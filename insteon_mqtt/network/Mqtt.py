@@ -87,11 +87,14 @@ class Mqtt (Link):
 
     #-----------------------------------------------------------------------
     def read_from_link(self):
-        rtn = self.client.loop_read()
-
-        self.log.debug("MQTT reading status %s", rtn)
-        if rtn == 0:
+        status = self.client.loop_read()
+        # If status is zero, everything is ok.  Return 1 to tell the
+        # link that reading was successful.
+        if status == 0:
             return 1
+
+        # Otherwise tell the link that reading failed and we should be
+        # closed.
         else:
             return -1
 
@@ -122,7 +125,7 @@ class Mqtt (Link):
 
     #-----------------------------------------------------------------------
     def _on_disconnect(self, client, data, result):
-        self.log.info("MQTT disconnection %s %s", self.host, self.port)
+        self.log.debug("MQTT disconnection %s %s", self.host, self.port)
 
         self.connected = False
         self.signal_closing.emit(self)
