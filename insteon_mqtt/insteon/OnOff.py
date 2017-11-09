@@ -4,7 +4,7 @@
 #
 #===========================================================================
 from .Device import Device
-from .. import sigslot
+from .. import Signal
 import logging
 
 s_log = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ class OnOff (Device):
         super().__init__(address, name)
         self._is_on = None
 
-        self.signal_state = sigslot.Signal()
+        self.signal_state = Signal.Signal()
 
     #-----------------------------------------------------------------------
     def pair(self, modem):

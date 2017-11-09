@@ -3,7 +3,7 @@
 # Network and serial link management
 #
 #===========================================================================
-from .. import sigslot
+from .. import Signal
 
 
 class Link:
@@ -11,12 +11,12 @@ class Link:
     def __init__(self):
         # Sent when the link is going down.
         # signature: (Link link)
-        self.signal_closing = sigslot.Signal()
+        self.signal_closing = Signal.Signal()
 
         # Sent when the link changes state on whether or not it has
         # bytes that need to be written to the link.
         # signature: (Link link, bool write_active)
-        self.signal_needs_write = sigslot.Signal()
+        self.signal_needs_write = Signal.Signal()
 
     #-----------------------------------------------------------------------
     def retry_connect_dt(self):

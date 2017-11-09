@@ -7,7 +7,7 @@ import logging
 import os
 import serial
 from .Link import Link
-from .. import sigslot
+from .. import Signal
 
 
 class Serial (Link):
@@ -21,8 +21,8 @@ class Serial (Link):
         """TODO: doc
         """
         # Public signals to connect to.
-        self.signal_read = sigslot.Signal()   # (Serial, bytes)
-        self.signal_wrote = sigslot.Signal()  # (Serial, bytes)
+        self.signal_read = Signal.Signal()   # (Serial, bytes)
+        self.signal_wrote = Signal.Signal()  # (Serial, bytes)
 
         super().__init__()
 

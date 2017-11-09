@@ -6,7 +6,7 @@
 import logging
 import paho.mqtt.client as paho
 from .Link import Link
-from .. import sigslot
+from .. import Signal
 
 
 class Mqtt (Link):
@@ -16,8 +16,8 @@ class Mqtt (Link):
         self.port = port
         self.connected = False
 
-        self.signal_connected = sigslot.Signal()  # (MqttLink, bool connected)
-        self.signal_message = sigslot.Signal()    # (MqttLink, Message msg)
+        self.signal_connected = Signal.Signal()  # (MqttLink, bool connected)
+        self.signal_message = Signal.Signal()    # (MqttLink, Message msg)
 
         self._reconnect_dt = reconnect_dt
         self._fd = None

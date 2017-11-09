@@ -5,11 +5,11 @@
 #===========================================================================
 import json
 import logging
-from . import sigslot
+from . import Signal
 
 class Mqtt:
     def __init__(self, link, modem):
-        self.signal_reload = sigslot.Signal()
+        self.signal_reload = Signal.Signal()
 
         self.modem = modem
 

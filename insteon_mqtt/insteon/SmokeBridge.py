@@ -4,7 +4,7 @@
 #
 #===========================================================================
 from .Device import Device
-from .. import sigslot
+from .. import Signal
 import logging
 
 s_log = logging.getLogger(__name__)
@@ -13,12 +13,12 @@ class SmokeBridge (Device):
     def __init__(self, address, name=None):
         super().__init__(address, name)
 
-        self.signal_smoke = sigslot.Signal()
-        self.signal_co = sigslot.Signal()
-        self.signal_test = sigslot.Signal()
-        self.signal_battery = sigslot.Signal()
-        self.signal_error = sigslot.Signal()
-        self.signal_heartbeat = sigslot.Signal()
+        self.signal_smoke = Signal.Signal()
+        self.signal_co = Signal.Signal()
+        self.signal_test = Signal.Signal()
+        self.signal_battery = Signal.Signal()
+        self.signal_error = Signal.Signal()
+        self.signal_heartbeat = Signal.Signal()
 
     #-----------------------------------------------------------------------
     def pair(self, modem):

@@ -14,6 +14,10 @@ class Signal:
     of slots which are functions or instance methods.  When the signal
     is emitted (by calling emit()), each slot is called with any
     arguments passed to the emit method.
+
+    Slots are held in weak references so if the object goes out of
+    scope, it the slot will be removed.  Slots can also disconnect
+    themselves in the middle of the signal being emitted.
     """
     #-----------------------------------------------------------------------
     def __init__(self):
@@ -48,18 +52,17 @@ class Signal:
         = INPUTS
         - slot   Instance method or function to connect.
         """
+        # Create a weak reference to the method or function.
         if inspect.ismethod(slot):
             wr_slot = weakref.WeakMethod(slot)
         else:
             wr_slot = weakref.ref(slot)
 
-        # If the index method throws, the slot doesn't exist yet.
-        try:
-            self.slots.index(wr_slot)
-        except ValueError:
-            # Insert it at the beginning so that when we call the
-            # slots in reverse order, they will be called in the order
-            # inserted.
+        # Only insert the slot if it doesn't already exist.  If the
+        # index method throws, the slot doesn't exist yet. Insert it
+        # at the beginning so that when we call the slots in reverse
+        # order, they will be called in the order inserted.
+        if wr_slot not in self.slots:
             self.slots.insert(0, wr_slot)
 
     #-----------------------------------------------------------------------
@@ -71,6 +74,8 @@ class Signal:
         = INPUTS
         - slot   Instance method or function to disconnect.
         """
+        # Create a weak reference to the method or function so that we
+        # can use the comparison operator on the weakref to find the slot.
         if inspect.ismethod(slot):
             wr_slot = weakref.WeakMethod(slot)
         else:
