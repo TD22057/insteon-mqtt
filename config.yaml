@@ -1,0 +1,70 @@
+#pprint.pprint( yaml.load(open("config.yaml").read()))
+
+#----------------------------------------------------------------
+mqtt:
+  broker: 127.0.0.1
+  port: 1883
+  username:
+  password:
+
+  # Topic: {set_topic}/ADDRESS
+  # Payload: { values }
+  set_topic: "insteon/set"
+
+  # Topic: {state_topic}/ADDRESS
+  # Payload: { values }
+  state_topic: "insteon/state"
+
+  # Topic: {cmd_topic}
+  # Payload:
+  #    reload: reload config file
+  #    dbinit: clear and reload all insteon device databases
+  #    repair ADDRESS: clear and re-initialize links to the model for
+  #                    the device at ADDRESS.
+  cmd_topic: "insteon/cmd"
+
+#----------------------------------------------------------------
+# One or the other of these:
+insteon:
+  # USB PLM modem
+  port: "/dev/insteon"
+  #baudrate: 19200
+
+  # Insteon HUB PLM network
+  #port: "socket://192.168.1.5:9761"
+
+  address: 44.85.11
+  storage: "/var/lib/insteon-mqtt"
+
+  #----------------------------------------------------------------
+  devices:
+    - on_off:
+        name: "lamp"
+        address: 37.2d.35
+
+    - dimmer:
+        name: "sw1"
+        address: 48.3d.46
+
+    - dimmer:
+        name: "sw2"
+        address: 48.b0.ad
+
+    - smoke_bridge:
+        address: 44.a3.79
+
+    #- mini_remote8:
+    #    name: "remote_01"
+    #    address: a2.b3.c4
+
+  #----------------------------------------------------------------
+  scenes:
+    - scene_01:
+        id: 01
+        devices:
+          - a2.b3.c4: 50
+          - hallway: 100
+
+#----------------------------------------------------------------
+
+#----------------------------------------------------------------

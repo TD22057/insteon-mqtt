@@ -14,11 +14,13 @@ class Mqtt (Link):
         super().__init__()
         self.host = host
         self.port = port
-        self._reconnect_dt = reconnect_dt
-        self._fd = None
+        self.connected = False
 
         self.signal_connected = sigslot.Signal()  # (MqttLink, bool connected)
         self.signal_message = sigslot.Signal()    # (MqttLink, Message msg)
+
+        self._reconnect_dt = reconnect_dt
+        self._fd = None
 
         self.client = paho.Client(client_id=id)
         self.client.on_connect = self._on_connect
@@ -28,28 +30,42 @@ class Mqtt (Link):
         self.log = logging.getLogger(__name__)
 
     #-----------------------------------------------------------------------
+    def load_config(self, config):
+        assert(not self.connected)
+
+        self.host = config['broker']
+        self.port = config['port']
+
+        username =  config.get('username', None)
+        if username is not None:
+            password = config.get('password', None)
+            self.client.username_pw_set(username, password)
+
+    #-----------------------------------------------------------------------
     def publish(self, topic, payload, qos=0, retain=False):
         self.client.publish(topic, payload, qos, retain)
         self.signal_needs_write.emit(self, True)
 
-        self.log.debug("MQTT publish", topic, payload, qos, retain)
+        self.log.debug("MQTT publish %s %s qos=%s ret=%s", topic, payload,
+                       qos, retain)
 
     #-----------------------------------------------------------------------
     def subscribe(self, topic, qos=0):
         self.client.subscribe(topic, qos)
         self.signal_needs_write.emit(self, True)
 
-        self.log.debug("MQTT subscribe", topic, qos)
+        self.log.debug("MQTT subscribe %s qos=%s", topic, qos)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, topic):
         self.client.unsubscribe(topic)
         self.signal_needs_write.emit(self, True)
 
-        self.log.debug("MQTT unsubscribe", topic)
+        self.log.debug("MQTT unsubscribe %s", topic)
 
     #-----------------------------------------------------------------------
     def fileno(self):
+        assert(self._fd)
         return self._fd
 
     #-----------------------------------------------------------------------
@@ -62,10 +78,10 @@ class Mqtt (Link):
             self.client.connect(self.host, self.port)
             self._fd = self.client.socket().fileno()
 
-            self.log.info("MQTT device opened", self.host, self.port)
+            self.log.info("MQTT device opened %s %s", self.host, self.port)
             return True
         except:
-            self.log.exception("MQTT connection error to", self.host,
+            self.log.exception("MQTT connection error to %s %s", self.host,
                                self.port)
             return False
 
@@ -73,7 +89,7 @@ class Mqtt (Link):
     def read_from_link(self):
         rtn = self.client.loop_read()
 
-        self.log.debug("MQTT reading status", rtn)
+        self.log.debug("MQTT reading status %s", rtn)
         if rtn == 0:
             return 1
         else:
@@ -90,7 +106,7 @@ class Mqtt (Link):
 
     #-----------------------------------------------------------------------
     def close(self):
-        self.log.info("MQTT device closing", self.host, self.port)
+        self.log.info("MQTT device closing %s %s", self.host, self.port)
 
         self.client.disconnect()
         self.signal_needs_write.emit(self, True)
@@ -98,21 +114,27 @@ class Mqtt (Link):
     #-----------------------------------------------------------------------
     def _on_connect(self, client, data, flags, result):
         if result == 0:
+            self.connected = True
             self.signal_connected.emit(self, True)
         else:
-            self.log.error("MQTT connection refused", self.host, self.port,
-                           result)
+            self.log.error("MQTT connection refused %s %s %s", self.host,
+                           self.port, result)
 
     #-----------------------------------------------------------------------
     def _on_disconnect(self, client, data, result):
-        self.log.info("MQTT disconnection", self.host, self.port)
+        self.log.info("MQTT disconnection %s %s", self.host, self.port)
 
+        self.connected = False
         self.signal_closing.emit(self)
         self.signal_connected.emit(self, False)
 
     #-----------------------------------------------------------------------
     def _on_message(self, client, data, message):
-        self.log.info("MQTT message", message.topic, message.payload)
+        self.log.info("MQTT message %s %s", message.topic, message.payload)
         self.signal_message.emit(self, message)
 
+    #-----------------------------------------------------------------------
+    def __str__(self):
+        return "MQTT %s:%d" % (self.host, self.port)
+    
     #-----------------------------------------------------------------------

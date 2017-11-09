@@ -8,7 +8,6 @@ import logging
 import select
 import time
 
-
 class Manager:
     # Bit flags to watch for when registering a socket for read or
     # read/write.
@@ -32,11 +31,11 @@ class Manager:
 
     #-----------------------------------------------------------------------
     def active(self):
-        return len(self.links)
+        return len(self.links) + len(self.unconnected)
 
     #-----------------------------------------------------------------------
     def add(self, link, connected=True):
-        self.log.debug("Link added", link)
+        self.log.debug("Link added: %s", link)
 
         if connected:
             fd = link.fileno()
@@ -60,7 +59,7 @@ class Manager:
         self.poll.unregister(fd)
         self.links.pop(fd, None)
 
-        self.log.debug("Link removed", link)
+        self.log.debug("Link removed %s", link)
 
     #-----------------------------------------------------------------------
     def close_all(self):
@@ -87,36 +86,31 @@ class Manager:
         for i in range(len(self.unconnected)-1, -1, -1):
             link, next_time = self.unconnected[i]
             if t >= next_time:
-                self.log.debug("Link connection attempt", link)
+                self.log.debug("Link connection attempt %s", link)
                 if link.connect():
-                    self.log.debug("Link connection success", link)
+                    self.log.debug("Link connection success %s", link)
                     self.add(link)
                     del self.unconnected[i]
                 else:
-                    self.log.debug("Link connection failed", link)
+                    self.log.debug("Link connection failed %s", link)
                     self.unconnected[i] = (link, t+link.retry_connect_dt())
 
         for fd, flag in events:
-            #print("   found fd=%s" % fd )
             link = self.links.get(fd, None)
             if link is None:
                 continue
 
             if flag & self.EVENT_READ:
-                #print("   link read")
                 if link.read_from_link() == -1:
                     flag = 0
 
             if flag & self.EVENT_WRITE:
-                #print("   link write")
                 link.write_to_link()
 
             if flag & self.EVENT_CLOSE:
-                #print("   link close")
                 link.close()
 
             elif flag & self.EVENT_ERROR:
-                #print("   link error")
                 link.close()
 
     #-----------------------------------------------------------------------

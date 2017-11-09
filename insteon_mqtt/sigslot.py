@@ -41,7 +41,6 @@ class Signal:
 
     #-----------------------------------------------------------------------
     def connect(self, slot):
-
         """Connect a slot to the signal.
 
         If the input slot is already connected, nothing is done.
@@ -54,8 +53,7 @@ class Signal:
         else:
             wr_slot = weakref.ref(slot)
 
-        # If the index method throws, the slot doesn't exist yet so
-        # add it.
+        # If the index method throws, the slot doesn't exist yet.
         try:
             self.slots.index(wr_slot)
         except ValueError:
@@ -67,6 +65,7 @@ class Signal:
     #-----------------------------------------------------------------------
     def disconnect(self, slot):
         """Disconnect a slot from the signal.
+
         If the input slot is not connected, nothing is done.
 
         = INPUTS

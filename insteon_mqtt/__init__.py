@@ -8,6 +8,7 @@ __doc__ = """TODO: doc"""
 
 #===========================================================================
 
-from . import mqtt
+from . import links
+from . import insteon
+from .Mqtt import Mqtt
 from . import sigslot
-
