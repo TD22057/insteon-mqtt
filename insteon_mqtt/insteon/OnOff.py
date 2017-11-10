@@ -10,9 +10,10 @@ import logging
 s_log = logging.getLogger(__name__)
 
 class OnOff (Device):
-    def __init__(self, address, name=None):
-        super().__init__(address, name)
-        self._is_on = None
+    def __init__(self, handler, address, name=None):
+        super().__init__(handler, address, name)
+        # 0x00 for off or 0xff for on
+        self._level = 0x00 
 
         self.signal_state = Signal.Signal()
 
@@ -23,31 +24,33 @@ class OnOff (Device):
         pass
 
     #-----------------------------------------------------------------------
+    def handle_direct_ack(self, msg):
+        self._level = 0xff if msg.cmd2 else 0x00
+        self.signal_state.emit(self._level)
+        
+    #-----------------------------------------------------------------------
     def is_on(self):
-        return self._is_on
+        return self._level > 0x00
 
     #-----------------------------------------------------------------------
     def level(self):
-        return 0xFF if self._is_on else 0
+        return self._level
 
     #-----------------------------------------------------------------------
     def on(self, instant=False):
         s_log.info( "OnOff %s cmd: on", self.addr)
-        assert(level >= 0 and level <= 0xff)
-        
-        if not instant:
-            msg = Msg.OutStandard.direct(self.addr, 0x11, level)
-        else:
-            msg = Msg.OutStandard.direct(self.addr, 0x21, level)
+
+        cmd1 = 0x11 if not instant else 0x21
+        msg = Msg.OutStandard.direct(self.addr, cmd1, 0xff)
+        self.handler.send(msg, StandardCmdHandler(self, cmd1))
 
     #-----------------------------------------------------------------------
     def off(self, instant=False):
         s_log.info( "OnOff %s cmd: off", self.addr)
 
-        if not instant:
-            msg = Msg.OutStandard.direct(self.addr, 0x13, 0x00)
-        else:
-            msg = Msg.OutStandard.direct(self.addr, 0x21, 0x00)
+        cmd1 = 0x13 if not instant else 0x21
+        msg = Msg.OutStandard.direct(self.addr, cmd1, 0x00)
+        self.handler.send(msg, StandardCmdHandler(self, cmd1))
 
     #-----------------------------------------------------------------------
     def set(self, active, instant=False):

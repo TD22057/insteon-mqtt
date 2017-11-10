@@ -51,7 +51,7 @@ class Flags:
         self.is_ext = is_ext
         self.hops_left = hops_left
         self.max_hops = max_hops
-        self.is_nak = type == DIRECT_NAK or type == CLEANUP_NAK
+        self.is_nak = type == Flags.DIRECT_NAK or type == Flags.CLEANUP_NAK
         self.is_broadcast = type == Flags.ALL_LINK_BROADCAST
 
         self.byte = self.type << 5 | self.is_ext << 4 | \

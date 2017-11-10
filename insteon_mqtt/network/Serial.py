@@ -55,7 +55,7 @@ class Serial (Link):
     #-----------------------------------------------------------------------
     def write(self, data):
         self._write_buf.append(data)
-        self.signal_needs_write.emit(True)
+        self.signal_needs_write.emit(self, True)
 
     #-----------------------------------------------------------------------
     def retry_connect_dt(self):
@@ -88,7 +88,7 @@ class Serial (Link):
     #-----------------------------------------------------------------------
     def write_to_link(self):
         if not self._write_buf:
-            self.signal_needs_write.emit(False)
+            self.signal_needs_write.emit(self, False)
             return
 
         data = self._write_buf[0]
@@ -100,7 +100,7 @@ class Serial (Link):
             if num == len(data):
                 self._write_buf.pop(0)
                 if not len(self._write_buf):
-                    self.signal_needs_write.emit(False)
+                    self.signal_needs_write.emit(self, False)
 
                 self.signal_wrote.emit(self, data)
 

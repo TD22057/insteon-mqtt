@@ -10,8 +10,8 @@ import logging
 s_log = logging.getLogger(__name__)
 
 class SmokeBridge (Device):
-    def __init__(self, address, name=None):
-        super().__init__(address, name)
+    def __init__(self, handler, address, name=None):
+        super().__init__(handler, address, name)
 
         self.signal_smoke = Signal.Signal()
         self.signal_co = Signal.Signal()

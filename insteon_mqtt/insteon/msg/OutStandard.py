@@ -101,8 +101,8 @@ class OutExtended (OutStandard):
     #-----------------------------------------------------------------------
     @staticmethod
     def direct(to_addr, cmd1, cmd2, data):
-        flags = Flags(Flags.DIRECT, is_ext=False)
-        return OutStandard(to_addr, flags, cmd1, cmd2, data)
+        flags = Flags(Flags.DIRECT, is_ext=True)
+        return OutExtended(to_addr, flags, cmd1, cmd2, data)
         
     #-----------------------------------------------------------------------
     def __init__(self, to_addr, flags, cmd1, cmd2, data, is_ack=None):

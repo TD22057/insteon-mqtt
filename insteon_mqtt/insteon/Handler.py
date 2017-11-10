@@ -9,6 +9,7 @@ import logging
 import io
 import binascii
 
+
 class Handler:
     def __init__(self, link):
         self.link = link
@@ -34,19 +35,25 @@ class Handler:
         # Set of possible message handlers to use.  These are handlers
         # that handle any message besides the replies expected by the
         # write handler.
-        self._read_handlers = {}
-        #    Msg.StandardHandler.code : Msr.StandardHandler(),
-        #    }
+        self._read_handlers = []
 
         self.log = logging.getLogger(__name__)
 
+    #-----------------------------------------------------------------------
+    def add_handler(self, handler):
+        self._read_handlers.append(handler)
+        
+    #-----------------------------------------------------------------------
+    def remove_handler(self, handler):
+        self._read_handlers.pop(handler, None)
+        
     #-----------------------------------------------------------------------
     def load_config(self, config):
         self.link.load_config(config)
 
     #-----------------------------------------------------------------------
-    def send(self, msg, msgHandler):
-        self._write_queue.append((msg, msgHandler))
+    def send(self, msg, msg_handler):
+        self._write_queue.append((msg, msg_handler))
 
         # If there is an existing msg in the write queue, we're either
         # waiting to write it or waiting for a reply.  So only write
@@ -129,7 +136,8 @@ class Handler:
         # the message.
         if self._write_handler:
             self.log.debug("Passing msg to write handler")
-            status = self._write_handler.handle(msg)
+            status = self._write_handler.msg_received(self, msg)
+            self.log.debug("GOT: %s", status)
             # status:
             # CONTINUE: message handled but waiting for more messages
             # FINISHED: all expected replies have arrived
@@ -137,8 +145,7 @@ class Handler:
             # Handler is finished.  Send the next outgoing message
             # if one is waiting.
             if status == Msg.FINISHED:
-                self.log.debug("Write handler %s finished",
-                               self._write_handler.name)
+                self.log.debug("Write handler finished")
                 self._write_handler = None
                 if self._write_queue:
                     self._send_next_msg()
@@ -149,21 +156,23 @@ class Handler:
                 return
 
         # No write handler or the message didn't match what the
-        # handler expects to see.  Try the regular read handler to
-        # see if they understand the message.
-        handler = self._read_handlers.get(msg.code, None)
-        if handler:
-            status = handler.handle(msg)
-            if status == Msg.FINISHED:
-                self.log.debug("Read handler %s finished", handler.name)
+        # handler expects to see.  Try the regular read handler to see
+        # if they understand the message.
+        for handler in self._read_handlers:
+            status = handler.msg_received(self, msg)
 
+            # If the message was understood by this handler return.
+            # This limits us to one handler per message but that's
+            # probably ok.
+            if status != Msg.UNKNOWN:
+                return
+            
         # No handler was found for the message.  Shift pass the ID
         # code and look for more messages.  This might be better
         # by having a lookup by msg ID->msg size and use that to
         # skip the whole message.
-        else:
-            self.log.warning("No read handler found for message type %#04x",
-                             msg.code)
+        self.log.warning("No read handler found for message type %#04x",
+                         msg.code)
 
     #-----------------------------------------------------------------------
     def _msg_written(self, link, data):
@@ -171,9 +180,9 @@ class Handler:
 
     #-----------------------------------------------------------------------
     def _send_next_msg(self):
-        msg, handler = self._write_queue.pop(0)
-        self.link.write(msg.bytes())
-        self._write_handler = handler
+        msg, msg_handler = self._write_queue.pop(0)
+        self.link.write(msg.raw())
+        self._write_handler = msg_handler
 
     #-----------------------------------------------------------------------
     

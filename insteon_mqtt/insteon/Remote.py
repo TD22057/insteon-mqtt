@@ -9,8 +9,8 @@ import logging
 s_log = logging.getLogger(__name__)
 
 class Remote (Device):
-    def __init__(self, address, num, name=None):
-        super().__init__(address, name)
+    def __init__(self, handler, address, num, name=None):
+        super().__init__(handler, address, name)
         self.num = num
         self._is_on = [None]*num
 

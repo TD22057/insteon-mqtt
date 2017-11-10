@@ -5,7 +5,7 @@
 #===========================================================================
 import io
 from ..Address import Address
-from .Control import Control
+from .DbFlags import DbFlags
 from .Flags import Flags
 
 #===========================================================================
@@ -49,21 +49,21 @@ class OutAllLinkUpdate:
             return OutAllLinkUpdate.msg_size
 
         cmd = raw[2]
-        ctrl = Control.read(raw, 3)
+        flags = DbFlags.read(raw, 3)
         group = raw[4]
         addr = Address.read(raw, 5)
         data = raw[8:11]
         is_ack = raw[12] == 0x06
-        return OutAllLinkUpdate(cmd, ctrl, group, addr, data, is_ack)
+        return OutAllLinkUpdate(cmd, flags, group, addr, data, is_ack)
         
     #-----------------------------------------------------------------------
-    def __init__(self, cmd, ctrl, group, addr, data, is_ack=None):
+    def __init__(self, cmd, flags, group, addr, data, is_ack=None):
         assert(cmd in [SEARCH, UPDATE, ADD_CONTROLLER, ADD_RESPONDER,
                            DELETE])
-        assert(isinstance(ctrl, Control))
+        assert(isinstance(flags, DbFlags))
         
         self.cmd = cmd
-        self.ctrl = ctrl
+        self.flags = flags
         self.group = group
         self.addr = addr
         self.data = data
@@ -73,7 +73,7 @@ class OutAllLinkUpdate:
     def raw(self):
         o = io.BytesIO(bytes([0x02, self.code]))
         o.write(self.cmd)
-        o.write(self.ctrl.raw())
+        o.write(self.flags.raw())
         o.write(self.group)
         o.write(self.addr.raw())
         o.write(self.data)

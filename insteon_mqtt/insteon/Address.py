@@ -36,7 +36,7 @@ class Address:
                 # Handles 'AABBCC' 'AA.BB.CC' 'AA:BB:CC' 'AA BB CC'
                 s = addr.replace(".","").replace(":","").replace(" ","").strip()
                 id = int(s, 16)
-            elif isistance(addr, int):
+            elif isinstance(addr, int):
                 id = addr
             else:
                 msg = "Error trying to parse an Insteon address.  The input " \

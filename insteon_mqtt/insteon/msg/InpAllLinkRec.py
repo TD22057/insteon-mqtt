@@ -6,7 +6,7 @@
 import io
 from ..Address import Address
 from .Flags import Flags
-from .Control import Control
+from .DbFlags import DbFlags
 
 #===========================================================================
 
@@ -38,18 +38,18 @@ class InpAllLinkRec:
         if InpAllLinkRec.msg_size > len(raw):
             return InpAllLinkRec.msg_size
 
-        ctrl = Control.read(raw, 2)
+        flags = DbFlags.read(raw, 2)
         group = raw[3]
         addr = Address.read(raw, 4)
         data = raw[7:10]
         
-        return InpAllLinkRec(ctrl, group, addr, data)
+        return InpAllLinkRec(flags, group, addr, data)
         
     #-----------------------------------------------------------------------
-    def __init__(self, ctrl, group, addr, data):
-        assert(isinstance(ctrl, Control))
+    def __init__(self, flags, group, addr, data):
+        assert(isinstance(flags, DbFlags))
         
-        self.ctrl = ctrl
+        self.flags = flags
         self.group = group
         self.addr = addr
         self.data = data
@@ -58,10 +58,20 @@ class InpAllLinkRec:
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "%s grp: %s ctrl: %s data: %#04x %#04x %#04x" % \
-            (self.addr, self.group, self.ctrl, self.data[0], self.data[1],
+        return "InpAllLinkRec: %s grp: %s %s data: %#04x %#04x %#04x" % \
+            (self.addr, self.group, self.flags, self.data[0], self.data[1],
              self.data[2])
 
+    #-----------------------------------------------------------------------
+    def to_json(self):
+        return {
+            'type' : 'InpAllLinkRec',
+            'addr' : self.addr.hex,
+            'group' : self.group,
+            'type' : 'ctrl' if self.flags.is_controller else 'resp',
+            'data' : self.data
+            }
+    
     #-----------------------------------------------------------------------
     
 #===========================================================================

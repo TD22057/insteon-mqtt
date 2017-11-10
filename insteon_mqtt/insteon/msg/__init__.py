@@ -4,7 +4,7 @@
 #
 #===========================================================================
 
-from .Control import Control
+from .DbFlags import DbFlags
 from .Flags import Flags
 
 # Messages from PLM modem to the host (codes >= 0x60)
@@ -12,7 +12,8 @@ from .InpAllLinkComplete import InpAllLinkComplete
 from .InpAllLinkFailure import InpAllLinkFailure
 from .InpAllLinkRec import InpAllLinkRec
 from .InpAllLinkStatus import InpAllLinkStatus
-from .InpStandard import InpStandard
+#from .InpExtended import InpExtended
+from .InpStandard import InpStandard, InpExtended
 from .InpUserReset import InpUserReset
 from .InpUserSetBtn import InpUserSetBtn
 
@@ -36,6 +37,7 @@ FINISHED = 2
 types = {
     # PLM -> host messages
     0x50 : InpStandard,
+    0x51 : InpExtended,
     0x53 : InpAllLinkComplete,
     0x54 : InpUserSetBtn,
     0x55 : InpUserReset,

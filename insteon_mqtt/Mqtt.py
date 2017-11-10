@@ -12,10 +12,11 @@ class Mqtt:
         self.signal_reload = Signal.Signal()
 
         self.modem = modem
+        self.modem.signal_new_device.connect(self._new_device)
 
         self.link = link
-        self.link.signal_connected.connect( self._connected )
-        self.link.signal_message.connect( self._message )
+        self.link.signal_connected.connect(self._connected)
+        self.link.signal_message.connect(self._message)
 
         self._cmd_topic = None
         self._set_topic = None
@@ -56,6 +57,23 @@ class Mqtt:
         if connected:
             self._subscribe()
 
+    #-----------------------------------------------------------------------
+    def _new_device(self, modem, device):
+        if hasattr(device, "signal_level_changed"):
+            self.log.info("MQTT adding level changed device %s '%s'",
+                          device.addr, device.name)
+            
+            device.signal_level_changed.connect(self._level_changed)
+
+    #-----------------------------------------------------------------------
+    def _level_changed(self, device, level):
+        self.log.info("MQTT received level change %s '%s' = %#04x",
+                      device.addr, device.name, level)
+        
+        topic = "%s/%s" % (self._state_topic, device.addr.hex)
+        payload = json.dumps( { 'level' : level } )
+        self.publish(topic, payload, retain=False) # TODO: True
+        
     #-----------------------------------------------------------------------
     def _message(self, link, msg):
         if msg.topic.startswith(self._cmd_topic):

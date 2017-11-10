@@ -6,9 +6,11 @@
 from .Address import Address
 
 class Device:
-    def __init__(self, address, name=None):
+    def __init__(self, handler, address, name=None):
+        self.handler = handler
         self.addr = Address(address)
         self.name = name
+        # TODO: db class
         self.db = {}
 
     #-----------------------------------------------------------------------
