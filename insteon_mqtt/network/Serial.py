@@ -9,6 +9,7 @@ import serial
 from .Link import Link
 from .. import Signal
 
+LOG = logging.getLogger(__name__)
 
 class Serial (Link):
     """TODO: doc
@@ -36,10 +37,10 @@ class Serial (Link):
         # for a connection call to do that.
         self.client = None if not port else self._open_client(port)
 
-        self.log = logging.getLogger(__name__)
-
     #-----------------------------------------------------------------------
     def load_config(self, config):
+        """TODO: doc
+        """
         assert(self._fd is None)
 
         self._baudrate = config.get('baudrate', self._baudrate)
@@ -49,44 +50,56 @@ class Serial (Link):
 
     #-----------------------------------------------------------------------
     def fileno(self):
+        """TODO: doc
+        """
         assert(self._fd)
         return self._fd
 
     #-----------------------------------------------------------------------
     def write(self, data):
+        """TODO: doc
+        """
         self._write_buf.append(data)
         self.signal_needs_write.emit(self, True)
 
     #-----------------------------------------------------------------------
     def retry_connect_dt(self):
+        """TODO: doc
+        """
         return self._reconnect_dt
 
     #-----------------------------------------------------------------------
     def connect(self):
+        """TODO: doc
+        """
         try:
             self.client.open()
             self._fd = self.client.fileno()
 
-            self.log.info("Serial device opened %s", self.client.port)
+            LOG.info("Serial device opened %s", self.client.port)
             return True
         except:
-            self.log.exception("Serial connection error to %s", self.client.port)
+            LOG.exception("Serial connection error to %s", self.client.port)
             return False
 
     #-----------------------------------------------------------------------
     def read_from_link(self):
+        """TODO: doc
+        """
         try:
             data = os.read(self._fd, self.read_buf_size)
             if data:
-                #self.log.debug("Read %s bytes from serial %s: %s", len(data),
+                #LOG.debug("Read %s bytes from serial %s: %s", len(data),
                 #               self.client.port, data)
 
                 self.signal_read.emit(self, data)
         except:
-            self.log.exception("Serial read error from %s", self.client.port)
+            LOG.exception("Serial read error from %s", self.client.port)
 
     #-----------------------------------------------------------------------
     def write_to_link(self):
+        """TODO: doc
+        """
         if not self._write_buf:
             self.signal_needs_write.emit(self, False)
             return
@@ -95,7 +108,7 @@ class Serial (Link):
         try:
             num = os.write(self._fd, data)
 
-            self.log.debug("Wrote %s bytes to serial %s", num, self.client.port)
+            LOG.debug("Wrote %s bytes to serial %s", num, self.client.port)
 
             if num == len(data):
                 self._write_buf.pop(0)
@@ -108,14 +121,16 @@ class Serial (Link):
                 self._write_buf[0] = data[num:]
 
         except:
-            self.log.exception("Serial write error from %s", self.client.port)
+            LOG.exception("Serial write error from %s", self.client.port)
 
     #-----------------------------------------------------------------------
     def close(self):
+        """TODO: doc
+        """
         if not self._fd:
             return
 
-        self.log.info("Serial device closing %s", self.client.port)
+        LOG.info("Serial device closing %s", self.client.port)
 
         self.client.close()
         self._fd = None
@@ -124,6 +139,8 @@ class Serial (Link):
 
     #-----------------------------------------------------------------------
     def _open_client(self, port, connect=False):
+        """TODO: doc
+        """
         client = serial.serial_for_url(port, do_not_open=True, timeout=0,
                                        write_timeout=0)
         client.baudrate = self._baudrate

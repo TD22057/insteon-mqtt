@@ -7,8 +7,12 @@ from .. import Signal
 
 
 class Link:
-    #-----------------------------------------------------------------------
+    """TODO: doc
+    """
+
     def __init__(self):
+        """TODO: doc
+        """
         # Sent when the link is going down.
         # signature: (Link link)
         self.signal_closing = Signal.Signal()
@@ -20,29 +24,41 @@ class Link:
 
     #-----------------------------------------------------------------------
     def retry_connect_dt(self):
+        """TODO: doc
+        """
         return None
 
     #-----------------------------------------------------------------------
     def connect(self):
+        """TODO: doc
+        """
         return False
 
     #-----------------------------------------------------------------------
     def fileno(self):
+        """TODO: doc
+        """
         raise NotImplementedError("{} needs fileno() method".format(
                                   self.__class__))
 
     #-----------------------------------------------------------------------
     def read_from_link(self):
+        """TODO: doc
+        """
         raise NotImplementedError("{} needs read_from_link() method".format(
                                   self.__class__))
 
     #-----------------------------------------------------------------------
     def write_to_link(self):
+        """TODO: doc
+        """
         raise NotImplementedError("{} needs write_to_link() method".format(
                                   self.__class__))
 
     #-----------------------------------------------------------------------
     def close(self):
+        """TODO: doc
+        """
         raise NotImplementedError("{} needs close() method".format(
                                   self.__class__))
 

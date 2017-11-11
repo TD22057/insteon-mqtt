@@ -7,13 +7,19 @@ mqtt:
   username:
   password:
 
-  # Topic: {set_topic}/ADDRESS
-  # Payload: { values }
-  set_topic: "insteon/set"
-
+  # Outbound messages:
+  qos: 1
+  retain: 0
+    
   # Topic: {state_topic}/ADDRESS
   # Payload: { values }
   state_topic: "insteon/state"
+
+  # Inbound messages:
+    
+  # Topic: {set_topic}/ADDRESS
+  # Payload: { json_values }
+  set_topic: "insteon/set"
 
   # Topic: {cmd_topic}
   # Payload:
@@ -34,7 +40,8 @@ insteon:
   #port: "socket://192.168.1.5:9761"
 
   address: 44.85.11
-  storage: "/var/lib/insteon-mqtt"
+  #storage: "/var/lib/insteon-mqtt"
+  storage: "."
 
   #----------------------------------------------------------------
   devices:

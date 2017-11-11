@@ -6,15 +6,18 @@
 import json
 import logging
 from . import Signal
+from . import device as Dev
+
+LOG = logging.getLogger(__name__)
 
 class Mqtt:
-    def __init__(self, link, modem):
+    def __init__(self, mqtt_link, modem):
         self.signal_reload = Signal.Signal()
 
         self.modem = modem
         self.modem.signal_new_device.connect(self._new_device)
 
-        self.link = link
+        self.link = mqtt_link
         self.link.signal_connected.connect(self._connected)
         self.link.signal_message.connect(self._message)
 
@@ -22,9 +25,7 @@ class Mqtt:
         self._set_topic = None
         self._state_topic = None
 
-        self.log = logging.getLogger(__name__)
-
-        self._cmds = {
+        self.cmds = {
             'reload' : self._cmd_reload,
             'dbinit' : self._cmd_dbinit,
             'repair' : self._cmd_repair,
@@ -40,12 +41,16 @@ class Mqtt:
         self._cmd_topic = self._clean_topic(config['cmd_topic'])
         self._set_topic = self._clean_topic(config['set_topic'])
         self._state_topic = self._clean_topic(config['state_topic'])
+        self._qos = config.get('qos', 1)
+        self._retain = config.get('retain', False)
 
         if self.link.connected:
             self._subscribe()
 
     #-----------------------------------------------------------------------
-    def publish(self, topic, payload, qos=1, retain=False):
+    def publish(self, topic, payload, qos=None, retain=None):
+        qos = self._qos if qos is None else qos
+        retain = self._retain if retain is None else retain
         self.link.publish(topic, payload, qos, retain)
 
     #-----------------------------------------------------------------------
@@ -59,29 +64,46 @@ class Mqtt:
 
     #-----------------------------------------------------------------------
     def _new_device(self, modem, device):
+        # TODO: what's the best way to handle this?  Don't want MQTT
+        # specific stuff in the insteon devices but it would be nice
+        # not to code up special cases for each here either.
+        
+        # Connect a callback for devices that report brightness.
         if hasattr(device, "signal_level_changed"):
-            self.log.info("MQTT adding level changed device %s '%s'",
-                          device.addr, device.name)
+            LOG.info("MQTT adding level changed device %s '%s'", device.addr,
+                     device.name)
             
             device.signal_level_changed.connect(self._level_changed)
 
+        elif isinstance(device, Dev.SmokeBridge):
+            device.signal_state_change.connect(self._smoke_bridge)
+            
     #-----------------------------------------------------------------------
     def _level_changed(self, device, level):
-        self.log.info("MQTT received level change %s '%s' = %#04x",
-                      device.addr, device.name, level)
+        LOG.info("MQTT received level change %s '%s' = %#04x",
+                 device.addr, device.name, level)
         
         topic = "%s/%s" % (self._state_topic, device.addr.hex)
         payload = json.dumps( { 'level' : level } )
-        self.publish(topic, payload, retain=False) # TODO: True
+        self.publish(topic, payload, retain=self._retain) 
+
+    #-----------------------------------------------------------------------
+    def _smoke_bridge(self, device, condition):
+        LOG.info("MQTT received smoke bridge alert %s '%s' = %s",
+                 device.addr, device.name, condition)
         
+        topic = "%s/%s" % (self._state_topic, device.addr.hex)
+        payload = json.dumps( { 'condition' : condition } )
+        self.publish(topic, payload, retain=self._retain) 
+    
     #-----------------------------------------------------------------------
     def _message(self, link, msg):
         if msg.topic.startswith(self._cmd_topic):
-            self.log.info("Command read: %s %s", msg.topic, msg.payload)
+            LOG.info("Command read: %s %s", msg.topic, msg.payload)
             self._handle_cmd(msg.topic, msg.payload)
 
         elif msg.topic.startswith(self._set_topic):
-            self.log.info("Insteon command: %s %s", msg.topic, msg.payload)
+            LOG.info("Insteon command: %s %s", msg.topic, msg.payload)
             self._handle_set(msg.topic, msg.payload)
 
     #-----------------------------------------------------------------------
@@ -91,37 +113,47 @@ class Mqtt:
              cmd = elem[0]
              data = "".join(elem[1:]).strip()
 
-             func = getattr(self, "_cmd_{}".format(cmd), None)
+             func = self.cmds.get(cmd, None)
              if func:
                  func(data)
              else:
-                 self.log.error("Unknown MQTT command: %s %s", topic, payload)
+                 LOG.error("Unknown MQTT command: %s %s", topic, payload)
          except:
-             self.log.exception("Error running command: %s %s", topic, payload)
+             LOG.exception("Error running command: %s %s", topic, payload)
 
     #-----------------------------------------------------------------------
     def _handle_set(self, topic, payload):
-         try:
-             data = json.loads(payload)
+        try:
+            address = topic.split("/")[-1]
+            device = self.modem.find(address)
+            if not device:
+                LOG.error("Unknown device requested: %s", address)
+                return
 
-             address = topic.split("/")[-1]
-             device = self.modem.find(address)
-             device.run_command(**data)
-         except:
-             self.log.exception("Error running set command %s %s", topic,
-                                payload)
+            s = payload.lower()
+            if s == b"on":
+                device.run_command(level=0xff)
+            elif s == b"off":
+                device.run_command(level=0)
+            else:
+                data = json.loads(payload)
+                device.run_command(**data)
+        except:
+            LOG.exception("Error running set command %s %s", topic, payload)
 
     #-----------------------------------------------------------------------
     def _subscribe(self):
         if self._cmd_topic:
-            self.link.subscribe(self._cmd_topic+"/#", qos=1)
+            self.link.subscribe(self._cmd_topic+"/#", qos=self._qos)
+            
         if self._set_topic:
-            self.link.subscribe(self._set_topic+"/#", qos=1)
+            self.link.subscribe(self._set_topic+"/#", qos=self._qos)
 
     #-----------------------------------------------------------------------
     def _unsubscribe(self, topic):
         if self._cmd_topic:
             self.link.unsubscribe(self._cmd_topic+"/#")
+            
         if self._set_topic:
             self.link.unsubscribe(self._set_topic+"/#")
 
@@ -129,6 +161,7 @@ class Mqtt:
     def _clean_topic(self, topic):
         if topic.endswith("/"):
             return topic[:-1]
+        
         return topic
 
     #-----------------------------------------------------------------------
@@ -141,10 +174,14 @@ class Mqtt:
 
     #-----------------------------------------------------------------------
     def _cmd_repair(self, data):
+        device = self.modem.find(data)
+        if not device:
+            LOG.error("repair command unknown device %s", data)
+            return
+
         try:
-            device = self.modem.find(data)
             device.repair()
         except:
-            self.log.exception("Error trying to repair device %s", data)
+            LOG.exception("Error trying to repair device %s", device.addr)
 
     #-----------------------------------------------------------------------

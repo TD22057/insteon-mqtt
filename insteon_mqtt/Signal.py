@@ -13,11 +13,14 @@ class Signal:
     A signal is an object that can be connected to an arbitrary number
     of slots which are functions or instance methods.  When the signal
     is emitted (by calling emit()), each slot is called with any
-    arguments passed to the emit method.
+    arguments passed to the emit method so care must be taken to
+    insure that the signal emitter is passing the same arguments
+    expected by the slot.
 
     Slots are held in weak references so if the object goes out of
     scope, it the slot will be removed.  Slots can also disconnect
     themselves in the middle of the signal being emitted.
+
     """
     #-----------------------------------------------------------------------
     def __init__(self):
@@ -29,8 +32,13 @@ class Signal:
     #-----------------------------------------------------------------------
     def emit(self, *args, **kwargs):
         """Emit the signal.
+        
         All of the connected slots will be called with the input args
         and kwargs.
+
+        Args:
+           args:    List of positional arguments to pass.
+           kwargs:  Dictionary of the keyword arguments to pass.
         """
         # Loop in reverse order over the slots.  That way we can
         # delete any weak references that no longer exist and support
@@ -49,8 +57,8 @@ class Signal:
 
         If the input slot is already connected, nothing is done.
 
-        = INPUTS
-        - slot   Instance method or function to connect.
+        Args:
+           slot:  Instance method or function to connect.
         """
         # Create a weak reference to the method or function.
         if inspect.ismethod(slot):
@@ -71,8 +79,8 @@ class Signal:
 
         If the input slot is not connected, nothing is done.
 
-        = INPUTS
-        - slot   Instance method or function to disconnect.
+        Args:
+           slot:  Instance method or function to disconnect.
         """
         # Create a weak reference to the method or function so that we
         # can use the comparison operator on the weakref to find the slot.

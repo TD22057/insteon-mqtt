@@ -10,7 +10,11 @@ from .. import Signal
 
 
 class Mqtt (Link):
+    """TODO: doc
+    """
     def __init__(self, host, port=1883, id=None, reconnect_dt=10):
+        """TODO: doc
+        """
         super().__init__()
         self.host = host
         self.port = port
@@ -31,6 +35,8 @@ class Mqtt (Link):
 
     #-----------------------------------------------------------------------
     def load_config(self, config):
+        """TODO: doc
+        """
         assert(not self.connected)
 
         self.host = config['broker']
@@ -43,6 +49,8 @@ class Mqtt (Link):
 
     #-----------------------------------------------------------------------
     def publish(self, topic, payload, qos=0, retain=False):
+        """TODO: doc
+        """
         self.client.publish(topic, payload, qos, retain)
         self.signal_needs_write.emit(self, True)
 
@@ -51,6 +59,8 @@ class Mqtt (Link):
 
     #-----------------------------------------------------------------------
     def subscribe(self, topic, qos=0):
+        """TODO: doc
+        """
         self.client.subscribe(topic, qos)
         self.signal_needs_write.emit(self, True)
 
@@ -58,6 +68,8 @@ class Mqtt (Link):
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, topic):
+        """TODO: doc
+        """
         self.client.unsubscribe(topic)
         self.signal_needs_write.emit(self, True)
 
@@ -65,15 +77,21 @@ class Mqtt (Link):
 
     #-----------------------------------------------------------------------
     def fileno(self):
+        """TODO: doc
+        """
         assert(self._fd)
         return self._fd
 
     #-----------------------------------------------------------------------
     def retry_connect_dt(self):
+        """TODO: doc
+        """
         return self._reconnect_dt
 
     #-----------------------------------------------------------------------
     def connect(self):
+        """TODO: doc
+        """
         try:
             self.client.connect(self.host, self.port)
             self._fd = self.client.socket().fileno()
@@ -87,6 +105,8 @@ class Mqtt (Link):
 
     #-----------------------------------------------------------------------
     def read_from_link(self):
+        """TODO: doc
+        """
         status = self.client.loop_read()
         # If status is zero, everything is ok.  Return 1 to tell the
         # link that reading was successful.
@@ -100,6 +120,8 @@ class Mqtt (Link):
 
     #-----------------------------------------------------------------------
     def write_to_link(self):
+        """TODO: doc
+        """
         self.client.loop_write()
 
         self.log.debug("MQTT writing")
@@ -109,6 +131,8 @@ class Mqtt (Link):
 
     #-----------------------------------------------------------------------
     def close(self):
+        """TODO: doc
+        """
         self.log.info("MQTT device closing %s %s", self.host, self.port)
 
         self.client.disconnect()
@@ -116,6 +140,8 @@ class Mqtt (Link):
 
     #-----------------------------------------------------------------------
     def _on_connect(self, client, data, flags, result):
+        """TODO: doc
+        """
         if result == 0:
             self.connected = True
             self.signal_connected.emit(self, True)
@@ -125,6 +151,8 @@ class Mqtt (Link):
 
     #-----------------------------------------------------------------------
     def _on_disconnect(self, client, data, result):
+        """TODO: doc
+        """
         self.log.debug("MQTT disconnection %s %s", self.host, self.port)
 
         self.connected = False
@@ -133,6 +161,8 @@ class Mqtt (Link):
 
     #-----------------------------------------------------------------------
     def _on_message(self, client, data, message):
+        """TODO: doc
+        """
         self.log.info("MQTT message %s %s", message.topic, message.payload)
         self.signal_message.emit(self, message)
 

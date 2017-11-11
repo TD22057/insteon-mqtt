@@ -8,7 +8,12 @@ import logging
 import select
 import time
 
+LOG = logging.getLogger(__name__)
+
+
 class Manager:
+    """TODO: doc
+    """
     # Bit flags to watch for when registering a socket for read or
     # read/write.
     READ = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
@@ -22,20 +27,26 @@ class Manager:
 
     #-----------------------------------------------------------------------
     def __init__(self):
+        """TODO: doc
+        """
         self.poll = select.poll()
         self.links = {}
         self.unconnected = []
         self.unconnected_time_out = 0.100  # sec
 
-        self.log = logging.getLogger(__name__)
+        LOG = logging.getLogger(__name__)
 
     #-----------------------------------------------------------------------
     def active(self):
+        """TODO: doc
+        """
         return len(self.links) + len(self.unconnected)
 
     #-----------------------------------------------------------------------
     def add(self, link, connected=True):
-        self.log.debug("Link added: %s", link)
+        """TODO: doc
+        """
+        LOG.debug("Link added: %s", link)
 
         if connected:
             fd = link.fileno()
@@ -51,6 +62,8 @@ class Manager:
 
     #-----------------------------------------------------------------------
     def remove(self, link):
+        """TODO: doc
+        """
         fd = link.fileno()
 
         link.signal_closing.disconnect(self.link_closing)
@@ -59,16 +72,20 @@ class Manager:
         self.poll.unregister(fd)
         self.links.pop(fd, None)
 
-        self.log.debug("Link removed %s", link)
+        LOG.debug("Link removed %s", link)
 
     #-----------------------------------------------------------------------
     def close_all(self):
+        """TODO: doc
+        """
         links = self.links.values()
         for l in links:
             l.close()
 
     #-----------------------------------------------------------------------
     def select(self, time_out=None):
+        """TODO: doc
+        """
         time_out = None if time_out is None else 1000*time_out
         if self.unconnected and not time_out:
             time_out = 1000*self.unconnected_time_out
@@ -86,13 +103,13 @@ class Manager:
         for i in range(len(self.unconnected)-1, -1, -1):
             link, next_time = self.unconnected[i]
             if t >= next_time:
-                self.log.debug("Link connection attempt %s", link)
+                LOG.debug("Link connection attempt %s", link)
                 if link.connect():
-                    self.log.debug("Link connection success %s", link)
+                    LOG.debug("Link connection success %s", link)
                     self.add(link)
                     del self.unconnected[i]
                 else:
-                    self.log.debug("Link connection failed %s", link)
+                    LOG.debug("Link connection failed %s", link)
                     self.unconnected[i] = (link, t+link.retry_connect_dt())
 
         for fd, flag in events:
@@ -115,6 +132,8 @@ class Manager:
 
     #-----------------------------------------------------------------------
     def link_closing(self, link):
+        """TODO: doc
+        """
         self.remove(link)
 
         dt = link.retry_connect_dt()
@@ -124,6 +143,8 @@ class Manager:
 
     #-----------------------------------------------------------------------
     def link_needs_write(self, link, needs_write):
+        """TODO: doc
+        """
         if needs_write:
             self.poll.modify(link.fileno(), self.READ_WRITE)
         else:
