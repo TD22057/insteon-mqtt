@@ -59,10 +59,9 @@ class Protocol:
     def send(self, msg, msg_handler):
         self._write_queue.append((msg, msg_handler))
 
-        # If there is an existing msg in the write queue, we're either
-        # waiting to write it or waiting for a reply.  So only write
-        # this to the modem if it's the only message we have left.
-        if len(self._write_queue) == 1:
+        # If there is an existing msg that we're processing replies
+        # for then delay sending this until we're done.
+        if not self._write_handler:
             self._send_next_msg()
 
     #-----------------------------------------------------------------------
@@ -105,7 +104,7 @@ class Protocol:
             start = self._buf.find(0x02)
             if start == -1:
                 LOG.debug("No 0x02 starting byte found - clearing")
-                self.clear()
+                self._buf = bytearray()
                 break
 
             # Move the buffer to the start token.  Make sure we still
