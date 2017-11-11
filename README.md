@@ -6,7 +6,8 @@ commands to Insteon commands.  It allows an Insteon network to be
 integrated into and controlled from anything that can use MQTT.
 
 My initial intent with this package is better integrate Insteon into
-HOme Assistant.
+Home Assistant and make it easier and more understandable to add new
+features and devices.
 
 ## Current Status
 
@@ -18,11 +19,13 @@ This is currently under development.  Here's what works so far:
 - convert MQTT commands to Insteon commands
 - correctly update all devices in a scene (and send MQTT) when the scene is triggered.
 - send remote commands (get db, refresh state) to devices via MQTT
+- more devices: mini-remotes, door sensors, leak sensors, keypads, thermostats,
+  fanlinks, etc.
 
 Things remaining to do:
 
-- user documentation
-- code comments
+- user documentation (github)
+- code comments + sphinx html docs
 - unit tests
 - custom scene creation
 - automatic initial state update (get each device's state on start up)
