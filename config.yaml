@@ -49,6 +49,10 @@ insteon:
         name: "lamp"
         address: 37.2d.35
 
+    - on_off:
+        name: "motion"
+        address: 21.d6.d9
+
     - dimmer:
         name: "sw1"
         address: 48.3d.46

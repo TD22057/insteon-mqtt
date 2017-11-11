@@ -84,24 +84,24 @@ class OnOff (Base):
             self.refresh()
             
         else:
-            LOG.error("Invalid commands to dimmer")
+            LOG.error("Invalid commands to OnOff")
         
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
         # ACK of the broadcast - ignore this.
         if msg.cmd1 == 0x06:
-            LOG.info( "Dimmer %s broadcast ACK grp: %s", self.addr, msg.group)
+            LOG.info( "OnOff %s broadcast ACK grp: %s", self.addr, msg.group)
             return
 
         # On command.  How do we tell the level?  It's not in the
         # message anywhere.
         elif msg.cmd1 == 0x11:
-            LOG.info( "Dimmer %s broadcast ON grp: %s", self.addr, msg.group)
+            LOG.info( "OnOff %s broadcast ON grp: %s", self.addr, msg.group)
             self._set_level(0xff)
             
         # Off command.
         elif msg.cmd1 == 0x13:
-            LOG.info( "Dimmer %s broadcast OFF grp: %s", self.addr, msg.group)
+            LOG.info( "OnOff %s broadcast OFF grp: %s", self.addr, msg.group)
             self._set_level(0x00)
         
         # Call handle_broadcast for any device that we're the
@@ -110,14 +110,14 @@ class OnOff (Base):
         
     #-----------------------------------------------------------------------
     def handle_ack(self, msg):
-        LOG.debug("Dimmer %s ack message: %s", self.addr,msg)
+        LOG.debug("OnOff %s ack message: %s", self.addr,msg)
         self._set_level(0xff if msg.cmd2 else 0x00)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
         entry = self.db.find(addr, msg.group, 'RESP')
         if not entry:
-            LOG.error("Dimmer %s has no group %s entry from %s", self.addr,
+            LOG.error("OnOff %s has no group %s entry from %s", self.addr,
                       msg.group, addr)
             return
 
