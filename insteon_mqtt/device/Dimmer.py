@@ -131,17 +131,6 @@ class Dimmer (Base):
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def refresh(self):
-        LOG.info( "Dimmer %s cmd: status refresh", self.addr)
-
-        msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
-
-        # The returned message command will be a data field so in this
-        # case don't check it against our input when matching messages.
-        msg_handler = handler.StandardCmd(msg, self.handle_ack, cmd=-1)
-        self.protocol.send(msg, msg_handler)
-        
-    #-----------------------------------------------------------------------
     def set(self, active, level=0xFF, instant=False):
         if active:
             self.on(level, instant)
@@ -180,9 +169,20 @@ class Dimmer (Base):
         
     #-----------------------------------------------------------------------
     def handle_ack(self, msg):
-        LOG.debug("Dimmer %s ack message: %s", self.addr,msg)
+        LOG.debug("Dimmer %s ack message: %s", self.addr, msg)
         if msg.flags.type == Msg.Flags.DIRECT_ACK:
             self._set_level(msg.cmd2)
+
+    #-----------------------------------------------------------------------
+    def handle_refresh(self, msg):
+        LOG.debug("Dimmer %s refresh message: %s", self.addr, msg)
+
+        # Current dimmer level is stored in cmd2 so update our level
+        # to match.
+        self._set_level(msg.cmd2)
+
+        # See if the database is up to date.
+        Base.handle_refresh(self, msg)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
@@ -217,14 +217,8 @@ class Dimmer (Base):
             else:
                 LOG.error("Invalid increment %s", dir)
 
-        elif 'getdb' in kwargs:
-            self.get_db()
-
-        elif 'refresh' in kwargs:
-            self.refresh()
-            
         else:
-            LOG.error("Invalid commands to dimmer")
+            Base.run_command(**kwargs)
         
     #-----------------------------------------------------------------------
     def _set_level(self, level):

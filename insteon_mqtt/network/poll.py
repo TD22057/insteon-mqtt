@@ -56,6 +56,10 @@ class Manager:
             link.signal_needs_write.connect(self.link_needs_write)
 
             self.links[fd] = link
+
+            # Now that the fd is registered, we can notify others that
+            # the links is ready to read or write.
+            link.signal_connected.emit(link, True)
         else:
             data = (link, time.time())
             self.unconnected.append(data)
@@ -140,6 +144,8 @@ class Manager:
         if dt and dt > 0:
             data = (link, time.time() + dt)
             self.unconnected.append(data)
+
+        link.signal_connected.emit(link, False)
 
     #-----------------------------------------------------------------------
     def link_needs_write(self, link, needs_write):

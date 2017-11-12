@@ -30,6 +30,7 @@ class Base:
         self.addr = Address(address)
         self.name = name
         self.db = db.Device()
+        self._next_db_delta = None
 
     #-----------------------------------------------------------------------
     def ping(self):
@@ -50,7 +51,8 @@ class Base:
         with open(self.db_path(), "w") as f:
             json.dump(data, f, indent=2)
 
-        LOG.info("%s database saved %s entries", self.addr, len(self.db))
+        LOG.info("Device %s database saved %s entries", self.addr,
+                 len(self.db))
 
     #-----------------------------------------------------------------------
     def load_db(self, path):
@@ -63,18 +65,60 @@ class Base:
 
         self.db = db.Device.from_json(data)
 
-        LOG.info("%s database loaded %s entries", self.addr, len(self.db))
+        LOG.info("Device %s database loaded %s entries", self.addr,
+                 len(self.db))
         LOG.debug(str(self.db))
                      
     #-----------------------------------------------------------------------
-    def get_db(self):
-        LOG.info("Device sending get first db record command")
+    def get_db(self, db_delta):
+        LOG.info("Device %s sending get first db record command",
+                 self.addr)
+
+        self.db.clear()
+        self._next_db_delta = db_delta
         
         # Request that the device send us all of it's database
         # records.  These will be streamed as fast as possible to us.
         msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, bytes(14))
         msg_handler = handler.DeviceDb(self.addr, self.handle_db_rec)
         self.protocol.send(msg, msg_handler)
+        
+    #-----------------------------------------------------------------------
+    def run_command(self, **kwargs):
+        if 'getdb' in kwargs:
+            # We need to get the current db delta so we know which one
+            # we're getting.  So clear the current flag and then do a
+            # refresh which will find the delta and then trigger a
+            # download.
+            self.db.clear_delta()
+            self.refresh()
+
+        elif 'refresh' in kwargs:
+            self.refresh()
+            
+        else:
+            LOG.error("Device %s invalid command: %s", self.addr, str(kwargs))
+        
+    #-----------------------------------------------------------------------
+    def refresh(self):
+        LOG.info( "Device %s cmd: status refresh", self.addr)
+
+        msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
+
+        # The returned message command will be a data field so in this
+        # case don't check it against our input when matching messages.
+        msg_handler = handler.StandardCmd(msg, self.handle_refresh, cmd=-1)
+        self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def handle_refresh(self, msg):
+        # NOTE: sub classes should probably override this and call
+        # this as well when done.
+        # All link database delta is stored in cmd1 so we if we have
+        # the latest version.  If not, schedule an update.
+        if not self.db.is_current(msg.cmd1):
+            LOG.info("Device %s db out of date - refreshing", self.addr)
+            self.get_db(msg.cmd1)
         
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -103,6 +147,9 @@ class Base:
             
         # Finished - we have all the records.
         else:
+            self.db.delta = self._next_db_delta
+            self._next_db_delta = None
+            
             # TODO: do something here?
             print("============")
             print(self.db)

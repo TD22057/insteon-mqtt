@@ -22,6 +22,12 @@ class Link:
         # signature: (Link link, bool write_active)
         self.signal_needs_write = Signal.Signal()
 
+        # The manager will emit this after the connection has been
+        # established and everything is ready.  Links should usually
+        # not emit this directly.
+        # signature: (Link link, bool connected)
+        self.signal_connected = Signal.Signal()
+
     #-----------------------------------------------------------------------
     def retry_connect_dt(self):
         """TODO: doc

@@ -37,6 +37,8 @@ class Serial (Link):
         # for a connection call to do that.
         self.client = None if not port else self._open_client(port)
 
+        self.signal_connected.connect(self._connected)
+
     #-----------------------------------------------------------------------
     def load_config(self, config):
         """TODO: doc
@@ -147,6 +149,15 @@ class Serial (Link):
         client.parity = self._parity
         return client
 
+    #-----------------------------------------------------------------------
+    def _connected(self, link, connected):
+        assert(self == link)
+
+        # If there are message waiting to send, emit the signal now
+        # that we are connected.
+        if connected and self._write_buf:
+            self.signal_needs_write.emit(self, True)
+        
     #-----------------------------------------------------------------------
     def __str__(self):
         return "Serial %s" % self.client.port

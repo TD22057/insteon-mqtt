@@ -29,6 +29,8 @@ mqtt:
   #                    the device at ADDRESS.
   cmd_topic: "insteon/cmd"
 
+  # TODO: payload templates?
+
 #----------------------------------------------------------------
 # One or the other of these:
 insteon:
@@ -39,9 +41,14 @@ insteon:
   # Insteon HUB PLM network
   #port: "socket://192.168.1.5:9761"
 
+  # Modem address
   address: 44.85.11
   #storage: "/var/lib/insteon-mqtt"
   storage: "."
+
+  # Automatically refresh device states and databases (if needed) at
+  # startup.
+  startup_refresh: False
 
   #----------------------------------------------------------------
   devices:
@@ -49,9 +56,9 @@ insteon:
         name: "lamp"
         address: 37.2d.35
 
-    - on_off:
-        name: "motion"
-        address: 21.d6.d9
+    #- on_off:
+    #    name: "motion"
+    #    address: 21.d6.d9
 
     - dimmer:
         name: "sw1"

@@ -15,7 +15,9 @@ class Device:
     @staticmethod
     def from_json(data):
         obj = Device()
-        
+
+        obj.delta = data['delta']
+
         for d in data['used']:
             entry = DeviceEntry.from_json(d)
             obj._add_used(entry)
@@ -28,13 +30,44 @@ class Device:
 
     #-----------------------------------------------------------------------
     def __init__(self):
+        # All link delta number.  This is incremented by the device
+        # when the db changes on the device.  It's returned in a
+        # refresh (cmd=0x19) call to the device so we can check it
+        # against the version we have stored.
+        self.delta = None
+
+        # List of DeviceEntry objects.  One per entry in the database.
         self.entries = []
+
+        # List of DeviceEntry objects that are on the device but
+        # unused.  We need to keep these so we can use these storage
+        # locations for future entries.
         self.unused = []
+
+        # Map of all link group number to DeviceEntry objects that
+        # respond to that group command.
         self.groups = {}
 
-        # Last entry in memory space - the lowest memory address record.
+        # Integer memory location which is the last entry in memory
+        # space - the lowest memory address record.
         self._last_entry = None
 
+    #-----------------------------------------------------------------------
+    def is_current(self, delta):
+        return delta == self.delta
+    
+    #-----------------------------------------------------------------------
+    def clear_delta(self):
+        self.delta = None
+    
+    #-----------------------------------------------------------------------
+    def clear(self):
+        self.delta = None
+        self.entries = []
+        self.unused = []
+        self.group = {}
+        self._last_entry = None
+    
     #-----------------------------------------------------------------------
     def __len__(self):
         return len(self.entries)
@@ -76,12 +109,12 @@ class Device:
     def to_json(self):
         used = [ i.to_json() for i in self.entries ]
         unused = [ i.to_json() for i in self.unused ]
-        return { 'used' : used, 'unused' : unused }
+        return { 'delta' : self.delta, 'used' : used, 'unused' : unused }
 
     #-----------------------------------------------------------------------
     def __str__(self):
         o = io.StringIO()
-        o.write("DeviceDb:\n")
+        o.write("DeviceDb: (delta %s)\n" % self.delta)
         for elem in sorted(self.entries, key=lambda i: i.addr.id):
             o.write("  %s\n" % elem)
 

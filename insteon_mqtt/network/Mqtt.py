@@ -20,7 +20,6 @@ class Mqtt (Link):
         self.port = port
         self.connected = False
 
-        self.signal_connected = Signal.Signal()  # (MqttLink, bool connected)
         self.signal_message = Signal.Signal()    # (MqttLink, Message msg)
 
         self._reconnect_dt = reconnect_dt
@@ -144,7 +143,6 @@ class Mqtt (Link):
         """
         if result == 0:
             self.connected = True
-            self.signal_connected.emit(self, True)
         else:
             self.log.error("MQTT connection refused %s %s %s", self.host,
                            self.port, result)
@@ -157,7 +155,6 @@ class Mqtt (Link):
 
         self.connected = False
         self.signal_closing.emit(self)
-        self.signal_connected.emit(self, False)
 
     #-----------------------------------------------------------------------
     def _on_message(self, client, data, message):

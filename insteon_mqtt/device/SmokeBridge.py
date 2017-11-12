@@ -4,12 +4,19 @@
 #
 #===========================================================================
 from .Base import Base
+from .. import message as Msg
+from .. import handler
 from .. import Signal
 import logging
 
 LOG = logging.getLogger(__name__)
 
 class SmokeBridge (Base):
+    """
+
+    NOTE: no way to read current alarm condition.  If the message is
+    sent and we don't get it - there is no way to retreive it.
+    """
     conditions = {
         0x01 : 'smoke',
         0x02 : 'CO',
@@ -33,6 +40,33 @@ class SmokeBridge (Base):
         # TODO: pair with modem
         pass
 
+    #-----------------------------------------------------------------------
+    def refresh(self):
+        LOG.info( "Smoke bridge %s cmd: status refresh", self.addr)
+
+        # There is no way to get the current device status but we can
+        # request the all link database delta so get that.  See smoke
+        # bridge dev guide p25.
+        msg = Msg.OutStandard.direct(self.addr, 0x1f, 0x01)
+
+        # The returned message command will put the database delta in cmd2.
+        msg_handler = handler.StandardCmd(msg, self.handle_refresh)
+        self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def handle_refresh(self, msg):
+        # See we if we have the latest version of the all link
+        # database.  If not, schedule an update.
+        if not self.db.is_current(msg.cmd2):
+            LOG.info("Smoke bridge %s db out of date - refreshing",
+                     self.addr)
+            self.get_db(msg.cmd2)
+        
+    #-----------------------------------------------------------------------
+    def handle_refresh(self, msg):
+        LOG.debug("Smoke bridge %s refresh message: %s", self.addr, msg)
+        Base.handle_refresh(self, msg)
+            
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
         # ACK of the broadcast - ignore this.
@@ -62,37 +96,13 @@ class SmokeBridge (Base):
         
     #-----------------------------------------------------------------------
     def handle_ack(self, msg):
-        LOG.debug("Dimmer %s ack message: %s", self.addr,msg)
+        LOG.debug("Smoke bridge %s ack message: %s", self.addr, msg)
         if msg.flags.type == Msg.Flags.DIRECT_ACK:
             self._set_level(msg.cmd2)
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
-        LOG.info("Dimmer command: %s", kwargs)
-        if 'level' in kwargs:
-            level = int(kwargs.pop('level'))
-            instant = bool(kwargs.pop('instant', False))
-            if level == 0:
-                self.off(instant)
-            else:
-                self.on(level, instant)
-
-        elif 'increment' in kwargs:
-            dir = kwargs.pop('increment')
-            if dir == +1:
-                self.incrementUp()
-            elif dir == -1:
-                self.incrementDown()
-            else:
-                LOG.error("Invalid increment %s", dir)
-
-        elif 'getdb' in kwargs:
-            self.get_db()
-
-        elif 'refresh' in kwargs:
-            self.refresh()
-            
-        else:
-            LOG.error("Invalid commands to dimmer")
+        LOG.info("Smoke bridge %s command: %s", self.addr, kwargs)
+        Base.run_command(self, **kwargs)
         
     #-----------------------------------------------------------------------

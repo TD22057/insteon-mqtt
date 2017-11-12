@@ -15,20 +15,21 @@ class Modem:
     @staticmethod
     def from_json(data):
         obj = Modem()
-        for d in data:
-            entry = ModemEntry.from_json(d)
-            obj.add_entry(entry)
-
+        obj.entries = [ ModemEntry.from_json(i) for i in data['entries'] ]
         return obj
 
     #-----------------------------------------------------------------------
     def __init__(self):
-        self.entries = {}
-        self.num = 0
+        # Note: unlike devices, the PLM has no delta value so there
+        # doesn't seem to be any way to tell if the db value is
+        # current or not.
+
+        # List of ModemEntry objects in the all link database.
+        self.entries = []
 
     #-----------------------------------------------------------------------
     def __len__(self):
-        return self.num
+        return len(self.entries)
         
     #-----------------------------------------------------------------------
     def add(self, msg):
@@ -43,30 +44,23 @@ class Modem:
     def add_entry(self, entry):
         assert(isinstance(entry, ModemEntry))
         
-        elems = self.entries.setdefault(entry.addr.id, [])
         try:
-            idx = elems.index(entry)
-            elems[idx].update(entry)
+            idx = self.entries.index(entry)
+            self.entries[idx] = entry
         except ValueError:
-            elems.append(entry)
-            self.num += 1
+            self.entries.append(entry)
 
     #-----------------------------------------------------------------------
     def to_json(self):
-        data = []
-        for elems in self.entries.values():
-            for entry in elems:
-                data.append( entry.to_json() )
-
-        return data
+        entries = [ i.to_json() for i in self.entries ]
+        return { 'entries' : entries }
 
     #-----------------------------------------------------------------------
     def __str__(self):
         o = io.StringIO()
         o.write("ModemDb:\n")
-        for id in sorted(self.entries.keys()):
-            for elem in self.entries[id]:
-                o.write("  %s\n" % elem)
+        for entry in sorted(self.entries):
+            o.write("  %s\n" % entry)
                 
         return o.getvalue()
 

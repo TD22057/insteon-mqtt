@@ -37,14 +37,19 @@ class Modem:
         
         self.addr = Address(data['address'])
         LOG.info("Modem address set to %s", self.addr)
-        
+
         if 'storage' in data:
             self.save_path = data['storage']
             self.load_db()
-            
+
         self.devices = self._load_devices(data.get('devices', []))
         self.scenes = self._load_scenes(data.get('scenes', []))
 
+        if data.get('startup_refresh', False) is True:
+            LOG.info("Starting device refresh")
+            for id, device in self.devices.items():
+                device.refresh()
+                
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
         # TODO: what should modem do?
@@ -89,11 +94,11 @@ class Modem:
         try:
             with open(path) as f:
                 data = json.load(f)
-        except:
-            LOG.exception("Error reading file %s", path)
-            return
 
-        self.db = db.Modem.from_json(data)
+            self.db = db.Modem.from_json(data)
+        except:
+            LOG.exception("Error reading modem db file %s", path)
+            return
 
         LOG.info("%s database loaded %s entries", self.addr, len(self.db))
                      

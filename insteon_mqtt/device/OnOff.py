@@ -3,10 +3,12 @@
 # On/off module
 #
 #===========================================================================
-from .Base import Base
-from .. import handler
-from .. import Signal
 import logging
+from .Base import Base
+from ..Address import Address
+from .. import handler
+from .. import message as Msg
+from .. import Signal
 
 LOG = logging.getLogger(__name__)
 
@@ -56,17 +58,6 @@ class OnOff (Base):
             self.off(instant)
 
     #-----------------------------------------------------------------------
-    def refresh(self):
-        LOG.info( "OnOff %s cmd: status refresh", self.addr)
-
-        msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
-
-        # The returned message command will be a data field so in this
-        # case don't check it against our input when matching messages.
-        msg_handler = handler.StandardCmd(msg, self.handle_ack, cmd=-1)
-        self.protocol.send(msg, msg_handler)
-        
-    #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
         LOG.info("OnOff command: %s", kwargs)
         if 'level' in kwargs:
@@ -77,14 +68,8 @@ class OnOff (Base):
             else:
                 self.on(instant)
 
-        elif 'getdb' in kwargs:
-            self.get_db()
-
-        elif 'refresh' in kwargs:
-            self.refresh()
-            
         else:
-            LOG.error("Invalid commands to OnOff")
+            Base.run_command(**kwargs)
         
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -109,8 +94,19 @@ class OnOff (Base):
         Base.handle_broadcast(self, msg)
         
     #-----------------------------------------------------------------------
+    def handle_refresh(self, msg):
+        LOG.debug("OnOff %s refresh message: %s", self.addr, msg)
+
+        # Current on/off level is stored in cmd2 so update our level
+        # to match.
+        self._set_level(0xff if msg.cmd2 else 0x00)
+
+        # See if the database is up to date.
+        Base.handle_refresh(self, msg)
+
+    #-----------------------------------------------------------------------
     def handle_ack(self, msg):
-        LOG.debug("OnOff %s ack message: %s", self.addr,msg)
+        LOG.debug("OnOff %s ack message: %s", self.addr, msg)
         self._set_level(0xff if msg.cmd2 else 0x00)
 
     #-----------------------------------------------------------------------

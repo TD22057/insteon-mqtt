@@ -24,8 +24,11 @@ class StandardCmd:
             if self._match(msg.to_addr, msg.cmd1):
                 if not msg.is_ack:
                     LOG.error("%s NAK response", self.addr)
+
+                LOG.debug("%s got msg ACK", self.addr)
                 return Msg.CONTINUE
 
+            LOG.debug("%s handler unknown msg", self.addr, msg)
             return Msg.UNKNOWN
 
         # See if this is the standard message ack/nak we're expecting.
