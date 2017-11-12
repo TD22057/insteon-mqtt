@@ -50,19 +50,33 @@ address.  There is no automatic device discovery.  Devices must be
 linked both ways (as a controller and responder) to the PLM modem
 (this will not be required in the final version).
 
-Run the run.py script.  Subscribe to the topic's defined in the
-config.yaml file and press some buttons to see the Insteon data flow.
-To get full scene support, devices must have a local copy of the
-database.  Right now that requires a specific command like this to be
-sent for each device (this will be automated in the near future):
-
-```
-   mosquitto_pub -t 'insteon/set/44.a3.79' -m '{"getdb": 1}'
-```
+Set the startup_refresh input to True in config.yaml and run the
+run.py script.  Subscribe to the topic's defined in the config.yaml
+file and press some buttons to see the Insteon data flow.  To get full
+scene support, devices must have a local copy of the database.  When
+startup_refresh is true, it will ping each device in the config file
+and download the device's database if there is no local copy or if the
+local copy is out of date.  This may take a little while the first
+time that it's run.
 
 When each device has a local database, it will automatically notify
 each device in the scene when it's triggered to update it's state and
 send out an MQTT message.
+
+## Supported Devices
+
+### Dimmers
+
+TODO: setup, MQTT commands
+
+### On/Off Modules
+
+TODO: setup, MQTT commands, motion sensors
+
+### Smoke Bridge
+
+TODO: setup, limitations, linking
+
 
 ## Thanks
 
