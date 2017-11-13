@@ -134,6 +134,9 @@ class Base:
                 LOG.info("%s broadcast to %s for group %s", self.addr,
                          device.addr, msg.group)
                 device.handle_group_cmd(self.addr, msg)
+            else:
+                LOG.warning("%s broadcast to %s - device %s not found",
+                            self.addr, elem.addr)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
@@ -150,10 +153,7 @@ class Base:
             self.db.delta = self._next_db_delta
             self._next_db_delta = None
             
-            # TODO: do something here?
-            print("============")
-            print(self.db)
-            print("============")
+            LOG.info("%s database download complete\n%s", self.addr, self.db)
             self.save_db()
         
     #-----------------------------------------------------------------------

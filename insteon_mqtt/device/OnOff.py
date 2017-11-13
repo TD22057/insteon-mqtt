@@ -69,7 +69,7 @@ class OnOff (Base):
                 self.on(instant)
 
         else:
-            Base.run_command(**kwargs)
+            Base.run_command(self, **kwargs)
         
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):

@@ -218,7 +218,7 @@ class Dimmer (Base):
                 LOG.error("Invalid increment %s", dir)
 
         else:
-            Base.run_command(**kwargs)
+            Base.run_command(self, **kwargs)
         
     #-----------------------------------------------------------------------
     def _set_level(self, level):

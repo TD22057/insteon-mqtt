@@ -31,7 +31,12 @@ class Remote (Base):
     #-----------------------------------------------------------------------
     def on(self, button, level=0xFF, instant=False):
         LOG.info( "Remote %s btn: %s cmd: on %s", self.addr, button, level)
-        # TODO: on command
+
+        # We can't inject a broadcast message from the device into the
+        # network.  So to simulate a button on press on the remote,
+        # look up each device in the link database and simulate the
+        # message being sent to them so they'll update to the correct
+        # levels.
         pass
 
     #-----------------------------------------------------------------------

@@ -39,6 +39,7 @@ Things remaining to do:
 - pip packaging
 - possible device discovery
 - MQTT payload templates.
+- yaml config validator  (voluptuous like HA?)
 
 ## Setup
 

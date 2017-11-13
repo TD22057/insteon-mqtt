@@ -5,6 +5,7 @@ import logging
 import yaml
 
 logging.basicConfig(level=logging.DEBUG)
+logging.getLogger('insteon_mqtt.network').setLevel(logging.INFO)
 
 config = yaml.load(open("config.yaml").read())
 

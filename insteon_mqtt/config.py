@@ -15,7 +15,7 @@ devices = {
     'dimmer' : device.Dimmer,
     'on_off' : device.OnOff,
     'smoke_bridge' : device.SmokeBridge,
-    'remote8' : functools.partial(device.Remote, num=8),
+    'mini_remote8' : functools.partial(device.Remote, num=8),
     }
 
 #===========================================================================

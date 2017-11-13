@@ -56,9 +56,9 @@ insteon:
         name: "lamp"
         address: 37.2d.35
 
-    #- on_off:
-    #    name: "motion"
-    #    address: 21.d6.d9
+    - on_off:
+        name: "motion"
+        address: 21.d6.d9
 
     - dimmer:
         name: "sw1"
@@ -71,9 +71,9 @@ insteon:
     - smoke_bridge:
         address: 44.a3.79
 
-    #- mini_remote8:
-    #    name: "remote_01"
-    #    address: a2.b3.c4
+    - mini_remote8:
+        name: "remote_01"
+        address: 3f.07.d4
 
   #----------------------------------------------------------------
   scenes:

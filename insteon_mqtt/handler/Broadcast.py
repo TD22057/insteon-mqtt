@@ -32,7 +32,7 @@ class Broadcast:
             
         elif msg.flags.type == Msg.Flags.ALL_LINK_CLEANUP:
             LOG.info("Ignoring broadcast clean up")
-            # TODO: what to do with this?
+            return Msg.CONTINUE
 
         return Msg.UNKNOWN
 
