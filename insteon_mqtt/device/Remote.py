@@ -37,6 +37,7 @@ class Remote (Base):
         # look up each device in the link database and simulate the
         # message being sent to them so they'll update to the correct
         # levels.
+
         pass
 
     #-----------------------------------------------------------------------

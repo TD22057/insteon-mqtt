@@ -3,8 +3,6 @@
 # Address parser
 #
 #===========================================================================
-import binascii
-
 
 class Address:
     #-----------------------------------------------------------------------
@@ -45,8 +43,7 @@ class Address:
         self.bytes = bytes(self.ids)
 
         # And a nicely formatted hex string output.
-        s = binascii.hexlify(self.bytes).decode().upper()
-        self.hex = s[0:2] + "." + s[2:4] + "." + s[4:6]
+        self.hex = "%02X.%02X.%02X" % tuple(self.ids)
 
     #-----------------------------------------------------------------------
     def to_bytes(self):

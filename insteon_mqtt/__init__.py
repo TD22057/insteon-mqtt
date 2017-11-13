@@ -14,6 +14,7 @@ from . import message
 from . import network
 from . import util
 
+from .Address import Address
 from .Modem import Modem
 from .Mqtt import Mqtt
 from .Protocol import Protocol
