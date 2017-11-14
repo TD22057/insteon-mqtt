@@ -164,7 +164,7 @@ class Mqtt (Link):
     def _on_disconnect(self, client, data, result):
         """TODO: doc
         """
-        self.log.debug("MQTT disconnection %s %s", self.host, self.port)
+        self.log.info("MQTT disconnection %s %s", self.host, self.port)
 
         self.connected = False
         self.signal_closing.emit(self)

@@ -4,6 +4,7 @@
 #
 #===========================================================================
 import logging
+import time
 from .Address import Address
 from . import message as Msg
 from . import util
@@ -19,6 +20,9 @@ class Protocol:
     """
     def __init__(self, link):
         self.link = link
+
+        # Forward poll() calls from the network stack to ourselves.
+        self.link.poll = self._poll
 
         link.signal_read.connect(self._data_read)
         link.signal_wrote.connect(self._msg_written)
@@ -36,7 +40,9 @@ class Protocol:
         # that's received all the expected replies (or times out).  At
         # that point we'll write the next message in the queue.
         self._write_queue = []
-        self._write_handler = None
+
+        # MsgData object for the last message written.
+        self._write_data = None
 
         # Set of possible message handlers to use.  These are handlers
         # that handle any message besides the replies expected by the
@@ -56,13 +62,23 @@ class Protocol:
         self.link.load_config(config)
 
     #-----------------------------------------------------------------------
-    def send(self, msg, msg_handler):
-        self._write_queue.append((msg, msg_handler))
+    def send(self, msg, msg_handler, time_out=5):
+        self._write_queue.append(MsgData(msg, msg_handler, time_out))
 
         # If there is an existing msg that we're processing replies
         # for then delay sending this until we're done.
-        if not self._write_handler:
+        if not self._write_data:
             self._send_next_msg()
+
+    #-----------------------------------------------------------------------
+    def _poll(self, t):
+        if not self._write_data:
+            return
+
+        if self._write_data.expired(t):
+            LOG.warning("Message time out: %s", self._write_data.msg)
+            self._write_finished()
+            # TODO: maybe send an error message of MQTT?
 
     #-----------------------------------------------------------------------
     def _data_read(self, link, data):
@@ -150,21 +166,21 @@ class Protocol:
         # seen all the messages it expects. If it's CONTINUE, it
         # processed the message but expects more.  If it's UNKNOWN,
         # the handler ignored that message.
-        if self._write_handler:
+        if self._write_data:
             LOG.debug("Passing msg to write handler")
-            status = self._write_handler.msg_received(self, msg)
+            status = self._write_data.handler.msg_received(self, msg)
 
             # Handler is finished.  Send the next outgoing message
             # if one is waiting.
             if status == Msg.FINISHED:
                 LOG.debug("Write handler finished")
-                self._write_handler = None
-                if self._write_queue:
-                    self._send_next_msg()
+                self._write_finished()
 
             # If this message was understood by the write handler,
-            # don't look in the read handlers.
-            if status != Msg.UNKNOWN:
+            # don't look in the read handlers and update the write
+            # handlers time out into the future.
+            elif status != Msg.UNKNOWN:
+                self._write_data.traffic()
                 return
 
         # No write handler or the message didn't match what the
@@ -186,6 +202,14 @@ class Protocol:
         LOG.warning("No read handler found for message type %#04x", msg.code)
 
     #-----------------------------------------------------------------------
+    def _write_finished(self):
+        assert(self._write_data)
+        
+        self._write_data = None
+        if self._write_queue:
+            self._send_next_msg()
+
+    #-----------------------------------------------------------------------
     def _msg_written(self, link, data):
         #LOG.info("Message sent: %s",data)
         pass
@@ -193,18 +217,35 @@ class Protocol:
     #-----------------------------------------------------------------------
     def _send_next_msg(self):
         # Get the next message and handler from the write queue.
-        msg, msg_handler = self._write_queue.pop(0)
+        data = self._write_queue.pop(0)
 
-        LOG.info("Write to PLM: %s", msg)
-
+        LOG.info("Write to PLM: %s", data.msg)
+        
         # Write the message to the PLM modem.
-        self.link.write(msg.to_bytes())
+        self.link.write(data.msg.to_bytes())
 
         # Save the handler to have priority processing any inbound
         # messages.
-        self._write_handler = msg_handler
+        self._write_data = data
+
+        # Tell the msg data that we've sent the message.
+        data.traffic()
 
     #-----------------------------------------------------------------------
     
 
+#===========================================================================
+class MsgData:
+    def __init__(self, msg, handler, time_out):
+        self.msg = msg
+        self.handler = handler
+        self.time_out = time_out
+        self.expire_time = None
+
+    def traffic(self):
+        self.expire_time = time.time() + self.time_out
+
+    def expired(self, t):
+        return t >= self.expire_time
+        
 #===========================================================================

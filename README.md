@@ -19,7 +19,8 @@ This is currently under development.  Here's what works so far:
   occurred.
 - convert Insteon state changes to MQTT
 - convert MQTT commands to Insteon commands
-- correctly update all devices in a scene (and send MQTT) when the scene is triggered.
+- correctly update all devices in a scene (and send MQTT) when the scene is
+  triggered by the device.
 - send remote commands (get db, refresh state) to devices via MQTT
 - correctly handle commands arriving while db is being downloaded
 
@@ -28,12 +29,13 @@ Things remaining to do:
 - user documentation (github)
 - code comments + sphinx html docs
 - unit tests
-- write command timeout (needed for slow devices like motion sensors)
 - more devices: mini-remotes, door sensors, leak sensors, keypads, thermostats,
   fanlinks, motion sensors, etc.
-- custom scene creation
+- custom scene creation (PLM modem scenes) and scene triggering
+- simulate device scenes via MQTT (clicking dimmer button)
 - ability to modify the all link database on each device
-- automatically link devices to the modem including all groups (like the smoke bridge)
+- automatically link devices to the modem including all groups (like the
+  smoke bridge or thermostat)
 - logging control
 - configuration file and database saving location control
 - pip packaging
