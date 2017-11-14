@@ -44,13 +44,13 @@ class Signal:
         # delete any weak references that no longer exist and support
         # a slot that calls disconnect on itself in the middle of the
         # loop.
-        for i, wr_slot in enumerate(reversed(self.slots)):
-            slot = wr_slot()
+        for i in reversed(range(len(self.slots))):
+            slot = self.slots[i]()
             if slot is not None:
                 slot(*args, **kwargs)
             else:
                 del self.slots[i]
-
+            
     #-----------------------------------------------------------------------
     def connect(self, slot):
         """Connect a slot to the signal.
@@ -101,3 +101,6 @@ class Signal:
         self.slots = []
 
     #-----------------------------------------------------------------------
+
+#===========================================================================
+        
