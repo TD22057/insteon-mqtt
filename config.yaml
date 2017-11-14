@@ -56,7 +56,7 @@ insteon:
         name: "lamp"
         address: 37.2d.35
 
-    - on_off:
+    - motion:
         name: "motion"
         address: 21.d6.d9
 

@@ -192,10 +192,26 @@ class Dimmer (Base):
                       msg.group, addr)
             return
 
-        if msg.cmd1 == 0x11:
+        cmd = msg.cmd1
+        
+        # 0x11: on, 0x12: on fast
+        if cmd == 0x11 or cmd == 0x12:
             self._set_level(entry.on_level)
-        else:
+
+        # 0x13: off, 0x14: off fast
+        elif cmd == 0x13 or cmd == 0x14:
             self._set_level(0x00)
+
+        # Increment up (32 steps)
+        elif cmd == 0x15:
+            self._set_level(max(0xff, self._level + 8))
+
+        # Increment down
+        elif cmd == 0x16:
+            self._set_level(min(0x00, self._level - 8))
+
+        else:
+            LOG.warning("Dimmer %s unknown group cmd %#04x", self.addr, cmd)
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):

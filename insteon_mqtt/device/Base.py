@@ -112,8 +112,9 @@ class Base:
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
-        # NOTE: sub classes should probably override this and call
+        # NOTE: sub classes may need to override this and call
         # this as well when done.
+        
         # All link database delta is stored in cmd1 so we if we have
         # the latest version.  If not, schedule an update.
         if not self.db.is_current(msg.cmd1):
@@ -135,8 +136,7 @@ class Base:
                          device.addr, msg.group)
                 device.handle_group_cmd(self.addr, msg)
             else:
-                LOG.warning("%s broadcast to %s - device %s not found",
-                            self.addr, elem.addr)
+                LOG.warning("%s broadcast - device %s not found", self.addr, elem.addr)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
