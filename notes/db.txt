@@ -1,0 +1,192 @@
+ commands to get PLM all link db
+begin: 0x02 0x69
+next : 0x02 0x6a
+
+0x57 all link rec response:
+db_flag  db_group   addr1-3   data1-3
+
+begin, then nexts (sorted):
+                  flag, group    addr       data
+lamp2
+02 69 06     02 57    e2 01    3a 29 84    01 0e 43
+02 6a 06     02 57    a2 01    3a 29 84    01 0e 43
+
+smoke bridge
+02 6a 06     02 57    a2 01    44 a3 79    01 0e 43
+02 6a 06     02 57    e2 01    44 a3 79    10 0a 43
+02 6a 06     02 57    a2 02    44 a3 79    00 00 02
+02 6a 06     02 57    a2 03    44 a3 79    00 00 03
+02 6a 06     02 57    a2 04    44 a3 79    00 00 04
+02 6a 06     02 57    a2 05    44 a3 79    00 00 05
+02 6a 06     02 57    a2 06    44 a3 79    00 00 06
+02 6a 06     02 57    a2 07    44 a3 79    00 00 07
+
+???
+02 6a 06     02 57    a2 01    21 d6 d9    01 0e 43
+02 6a 06     02 57    a2 02    3f 07 d4    02 37 48
+
+lamp
+02 6a 06     02 57    a2 01    37 2d 35    01 0e 43
+02 6a 06     02 57    e2 01    37 2d 35    02 37 48
+
+sw1
+02 6a 06     02 57    e2 01    48 3d 46    01 20 45
+02 6a 06     02 57    a2 01    48 3d 46    01 20 45
+
+sw2
+02 6a 06     02 57    e2 01    48 b0 ad    01 20 45
+02 6a 06     02 57    a2 01    48 b0 ad    01 20 45
+02 6a 15
+
+terminal reports:
+0000 21.D6.D9  21.D6.D9  RESP  10100010 group: 01 data: 01 0e 43
+0000 lamp      37.2D.35  RESP  10100010 group: 01 data: 01 0e 43
+0000 lamp      37.2D.35  CTRL  11100010 group: 01 data: 02 37 48
+0000 smoke     44.A3.79  RESP  10100010 group: 01 data: 01 0e 43
+0000 smoke     44.A3.79  RESP  10100010 group: 02 data: 00 00 02
+0000 smoke     44.A3.79  RESP  10100010 group: 03 data: 00 00 03
+0000 smoke     44.A3.79  RESP  10100010 group: 04 data: 00 00 04
+0000 smoke     44.A3.79  RESP  10100010 group: 05 data: 00 00 05
+0000 smoke     44.A3.79  RESP  10100010 group: 06 data: 00 00 06
+0000 smoke     44.A3.79  RESP  10100010 group: 07 data: 00 00 07
+0000 smoke     44.A3.79  CTRL  11100010 group: 01 data: 10 0a 43
+0000 sw2       48.B0.AD  RESP  10100010 group: 01 data: 01 20 45
+0000 sw2       48.B0.AD  CTRL  11100010 group: 01 data: 01 20 45
+0000 3F.07.D4  3F.07.D4  RESP  10100010 group: 02 data: 02 37 48
+0000 lamp2     3A.29.84  RESP  10100010 group: 01 data: 01 0e 43
+0000 lamp2     3A.29.84  CTRL  11100010 group: 01 data: 01 0e 43
+0000 sw1       48.3D.46  RESP  10100010 group: 01 data: 01 20 45
+0000 sw1       48.3D.46  CTRL  11100010 group: 01 data: 01 20 45
+
+================
+run:
+modem.startWatch()
+sw1.getdb()
+
+sent db query msg, incoming records:
+
+command is 0x2f: reada/write all link db
+SENT:
+0x62|48.3D.46|0x1F=DIRECT:3:3|cmd1:0x2F|cmd2:0x00|u1:0x00|u02:0x00|...|u14:0xD1|'
+cmd = bytes( [ 0x02, 0x62, 0x48, 0x3d, 0x46, 0x1f, 0x2f, 0x00, 0x00,
+               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+               0x00, 0x00, 0x00, 0xd1 ] )
+
+0x50|48.3D.46|44.85.11|0x2F=ACK_OF_DIRECT:3:3|cmd1:0x2F|cmd2:0x00|
+0x51|48.3D.46|44.85.11|0x15=DIRECT:1:1|cmd1:0x2F|cmd2:0x00|
+     u01:0x00|u02:0x01|u03:0x0F|u04:0xFF|u05:0x00|u06:0xAA|u07:0x01|
+     u08:0x44|u09:0x85|u10:0x11|u11:0xFF|u12:0x1C|u13:0x01|u14:0x21|
+0x51|48.3D.46|44.85.11|0x15=DIRECT:1:1|cmd1:0x2F|cmd2:0x00|
+     u01:0x00|u02:0x01|u03:0x0F|u04:0xF7|u05:0x00|u06:0xE2|u07:0x01|
+     u08:0x44|u09:0x85|u10:0x11|u11:0x03|u12:0x1C|u13:0x01|u14:0xED|
+0x51|48.3D.46|44.85.11|0x15=DIRECT:1:1|cmd1:0x2F|cmd2:0x00|
+     u01:0x00|u02:0x01|u03:0x0F|u04:0xEF|u05:0x00|u06:0xE2|u07:0x01|
+     u08:0x37|u09:0x2D|u10:0x35|u11:0x03|u12:0x1C|u13:0x01|u14:0x36|
+0x51|48.3D.46|44.85.11|0x1A=DIRECT:2:2|cmd1:0x2F|cmd2:0x00|
+     u01:0x00|u02:0x01|u03:0x0F|u04:0xEF|u05:0x00|u06:0xE2|u07:0x01|
+     u08:0x37|u09:0x2D|u10:0x35|u11:0x03|u12:0x1C|u13:0x01|u14:0x36|
+0x51|48.3D.46|44.85.11|0x15=DIRECT:1:1|cmd1:0x2F|cmd2:0x00|
+     u01:0x00|u02:0x01|u03:0x0F|u04:0xE7|u05:0x00|u06:0xAA|u07:0x01|
+     u08:0x37|u09:0x2D|u10:0x35|u11:0xFE|u12:0x1C|u13:0x01|u14:0x7B|
+0x51|48.3D.46|44.85.11|0x15=DIRECT:1:1|cmd1:0x2F|cmd2:0x00|
+     u01:0x00|u02:0x01|u03:0x0F|u04:0xDF|u05:0x00|u06:0xE2|u07:0x01|
+     u08:0x48|u09:0xB0|u10:0xAD|u11:0x03|u12:0x1C|u13:0x01|u14:0x3A|
+0x51|48.3D.46|44.85.11|0x15=DIRECT:1:1|cmd1:0x2F|cmd2:0x00|
+     u01:0x00|u02:0x01|u03:0x0F|u04:0xD7|u05:0x00|u06:0xAA|u07:0x01|
+     u08:0x48|u09:0xB0|u10:0xAD|u11:0xFE|u12:0x1C|u13:0x01|u14:0x7F|
+0x51|48.3D.46|44.85.11|0x15=DIRECT:1:1|cmd1:0x2F|cmd2:0x00|
+     u01:0x00|u02:0x01|u03:0x0F|u04:0xCF|u05:0x00|u06:0xE2|u07:0x01|
+     u08:0x3A|u09:0x29|u10:0x84|u11:0x03|u12:0x1C|u13:0x01|u14:0x08|
+0x51|48.3D.46|44.85.11|0x15=DIRECT:1:1|cmd1:0x2F|cmd2:0x00|
+     u01:0x00|u02:0x01|u03:0x0F|u04:0xC7|u05:0x00|u06:0xAA|u07:0x01|
+     u08:0x3A|u09:0x29|u10:0x84|u11:0xFE|u12:0x1C|u13:0x01|u14:0x4D|
+0x51|48.3D.46|44.85.11|0x15=DIRECT:1:1|cmd1:0x2F|cmd2:0x00|
+     u01:0x00|u02:0x01|u03:0x0F|u04:0xBF|u05:0x00|u06:0x00|u07:0x00|
+     u08:0x00|u09:0x00|u10:0x00|u11:0x00|u12:0x00|u13:0x00|u14:0x02|
+
+0fff modem      44.85.11  RESP  10101010 group: 01 ON LVL: 255 RMPRT:  28 BUTTON:   1
+0ff7 modem      44.85.11  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+0fe7 lamp       37.2D.35  RESP  10101010 group: 01 ON LVL: 254 RMPRT:  28 BUTTON:   1
+0fef lamp       37.2D.35  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+0fd7 sw2        48.B0.AD  RESP  10101010 group: 01 ON LVL: 254 RMPRT:  28 BUTTON:   1
+0fdf sw2        48.B0.AD  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+0fcf 00.00.00   00.00.00 (RESP) 00000000 group: 00 ON LVL:   0 RMPRT:   0 BUTTON:   0
+
+=== my version:
+NOTE - there can be dup message rows
+ack:
+02 62 48 3d 46 1f 2f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 d1 06
+start:
+02 50 48 3d 46 44 85 11 2f 2f 00
+records:
+        from, to addr     flag,cmd  d1 d2 recloc  d5  d6 d7  dev addr  lev rate checksum
+02 51  48 3d 46 44 85 11  15 2f 00  00 01  0f ff  00  aa 01  44 85 11  ff 1c 01   21
+02 51  48 3d 46 44 85 11  15 2f 00  00 01  0f f7  00  e2 01  44 85 11  03 1c 01   ed
+02 51  48 3d 46 44 85 11  15 2f 00  00 01  0f ef  00  e2 01  37 2d 35  03 1c 01   36
+02 51  48 3d 46 44 85 11  15 2f 00  00 01  0f e7  00  aa 01  37 2d 35  fe 1c 01   7b
+02 51  48 3d 46 44 85 11  15 2f 00  00 01  0f df  00  e2 01  48 b0 ad  03 1c 01   3a
+02 51  48 3d 46 44 85 11  15 2f 00  00 01  0f d7  00  aa 01  48 b0 ad  fe 1c 01   7f
+02 51  48 3d 46 44 85 11  15 2f 00  00 01  0f cf  00  e2 01  3a 29 84  03 1c 01   08
+02 51  48 3d 46 44 85 11  15 2f 00  00 01  0f c7  00  aa 01  3a 29 84  fe 1c 01   4d
+02 51  48 3d 46 44 85 11  1a 2f 00  00 01  0f bf  00  00 00  00 00 00  00 00 00   02
+
+p162:
+D1 = unused
+D2 = 0x00 ALB record request
+     0x01 ALB record response
+D3 = record memory loc high byte
+D4 = record memory loc low byte
+D5 = 0x00 = dump one records
+     0xXX = dump one record
+D6->D13 = 8 byte ALDB record (see p116)
+D6: rec_flag:
+    bit7: 1=in use, 0=available
+    bit6: 1=controller, 0=responder
+    bit5: product dependent
+    bit4: product dependent
+    bit3: product dependent
+    bit2: product dependent
+    bit1: 1=used before, 0=not used before (highwater mark)
+    bit0: unused
+D7: group ID
+D8-10: link device ID
+D11: on level
+D12: ramp rate, misg?
+D13: unknown
+
+
+==============================
+Extended data (userData):
+u13 and u14: checksum CRC (see message.py)
+
+Places extended messages are used:
+- motion sensor status request (light levels, counts, times)
+- thermostat
+- keypad - just for extended status, probably not needed
+- leak sensor: extended status request, led brightness
+- door sensor: battery levels, various prog flags
+- getting remote db (dbbuilder)
+  - cmd to get remote db + responses for remote db contents
+- modifying remote db:
+  - see device
+  - needed to add/remove/clear/etc remote database
+  - seems pretty complicated
+
+===============================
+modem.addController("32.f4.22",00)
+
+WRITE 'OUT:Cmd:0x6F|controlCode:0x40|recordFlags:0xA2|ALLLinkGroup:0x00|linkAddress:32.F4.22|linkData1:0x00|linkData2:0x00|linkData3:0x00|'
+
+0x6F ctrl:0x40 flags:0xA2 group:0x00 addr:32.F4.22 data:0x00,0x00,0x00|
+
+RECV: same w/ 0x06 ACK
+
+====================================
+
+modem.removeResponderOrController("32.f4.22",00)
+
+WRITE 'OUT:Cmd:0x6F|controlCode:0x80|recordFlags:0x00|ALLLinkGroup:0x00|linkAddress:32.F4.22|linkData1:0x00|linkData2:0x00|linkData3:0x00|'
+
+0x6F ctrl:0x80 flags:0x00 group:0x00 addr:32.F4.22 data:0x00,0x00,0x00
+
+removeResponderOrController got msg: IN:Cmd:0x6F|controlCode:0x80|recordFlags:0x00|ALLLinkGroup:0x00|linkAddress:32.F4.22|linkData1:0x00|linkData2:0x00|linkData3:0x00|ACK/NACK:0x06|

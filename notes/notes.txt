@@ -1,0 +1,242 @@
+
+---------------------
+Sending a command directly to a device:
+- send direct command, get ack back
+- fairly simple, commands easy to understand
+- but... no scenes.
+- questions
+  - what happens if have 3way switch and send direct command to 1 switch?
+
+Toggling switch at device
+- sends group broadcast
+  - devices in group set themselves to some state
+    - state is defined by what state was when originally paired
+    - need to know this state
+      - have db poll linked devices and cache what state is, then when
+        linked device is tripped, auto modify devices to that state
+      - how to verify state? optimistic? assume that it was set?
+  - same thing w/ motion and smoke bridge - broadcast msg to group        
+
+Ideally, use server to configure groups in the first place so it knows
+about them.  But what about existing network?  So how can server query
+devices to find out groups?
+
+---------------------
+Devices
+
+- On/off module
+  - commands:
+    - on (to level x)
+    - off
+    - poll
+  - signals
+    - state change (int level=x)
+
+- Dimmer module
+- Dimmer switch
+  - commands:
+    - on (to level x)
+    - off
+    - set on ramp rate
+    - set off ramp rate
+    - set on level
+    - set hold ramp rate
+    - increment brighter
+    - increment dimmer
+    - instant on
+    - instant off
+    - poll
+  - signals:
+    - state change (int level=x)
+
+- Mini remote (8 buttons)
+  - signals
+    - pushed (button id)
+
+- Motion sensor
+  - signals
+    - motion(bool on)
+
+- Smoke bridge
+  - signals
+    - smoke (group 0x01)
+    - CO (group 0x02)
+    - test (group 0x03)
+    - ?? (group 0x04)
+    - clear (group 0x05)
+    - low battery (group 0x06)
+    - error (group 0x07)
+    - heartbeat (group 0x0A)
+
+
+#=================================================================
+# 3 way scene test
+# 1 lamp module, 2 dimmer switches
+# link all 3 both ways to modem, then link all in ON state to each other:
+# dimmer->lamp:  dimmer set, turn on lamp, lamp set
+# lamp->dimmer:  lamp set, turn on dimmer, dimmer set
+# dimmer1->dimmer2:  dimmer1 set, turn on dimmer2, dimmer2 set
+#
+onMod = bytes( [
+    0x02, 0x62,  # header
+    0x37, 0x2d, 0x35,  # address
+    0x00, # flags
+    0x11, 0xFF,  # turn on level 255
+    ] )
+# lamp module turned on, switches did not respond.
+# reply was huge number of 0x00 bytes then:
+# 02 62 37 2d 35 00 11 ff 06
+# 02 50 37 2d 35 44 85 11 21 11 ff
+# replay + from addr + PLM addr
+# 21 msg flags = direct ack
+# 11 ff = on at 255
+# = echo and direct ack 
+
+offMod = bytes( [
+    0x02, 0x62,  # header
+    0x37, 0x2d, 0x35,  # address
+    0x00, # flags
+    0x13, 0x00,  # turn off
+    ] )
+# lamp module turned off, switches did not respond
+# 02 62 37 2d 35 00 13 00 06
+# 02 50 37 2d 35 44 85 11 25 13 00
+# = echo and direct ack
+
+onSw = bytes( [
+    0x02, 0x62,  # header
+    0x48, 0x3d, 0x46,  # address
+    0x00, # flags
+    0x11, 0xFF,  # turn on level 255
+    ] )
+# switch shows on state, but lamp and other switch don't respond
+# 02 62 48 3d 46 00 11 ff 06
+# 02 50 48 3d 46 44 85 11 20 11 ff
+
+offSw = bytes( [
+    0x02, 0x62,  # header
+    0x48, 0x3d, 0x46,  # address
+    0x00, # flags
+    0x13, 0x00,  # turn off
+    ] )
+# lamp module turned off, switches did not respond
+# 02 62 48 3d 46 00 13 00 06
+# 02 50 48 3d 46 44 85 11 20 13 00
+
+# Turn lamp module on
+# 02 50 37 2d 35 00 00 01 cf 11 00
+# 02 50 37 2d 35 44 85 11 4a 11 01
+# 02 50 37 2d 35 11 03 01 c7 06 00
+
+# Turn lamp module off
+# 02 50 37 2d 35 00 00 01 cf 13 00
+# 02 50 37 2d 35 44 85 11 41 13 01
+# 02 50 37 2d 35 13 03 01 cb 06 00
+
+# Turn dimmer switch on
+# 02 50 48 b0 ad 00 00 01 cf 11 00
+# 02 50 48 b0 ad 44 85 11 40 11 01
+# 02 50 48 b0 ad 11 03 01 cf 06 00 
+
+# Turn dimmer switch off
+# 02 50 48 b0 ad 00 00 01 cf 13 00
+# 02 50 48 b0 ad 44 85 11 40 13 01
+# 02 50 48 b0 ad 44 85 11 45 13 01
+# 02 50 48 b0 ad 13 03 01 cf 06 00 
+
+Using insteon terminal, look at dabases
+switch 1
+0fff modem      44.85.11  RESP  10101010 group: 01 ON LVL: 255 RMPRT:  28 BUTTON:   1
+0ff7 modem      44.85.11  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+0fe7 lamp       37.2D.35  RESP  10101010 group: 01 ON LVL: 254 RMPRT:  28 BUTTON:   1
+0fef lamp       37.2D.35  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+0fd7 sw2        48.B0.AD  RESP  10101010 group: 01 ON LVL: 254 RMPRT:  28 BUTTON:   1
+0fdf sw2        48.B0.AD  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+0fcf 00.00.00   00.00.00 (RESP) 00000000 group: 00 ON LVL:   0 RMPRT:   0 BUTTON:   0
+
+switch 2
+0fff modem      44.85.11  RESP  10101010 group: 01 ON LVL: 255 RMPRT:  28 BUTTON:   1
+0ff7 modem      44.85.11  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+
+0fe7 lamp       37.2D.35  RESP  10101010 group: 01 ON LVL: 254 RMPRT:  28 BUTTON:   1
+0fef lamp       37.2D.35  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+
+0fdf sw1        48.3D.46  RESP  10101010 group: 01 ON LVL: 254 RMPRT:  28 BUTTON:   1
+0fd7 sw1        48.3D.46  CTRL  11101010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+
+0fcf 00.00.00   00.00.00 (RESP) 00000000 group: 00 ON LVL:   0 RMPRT:   0 BUTTON:   0
+
+lamp module
+0fef modem      44.85.11  RESP  10101010 group: 01 ON LVL: 255 RMPRT:  28 BUTTON:   1
+0ff7 modem      44.85.11  CTRL  11101010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+
+0fdf sw1        48.3D.46  RESP  10101010 group: 01 ON LVL: 255 RMPRT:  28 BUTTON:   1
+0fc7 sw1        48.3D.46  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+
+0fd7 sw2        48.B0.AD  RESP  10101010 group: 01 ON LVL: 255 RMPRT:  28 BUTTON:   1
+0fcf sw2        48.B0.AD  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+
+0fbf 00.00.00   00.00.00 (RESP) 00000000 group: 00 ON LVL:   0 RMPRT:   0 BUTTON:   0
+
+plm modem
+0000 sw1        48.3D.46  RESP  10100010 group: 01 data: 01 20 45
+0000 sw1        48.3D.46  CTRL  11100010 group: 01 data: 01 20 45
+
+0000 sw2        48.B0.AD  RESP  10100010 group: 01 data: 01 20 45
+0000 sw2        48.B0.AD  CTRL  11100010 group: 01 data: 01 20 45
+
+0000 lamp       37.2D.35  RESP  10100010 group: 01 data: 01 0e 43
+0000 lamp       37.2D.35  CTRL  11100010 group: 01 data: 02 37 48
+
+0000 smoke      44.A3.79  RESP  10100010 group: 01 data: 01 0e 43
+0000 smoke      44.A3.79  RESP  10100010 group: 02 data: 00 00 02
+0000 smoke      44.A3.79  RESP  10100010 group: 03 data: 00 00 03
+0000 smoke      44.A3.79  RESP  10100010 group: 04 data: 00 00 04
+0000 smoke      44.A3.79  RESP  10100010 group: 05 data: 00 00 05
+0000 smoke      44.A3.79  RESP  10100010 group: 06 data: 00 00 06
+0000 smoke      44.A3.79  RESP  10100010 group: 07 data: 00 00 07
+0000 smoke      44.A3.79  CTRL  11100010 group: 01 data: 10 0a 43
+
+0000 keypad A   3F.07.D4  RESP  10100010 group: 02 data: 02 37 48
+
+smoke db
+0ff7 modem      44.85.11  RESP  10100010 group: 01 ON LVL: 255 RMPRT:  28 BUTTON:   0
+0fff modem      44.85.11  CTRL  11100010 group: ff ON LVL:   3 RMPRT:  28 BUTTON:   0  ????
+0fef modem      44.85.11  CTRL  11100010 group: 01 ON LVL:   0 RMPRT:   0 BUTTON:   1
+0fe7 modem      44.85.11  CTRL  11100010 group: 02 ON LVL:   0 RMPRT:   0 BUTTON:   2
+0fdf modem      44.85.11  CTRL  11100010 group: 03 ON LVL:   0 RMPRT:   0 BUTTON:   3
+0fd7 modem      44.85.11  CTRL  11100010 group: 04 ON LVL:   0 RMPRT:   0 BUTTON:   4
+0fcf modem      44.85.11  CTRL  11100010 group: 05 ON LVL:   0 RMPRT:   0 BUTTON:   5
+0fc7 modem      44.85.11  CTRL  11100010 group: 06 ON LVL:   0 RMPRT:   0 BUTTON:   6
+0fbf modem      44.85.11  CTRL  11100010 group: 07 ON LVL:   0 RMPRT:   0 BUTTON:   7
+0fb7 00.00.00   00.00.00 (RESP) 00000000 group: 00 ON LVL:   0 RMPRT:   0 BUTTON:   0
+
+For data fields in all link database, modem shows data, items show
+   LVL: D1 RMPRT: D2 BTN: D3
+3 data bytes in all link dtabase (see page 116).  All are device specific
+Data 1: on level
+Data 2: ramp rate, set point
+Data 3: normally unused
+
+SMOKE: this works fine, no need for weird data fields:
+modem.addResponder("44.a3.79",0x07)
+smoke.addController("44.85.11",0x06)
+
+
+>>> smoke.getId()
+sent msg: OUT:Cmd:0x62|toAddress:44.A3.79|messageFlags:0x0F=DIRECT:3:3|command1:0x10|command2:0x00|
+id got ack!
+id got info: IN:Cmd:0x50|fromAddress:44.A3.79|toAddress:00.00.01|messageFlags:0xCF=ALL_LINK_BROADCAST:3:3|command1:0x01|command2:0x35|
+id dev cat: 00 subcat: 00 firmware: 01 hardware: 35
+
+>>> lamp.getId()
+sent msg: OUT:Cmd:0x62|toAddress:37.2D.35|messageFlags:0x0F=DIRECT:3:3|command1:0x10|command2:0x00|
+id got ack!
+id got info: IN:Cmd:0x50|fromAddress:37.2D.35|toAddress:02.37.48|messageFlags:0x8B=BROADCAST:3:2|command1:0x01|command2:0x48|
+id dev cat: 02 subcat: 37 firmware: 48 hardware: 48
+
+>>> sw1.getId()
+sent msg: OUT:Cmd:0x62|toAddress:48.3D.46|messageFlags:0x0F=DIRECT:3:3|command1:0x10|command2:0x00|
+id got ack!
+id got info: IN:Cmd:0x50|fromAddress:48.3D.46|toAddress:01.20.45|messageFlags:0x8F=BROADCAST:3:3|command1:0x01|command2:0x82|
+id dev cat: 01 subcat: 20 firmware: 45 hardware: 82

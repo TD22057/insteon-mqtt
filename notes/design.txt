@@ -1,0 +1,80 @@
+
+Comm
+  - comm w/ socket or serial
+  - read/write
+  - asyncio
+  - write message queue, w/ timeout/dropping
+    - write buffer - how to handle queue?
+      - write until 1 message done
+      - wait for ack
+      - then can write again? or not?
+      - may need to wait on reply?
+      
+  - read message queue w/ handlers (callbacks/signals)
+    - use py3 bytearray() as buffer.
+
+All messages echo back w/ ack
+  - handle in device (or modem) and raise error if no ack after retry?
+Send direct to TO_ADDR
+  - Device object push message to write queue and write
+  - echo back w/ ack
+  - receive msg back from TO_ADDR to MODEM_ADDR w/ result
+  - Comm pass to Modem? or Device?
+    - modem looks up object and passes message to it
+    - device triggers callback
+
+Light turned on manually
+  - receive msg from DEVICE_ADDR to 00 addr as broadcast w/ group ID
+    - need to know what devices are linked to DEVICE_ADDR/GROUP_ID
+    - trigger callbacks on all of those devices
+  - receive cleanup msg as DEVICE_ADDR->MODEM_ADDR w/ same data
+  - NOTE: holding down to dim does NOT trigger cleanup, just broadcast
+    - must trigger status request to get actual light level
+      - start_manual -> changing(true) callback
+      - stop_manual -> changing(false) callback,
+        - queue status command
+        - level(brightness) callback w/ status returns
+        
+Modem
+  - dict addr->devices
+  - methods to find devices
+  - methods to program links (add/remove/query)
+  - save/load/restore database
+  - sync all db command
+
+Device
+  - all link db (map to weaklink to devices)
+  - methods to change things
+  - signals to indicate change
+  - methods to program links (add/remove/query)
+  - save/load/restore database
+  - sync db command
+
+MQTT:
+  - connect to device signals
+    - when changed, send MQTT message
+  - subscribe to set topics
+    - when receive, look up device and call method
+
+GROUPS:
+- each address has it's own group numbering.  So ADDR/GROUP is the key.
+- must get all items link db's to get ADDR/GROUP mappings to light
+  levels and to see which items respond to which broadcasts
+
+
+To add new item:
+  - plug in.  modem in link mode, device in link mode
+  - create new device object and call init()
+    - adds correct links to device and modem db
+    - downloads and saves all link database
+  - how to create device in running process?
+    - don't
+    - stop existing process, start new one on console
+
+How to do console vs background server?
+Server app is async system
+   - talk to serial/port modem device
+   - send/recv mqtt messages
+
+See:  
+https://github.com/vxgmichel/aioconsole/issues/7#issuecomment-340092424
