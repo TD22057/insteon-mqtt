@@ -4,8 +4,8 @@ import insteon_mqtt as IM
 import logging
 import yaml
 
-logging.basicConfig(level=logging.DEBUG)
-logging.getLogger('insteon_mqtt.network').setLevel(logging.INFO)
+logging.basicConfig(level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S',
+                    format='%(asctime)s %(levelname)s %(module)s: %(message)s')
 
 config = yaml.load(open("config.yaml").read())
 

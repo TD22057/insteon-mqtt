@@ -19,13 +19,19 @@ class Mqtt (Link):
         self.host = host
         self.port = port
         self.connected = False
+        self.id = id if id is not None else "insteon-mqtt"
+
+        # Insure poll is called at least once every 15 seconds so we
+        # can send a keep alive message to the server so our
+        # connection doesn't get dropped.
+        self.time_out = 15
 
         self.signal_message = Signal.Signal()    # (MqttLink, Message msg)
 
         self._reconnect_dt = reconnect_dt
         self._fd = None
 
-        self.client = paho.Client(client_id=id)
+        self.client = paho.Client(client_id=self.id, clean_session=False)
         self.client.on_connect = self._on_connect
         self.client.on_disconnect = self._on_disconnect
         self.client.on_message = self._on_message
@@ -82,6 +88,13 @@ class Mqtt (Link):
         return self._fd
 
     #-----------------------------------------------------------------------
+    def poll(self, t):
+        """TODO: doc
+        """
+        # This is required to handle keepalive messages.
+        self.client.loop_misc()
+
+    #-----------------------------------------------------------------------
     def retry_connect_dt(self):
         """TODO: doc
         """
@@ -92,7 +105,7 @@ class Mqtt (Link):
         """TODO: doc
         """
         try:
-            self.client.connect(self.host, self.port)
+            self.client.connect(self.host, self.port, keepalive=60)
             self._fd = self.client.socket().fileno()
 
             self.log.info("MQTT device opened %s %s", self.host, self.port)

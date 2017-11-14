@@ -14,6 +14,8 @@ LOG = logging.getLogger(__name__)
 class Manager:
     """TODO: doc
     """
+    min_time_out = 3  # seconds
+    
     # Bit flags to watch for when registering a socket for read or
     # read/write.
     READ = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
@@ -32,7 +34,7 @@ class Manager:
         self.poll = select.poll()
         self.links = {}
         self.unconnected = []
-        self.unconnected_time_out = 0.100  # sec
+        self.unconnected_time_out = 0.5  # sec
 
         LOG = logging.getLogger(__name__)
 
@@ -90,13 +92,13 @@ class Manager:
     def select(self, time_out=None):
         """TODO: doc
         """
-        time_out = None if time_out is None else 1000*time_out
-        if self.unconnected and not time_out:
-            time_out = 1000*self.unconnected_time_out
+        time_out = Manager.min_time_out if time_out is None else time_out
+        if self.unconnected:
+            time_out = min( time_out, self.unconnected_time_out)
 
         while True:
             try:
-                events = self.poll.poll(time_out)
+                events = self.poll.poll(1000*time_out)  # sec->msec
             except select.error as e:
                 if e[0] != errno.EINTR:
                     raise
@@ -133,6 +135,9 @@ class Manager:
 
             elif flag & self.EVENT_ERROR:
                 link.close()
+
+        for link in self.links.values():
+            link.poll( t )
 
     #-----------------------------------------------------------------------
     def link_closing(self, link):
