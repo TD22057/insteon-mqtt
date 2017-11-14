@@ -3,8 +3,6 @@
 # Tests for: insteont_mqtt/Signal.py
 #
 #===========================================================================
-import sys
-sys.path.insert(0,"..")
 import insteon_mqtt as IM
 from pytest import assume
 
