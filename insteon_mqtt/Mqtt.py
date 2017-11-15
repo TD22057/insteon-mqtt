@@ -10,6 +10,7 @@ from . import device as Dev
 
 LOG = logging.getLogger(__name__)
 
+
 class Mqtt:
     def __init__(self, mqtt_link, modem):
         self.signal_reload = Signal.Signal()
@@ -24,6 +25,8 @@ class Mqtt:
         self._cmd_topic = None
         self._set_topic = None
         self._state_topic = None
+        self._qos = 1
+        self._retain = True
 
         self.cmds = {
             'reload' : self._cmd_reload,
@@ -42,7 +45,7 @@ class Mqtt:
         self._set_topic = self._clean_topic(config['set_topic'])
         self._state_topic = self._clean_topic(config['state_topic'])
         self._qos = config.get('qos', 1)
-        self._retain = config.get('retain', False)
+        self._retain = config.get('retain', True)
 
         if self.link.connected:
             self._subscribe()
@@ -67,12 +70,12 @@ class Mqtt:
         # TODO: what's the best way to handle this?  Don't want MQTT
         # specific stuff in the insteon devices but it would be nice
         # not to code up special cases for each here either.
-        
+
         # Connect a callback for devices that report brightness.
         if hasattr(device, "signal_level_changed"):
             LOG.info("MQTT adding level changed device %s '%s'", device.addr,
                      device.name)
-            
+
             device.signal_level_changed.connect(self._level_changed)
 
         elif isinstance(device, Dev.SmokeBridge):
@@ -80,34 +83,34 @@ class Mqtt:
 
         elif hasattr(device, "signal_active"):
             device.signal_active.connect(self._active)
-            
+
     #-----------------------------------------------------------------------
     def _level_changed(self, device, level):
         LOG.info("MQTT received level change %s '%s' = %#04x",
                  device.addr, device.name, level)
-        
+
         topic = "%s/%s" % (self._state_topic, device.addr.hex)
-        payload = json.dumps( { 'level' : level } )
-        self.publish(topic, payload, retain=self._retain) 
+        payload = json.dumps({'level' : level})
+        self.publish(topic, payload, retain=self._retain)
 
     #-----------------------------------------------------------------------
     def _active(self, device, is_active):
         LOG.info("MQTT received active change %s '%s' = %s",
                  device.addr, device.name, is_active)
-        
+
         topic = "%s/%s" % (self._state_topic, device.addr.hex)
         payload = 'ON' if is_active else 'OFF'
-        self.publish(topic, payload, retain=self._retain) 
+        self.publish(topic, payload, retain=self._retain)
 
     #-----------------------------------------------------------------------
     def _smoke_bridge(self, device, condition):
         LOG.info("MQTT received smoke bridge alert %s '%s' = %s",
                  device.addr, device.name, condition)
-        
+
         topic = "%s/%s" % (self._state_topic, device.addr.hex)
-        payload = json.dumps( { 'condition' : condition } )
-        self.publish(topic, payload, retain=self._retain) 
-    
+        payload = json.dumps({'condition' : condition})
+        self.publish(topic, payload, retain=self._retain)
+
     #-----------------------------------------------------------------------
     def _message(self, link, msg):
         if msg.topic.startswith(self._cmd_topic):
@@ -120,18 +123,18 @@ class Mqtt:
 
     #-----------------------------------------------------------------------
     def _handle_cmd(self, topic, payload):
-         try:
-             elem = msg.payload.split(" ")
-             cmd = elem[0]
-             data = "".join(elem[1:]).strip()
+        try:
+            elem = msg.payload.split(" ")
+            cmd = elem[0]
+            data = "".join(elem[1:]).strip()
 
-             func = self.cmds.get(cmd, None)
-             if func:
-                 func(data)
-             else:
-                 LOG.error("Unknown MQTT command: %s %s", topic, payload)
-         except:
-             LOG.exception("Error running command: %s %s", topic, payload)
+            func = self.cmds.get(cmd, None)
+            if func:
+                func(data)
+            else:
+                LOG.error("Unknown MQTT command: %s %s", topic, payload)
+        except:
+            LOG.exception("Error running command: %s %s", topic, payload)
 
     #-----------------------------------------------------------------------
     def _handle_set(self, topic, payload):
@@ -157,15 +160,15 @@ class Mqtt:
     def _subscribe(self):
         if self._cmd_topic:
             self.link.subscribe(self._cmd_topic+"/#", qos=self._qos)
-            
+
         if self._set_topic:
             self.link.subscribe(self._set_topic+"/#", qos=self._qos)
 
     #-----------------------------------------------------------------------
-    def _unsubscribe(self, topic):
+    def _unsubscribe(self,):
         if self._cmd_topic:
             self.link.unsubscribe(self._cmd_topic+"/#")
-            
+
         if self._set_topic:
             self.link.unsubscribe(self._set_topic+"/#")
 
@@ -173,7 +176,7 @@ class Mqtt:
     def _clean_topic(self, topic):
         if topic.endswith("/"):
             return topic[:-1]
-        
+
         return topic
 
     #-----------------------------------------------------------------------

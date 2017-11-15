@@ -10,12 +10,12 @@ from .ModemEntry import ModemEntry
 
 LOG = logging.getLogger(__name__)
 
-        
+
 class Modem:
     @staticmethod
     def from_json(data):
         obj = Modem()
-        obj.entries = [ ModemEntry.from_json(i) for i in data['entries'] ]
+        obj.entries = [ModemEntry.from_json(i) for i in data['entries']]
         return obj
 
     #-----------------------------------------------------------------------
@@ -30,10 +30,10 @@ class Modem:
     #-----------------------------------------------------------------------
     def __len__(self):
         return len(self.entries)
-        
+
     #-----------------------------------------------------------------------
     def add(self, msg):
-        assert(isinstance(msg, Msg.InpAllLinkRec))
+        assert isinstance(msg, Msg.InpAllLinkRec)
         LOG.info("Adding modem db record for %s grp: %s", msg.addr, msg.group)
 
         entry = ModemEntry(msg.addr, msg.group, msg.flags.is_controller,
@@ -42,8 +42,8 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def add_entry(self, entry):
-        assert(isinstance(entry, ModemEntry))
-        
+        assert isinstance(entry, ModemEntry)
+
         try:
             idx = self.entries.index(entry)
             self.entries[idx] = entry
@@ -52,8 +52,10 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def to_json(self):
-        entries = [ i.to_json() for i in self.entries ]
-        return { 'entries' : entries }
+        entries = [i.to_json() for i in self.entries]
+        return {
+            'entries' : entries,
+            }
 
     #-----------------------------------------------------------------------
     def __str__(self):
@@ -61,7 +63,7 @@ class Modem:
         o.write("ModemDb:\n")
         for entry in sorted(self.entries):
             o.write("  %s\n" % entry)
-                
+
         return o.getvalue()
 
 #===========================================================================

@@ -5,9 +5,7 @@
 #===========================================================================
 import logging
 import time
-from .Address import Address
 from . import message as Msg
-from . import util
 
 LOG = logging.getLogger(__name__)
 
@@ -16,7 +14,7 @@ class Protocol:
     """Insteon PLM protocol processing class.
 
     This class processes the byte stream that is being read from and
-    written to the Insteon PLM modem.  
+    written to the Insteon PLM modem.
     """
     def __init__(self, link):
         self.link = link
@@ -52,11 +50,11 @@ class Protocol:
     #-----------------------------------------------------------------------
     def add_handler(self, handler):
         self._read_handlers.append(handler)
-        
+
     #-----------------------------------------------------------------------
     def remove_handler(self, handler):
         self._read_handlers.pop(handler, None)
-        
+
     #-----------------------------------------------------------------------
     def load_config(self, config):
         self.link.load_config(config)
@@ -110,7 +108,7 @@ class Protocol:
         while len(self._buf) > 1:
             #LOG.debug("Searching message (len %d): %s... ",
             #               len(self._buf), tohex(self._buf,10))
-            
+
             # Find a message start token.  Note that this token could
             # also appear in the middle of a message so we can't be
             # totally sure it's a message until we try to parse it.
@@ -194,7 +192,7 @@ class Protocol:
             # probably ok.
             if status != Msg.UNKNOWN:
                 return
-            
+
         # No handler was found for the message.  Shift pass the ID
         # code and look for more messages.  This might be better
         # by having a lookup by msg ID->msg size and use that to
@@ -204,7 +202,7 @@ class Protocol:
     #-----------------------------------------------------------------------
     def _write_finished(self):
         assert(self._write_data)
-        
+
         self._write_data = None
         if self._write_queue:
             self._send_next_msg()
@@ -220,7 +218,7 @@ class Protocol:
         data = self._write_queue.pop(0)
 
         LOG.info("Write to PLM: %s", data.msg)
-        
+
         # Write the message to the PLM modem.
         self.link.write(data.msg.to_bytes())
 
@@ -232,7 +230,7 @@ class Protocol:
         data.traffic()
 
     #-----------------------------------------------------------------------
-    
+
 
 #===========================================================================
 class MsgData:
@@ -247,5 +245,5 @@ class MsgData:
 
     def expired(self, t):
         return t >= self.expire_time
-        
+
 #===========================================================================

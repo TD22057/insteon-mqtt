@@ -12,12 +12,11 @@ LOG = logging.getLogger(__name__)
 class ModemDb:
     def __init__(self, modem):
         self.modem = modem
-        
+
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
         # Message is an ACK/NAK of the record request.
-        if (isinstance(msg, Msg.OutAllLinkGetFirst) or
-            isinstance(msg, Msg.OutAllLinkGetNext)):
+        if isinstance(msg, [Msg.OutAllLinkGetFirst, Msg.OutAllLinkGetNext]):
             # If we get a NAK, then there are no more db records.
             if not msg.is_ack:
                 LOG.info("Modem finished - last db record received")
@@ -39,5 +38,5 @@ class ModemDb:
             return Msg.CONTINUE
 
         return Msg.UNKNOWN
-        
+
     #-----------------------------------------------------------------------

@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Network and serial link management
+# Network Link base class definition.
 #
 #===========================================================================
 from .. import Signal

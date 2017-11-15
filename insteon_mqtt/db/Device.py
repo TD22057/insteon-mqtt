@@ -21,7 +21,7 @@ class Device:
         for d in data['used']:
             entry = DeviceEntry.from_json(d)
             obj._add_used(entry)
-            
+
         for d in data['unused']:
             entry = DeviceEntry.from_json(d)
             obj._add_unused(entry)
@@ -55,27 +55,27 @@ class Device:
     #-----------------------------------------------------------------------
     def is_current(self, delta):
         return delta == self.delta
-    
+
     #-----------------------------------------------------------------------
     def clear_delta(self):
         self.delta = None
-    
+
     #-----------------------------------------------------------------------
     def clear(self):
         self.delta = None
         self.entries = []
         self.unused = []
-        self.group = {}
+        self.groups = {}
         self._last_entry = None
-    
+
     #-----------------------------------------------------------------------
     def __len__(self):
         return len(self.entries)
-    
+
     #-----------------------------------------------------------------------
     def add(self, msg):
-        assert(isinstance(msg, Msg.InpExtended))
-        assert(msg.data[1] == 0x01)  # record response
+        assert isinstance(msg, Msg.InpExtended)
+        assert msg.data[1] == 0x01  # record response
 
         entry = DeviceEntry.from_bytes(msg.data)
 
@@ -95,21 +95,25 @@ class Device:
 
     #-----------------------------------------------------------------------
     def find(self, addr, group, type):
-        assert(type == 'RESP' or type == 'CTRL')
+        assert type == 'RESP' or type == 'CTRL'
         is_controller = type == 'CTRL'
-        
+
         for entry in self.entries:
             if (entry.addr == addr and entry.group == group and
-                entry.ctrl.is_controller == is_controller):
+                    entry.ctrl.is_controller == is_controller):
                 return entry
 
         return None
-        
+
     #-----------------------------------------------------------------------
     def to_json(self):
-        used = [ i.to_json() for i in self.entries ]
-        unused = [ i.to_json() for i in self.unused ]
-        return { 'delta' : self.delta, 'used' : used, 'unused' : unused }
+        used = [i.to_json() for i in self.entries]
+        unused = [i.to_json() for i in self.unused]
+        return {
+            'delta' : self.delta,
+            'used' : used,
+            'unused' : unused,
+            }
 
     #-----------------------------------------------------------------------
     def __str__(self):
@@ -120,8 +124,8 @@ class Device:
 
         o.write("GroupMap\n")
         for grp, elem in self.groups.items():
-            o.write( "  %s -> %s\n" % (grp, [i.addr.hex for i in elem]))
-                
+            o.write("  %s -> %s\n" % (grp, [i.addr.hex for i in elem]))
+
         return o.getvalue()
 
     #-----------------------------------------------------------------------
@@ -142,8 +146,7 @@ class Device:
     #-----------------------------------------------------------------------
     def _update_last(self, entry):
         if (self._last_entry is None or
-            self._last_entry.mem_loc > entry.mem_loc):
+                self._last_entry.mem_loc > entry.mem_loc):
             self._last_entry = entry
 
     #-----------------------------------------------------------------------
-

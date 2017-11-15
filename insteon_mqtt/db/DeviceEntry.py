@@ -19,7 +19,7 @@ class DeviceEntry:
                            data['mem_loc'],
                            Msg.DbFlags.from_json(data['ctrl']),
                            bytes(data['data']))
-    
+
     #-----------------------------------------------------------------------
     @staticmethod
     def from_bytes(data):
@@ -31,8 +31,6 @@ class DeviceEntry:
         ctrl = Msg.DbFlags.from_bytes(data, 5)
         group = data[6]
         link_addr = Address.from_bytes(data, 7)
-        on_level = data[10]
-        ramp_rate = data[11]
         link_data = data[10:13]
 
         return DeviceEntry(link_addr, group, mem_loc, ctrl, link_data)
@@ -50,9 +48,9 @@ class DeviceEntry:
     #-----------------------------------------------------------------------
     def mem_bytes(self):
         high = (self.mem_loc & 0xFF00) >> 8
-        low =  (self.mem_loc & 0x00FF) >> 0
+        low = (self.mem_loc & 0x00FF) >> 0
         return bytes([high, low])
-    
+
     #-----------------------------------------------------------------------
     def to_json(self):
         return {
@@ -62,19 +60,18 @@ class DeviceEntry:
             'ctrl' : self.ctrl.to_json(),
             'data' : list(self.data)
             }
-        
+
     #-----------------------------------------------------------------------
     def __eq__(self, rhs):
         return (self.addr.id == rhs.addr.id and
                 self.group == rhs.group and
                 self.ctrl.is_controller == rhs.ctrl.is_controller)
-    
+
     #-----------------------------------------------------------------------
     def __str__(self):
         return "ID: %s  grp: %s  type: %s  data: %#04x %#04x %#04x" % \
             (self.addr.hex, self.group,
              'CTRL' if self.ctrl.is_controller else 'RESP',
              self.data[0], self.data[1], self.data[2])
-    
-    #-----------------------------------------------------------------------
 
+    #-----------------------------------------------------------------------

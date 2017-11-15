@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Network and serial link management
+# Network link to a Serial device class
 #
 #===========================================================================
 import logging
@@ -158,7 +158,7 @@ class Serial (Link):
 
         This will be called by the manager when there is data
         available on the file descriptor for reading.
-        
+
         Returns:
            (int) Return -1 if the link should be closed.  Or any other
            integer to indicate success.
@@ -267,9 +267,9 @@ class Serial (Link):
         # that we are connected.
         if connected and self._write_buf:
             self.signal_needs_write.emit(self, True)
-        
+
     #-----------------------------------------------------------------------
     def __str__(self):
         return "Serial %s" % str(self._port)
-    
+
     #-----------------------------------------------------------------------

@@ -28,7 +28,7 @@ class StandardCmd:
                 LOG.debug("%s got msg ACK", self.addr)
                 return Msg.CONTINUE
 
-            LOG.debug("%s handler unknown msg", self.addr, msg)
+            LOG.debug("%s handler unknown msg", self.addr)
             return Msg.UNKNOWN
 
         # See if this is the standard message ack/nak we're expecting.
@@ -58,6 +58,6 @@ class StandardCmd:
             return False
 
         return True
-        
-            
+
+
     #-----------------------------------------------------------------------

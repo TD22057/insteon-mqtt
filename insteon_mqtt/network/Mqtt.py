@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Network and serial link management
+# Network link to an MQTT client class
 #
 #===========================================================================
 import logging
@@ -194,14 +194,14 @@ class Mqtt (Link):
 
         This will be called by the manager when there is data
         available on the file descriptor for reading.
-        
+
         Returns:
            (int) Return -1 if the link should be closed.  Or any other
            integer to indicate success.
         """
         # Tell the MQTT client that it ca read.
         status = self.client.loop_read()
-        
+
         # If status is zero, everything is ok.  Return 1 to tell the
         # link that reading was successful.
         if status == 0:
@@ -278,5 +278,5 @@ class Mqtt (Link):
     #-----------------------------------------------------------------------
     def __str__(self):
         return "MQTT %s:%d" % (self.host, self.port)
-    
+
     #-----------------------------------------------------------------------

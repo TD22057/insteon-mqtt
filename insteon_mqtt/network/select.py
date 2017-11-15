@@ -1,6 +1,9 @@
 #===========================================================================
 #
-# select.poll based network manager.
+# select.select based network manager.
+#
+# The poll system is better, but windows doesn't support that so
+# select is provided here as an alternative.
 #
 #===========================================================================
 import errno
@@ -49,7 +52,7 @@ class Manager:
        self.read = []
        self.write = []
        self.error = []
-       
+
        # Map of filno to Link objects.
        self.links = {}
 
@@ -66,7 +69,7 @@ class Manager:
            unconnected links.
         """
         return len(self.links) + len(self.unconnected)
-      
+
     #-----------------------------------------------------------------------
     def add(self, link, connected=True):
         """Add a Link to the manager.
@@ -79,7 +82,7 @@ class Manager:
                     if the manager should try and connect the link itself.
         """
         LOG.debug("Link added: %s", link)
-        
+
         # If the link is connected, we can get it's file descriptor
         # and add it to the polling loop.
         if connected:
@@ -131,7 +134,7 @@ class Manager:
         self.links.pop(fd, None)
 
         LOG.debug("Link removed %s", link)
-      
+
     #-----------------------------------------------------------------------
     def close_all(self):
         """Close all the links in the manager.
@@ -215,7 +218,7 @@ class Manager:
             link = self.links.get(fd, None)
             if link:
                 link.write_to_link()
-                
+
     #-----------------------------------------------------------------------
     def link_closing(self, link):
         """Callback when a link is closing.
@@ -265,6 +268,5 @@ class Manager:
         # Remove the link from the write watching list.
         elif fd in self.write:
             self.write.remove(fd)
-      
+
     #-----------------------------------------------------------------------
-   

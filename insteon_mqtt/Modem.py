@@ -32,9 +32,9 @@ class Modem:
     #-----------------------------------------------------------------------
     def load_config(self, data):
         LOG.info("Loading configuration data")
-        
+
         self.protocol.load_config(data)
-        
+
         self.addr = Address(data['address'])
         LOG.info("Modem address set to %s", self.addr)
 
@@ -49,35 +49,35 @@ class Modem:
             LOG.info("Starting device refresh")
             for id, device in self.devices.items():
                 device.refresh()
-                
+
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
         # TODO: what should modem do?
         pass
-        
+
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
         pass
-        
+
     #-----------------------------------------------------------------------
     def get_db(self):
         LOG.info("Modem sending get first db record command")
-        
+
         # Request the first db record from the handler.  The handler
         # will request each next record as the records arrive.
         msg = Msg.OutAllLinkGetFirst()
         msg_handler = handler.ModemDb(self)
         self.protocol.send(msg, msg_handler)
-        
+
     #-----------------------------------------------------------------------
     def db_path(self):
         return os.path.join(self.save_path, self.addr.hex) + ".json"
-        
+
     #-----------------------------------------------------------------------
     def save_db(self):
         if not self.save_path:
             return
-        
+
         data = self.db.to_json()
 
         with open(self.db_path(), "w") as f:
@@ -90,7 +90,7 @@ class Modem:
         path = self.db_path()
         if not os.path.exists(path):
             return
-        
+
         try:
             with open(path) as f:
                 data = json.load(f)
@@ -101,7 +101,7 @@ class Modem:
             return
 
         LOG.info("%s database loaded %s entries", self.addr, len(self.db))
-                     
+
     #-----------------------------------------------------------------------
     def handle_db_rec(self, msg):
         if msg is None:
@@ -117,7 +117,7 @@ class Modem:
                 return
 
             self.db.add(msg)
-        
+
     #-----------------------------------------------------------------------
     def add(self, device):
         self.devices[device.addr.id] = device
@@ -135,11 +135,11 @@ class Modem:
 
         if addr == self.addr:
             return self
-        
+
         device = self.devices.get(addr.id, None)
         if device:
             return device
-        
+
         return None
 
     #-----------------------------------------------------------------------
@@ -154,7 +154,7 @@ class Modem:
             self.get_db()
         else:
             LOG.error("Invalid command sent to modem %s", kwargs)
-            
+
     #-----------------------------------------------------------------------
     def _load_devices(self, data):
         """
@@ -174,13 +174,13 @@ class Modem:
             device = ctor(**args, protocol=self.protocol, modem=self)
             LOG.info("Created %s at %s '%s'", device.__class__.__name__,
                      device.addr, device.name)
-            
+
             # Load an existing database for this device if it exists.
             if self.save_path:
                 save_path = os.path.join(self.save_path,
                                          device.addr.hex) + ".json"
                 if os.path.exists(save_path):
-                    LOG.info("%s loading device db %s",device.addr, save_path)
+                    LOG.info("%s loading device db %s", device.addr, save_path)
                     device.load_db(save_path)
 
             device_map[device.addr.id] = device

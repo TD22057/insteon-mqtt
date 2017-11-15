@@ -16,7 +16,7 @@ class ModemEntry:
                           data['group'],
                           data['is_controller'],
                           bytes(data['data']))
-        
+
     #-----------------------------------------------------------------------
     def __init__(self, addr, group, is_controller, data):
         self.addr = addr
@@ -35,17 +35,17 @@ class ModemEntry:
             'is_controller' : self.is_controller,
             'data' : list(self.data)
             }
-        
+
     #-----------------------------------------------------------------------
     def __eq__(self, rhs):
         return (self.addr.id == rhs.addr.id and
                 self.group == rhs.group and
                 self.is_controller == rhs.is_controller)
-    
+
     #-----------------------------------------------------------------------
     def __str__(self):
         return "ID: %s  grp: %s  type: %s  data: %#04x %#04x %#04x" % \
             (self.addr.hex, self.group, 'CTRL' if self.is_controller else 'RESP',
              self.data[0], self.data[1], self.data[2])
-        
+
     #-----------------------------------------------------------------------
