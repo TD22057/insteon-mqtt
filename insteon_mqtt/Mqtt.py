@@ -77,6 +77,9 @@ class Mqtt:
 
         elif isinstance(device, Dev.SmokeBridge):
             device.signal_state_change.connect(self._smoke_bridge)
+
+        elif hasattr(device, "signal_active"):
+            device.signal_active.connect(self._active)
             
     #-----------------------------------------------------------------------
     def _level_changed(self, device, level):
@@ -85,6 +88,15 @@ class Mqtt:
         
         topic = "%s/%s" % (self._state_topic, device.addr.hex)
         payload = json.dumps( { 'level' : level } )
+        self.publish(topic, payload, retain=self._retain) 
+
+    #-----------------------------------------------------------------------
+    def _active(self, device, is_active):
+        LOG.info("MQTT received active change %s '%s' = %s",
+                 device.addr, device.name, is_active)
+        
+        topic = "%s/%s" % (self._state_topic, device.addr.hex)
+        payload = 'ON' if is_active else 'OFF'
         self.publish(topic, payload, retain=self._retain) 
 
     #-----------------------------------------------------------------------

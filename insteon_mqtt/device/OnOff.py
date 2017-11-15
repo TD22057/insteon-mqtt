@@ -117,10 +117,18 @@ class OnOff (Base):
                       msg.group, addr)
             return
 
-        if msg.cmd1 == 0x11:
+        cmd = msg.cmd1
+        
+        # 0x11: on, 0x12: on fast
+        if cmd == 0x11 or cmd == 0x12:
             self._set_level(entry.on_level)
-        else:
+
+        # 0x13: off, 0x14: off fast
+        elif cmd == 0x13 or cmd == 0x14:
             self._set_level(0x00)
+
+        else:
+            LOG.warning("OnOff %s unknown group cmd %#04x", self.addr, cmd)
         
     #-----------------------------------------------------------------------
     def _set_level(self, level):

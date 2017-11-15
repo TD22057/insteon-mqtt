@@ -13,6 +13,7 @@ from . import device
 # Possible devices we can read and build from the config file.
 devices = {
     'dimmer' : device.Dimmer,
+    'motion' : device.Motion,
     'on_off' : device.OnOff,
     'smoke_bridge' : device.SmokeBridge,
     'mini_remote8' : functools.partial(device.Remote, num=8),
