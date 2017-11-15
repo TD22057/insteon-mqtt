@@ -4,7 +4,16 @@
 #
 #===========================================================================
 
-__doc__ = """TODO: doc"""
+__doc__ = """Network manage package
+
+This package handles network and serial connections.  It uses
+select/poll systems to manage multiple connections and read data
+notifications are handled via the Signal class (loose coupling).
+
+The network manager supports delayed connections (so remote hosts
+don't have to be available right away) and automatic reconnections if
+links get closed for maximum robustness.
+"""
 
 #===========================================================================
 
@@ -17,7 +26,6 @@ import platform
 if platform.system() != 'Windows':
    from .poll import Manager
 else:
-   # TODO: implemeent select
-   #from .select import Manager
+   from .select import Manager
    pass
 

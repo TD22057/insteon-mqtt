@@ -12,10 +12,10 @@ LOG = logging.getLogger(__name__)
 
 
 class Manager:
-    """Poll based network event loop manager.
+    """Select based network event loop manager.
 
     This class implements a networking event loop (poll or select)
-    using the select.poll system (so it's not supported on Windows).
+    using the select.select system (so it is supported on Windows).
 
     Network connections (or files, sockets, etc) should inherit from
     the Link class which will manage the communication with this class
@@ -40,40 +40,33 @@ class Manager:
     # Minimum time out - used to poll links for reconnection.
     min_time_out = 3  # seconds
 
-    # Bit flags to watch for when registering a socket for read or
-    # read/write.
-    READ = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
-    READ_WRITE = READ | select.POLLOUT
-
-    # Bit flags reported for events.
-    EVENT_READ = select.POLLIN | select.POLLPRI
-    EVENT_WRITE = select.POLLOUT
-    EVENT_CLOSE = select.POLLHUP
-    EVENT_ERROR = select.POLLERR
-
     #-----------------------------------------------------------------------
     def __init__(self):
-        """Constructor.
-        """
-        self.poll = select.poll()
+       """Constructor.
+       """
+       # List of file descriptors to look at for reading, writing, and
+       # error.s
+       self.read = []
+       self.write = []
+       self.error = []
+       
+       # Map of filno to Link objects.
+       self.links = {}
 
-        # Map of fileno to Link objects.
-        self.links = {}
+       # List of unconnected link tuples (Link, time) where time is
+       # the time is the next time to try reconnecting the linnk.
+       self.unconnected = []
 
-        # List of unconnected link tuples (Link, time) where time is
-        # the time is the next time to try reconnecting the linnk.
-        self.unconnected = []
-
-        # Time out to use when trying to reconnect links.
-        self.unconnected_time_out = 1.0  # sec
+       # Time out to use when trying to reconnect links.
+       self.unconnected_time_out = 1.0  # sec
 
     #-----------------------------------------------------------------------
-    def active(self):
+    def active( self ):
         """Returns non-zero if the link has active links or
            unconnected links.
         """
         return len(self.links) + len(self.unconnected)
-
+      
     #-----------------------------------------------------------------------
     def add(self, link, connected=True):
         """Add a Link to the manager.
@@ -86,12 +79,15 @@ class Manager:
                     if the manager should try and connect the link itself.
         """
         LOG.debug("Link added: %s", link)
-
+        
         # If the link is connected, we can get it's file descriptor
         # and add it to the polling loop.
         if connected:
+            # Check all links for reading since that's how a dropped
+            # connection occurs (read of 0).
             fd = link.fileno()
-            self.poll.register(fd, self.READ)
+            self.read.append(fd)
+            self.error.append(fd)
 
             # Connect the link signals so we know when it closes or
             # needs to write data.
@@ -128,11 +124,14 @@ class Manager:
         link.signal_closing.disconnect(self.link_closing)
         link.signal_needs_write.disconnect(self.link_needs_write)
 
-        self.poll.unregister(fd)
+        self.read.remove(fd)
+        self.errors.remove(fd)
+        if fd in self.write:
+            self.write.remove(fd)
         self.links.pop(fd, None)
 
         LOG.debug("Link removed %s", link)
-
+      
     #-----------------------------------------------------------------------
     def close_all(self):
         """Close all the links in the manager.
@@ -163,11 +162,17 @@ class Manager:
         if self.unconnected:
             time_out = min(time_out, self.unconnected_time_out)
 
-        # Keep polling until we get a successfull call with events.
-        while True:
+        # If nothing is reading for checking, skip the select call.
+        run = self.read or self.write or self.error
+        if not run:
+            time.sleep(time_out)
+            reads, writes, errors = [], [], []
+
+        # Keep trying until we get a successfull call with events.
+        while run:
             try:
-                # events = (fileno, bit flags) of the actions.
-                events = self.poll.poll(1000*time_out)  # sec->msec
+                reads, writes, errors = select.select(self.read, self.write,
+                                                      self.error, time_out)
             except select.error as err:
                 # This error can occur sometimes when using a timeout.
                 # It should be ignored and the poll retried.
@@ -193,35 +198,24 @@ class Manager:
                     LOG.debug("Link connection failed %s", link)
                     self.unconnected[i] = (link, t+link.retry_connect_dt())
 
-        for fd, flag in events:
-            # Map the fileno to the Link object.
+
+        # Check errors first to close the links.
+        for fd in errors:
+            link = self.links[fd]
+            link.cloes()
+
+        # Link has data to read.  It may have been closed by the error
+        # check so allow for that here.
+        for fd in reads:
             link = self.links.get(fd, None)
-            if link is None:
-                continue
+            if link:
+                link.read_from_link()
 
-            # Link has data to read.  If reading has an error, clear
-            # the action flag so nothing else happens.
-            if flag & self.EVENT_READ:
-                if link.read_from_link() == -1:
-                    flag = 0
-
-            # Link has data to write.
-            if flag & self.EVENT_WRITE:
+        for fd in writes:
+            link = self.links.get(fd, None)
+            if link:
                 link.write_to_link()
-
-            # File/socket is shutting down - close the link.
-            if flag & self.EVENT_CLOSE:
-                link.close()
-
-            # Unknown error occurred - this is fatal so close the link.
-            elif flag & self.EVENT_ERROR:
-                link.close()
-
-        # Poll the links in case they need to do brute force
-        # processing of any kind.
-        for link in self.links.values():
-            link.poll(t)
-
+                
     #-----------------------------------------------------------------------
     def link_closing(self, link):
         """Callback when a link is closing.
@@ -261,9 +255,16 @@ class Manager:
                          if the link no longer has data to write.
 
         """
-        if needs_write:
-            self.poll.modify(link.fileno(), self.READ_WRITE)
-        else:
-            self.poll.modify(link.fileno(), self.READ)
+        fd = link.fileno()
 
+        # Add the link to the write watching list.
+        if needs_write:
+            if fd not in self.write:
+                self.write.append(fd)
+
+        # Remove the link from the write watching list.
+        elif fd in self.write:
+            self.write.remove(fd)
+      
     #-----------------------------------------------------------------------
+   
