@@ -12,7 +12,8 @@ from .. import Signal
 class Mqtt (Link):
     """TODO: doc
     """
-    def __init__(self, host, port=1883, id=None, reconnect_dt=10):
+    def __init__(self, host="127.0.0.1", port=1883, id=None,
+                 reconnect_dt=10):
         """TODO: doc
         """
         super().__init__()

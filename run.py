@@ -9,9 +9,9 @@ logging.basicConfig(level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S',
 
 config = yaml.load(open("config.yaml").read())
 
-loop = IM.network.poll.Manager()
-mqtt_link = IM.network.Mqtt( '127.0.0.1' )
-plm_link = IM.network.Serial( '/dev/insteon' )
+loop = IM.network.Manager()
+mqtt_link = IM.network.Mqtt()
+plm_link = IM.network.Serial()
 
 loop.add(mqtt_link, connected=False)
 loop.add(plm_link, connected=False)

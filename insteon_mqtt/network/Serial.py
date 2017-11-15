@@ -17,7 +17,7 @@ class Serial (Link):
     read_buf_size = 4096
 
     #-----------------------------------------------------------------------
-    def __init__(self, port, baudrate=19200, parity=serial.PARITY_NONE,
+    def __init__(self, port=None, baudrate=19200, parity=serial.PARITY_NONE,
                  reconnect_dt=10):
         """TODO: doc
         """
