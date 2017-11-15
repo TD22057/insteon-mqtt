@@ -1,0 +1,66 @@
+2 dimmer switches, 1 lamp linc.  All connected together w/ modem
+
+>>> sw1.getdb()
+----- database -------
+0fff modem                          44.85.11  RESP  10101010 group: 01 ON LVL: 255 RMPRT:  28 BUTTON:   1
+0ff7 modem                          44.85.11  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+0fe7 lamp                           37.2D.35  RESP  10101010 group: 01 ON LVL: 254 RMPRT:  28 BUTTON:   1
+0fef lamp                           37.2D.35  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+0fd7 sw2                            48.B0.AD  RESP  10101010 group: 01 ON LVL: 254 RMPRT:  28 BUTTON:   1
+0fdf sw2                            48.B0.AD  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+0fcf 00.00.00                       00.00.00 (RESP) 00000000 group: 00 ON LVL:   0 RMPRT:   0 BUTTON:   0
+----- end ------------
+
+>>> sw2.getdb()
+----- database -------
+0fff modem                          44.85.11  RESP  10101010 group: 01 ON LVL: 255 RMPRT:  28 BUTTON:   1
+0ff7 modem                          44.85.11  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+
+0fe7 lamp                           37.2D.35  RESP  10101010 group: 01 ON LVL: 254 RMPRT:  28 BUTTON:   1
+0fef lamp                           37.2D.35  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+
+0fdf sw1                            48.3D.46  RESP  10101010 group: 01 ON LVL: 254 RMPRT:  28 BUTTON:   1
+0fd7 sw1                            48.3D.46  CTRL  11101010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   1
+0fcf 00.00.00                       00.00.00 (RESP) 00000000 group: 00 ON LVL:   0 RMPRT:   0 BUTTON:   0
+----- end ------------
+
+>>> lamp2.getdb()
+----- database -------
+0fff modem                          44.85.11  RESP  10100010 group: 01 ON LVL:   0 RMPRT:  28 BUTTON:   0
+0ff7 modem                          44.85.11  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   0
+
+0fef sw1                            48.3D.46  RESP  10100010 group: 01 ON LVL: 254 RMPRT:  28 BUTTON:   0
+0fd7 sw1                            48.3D.46  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   0
+
+0fe7 sw2                            48.B0.AD  RESP  10100010 group: 01 ON LVL: 254 RMPRT:  28 BUTTON:   0
+0fdf sw2                            48.B0.AD  CTRL  11100010 group: 01 ON LVL:   3 RMPRT:  28 BUTTON:   0
+0fcf 00.00.00                       00.00.00 (RESP) 00000000 group: 00 ON LVL:   0 RMPRT:   0 BUTTON:   0
+----- end ------------
+
+NOTE: data here is product ID's 
+>>> modem.getdb()
+0000 sw1                            48.3D.46  RESP  10100010 group: 01 data: 01 20 45
+0000 sw1                            48.3D.46  CTRL  11100010 group: 01 data: 01 20 45
+
+0000 sw2                            48.B0.AD  RESP  10100010 group: 01 data: 01 20 45
+0000 sw2                            48.B0.AD  CTRL  11100010 group: 01 data: 01 20 45
+
+0000 lamp                           37.2D.35  RESP  10100010 group: 01 data: 01 0e 43
+0000 lamp                           37.2D.35  CTRL  11100010 group: 01 data: 02 37 48
+
+0000 lamp2                          3A.29.84  RESP  10100010 group: 01 data: 01 0e 43
+0000 lamp2                          3A.29.84  CTRL  11100010 group: 01 data: 01 0e 43
+
+=========================
+>>> sw1.getId()
+id got info: IN:Cmd:0x50|fromAddress:48.3D.46|toAddress:01.20.45|messageFlags:0x8F=BROADCAST:3:3|command1:0x01|command2:0x82|
+id dev cat: 01 subcat: 20 firmware: 45 hardware: 82
+
+>>> lamp.getId()
+id got info: IN:Cmd:0x50|fromAddress:37.2D.35|toAddress:02.37.48|messageFlags:0x8F=BROADCAST:3:3|command1:0x01|command2:0x48|
+id dev cat: 02 subcat: 37 firmware: 48 hardware: 48
+
+>>> lamp2.getId()
+id got info: IN:Cmd:0x50|fromAddress:3A.29.84|toAddress:01.0E.43|messageFlags:0x8F=BROADCAST:3:3|command1:0x01|command2:0x36|
+id dev cat: 01 subcat: 0e firmware: 43 hardware: 36
+
