@@ -12,8 +12,28 @@ LOG = logging.getLogger(__name__)
 
 #===========================================================================
 class DeviceEntry:
+    """Device all link database entry.
+
+    Each entry in the device's all link database has the address of
+    the remote device, the group the device is part of, and various
+    flags for the entry.
+
+    The entry can be converted to/from JSON with to_json() and
+    from_json().
+    """
+
     @staticmethod
     def from_json(data):
+        """Read a DeviceEntry from a JSON input.
+
+        The inverse of this is to_json().
+
+        Args:
+          data:    (dict): The data to read from.
+
+        Returns:
+          DeviceEntry: Returns the created DeviceEntry object.
+        """
         return DeviceEntry(Address.from_json(data['addr']),
                            data['group'],
                            data['mem_loc'],
@@ -23,6 +43,19 @@ class DeviceEntry:
     #-----------------------------------------------------------------------
     @staticmethod
     def from_bytes(data):
+        """Read a DeviceEntry from a byte array.
+
+        This is used to read an entry from an InpExtended insteon
+        message object.  See p162 of the Insteon dev guide for the
+        byte array layout.
+
+        Args:
+          data:  (bytes) The data byte array from an InpExtended message.
+
+        Returns:
+          DeviceEntry: Returns the created DeviceEntry object.
+
+        """
         # See p162 of insteon dev guide
         # [0] = unused
         # [1] = request/response flag
@@ -37,6 +70,15 @@ class DeviceEntry:
 
     #-----------------------------------------------------------------------
     def __init__(self, addr, group, mem_loc, ctrl, data):
+        """Constructor
+
+        Args:
+          addr:    (Address) The address of the device in the database.
+          group:   (int) The group the entry is for.
+          mem_loc:
+          ctrl:
+          data:
+        """
         self.addr = addr
         self.group = group
         self.mem_loc = mem_loc

@@ -12,6 +12,16 @@ LOG = logging.getLogger(__name__)
 class ModemEntry:
     @staticmethod
     def from_json(data):
+        """Read a ModemEntry from a JSON input.
+
+        The inverse of this is to_json().
+
+        Args:
+          data:    (dict): The data to read from.
+
+        Returns:
+          ModemEntry: Returns the created ModemEntry object.
+        """
         return ModemEntry(Address.from_json(data['addr']),
                           data['group'],
                           data['is_controller'],
