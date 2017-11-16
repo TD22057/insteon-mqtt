@@ -3,17 +3,13 @@
 # Host->PLM standard direct message
 #
 #===========================================================================
-import io
-from ..Address import Address
-from .Flags import Flags
 
-#===========================================================================
 
 class OutAllLinkCancel:
     """Direct, standard message from host->PLM.
 
     When sending, this will be 8 bytes long.  When receiving back from
-    the modem, it will be 9 bytes (8+ack/nak).  
+    the modem, it will be 9 bytes (8+ack/nak).
     """
     code = 0x65
     msg_size = 3
@@ -33,16 +29,16 @@ class OutAllLinkCancel:
            Otherwise the read message is returned.  This will return
            either an OutStandard or OutExtended message.
         """
-        assert(len(raw) >= 2)
-        assert(raw[0] == 0x02 and raw[1] == OutAllLinkCancel.code)
+        assert len(raw) >= 2
+        assert raw[0] == 0x02 and raw[1] == OutAllLinkCancel.code
 
         # Make sure we have enough bytes to read the message.
         if OutAllLinkCancel.msg_size > len(raw):
             return OutAllLinkCancel.msg_size
 
         is_ack = raw[2] == 0x06
-        return OutAllLinkStart(is_ack)
-        
+        return OutAllLinkCancel(is_ack)
+
     #-----------------------------------------------------------------------
     def __init__(self, is_ack=None):
         self.is_ack = is_ack
@@ -56,5 +52,5 @@ class OutAllLinkCancel:
         return "All link cancel: ack: %s" % self.is_ack
 
     #-----------------------------------------------------------------------
-    
+
 #===========================================================================

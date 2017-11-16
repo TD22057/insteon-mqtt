@@ -3,11 +3,7 @@
 # PLM->host standard direct message
 #
 #===========================================================================
-import io
-from ..Address import Address
-from .Flags import Flags
 
-#===========================================================================
 
 class InpUserReset:
     """TODO
@@ -30,15 +26,15 @@ class InpUserReset:
            Otherwise the read message is returned.  This will return
            either an OutStandard or OutExtended message.
         """
-        assert(len(raw) >= 2)
-        assert(raw[0] == 0x02 and raw[1] == InpUserReset.code)
+        assert len(raw) >= 2
+        assert raw[0] == 0x02 and raw[1] == InpUserReset.code
 
         # Make sure we have enough bytes to read the message.
         if InpUserReset.msg_size > len(raw):
             return InpUserReset.msg_size
 
-        return InpAllLinkFailure()
-        
+        return InpUserReset()
+
     #-----------------------------------------------------------------------
     def __init__(self):
         pass
@@ -48,5 +44,5 @@ class InpUserReset:
         return "User reset"
 
     #-----------------------------------------------------------------------
-    
+
 #===========================================================================

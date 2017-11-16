@@ -4,6 +4,25 @@
 #
 #===========================================================================
 
+__doc__ = """Insteon message classes.
+
+Each message has it's own class which can convert between the byte
+stream and the message.  All messages start with the byte 0x02
+followed by the message ID byte.  Mapping from the ID by to the class
+type is handled by the messages.types dictionary.
+
+Class names that start with 'Inp' are input messages that are sent
+from the PLM modem to the host computer.  These are either replies to
+commands or broadcast commands triggered by Insteon devices
+(e.g. motion, pushing a light switch, etc).
+
+Class names that start with 'Out' are output messages that are sent
+from the host computer to the PLM modem as commands.  These can also
+be inputs because the PLM modem will repeat messages back as ACK/NAK
+results.
+"""
+
+# Bit level message flags
 from .DbFlags import DbFlags
 from .Flags import Flags
 
@@ -12,13 +31,11 @@ from .InpAllLinkComplete import InpAllLinkComplete
 from .InpAllLinkFailure import InpAllLinkFailure
 from .InpAllLinkRec import InpAllLinkRec
 from .InpAllLinkStatus import InpAllLinkStatus
-#from .InpExtended import InpExtended
 from .InpStandard import InpStandard, InpExtended
 from .InpUserReset import InpUserReset
 from .InpUserSetBtn import InpUserSetBtn
 
 # Messages from the host to the PLM modem (codes < 0x06)
-# These can be sent to the modem as commands.
 from .OutAllLink import OutAllLink
 from .OutAllLinkCancel import OutAllLinkCancel
 from .OutAllLinkStart import OutAllLinkStart
@@ -49,12 +66,9 @@ types = {
     0x61 : OutAllLink,
     0x62 : OutStandard,  # Handles reading standard and extended
     0x64 : OutAllLinkStart,
-    0x64 : OutAllLinkCancel,
+    0x65 : OutAllLinkCancel,
     0x67 : OutResetPlm,
     0x69 : OutAllLinkGetFirst,
     0x6a : OutAllLinkGetNext,
     0x6f : OutAllLinkUpdate,
     }
-
-# TODO: log add responder, controller to modem
-# TODO: log add responder, controller to device

@@ -3,9 +3,7 @@
 # PLM->host standard direct message
 #
 #===========================================================================
-import io
 from ..Address import Address
-from .Flags import Flags
 
 #===========================================================================
 
@@ -30,18 +28,18 @@ class InpAllLinkFailure:
            Otherwise the read message is returned.  This will return
            either an OutStandard or OutExtended message.
         """
-        assert(len(raw) >= 2)
-        assert(raw[0] == 0x02 and raw[1] == InpAllLinkFailure.code)
+        assert len(raw) >= 2
+        assert raw[0] == 0x02 and raw[1] == InpAllLinkFailure.code
 
         # Make sure we have enough bytes to read the message.
         if InpAllLinkFailure.msg_size > len(raw):
             return InpAllLinkFailure.msg_size
 
-        assert(raw[2] == 0x01)
+        assert raw[2] == 0x01
         group = raw[3]
         addr = Address.from_bytes(raw, 4)
         return InpAllLinkFailure(group, addr)
-        
+
     #-----------------------------------------------------------------------
     def __init__(self, group, addr):
         self.group = group
@@ -52,5 +50,5 @@ class InpAllLinkFailure:
         return "All link fail: %s grp: %d" % (self.addr, self.group)
 
     #-----------------------------------------------------------------------
-    
+
 #===========================================================================

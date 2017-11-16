@@ -6,15 +6,13 @@
 import io
 from ..Address import Address
 from .DbFlags import DbFlags
-from .Flags import Flags
 
-#===========================================================================
 
 class OutAllLinkUpdate:
     """TODO: doc
 
     When sending, this will be 8 bytes long.  When receiving back from
-    the modem, it will be 9 bytes (8+ack/nak).  
+    the modem, it will be 9 bytes (8+ack/nak).
     """
     code = 0x6f
     msg_size = 12
@@ -41,8 +39,8 @@ class OutAllLinkUpdate:
            Otherwise the read message is returned.  This will return
            either an OutStandard or OutExtended message.
         """
-        assert(len(raw) >= 2)
-        assert(raw[0] == 0x02 and raw[1] == OutAllLinkUpdate.code)
+        assert len(raw) >= 2
+        assert raw[0] == 0x02 and raw[1] == OutAllLinkUpdate.code
 
         # Make sure we have enough bytes to read the message.
         if OutAllLinkUpdate.msg_size > len(raw):
@@ -55,13 +53,13 @@ class OutAllLinkUpdate:
         data = raw[8:11]
         is_ack = raw[12] == 0x06
         return OutAllLinkUpdate(cmd, flags, group, addr, data, is_ack)
-        
+
     #-----------------------------------------------------------------------
     def __init__(self, cmd, flags, group, addr, data, is_ack=None):
-        assert(cmd in [SEARCH, UPDATE, ADD_CONTROLLER, ADD_RESPONDER,
-                           DELETE])
-        assert(isinstance(flags, DbFlags))
-        
+        assert cmd in [self.SEARCH, self.UPDATE, self.ADD_CONTROLLER,
+                       self.ADD_RESPONDER, self.DELETE]
+        assert isinstance(flags, DbFlags)
+
         self.cmd = cmd
         self.flags = flags
         self.group = group
@@ -81,14 +79,18 @@ class OutAllLinkUpdate:
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        lbl = { self.RESPONDER : 'rspd',
-                self.CONTROLLER : 'ctrl',
-                self.DELETE : 'del',
-                }
+        lbl = {
+            self.EXISTS : "EXISTS",
+            self.SEARCH : "SEARCH",
+            self.UPDATE : "UPDATE",
+            self.ADD_CONTROLLER : "ADD_CTRL",
+            self.ADD_RESPONDER : "ADD_RESP",
+            self.DELETE : "DELETE",
+            }
 
-        return "All link start: grp: %s %s ack: %s" % \
-            (self.group, lbl[self.link], self.is_ack)
+        return "All link update: grp: %s %s: %s" % \
+            (self.group, lbl[self.cmd], self.is_ack)
 
     #-----------------------------------------------------------------------
-    
+
 #===========================================================================

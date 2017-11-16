@@ -3,11 +3,7 @@
 # PLM->host standard direct message
 #
 #===========================================================================
-import io
-from ..Address import Address
-from .Flags import Flags
 
-#===========================================================================
 
 class InpUserSetBtn:
     """TODO
@@ -42,24 +38,24 @@ class InpUserSetBtn:
            Otherwise the read message is returned.  This will return
            either an OutStandard or OutExtended message.
         """
-        assert(len(raw) >= 2)
-        assert(raw[0] == 0x02 and raw[1] == InpUserSetBtn.code)
+        assert len(raw) >= 2
+        assert raw[0] == 0x02 and raw[1] == InpUserSetBtn.code
 
         # Make sure we have enough bytes to read the message.
         if InpUserSetBtn.msg_size > len(raw):
             return InpUserSetBtn.msg_size
 
-        event = self.events.get(raw[2], 'UNKNOWN')
-        return InpAllLinkFailure(event)
-        
+        event = InpUserSetBtn.events.get(raw[2], 'UNKNOWN')
+        return InpUserSetBtn(event)
+
     #-----------------------------------------------------------------------
     def __init__(self, event):
         self.event = event
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "Set btn: %s" % events[self.event]
+        return "Set btn: %s" % InpUserSetBtn.events[self.event]
 
     #-----------------------------------------------------------------------
-    
+
 #===========================================================================

@@ -3,9 +3,7 @@
 # PLM->host standard direct message
 #
 #===========================================================================
-import io
 from ..Address import Address
-from .Flags import Flags
 from .DbFlags import DbFlags
 
 #===========================================================================
@@ -31,8 +29,8 @@ class InpAllLinkRec:
            Otherwise the read message is returned.  This will return
            either an OutStandard or OutExtended message.
         """
-        assert(len(raw) >= 2)
-        assert(raw[0] == 0x02 and raw[1] == InpAllLinkRec.code)
+        assert len(raw) >= 2
+        assert raw[0] == 0x02 and raw[1] == InpAllLinkRec.code
 
         # Make sure we have enough bytes to read the message.
         if InpAllLinkRec.msg_size > len(raw):
@@ -42,13 +40,13 @@ class InpAllLinkRec:
         group = raw[3]
         addr = Address.from_bytes(raw, 4)
         data = raw[7:10]
-        
+
         return InpAllLinkRec(flags, group, addr, data)
-        
+
     #-----------------------------------------------------------------------
     def __init__(self, flags, group, addr, data):
-        assert(isinstance(flags, DbFlags))
-        
+        assert isinstance(flags, DbFlags)
+
         self.flags = flags
         self.group = group
         self.addr = addr
@@ -63,15 +61,5 @@ class InpAllLinkRec:
              self.data[2])
 
     #-----------------------------------------------------------------------
-    def to_json(self):
-        return {
-            'type' : 'InpAllLinkRec',
-            'addr' : self.addr.hex,
-            'group' : self.group,
-            'type' : 'CTRL' if self.flags.is_controller else 'RESP',
-            'data' : self.data
-            }
-    
-    #-----------------------------------------------------------------------
-    
+
 #===========================================================================

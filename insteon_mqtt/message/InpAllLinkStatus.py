@@ -3,9 +3,7 @@
 # PLM->host standard direct message
 #
 #===========================================================================
-from ..Address import Address
 
-#===========================================================================
 
 class InpAllLinkStatus:
     """TODO
@@ -28,15 +26,16 @@ class InpAllLinkStatus:
            Otherwise the read message is returned.  This will return
            either an OutStandard or OutExtended message.
         """
-        assert(len(raw) >= 2)
-        assert(raw[0] == 0x02 and raw[1] == InpAllLinkStatus.code)
+        assert len(raw) >= 2
+        assert raw[0] == 0x02 and raw[1] == InpAllLinkStatus.code
 
         # Make sure we have enough bytes to read the message.
         if InpAllLinkStatus.msg_size > len(raw):
             return InpAllLinkStatus.msg_size
 
         is_ack = raw[2] == 0x06
-        
+        return InpAllLinkStatus(is_ack)
+
     #-----------------------------------------------------------------------
     def __init__(self, is_ack):
         self.is_ack = is_ack
@@ -46,5 +45,5 @@ class InpAllLinkStatus:
         return "All link status ack: %d" % self.is_ack
 
     #-----------------------------------------------------------------------
-    
+
 #===========================================================================

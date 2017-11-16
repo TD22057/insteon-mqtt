@@ -3,9 +3,7 @@
 # PLM->host standard direct message
 #
 #===========================================================================
-import io
 from ..Address import Address
-from .Flags import Flags
 
 #===========================================================================
 
@@ -34,8 +32,8 @@ class InpAllLinkComplete:
            Otherwise the read message is returned.  This will return
            either an OutStandard or OutExtended message.
         """
-        assert(len(raw) >= 2)
-        assert(raw[0] == 0x02 and raw[1] == InpAllLinkComplete.code)
+        assert len(raw) >= 2
+        assert raw[0] == 0x02 and raw[1] == InpAllLinkComplete.code
 
         # Make sure we have enough bytes to read the message.
         if InpAllLinkComplete.msg_size > len(raw):
@@ -49,13 +47,13 @@ class InpAllLinkComplete:
         firmware = raw[9]
         return InpAllLinkComplete(link, group, addr, dev_cat, dev_subcat,
                                   firmware)
-        
+
     #-----------------------------------------------------------------------
     def __init__(self, link, group, addr, dev_cat, dev_subcat, firmware):
         self.link = link
-        self.plm_responder = link == RESPONDER
-        self.plm_controller = link == CONTROLLER
-        self.is_delete = link == DELETE
+        self.plm_responder = link == self.RESPONDER
+        self.plm_controller = link == self.CONTROLLER
+        self.is_delete = link == self.DELETE
         self.group = group
         self.addr = addr
         self.dev_cat = dev_cat
@@ -64,14 +62,15 @@ class InpAllLinkComplete:
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        lbl = { self.RESPONDER : 'RESP',
-                self.CONTROLLER : 'CTRL',
-                self.DELETE : 'DEL',
-                }
+        lbl = {
+            self.RESPONDER : 'RESP',
+            self.CONTROLLER : 'CTRL',
+            self.DELETE : 'DEL',
+            }
         return "All link done: %s grp: %d %s cat: %#04x %#04x %#04x" % \
             (self.addr, self.group, lbl[self.link], self.dev_cat,
              self.dev_subcat, self.firmware)
 
     #-----------------------------------------------------------------------
-    
+
 #===========================================================================

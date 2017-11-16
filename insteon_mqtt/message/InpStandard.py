@@ -30,8 +30,8 @@ class InpStandard:
            Otherwise the read message is returned.  This will return
            either an OutStandard or OutExtended message.
         """
-        assert(len(raw) >= 2)
-        assert(raw[0] == 0x02 and raw[1] == InpStandard.code)
+        assert len(raw) >= 2
+        assert raw[0] == 0x02 and raw[1] == InpStandard.code
 
         # Make sure we have enough bytes to read the message.
         if InpStandard.msg_size > len(raw):
@@ -43,17 +43,17 @@ class InpStandard:
         if flags.is_ext:
             if InpExtended.msg_size > len(raw):
                 return InpExtended.msg_size
-        
+
         from_addr = Address.from_bytes(raw, 2)
         to_addr = Address.from_bytes(raw, 5)
         cmd1 = raw[9]
         cmd2 = raw[10]
         return InpStandard(from_addr, to_addr, flags, cmd1, cmd2)
-        
+
     #-----------------------------------------------------------------------
     def __init__(self, from_addr, to_addr, flags, cmd1, cmd2):
-        assert(isinstance(flags, Flags))
-        
+        assert isinstance(flags, Flags)
+
         self.from_addr = from_addr
         self.to_addr = to_addr
         self.flags = flags
@@ -74,10 +74,10 @@ class InpStandard:
         else:
             return "Std: %s %s grp: %02x cmd: %02x %02x" % \
                 (self.from_addr, self.flags, self.group, self.cmd1, self.cmd2)
-            
+
 
     #-----------------------------------------------------------------------
-    
+
 #===========================================================================
 class InpExtended:
     """Direct, extended message from PLM->host.
@@ -100,8 +100,8 @@ class InpExtended:
            Otherwise the read message is returned.  This will return
            either an OutStandard or OutExtended message.
         """
-        assert(len(raw) >= 2)
-        assert(raw[0] == 0x02 and raw[1] == InpExtended.code)
+        assert len(raw) >= 2
+        assert raw[0] == 0x02 and raw[1] == InpExtended.code
 
         # Make sure we have enough bytes to read the message.
         if InpExtended.msg_size > len(raw):
@@ -114,7 +114,7 @@ class InpExtended:
         cmd2 = raw[10]
         data = raw[11:25]
         return InpExtended(from_addr, to_addr, flags, cmd1, cmd2, data)
-        
+
     #-----------------------------------------------------------------------
     def __init__(self, from_addr, to_addr, flags, cmd1, cmd2, data):
         self.from_addr = from_addr
@@ -134,7 +134,7 @@ class InpExtended:
     def __str__(self):
         o = io.StringIO()
         if self.group is None:
-            o.write("Ext: %s->%s %s cmd: %02x %02x\n" % 
+            o.write("Ext: %s->%s %s cmd: %02x %02x\n" %
                     (self.from_addr, self.to_addr, self.flags, self.cmd1,
                      self.cmd2))
         else:
@@ -143,9 +143,9 @@ class InpExtended:
                      self.cmd2))
 
         for i in self.data:
-            o.write("%02x " % i )
+            o.write("%02x " % i)
         return o.getvalue()
 
     #-----------------------------------------------------------------------
-    
+
 #===========================================================================
