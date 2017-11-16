@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# PLM->host standard direct message
+# Input insteon all link complete message.
 #
 #===========================================================================
 from ..Address import Address
@@ -8,10 +8,13 @@ from ..Address import Address
 #===========================================================================
 
 class InpAllLinkComplete:
-    """TODO
+    """All linking complete.
+
+    This is sent from the PLM modem to the host when linking between
+    the PLM modem and a device is completed.
     """
-    code = 0x53
-    msg_size = 10
+    msg_code = 0x53
+    fixed_msg_size = 10
 
     RESPONDER = 0x01
     CONTROLLER = 0x01
@@ -22,22 +25,17 @@ class InpAllLinkComplete:
     def from_bytes(raw):
         """Read the message from a byte stream.
 
+        This should only be called if raw[1] == msg_code and len(raw)
+        >= msg_size().
+
         Args:
-           raw   (bytes): The current byte stream to read from.  This
-                 must be at least length 2.
+           raw   (bytes): The current byte stream to read from.
 
         Returns:
-           If an integer is returned, it is the number of bytes
-           remaining to be read before calling from_bytes() again.
-           Otherwise the read message is returned.  This will return
-           either an OutStandard or OutExtended message.
+           Returns the constructed OutStandard or OutExtended object.
         """
-        assert len(raw) >= 2
-        assert raw[0] == 0x02 and raw[1] == InpAllLinkComplete.code
-
-        # Make sure we have enough bytes to read the message.
-        if InpAllLinkComplete.msg_size > len(raw):
-            return InpAllLinkComplete.msg_size
+        assert len(raw) >= InpAllLinkComplete.fixed_msg_size
+        assert raw[0] == 0x02 and raw[1] == InpAllLinkComplete.msg_code
 
         link = raw[2]
         group = raw[3]
@@ -50,6 +48,18 @@ class InpAllLinkComplete:
 
     #-----------------------------------------------------------------------
     def __init__(self, link, group, addr, dev_cat, dev_subcat, firmware):
+        """Constructor
+
+        Args:
+          link:         Link command flag.  InpAllLinkComplete.RESPONDER,
+                        InpAllLinkComplete.CONTROLLER, or
+                        InpAllLinkComplete.DELETE.
+          group:        (int) The all link group of the link.
+          addr:         (Address) The address of the device being linked.
+          dev_cat:      (int) device category.
+          dev_subcat:   (int) Device subcategory.
+          firmware:     (int) Firmware revision.
+        """
         self.link = link
         self.plm_responder = link == self.RESPONDER
         self.plm_controller = link == self.CONTROLLER

@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Host->PLM standard direct message
+# Output insteon update all link database message.
 #
 #===========================================================================
 import io
@@ -13,9 +13,11 @@ class OutAllLinkUpdate:
 
     When sending, this will be 8 bytes long.  When receiving back from
     the modem, it will be 9 bytes (8+ack/nak).
+
+    The modem will respond with an echo/ACK of this message.
     """
-    code = 0x6f
-    msg_size = 12
+    msg_code = 0x6f
+    fixed_msg_size = 12
 
     EXISTS = 0x00
     SEARCH = 0x01
@@ -29,22 +31,17 @@ class OutAllLinkUpdate:
     def from_bytes(raw):
         """Read the message from a byte stream.
 
+        This should only be called if raw[1] == msg_code and len(raw)
+        >= msg_size().
+
         Args:
-           raw   (bytes): The current byte stream to read from.  This
-                 must be at least length 2.
+           raw   (bytes): The current byte stream to read from.
 
         Returns:
-           If an integer is returned, it is the number of bytes
-           that need to be in the message to finish reading it.
-           Otherwise the read message is returned.  This will return
-           either an OutStandard or OutExtended message.
+           Returns the constructed OutAllLinkUpdate object.
         """
-        assert len(raw) >= 2
-        assert raw[0] == 0x02 and raw[1] == OutAllLinkUpdate.code
-
-        # Make sure we have enough bytes to read the message.
-        if OutAllLinkUpdate.msg_size > len(raw):
-            return OutAllLinkUpdate.msg_size
+        assert len(raw) >= OutAllLinkUpdate.fixed_msg_size
+        assert raw[0] == 0x02 and raw[1] == OutAllLinkUpdate.msg_code
 
         cmd = raw[2]
         flags = DbFlags.from_bytes(raw, 3)
@@ -56,9 +53,22 @@ class OutAllLinkUpdate:
 
     #-----------------------------------------------------------------------
     def __init__(self, cmd, flags, group, addr, data, is_ack=None):
+        """Constructor
+
+        Args:
+          cmd:     (int) Command byte.  See the class constants for valid
+                   commands.
+          flags:   (Flags) Message flags to send.
+          group:   (int) All link group for the command.
+          addr:    (Address) Address to send the command to.
+          data:    (bytes) 3 byte data packet.
+          is_ack:  (bool) True for ACK, False for NAK.  None for output
+                   commands to the modem.
+        """
         assert cmd in [self.SEARCH, self.UPDATE, self.ADD_CONTROLLER,
                        self.ADD_RESPONDER, self.DELETE]
         assert isinstance(flags, DbFlags)
+        assert len(data) == 3
 
         self.cmd = cmd
         self.flags = flags
@@ -69,7 +79,12 @@ class OutAllLinkUpdate:
 
     #-----------------------------------------------------------------------
     def to_bytes(self):
-        o = io.BytesIO(bytes([0x02, self.code]))
+        """Convert the message to a byte array.
+
+        Returns:
+           (bytes) Returns the message as bytes.
+        """
+        o = io.BytesIO(bytes([0x02, self.msg_code]))
         o.write(self.cmd)
         o.write(self.flags.to_bytes())
         o.write(self.group)
@@ -88,8 +103,8 @@ class OutAllLinkUpdate:
             self.DELETE : "DELETE",
             }
 
-        return "All link update: grp: %s %s: %s" % \
-            (self.group, lbl[self.cmd], self.is_ack)
+        return "OutAllLinkUpdate: %s grp: %s %s: %s" % \
+            (self.addr, self.group, lbl[self.cmd], self.is_ack)
 
     #-----------------------------------------------------------------------
 

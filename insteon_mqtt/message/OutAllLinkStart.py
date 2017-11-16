@@ -1,18 +1,15 @@
 #===========================================================================
 #
-# Host->PLM standard direct message
+# Output insteon start all link mode message.
 #
 #===========================================================================
 
 
 class OutAllLinkStart:
-    """Direct, standard message from host->PLM.
-
-    When sending, this will be 8 bytes long.  When receiving back from
-    the modem, it will be 9 bytes (8+ack/nak).
+    """Begin all linking command message.
     """
-    code = 0x64
-    msg_size = 5
+    msg_code = 0x64
+    fixed_msg_size = 5
 
     RESPONDER = 0x01
     CONTROLLER = 0x03
@@ -23,22 +20,17 @@ class OutAllLinkStart:
     def from_bytes(raw):
         """Read the message from a byte stream.
 
+        This should only be called if raw[1] == msg_code and len(raw)
+        >= msg_size().
+
         Args:
-           raw   (bytes): The current byte stream to read from.  This
-                 must be at least length 2.
+           raw   (bytes): The current byte stream to read from.
 
         Returns:
-           If an integer is returned, it is the number of bytes
-           that need to be in the message to finish reading it.
-           Otherwise the read message is returned.  This will return
-           either an OutStandard or OutExtended message.
+           Returns the constructed OutAllLinkStart object.
         """
-        assert len(raw) >= 2
-        assert raw[0] == 0x02 and raw[1] == OutAllLinkStart.code
-
-        # Make sure we have enough bytes to read the message.
-        if OutAllLinkStart.msg_size > len(raw):
-            return OutAllLinkStart.msg_size
+        assert len(raw) >= OutAllLinkStart.fixed_msg_size
+        assert raw[0] == 0x02 and raw[1] == OutAllLinkStart.msg_code
 
         link = raw[2]
         group = raw[3]
@@ -47,6 +39,15 @@ class OutAllLinkStart:
 
     #-----------------------------------------------------------------------
     def __init__(self, link, group, is_ack=None):
+        """Constructor
+
+        Args:
+          link:    (int) OutAllLinkStart.RESPONDER, OutAllLinkStart.CONGTROLLER,
+                   or OutAllLinkStart.DELETE command code.
+          group:   (int) The group to link.
+          is_ack:  (bool) True for ACK, False for NAK.  None for output
+                   commands to the modem.
+        """
         assert(link == self.RESPONDER or link == self.CONTROLLER or
                link == self.DELETE)
 
@@ -59,7 +60,12 @@ class OutAllLinkStart:
 
     #-----------------------------------------------------------------------
     def to_bytes(self):
-        return bytes([0x02, self.code, self.link, self.group])
+        """Convert the message to a byte array.
+
+        Returns:
+           (bytes) Returns the message as bytes.
+        """
+        return bytes([0x02, self.msg_code, self.link, self.group])
 
     #-----------------------------------------------------------------------
     def __str__(self):

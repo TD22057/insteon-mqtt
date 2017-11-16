@@ -1,43 +1,47 @@
 #===========================================================================
 #
-# PLM->host standard direct message
+# Input insteon all link status message.
 #
 #===========================================================================
 
 
 class InpAllLinkStatus:
-    """TODO
+    """All link cleanup status report.
+
+    This is sent from the PLM modem to the host after a device has
+    broadcast an all link broadcast message to activate a scene as an
+    ACK/NAK of the broadcast.
     """
-    code = 0x58
-    msg_size = 3
+    msg_code = 0x58
+    fixed_msg_size = 3
 
     #-----------------------------------------------------------------------
     @staticmethod
     def from_bytes(raw):
         """Read the message from a byte stream.
 
+        This should only be called if raw[1] == msg_code and len(raw)
+        >= msg_size().
+
         Args:
-           raw   (bytes): The current byte stream to read from.  This
-                 must be at least length 2.
+           raw   (bytes): The current byte stream to read from.
 
         Returns:
-           If an integer is returned, it is the number of bytes
-           remaining to be read before calling from_bytes() again.
-           Otherwise the read message is returned.  This will return
-           either an OutStandard or OutExtended message.
+           Returns the constructed InpAllLinkStatus object.
         """
-        assert len(raw) >= 2
-        assert raw[0] == 0x02 and raw[1] == InpAllLinkStatus.code
-
-        # Make sure we have enough bytes to read the message.
-        if InpAllLinkStatus.msg_size > len(raw):
-            return InpAllLinkStatus.msg_size
+        assert len(raw) >= InpAllLinkStatus.fixed_msg_size
+        assert raw[0] == 0x02 and raw[1] == InpAllLinkStatus.msg_code
 
         is_ack = raw[2] == 0x06
         return InpAllLinkStatus(is_ack)
 
     #-----------------------------------------------------------------------
     def __init__(self, is_ack):
+        """Constructor
+
+        Args:
+          is_ack: (bool) True for ACK, False for NAK.
+        """
         self.is_ack = is_ack
 
     #-----------------------------------------------------------------------

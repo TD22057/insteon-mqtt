@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# PLM->host standard direct message
+# Input insteon all link record message.
 #
 #===========================================================================
 from ..Address import Address
@@ -9,32 +9,31 @@ from .DbFlags import DbFlags
 #===========================================================================
 
 class InpAllLinkRec:
-    """Direct, standard message from PLM->host.
+    """All link database record.
+
+    This is sent from the PLM modem to the host as a response to a
+    record request and is the PLM modem all link database record that
+    was requested.
     """
-    code = 0x57
-    msg_size = 10
+    msg_code = 0x57
+    fixed_msg_size = 10
 
     #-----------------------------------------------------------------------
     @staticmethod
     def from_bytes(raw):
         """Read the message from a byte stream.
 
+        This should only be called if raw[1] == msg_code and len(raw)
+        >= msg_size().
+
         Args:
-           raw   (bytes): The current byte stream to read from.  This
-                 must be at least length 2.
+           raw   (bytes): The current byte stream to read from.
 
         Returns:
-           If an integer is returned, it is the number of bytes
-           remaining to be read before calling from_bytes() again.
-           Otherwise the read message is returned.  This will return
-           either an OutStandard or OutExtended message.
+           Returns the constructed InpAllLinkRec object.
         """
-        assert len(raw) >= 2
-        assert raw[0] == 0x02 and raw[1] == InpAllLinkRec.code
-
-        # Make sure we have enough bytes to read the message.
-        if InpAllLinkRec.msg_size > len(raw):
-            return InpAllLinkRec.msg_size
+        assert len(raw) >= InpAllLinkRec.fixed_msg_size
+        assert raw[0] == 0x02 and raw[1] == InpAllLinkRec.msg_code
 
         flags = DbFlags.from_bytes(raw, 2)
         group = raw[3]
@@ -45,7 +44,16 @@ class InpAllLinkRec:
 
     #-----------------------------------------------------------------------
     def __init__(self, flags, group, addr, data):
+        """Constructor
+
+        Args:
+          flags:  (DbFlags) The database record flags.
+          group:  (int) The group the link is for.
+          addr:   (Address) The address of the device in the link.
+          data:   (bytes) 3 byte data record.
+        """
         assert isinstance(flags, DbFlags)
+        assert len(data) == 3
 
         self.flags = flags
         self.group = group

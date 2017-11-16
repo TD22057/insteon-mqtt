@@ -1,56 +1,65 @@
 #===========================================================================
 #
-# Host->PLM standard direct message
+# Output insteon reset the PLM modem message.
 #
 #===========================================================================
 
 
 class OutResetPlm:
-    """Direct, standard message from host->PLM.
+    """Command to reset the PLM modem.
 
-    When sending, this will be 8 bytes long.  When receiving back from
-    the modem, it will be 9 bytes (8+ack/nak).
+    Send this command to reset the PLM modem.  This is probably a bad
+    idea since it will loose all associations and the software
+    currently doesn't handle this case automatically.
+
+    The modem will respond with an echo/ACK of this message.
     """
-    code = 0x67
-    msg_size = 3
+    msg_code = 0x67
+    fixed_msg_size = 3
 
     #-----------------------------------------------------------------------
     @staticmethod
     def from_bytes(raw):
         """Read the message from a byte stream.
 
+        This should only be called if raw[1] == msg_code and len(raw)
+        >= msg_size().
+
         Args:
-           raw   (bytes): The current byte stream to read from.  This
-                 must be at least length 2.
+           raw   (bytes): The current byte stream to read from.
 
         Returns:
-           If an integer is returned, it is the number of bytes
-           that need to be in the message to finish reading it.
-           Otherwise the read message is returned.  This will return
-           either an OutStandard or OutExtended message.
+           Returns the constructed OutResetPlm object.
         """
-        assert len(raw) >= 2
-        assert raw[0] == 0x02 and raw[1] == OutResetPlm.code
-
-        # Make sure we have enough bytes to read the message.
-        if OutResetPlm.msg_size > len(raw):
-            return OutResetPlm.msg_size
+        assert len(raw) >= OutResetPlm.fixed_msg_size
+        assert raw[0] == 0x02 and raw[1] == OutResetPlm.msg_code
 
         is_ack = raw[2] == 0x06
         return OutResetPlm(is_ack)
 
     #-----------------------------------------------------------------------
     def __init__(self, is_ack=None):
+        """Constructor
+
+        Args:
+          is_ack:  (bool) True for ACK, False for NAK.  None for output
+                   commands to the modem.
+        """
         self.is_ack = is_ack
 
     #-----------------------------------------------------------------------
     def to_bytes(self):
-        return bytes([0x02, self.code])
+        """Convert the message to a byte array.
+
+        Returns:
+           (bytes) Returns the message as bytes.
+        """
+        return bytes([0x02, self.msg_code])
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        # TODO:
-        return ""
+        ack = "" if self.is_ack is None else " ack: %s" % str(self.is_ack)
+        return "OutResetPlm%s" % ack
 
     #-----------------------------------------------------------------------
 

@@ -1,40 +1,36 @@
 #===========================================================================
 #
-# Host->PLM standard direct message
+# Output insteon all link command message.
 #
 #===========================================================================
 
 
 class OutAllLink:
-    """TODO: doc
+    """Send an all link command to a group.
 
-    When sending, this will be 8 bytes long.  When receiving back from
-    the modem, it will be 9 bytes (8+ack/nak).
+    This triggers a PLM modem scene.  Any devices linked to the modem
+    with this group ID will change state.  This basically triggers the
+    virtual scenes that can be defined on the modem.
     """
-    code = 0x61
-    msg_size = 6
+    msg_code = 0x61
+    fixed_msg_size = 6
 
     #-----------------------------------------------------------------------
     @staticmethod
     def from_bytes(raw):
         """Read the message from a byte stream.
 
+        This should only be called if raw[1] == msg_code and len(raw)
+        >= msg_size().
+
         Args:
-           raw   (bytes): The current byte stream to read from.  This
-                 must be at least length 2.
+           raw   (bytes): The current byte stream to read from.
 
         Returns:
-           If an integer is returned, it is the number of bytes
-           that need to be in the message to finish reading it.
-           Otherwise the read message is returned.  This will return
-           either an OutStandard or OutExtended message.
+           Returns the constructed message object.
         """
-        assert len(raw) >= 2
-        assert raw[0] == 0x02 and raw[1] == OutAllLink.code
-
-        # Make sure we have enough bytes to read the message.
-        if OutAllLink.msg_size > len(raw):
-            return OutAllLink.msg_size
+        assert len(raw) >= OutAllLink.fixed_msg_size
+        assert raw[0] == 0x02 and raw[1] == OutAllLink.msg_code
 
         group = raw[2]
         cmd1 = raw[3]
@@ -44,6 +40,15 @@ class OutAllLink:
 
     #-----------------------------------------------------------------------
     def __init__(self, group, cmd1, cmd2, is_ack=None):
+        """Constructor
+
+        Args:
+          group:   (int) The group to send the command for.
+          cmd1:    (int) The command 1 field.
+          cmd2:    (int) The command 2 field.
+          is_ack:  (bool) True for ACK, False for NAK.  None for output
+                   commands to the modem.
+        """
         self.group = group
         self.cmd1 = cmd1
         self.cmd2 = cmd2
@@ -51,7 +56,12 @@ class OutAllLink:
 
     #-----------------------------------------------------------------------
     def to_bytes(self):
-        return bytes([0x02, self.code,
+        """Convert the message to a byte array.
+
+        Returns:
+           (bytes) Returns the message as bytes.
+        """
+        return bytes([0x02, self.msg_code,
                       self.group, self.cmd1, self.cmd2])
 
     #-----------------------------------------------------------------------

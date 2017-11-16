@@ -1,42 +1,42 @@
 #===========================================================================
 #
-# PLM->host standard direct message
+# Input insteon user factory reset message.
 #
 #===========================================================================
 
 
 class InpUserReset:
-    """TODO
+    """User reset the PLM modem.
+
+    This is sent from the PLM modem to the host when the user does a
+    factory reset on the modem.
     """
-    code = 0x55
-    msg_size = 2
+    msg_code = 0x55
+    fixed_msg_size = 2
 
     #-----------------------------------------------------------------------
     @staticmethod
     def from_bytes(raw):
         """Read the message from a byte stream.
 
+        This should only be called if raw[1] == msg_code and len(raw)
+        >= msg_size().
+
         Args:
-           raw   (bytes): The current byte stream to read from.  This
-                 must be at least length 2.
+           raw   (bytes): The current byte stream to read from.
 
         Returns:
-           If an integer is returned, it is the number of bytes
-           remaining to be read before calling from_bytes() again.
-           Otherwise the read message is returned.  This will return
-           either an OutStandard or OutExtended message.
+           Returns the constructed message object.
         """
-        assert len(raw) >= 2
-        assert raw[0] == 0x02 and raw[1] == InpUserReset.code
-
-        # Make sure we have enough bytes to read the message.
-        if InpUserReset.msg_size > len(raw):
-            return InpUserReset.msg_size
+        assert len(raw) >= InpUserReset.fixed_msg_size
+        assert raw[0] == 0x02 and raw[1] == InpUserReset.msg_code
 
         return InpUserReset()
 
     #-----------------------------------------------------------------------
     def __init__(self):
+        """Constructor
+        """
         pass
 
     #-----------------------------------------------------------------------

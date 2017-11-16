@@ -1,57 +1,61 @@
 #===========================================================================
 #
-# PLM->host standard direct message
+# Input insteon standard and extended message.
 #
 #===========================================================================
 import io
 from ..Address import Address
 from .Flags import Flags
 
-#===========================================================================
 
 class InpStandard:
-    """Direct, standard message from PLM->host.
+    """Direct, standard message.
+
+    This is sent from the PLM modem to the host when various
+    conditions happen.  Standard messages are general purpose - they
+    can contain a lot of different data and it's up to the message
+    handler to interpret the results.
     """
-    code = 0x50
-    msg_size = 11
+    msg_code = 0x50
+    fixed_msg_size = 11
 
     #-----------------------------------------------------------------------
     @staticmethod
     def from_bytes(raw):
         """Read the message from a byte stream.
 
+        This should only be called if raw[1] == msg_code and len(raw)
+        >= msg_size().
+
         Args:
-           raw   (bytes): The current byte stream to read from.  This
-                 must be at least length 2.
+           raw   (bytes): The current byte stream to read from.
 
         Returns:
-           If an integer is returned, it is the number of bytes
-           remaining to be read before calling from_bytes() again.
-           Otherwise the read message is returned.  This will return
-           either an OutStandard or OutExtended message.
+           Returns the constructed message object.
         """
-        assert len(raw) >= 2
-        assert raw[0] == 0x02 and raw[1] == InpStandard.code
-
-        # Make sure we have enough bytes to read the message.
-        if InpStandard.msg_size > len(raw):
-            return InpStandard.msg_size
+        assert len(raw) >= InpStandard.fixed_msg_size
+        assert raw[0] == 0x02 and raw[1] == InpStandard.msg_code
 
         # Read the message flags first to see if we have an extended
         # message.  If we do, make sure we have enough bytes.
-        flags = Flags.from_bytes(raw, 8)
-        if flags.is_ext:
-            if InpExtended.msg_size > len(raw):
-                return InpExtended.msg_size
-
         from_addr = Address.from_bytes(raw, 2)
         to_addr = Address.from_bytes(raw, 5)
+        flags = Flags.from_bytes(raw, 8)
         cmd1 = raw[9]
         cmd2 = raw[10]
         return InpStandard(from_addr, to_addr, flags, cmd1, cmd2)
 
     #-----------------------------------------------------------------------
     def __init__(self, from_addr, to_addr, flags, cmd1, cmd2):
+        """Constructor
+
+        Args:
+          from_addr:  (Address) The from device address.
+          to_addr:    (Address) The to device address.
+          flags:      (Flags) The message flags.
+          cmd1:       (int) The command 1 byte.
+          cmd2:       (int) The command 2 byte.
+        """
         assert isinstance(flags, Flags)
 
         self.from_addr = from_addr
@@ -81,31 +85,30 @@ class InpStandard:
 #===========================================================================
 class InpExtended:
     """Direct, extended message from PLM->host.
+
+    The extended message is used by specialized devices to report
+    state as well as when a device reports it's all link database
+    records.
     """
-    code = 0x51
-    msg_size = 25
+    msg_code = 0x51
+    fixed_msg_size = 25
 
     #-----------------------------------------------------------------------
     @staticmethod
     def from_bytes(raw):
         """Read the message from a byte stream.
 
+        This should only be called if raw[1] == msg_code and len(raw)
+        >= msg_size().
+
         Args:
-           raw   (bytes): The current byte stream to read from.  This
-                 must be at least length 2.
+           raw   (bytes): The current byte stream to read from.
 
         Returns:
-           If an integer is returned, it is the number of bytes
-           remaining to be read before calling from_bytes() again.
-           Otherwise the read message is returned.  This will return
-           either an OutStandard or OutExtended message.
+           Returns the constructed OutStandard or OutExtended object.
         """
-        assert len(raw) >= 2
-        assert raw[0] == 0x02 and raw[1] == InpExtended.code
-
-        # Make sure we have enough bytes to read the message.
-        if InpExtended.msg_size > len(raw):
-            return InpExtended.msg_size
+        assert len(raw) >= InpExtended.fixed_msg_size
+        assert raw[0] == 0x02 and raw[1] == InpExtended.msg_code
 
         from_addr = Address.from_bytes(raw, 2)
         to_addr = Address.from_bytes(raw, 5)
@@ -117,6 +120,18 @@ class InpExtended:
 
     #-----------------------------------------------------------------------
     def __init__(self, from_addr, to_addr, flags, cmd1, cmd2, data):
+        """Constructor
+
+        Args:
+          from_addr:  (Address) The from device address.
+          to_addr:    (Address) The to device address.
+          flags:      (Flags) The message flags.
+          cmd1:       (int) The command 1 byte.
+          cmd2:       (int) The command 2 byte.
+          data:       (bytes) 14 byte extended data array.
+        """
+        assert len(data) == 14
+
         self.from_addr = from_addr
         self.to_addr = to_addr
         self.flags = flags

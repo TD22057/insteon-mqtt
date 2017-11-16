@@ -93,7 +93,7 @@ class Flags:
         """Convert to bytes.
 
         The inverse of this is Flags.from_bytes().  This is used to
-        parse the flags from the raw serial byte.
+        output the flags as bytes.
 
         Returns:
            (bytes) Returns a 1 byte array containing the bit flags.

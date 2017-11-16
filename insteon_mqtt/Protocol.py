@@ -138,20 +138,17 @@ class Protocol:
                 self._buf = self._buf[2:]
                 continue
 
-            # Try and read the message - if we get back an int, it's
-            # the number of bytes we need to have before proceeding.
-            # Future enhancement is to retain that and skip directly
-            # here when we have that many bytes.  Current system works
-            # fine but is inefficient since it tries to read over and
-            # over again.
-            msg = msg_class.from_bytes(self._buf)
-            if isinstance(msg, int):
+            # See if we have enough bytes to read the message.  If
+            # not, wait until more data is read.
+            msg_size = msg_class.msg_size(self._buf)
+            if len(self._buf) < msg_size:
                 break
 
-            # We read a message type.  Move the buffer forward to the
-            # end of the message.
+            # Read the message and move the buffer forward.
+            msg = msg_class.from_bytes(self._buf)
+            self._buf = self._buf[msg_size:]
+
             LOG.info("Read %#04x: %s", msg_type, msg)
-            self._buf = self._buf[msg.msg_size:]
 
             # And process the message using the handlers.
             self._process_msg(msg)
@@ -197,7 +194,8 @@ class Protocol:
         # code and look for more messages.  This might be better
         # by having a lookup by msg ID->msg size and use that to
         # skip the whole message.
-        LOG.warning("No read handler found for message type %#04x", msg.code)
+        LOG.warning("No read handler found for message type %#04x",
+                    msg.msg_code)
 
     #-----------------------------------------------------------------------
     def _write_finished(self):
