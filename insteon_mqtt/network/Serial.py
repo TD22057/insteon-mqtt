@@ -12,7 +12,7 @@ from .. import Signal
 LOG = logging.getLogger(__name__)
 
 
-class Serial (Link):
+class Serial(Link):
     """Serial network link.
 
     This class reads and writes to a serial connection using the
@@ -84,7 +84,7 @@ class Serial (Link):
         Args:
           config:   (dict) Configuration data to load.
         """
-        assert(self._fd is None)
+        assert self._fd is None
 
         self._port = config.get('port', self._port)
         self._baudrate = config.get('baudrate', self._baudrate)
@@ -99,7 +99,7 @@ class Serial (Link):
         Returns:
           (int) Returns the descriptor (obj.fileno() usually) to monitor.
         """
-        assert(self._fd)
+        assert self._fd
         return self._fd
 
     #-----------------------------------------------------------------------
@@ -261,7 +261,7 @@ class Serial (Link):
           link:        (Link) Ourselves.
           connected:   (bool) True if the device is connected.
         """
-        assert(self == link)
+        assert self == link
 
         # If there are message waiting to send, emit the signal now
         # that we are connected.

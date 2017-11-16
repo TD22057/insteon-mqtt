@@ -45,26 +45,26 @@ class Manager:
 
     #-----------------------------------------------------------------------
     def __init__(self):
-       """Constructor.
-       """
-       # List of file descriptors to look at for reading, writing, and
-       # error.s
-       self.read = []
-       self.write = []
-       self.error = []
+        """Constructor.
+        """
+        # List of file descriptors to look at for reading, writing, and
+        # error.s
+        self.read = []
+        self.write = []
+        self.error = []
 
-       # Map of filno to Link objects.
-       self.links = {}
+        # Map of filno to Link objects.
+        self.links = {}
 
-       # List of unconnected link tuples (Link, time) where time is
-       # the time is the next time to try reconnecting the linnk.
-       self.unconnected = []
+        # List of unconnected link tuples (Link, time) where time is
+        # the time is the next time to try reconnecting the linnk.
+        self.unconnected = []
 
-       # Time out to use when trying to reconnect links.
-       self.unconnected_time_out = 1.0  # sec
+        # Time out to use when trying to reconnect links.
+        self.unconnected_time_out = 1.0  # sec
 
     #-----------------------------------------------------------------------
-    def active( self ):
+    def active(self):
         """Returns non-zero if the link has active links or
            unconnected links.
         """
@@ -128,7 +128,7 @@ class Manager:
         link.signal_needs_write.disconnect(self.link_needs_write)
 
         self.read.remove(fd)
-        self.errors.remove(fd)
+        self.error.remove(fd)
         if fd in self.write:
             self.write.remove(fd)
         self.links.pop(fd, None)
@@ -176,10 +176,10 @@ class Manager:
             try:
                 reads, writes, errors = select.select(self.read, self.write,
                                                       self.error, time_out)
-            except select.error as err:
+            except OSError as err:
                 # This error can occur sometimes when using a timeout.
                 # It should be ignored and the poll retried.
-                if err[0] != errno.EINTR:
+                if err.errno != errno.EINTR:
                     raise
             else:
                 break

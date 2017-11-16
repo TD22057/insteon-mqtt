@@ -10,7 +10,7 @@ from .. import Signal
 
 LOG = logging.getLogger(__name__)
 
-class Mqtt (Link):
+class Mqtt(Link):
     """MQTT client link.
 
     This class bridges an MQTT client (paho-mqtt library) and the
@@ -79,7 +79,7 @@ class Mqtt (Link):
         Args:
           config:   (dict) Configuration data to load.
         """
-        assert(not self.connected)
+        assert not self.connected
 
         self.host = config['broker']
         self.port = config['port']
@@ -140,7 +140,7 @@ class Mqtt (Link):
         Returns:
           (int) Returns the descriptor (obj.fileno() usually) to monitor.
         """
-        assert(self._fd)
+        assert self._fd
         return self._fd
 
     #-----------------------------------------------------------------------

@@ -81,8 +81,8 @@ class Address:
         # Error if: no address is input, or not both addr2 and addr3
         # are input.
         if (addr is None or
-            (addr is not None and addr2 is not None and addr3 is None) or
-            (addr is not None and addr2 is None and addr3 is not None)):
+                (addr is not None and addr2 is not None and addr3 is None) or
+                (addr is not None and addr2 is None and addr3 is not None)):
             msg = "Error trying to parse an Insteon address.  The input " \
                   "can be a single integer, string, or 3 bytes or " \
                   "strings.  Inputs: %s, %s, %s" % (addr, addr2, addr3)

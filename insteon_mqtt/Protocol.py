@@ -201,7 +201,7 @@ class Protocol:
 
     #-----------------------------------------------------------------------
     def _write_finished(self):
-        assert(self._write_data)
+        assert self._write_data
 
         self._write_data = None
         if self._write_queue:

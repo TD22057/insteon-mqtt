@@ -168,10 +168,10 @@ class Manager:
             try:
                 # events = (fileno, bit flags) of the actions.
                 events = self.poll.poll(1000*time_out)  # sec->msec
-            except select.error as err:
+            except OSError as err:
                 # This error can occur sometimes when using a timeout.
                 # It should be ignored and the poll retried.
-                if err[0] != errno.EINTR:
+                if err.errno != errno.EINTR:
                     raise
             else:
                 break

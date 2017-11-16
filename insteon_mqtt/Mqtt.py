@@ -124,7 +124,7 @@ class Mqtt:
     #-----------------------------------------------------------------------
     def _handle_cmd(self, topic, payload):
         try:
-            elem = msg.payload.split(" ")
+            elem = payload.split(" ")
             cmd = elem[0]
             data = "".join(elem[1:]).strip()
 

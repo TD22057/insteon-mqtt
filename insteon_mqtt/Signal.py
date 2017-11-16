@@ -32,7 +32,7 @@ class Signal:
     #-----------------------------------------------------------------------
     def emit(self, *args, **kwargs):
         """Emit the signal.
-        
+
         All of the connected slots will be called with the input args
         and kwargs.
 
@@ -50,7 +50,7 @@ class Signal:
                 slot(*args, **kwargs)
             else:
                 del self.slots[i]
-            
+
     #-----------------------------------------------------------------------
     def connect(self, slot):
         """Connect a slot to the signal.
@@ -103,4 +103,3 @@ class Signal:
     #-----------------------------------------------------------------------
 
 #===========================================================================
-        

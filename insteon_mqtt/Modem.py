@@ -47,7 +47,7 @@ class Modem:
 
         if data.get('startup_refresh', False) is True:
             LOG.info("Starting device refresh")
-            for id, device in self.devices.items():
+            for device in self.devices.values():
                 device.refresh()
 
     #-----------------------------------------------------------------------
@@ -111,7 +111,7 @@ class Modem:
             print("============")
             self.save_db()
         else:
-            assert(isinstance(msg, Msg.InpAllLinkRec))
+            assert isinstance(msg, Msg.InpAllLinkRec)
             if not msg.flags.in_use:
                 LOG.info("Ignoring modem db record in_use = False")
                 return
@@ -125,7 +125,7 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def remove(self, device):
-        del devices[device.addr.id]
+        del self.devices[device.addr.id]
         # db files?
 
     #-----------------------------------------------------------------------
@@ -165,7 +165,7 @@ class Modem:
         """
         device_map = {}
         for entry in data:
-            assert(len(entry) == 1)
+            assert len(entry) == 1
 
             type = next(iter(entry))
             ctor = config.find(type)
