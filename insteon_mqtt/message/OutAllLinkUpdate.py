@@ -34,6 +34,10 @@ class OutAllLinkUpdate:
         This should only be called if raw[1] == msg_code and len(raw)
         >= msg_size().
 
+        You cannot pass the output of to_bytes() to this.  to_bytes()
+        is used to output to the PLM but the modem sends back the same
+        message with an extra ack byte which this function can read.
+
         Args:
            raw   (bytes): The current byte stream to read from.
 
