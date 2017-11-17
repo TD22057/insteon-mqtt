@@ -30,7 +30,7 @@ Things remaining to do:
 - user documentation (github)
 - unit tests
 - more devices: mini-remotes, door sensors, leak sensors, keypads, thermostats,
-  fanlinks, motion sensors, etc.
+  fanlincs, etc.
 - custom scene creation (PLM modem scenes) and scene triggering
 - simulate device scenes via MQTT (clicking dimmer button)
 - ability to modify the all link database on each device

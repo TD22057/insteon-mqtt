@@ -13,24 +13,23 @@ class Test_util:
         b = bytes([0x01, 0x08, 0xff, 0xa0, 0x0a])
         s = IM.util.to_hex(b)
         rt = "01 08 ff a0 0a"
-        assert(rt == s)
-        
+        assert rt == s
+
     #-----------------------------------------------------------------------
     def test_to_hex_spc(self):
         b = bytes([0x01, 0x08, 0xff, 0xa0, 0x0a])
         s = IM.util.to_hex(b, space='.')
         rt = "01.08.ff.a0.0a"
-        assert(rt == s)
-        
+        assert rt == s
+
     #-----------------------------------------------------------------------
     def test_to_hex_limit(self):
         b = bytes([0x01, 0x08, 0xff, 0xa0, 0x0a])
         s = IM.util.to_hex(b, 3)
         rt = "01 08 ff"
-        assert(rt == s)
-        
+        assert rt == s
+
     #-----------------------------------------------------------------------
-        
+
 
 #===========================================================================
-        
