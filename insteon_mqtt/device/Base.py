@@ -19,17 +19,28 @@ class Base:
 
     This class implements the required API for all devices and handles
     functions that are the same for all devices.
-    """
 
+    The run_command() method is used for arbitrary remote commanding
+    (via MQTT for example).  The input is a dict (or keyword args)
+    containing a 'cmd' key with the value as the command name and any
+    additional arguments needed for the command as other key/value
+    pairs. Valid commands for all devices are:
+
+       getdb:    No arguments.  Download the PLM modem all link database
+                 and save it to file.
+       refresh:  No arguments.  Ping the device and see if the database is
+                 current.  Reloads the modem database if needed.
+    """
     def __init__(self, protocol, modem, address, name):
         """Constructor
 
         Args:
-           protocol:    (Protocol) The Protocol object used to communicate
-                        with the Insteon network.  This is needed to allow
-                        the device to send messages to the PLM modem.
-           address:     (Address) The address of the device.
-           name         (str) Nice alias name to use for the device.
+          protocol:    (Protocol) The Protocol object used to communicate
+                       with the Insteon network.  This is needed to allow
+                       the device to send messages to the PLM modem.
+          modem:       (Modem) The Insteon modem used to find other devices.
+          address:     (Address) The address of the device.
+          name         (str) Nice alias name to use for the device.
         """
         self.protocol = protocol
         self.modem = modem
@@ -37,6 +48,15 @@ class Base:
         self.name = name
         self.save_path = None  # set by the modem loading method
         self.db = db.Device()
+
+        # Remove (mqtt) commands mapped to methods calls.  These are
+        # handled in run_command().  Derived classes can add more
+        # commands to the dict to expand the list.  Commands should
+        # all be lower case (inputs are lowered).
+        self.cmd_map = {
+            'getdb' : self.get_db,
+            'refresh' : self.refresh,
+            }
 
         # Device database delta.  The delta tells us if the database
         # is current.  The only way to get this is by sending a
@@ -148,19 +168,26 @@ class Base:
           refresh:  No arguments.  Ping the device and see if the database is
                     current.  Reloads the modem database if needed.
         """
-        cmd = kwargs.get('cmd', None)
+        cmd = kwargs.pop('cmd', None).lower().strip()
         if not cmd:
-            LOG.error("Invalid command sent to modem.  No 'cmd' keyword: %s",
-                      kwargs)
+            LOG.error("Invalid command sent to device %s '%s'.  No 'cmd' "
+                      "keyword: %s", self.addr, self.name, kwargs)
             return
 
-        if cmd == 'getdb':
-            self.get_db()
-        elif cmd == 'refresh':
-            self.refresh()
-        else:
-            LOG.error("Unknown modem command '%s'.  Valid commands are: "
-                      "'getdb', 'refresh'", cmd)
+        func = self.cmd_map.get(cmd, None)
+        if not func:
+            LOG.error("Invalid command sent to device %s '%s'.  Input cmd "
+                      "'%s' not valid.  Valid commands: %s", self.addr,
+                      self.name, cmd, self.cmd_map.keys())
+            return
+
+        # Call the command function with any remaining arguments.
+        try:
+            func(**kwargs)
+        except:
+            LOG.exception("Invalid command inputs to device %s '%s'.  Input "
+                          "cmd %s with args: %s", self.addr, self.name, cmd,
+                          str(kwargs))
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
@@ -173,6 +200,9 @@ class Base:
         Most derived devices should override this to handle the devie
         state an dthen call this method to check the all link
         database.
+
+        Args:
+          msg:  (message.InpStandard) The refresh message reply.
         """
         # All link database delta is stored in cmd1 so we if we have
         # the latest version.  If not, schedule an update.
@@ -205,7 +235,6 @@ class Base:
 
         Args:
           msg:   (InptStandard) Broadcast message from the device.
-
         """
         responders = self.db.find_group(msg.group)
         LOG.debug("Found %s responders in group %s", len(responders), msg.group)
@@ -253,7 +282,6 @@ class Base:
           msg:   (message.Msg.InpExtended) Extended message that contains
                  the device database entry.  This is passed to db.Device.add()
                  to parse the message.
-
         """
         # New record - add it to the device database.
         if msg is not None:
