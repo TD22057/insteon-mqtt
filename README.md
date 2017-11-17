@@ -13,7 +13,8 @@ features and devices.
 
 This is currently under development.  Here's what works so far:
 
-- basic Insteon devices (dimmers, on/off modules, modem, smoke bridge)
+- basic Insteon devices (dimmers, on/off modules, modem, smoke bridge,
+  motion sensors)
 - download all link database (scenes) from each device and store locally
 - refresh device state on startup and download all link database if changes
   occurred.
@@ -27,7 +28,6 @@ This is currently under development.  Here's what works so far:
 Things remaining to do:
 
 - user documentation (github)
-- code comments + sphinx html docs
 - unit tests
 - more devices: mini-remotes, door sensors, leak sensors, keypads, thermostats,
   fanlinks, motion sensors, etc.
@@ -43,15 +43,17 @@ Things remaining to do:
 - MQTT payload templates.
 - yaml config validator  (voluptuous like HA?)
 
+
 ## Setup
 
 Create a virtual env with Python 3 (I happen to use miniconda for
 this) and install the dependencies from requirements.txt.
 
-Edit the config.yaml file and list the Insteon devices by type and
-address.  There is no automatic device discovery.  Devices must be
-linked both ways (as a controller and responder) to the PLM modem
-(this will not be required in the final version).
+Edit the config.yaml file and list the Insteon devices you have by
+type and address.  There is no automatic device discovery at this
+time.  Devices must already be linked both ways (as a controller and
+responder) with the PLM modem (this will not be required in the final
+version).
 
 Set the startup_refresh input to True in config.yaml and run the
 run.py script.  Subscribe to the topic's defined in the config.yaml
@@ -68,17 +70,137 @@ send out an MQTT message.
 
 ## Supported Devices
 
+These examples assume the state reporting topic is 'inteon/state' and
+the input command topic is 'insteon/set' (those can be changed in the
+configuration file).  Device addresses are AA.BB.CC which are the 6
+digit hex device address codes.  Address can be input spaces, commas,
+or decimal separators and are case insensitive.
+
+All devices support the following commands:
+  - 'refresh' will ping the device, update the device's internal state
+    (on level, on/off, etc) and check the all link database for
+    changes.
+  - 'getdb' will cause the device to re-download it's all link database.
+
+
 ### Dimmers
 
-TODO: setup, MQTT commands
+Configuration file setup for a dimmer:
+
+```
+    - dimmer:
+        name: "switch 1"
+        address: 48.3d.46
+```
+
+State change messages get published whenever the device changes state.
+
+```
+   Topic: insteon/state/AA.BB.CC
+   Payload: { 'level' : LEVEL }
+```
+
+Input commands can be sent to this package to change the dimmer.
+
+```
+   Topic: insteon/set/AA.BB.CC
+   Payload:
+      'ON' or 'OFF'
+      'UP' or 'DOWN'
+      { 'cmd' : 'set', 'level' : LEVEL }
+      'refresh'
+      'getdb'
+```
+
 
 ### On/Off Modules
 
-TODO: setup, MQTT commands, motion sensors
+Configuration file setup for an on/off module:
+
+```
+    - on_off:
+        name: "switch 1"
+        address: 48.3d.46
+```
+
+State change messages get published whenever the device changes state.
+
+```
+   Topic: insteon/state/AA.BB.CC
+   Payload: 'ON' or 'OFF'
+```
+
+Input commands can be sent to this package to change the device state.
+
+```
+   Topic: insteon/set/AA.BB.CC
+   Payload:
+      'ON' or 'OFF'
+      'refresh'
+      'getdb'
+```
+
+
+### Motion Sensors
+
+
+Configuration file setup for an on/off module:
+
+```
+    - motion:
+        name: "Front door"
+        address: 48.3d.46
+```
+
+State change messages get published whenever the device changes state.
+
+```
+   Topic: insteon/state/AA.BB.CC
+   Payload: 'ON' or 'OFF'
+```
+
+Input commands can be sent to this package to change the device state.
+These commands only work if the device is awake (recently triggered or
+in all link mode) since batter operated devices do not listen for
+arbitrary input commands.
+
+```
+   Topic: insteon/set/AA.BB.CC
+   Payload:
+      'refresh'
+      'getdb'
+```
+
 
 ### Smoke Bridge
 
-TODO: setup, limitations, linking
+
+Configuration file setup for a smoke bridge module:
+
+```
+    - smoke_bridge:
+        name: "Smoke"
+        address: 48.3d.46
+```
+
+State change messages get published whenever the device changes state.
+The condition string will be one of: 'smoke', 'CO', 'test', 'clear',
+'low battery', 'error', 'heartbeat'.
+
+```
+   Topic: insteon/state/AA.BB.CC
+   Payload: { 'condition' : CONDITION }
+```
+
+Input commands can be sent to this package to change the device state.
+
+```
+   Topic: insteon/set/AA.BB.CC
+   Payload:
+      'refresh'
+      'getdb'
+```
+
 
 
 ## Thanks

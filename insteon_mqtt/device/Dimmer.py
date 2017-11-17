@@ -56,7 +56,7 @@ class Dimmer(Base):
     """
 
     on_codes = [0x11, 0x12, 0x21, 0x23]  # on, fast on, instant on, manual on
-    off_codes = [0x13, 0x14, 0x22]  # off, fast off, isntant off
+    off_codes = [0x13, 0x14, 0x22]  # off, fast off, instant off
 
     def __init__(self, protocol, modem, address, name):
         """Constructor
@@ -69,7 +69,7 @@ class Dimmer(Base):
           address:     (Address) The address of the device.
           name         (str) Nice alias name to use for the device.
         """
-        super().__init__(self, protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name)
 
         # Current dimming level. 0x00 -> 0xff
         self._level = None

@@ -52,7 +52,7 @@ class OnOff(Base):
                  True or False to change state instantly (default=False).
     """
     on_codes = [0x11, 0x12, 0x21, 0x23]  # on, fast on, instant on, manual on
-    off_codes = [0x13, 0x14, 0x22]  # off, fast off, isntant off
+    off_codes = [0x13, 0x14, 0x22]  # off, fast off, instant off
 
     def __init__(self, protocol, modem, address, name=None):
         """Constructor

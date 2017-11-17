@@ -192,18 +192,21 @@ class Mqtt:
         # specific stuff in the insteon devices but it would be nice
         # not to code up special cases for each here either.
 
-        # Connect a callback for devices that report brightness.
-        if hasattr(device, "signal_level_changed"):
+        # On/off devices.
+        if hasattr(device, "signal_active"):
+            device.signal_active.connect(self._active)
+
+        # Dimmer devices.
+        elif hasattr(device, "signal_level_changed"):
             LOG.info("MQTT adding level changed device %s '%s'", device.addr,
                      device.name)
 
             device.signal_level_changed.connect(self._level_changed)
 
+        # Smoke bridge special case.
         elif isinstance(device, Dev.SmokeBridge):
             device.signal_state_change.connect(self._smoke_bridge)
 
-        elif hasattr(device, "signal_active"):
-            device.signal_active.connect(self._active)
 
     #-----------------------------------------------------------------------
     def _level_changed(self, device, level):
