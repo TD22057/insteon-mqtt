@@ -5,26 +5,24 @@
 #===========================================================================
 import logging
 from .Base import Base
-from ..Address import Address
 from .. import handler
 from .. import message as Msg
 from .. import Signal
 
 LOG = logging.getLogger(__name__)
 
-class OnOff (Base):
+class OnOff(Base):
     def __init__(self, protocol, modem, address, name=None):
         super().__init__(protocol, modem, address, name)
         # 0x00 for off or 0xff for on
-        self._level = 0x00 
+        self._level = 0x00
 
         self.signal_level_changed = Signal.Signal()
 
     #-----------------------------------------------------------------------
     def pair(self):
-        LOG.info( "Dimmer %s pairing with modem", self.addr)
+        LOG.info("Dimmer %s pairing with modem", self.addr)
         # TODO: pair with modem
-        pass
 
     #-----------------------------------------------------------------------
     def is_on(self):
@@ -36,7 +34,7 @@ class OnOff (Base):
 
     #-----------------------------------------------------------------------
     def on(self, instant=False):
-        LOG.info( "OnOff %s cmd: on", self.addr)
+        LOG.info("OnOff %s cmd: on", self.addr)
 
         cmd1 = 0x11 if not instant else 0x21
         msg = Msg.OutStandard.direct(self.addr, cmd1, 0xff)
@@ -44,7 +42,7 @@ class OnOff (Base):
 
     #-----------------------------------------------------------------------
     def off(self, instant=False):
-        LOG.info( "OnOff %s cmd: off", self.addr)
+        LOG.info("OnOff %s cmd: off", self.addr)
 
         cmd1 = 0x13 if not instant else 0x21
         msg = Msg.OutStandard.direct(self.addr, cmd1, 0x00)
@@ -70,29 +68,29 @@ class OnOff (Base):
 
         else:
             Base.run_command(self, **kwargs)
-        
+
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
         # ACK of the broadcast - ignore this.
         if msg.cmd1 == 0x06:
-            LOG.info( "OnOff %s broadcast ACK grp: %s", self.addr, msg.group)
+            LOG.info("OnOff %s broadcast ACK grp: %s", self.addr, msg.group)
             return
 
         # On command.  How do we tell the level?  It's not in the
         # message anywhere.
         elif msg.cmd1 == 0x11:
-            LOG.info( "OnOff %s broadcast ON grp: %s", self.addr, msg.group)
+            LOG.info("OnOff %s broadcast ON grp: %s", self.addr, msg.group)
             self._set_level(0xff)
-            
+
         # Off command.
         elif msg.cmd1 == 0x13:
-            LOG.info( "OnOff %s broadcast OFF grp: %s", self.addr, msg.group)
+            LOG.info("OnOff %s broadcast OFF grp: %s", self.addr, msg.group)
             self._set_level(0x00)
-        
+
         # Call handle_broadcast for any device that we're the
         # controller of.
         Base.handle_broadcast(self, msg)
-        
+
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
         LOG.debug("OnOff %s refresh message: %s", self.addr, msg)
@@ -118,7 +116,7 @@ class OnOff (Base):
             return
 
         cmd = msg.cmd1
-        
+
         # 0x11: on, 0x12: on fast
         if cmd == 0x11 or cmd == 0x12:
             self._set_level(entry.on_level)
@@ -129,11 +127,11 @@ class OnOff (Base):
 
         else:
             LOG.warning("OnOff %s unknown group cmd %#04x", self.addr, cmd)
-        
+
     #-----------------------------------------------------------------------
     def _set_level(self, level):
         LOG.info("Setting device %s '%s' level %s", self.addr, self.name, level)
         self._level = 0x00 if not level else 0xff
         self.signal_level_changed.emit(self, self._level)
-        
+
     #-----------------------------------------------------------------------

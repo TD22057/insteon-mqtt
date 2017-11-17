@@ -6,14 +6,14 @@
 #===========================================================================
 import logging
 from .Base import Base
-from ..Address import Address
 from .. import handler
 from .. import message as Msg
 from .. import Signal
 
 LOG = logging.getLogger(__name__)
 
-class Dimmer (Base):
+
+class Dimmer(Base):
     """Insteon dimmer device.
 
     This includes any device that acts like a dimmer including wall
@@ -61,8 +61,8 @@ class Dimmer (Base):
 
     #-----------------------------------------------------------------------
     def on(self, level=0xFF, instant=False):
-        LOG.info( "Dimmer %s cmd: on %s", self.addr, level)
-        assert(level >= 0 and level <= 0xff)
+        LOG.info("Dimmer %s cmd: on %s", self.addr, level)
+        assert level >= 0 and level <= 0xff
 
         # Send an on or instant on command.
         cmd1 = 0x11 if not instant else 0x21
@@ -77,7 +77,7 @@ class Dimmer (Base):
 
     #-----------------------------------------------------------------------
     def off(self, instant=False):
-        LOG.info( "Dimmer %s cmd: off", self.addr)
+        LOG.info("Dimmer %s cmd: off", self.addr)
 
         # Send an off or instant off command.
         cmd1 = 0x13 if not instant else 0x21
@@ -92,31 +92,31 @@ class Dimmer (Base):
 
     #-----------------------------------------------------------------------
     def incrementUp(self):
-        LOG.info( "Dimmer %s cmd: increment up", self.addr)
-        
+        LOG.info("Dimmer %s cmd: increment up", self.addr)
+
         msg = Msg.OutStandard.direct(self.addr, 0x15, 0x00)
         msg_handler = handler.StandardCmd(msg, self.handle_ack)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def incrementDown(self):
-        LOG.info( "Dimmer %s cmd: increment down", self.addr)
-        
+        LOG.info("Dimmer %s cmd: increment down", self.addr)
+
         msg = Msg.OutStandard.direct(self.addr, 0x16, 0x00)
         msg_handler = handler.StandardCmd(msg, self.handle_ack)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def manualStartUp(self):
-        LOG.info( "Dimmer %s cmd: manual start up", self.addr)
-        
+        LOG.info("Dimmer %s cmd: manual start up", self.addr)
+
         msg = Msg.OutStandard.direct(self.addr, 0x17, 0x01)
         msg_handler = handler.StandardCmd(msg, self.handle_ack)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def manualStartDown(self):
-        LOG.info( "Dimmer %s cmd: manual start down", self.addr)
+        LOG.info("Dimmer %s cmd: manual start down", self.addr)
 
         msg = Msg.OutStandard.direct(self.addr, 0x17, 0x00)
         msg_handler = handler.StandardCmd(msg, self.handle_ack)
@@ -124,8 +124,8 @@ class Dimmer (Base):
 
     #-----------------------------------------------------------------------
     def manualStop(self):
-        LOG.info( "Dimmer %s cmd: manual stop", self.addr)
-        
+        LOG.info("Dimmer %s cmd: manual stop", self.addr)
+
         msg = Msg.OutStandard.direct(self.addr, 0x18, 0x00)
         msg_handler = handler.StandardCmd(msg, self.handle_ack)
         self.protocol.send(msg, msg_handler)
@@ -149,24 +149,24 @@ class Dimmer (Base):
     def handle_broadcast(self, msg):
         # ACK of the broadcast - ignore this.
         if msg.cmd1 == 0x06:
-            LOG.info( "Dimmer %s broadcast ACK grp: %s", self.addr, msg.group)
+            LOG.info("Dimmer %s broadcast ACK grp: %s", self.addr, msg.group)
             return
 
         # On command.  How do we tell the level?  It's not in the
         # message anywhere.
         elif msg.cmd1 == 0x11:
-            LOG.info( "Dimmer %s broadcast ON grp: %s", self.addr, msg.group)
+            LOG.info("Dimmer %s broadcast ON grp: %s", self.addr, msg.group)
             self._set_level(0xff)
-            
+
         # Off command.
         elif msg.cmd1 == 0x13:
-            LOG.info( "Dimmer %s broadcast OFF grp: %s", self.addr, msg.group)
+            LOG.info("Dimmer %s broadcast OFF grp: %s", self.addr, msg.group)
             self._set_level(0x00)
-        
+
         # Call handle_broadcast for any device that we're the
         # controller of.
         Base.handle_broadcast(self, msg)
-        
+
     #-----------------------------------------------------------------------
     def handle_ack(self, msg):
         LOG.debug("Dimmer %s ack message: %s", self.addr, msg)
@@ -193,7 +193,7 @@ class Dimmer (Base):
             return
 
         cmd = msg.cmd1
-        
+
         # 0x11: on, 0x12: on fast
         if cmd == 0x11 or cmd == 0x12:
             self._set_level(entry.on_level)
@@ -215,6 +215,8 @@ class Dimmer (Base):
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
+        # TODO: handle new command
+
         LOG.info("Dimmer command: %s", kwargs)
         if 'level' in kwargs:
             level = int(kwargs.pop('level'))
@@ -235,11 +237,11 @@ class Dimmer (Base):
 
         else:
             Base.run_command(self, **kwargs)
-        
+
     #-----------------------------------------------------------------------
     def _set_level(self, level):
         LOG.info("Setting device %s '%s' level %s", self.addr, self.name, level)
         self._level = level
         self.signal_level_changed.emit(self, self._level)
-        
+
     #-----------------------------------------------------------------------

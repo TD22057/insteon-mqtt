@@ -145,14 +145,18 @@ class Mqtt:
                 LOG.error("Unknown device requested: %s", address)
                 return
 
-            s = payload.lower()
-            if s == b"on":
-                device.run_command(level=0xff)
-            elif s == b"off":
-                device.run_command(level=0)
+            s = payload.strip()
+
+            # Single command input.
+            if '{' not in s:
+                data = { 'cmd' : s }
+
+            # JSON dictionary of command and arguments.
             else:
                 data = json.loads(payload)
-                device.run_command(**data)
+
+            # Run the command
+            device.run_command(**data)
         except:
             LOG.exception("Error running set command %s %s", topic, payload)
 
