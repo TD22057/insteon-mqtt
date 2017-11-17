@@ -70,7 +70,7 @@ class Base:
                  len(self.db))
 
     #-----------------------------------------------------------------------
-    def load_db(self, path):
+    def load_db(self):
         """Load the all link database from a file.
 
         The file is stored in JSON format (by save_db()) and has the

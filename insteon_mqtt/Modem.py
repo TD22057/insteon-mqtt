@@ -354,7 +354,7 @@ class Modem:
             # Load any existing all link database for this device if
             # it exists.
             if self.save_path:
-                device.save_path = save_path
+                device.save_path = self.save_path
                 device.load_db()
 
             # Store the device by ID in the map.
