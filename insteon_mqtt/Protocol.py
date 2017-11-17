@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Insteon modem
+# Insteon Protocol class.  Parses PLM data and writes messages.
 #
 #===========================================================================
 import logging
@@ -14,32 +14,76 @@ class Protocol:
     """Insteon PLM protocol processing class.
 
     This class processes the byte stream that is being read from and
-    written to the Insteon PLM modem.
+    written to the Insteon PLM modem.  It connects to a network/Serial
+    link class which handles the actual reading and writing.
+
+    For input, this class connects to the network.Serial class signals
+    for data being read.  When data is read, it's added to a bytearray
+    and then we search for 0x02 bytes which are the start of an
+    Insteon message.  After that, we look at the message type code
+    byte and search for a message handler to handle the class.  There
+    can be a set of read handlers that are always active for handling
+    messages.
+
+    If a message was written out, it also registers a handler with the
+    message to write.  That write handler is checked first whenever a
+    message comes back in until all the expected replies come in.
+    Then the write handler is removed and the next message in the
+    write queue is sent.
+
+    The types of messages we expected are:
+
+    1) Replies from commands we send to the modem.  For a standard
+       message (8 bytes), we'll get a echo reply w/ ACK/NAK (9 bytes).
+       If this fails, we'll get a 2 byte NAK.  After the ACK, we'll
+       probably also get further messages in.  If we don't wait for
+       these and continue writing messages, the modem won't send them
+       (but will ACK them).  So once we send a message, we need to
+       know what the expected reply is going to be and wait for that.
+
+    2) Inbound messages from modem when a device triggers and sends a
+       message to the modem.  This will be an 11 byte standard message
+       that's a broadcast or broadcast cleanup type message.
+
+    3) Device database reading.  Reading remote db's from a device
+       involves sending one command, getting an ACK, then reading a
+       series of messages (1 per db entry) until we get a final
+       message which ends the sequence.
     """
     def __init__(self, link):
+        """Constructor
+
+        Args:
+          link:   (network.Link) Network Serial link class to use to
+                  communicate with the PLM modem.
+        """
         self.link = link
 
-        # Forward poll() calls from the network stack to ourselves.
+        # Forward poll() calls from the network link to ourselves.
+        # That way we can test for write message time outs periodically.
         self.link.poll = self._poll
 
+        # Connect the link read/write signals to our callback methods.
         link.signal_read.connect(self._data_read)
         link.signal_wrote.connect(self._msg_written)
 
         # Inbound message buffer.
         self._buf = bytearray()
 
-        # Tuple of (msg,handler) which is the queue of messages to
-        # send.  Each message comes with a handler to process
-        # responses.  We have to wait until the handler says that it's
-        # done receiving replies until we can send the next message.
-        # If we write to the modem before that, it basically cancels
-        # the previous action.  When a message is written, it's
-        # handler gets set into _write_handler until that handler says
-        # that's received all the expected replies (or times out).  At
-        # that point we'll write the next message in the queue.
+        # List of WriteData objects.  These contain the message
+        # object, message handler class, the time it was sent, and
+        # when to time out.  Messages from oldest to newest.  The
+        # handlers are used to process responses.  We have to wait
+        # until the handler says that it's done receiving replies
+        # until we can send the next message.  If we write to the
+        # modem before that, it basically cancels the previous action.
+        # When a message is written, it's WriteData object gets set
+        # into _write_data until that handler says that's received all
+        # the expected replies (or times out).  At that point we'll
+        # write the next message in the queue.
         self._write_queue = []
 
-        # MsgData object for the last message written.
+        # WriteData object for the last message written.
         self._write_data = None
 
         # Set of possible message handlers to use.  These are handlers
@@ -49,19 +93,69 @@ class Protocol:
 
     #-----------------------------------------------------------------------
     def add_handler(self, handler):
+        """Add a universal message handler.
+
+        These handlers can handle any message that shows up.  This is
+        normally used for broadcast messages that originate on the
+        network without us writing us commands.
+
+        See the classes in the handler sub-package for examples.
+
+        Args:
+           handler:   (handler) Message handler class to add.
+        """
         self._read_handlers.append(handler)
 
     #-----------------------------------------------------------------------
     def remove_handler(self, handler):
+        """Remove a universal message handler.
+
+        Args:
+           handler:   (handler) Message handler to remove.  If this doesn't
+                      exist, nothing is done.
+        """
         self._read_handlers.pop(handler, None)
 
     #-----------------------------------------------------------------------
     def load_config(self, config):
+        """Load a configuration dictionary.
+
+        This gets passed to the network link (usually network.Serial
+        object) to load any configuration for the modem connection.
+
+        Args:
+          config:   (dict) Configuration data to load.
+        """
         self.link.load_config(config)
 
     #-----------------------------------------------------------------------
     def send(self, msg, msg_handler, time_out=5):
-        self._write_queue.append(MsgData(msg, msg_handler, time_out))
+        """Write a message to the PLM modem.
+
+        If there are no other messages in the queue, the message gets
+        written immediately.  Otherwise the message is added to the
+        write queue and will be written after other messages are
+        finished.
+
+        The handler is responsible for reading replies.  Each handler
+        returns message.UNKNOWN if it can't process the message,
+        message.CONTINUE if the message was handled and more replies
+        are expected, or message.FINISHED if the message was handled
+        and no more replies are expected.
+
+        Arg:
+          msg:          Output message to write.  This should be an
+                        instance of a message in the message directory that
+                        that starts with 'Out'.
+          msg_handler:  Message handler instance to use when replies to the
+                        message are received.  Any message received after we
+                        write out the msg are passed to this handler until
+                        the handler returns the message.FINISHED flags.
+          time_out:     (int) Time in seconds after which we'll delete the
+                        handler as a time out and send any other messages.
+
+        """
+        self._write_queue.append(WriteData(msg, msg_handler, time_out))
 
         # If there is an existing msg that we're processing replies
         # for then delay sending this until we're done.
@@ -70,37 +164,38 @@ class Protocol:
 
     #-----------------------------------------------------------------------
     def _poll(self, t):
+        """Periodic polling function.
+
+        The network stack calls this periodically.  If we have message
+        handler, we'll use this to check for a time out if the correct
+        set of replies hasn't been received yet.
+
+        Args:
+           t:   (float) Current Unix clock time tag.
+        """
         if not self._write_data:
             return
 
+        # Ask the WriteData if it's past the time out in which case
+        # we'll mark this message as finished and move on.
         if self._write_data.expired(t):
             LOG.warning("Message time out: %s", self._write_data.msg)
             self._write_finished()
-            # TODO: maybe send an error message of MQTT?
 
     #-----------------------------------------------------------------------
     def _data_read(self, link, data):
+        """PLM modem data read callback.
+
+        This is called by the network loop when data is read from the
+        modem.  We'll add it to our read buffer and try to find any
+        insteon messages that are in it.
+
+        Args:
+          link:    network.Link The serial connection that read the data.
+          data:    bytes: The data that was read.
+        """
         # Append the read data to the inbound message buffer.
         self._buf.extend(data)
-
-        # Use cases:
-        #
-        # 1) Replies from commands we send to the modem.  For a
-        #    std msg (8 bytes), we'll get a echo reply w/ ACK/NAK (9
-        #    bytes).  If this fails, we'll get a 2 byte NAK.  After
-        #    the ACK, we'll probably also get further messages in.  If
-        #    we don't wait for these and continue writing messages,
-        #    the modem won't send them (but will ACK them).  So once
-        #    we send a message, we need to know what the expected
-        #    reply is going to be and wait for that.
-        #
-        # 2) inbound msg from modem when a device triggers and sends a
-        #    message to the modem.  This will be an 11 byte std msg.
-        #
-        # 3) Device database reading.  Reading remote db's involves
-        #    sending one command, getting an ACK, then reading a series
-        #    of messages (1 per db entry) until we get a final message
-        #    which ends the sequence.
 
         # Keep processing until there are no more messages to handle.
         # There must be at least 2 bytes so we can read the message
@@ -129,7 +224,7 @@ class Protocol:
                 if len(self._buf) < 2:
                     break
 
-            # Messages are 0x02 TYPE so find map the type code to the
+            # Messages are [0x02,TYPE] so find map the type code to the
             # message class we need to use to read it.
             msg_type = self._buf[1]
             msg_class = Msg.types.get(msg_type, None)
@@ -150,11 +245,21 @@ class Protocol:
 
             LOG.info("Read %#04x: %s", msg_type, msg)
 
-            # And process the message using the handlers.
+            # And try to process the message using the handlers.
             self._process_msg(msg)
 
     #-----------------------------------------------------------------------
     def _process_msg(self, msg):
+        """Process a read message by passing it to the handlers.
+
+        If we wrote out a message, we'll try and use the message
+        handler for that message first.  If not or if that handler
+        doesn't understand the message, we'll pass it to the read
+        handlers for processing.
+
+        Args:
+          msg:   Insteon message object to process.
+        """
         # If we have a write handler, then most likely the inbound
         # message is a reply to the write so see if it can handle the
         # message.  If the status is FINISHED, then the handler has
@@ -199,6 +304,13 @@ class Protocol:
 
     #-----------------------------------------------------------------------
     def _write_finished(self):
+        """Message written finished.
+
+        This is called when the write message handler returns
+        message.FINISHED which means all the expected replies have
+        been read.  The write handler is cleared and the next message
+        in the queue is written.
+        """
         assert self._write_data
 
         self._write_data = None
@@ -207,11 +319,21 @@ class Protocol:
 
     #-----------------------------------------------------------------------
     def _msg_written(self, link, data):
-        #LOG.info("Message sent: %s",data)
+        """Message written callback.
+
+        This is called by the network link when the message packet has
+        been written to the modem.
+        """
+        # Currently we don't need to do anything.
         pass
 
     #-----------------------------------------------------------------------
     def _send_next_msg(self):
+        """Send the next message in the write queue.
+
+        This pops off the first message in the queue and sets it into
+        the write_data field for later processing of replies.
+        """
         # Get the next message and handler from the write queue.
         data = self._write_queue.pop(0)
 
@@ -224,24 +346,49 @@ class Protocol:
         # messages.
         self._write_data = data
 
-        # Tell the msg data that we've sent the message.
+        # Tell the msg data that we've sent the message to update the
+        # time out time.
         data.traffic()
 
     #-----------------------------------------------------------------------
 
 
 #===========================================================================
-class MsgData:
+class WriteData:
+    """Output message data.
+
+    Stores the message object, handler, and time out delta time.
+    """
     def __init__(self, msg, handler, time_out):
+        """Constructor
+
+        Args:
+          msg:       Message object to send.
+          handler:   Message handler object to process replies.
+          time_out:  (int) time out in seconds.
+        """
         self.msg = msg
         self.handler = handler
         self.time_out = time_out
         self.expire_time = None
 
     def traffic(self):
+        """Record that valid messages were seen.
+
+        This resets the time out time to record that we saw a valid
+        message.
+        """
         self.expire_time = time.time() + self.time_out
 
     def expired(self, t):
+        """See if the time out time has been exceeded.
+
+        Args:
+          t:  (float) Current time tag as a Unix clock time.
+
+        Returns:
+          Returns True if the message has timed out or False otherwise.
+        """
         return t >= self.expire_time
 
 #===========================================================================

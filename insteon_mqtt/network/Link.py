@@ -76,6 +76,9 @@ class Link:
 
         The manager will call this at recurring intervals in case the
         link needs to do some periodic manual processing.
+
+        Args:
+           t:   (float) Current Unix clock time tag.
         """
         pass
 
