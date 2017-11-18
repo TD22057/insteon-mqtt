@@ -26,6 +26,7 @@ def func_slot(**kwargs):
 
 
 def clear():
+    # pylint: disable=global-statement
     global func_data
     func_data = []
     Slot.static_data = []

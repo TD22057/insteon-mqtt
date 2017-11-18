@@ -9,20 +9,20 @@ import insteon_mqtt.message as Msg
 class Test_DbFlags:
     #-----------------------------------------------------------------------
     def check(self, obj, in_use, is_ctrl, is_high, raw):
-        assert(obj.in_use == in_use)
-        assert(obj.is_controller == is_ctrl)
-        assert(obj.is_responder != obj.is_controller)
-        assert(obj.high_water == is_high)
+        assert obj.in_use == in_use
+        assert obj.is_controller == is_ctrl
+        assert obj.is_responder != obj.is_controller
+        assert obj.high_water == is_high
 
         out = obj.to_bytes()
-        assert(len(out) == 1)
-        assert(out[0] == raw)
+        assert len(out) == 1
+        assert out[0] == raw
 
         d = obj.to_json()
         obj2 = Msg.DbFlags.from_json(d)
-        assert(obj2.in_use == in_use)
-        assert(obj2.is_controller == is_ctrl)
-        assert(obj2.high_water == is_high)
+        assert obj2.in_use == in_use
+        assert obj2.is_controller == is_ctrl
+        assert obj2.high_water == is_high
 
         str(obj)
 
