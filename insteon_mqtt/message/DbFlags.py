@@ -53,7 +53,7 @@ class DbFlags:
         in_use = (b & 0b10000000) >> 7
         is_controller = (b & 0b01000000) >> 6
         # bits 2-5 are unused
-        high_water = (b & 0b00000001) >> 1
+        high_water = (b & 0b00000010) >> 1
         # bit 0 is not needed
 
         return DbFlags(bool(in_use), bool(is_controller), bool(high_water))
