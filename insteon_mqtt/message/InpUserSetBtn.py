@@ -54,11 +54,12 @@ class InpUserSetBtn:
           event:   (int) The event code.  See the class attributes for
                    options.
         """
+        assert event in InpUserSetBtn.events.values()
         self.event = event
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "Set btn: %s" % InpUserSetBtn.events[self.event]
+        return "Set btn: %s" % self.event
 
     #-----------------------------------------------------------------------
 

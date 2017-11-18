@@ -25,6 +25,7 @@ results.
 # Bit level message flags
 from .DbFlags import DbFlags
 from .Flags import Flags
+from .Base import Base
 
 # Messages from PLM modem to the host (codes >= 0x60)
 from .InpAllLinkComplete import InpAllLinkComplete

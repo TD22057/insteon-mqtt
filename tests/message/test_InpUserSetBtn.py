@@ -1,30 +1,19 @@
 #===========================================================================
 #
-# Tests for: insteont_mqtt/message/OutResetPlm.py
+# Tests for: insteont_mqtt/message/InpUserSetBtn.py
 #
 #===========================================================================
 import insteon_mqtt.message as Msg
 import pytest
 
 #===========================================================================
-class Test_OutResetPlm:
-    #-----------------------------------------------------------------------
-    def test_out(self):
-        obj = Msg.OutResetPlm()
-        assert obj.fixed_msg_size == 3
-
-        b = obj.to_bytes()
-        rt = bytes([0x02, 0x67])
-        assert b == rt
-
-        str(obj)
-
+class Test_InpUserSetBtn:
     #-----------------------------------------------------------------------
     def test_in(self):
-        b = bytes([0x02, 0x67, 0x06])
-        obj = Msg.OutResetPlm.from_bytes(b)
+        b = bytes([0x02, 0x54, 0x13])
+        obj = Msg.InpUserSetBtn.from_bytes(b)
 
-        assert obj.is_ack == True
+        assert obj.event == 'BTN2_HOLD'
 
         str(obj)
 

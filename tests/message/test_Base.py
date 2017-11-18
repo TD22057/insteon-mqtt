@@ -1,32 +1,28 @@
 #===========================================================================
 #
-# Tests for: insteont_mqtt/message/OutResetPlm.py
+# Tests for: insteont_mqtt/message/Base.py
 #
 #===========================================================================
 import insteon_mqtt.message as Msg
 import pytest
 
 #===========================================================================
-class Test_OutResetPlm:
+class Test_Base:
     #-----------------------------------------------------------------------
-    def test_out(self):
-        obj = Msg.OutResetPlm()
-        assert obj.fixed_msg_size == 3
+    def test_errors(self):
+        obj = Msg.Base()
 
-        b = obj.to_bytes()
-        rt = bytes([0x02, 0x67])
-        assert b == rt
+        with pytest.raises(NotImplementedError):
+            Msg.Base.from_bytes([])
 
-        str(obj)
+        with pytest.raises(NotImplementedError):
+            obj.msg_size([])
 
-    #-----------------------------------------------------------------------
-    def test_in(self):
-        b = bytes([0x02, 0x67, 0x06])
-        obj = Msg.OutResetPlm.from_bytes(b)
+        obj.fixed_msg_size = 10
+        assert obj.msg_size([]) == 10
 
-        assert obj.is_ack == True
-
-        str(obj)
+        with pytest.raises(NotImplementedError):
+            obj.to_bytes()
 
     #-----------------------------------------------------------------------
 
