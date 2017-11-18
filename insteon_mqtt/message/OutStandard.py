@@ -188,7 +188,7 @@ class OutExtended(OutStandard):
         """
         assert len(data) == 14
 
-        super().__init__(self, to_addr, flags, cmd1, cmd2, is_ack)
+        super().__init__(to_addr, flags, cmd1, cmd2, is_ack)
         self.data = data
 
     #-----------------------------------------------------------------------

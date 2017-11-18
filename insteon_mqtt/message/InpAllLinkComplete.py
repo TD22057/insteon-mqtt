@@ -16,7 +16,7 @@ class InpAllLinkComplete:
     msg_code = 0x53
     fixed_msg_size = 10
 
-    RESPONDER = 0x01
+    RESPONDER = 0x00
     CONTROLLER = 0x01
     DELETE = 0xff
 

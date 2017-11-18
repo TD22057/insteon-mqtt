@@ -52,7 +52,7 @@ class OutAllLinkUpdate:
         group = raw[4]
         addr = Address.from_bytes(raw, 5)
         data = raw[8:11]
-        is_ack = raw[12] == 0x06
+        is_ack = raw[11] == 0x06
         return OutAllLinkUpdate(cmd, flags, group, addr, data, is_ack)
 
     #-----------------------------------------------------------------------
