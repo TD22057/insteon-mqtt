@@ -29,6 +29,18 @@ class ModemEntry:
 
     #-----------------------------------------------------------------------
     def __init__(self, addr, group, is_controller, data):
+        """Constructor
+
+        Args:
+          addr:      (Address) The device address.
+          group:     (int) The group the device is part of.
+          is_controller:   (bool) True if this device is a controller of addr,
+                           False if this device is a responder of addr.
+          data:      (bytes) 3 data bytes.  [0] is the on level, [1] is the
+                     ramp rate.
+        """
+        assert(len(data) == 3)
+
         self.addr = addr
         self.group = group
         self.is_controller = is_controller
@@ -39,6 +51,11 @@ class ModemEntry:
 
     #-----------------------------------------------------------------------
     def to_json(self):
+        """Convert the entry to JSON format.
+
+        Returns:
+          (dict) Returns the entry as a JSON dictionary.
+        """
         return {
             'addr' : self.addr.to_json(),
             'group' : self.group,

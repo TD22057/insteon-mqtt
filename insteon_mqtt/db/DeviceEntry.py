@@ -50,11 +50,10 @@ class DeviceEntry:
         byte array layout.
 
         Args:
-          data:  (bytes) The data byte array from an InpExtended message.
+          data:  (bytes) The data 14 byte array from an InpExtended message.
 
         Returns:
           DeviceEntry: Returns the created DeviceEntry object.
-
         """
         # See p162 of insteon dev guide
         # [0] = unused
@@ -75,9 +74,10 @@ class DeviceEntry:
         Args:
           addr:    (Address) The address of the device in the database.
           group:   (int) The group the entry is for.
-          mem_loc:
-          ctrl:
-          data:
+          mem_loc: (int) The memory address location of the record.
+          ctrl:    (message.DbFlags) The db controler record flags.
+          data:    (bytes) 3 data bytes.  [0] is the on level, [1] is the
+                   ramp rate.
         """
         self.addr = addr
         self.group = group
@@ -89,12 +89,22 @@ class DeviceEntry:
 
     #-----------------------------------------------------------------------
     def mem_bytes(self):
+        """Return the memory location as a byte array.
+
+        Returns:
+          (bytes) Returns the record memory location as a 2 byte array.
+        """
         high = (self.mem_loc & 0xFF00) >> 8
         low = (self.mem_loc & 0x00FF) >> 0
         return bytes([high, low])
 
     #-----------------------------------------------------------------------
     def to_json(self):
+        """Convert the entry to JSON format.
+
+        Returns:
+          (dict) Returns the entry as a JSON dictionary.
+        """
         return {
             'addr' : self.addr.to_json(),
             'group' : self.group,

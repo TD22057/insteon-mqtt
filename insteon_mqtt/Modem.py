@@ -312,7 +312,7 @@ class Modem:
                 LOG.info("Ignoring modem db record in_use = False")
                 return
 
-            self.db.add(msg)
+            self.db.handle_db_rec(msg)
 
     #-----------------------------------------------------------------------
     def _load_devices(self, data):

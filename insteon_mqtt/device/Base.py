@@ -282,12 +282,12 @@ class Base:
 
         Arg:
           msg:   (message.Msg.InpExtended) Extended message that contains
-                 the device database entry.  This is passed to db.Device.add()
-                 to parse the message.
+                 the device database entry.  This is passed to
+                 db.Device database to parse the message.
         """
         # New record - add it to the device database.
         if msg is not None:
-            self.db.add(msg)
+            self.db.handle_db_rec(msg)
 
         # Finished - we have all the records.
         else:
