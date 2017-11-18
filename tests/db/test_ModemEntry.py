@@ -37,6 +37,14 @@ class Test_ModemEntry:
 
         str(obj)
 
+        # compare w/ groups
+        obj2.group = 0x02
+        assert obj2 < obj
+
+        # compare w/ addr
+        obj2.addr = IM.Address('12.34.ac')
+        assert obj < obj2
+
     #-----------------------------------------------------------------------
     def test_resp(self):
         addr = IM.Address('12.34.ab')

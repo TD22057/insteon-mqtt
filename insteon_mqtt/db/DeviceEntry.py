@@ -120,6 +120,13 @@ class DeviceEntry:
                 self.ctrl.is_controller == rhs.ctrl.is_controller)
 
     #-----------------------------------------------------------------------
+    def __lt__(self, rhs):
+        if self.addr.id != rhs.addr.id:
+            return self.addr.id < rhs.addr.id
+
+        return self.group < rhs.group
+
+    #-----------------------------------------------------------------------
     def __str__(self):
         return "ID: %s  grp: %s  type: %s  data: %#04x %#04x %#04x" % \
             (self.addr.hex, self.group,
