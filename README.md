@@ -82,6 +82,27 @@ All devices support the following commands:
     changes.
   - 'getdb' will cause the device to re-download it's all link database.
 
+### PLM Modem
+
+Configuration file setup for the modem:
+
+```
+    port: "/dev/insteon"
+    storage: "/var/lib/insteon-mqtt"
+    startup_refresh: True
+    address: 44.85.11
+```
+
+Input commands can be sent to the modem to download it's all link
+database or remove and reload the database for every device.
+
+```
+   Topic: insteon/set/AA.BB.CC
+   Payload:
+      'refresh'
+      'reload_all'
+```
+
 
 ### Dimmers
 
@@ -100,7 +121,8 @@ State change messages get published whenever the device changes state.
    Payload: { 'level' : LEVEL }
 ```
 
-Input commands can be sent to this package to change the dimmer.
+Input commands can be sent to the device to turn it on or off, change
+the dimmer level, refresh the state, or download it's database
 
 ```
    Topic: insteon/set/AA.BB.CC
@@ -130,7 +152,8 @@ State change messages get published whenever the device changes state.
    Payload: 'ON' or 'OFF'
 ```
 
-Input commands can be sent to this package to change the device state.
+Input commands can be sent to the device to turn it on or off, refresh
+the state, or download it's database
 
 ```
    Topic: insteon/set/AA.BB.CC
@@ -159,10 +182,10 @@ State change messages get published whenever the device changes state.
    Payload: 'ON' or 'OFF'
 ```
 
-Input commands can be sent to this package to change the device state.
-These commands only work if the device is awake (recently triggered or
-in all link mode) since batter operated devices do not listen for
-arbitrary input commands.
+Input commands can be sent to the device to refresh the state, or
+download it's database These commands only work if the device is awake
+(recently triggered or in all link mode) since batter operated devices
+do not listen for arbitrary input commands.
 
 ```
    Topic: insteon/set/AA.BB.CC
@@ -192,7 +215,8 @@ The condition string will be one of: 'smoke', 'CO', 'test', 'clear',
    Payload: { 'condition' : CONDITION }
 ```
 
-Input commands can be sent to this package to change the device state.
+Input commands can be sent to the device to refresh the state, or
+download it's database
 
 ```
    Topic: insteon/set/AA.BB.CC
