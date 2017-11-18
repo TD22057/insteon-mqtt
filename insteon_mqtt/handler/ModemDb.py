@@ -47,7 +47,7 @@ class ModemDb:
           Msg.FINISHED if we handled the message and are done.
         """
         # Message is an ACK/NAK of the record request.
-        if isinstance(msg, [Msg.OutAllLinkGetFirst, Msg.OutAllLinkGetNext]):
+        if isinstance(msg, (Msg.OutAllLinkGetFirst, Msg.OutAllLinkGetNext)):
             # If we get a NAK, then there are no more db records.
             if not msg.is_ack:
                 LOG.info("Modem finished - last db record received")
