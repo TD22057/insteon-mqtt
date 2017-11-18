@@ -234,7 +234,7 @@ class Device:
         """
         # Update the last memory location if needed and save the entry.
         self._update_last(entry)
-        self._add_unused(entry)
+        self.unused.append(entry)
 
     #-----------------------------------------------------------------------
     def _update_last(self, entry):
