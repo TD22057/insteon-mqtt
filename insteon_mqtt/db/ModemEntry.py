@@ -39,7 +39,7 @@ class ModemEntry:
           data:      (bytes) 3 data bytes.  [0] is the on level, [1] is the
                      ramp rate.
         """
-        assert(len(data) == 3)
+        assert len(data) == 3
 
         self.addr = addr
         self.group = group
