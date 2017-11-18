@@ -88,10 +88,10 @@ class OutAllLinkUpdate:
         Returns:
            (bytes) Returns the message as bytes.
         """
-        o = io.BytesIO(bytes([0x02, self.msg_code]))
-        o.write(self.cmd)
+        o = io.BytesIO()
+        o.write(bytes([0x02, self.msg_code, self.cmd]))
         o.write(self.flags.to_bytes())
-        o.write(self.group)
+        o.write(bytes([self.group]))
         o.write(self.addr.to_bytes())
         o.write(self.data)
         return o.getvalue()

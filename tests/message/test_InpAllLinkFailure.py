@@ -10,10 +10,14 @@ import pytest
 class Test_InpAllLinkFailure:
     #-----------------------------------------------------------------------
     def test_basic(self):
-        b = bytes([0x02, 0x56, 0x01, 0x02, 0x03, 0x04, 0x05])
+        b = bytes([0x02, 0x56,  # code
+                   0x01,  # failure
+                   0x02,  # group
+                   0x03, 0x04, 0x05])  # address
         obj = Msg.InpAllLinkFailure.from_bytes(b)
 
-        # TODO: check obj
+        assert obj.group == 0x02
+        assert obj.addr.ids == [0x03, 0x04, 0x05]
 
         str(obj)
 

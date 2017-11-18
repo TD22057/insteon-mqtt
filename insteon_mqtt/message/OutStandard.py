@@ -114,8 +114,8 @@ class OutStandard:
 
         # Read the message flags first to see if we have an extended
         # message.  If we do, make sure we have enough bytes.
-        flags = Flags.from_bytes(raw, 8)
-        if flags.is_ext:
+        flags = Flags.from_bytes(raw, 5)
+        if not flags.is_ext:
             return OutStandard.fixed_msg_size
         else:
             return OutExtended.fixed_msg_size

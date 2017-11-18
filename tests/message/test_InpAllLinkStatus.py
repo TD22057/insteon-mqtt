@@ -9,11 +9,20 @@ import pytest
 #===========================================================================
 class Test_InpAllLinkStatus:
     #-----------------------------------------------------------------------
-    def test_basic(self):
+    def test_ack(self):
         b = bytes([0x02, 0x58, 0x06])
         obj = Msg.InpAllLinkStatus.from_bytes(b)
 
-        # TODO: check obj
+        assert obj.is_ack == True
+
+        str(obj)
+
+    #-----------------------------------------------------------------------
+    def test_nak(self):
+        b = bytes([0x02, 0x58, 0xff])
+        obj = Msg.InpAllLinkStatus.from_bytes(b)
+
+        assert obj.is_ack == False
 
         str(obj)
 
