@@ -6,19 +6,11 @@
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
 
-class Modem:
-    def handle_db_rec(self, msg):
-        self.msg = msg
-
-class Protocol:
-    def send(self, msg, handler):
-        self.sent = msg
-        self.handler = handler
 
 class Test_ModemDb:
     def test_acks(self):
-        proto = Protocol()
-        modem = Modem()
+        proto = MockProtocol()
+        modem = MockModem()
         handler = IM.handler.ModemDb(modem)
 
         get_first = Msg.OutAllLinkGetFirst(is_ack=True)
@@ -42,7 +34,7 @@ class Test_ModemDb:
     def test_recs(self):
         modem = IM.db.Modem()
         handler = IM.handler.ModemDb(modem)
-        proto = Protocol()
+        proto = MockProtocol()
 
         b = bytes([0x02, 0x57,
                    0xe2,  # flags
@@ -57,4 +49,17 @@ class Test_ModemDb:
         assert proto.handler == handler
         assert len(modem) == 1
 
-    #-----------------------------------------------------------------------
+#===========================================================================
+
+
+class MockModem:
+    def handle_db_rec(self, msg):
+        self.msg = msg
+
+#===========================================================================
+
+
+class MockProtocol:
+    def send(self, msg, handler):
+        self.sent = msg
+        self.handler = handler

@@ -52,24 +52,15 @@ class DeviceDb:
         """
         # Probably an echo back of our sent message.  See if the
         # message matches the address we sent to and assume it's the
-        # ACK/NAK message.
-        if isinstance(msg, Msg.OutExtended):
+        # ACK/NAK message.  These seem to be either extended or
+        # standard message so allow for both.
+        if isinstance(msg, (Msg.OutExtended, Msg.OutStandard)):
             if msg.to_addr == self.addr and msg.cmd1 == 0x2f:
                 if not msg.is_ack:
                     LOG.error("%s NAK response", self.addr)
-
                 return Msg.CONTINUE
 
             return Msg.UNKNOWN
-
-        # Another option is to get a standard ACK of the request.
-        elif isinstance(msg, Msg.OutStandard):
-            if msg.to_addr != self.addr or msg.cmd1 != 0x2f:
-                return Msg.UNKNOWN
-
-            self._have_ack = True
-            LOG.info("received direct ack %s", self.addr)
-            return Msg.CONTINUE
 
         # Process the real reply.  Database reply is an extended messages.
         elif isinstance(msg, Msg.InpExtended):
