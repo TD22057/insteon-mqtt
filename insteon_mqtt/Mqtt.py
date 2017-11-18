@@ -207,7 +207,6 @@ class Mqtt:
         elif isinstance(device, Dev.SmokeBridge):
             device.signal_state_change.connect(self._smoke_bridge)
 
-
     #-----------------------------------------------------------------------
     def _level_changed(self, device, level):
         """Device level changed callback.
@@ -306,7 +305,6 @@ class Mqtt:
                 args = json.loads(payload)
                 cmd = args.pop('cmd')
 
-
             # Find the function by name and call it w/ any additional args.
             func = self.cmds.get(cmd, None)
             if func:
@@ -357,20 +355,20 @@ class Mqtt:
         """Subscribe to the command and set topics.
         """
         if self._cmd_topic:
-            self.link.subscribe(self._cmd_topic+"/#", qos=self._qos)
+            self.link.subscribe(self._cmd_topic + "/#", qos=self._qos)
 
         if self._set_topic:
-            self.link.subscribe(self._set_topic+"/#", qos=self._qos)
+            self.link.subscribe(self._set_topic + "/#", qos=self._qos)
 
     #-----------------------------------------------------------------------
     def _unsubscribe(self,):
         """Unsubscribe to the command and set topics.
         """
         if self._cmd_topic:
-            self.link.unsubscribe(self._cmd_topic+"/#")
+            self.link.unsubscribe(self._cmd_topic + "/#")
 
         if self._set_topic:
-            self.link.unsubscribe(self._set_topic+"/#")
+            self.link.unsubscribe(self._set_topic + "/#")
 
     #-----------------------------------------------------------------------
     def _clean_topic(self, topic):

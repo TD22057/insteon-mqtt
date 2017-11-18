@@ -237,8 +237,10 @@ class Base:
           msg:   (InptStandard) Broadcast message from the device.
         """
         responders = self.db.find_group(msg.group)
-        LOG.debug("Found %s responders in group %s", len(responders), msg.group)
-        LOG.debug("Group %s -> %s", msg.group, [i.addr.hex for i in responders])
+        LOG.debug("Found %s responders in group %s", len(responders),
+                  msg.group)
+        LOG.debug("Group %s -> %s", msg.group,
+                  [i.addr.hex for i in responders])
 
         # For each device that we're the controller of call it's
         # handler for the broadcast message.

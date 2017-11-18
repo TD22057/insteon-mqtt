@@ -41,7 +41,7 @@ class Modem:
         self.db = db.Modem()
 
         # Signal to emit when a new device is added.
-        self.signal_new_device = Signal() # emit(modem, device)
+        self.signal_new_device = Signal()  # emit(modem, device)
 
         # Add a generic read handler for any broadcast messages
         # initiated by the Insteon devices.

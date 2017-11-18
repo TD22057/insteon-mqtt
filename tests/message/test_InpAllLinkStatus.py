@@ -4,16 +4,15 @@
 #
 #===========================================================================
 import insteon_mqtt.message as Msg
-import pytest
 
-#===========================================================================
+
 class Test_InpAllLinkStatus:
     #-----------------------------------------------------------------------
     def test_ack(self):
         b = bytes([0x02, 0x58, 0x06])
         obj = Msg.InpAllLinkStatus.from_bytes(b)
 
-        assert obj.is_ack == True
+        assert obj.is_ack is True
 
         str(obj)
 
@@ -22,7 +21,7 @@ class Test_InpAllLinkStatus:
         b = bytes([0x02, 0x58, 0xff])
         obj = Msg.InpAllLinkStatus.from_bytes(b)
 
-        assert obj.is_ack == False
+        assert obj.is_ack is False
 
         str(obj)
 

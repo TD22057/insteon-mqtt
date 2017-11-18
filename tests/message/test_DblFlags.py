@@ -4,10 +4,8 @@
 #
 #===========================================================================
 import insteon_mqtt.message as Msg
-import pytest
-from pytest import assume
 
-#===========================================================================
+
 class Test_DbFlags:
     #-----------------------------------------------------------------------
     def check(self, obj, in_use, is_ctrl, is_high, raw):

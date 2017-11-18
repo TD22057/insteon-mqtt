@@ -10,6 +10,7 @@ from .. import Signal
 
 LOG = logging.getLogger(__name__)
 
+
 class Mqtt(Link):
     """MQTT client link.
 

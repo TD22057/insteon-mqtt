@@ -4,9 +4,8 @@
 #
 #===========================================================================
 import insteon_mqtt.message as Msg
-import pytest
 
-#===========================================================================
+
 class Test_OutAllLinkCancel:
     #-----------------------------------------------------------------------
     def test_out(self):
@@ -24,7 +23,7 @@ class Test_OutAllLinkCancel:
         b = bytes([0x02, 0x65, 0x06])
         obj = Msg.OutAllLinkCancel.from_bytes(b)
 
-        assert obj.is_ack == True
+        assert obj.is_ack is True
 
         str(obj)
 

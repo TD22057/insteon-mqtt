@@ -3,6 +3,7 @@
 # Network and serial link management
 #
 #===========================================================================
+# flake8: noqa
 
 __doc__ = """Network manage package
 
@@ -24,8 +25,6 @@ from .Mqtt import Mqtt
 # Use Poll on non-windows systems - For windows we have to use select.
 import platform
 if platform.system() != 'Windows':
-   from .poll import Manager
+    from .poll import Manager
 else:
-   from .select import Manager
-   pass
-
+    from .select import Manager

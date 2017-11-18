@@ -74,15 +74,17 @@ class InpStandard:
     def __str__(self):
         if self.group is None:
             return "Std: %s->%s %s cmd: %02x %02x" % \
-                (self.from_addr, self.to_addr, self.flags, self.cmd1, self.cmd2)
+                (self.from_addr, self.to_addr, self.flags, self.cmd1,
+                 self.cmd2)
         else:
             return "Std: %s %s grp: %02x cmd: %02x %02x" % \
                 (self.from_addr, self.flags, self.group, self.cmd1, self.cmd2)
 
-
     #-----------------------------------------------------------------------
 
 #===========================================================================
+
+
 class InpExtended:
     """Direct, extended message from PLM->host.
 
@@ -153,7 +155,7 @@ class InpExtended:
                     (self.from_addr, self.to_addr, self.flags, self.cmd1,
                      self.cmd2))
         else:
-            o.write("Ext: %s %s grp: %02x cmd: %02x %02x" % \
+            o.write("Ext: %s %s grp: %02x cmd: %02x %02x" %
                     (self.from_addr, self.flags, self.group, self.cmd1,
                      self.cmd2))
 

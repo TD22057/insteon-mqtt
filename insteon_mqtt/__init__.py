@@ -3,6 +3,7 @@
 # Insteon-MQTT bridge Python package
 #
 #===========================================================================
+# flake8: noqa
 
 __doc__ = """Insteon <-> MQTT bridge package
 

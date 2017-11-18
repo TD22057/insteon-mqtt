@@ -141,7 +141,6 @@ class SmokeBridge(Base):
                 LOG.info("Smoke bridge %s ignoring group %s", self.addr,
                          msg.group)
 
-
         # Call handle_broadcast for any device that we're the
         # controller of.
         super().handle_broadcast(msg)

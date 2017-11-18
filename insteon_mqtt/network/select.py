@@ -186,7 +186,7 @@ class Manager:
 
         # Handle any links that need to be connected.
         t = time.time()
-        for i in range(len(self.unconnected)-1, -1, -1):
+        for i in range(len(self.unconnected) - 1, -1, -1):
             link, next_time = self.unconnected[i]
 
             # If we're after the reconnect time, try and connect the linkn.
@@ -199,8 +199,7 @@ class Manager:
                     del self.unconnected[i]
                 else:
                     LOG.debug("Link connection failed %s", link)
-                    self.unconnected[i] = (link, t+link.retry_connect_dt())
-
+                    self.unconnected[i] = (link, t + link.retry_connect_dt())
 
         # Check errors first to close the links.
         for fd in errors:

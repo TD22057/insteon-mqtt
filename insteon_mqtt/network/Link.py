@@ -115,6 +115,7 @@ class Link:
 
         The link must call self.signal_closing.emit() after closing.
         """
-        raise NotImplementedError("%s.close() not implemented" % self.__class__)
+        raise NotImplementedError("%s.close() not implemented" %
+                                  self.__class__)
 
     #-----------------------------------------------------------------------

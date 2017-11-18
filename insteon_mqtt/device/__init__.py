@@ -3,6 +3,7 @@
 # Insteon device classes
 #
 #===========================================================================
+# flake8: noqa
 
 __doc__ = """Insteon device classes.
 

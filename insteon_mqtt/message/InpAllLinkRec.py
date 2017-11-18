@@ -6,7 +6,6 @@
 from ..Address import Address
 from .DbFlags import DbFlags
 
-#===========================================================================
 
 class InpAllLinkRec:
     """All link database record.

@@ -167,7 +167,7 @@ class Manager:
         while True:
             try:
                 # events = (fileno, bit flags) of the actions.
-                events = self.poll.poll(1000*time_out)  # sec->msec
+                events = self.poll.poll(1000 * time_out)  # sec->msec
             except OSError as err:
                 # This error can occur sometimes when using a timeout.
                 # It should be ignored and the poll retried.
@@ -178,7 +178,7 @@ class Manager:
 
         # Handle any links that need to be connected.
         t = time.time()
-        for i in range(len(self.unconnected)-1, -1, -1):
+        for i in range(len(self.unconnected) - 1, -1, -1):
             link, next_time = self.unconnected[i]
 
             # If we're after the reconnect time, try and connect the linkn.
@@ -191,7 +191,7 @@ class Manager:
                     del self.unconnected[i]
                 else:
                     LOG.debug("Link connection failed %s", link)
-                    self.unconnected[i] = (link, t+link.retry_connect_dt())
+                    self.unconnected[i] = (link, t + link.retry_connect_dt())
 
         for fd, flag in events:
             # Map the fileno to the Link object.

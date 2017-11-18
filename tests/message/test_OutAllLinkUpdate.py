@@ -4,9 +4,8 @@
 #
 #===========================================================================
 import insteon_mqtt.message as Msg
-import pytest
 
-#===========================================================================
+
 class Test_OutAllLinkUpdate:
     #-----------------------------------------------------------------------
     def test_basic(self):
@@ -21,12 +20,12 @@ class Test_OutAllLinkUpdate:
 
         assert obj.cmd == 0x40
         assert obj.group == 0x03
-        assert obj.flags.in_use == False
-        assert obj.flags.is_controller == True
-        assert obj.flags.high_water == True
+        assert obj.flags.in_use is False
+        assert obj.flags.is_controller is True
+        assert obj.flags.high_water is True
         assert obj.addr.ids == [0x32, 0xf4, 0x22]
         assert obj.data == bytes([0x01, 0x02, 0x03])
-        assert obj.is_ack == True
+        assert obj.is_ack is True
 
         ob = obj.to_bytes()
         assert ob == b[:-1]  # output has no ack byte

@@ -4,9 +4,8 @@
 #
 #===========================================================================
 import insteon_mqtt.message as Msg
-import pytest
 
-#===========================================================================
+
 class Test_InpStandard:
     #-----------------------------------------------------------------------
     def test_basic(self):
@@ -20,11 +19,11 @@ class Test_InpStandard:
         assert obj.from_addr.ids == [0x3e, 0xe2, 0xc4]
         assert obj.to_addr.ids == [0x23, 0x9b, 0x65]
         assert obj.flags.type == Msg.Flags.DIRECT_NAK
-        assert obj.flags.is_ext == False
+        assert obj.flags.is_ext is False
         assert obj.flags.hops_left == 3
         assert obj.flags.max_hops == 3
-        assert obj.flags.is_nak == True
-        assert obj.flags.is_broadcast == False
+        assert obj.flags.is_nak is True
+        assert obj.flags.is_broadcast is False
         assert obj.cmd1 == 0x11
         assert obj.cmd2 == 0x01
         assert obj.group is None
@@ -43,11 +42,11 @@ class Test_InpStandard:
         assert obj.from_addr.ids == [0x3e, 0xe2, 0xc4]
         assert obj.to_addr.ids == [0x23, 0x9b, 0x65]
         assert obj.flags.type == Msg.Flags.ALL_LINK_BROADCAST
-        assert obj.flags.is_ext == False
+        assert obj.flags.is_ext is False
         assert obj.flags.hops_left == 3
         assert obj.flags.max_hops == 3
-        assert obj.flags.is_nak == False
-        assert obj.flags.is_broadcast == True
+        assert obj.flags.is_nak is False
+        assert obj.flags.is_broadcast is True
         assert obj.cmd1 == 0x11
         assert obj.cmd2 == 0x01
         assert obj.group == 0x65
@@ -66,11 +65,11 @@ class Test_InpStandard:
         assert obj.from_addr.ids == [0x3e, 0xe2, 0xc4]
         assert obj.to_addr.ids == [0x23, 0x9b, 0x65]
         assert obj.flags.type == Msg.Flags.CLEANUP_ACK
-        assert obj.flags.is_ext == False
+        assert obj.flags.is_ext is False
         assert obj.flags.hops_left == 3
         assert obj.flags.max_hops == 3
-        assert obj.flags.is_nak == False
-        assert obj.flags.is_broadcast == False
+        assert obj.flags.is_nak is False
+        assert obj.flags.is_broadcast is False
         assert obj.cmd1 == 0x11
         assert obj.cmd2 == 0x01
         assert obj.group == 0x01

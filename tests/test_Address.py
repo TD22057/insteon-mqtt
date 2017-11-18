@@ -6,7 +6,7 @@
 import insteon_mqtt as IM
 import pytest
 
-#===========================================================================
+
 class Test_Address:
     def check(self, addr, id):
         ids = [(id & 0xff0000) >> 16, (id & 0xff00) >> 8, (id & 0xff)]
@@ -15,7 +15,7 @@ class Test_Address:
         assert addr.ids == ids
         assert addr.bytes == bytes(ids)
         assert addr.hex == hex
-        s = str(addr)
+        str(addr)
 
         b = addr.to_bytes()
         addr2 = IM.Address.from_bytes(b)
@@ -111,8 +111,6 @@ class Test_Address:
             IM.Address("foo bar")
 
         with pytest.raises(Exception):
-            IM.Address({1:2})
-
-
+            IM.Address({1 : 2})
 
 #===========================================================================

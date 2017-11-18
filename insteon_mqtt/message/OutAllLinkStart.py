@@ -46,8 +46,9 @@ class OutAllLinkStart:
         """Constructor
 
         Args:
-          link:    (int) OutAllLinkStart.RESPONDER, OutAllLinkStart.CONGTROLLER,
-                   or OutAllLinkStart.DELETE command code.
+          link:    (int) OutAllLinkStart.RESPONDER,
+                   OutAllLinkStart.CONGTROLLER, or OutAllLinkStart.DELETE
+                   command code.
           group:   (int) The group to link.
           is_ack:  (bool) True for ACK, False for NAK.  None for output
                    commands to the modem.

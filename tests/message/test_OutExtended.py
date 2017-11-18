@@ -5,9 +5,8 @@
 #===========================================================================
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
-import pytest
 
-#===========================================================================
+
 class Test_OutExtended:
     #-----------------------------------------------------------------------
     def test_basic(self):
@@ -24,14 +23,14 @@ class Test_OutExtended:
 
         assert obj.to_addr.ids == [0x3e, 0xe2, 0xc4]
         assert obj.flags.type == Msg.Flags.BROADCAST
-        assert obj.flags.is_ext == True
+        assert obj.flags.is_ext is True
         assert obj.flags.hops_left == 3
         assert obj.flags.max_hops == 3
-        assert obj.flags.is_nak == False
-        assert obj.flags.is_broadcast == False
+        assert obj.flags.is_nak is False
+        assert obj.flags.is_broadcast is False
         assert obj.cmd1 == 0x11
         assert obj.cmd2 == 0x01
-        assert obj.is_ack == True
+        assert obj.is_ack is True
         assert obj.data == bytes([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
                                   0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e])
 
@@ -51,11 +50,11 @@ class Test_OutExtended:
 
         assert obj.to_addr.ids == [0x3e, 0xe2, 0xc4]
         assert obj.flags.type == Msg.Flags.DIRECT
-        assert obj.flags.is_ext == True
+        assert obj.flags.is_ext is True
         assert obj.flags.hops_left == 3
         assert obj.flags.max_hops == 3
-        assert obj.flags.is_nak == False
-        assert obj.flags.is_broadcast == False
+        assert obj.flags.is_nak is False
+        assert obj.flags.is_broadcast is False
         assert obj.cmd1 == 0x11
         assert obj.cmd2 == 0x25
         assert obj.is_ack is None

@@ -4,9 +4,8 @@
 #
 #===========================================================================
 import insteon_mqtt as IM
-from pytest import assume
 
-#===========================================================================
+
 class Slot:
     static_data = []
     method_data = []
@@ -18,9 +17,13 @@ class Slot:
     def method_slot(self, **kwargs):
         Slot.method_data.append(kwargs)
 
+
 func_data = []
+
+
 def func_slot(**kwargs):
     func_data.append(kwargs)
+
 
 def clear():
     global func_data
@@ -29,6 +32,8 @@ def clear():
     Slot.method_data = []
 
 #===========================================================================
+
+
 def test_func():
     clear()
     sig = IM.Signal()
@@ -40,6 +45,8 @@ def test_func():
     assert func_data[0] == {'a' : 1, 'b': 2}
 
 #===========================================================================
+
+
 def test_static():
     clear()
     sig = IM.Signal()
@@ -51,6 +58,8 @@ def test_static():
     assert Slot.static_data[0] == {'a' : 1, 'b': 2}
 
 #===========================================================================
+
+
 def test_method():
     clear()
     sig = IM.Signal()
@@ -63,6 +72,8 @@ def test_method():
     assert Slot.method_data[0] == {'a' : 1, 'b': 2}
 
 #===========================================================================
+
+
 def test_multi():
     clear()
     sig = IM.Signal()
@@ -104,8 +115,9 @@ def test_multi():
     assert len(Slot.static_data) == 3
     assert len(func_data) == 4
 
-
 #===========================================================================
+
+
 def test_clear():
     clear()
     sig = IM.Signal()
@@ -121,6 +133,8 @@ def test_clear():
     assert len(func_data) == 0
 
 #===========================================================================
+
+
 def test_weakref():
     clear()
     sig = IM.Signal()
@@ -135,12 +149,15 @@ def test_weakref():
     assert len(func_data) == 1
 
 #===========================================================================
+
+
 def test_disconnect():
     clear()
     sig = IM.Signal()
 
     def dslot1(**kwargs):
         sig.disconnect(dslot1)
+
     def dslot2(**kwargs):
         sig.disconnect(dslot2)
 

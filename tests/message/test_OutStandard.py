@@ -5,9 +5,8 @@
 #===========================================================================
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
-import pytest
 
-#===========================================================================
+
 class Test_OutStandard:
     #-----------------------------------------------------------------------
     def test_basic(self):
@@ -20,14 +19,14 @@ class Test_OutStandard:
 
         assert obj.to_addr.ids == [0x48, 0x3d, 0x46]
         assert obj.flags.type == Msg.Flags.DIRECT_NAK
-        assert obj.flags.is_ext == False
+        assert obj.flags.is_ext is False
         assert obj.flags.hops_left == 3
         assert obj.flags.max_hops == 3
-        assert obj.flags.is_nak == True
-        assert obj.flags.is_broadcast == False
+        assert obj.flags.is_nak is True
+        assert obj.flags.is_broadcast is False
         assert obj.cmd1 == 0x11
         assert obj.cmd2 == 0xff
-        assert obj.is_ack == True
+        assert obj.is_ack is True
 
         assert obj.msg_size(b) == Msg.OutStandard.fixed_msg_size
 
@@ -43,11 +42,11 @@ class Test_OutStandard:
 
         assert obj.to_addr.ids == [0x48, 0x3d, 0x46]
         assert obj.flags.type == Msg.Flags.DIRECT
-        assert obj.flags.is_ext == False
+        assert obj.flags.is_ext is False
         assert obj.flags.hops_left == 3
         assert obj.flags.max_hops == 3
-        assert obj.flags.is_nak == False
-        assert obj.flags.is_broadcast == False
+        assert obj.flags.is_nak is False
+        assert obj.flags.is_broadcast is False
         assert obj.cmd1 == 0x11
         assert obj.cmd2 == 0x25
         assert obj.is_ack is None

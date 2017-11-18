@@ -4,6 +4,7 @@
 #
 #===========================================================================
 
+
 class Address:
     """Insteon address class.
 
@@ -34,7 +35,7 @@ class Address:
         Returns:
           Address: Returns the created Address object.
         """
-        return Address(raw[0+offset], raw[1+offset], raw[2+offset])
+        return Address(raw[0 + offset], raw[1 + offset], raw[2 + offset])
 
     #-----------------------------------------------------------------------
     @staticmethod

@@ -55,7 +55,8 @@ class ModemEntry:
     #-----------------------------------------------------------------------
     def __str__(self):
         return "ID: %s  grp: %s  type: %s  data: %#04x %#04x %#04x" % \
-            (self.addr.hex, self.group, 'CTRL' if self.is_controller else 'RESP',
+            (self.addr.hex, self.group,
+             'CTRL' if self.is_controller else 'RESP',
              self.data[0], self.data[1], self.data[2])
 
     #-----------------------------------------------------------------------

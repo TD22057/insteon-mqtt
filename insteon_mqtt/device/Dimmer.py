@@ -353,5 +353,4 @@ class Dimmer(Base):
         self.signal_level_changed.emit(self, level)
         self.signal_active.emit(self, level > 0x00)
 
-
     #-----------------------------------------------------------------------

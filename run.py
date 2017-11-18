@@ -25,5 +25,3 @@ mqtt.load_config(config['mqtt'])
 
 while loop.active():
     loop.select()
-
-    

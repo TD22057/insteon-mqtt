@@ -1,0 +1,14 @@
+[flake8]
+ignore =
+  # allow block comments without '# '
+  E265,
+  # white space before dict ':'
+  E203,
+  # closing bracket indent level
+  E123,
+  # allow bare excepts
+  E722,
+  # continuation line indentation
+  E127,
+
+exclude = notes,

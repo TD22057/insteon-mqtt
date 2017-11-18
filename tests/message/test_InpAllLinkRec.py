@@ -4,9 +4,8 @@
 #
 #===========================================================================
 import insteon_mqtt.message as Msg
-import pytest
 
-#===========================================================================
+
 class Test_InpAllLinkRec:
     #-----------------------------------------------------------------------
     def test_basic(self):
@@ -17,10 +16,10 @@ class Test_InpAllLinkRec:
                    0x01, 0x0e, 0x43])  # data
         obj = Msg.InpAllLinkRec.from_bytes(b)
 
-        assert obj.flags.in_use == True
-        assert obj.flags.is_controller == True
-        assert obj.flags.is_responder == False
-        assert obj.flags.high_water == True
+        assert obj.flags.in_use is True
+        assert obj.flags.is_controller is True
+        assert obj.flags.is_responder is False
+        assert obj.flags.high_water is True
 
         assert obj.group == 0x01
         assert obj.addr.ids == [0x3a, 0x29, 0x84]

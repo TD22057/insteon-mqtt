@@ -3,6 +3,7 @@
 # Insteon messages
 #
 #===========================================================================
+# flake8: noqa
 
 __doc__ = """Insteon message classes.
 

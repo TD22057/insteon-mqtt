@@ -284,7 +284,8 @@ class OnOff(Base):
             self._set_is_on(False)
 
         else:
-            LOG.warning("OnOff %s unknown group cmd %#04x", self.addr, msg.cmd1)
+            LOG.warning("OnOff %s unknown group cmd %#04x", self.addr,
+                        msg.cmd1)
 
     #-----------------------------------------------------------------------
     def _set_is_on(self, is_on):

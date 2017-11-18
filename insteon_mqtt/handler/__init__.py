@@ -3,6 +3,7 @@
 # Message reading handlers.
 #
 #===========================================================================
+# flake8: noqa
 
 __doc__ = """Message handler classes.
 

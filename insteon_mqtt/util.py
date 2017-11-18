@@ -3,13 +3,10 @@
 # Misc utilities
 #
 #===========================================================================
-__doc__ = """Misc utilities
-"""
-
 import binascii
 import io
 
-#===========================================================================
+
 def to_hex(data, num=None, space=' '):
     """Convert a byte array to a string of hex.
 
@@ -31,7 +28,7 @@ def to_hex(data, num=None, space=' '):
         if i:
             o.write(space)
         o.write(hex_str[i])
-        o.write(hex_str[i+1])
+        o.write(hex_str[i + 1])
 
     return o.getvalue()
 
