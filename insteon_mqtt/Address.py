@@ -137,7 +137,7 @@ class Address:
 
     #-----------------------------------------------------------------------
     def __eq__(self, rhs):
-        return self.id == rhs.id
+        return isinstance(rhs, Address) and self.id == rhs.id
 
     #-----------------------------------------------------------------------
     def __lt__(self, rhs):

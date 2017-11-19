@@ -54,7 +54,6 @@ class Broadcast:
 
         # Process the all link broadcast.
         if msg.flags.type == Msg.Flags.ALL_LINK_BROADCAST:
-            self._handled = True
             return self._process(msg)
 
         # Clean up message is basically the same data but addressed to
@@ -66,7 +65,7 @@ class Broadcast:
                 return self._process(msg)
             return Msg.FINISHED
 
-        # Different message type than we exepcted.
+        # Different message flags than we exepcted.
         return Msg.UNKNOWN
 
     #-----------------------------------------------------------------------
@@ -94,4 +93,5 @@ class Broadcast:
         # responders for this group and tell them that the scene
         # has been activated.
         device.handle_broadcast(msg)
+        self._handled = True
         return Msg.FINISHED

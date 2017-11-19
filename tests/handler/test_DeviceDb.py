@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Tests for: insteont_mqtt/handler/test_DeviceDb.py
+# Tests for: insteont_mqtt/handler/DeviceDb.py
 #
 #===========================================================================
 import insteon_mqtt as IM
