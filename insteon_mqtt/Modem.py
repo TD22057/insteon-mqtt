@@ -93,40 +93,11 @@ class Modem:
                 device.refresh()
 
     #-----------------------------------------------------------------------
-    def handle_broadcast(self, msg):
-        """Handle a broadcast message from the modem.
-
-        The modem has no scenes that can be triggered by the modem so
-        this should never be called.
-
-        Args:
-           msg:    (message.InpStandard) Broadcast group message.
-        """
-        pass
-
-    #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, msg):
-        """Handle a group command addressed to the modem.
-
-        This is called when a broadcast message is sent from a device
-        that is triggered (like a motion sensor or clicking a light
-        switch).  The device that sent the message will look up it's
-        associations in it's all link database and call the
-        handle_group_cmd() on each device that are in it's scene.
-
-        Args:
-           addr:   (Address) The address the message is from.
-           msg:    (message.InpStandard) Broadcast group message.
-        """
-        # The modem mhas nothing to do for these messages.
-        pass
-
-    #-----------------------------------------------------------------------
     def get_db(self):
         """Load the all link database from the modem.
 
         This sends a message to the modem to start downloading the all
-        link database.  The message handler handler.ModemDb is used to
+        link database.  The message handler handler.ModemGetDb is used to
         process the replies and update the modem database.
         """
         LOG.info("Modem sending get first db record command")
@@ -134,7 +105,7 @@ class Modem:
         # Request the first db record from the handler.  The handler
         # will request each next record as the records arrive.
         msg = Msg.OutAllLinkGetFirst()
-        msg_handler = handler.ModemDb(self)
+        msg_handler = handler.ModemGetDb(self)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -254,6 +225,42 @@ class Modem:
             device.get_db()
 
     #-----------------------------------------------------------------------
+    def add_controller_of(self, addr, group, data=None):
+        """TODO: doc
+        """
+        cmd = Msg.OutAllLinkUpdate.ADD_CONTROLLER
+        is_ctrl = True
+        device_cmd = "add_responder_of"
+        self._modify_db(cmd, is_ctrl, addr, group, device_cmd, data)
+
+    #-----------------------------------------------------------------------
+    def add_responder_of(self, addr, group, data=None):
+        """TODO: doc
+        """
+        cmd = Msg.OutAllLinkUpdate.ADD_RESPONDER
+        is_ctrl = False
+        device_cmd = "add_controller_of"
+        self._modify_db(cmd, is_ctrl, addr, group, device_cmd, data)
+
+    #-----------------------------------------------------------------------
+    def del_controller_of(self, addr, group):
+        """TODO: doc
+        """
+        cmd = Msg.OutAllLinkUpdate.DELETE
+        is_ctrl = True
+        device_cmd = "del_responder_of"
+        self._modify_db(cmd, is_ctrl, addr, group, device_cmd)
+
+    #-----------------------------------------------------------------------
+    def del_responder_of(self, addr, group):
+        """TODO: doc
+        """
+        cmd = Msg.OutAllLinkUpdate.DELETE
+        is_ctrl = False
+        device_cmd = "del_controller_of"
+        self._modify_db(cmd, is_ctrl, addr, group, device_cmd)
+
+    #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
         """Run arbitrary commands.
 
@@ -286,10 +293,39 @@ class Modem:
                       "'getdb'", cmd)
 
     #-----------------------------------------------------------------------
+    def handle_broadcast(self, msg):
+        """Handle a broadcast message from the modem.
+
+        The modem has no scenes that can be triggered by the modem so
+        this should never be called.
+
+        Args:
+           msg:    (message.InpStandard) Broadcast group message.
+        """
+        pass
+
+    #-----------------------------------------------------------------------
+    def handle_group_cmd(self, addr, msg):
+        """Handle a group command addressed to the modem.
+
+        This is called when a broadcast message is sent from a device
+        that is triggered (like a motion sensor or clicking a light
+        switch).  The device that sent the message will look up it's
+        associations in it's all link database and call the
+        handle_group_cmd() on each device that are in it's scene.
+
+        Args:
+           addr:   (Address) The address the message is from.
+           msg:    (message.InpStandard) Broadcast group message.
+        """
+        # The modem mhas nothing to do for these messages.
+        pass
+
+    #-----------------------------------------------------------------------
     def handle_db_rec(self, msg):
         """New all link database record handler.
 
-        This is called by the handler.ModemDb message handler when a
+        This is called by the handler.ModemGetDb message handler when a
         new message.InpAllLinkRec message is read.  Each message is an
         entry in the modem's all link database.
 
@@ -384,5 +420,48 @@ class Modem:
         # has, we need to update the device databases.
         scenes = {}
         return scenes
+
+    #-----------------------------------------------------------------------
+    def _modify_db(self, cmd, is_ctrl, addr, group, device_cmd, data=None):
+        """TODO: doc
+        """
+        # Find the device the link is for.
+        device = self.find(addr)
+        if not device:
+            # TODO???
+            return
+
+        # See if there is a current database entry for this
+        # combination.  If there is, change the command to update
+        # unless we're removing it.
+        entry = self.db.find(addr, group, is_ctrl)
+        if entry and cmd != Msg.OutAllLinkUpdate.DELETE:
+            cmd = Msg.OutAllLinkUpdate.UPDATE
+
+        # Build the modem database update message.
+        flags = Msg.DbFlags(in_use=True, is_controller=is_ctrl, high_water=True)
+        msg = Msg.OutAllLinkUpdate(cmd, flags, group, addr, data)
+
+        # Modem will ack/nak our message.  This calls handle_db_update()
+        # with the result.
+        msg_handler = handler.ModemModifyDb(self)
+        self.protocol.send(msg, msg_handler)
+
+        # Send a message to the device to update it's end of the link.
+        if device_cmd:
+            func = getattr(device, device_cmd)
+            func(self.addr, group, data)
+
+    #-----------------------------------------------------------------------
+    def handle_db_update(self, msg):
+        """TODO: doc
+        """
+        # TODO: callback handler?  might be easier to understand.
+        if msg.is_ack:
+            LOG.info("Modem db updated: %s", msg)
+            self.db.update_rec(msg)
+            self.db.save_db()
+        else:
+            LOG.error("Modem db update error: %s", msg)
 
     #-----------------------------------------------------------------------

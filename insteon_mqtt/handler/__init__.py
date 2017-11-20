@@ -33,6 +33,7 @@ Inbound messages can be:
 
 #===========================================================================
 from .Broadcast import Broadcast
-from .DeviceDb import DeviceDb
-from .ModemDb import ModemDb
+from .DeviceGetDb import DeviceGetDb
+from .ModemGetDb import ModemGetDb
+from .ModemModifyDb import ModemModifyDb
 from .StandardCmd import StandardCmd

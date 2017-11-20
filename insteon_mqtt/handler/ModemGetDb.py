@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Insteon broadcast message handler
+# Modem get all link database handler.
 #
 #===========================================================================
 import logging
@@ -9,7 +9,7 @@ from .. import message as Msg
 LOG = logging.getLogger(__name__)
 
 
-class ModemDb:
+class ModemGetDb:
     """PLM Modem database request message handler.
 
     To download the all link database from the PLM modem, we send a

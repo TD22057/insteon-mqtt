@@ -64,8 +64,8 @@ class DbFlags:
 
         Args:
           in_use:         (bool) True if the record is in use.
-          is_controller:  (bool) True if the record is for a controller,
-                          False for a responder.
+          is_controller:  (bool) True means the device holding the record is
+                          the controller.  False means it's a responder.
           high_water:     (bool) True if this is the last valid record in use.
         """
         self.in_use = in_use
