@@ -46,6 +46,8 @@ class InpAllLinkFailure(Base):
           group:  (int) The group the link is for.
           addr:   (Address) The address of the device in the link.
         """
+        super().__init__()
+
         self.group = group
         self.addr = addr
 

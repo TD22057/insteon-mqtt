@@ -52,6 +52,8 @@ class InpAllLinkRec(Base):
           addr:   (Address) The address of the device in the link.
           data:   (bytes) 3 byte data record.
         """
+        super().__init__()
+
         assert isinstance(flags, DbFlags)
         assert len(data) == 3
 

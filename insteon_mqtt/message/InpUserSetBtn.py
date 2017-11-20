@@ -55,6 +55,8 @@ class InpUserSetBtn(Base):
           event:   (int) The event code.  See the class attributes for
                    options.
         """
+        super().__init__()
+
         assert event in InpUserSetBtn.events.values()
         self.event = event
 

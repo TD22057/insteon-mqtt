@@ -117,6 +117,8 @@ class OutStandard(Base):
           is_ack:   (bool) True for ACK, False for NAK.  None for output
                     commands to the modem.
         """
+        super().__init__()
+
         assert isinstance(flags, Flags)
 
         self.to_addr = to_addr

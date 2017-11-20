@@ -55,6 +55,8 @@ class OutAllLink(Base):
           is_ack:  (bool) True for ACK, False for NAK.  None for output
                    commands to the modem.
         """
+        super().__init__()
+
         self.group = group
         self.cmd1 = cmd1
         self.cmd2 = cmd2

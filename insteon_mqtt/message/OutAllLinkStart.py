@@ -54,6 +54,8 @@ class OutAllLinkStart(Base):
           is_ack:  (bool) True for ACK, False for NAK.  None for output
                    commands to the modem.
         """
+        super().__init__()
+
         assert(link == self.RESPONDER or link == self.CONTROLLER or
                link == self.DELETE)
 

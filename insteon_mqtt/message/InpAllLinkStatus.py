@@ -43,6 +43,8 @@ class InpAllLinkStatus(Base):
         Args:
           is_ack: (bool) True for ACK, False for NAK.
         """
+        super().__init__()
+
         self.is_ack = is_ack
 
     #-----------------------------------------------------------------------

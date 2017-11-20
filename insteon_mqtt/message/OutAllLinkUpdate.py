@@ -70,6 +70,8 @@ class OutAllLinkUpdate(Base):
           is_ack:  (bool) True for ACK, False for NAK.  None for output
                    commands to the modem.
         """
+        super().__init__()
+
         assert cmd in [self.SEARCH, self.UPDATE, self.ADD_CONTROLLER,
                        self.ADD_RESPONDER, self.DELETE]
         assert isinstance(flags, DbFlags)

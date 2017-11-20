@@ -38,7 +38,7 @@ class InpUserReset(Base):
     def __init__(self):
         """Constructor
         """
-        pass
+        super().__init__()
 
     #-----------------------------------------------------------------------
     def __str__(self):
