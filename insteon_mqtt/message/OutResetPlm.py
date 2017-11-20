@@ -3,9 +3,10 @@
 # Output insteon reset the PLM modem message.
 #
 #===========================================================================
+from .Base import Base
 
 
-class OutResetPlm:
+class OutResetPlm(Base):
     """Command to reset the PLM modem.
 
     Send this command to reset the PLM modem.  This is probably a bad
@@ -49,6 +50,8 @@ class OutResetPlm:
           is_ack:  (bool) True for ACK, False for NAK.  None for output
                    commands to the modem.
         """
+        super().__init__()
+
         self.is_ack = is_ack
 
     #-----------------------------------------------------------------------

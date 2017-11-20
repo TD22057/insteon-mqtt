@@ -3,9 +3,10 @@
 # Output insteon start all link mode message.
 #
 #===========================================================================
+from .Base import Base
 
 
-class OutAllLinkStart:
+class OutAllLinkStart(Base):
     """Begin all linking command message.
     """
     msg_code = 0x64
@@ -53,6 +54,8 @@ class OutAllLinkStart:
           is_ack:  (bool) True for ACK, False for NAK.  None for output
                    commands to the modem.
         """
+        super().__init__()
+
         assert(link == self.RESPONDER or link == self.CONTROLLER or
                link == self.DELETE)
 

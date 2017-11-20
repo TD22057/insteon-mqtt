@@ -3,9 +3,10 @@
 # Output insteon all link command message.
 #
 #===========================================================================
+from .Base import Base
 
 
-class OutAllLink:
+class OutAllLink(Base):
     """Send an all link command to a group.
 
     This triggers a PLM modem scene.  Any devices linked to the modem
@@ -54,6 +55,8 @@ class OutAllLink:
           is_ack:  (bool) True for ACK, False for NAK.  None for output
                    commands to the modem.
         """
+        super().__init__()
+
         self.group = group
         self.cmd1 = cmd1
         self.cmd2 = cmd2

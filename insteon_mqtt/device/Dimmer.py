@@ -23,10 +23,6 @@ class Dimmer(Base):
     the device level is changed with the calling sequence (device,
     level) where level is 0->0xff.
 
-    The Signal Dimmer.signal_active will be emitted whenever
-    the device level is changed with the calling sequence (device,
-    on) where on is True for on and False for off.
-
     Sample configuration input:
 
         insteon:
@@ -76,7 +72,6 @@ class Dimmer(Base):
 
         # Support dimmer style signals and motion on/off style signals.
         self.signal_level_changed = Signal.Signal()  # (Device, level)
-        self.signal_active = Signal.Signal()  # (Device, bool)
 
         # Remove (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
@@ -351,6 +346,5 @@ class Dimmer(Base):
         self._level = level
 
         self.signal_level_changed.emit(self, level)
-        self.signal_active.emit(self, level > 0x00)
 
     #-----------------------------------------------------------------------

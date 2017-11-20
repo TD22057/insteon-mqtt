@@ -44,7 +44,7 @@ class Test_ModemDb:
         msg = Msg.InpAllLinkRec.from_bytes(b)
 
         r = handler.msg_received(proto, msg)
-        assert r == Msg.CONTINUE
+        assert r == Msg.FINISHED
         assert isinstance(proto.sent, Msg.OutAllLinkGetNext)
         assert proto.handler == handler
         assert len(modem) == 1

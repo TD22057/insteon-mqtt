@@ -4,10 +4,11 @@
 #
 #===========================================================================
 from ..Address import Address
+from .Base import Base
 from .DbFlags import DbFlags
 
 
-class InpAllLinkRec:
+class InpAllLinkRec(Base):
     """All link database record.
 
     This is sent from the PLM modem to the host as a response to a
@@ -51,6 +52,8 @@ class InpAllLinkRec:
           addr:   (Address) The address of the device in the link.
           data:   (bytes) 3 byte data record.
         """
+        super().__init__()
+
         assert isinstance(flags, DbFlags)
         assert len(data) == 3
 

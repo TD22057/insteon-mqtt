@@ -66,7 +66,12 @@ class ModemGetDb:
             LOG.info("Modem requesting next db record")
             msg = Msg.OutAllLinkGetNext()
             protocol.send(msg, self)
-            return Msg.CONTINUE
+
+            # Return finished - this way the getnext message will go
+            # out.  We'll be used as the handler for that as well
+            # which repeats until we get a nak response (handled
+            # above).
+            return Msg.FINISHED
 
         return Msg.UNKNOWN
 

@@ -4,9 +4,10 @@
 #
 #===========================================================================
 from ..Address import Address
+from .Base import Base
 
 
-class InpAllLinkComplete:
+class InpAllLinkComplete(Base):
     """All linking complete.
 
     This is sent from the PLM modem to the host when linking between
@@ -59,6 +60,8 @@ class InpAllLinkComplete:
           dev_subcat:   (int) Device subcategory.
           firmware:     (int) Firmware revision.
         """
+        super().__init__()
+
         self.link = link
         self.plm_responder = link == self.RESPONDER
         self.plm_controller = link == self.CONTROLLER

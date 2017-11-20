@@ -3,9 +3,10 @@
 # Input insteon all link status message.
 #
 #===========================================================================
+from .Base import Base
 
 
-class InpAllLinkStatus:
+class InpAllLinkStatus(Base):
     """All link cleanup status report.
 
     This is sent from the PLM modem to the host after a device has
@@ -42,6 +43,8 @@ class InpAllLinkStatus:
         Args:
           is_ack: (bool) True for ACK, False for NAK.
         """
+        super().__init__()
+
         self.is_ack = is_ack
 
     #-----------------------------------------------------------------------

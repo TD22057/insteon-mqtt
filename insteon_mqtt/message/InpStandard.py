@@ -5,10 +5,11 @@
 #===========================================================================
 import io
 from ..Address import Address
+from .Base import Base
 from .Flags import Flags
 
 
-class InpStandard:
+class InpStandard(Base):
     """Direct, standard message.
 
     This is sent from the PLM modem to the host when various
@@ -56,6 +57,8 @@ class InpStandard:
           cmd1:       (int) The command 1 byte.
           cmd2:       (int) The command 2 byte.
         """
+        super().__init__()
+
         assert isinstance(flags, Flags)
 
         self.from_addr = from_addr
@@ -85,7 +88,7 @@ class InpStandard:
 #===========================================================================
 
 
-class InpExtended:
+class InpExtended(Base):
     """Direct, extended message from PLM->host.
 
     The extended message is used by specialized devices to report
@@ -132,6 +135,8 @@ class InpExtended:
           cmd2:       (int) The command 2 byte.
           data:       (bytes) 14 byte extended data array.
         """
+        super().__init__()
+
         assert len(data) == 14
 
         self.from_addr = from_addr

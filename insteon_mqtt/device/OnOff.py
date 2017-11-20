@@ -18,10 +18,6 @@ class OnOff(Base):
     This includes any device that turns on and off like an appliance
     module or non-dimming lamp module.
 
-    The Signal OnOff.signal_level_changed will be emitted whenever
-    the device level is changed with the calling sequence (device,
-    level) where level is 0->0xff.
-
     The Signal OnOff.signal_active will be emitted whenever
     the device level is changed with the calling sequence (device,
     on) where on is True for on and False for off.
@@ -69,8 +65,9 @@ class OnOff(Base):
 
         self._is_on = False
 
-        # Support dimmer style signals and motion on/off style signals.
-        self.signal_level_changed = Signal.Signal()  # (Device, level)
+        # TODO: Not sure we should do this?
+        #self.signal_level_changed = Signal.Signal()  # (Device, level)
+        # Support on/off style signals.
         self.signal_active = Signal.Signal()  # (Device, bool)
 
         # Remove (mqtt) commands mapped to methods calls.  Add to the
@@ -300,7 +297,8 @@ class OnOff(Base):
         LOG.info("Setting device %s '%s' on %s", self.addr, self.name, is_on)
         self._is_on = bool(is_on)
 
-        self.signal_level_changed.emit(self, 0xff if is_on else 0x00)
+        # TODO: should we support this?
+        #self.signal_level_changed.emit(self, 0xff if is_on else 0x00)
         self.signal_active.emit(self, self._is_on)
 
     #-----------------------------------------------------------------------

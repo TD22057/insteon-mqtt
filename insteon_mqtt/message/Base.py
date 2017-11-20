@@ -16,8 +16,8 @@ class Base:
     fixed_msg_size = None  # set if the message is fixed length.
 
     #-----------------------------------------------------------------------
-    @staticmethod
-    def from_bytes(raw):
+    @classmethod
+    def from_bytes(cls, raw):
         """Read the message from a byte stream.
 
         This should only be called if raw[1] == msg_code and len(raw)
@@ -29,10 +29,11 @@ class Base:
         Returns:
            Returns the constructed message object.
         """
-        raise NotImplementedError("from_bytes() not implemented")
+        raise NotImplementedError("%s.from_bytes() not implemented" % cls)
 
     #-----------------------------------------------------------------------
-    def msg_size(self, raw):
+    @classmethod
+    def msg_size(cls, raw):
         """Return the message size in bytes.
 
         Standard and Extended messages depend on the message flags
@@ -43,14 +44,13 @@ class Base:
            raw   (bytes): The current byte stream to read from.
 
         Returns:
-           Returns the constructed message object.
-
+           (int) Returns the number of bytes needed to construct the
+           message.
         """
-        if self.fixed_msg_size:
-            return self.fixed_msg_size
+        if cls.fixed_msg_size:
+            return cls.fixed_msg_size
         else:
-            raise NotImplementedError("%s.msg_size() not implemented" %
-                                      self.__class__)
+            raise NotImplementedError("%s.msg_size() not implemented" % cls)
 
     #-----------------------------------------------------------------------
     def to_bytes(self):

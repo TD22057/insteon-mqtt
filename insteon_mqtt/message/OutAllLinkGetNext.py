@@ -3,9 +3,10 @@
 # Output insteon get next PLM modem database message.
 #
 #===========================================================================
+from .Base import Base
 
 
-class OutAllLinkGetNext:
+class OutAllLinkGetNext(Base):
     """Get the next PLM modem all link database record.
 
     This is sent to the PLM modem to get the next database record.
@@ -47,6 +48,8 @@ class OutAllLinkGetNext:
           is_ack:  (bool) True for ACK, False for NAK.  None for output
                    commands to the modem.
         """
+        super().__init__()
+
         self.is_ack = is_ack
 
     #-----------------------------------------------------------------------

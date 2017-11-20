@@ -5,10 +5,11 @@
 #===========================================================================
 import io
 from ..Address import Address
+from .Base import Base
 from .Flags import Flags
 
 
-class OutStandard:
+class OutStandard(Base):
     """Direct, standard message from host->PLM.
 
     When sending, this will be 8 bytes long.  When receiving back from
@@ -77,6 +78,34 @@ class OutStandard:
         return OutStandard(to_addr, flags, cmd1, cmd2)
 
     #-----------------------------------------------------------------------
+    @classmethod
+    def msg_size(cls, raw):
+        """Return the message size in bytes.
+
+        Standard and Extended messages depend on the message flags
+        inside the message so some types will need to parse part of
+        the byte array to figure out the total size.
+
+        Args:
+           raw   (bytes): The current byte stream to read from.
+
+        Returns:
+           (int) Returns the number of bytes needed to construct the
+           message.
+        """
+        # Get at least enough to make a standard message.
+        if len(raw) < OutStandard.fixed_msg_size:
+            return OutStandard.fixed_msg_size
+
+        # Read the message flags first to see if we have an extended
+        # message.  If we do, make sure we have enough bytes.
+        flags = Flags.from_bytes(raw, 5)
+        if not flags.is_ext:
+            return OutStandard.fixed_msg_size
+        else:
+            return OutExtended.fixed_msg_size
+
+    #-----------------------------------------------------------------------
     def __init__(self, to_addr, flags, cmd1, cmd2, is_ack=None):
         """General constructor
 
@@ -88,6 +117,8 @@ class OutStandard:
           is_ack:   (bool) True for ACK, False for NAK.  None for output
                     commands to the modem.
         """
+        super().__init__()
+
         assert isinstance(flags, Flags)
 
         self.to_addr = to_addr
@@ -95,30 +126,6 @@ class OutStandard:
         self.cmd1 = cmd1
         self.cmd2 = cmd2
         self.is_ack = is_ack
-
-    #-----------------------------------------------------------------------
-    def msg_size(self, raw):
-        """Return the message size in bytes.
-
-        Standard and Extended messages depend on the message flags
-        inside the message so some types will need to parse part of
-        the byte array to figure out the total size.
-
-        Args:
-           raw   (bytes): The current byte stream to read from.
-
-        Returns:
-           Returns the constructed message object.
-        """
-        assert len(raw) >= OutStandard.fixed_msg_size
-
-        # Read the message flags first to see if we have an extended
-        # message.  If we do, make sure we have enough bytes.
-        flags = Flags.from_bytes(raw, 5)
-        if not flags.is_ext:
-            return OutStandard.fixed_msg_size
-        else:
-            return OutExtended.fixed_msg_size
 
     #-----------------------------------------------------------------------
     def to_bytes(self):

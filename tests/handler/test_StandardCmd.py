@@ -12,7 +12,6 @@ class Test_StandardCmd:
         # Tests matching the command from the outbound message.
         proto = MockProto()
         calls = []
-        modem = IM.Modem(proto)
 
         addr = IM.Address('0a.12.34')
 
@@ -66,7 +65,6 @@ class Test_StandardCmd:
         # Tests matching the command passed in.
         proto = MockProto()
         calls = []
-        modem = IM.Modem(proto)
 
         addr = IM.Address('0a.12.34')
 
@@ -98,13 +96,11 @@ class Test_StandardCmd:
         r = handler.msg_received(proto, msg)
         assert r == Msg.UNKNOWN
 
-
     #-----------------------------------------------------------------------
     def test_any_cmd(self):
         # Tests matching any command
         proto = MockProto()
         calls = []
-        modem = IM.Modem(proto)
 
         addr = IM.Address('0a.12.34')
 

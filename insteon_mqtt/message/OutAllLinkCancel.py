@@ -3,9 +3,10 @@
 # Output insteon all link cancel message.
 #
 #===========================================================================
+from .Base import Base
 
 
-class OutAllLinkCancel:
+class OutAllLinkCancel(Base):
     """Cancel PLM all linking mode.
 
     This is sent to cancel the all link mode on the PLM modem.  The
@@ -46,6 +47,8 @@ class OutAllLinkCancel:
           is_ack:  (bool) True for ACK, False for NAK.  None for output
                    commands to the modem.
         """
+        super().__init__()
+
         self.is_ack = is_ack
 
     #-----------------------------------------------------------------------

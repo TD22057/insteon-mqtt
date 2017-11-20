@@ -4,9 +4,10 @@
 #
 #===========================================================================
 from ..Address import Address
+from .Base import Base
 
 
-class InpAllLinkFailure:
+class InpAllLinkFailure(Base):
     """User pressed the PLM set button.
 
     This is sent from the PLM modem to the host when all linking
@@ -45,6 +46,8 @@ class InpAllLinkFailure:
           group:  (int) The group the link is for.
           addr:   (Address) The address of the device in the link.
         """
+        super().__init__()
+
         self.group = group
         self.addr = addr
 

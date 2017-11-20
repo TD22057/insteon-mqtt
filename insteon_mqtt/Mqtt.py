@@ -335,7 +335,7 @@ class Mqtt:
 
             # If the device isn't JSON, turn it into JSON so we can
             # just parse JSOn data.
-            s = payload.strip()
+            s = payload.decode("utf-8").strip()
 
             # Single command input.
             if '{' not in s:
@@ -343,7 +343,7 @@ class Mqtt:
 
             # JSON dictionary of command and arguments.
             else:
-                data = json.loads(payload)
+                data = json.loads(s)
 
             # Pass everyting to the device for parsing.
             device.run_command(**data)
