@@ -3,9 +3,10 @@
 # Output insteon all link command message.
 #
 #===========================================================================
+from .Base import Base
 
 
-class OutAllLink:
+class OutAllLink(Base):
     """Send an all link command to a group.
 
     This triggers a PLM modem scene.  Any devices linked to the modem

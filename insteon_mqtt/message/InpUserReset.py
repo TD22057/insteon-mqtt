@@ -3,9 +3,10 @@
 # Input insteon user factory reset message.
 #
 #===========================================================================
+from .Base import Base
 
 
-class InpUserReset:
+class InpUserReset(Base):
     """User reset the PLM modem.
 
     This is sent from the PLM modem to the host when the user does a

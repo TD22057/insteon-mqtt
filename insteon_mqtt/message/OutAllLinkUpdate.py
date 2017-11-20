@@ -5,10 +5,11 @@
 #===========================================================================
 import io
 from ..Address import Address
+from .Base import Base
 from .DbFlags import DbFlags
 
 
-class OutAllLinkUpdate:
+class OutAllLinkUpdate(Base):
     """TODO: doc
 
     When sending, this will be 8 bytes long.  When receiving back from

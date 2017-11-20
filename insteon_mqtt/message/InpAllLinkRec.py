@@ -4,10 +4,11 @@
 #
 #===========================================================================
 from ..Address import Address
+from .Base import Base
 from .DbFlags import DbFlags
 
 
-class InpAllLinkRec:
+class InpAllLinkRec(Base):
     """All link database record.
 
     This is sent from the PLM modem to the host as a response to a

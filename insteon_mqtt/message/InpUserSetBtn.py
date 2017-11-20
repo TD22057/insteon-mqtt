@@ -3,9 +3,10 @@
 # Input insteon user pressed set button message.
 #
 #===========================================================================
+from .Base import Base
 
 
-class InpUserSetBtn:
+class InpUserSetBtn(Base):
     """User pressed the PLM set button.
 
     This is sent from the PLM modem to the host when the user presses

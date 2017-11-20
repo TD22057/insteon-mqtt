@@ -3,9 +3,10 @@
 # Output insteon get first PLM database record message.
 #
 #===========================================================================
+from .Base import Base
 
 
-class OutAllLinkGetFirst:
+class OutAllLinkGetFirst(Base):
     """Get the first PLM modem all link database record.
 
     This is sent to the PLM modem to get start receiving the all link

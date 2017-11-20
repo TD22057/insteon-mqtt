@@ -3,9 +3,10 @@
 # Output insteon reset the PLM modem message.
 #
 #===========================================================================
+from .Base import Base
 
 
-class OutResetPlm:
+class OutResetPlm(Base):
     """Command to reset the PLM modem.
 
     Send this command to reset the PLM modem.  This is probably a bad

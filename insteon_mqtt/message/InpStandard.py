@@ -5,10 +5,11 @@
 #===========================================================================
 import io
 from ..Address import Address
+from .Base import Base
 from .Flags import Flags
 
 
-class InpStandard:
+class InpStandard(Base):
     """Direct, standard message.
 
     This is sent from the PLM modem to the host when various

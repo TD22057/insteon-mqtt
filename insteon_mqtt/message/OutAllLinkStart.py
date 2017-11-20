@@ -3,9 +3,10 @@
 # Output insteon start all link mode message.
 #
 #===========================================================================
+from .Base import Base
 
 
-class OutAllLinkStart:
+class OutAllLinkStart(Base):
     """Begin all linking command message.
     """
     msg_code = 0x64

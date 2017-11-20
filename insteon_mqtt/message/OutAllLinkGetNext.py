@@ -3,9 +3,10 @@
 # Output insteon get next PLM modem database message.
 #
 #===========================================================================
+from .Base import Base
 
 
-class OutAllLinkGetNext:
+class OutAllLinkGetNext(Base):
     """Get the next PLM modem all link database record.
 
     This is sent to the PLM modem to get the next database record.

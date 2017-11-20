@@ -4,9 +4,10 @@
 #
 #===========================================================================
 from ..Address import Address
+from .Base import Base
 
 
-class InpAllLinkFailure:
+class InpAllLinkFailure(Base):
     """User pressed the PLM set button.
 
     This is sent from the PLM modem to the host when all linking
