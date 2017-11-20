@@ -118,7 +118,7 @@ State change messages get published whenever the device changes state.
 
 ```
    Topic: insteon/state/AA.BB.CC
-   Payload: { 'level' : LEVEL }
+   Payload: { "level" : LEVEL }
 ```
 
 Input commands can be sent to the device to turn it on or off, change
@@ -129,9 +129,12 @@ the dimmer level, refresh the state, or download it's database
    Payload:
       'ON' or 'OFF'
       'UP' or 'DOWN'
-      { 'cmd' : 'set', 'level' : LEVEL }
+      { "cmd" : "set", "level" : LEVEL }
       'refresh'
       'getdb'
+
+   Example command line:
+      mosquitto_pub -t 'insteon/set/48.b0.ad' -m '{"cmd":"set", "level":128}'
 ```
 
 
@@ -212,7 +215,7 @@ The condition string will be one of: 'smoke', 'CO', 'test', 'clear',
 
 ```
    Topic: insteon/state/AA.BB.CC
-   Payload: { 'condition' : CONDITION }
+   Payload: { "condition" : CONDITION }
 ```
 
 Input commands can be sent to the device to refresh the state, or

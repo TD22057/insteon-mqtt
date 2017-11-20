@@ -168,12 +168,13 @@ class Base:
           refresh:  No arguments.  Ping the device and see if the database is
                     current.  Reloads the modem database if needed.
         """
-        cmd = kwargs.pop('cmd', None).lower().strip()
+        cmd = kwargs.pop('cmd', None)
         if not cmd:
             LOG.error("Invalid command sent to device %s '%s'.  No 'cmd' "
                       "keyword: %s", self.addr, self.name, kwargs)
             return
 
+        cmd = cmd.lower().strip()
         func = self.cmd_map.get(cmd, None)
         if not func:
             LOG.error("Invalid command sent to device %s '%s'.  Input cmd "
