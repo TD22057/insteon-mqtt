@@ -53,8 +53,7 @@ class Test_DeviceDb:
         handler = IM.handler.DeviceDb(addr, calls.append)
 
         flags = Msg.Flags(Msg.Flags.DIRECT, True)
-        ctrl = Msg.DbFlags(in_use=True, is_controller=True, high_water=True)
-        data = bytes([0x01,0,0,0,0,0,0,0x01,0,0,0,0,0,0])
+        data = bytes([0x01, 0, 0, 0, 0, 0, 0, 0x01, 0, 0, 0, 0, 0, 0])
         msg = Msg.InpExtended(addr, addr, flags, 0x2f, 0x00, data)
 
         r = handler.msg_received(proto, msg)

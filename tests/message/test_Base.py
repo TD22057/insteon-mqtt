@@ -18,7 +18,7 @@ class Test_Base:
         with pytest.raises(NotImplementedError):
             obj.msg_size([])
 
-        obj.fixed_msg_size = 10
+        Msg.Base.fixed_msg_size = 10
         assert obj.msg_size([]) == 10
 
         with pytest.raises(NotImplementedError):

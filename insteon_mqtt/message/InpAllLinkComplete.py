@@ -61,7 +61,7 @@ class InpAllLinkComplete(Base):
           firmware:     (int) Firmware revision.
         """
         super().__init__()
-        
+
         self.link = link
         self.plm_responder = link == self.RESPONDER
         self.plm_controller = link == self.CONTROLLER
