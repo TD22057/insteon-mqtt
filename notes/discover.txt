@@ -1,0 +1,54 @@
+
+modem.startWatch()
+
+modem.getid()
+WRITE 'OUT:Cmd:0x60|'
+sent msg: OUT:Cmd:0x60
+IN:Cmd:0x60
+   IMAddress:44.85.11
+   DeviceCategory:0x03
+   DeviceSubCategory:0x15
+   FirmwareVersion:0x9E
+   ACK/NACK:0x06
+
+sw1.getId()
+
+WRITE 'OUT:
+Cmd:0x62
+   toAddress:48.3D.46
+   messageFlags:0x0F=DIRECT:3:3
+   command1:0x10
+   command2:0x00|'
+
+id got ack!
+modem got msg: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x10
+   command2:0x00
+
+id got info: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:01.20.45
+   messageFlags:0x8F=BROADCAST:3:3
+   command1:0x01
+   command2:0x82
+
+DIMMER switch:
+id dev cat: 01 subcat: 20 firmware: 45 hardware: 82
+
+modem got msg: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:01.20.45
+   messageFlags:0x8F=BROADCAST:3:3
+   command1:0x01
+   command2:0x82
+
+ON/OFF lamp:
+id dev cat: 02 subcat: 37 firmware: 48 hardware: 48
+
+DIMMER lamp module:
+id dev cat: 01 subcat: 0e firmware: 43 hardware: 36
+
+SMOKE: doesn't reply to getid() !

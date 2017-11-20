@@ -1,0 +1,799 @@
+
+=================================
+Modem DB modification commands:
+
+modem.addController(addr, group)
+modem.addResponder(addr, group)
+modem.removeController(addr, group)
+modem.removeResponder(addr, group)
+
+Device DB modification commands:
+
+dev.addController(addr, group, [data])
+dev.addResponder(addr, group, [data])
+dev.removeController(addr, group)
+dev.removeResponder(addr, group)
+
+keypads - this just a short cut to map button # to hard coded group
+dev.addControllerForButton
+
+keypads 6 button:
+     on: grp 1
+ grp 3      grp 4
+ grp 5      grp 6
+    off: grp 1
+
+keypad 8 button:
+ grp 1      grp 2
+ grp 3      grp 4
+ grp 5      grp 6
+ grp 7      grp 8
+
+
+=================================
+
+modem.startWatch()
+
+---
+modem.addController("44.01.02", 3)
+
+WRITE 'OUT:Cmd:0x6F
+   controlCode:0x40
+   recordFlags:0xA2
+   ALLLinkGroup:0x03
+   linkAddress:44.01.02
+   linkData1:0x00
+   linkData2:0x00
+   linkData3:0x03
+   '
+sent msg: OUT:Cmd:0x6F
+   controlCode:0x40
+   recordFlags:0xA2
+   ALLLinkGroup:0x03
+   linkAddress:44.01.02
+   linkData1:0x00
+   linkData2:0x00
+   linkData3:0x03
+
+addController got msg: IN:Cmd:0x6F
+   controlCode:0x40
+   recordFlags:0xA2
+   ALLLinkGroup:0x03
+   linkAddress:44.01.02
+   linkData1:0x00
+   linkData2:0x00
+   linkData3:0x03
+   ACK/NACK:0x06
+
+modem got msg: IN:Cmd:0x6F
+   controlCode:0x40
+   recordFlags:0xA2
+   ALLLinkGroup:0x03
+   linkAddress:44.01.02
+   linkData1:0x00
+   linkData2:0x00
+   linkData3:0x03
+   ACK/NACK:0x06
+
+
+---
+modem.addResponder("44.01.02", 3)
+
+WRITE 'OUT:Cmd:0x6F
+   controlCode:0x41
+   recordFlags:0xA2
+   ALLLinkGroup:0x03
+   linkAddress:44.01.02
+   linkData1:0x00
+   linkData2:0x00
+   linkData3:0x03
+   '
+sent msg: OUT:Cmd:0x6F
+   controlCode:0x41
+   recordFlags:0xA2
+   ALLLinkGroup:0x03
+   linkAddress:44.01.02
+   linkData1:0x00
+   linkData2:0x00
+   linkData3:0x03
+
+modem got msg: IN:Cmd:0x6F
+   controlCode:0x41
+   recordFlags:0xA2
+   ALLLinkGroup:0x03
+   linkAddress:44.01.02
+   linkData1:0x00
+   linkData2:0x00
+   linkData3:0x03
+   ACK/NACK:0x06
+
+addResponder got msg: IN:Cmd:0x6F
+   controlCode:0x41
+   recordFlags:0xA2
+   ALLLinkGroup:0x03
+   linkAddress:44.01.02
+   linkData1:0x00
+   linkData2:0x00
+   linkData3:0x03
+   ACK/NACK:0x06
+
+
+---
+not supported by terminal:
+modem.removeController("44.01.02", 3)
+modem.removeResponder("44.01.02", 3)
+
+BAD: this only removed controller, not responder.  Ran twice and it
+removed both records.
+
+modem.removeResponderOrController("44.01.02", 3)
+
+WRITE 'OUT:Cmd:0x6F
+   controlCode:0x80
+   recordFlags:0x00
+   ALLLinkGroup:0x03
+   linkAddress:44.01.02
+   linkData1:0x00
+   linkData2:0x00
+   linkData3:0x00
+   '
+sent msg: OUT:Cmd:0x6F
+   controlCode:0x80
+   recordFlags:0x00
+   ALLLinkGroup:0x03
+   linkAddress:44.01.02
+   linkData1:0x00
+   linkData2:0x00
+   linkData3:0x00
+
+removeResponderOrController got msg: IN:Cmd:0x6F
+   controlCode:0x80
+   recordFlags:0x00
+   ALLLinkGroup:0x03
+   linkAddress:44.01.02
+   linkData1:0x00
+   linkData2:0x00
+   linkData3:0x00
+   ACK/NACK:0x06
+
+modem got msg: IN:Cmd:0x6F
+   controlCode:0x80
+   recordFlags:0x00
+   ALLLinkGroup:0x03
+   linkAddress:44.01.02
+   linkData1:0x00
+   linkData2:0x00
+   linkData3:0x00
+   ACK/NACK:0x06
+
+---
+sw1.addController("44.01.02", 3, [4,5,6])
+
+no unused records, adding one at the end!
+TED: Add an empty 0 record to mark the end of the db.
+sent msg: OUT:Cmd:0x62
+   toAddress:48.3D.46
+   messageFlags:0x1F=DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x02
+   userData3:0x0F
+   userData4:0xB7
+   userData5:0x08
+   userData6:0x00
+   userData7:0x00
+   userData8:0x00
+   userData9:0x00
+   userData10:0x00
+   userData11:0x00
+   userData12:0x00
+   userData13:0x00
+   userData14:0x01
+
+TED: Then write the new record in the prev mem address:
+sent msg: OUT:Cmd:0x62
+   toAddress:48.3D.46
+   messageFlags:0x1F=DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x02
+   userData3:0x0F
+   userData4:0xBF
+   userData5:0x08
+   userData6:0xE2
+   userData7:0x03
+   userData8:0x44
+   userData9:0x01
+   userData10:0x02
+   userData11:0x04
+   userData12:0x05
+   userData13:0x06
+   userData14:0xBE
+
+modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xBF
+   userData5:0x00
+   userData6:0x00
+   userData7:0x00
+   userData8:0x00
+   userData9:0x00
+   userData10:0x00
+   userData11:0x00
+   userData12:0x00
+   userData13:0x00
+   userData14:0x02
+
+got set record: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+
+modem got msg: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+
+modem got msg: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+
+
+---
+sw1.addResponder("44.01.02", 3, [4,5,6])
+
+
+sent msg: OUT:Cmd:0x62
+   toAddress:48.3D.46
+   messageFlags:0x1F=DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x02
+   userData3:0x0F
+   userData4:0xAF
+   userData5:0x08
+   userData6:0x00
+   userData7:0x00
+   userData8:0x00
+   userData9:0x00
+   userData10:0x00
+   userData11:0x00
+   userData12:0x00
+   userData13:0x00
+   userData14:0x09
+
+now setting the new record!
+sent msg: OUT:Cmd:0x62
+   toAddress:48.3D.46
+   messageFlags:0x1F=DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x02
+   userData3:0x0F
+   userData4:0xB7
+   userData5:0x08
+   userData6:0xA2
+   userData7:0x03
+   userData8:0x44
+   userData9:0x01
+   userData10:0x02
+   userData11:0x04
+   userData12:0x05
+   userData13:0x06
+   userData14:0x06
+
+modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xB7
+   userData5:0x00
+   userData6:0x00
+   userData7:0x00
+   userData8:0x00
+   userData9:0x00
+   userData10:0x00
+   userData11:0x00
+   userData12:0x00
+   userData13:0x00
+   userData14:0x0A
+
+got set record: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+
+modem got msg: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+
+modem got msg: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+
+
+---
+sw1.removeController("44.01.02", 3)
+
+erasing active record at offset: 0fbf
+sent msg: OUT:Cmd:0x62
+   toAddress:48.3D.46
+   messageFlags:0x1F=DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x02
+   userData3:0x0F
+   userData4:0xBF
+   userData5:0x08
+   userData6:0x22
+   userData7:0x03
+   userData8:0x44
+   userData9:0x01
+   userData10:0x02
+   userData11:0x04
+   userData12:0x05
+   userData13:0x06
+   userData14:0x7E
+
+modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xAF
+   userData5:0x00
+   userData6:0x00
+   userData7:0x00
+   userData8:0x00
+   userData9:0x00
+   userData10:0x00
+   userData11:0x00
+   userData12:0x00
+   userData13:0x00
+   userData14:0x12
+
+got set record: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+
+modem got msg: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+
+
+---
+sw1.addController("44.01.02", 3, [4,5,6])
+
+reusing inactive record:0fbf 44.01.02                       44.01.02 (RESP) 00100010 group: 03 ON LVL:   4 RMPRT:   5 BUTTON:   6
+sent msg: OUT:Cmd:0x62
+   toAddress:48.3D.46
+   messageFlags:0x1F=DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x02
+   userData3:0x0F
+   userData4:0xBF
+   userData5:0x08
+   userData6:0xE2
+   userData7:0x03
+   userData8:0x44
+   userData9:0x01
+   userData10:0x02
+   userData11:0x04
+   userData12:0x05
+   userData13:0x06
+   userData14:0xBE
+
+link record added!
+modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xAF
+   userData5:0x00
+   userData6:0x00
+   userData7:0x00
+   userData8:0x00
+   userData9:0x00
+   userData10:0x00
+   userData11:0x00
+   userData12:0x00
+   userData13:0x00
+   userData14:0x12
+
+got set record: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+
+modem got msg: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+
+
+---
+sw1.removeResponder("44.01.02", 3)
+
+erasing active record at offset: 0fb7
+sent msg: OUT:Cmd:0x62
+   toAddress:48.3D.46
+   messageFlags:0x1F=DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x02
+   userData3:0x0F
+   userData4:0xB7
+   userData5:0x08
+   userData6:0x22
+   userData7:0x03
+   userData8:0x44
+   userData9:0x01
+   userData10:0x02
+   userData11:0x04
+   userData12:0x05
+   userData13:0x06
+   userData14:0x86
+
+modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x11=DIRECT:1:0
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xAF
+   userData5:0x00
+   userData6:0x00
+   userData7:0x00
+   userData8:0x00
+   userData9:0x00
+   userData10:0x00
+   userData11:0x00
+   userData12:0x00
+   userData13:0x00
+   userData14:0x12
+
+got set record: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+
+modem got msg: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+
+
+---
+sw1.removeController("44.01.02", 3)
+
+erasing active record at offset: 0fbf
+sent msg: OUT:Cmd:0x62
+   toAddress:48.3D.46
+   messageFlags:0x1F=DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x02
+   userData3:0x0F
+   userData4:0xBF
+   userData5:0x08
+   userData6:0x22
+   userData7:0x03
+   userData8:0x44
+   userData9:0x01
+   userData10:0x02
+   userData11:0x04
+   userData12:0x05
+   userData13:0x06
+   userData14:0x7E
+
+modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xAF
+   userData5:0x00
+   userData6:0x00
+   userData7:0x00
+   userData8:0x00
+   userData9:0x00
+   userData10:0x00
+   userData11:0x00
+   userData12:0x00
+   userData13:0x00
+   userData14:0x12
+
+got set record: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+
+modem got msg: IN:Cmd:0x50
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x2F=ACK_OF_DIRECT:3:3
+   command1:0x2F
+   command2:0x00
+
+---
+getdb:
+
+IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xFF
+   userData5:0x00
+   userData6:0xAA
+   userData7:0x01
+   userData8:0x44
+   userData9:0x85
+   userData10:0x11
+   userData11:0xFF
+   userData12:0x1C
+   userData13:0x01
+   userData14:0x21
+
+ 2modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xF7
+   userData5:0x00
+   userData6:0xE2
+   userData7:0x01
+   userData8:0x44
+   userData9:0x85
+   userData10:0x11
+   userData11:0x03
+   userData12:0x1C
+   userData13:0x01
+   userData14:0xED
+
+ 3modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xEF
+   userData5:0x00
+   userData6:0xE2
+   userData7:0x01
+   userData8:0x37
+   userData9:0x2D
+   userData10:0x35
+   userData11:0x03
+   userData12:0x1C
+   userData13:0x01
+   userData14:0x36
+
+ 4modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xE7
+   userData5:0x00
+   userData6:0xAA
+   userData7:0x01
+   userData8:0x37
+   userData9:0x2D
+   userData10:0x35
+   userData11:0xFE
+   userData12:0x1C
+   userData13:0x01
+   userData14:0x7B
+
+ 5modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xDF
+   userData5:0x00
+   userData6:0xE2
+   userData7:0x01
+   userData8:0x48
+   userData9:0xB0
+   userData10:0xAD
+   userData11:0x03
+   userData12:0x1C
+   userData13:0x01
+   userData14:0x3A
+
+ 6modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xD7
+   userData5:0x00
+   userData6:0xAA
+   userData7:0x01
+   userData8:0x48
+   userData9:0xB0
+   userData10:0xAD
+   userData11:0xFE
+   userData12:0x1C
+   userData13:0x01
+   userData14:0x7F
+
+ 7modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xCF
+   userData5:0x00
+   userData6:0xE2
+   userData7:0x01
+   userData8:0x3A
+   userData9:0x29
+   userData10:0x84
+   userData11:0x03
+   userData12:0x1C
+   userData13:0x01
+   userData14:0x08
+
+ 8modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xC7
+   userData5:0x00
+   userData6:0xAA
+   userData7:0x01
+   userData8:0x3A
+   userData9:0x29
+   userData10:0x84
+   userData11:0xFE
+   userData12:0x1C
+   userData13:0x01
+   userData14:0x4D
+
+ 9modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xBF
+   userData5:0x00
+   userData6:0x22
+   userData7:0x03
+   userData8:0x44
+   userData9:0x01
+   userData10:0x02
+   userData11:0x04
+   userData12:0x05
+   userData13:0x06
+   userData14:0x87
+
+ 10modem got msg: IN:Cmd:0x51
+   fromAddress:48.3D.46
+   toAddress:44.85.11
+   messageFlags:0x15=DIRECT:1:1
+   command1:0x2F
+   command2:0x00
+   userData1:0x00
+   userData2:0x01
+   userData3:0x0F
+   userData4:0xB7
+   userData5:0x00
+   userData6:0x22
+   userData7:0x03
+   userData8:0x44
+   userData9:0x01
+   userData10:0x02
+   userData11:0x04
+   userData12:0x05
+   userData13:0x06
+   userData14:0x8F
+
+ 11
