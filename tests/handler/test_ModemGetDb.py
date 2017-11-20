@@ -1,17 +1,17 @@
 #===========================================================================
 #
-# Tests for: insteont_mqtt/handler/ModemDb.py
+# Tests for: insteont_mqtt/handler/ModemGetDb.py
 #
 #===========================================================================
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
 
 
-class Test_ModemDb:
+class Test_ModemGetDb:
     def test_acks(self):
         proto = MockProtocol()
         modem = MockModem()
-        handler = IM.handler.ModemDb(modem)
+        handler = IM.handler.ModemGetDb(modem)
 
         get_first = Msg.OutAllLinkGetFirst(is_ack=True)
         get_next = Msg.OutAllLinkGetNext(is_ack=True)
@@ -33,7 +33,7 @@ class Test_ModemDb:
     #-----------------------------------------------------------------------
     def test_recs(self):
         modem = IM.db.Modem()
-        handler = IM.handler.ModemDb(modem)
+        handler = IM.handler.ModemGetDb(modem)
         proto = MockProtocol()
 
         b = bytes([0x02, 0x57,

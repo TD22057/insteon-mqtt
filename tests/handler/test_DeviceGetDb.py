@@ -1,19 +1,19 @@
 #===========================================================================
 #
-# Tests for: insteont_mqtt/handler/DeviceDb.py
+# Tests for: insteont_mqtt/handler/DeviceGetDb.py
 #
 #===========================================================================
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
 
 
-class Test_DeviceDb:
+class Test_DeviceGetDb:
     def test_acks(self):
         proto = None
         calls = []
 
         addr = IM.Address('0a.12.34')
-        handler = IM.handler.DeviceDb(addr, calls.append)
+        handler = IM.handler.DeviceGetDb(addr, calls.append)
 
         # Normal nak
         std_ack = Msg.OutStandard.direct(addr, 0x2f, 0x00)
@@ -50,7 +50,7 @@ class Test_DeviceDb:
         calls = []
 
         addr = IM.Address('0a.12.34')
-        handler = IM.handler.DeviceDb(addr, calls.append)
+        handler = IM.handler.DeviceGetDb(addr, calls.append)
 
         flags = Msg.Flags(Msg.Flags.DIRECT, True)
         data = bytes([0x01, 0, 0, 0, 0, 0, 0, 0x01, 0, 0, 0, 0, 0, 0])
