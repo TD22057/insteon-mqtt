@@ -120,8 +120,8 @@ class Base:
         """Load the all link database from the modem.
 
         This sends a message to the modem to start downloading the all
-        link database.  The message handler handler.ModemDb is used to
-        process the replies and update the modem database.
+        link database.  The message handler handler.DeviceGetDb is
+        used to process the replies and update the modem database.
         """
         # We need to get the current db delta so we know which
         # database we're getting.  So clear the current flag and then
@@ -151,6 +151,51 @@ class Base:
         # case don't check it against our input when matching messages.
         msg_handler = handler.StandardCmd(msg, self.handle_refresh, cmd=-1)
         self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def add_controller_of(self, addr, group, data=None):
+        """TODO: doc
+        """
+        # TODO: set controller flags.
+
+        # Find the first unused record in the database.  If prev_last
+        # is set, then we're adding a new entry and we need to update
+        # the old lsat entry at the same time.
+        rec, prev_last = self.db.find_unused(addr, group, True, data)
+
+        # TODO: move this to the database?
+
+
+
+
+
+
+    #-----------------------------------------------------------------------
+    def add_responder_of(self, addr, group, data=None):
+        """TODO: doc
+        """
+        cmd = Msg.OutAllLinkUpdate.ADD_RESPONDER
+        is_ctrl = False
+        device_cmd = "add_controller_of"
+        self._modify_db(cmd, is_ctrl, addr, group, device_cmd, data)
+
+    #-----------------------------------------------------------------------
+    def del_controller_of(self, addr, group):
+        """TODO: doc
+        """
+        cmd = Msg.OutAllLinkUpdate.DELETE
+        is_ctrl = True
+        device_cmd = "del_responder_of"
+        self._modify_db(cmd, is_ctrl, addr, group, device_cmd)
+
+    #-----------------------------------------------------------------------
+    def del_responder_of(self, addr, group):
+        """TODO: doc
+        """
+        cmd = Msg.OutAllLinkUpdate.DELETE
+        is_ctrl = False
+        device_cmd = "del_controller_of"
+        self._modify_db(cmd, is_ctrl, addr, group, device_cmd)
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
@@ -219,7 +264,7 @@ class Base:
         # Request that the device send us all of it's database
         # records.  These will be streamed as fast as possible to us.
         msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, bytes(14))
-        msg_handler = handler.DeviceDb(self.addr, self.handle_db_rec)
+        msg_handler = handler.DeviceGetDb(self.addr, self.handle_db_rec)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

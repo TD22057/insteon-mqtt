@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Insteon broadcast message handler
+# Device get all link database handler.
 #
 #===========================================================================
 import logging
@@ -9,7 +9,7 @@ from .. import message as Msg
 LOG = logging.getLogger(__name__)
 
 
-class DeviceDb:
+class DeviceGetDb:
     """Device database request message handler.
 
     To download the all link database from a device, we send a

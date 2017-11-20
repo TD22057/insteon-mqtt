@@ -57,7 +57,7 @@ class OutAllLinkUpdate(Base):
         return OutAllLinkUpdate(cmd, flags, group, addr, data, is_ack)
 
     #-----------------------------------------------------------------------
-    def __init__(self, cmd, flags, group, addr, data, is_ack=None):
+    def __init__(self, cmd, flags, group, addr, data=None, is_ack=None):
         """Constructor
 
         Args:
@@ -66,7 +66,7 @@ class OutAllLinkUpdate(Base):
           flags:   (Flags) Message flags to send.
           group:   (int) All link group for the command.
           addr:    (Address) Address to send the command to.
-          data:    (bytes) 3 byte data packet.
+          data:    (bytes) 3 byte data packet.  If None, three 0x00 are sent.
           is_ack:  (bool) True for ACK, False for NAK.  None for output
                    commands to the modem.
         """
@@ -81,7 +81,7 @@ class OutAllLinkUpdate(Base):
         self.flags = flags
         self.group = group
         self.addr = addr
-        self.data = data
+        self.data = data if data is not None else bytes(3)
         self.is_ack = is_ack
 
     #-----------------------------------------------------------------------

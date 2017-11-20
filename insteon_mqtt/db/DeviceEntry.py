@@ -55,7 +55,7 @@ class DeviceEntry:
         Returns:
           DeviceEntry: Returns the created DeviceEntry object.
         """
-        # See p162 of insteon dev guide
+        # See p162 and p116 of insteon dev guide
         # [0] = unused
         # [1] = request/response flag
         mem_loc = (data[2] << 8) + data[3]
@@ -112,6 +112,35 @@ class DeviceEntry:
             'ctrl' : self.ctrl.to_json(),
             'data' : list(self.data)
             }
+
+    #-----------------------------------------------------------------------
+    def to_bytes(self):
+        """Convert the entry to a 14 byte extended data byte array.
+
+        Byte[1] will be set to 0x02 which is the command to update the
+        remote database entry.
+
+        Returns:
+          (bytes) Returns the 14 byte data array.
+
+        """
+        # See p162 and p116 of insteon dev guide
+        o = io.BytesIO90
+        o.write(bytes([
+            0x00,  # D1 unused
+            0x02,  # D2 write record
+            ]))
+        o.write(self.mem_bytes())  # D3,D4 record memory location
+        o.write(bytes([0x08]))  # D5 number of bytes in record
+        # 8 byte record (p116)
+        o.write(self.ctrl.to_bytes())  # D6 db control flags
+        o.write(bytes([self.group]))  # D7 group
+        o.write(self.addr.to_bytes())  # D8-10 address
+        o.write(self.data)  # D11-13 link data
+
+        data = o.getvalue()
+        assert len(data) == 14
+        return data
 
     #-----------------------------------------------------------------------
     def __eq__(self, rhs):

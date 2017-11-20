@@ -54,23 +54,6 @@ class Modem:
         return len(self.entries)
 
     #-----------------------------------------------------------------------
-    def handle_db_rec(self, msg):
-        """Handle a InpAllLinkRec database record message.
-
-        This parses the input message into a ModemEntry record and
-        adds it to the database.
-
-        Args:
-          msg:  (InpAllLinkRec) The database record to parse.
-        """
-        assert isinstance(msg, Msg.InpAllLinkRec)
-        LOG.info("Adding modem db record for %s grp: %s", msg.addr, msg.group)
-
-        entry = ModemEntry(msg.addr, msg.group, msg.flags.is_controller,
-                           msg.data)
-        self.add_entry(entry)
-
-    #-----------------------------------------------------------------------
     def add_entry(self, entry):
         """Add a ModemEntry object to the database.
 
@@ -89,6 +72,17 @@ class Modem:
             self.entries.append(entry)
 
     #-----------------------------------------------------------------------
+    def find(self, addr, group, is_ctrl):
+        """TODO: doc
+        """
+        for e in self.entries:
+            if (e.addr == addr and e.group == group and
+                    e.is_controller == is_ctrl):
+                return e
+
+        return None
+
+    #-----------------------------------------------------------------------
     def to_json(self):
         """Convert the database to JSON format.
 
@@ -99,6 +93,23 @@ class Modem:
         return {
             'entries' : entries,
             }
+
+    #-----------------------------------------------------------------------
+    def handle_db_rec(self, msg):
+        """Handle a InpAllLinkRec database record message.
+
+        This parses the input message into a ModemEntry record and
+        adds it to the database.
+
+        Args:
+          msg:  (InpAllLinkRec) The database record to parse.
+        """
+        assert isinstance(msg, Msg.InpAllLinkRec)
+        LOG.info("Adding modem db record for %s grp: %s", msg.addr, msg.group)
+
+        entry = ModemEntry(msg.addr, msg.group, msg.flags.is_controller,
+                           msg.data)
+        self.add_entry(entry)
 
     #-----------------------------------------------------------------------
     def __str__(self):
