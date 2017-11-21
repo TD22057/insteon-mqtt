@@ -21,7 +21,7 @@ class Test_InpExtended:
 
         assert obj.from_addr.ids == [0x3e, 0xe2, 0xc4]
         assert obj.to_addr.ids == [0x23, 0x9b, 0x65]
-        assert obj.flags.type == Msg.Flags.DIRECT_NAK
+        assert obj.flags.type == Msg.Flags.Type.DIRECT_NAK
         assert obj.flags.is_ext is True
         assert obj.flags.hops_left == 3
         assert obj.flags.max_hops == 3
@@ -50,7 +50,7 @@ class Test_InpExtended:
 
         assert obj.from_addr.ids == [0x3e, 0xe2, 0xc4]
         assert obj.to_addr.ids == [0x23, 0x9b, 0x65]
-        assert obj.flags.type == Msg.Flags.ALL_LINK_BROADCAST
+        assert obj.flags.type == Msg.Flags.Type.ALL_LINK_BROADCAST
         assert obj.flags.is_ext is True
         assert obj.flags.hops_left == 3
         assert obj.flags.max_hops == 3
@@ -79,7 +79,7 @@ class Test_InpExtended:
 
         assert obj.from_addr.ids == [0x3e, 0xe2, 0xc4]
         assert obj.to_addr.ids == [0x23, 0x9b, 0x65]
-        assert obj.flags.type == Msg.Flags.CLEANUP_ACK
+        assert obj.flags.type == Msg.Flags.Type.CLEANUP_ACK
         assert obj.flags.is_ext is True
         assert obj.flags.hops_left == 3
         assert obj.flags.max_hops == 3

@@ -3,6 +3,7 @@
 # Output insteon start all link mode message.
 #
 #===========================================================================
+import enum
 from .Base import Base
 
 
@@ -13,14 +14,15 @@ class OutAllLinkStart(Base):
     fixed_msg_size = 5
 
     # Valid command codes
-    RESPONDER = 0x00  # modem is responder
-    CONTROLLER = 0x01  # modem is controller
-    EITHER = 0x03  # modem 1st == modem is ctrl; device 1st == modem is resp
-    DELETE = 0xff
+    class Cmd(enum.IntEnum):
+        RESPONDER = 0x00  # modem is responder
+        CONTROLLER = 0x01  # modem is controller
+        EITHER = 0x03  # modem 1st: modem is ctrl; device 1st: modem is resp
+        DELETE = 0xff
 
     #-----------------------------------------------------------------------
-    @staticmethod
-    def from_bytes(raw):
+    @classmethod
+    def from_bytes(cls, raw):
         """Read the message from a byte stream.
 
         This should only be called if raw[1] == msg_code and len(raw)
@@ -36,13 +38,13 @@ class OutAllLinkStart(Base):
         Returns:
            Returns the constructed OutAllLinkStart object.
         """
-        assert len(raw) >= OutAllLinkStart.fixed_msg_size
-        assert raw[0] == 0x02 and raw[1] == OutAllLinkStart.msg_code
+        assert len(raw) >= cls.fixed_msg_size
+        assert raw[0] == 0x02 and raw[1] == cls.msg_code
 
-        link = raw[2]
+        cmd = cls.Cmd(raw[2])
         group = raw[3]
         is_ack = raw[4] == 0x06
-        return OutAllLinkStart(link, group, is_ack)
+        return OutAllLinkStart(cmd, group, is_ack)
 
     #-----------------------------------------------------------------------
     def __init__(self, cmd, group, is_ack=None):
@@ -58,10 +60,7 @@ class OutAllLinkStart(Base):
         """
         super().__init__()
 
-        assert cmd in [self.RESPONDER, self.CONTROLLER, self.EITHER,
-                       self.DELETE]
-
-        self.cmd = cmd
+        self.cmd = self.Cmd(cmd)
         self.group = group
         self.is_ack = is_ack
 
@@ -72,19 +71,12 @@ class OutAllLinkStart(Base):
         Returns:
            (bytes) Returns the message as bytes.
         """
-        return bytes([0x02, self.msg_code, self.cmd, self.group])
+        return bytes([0x02, self.msg_code, self.cmd.value, self.group])
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        lbl = {
-            self.RESPONDER : 'RESP',
-            self.CONTROLLER : 'CTRL',
-            self.EITHER : 'ANY',
-            self.DELETE : 'DEL',
-            }
-
-        return "All link start: grp: %s %s ack: %s" % \
-            (self.group, lbl[self.cmd], self.is_ack)
+        return "All link start: grp: %s %s ack: %s" % (self.group, self.cmd,
+                                                       self.is_ack)
 
     #-----------------------------------------------------------------------
 

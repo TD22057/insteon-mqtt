@@ -19,8 +19,8 @@ class OutResetPlm(Base):
     fixed_msg_size = 3
 
     #-----------------------------------------------------------------------
-    @staticmethod
-    def from_bytes(raw):
+    @classmethod
+    def from_bytes(cls, raw):
         """Read the message from a byte stream.
 
         This should only be called if raw[1] == msg_code and len(raw)
@@ -36,8 +36,8 @@ class OutResetPlm(Base):
         Returns:
            Returns the constructed OutResetPlm object.
         """
-        assert len(raw) >= OutResetPlm.fixed_msg_size
-        assert raw[0] == 0x02 and raw[1] == OutResetPlm.msg_code
+        assert len(raw) >= cls.fixed_msg_size
+        assert raw[0] == 0x02 and raw[1] == cls.msg_code
 
         is_ack = raw[2] == 0x06
         return OutResetPlm(is_ack)

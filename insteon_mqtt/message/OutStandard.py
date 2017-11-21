@@ -24,8 +24,8 @@ class OutStandard(Base):
     fixed_msg_size = 9
 
     #-----------------------------------------------------------------------
-    @staticmethod
-    def from_bytes(raw):
+    @classmethod
+    def from_bytes(cls, raw):
         """Read the message from a byte stream.
 
         You cannot pass the output of to_bytes() to this.  to_bytes()
@@ -62,8 +62,8 @@ class OutStandard(Base):
         return OutExtended(to_addr, flags, cmd1, cmd2, data, is_ack)
 
     #-----------------------------------------------------------------------
-    @staticmethod
-    def direct(to_addr, cmd1, cmd2):
+    @classmethod
+    def direct(cls, to_addr, cmd1, cmd2):
         """Construct a direct, standard message
 
         Args:
@@ -74,7 +74,7 @@ class OutStandard(Base):
         Returns:
           Returns the created OutStandard message.
         """
-        flags = Flags(Flags.DIRECT, is_ext=False)
+        flags = Flags(Flags.Type.DIRECT, is_ext=False)
         return OutStandard(to_addr, flags, cmd1, cmd2)
 
     #-----------------------------------------------------------------------
@@ -166,8 +166,8 @@ class OutExtended(OutStandard):
     fixed_msg_size = 23
 
     #-----------------------------------------------------------------------
-    @staticmethod
-    def direct(to_addr, cmd1, cmd2, data):
+    @classmethod
+    def direct(cls, to_addr, cmd1, cmd2, data):
         """Construct a direct, extended message
 
         Args:
@@ -179,7 +179,7 @@ class OutExtended(OutStandard):
         Returns:
           Returns the created OutStandard message.
         """
-        flags = Flags(Flags.DIRECT, is_ext=True)
+        flags = Flags(Flags.Type.DIRECT, is_ext=True)
         return OutExtended(to_addr, flags, cmd1, cmd2, data)
 
     #-----------------------------------------------------------------------

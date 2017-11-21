@@ -19,8 +19,8 @@ class InpAllLinkRec(Base):
     fixed_msg_size = 10
 
     #-----------------------------------------------------------------------
-    @staticmethod
-    def from_bytes(raw):
+    @classmethod
+    def from_bytes(cls, raw):
         """Read the message from a byte stream.
 
         This should only be called if raw[1] == msg_code and len(raw)

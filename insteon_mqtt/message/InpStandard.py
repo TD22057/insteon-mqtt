@@ -21,8 +21,8 @@ class InpStandard(Base):
     fixed_msg_size = 11
 
     #-----------------------------------------------------------------------
-    @staticmethod
-    def from_bytes(raw):
+    @classmethod
+    def from_bytes(cls, raw):
         """Read the message from a byte stream.
 
         This should only be called if raw[1] == msg_code and len(raw)
@@ -69,8 +69,8 @@ class InpStandard(Base):
         self.group = None
         if self.flags.is_broadcast:
             self.group = self.to_addr.ids[2]
-        elif (self.flags.type == Flags.ALL_LINK_CLEANUP or
-              self.flags.type == Flags.CLEANUP_ACK):
+        elif (self.flags.type == Flags.Type.ALL_LINK_CLEANUP or
+              self.flags.type == Flags.Type.CLEANUP_ACK):
             self.group = self.cmd2
 
     #-----------------------------------------------------------------------
@@ -99,8 +99,8 @@ class InpExtended(Base):
     fixed_msg_size = 25
 
     #-----------------------------------------------------------------------
-    @staticmethod
-    def from_bytes(raw):
+    @classmethod
+    def from_bytes(cls, raw):
         """Read the message from a byte stream.
 
         This should only be called if raw[1] == msg_code and len(raw)
@@ -148,8 +148,8 @@ class InpExtended(Base):
         self.group = None
         if self.flags.is_broadcast:
             self.group = self.to_addr.ids[2]
-        elif (self.flags.type == Flags.ALL_LINK_CLEANUP or
-              self.flags.type == Flags.CLEANUP_ACK):
+        elif (self.flags.type == Flags.Type.ALL_LINK_CLEANUP or
+              self.flags.type == Flags.Type.CLEANUP_ACK):
             self.group = self.cmd2
 
     #-----------------------------------------------------------------------

@@ -18,7 +18,7 @@ class Test_OutAllLinkUpdate:
                    0x06])  # ack
         obj = Msg.OutAllLinkUpdate.from_bytes(b)
 
-        assert obj.cmd == 0x40
+        assert obj.cmd == Msg.OutAllLinkUpdate.Cmd.ADD_CONTROLLER
         assert obj.group == 0x03
         assert obj.db_flags.in_use is False
         assert obj.db_flags.is_controller is True

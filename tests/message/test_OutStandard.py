@@ -18,7 +18,7 @@ class Test_OutStandard:
         obj = Msg.OutStandard.from_bytes(b)
 
         assert obj.to_addr.ids == [0x48, 0x3d, 0x46]
-        assert obj.flags.type == Msg.Flags.DIRECT_NAK
+        assert obj.flags.type == Msg.Flags.Type.DIRECT_NAK
         assert obj.flags.is_ext is False
         assert obj.flags.hops_left == 3
         assert obj.flags.max_hops == 3
@@ -41,7 +41,7 @@ class Test_OutStandard:
         obj = Msg.OutStandard.direct(addr, 0x11, 0x25)
 
         assert obj.to_addr.ids == [0x48, 0x3d, 0x46]
-        assert obj.flags.type == Msg.Flags.DIRECT
+        assert obj.flags.type == Msg.Flags.Type.DIRECT
         assert obj.flags.is_ext is False
         assert obj.flags.hops_left == 3
         assert obj.flags.max_hops == 3

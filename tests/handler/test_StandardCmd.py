@@ -41,7 +41,7 @@ class Test_StandardCmd:
         # Now pass in the input message.
 
         # expected input meesage
-        flags = Msg.Flags(Msg.Flags.DIRECT_ACK, False)
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
         msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
 
         r = handler.msg_received(proto, msg)
@@ -83,7 +83,7 @@ class Test_StandardCmd:
         # Now pass in the input message.
 
         # expected input meesage
-        flags = Msg.Flags(Msg.Flags.DIRECT_ACK, False)
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
         msg = Msg.InpStandard(addr, addr, flags, 0x13, 0x01)
 
         r = handler.msg_received(proto, msg)
@@ -114,7 +114,7 @@ class Test_StandardCmd:
         # Now pass in the input message.
 
         # expected input meesage
-        flags = Msg.Flags(Msg.Flags.DIRECT_ACK, False)
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
         msg = Msg.InpStandard(addr, addr, flags, 0x13, 0x01)
 
         r = handler.msg_received(proto, msg)

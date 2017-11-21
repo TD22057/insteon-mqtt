@@ -53,14 +53,14 @@ class Broadcast:
             return Msg.UNKNOWN
 
         # Process the all link broadcast.
-        if msg.flags.type == Msg.Flags.ALL_LINK_BROADCAST:
+        if msg.flags.type == Msg.Flags.Type.ALL_LINK_BROADCAST:
             return self._process(msg)
 
         # Clean up message is basically the same data but addressed to
         # the modem.  If we saw the broadcast, we don't need to handle
         # this.  But if we missed the broadcast, this gives us a
         # second chance to trigger the scene.
-        elif msg.flags.type == Msg.Flags.ALL_LINK_CLEANUP:
+        elif msg.flags.type == Msg.Flags.Type.ALL_LINK_CLEANUP:
             if not self._handled:
                 return self._process(msg)
             return Msg.FINISHED

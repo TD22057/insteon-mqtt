@@ -19,7 +19,7 @@ class Test_Broadcast:
         r = handler.msg_received(proto, "dummy")
         assert r == Msg.UNKNOWN
 
-        flags = Msg.Flags(Msg.Flags.ALL_LINK_BROADCAST, False)
+        flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
         msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
 
         # no device
@@ -35,7 +35,7 @@ class Test_Broadcast:
         assert len(calls) == 1
 
         # cleanup should be ignored since prev was processed.
-        flags = Msg.Flags(Msg.Flags.ALL_LINK_CLEANUP, False)
+        flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_CLEANUP, False)
         msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
         r = handler.msg_received(proto, msg)
 
@@ -49,7 +49,7 @@ class Test_Broadcast:
         assert r == Msg.FINISHED
         assert len(calls) == 2
 
-        flags = Msg.Flags(Msg.Flags.DIRECT_ACK, False)
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
         msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
         r = handler.msg_received(proto, msg)
         assert r == Msg.UNKNOWN

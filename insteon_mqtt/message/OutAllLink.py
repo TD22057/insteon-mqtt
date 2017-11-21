@@ -17,8 +17,8 @@ class OutAllLink(Base):
     fixed_msg_size = 6
 
     #-----------------------------------------------------------------------
-    @staticmethod
-    def from_bytes(raw):
+    @classmethod
+    def from_bytes(cls, raw):
         """Read the message from a byte stream.
 
         This should only be called if raw[1] == msg_code and len(raw)
@@ -35,8 +35,8 @@ class OutAllLink(Base):
            Returns the constructed message object.
 
         """
-        assert len(raw) >= OutAllLink.fixed_msg_size
-        assert raw[0] == 0x02 and raw[1] == OutAllLink.msg_code
+        assert len(raw) >= cls.fixed_msg_size
+        assert raw[0] == 0x02 and raw[1] == cls.msg_code
 
         group = raw[2]
         cmd1 = raw[3]

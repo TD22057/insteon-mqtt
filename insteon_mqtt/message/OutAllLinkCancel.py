@@ -16,8 +16,8 @@ class OutAllLinkCancel(Base):
     fixed_msg_size = 3
 
     #-----------------------------------------------------------------------
-    @staticmethod
-    def from_bytes(raw):
+    @classmethod
+    def from_bytes(cls, raw):
         """Read the message from a byte stream.
 
         This should only be called if raw[1] == msg_code and len(raw)
@@ -33,8 +33,8 @@ class OutAllLinkCancel(Base):
         Returns:
            Returns the constructed message object.
         """
-        assert len(raw) >= OutAllLinkCancel.fixed_msg_size
-        assert raw[0] == 0x02 and raw[1] == OutAllLinkCancel.msg_code
+        assert len(raw) >= cls.fixed_msg_size
+        assert raw[0] == 0x02 and raw[1] == cls.msg_code
 
         is_ack = raw[2] == 0x06
         return OutAllLinkCancel(is_ack)

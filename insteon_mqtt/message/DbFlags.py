@@ -5,8 +5,6 @@
 #===========================================================================
 
 
-#===========================================================================
-
 class DbFlags:
     """All link database record control bit flags.
 
@@ -15,8 +13,8 @@ class DbFlags:
     format.
     """
     #-----------------------------------------------------------------------
-    @staticmethod
-    def from_json(data):
+    @classmethod
+    def from_json(cls, data):
         """Read from JSON data.
 
         The inverse of this is DbFlags.to_json().  This is used when
@@ -32,8 +30,8 @@ class DbFlags:
                        data['high_water'])
 
     #-----------------------------------------------------------------------
-    @staticmethod
-    def from_bytes(raw, offset=0):
+    @classmethod
+    def from_bytes(cls, raw, offset=0):
         """Read from bytes.
 
         The inverse of this is DbFlags.to_bytes().  This is used to

@@ -20,8 +20,9 @@ class Test_Device:
         assert obj.is_current(1) is False
 
         addr = IM.Address(0x10, 0xab, 0x1c)
-        flags = Msg.Flags(Msg.Flags.DIRECT, True)
-        db_flags = Msg.DbFlags(in_use=True, is_controller=True, high_water=True)
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT, True)
+        db_flags = Msg.DbFlags(in_use=True, is_controller=True,
+                               high_water=True)
         data = bytes([0x01, 0x02, 0x03])
         raw = [0x00, 0x01,
                0xfe, 0x10,  # mem_loc
@@ -44,13 +45,15 @@ class Test_Device:
         obj.handle_db_rec(msg)
 
         # responder - not in a group
-        db_flags = Msg.DbFlags(in_use=True, is_controller=False, high_water=True)
+        db_flags = Msg.DbFlags(in_use=True, is_controller=False,
+                               high_water=True)
         raw[5] = db_flags.to_bytes()[0]
         msg.data = raw
         obj.handle_db_rec(msg)
 
         # in use = False
-        db_flags = Msg.DbFlags(in_use=False, is_controller=True, high_water=True)
+        db_flags = Msg.DbFlags(in_use=False, is_controller=True,
+                               high_water=True)
         raw[5] = db_flags.to_bytes()[0]
         msg.data = raw
         obj.handle_db_rec(msg)

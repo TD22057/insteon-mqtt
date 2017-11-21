@@ -15,7 +15,7 @@ class Test_OutAllLinkStart:
                    0x06])  # ack
         obj = Msg.OutAllLinkStart.from_bytes(b)
 
-        assert obj.cmd == Msg.OutAllLinkStart.RESPONDER
+        assert obj.cmd == Msg.OutAllLinkStart.Cmd.RESPONDER
         assert obj.group == 0x02
         assert obj.is_ack is True
 
@@ -32,7 +32,7 @@ class Test_OutAllLinkStart:
                    0x06])  # ack
         obj = Msg.OutAllLinkStart.from_bytes(b)
 
-        assert obj.cmd == Msg.OutAllLinkStart.CONTROLLER
+        assert obj.cmd == Msg.OutAllLinkStart.Cmd.CONTROLLER
         assert obj.group == 0x02
         assert obj.is_ack is True
 
@@ -49,7 +49,7 @@ class Test_OutAllLinkStart:
                    0x06])  # ack
         obj = Msg.OutAllLinkStart.from_bytes(b)
 
-        assert obj.cmd == Msg.OutAllLinkStart.EITHER
+        assert obj.cmd == Msg.OutAllLinkStart.Cmd.EITHER
         assert obj.group == 0x02
         assert obj.is_ack is True
 
@@ -66,7 +66,7 @@ class Test_OutAllLinkStart:
                    0x15])  # ack
         obj = Msg.OutAllLinkStart.from_bytes(b)
 
-        assert obj.cmd == Msg.OutAllLinkStart.DELETE
+        assert obj.cmd == Msg.OutAllLinkStart.Cmd.DELETE
         assert obj.group == 0x02
         assert obj.is_ack is False
 

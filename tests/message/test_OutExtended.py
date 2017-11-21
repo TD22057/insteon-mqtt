@@ -22,7 +22,7 @@ class Test_OutExtended:
         obj = Msg.OutExtended.from_bytes(b)
 
         assert obj.to_addr.ids == [0x3e, 0xe2, 0xc4]
-        assert obj.flags.type == Msg.Flags.BROADCAST
+        assert obj.flags.type == Msg.Flags.Type.BROADCAST
         assert obj.flags.is_ext is True
         assert obj.flags.hops_left == 3
         assert obj.flags.max_hops == 3
@@ -49,7 +49,7 @@ class Test_OutExtended:
         obj = Msg.OutExtended.direct(addr, 0x11, 0x25, data)
 
         assert obj.to_addr.ids == [0x3e, 0xe2, 0xc4]
-        assert obj.flags.type == Msg.Flags.DIRECT
+        assert obj.flags.type == Msg.Flags.Type.DIRECT
         assert obj.flags.is_ext is True
         assert obj.flags.hops_left == 3
         assert obj.flags.max_hops == 3

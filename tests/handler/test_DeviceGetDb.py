@@ -52,7 +52,7 @@ class Test_DeviceGetDb:
         addr = IM.Address('0a.12.34')
         handler = IM.handler.DeviceGetDb(addr, calls.append)
 
-        flags = Msg.Flags(Msg.Flags.DIRECT, True)
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT, True)
         data = bytes([0x01, 0, 0, 0, 0, 0, 0, 0x01, 0, 0, 0, 0, 0, 0])
         msg = Msg.InpExtended(addr, addr, flags, 0x2f, 0x00, data)
 
