@@ -21,6 +21,9 @@ class Broadcast:
     device address and group from.  Then an ALL_LINK_CLEANUP is sent.
     Both messages can be used to trigger the scene but we'll only do
     that once (so the 2nd message gets ignored).
+
+    This handler will call device.handle_broadcast(msg) for the device
+    that sends the message.
     """
     def __init__(self, modem):
         """Constructor

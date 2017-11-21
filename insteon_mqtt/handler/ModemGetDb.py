@@ -18,16 +18,20 @@ class ModemGetDb:
     send another message out requesting the next record, etc, etc
     until we get a NAK to indicate there are no more records.
 
-    Each reply is passed to the modem.handle_db_rec to update it's
+    Each reply is passed to the callback function set in the
+    constructor which is usually a method on the device to update it's
     database.
     """
-    def __init__(self, modem):
+    def __init__(self, modem, callback):
         """Constructor
 
         Args
-          modem:   (Modem) The Insteon modem.
+          modem:    (Modem) The Insteon modem.
+          callback: Callback function to pass database messages to or None
+                    to indicate the end of the entries.
         """
         self.modem = modem
+        self.callback = callback
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
@@ -51,7 +55,7 @@ class ModemGetDb:
             # If we get a NAK, then there are no more db records.
             if not msg.is_ack:
                 LOG.info("Modem finished - last db record received")
-                self.modem.handle_db_rec(None)
+                self.callback(None)
                 return Msg.FINISHED
 
             # ACK - keep reading until we get the record we requested.
@@ -60,7 +64,7 @@ class ModemGetDb:
         # Message is the record we requested.
         if isinstance(msg, Msg.InpAllLinkRec):
             LOG.info("Modem db record received")
-            self.modem.handle_db_rec(msg)
+            self.callback(msg)
 
             # Request the next record in the PLM database.
             LOG.info("Modem requesting next db record")
