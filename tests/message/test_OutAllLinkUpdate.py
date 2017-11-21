@@ -22,7 +22,7 @@ class Test_OutAllLinkUpdate:
         assert obj.group == 0x03
         assert obj.db_flags.in_use is False
         assert obj.db_flags.is_controller is True
-        assert obj.db_flags.high_water is True
+        assert obj.db_flags.last_record is False
         assert obj.addr.ids == [0x32, 0xf4, 0x22]
         assert obj.data == bytes([0x01, 0x02, 0x03])
         assert obj.is_ack is True

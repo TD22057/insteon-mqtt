@@ -469,7 +469,8 @@ class Modem:
             cmd = Msg.OutAllLinkUpdate.UPDATE
 
         # Build the modem database update message.
-        flags = Msg.DbFlags(in_use=True, is_controller=is_ctrl, high_water=True)
+        flags = Msg.DbFlags(in_use=True, is_controller=is_ctrl,
+                            last_record=False)
         msg = Msg.OutAllLinkUpdate(cmd, flags, group, addr, data)
 
         # Modem will ack/nak our message.  This calls handle_db_update()

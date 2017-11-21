@@ -27,7 +27,7 @@ class DbFlags:
            Returns the constructed DbFlags object.
         """
         return DbFlags(data['in_use'], data['is_controller'],
-                       data['high_water'])
+                       data['last_record'])
 
     #-----------------------------------------------------------------------
     @classmethod
@@ -51,25 +51,28 @@ class DbFlags:
         in_use = (b & 0b10000000) >> 7
         is_controller = (b & 0b01000000) >> 6
         # bits 2-5 are unused
-        high_water = (b & 0b00000010) >> 1
+
+        # high water bit: 0 for last record, 1 otherwise
+        last_record = not ((b & 0b00000010) >> 1)
         # bit 0 is not needed
 
-        return DbFlags(bool(in_use), bool(is_controller), bool(high_water))
+        return DbFlags(bool(in_use), bool(is_controller), last_record)
 
     #-----------------------------------------------------------------------
-    def __init__(self, in_use, is_controller, high_water):
+    def __init__(self, in_use, is_controller, last_record):
         """Constructor
 
         Args:
           in_use:         (bool) True if the record is in use.
           is_controller:  (bool) True means the device holding the record is
                           the controller.  False means it's a responder.
-          high_water:     (bool) True if this is the last valid record in use.
+          last_record:    (bool) True if this is the last record in the
+                          database.
         """
         self.in_use = in_use
         self.is_controller = is_controller
         self.is_responder = not is_controller
-        self.high_water = high_water
+        self.last_record = last_record
 
     #-----------------------------------------------------------------------
     def to_bytes(self):
@@ -83,7 +86,7 @@ class DbFlags:
         """
         data = self.in_use << 7 | \
                self.is_controller << 6 | \
-               self.high_water << 1
+               (not self.last_record) << 1
         return bytes([data])
 
     #-----------------------------------------------------------------------
@@ -99,13 +102,13 @@ class DbFlags:
         return {
             'in_use' : self.in_use,
             'is_controller' : self.is_controller,
-            'high_water' : self.high_water,
+            'last_record' : self.last_record,
             }
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "in_use: %s type: %s used: %s" % \
+        return "in_use: %s type: %s last: %s" % \
             (self.in_use, 'CTRL' if self.is_controller else 'RESP',
-             self.high_water)
+             self.last_record)
 
     #-----------------------------------------------------------------------

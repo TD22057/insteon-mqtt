@@ -19,7 +19,7 @@ class Test_InpAllLinkRec:
         assert obj.db_flags.in_use is True
         assert obj.db_flags.is_controller is True
         assert obj.db_flags.is_responder is False
-        assert obj.db_flags.high_water is True
+        assert obj.db_flags.last_record is False
 
         assert obj.group == 0x01
         assert obj.addr.ids == [0x3a, 0x29, 0x84]
