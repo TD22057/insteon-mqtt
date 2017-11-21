@@ -35,29 +35,29 @@ class InpAllLinkRec(Base):
         assert len(raw) >= InpAllLinkRec.fixed_msg_size
         assert raw[0] == 0x02 and raw[1] == InpAllLinkRec.msg_code
 
-        flags = DbFlags.from_bytes(raw, 2)
+        db_flags = DbFlags.from_bytes(raw, 2)
         group = raw[3]
         addr = Address.from_bytes(raw, 4)
         data = raw[7:10]
 
-        return InpAllLinkRec(flags, group, addr, data)
+        return InpAllLinkRec(db_flags, group, addr, data)
 
     #-----------------------------------------------------------------------
-    def __init__(self, flags, group, addr, data):
+    def __init__(self, db_flags, group, addr, data):
         """Constructor
 
         Args:
-          flags:  (DbFlags) The database record flags.
-          group:  (int) The group the link is for.
-          addr:   (Address) The address of the device in the link.
-          data:   (bytes) 3 byte data record.
+          db_flags:  (DbFlags) The database record flags.
+          group:     (int) The group the link is for.
+          addr:      (Address) The address of the device in the link.
+          data:      (bytes) 3 byte data record.
         """
         super().__init__()
 
-        assert isinstance(flags, DbFlags)
+        assert isinstance(db_flags, DbFlags)
         assert len(data) == 3
 
-        self.flags = flags
+        self.db_flags = db_flags
         self.group = group
         self.addr = addr
         self.data = data
@@ -67,7 +67,7 @@ class InpAllLinkRec(Base):
     #-----------------------------------------------------------------------
     def __str__(self):
         return "InpAllLinkRec: %s grp: %s %s data: %#04x %#04x %#04x" % \
-            (self.addr, self.group, self.flags, self.data[0], self.data[1],
+            (self.addr, self.group, self.db_flags, self.data[0], self.data[1],
              self.data[2])
 
     #-----------------------------------------------------------------------

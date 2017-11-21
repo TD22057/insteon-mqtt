@@ -21,11 +21,11 @@ class Test_Device:
 
         addr = IM.Address(0x10, 0xab, 0x1c)
         flags = Msg.Flags(Msg.Flags.DIRECT, True)
-        ctrl = Msg.DbFlags(in_use=True, is_controller=True, high_water=True)
+        db_flags = Msg.DbFlags(in_use=True, is_controller=True, high_water=True)
         data = bytes([0x01, 0x02, 0x03])
         raw = [0x00, 0x01,
                0xfe, 0x10,  # mem_loc
-               0x00, ctrl.to_bytes()[0],
+               0x00, db_flags.to_bytes()[0],
                0x03,  # group
                addr.ids[0], addr.ids[1], addr.ids[2],
                data[0], data[1], data[2], 0x06]
@@ -44,14 +44,14 @@ class Test_Device:
         obj.handle_db_rec(msg)
 
         # responder - not in a group
-        ctrl = Msg.DbFlags(in_use=True, is_controller=False, high_water=True)
-        raw[5] = ctrl.to_bytes()[0]
+        db_flags = Msg.DbFlags(in_use=True, is_controller=False, high_water=True)
+        raw[5] = db_flags.to_bytes()[0]
         msg.data = raw
         obj.handle_db_rec(msg)
 
         # in use = False
-        ctrl = Msg.DbFlags(in_use=False, is_controller=True, high_water=True)
-        raw[5] = ctrl.to_bytes()[0]
+        db_flags = Msg.DbFlags(in_use=False, is_controller=True, high_water=True)
+        raw[5] = db_flags.to_bytes()[0]
         msg.data = raw
         obj.handle_db_rec(msg)
 
@@ -67,12 +67,12 @@ class Test_Device:
         e = obj.find(addr, 0x02, 'CTRL')
         assert e.addr == addr
         assert e.group == 0x02
-        assert e.ctrl.is_controller is True
+        assert e.db_flags.is_controller is True
 
         e = obj.find(addr2, 0x02, 'RESP')
         assert e.addr == addr2
         assert e.group == 0x02
-        assert e.ctrl.is_responder is True
+        assert e.db_flags.is_responder is True
 
         e = obj.find(addr, 0x05, 'RESP')
         assert e is None

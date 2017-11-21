@@ -16,6 +16,7 @@ class InpAllLinkComplete(Base):
     msg_code = 0x53
     fixed_msg_size = 10
 
+    # Link command codes
     RESPONDER = 0x00
     CONTROLLER = 0x01
     DELETE = 0xff
@@ -37,21 +38,21 @@ class InpAllLinkComplete(Base):
         assert len(raw) >= InpAllLinkComplete.fixed_msg_size
         assert raw[0] == 0x02 and raw[1] == InpAllLinkComplete.msg_code
 
-        link = raw[2]
+        cmd = raw[2]
         group = raw[3]
         addr = Address.from_bytes(raw, 4)
         dev_cat = raw[7]
         dev_subcat = raw[8]
         firmware = raw[9]
-        return InpAllLinkComplete(link, group, addr, dev_cat, dev_subcat,
+        return InpAllLinkComplete(cmd, group, addr, dev_cat, dev_subcat,
                                   firmware)
 
     #-----------------------------------------------------------------------
-    def __init__(self, link, group, addr, dev_cat, dev_subcat, firmware):
+    def __init__(self, cmd, group, addr, dev_cat, dev_subcat, firmware):
         """Constructor
 
         Args:
-          link:         Link command flag.  InpAllLinkComplete.RESPONDER,
+          cmd:          Link command flag.  InpAllLinkComplete.RESPONDER,
                         InpAllLinkComplete.CONTROLLER, or
                         InpAllLinkComplete.DELETE.
           group:        (int) The all link group of the link.
@@ -62,10 +63,7 @@ class InpAllLinkComplete(Base):
         """
         super().__init__()
 
-        self.link = link
-        self.plm_responder = link == self.RESPONDER
-        self.plm_controller = link == self.CONTROLLER
-        self.is_delete = link == self.DELETE
+        self.cmd = cmd
         self.group = group
         self.addr = addr
         self.dev_cat = dev_cat
@@ -80,7 +78,7 @@ class InpAllLinkComplete(Base):
             self.DELETE : 'DEL',
             }
         return "All link done: %s grp: %d %s cat: %#04x %#04x %#04x" % \
-            (self.addr, self.group, lbl[self.link], self.dev_cat,
+            (self.addr, self.group, lbl[self.cmd], self.dev_cat,
              self.dev_subcat, self.firmware)
 
     #-----------------------------------------------------------------------

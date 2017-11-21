@@ -18,9 +18,9 @@ class Test_DeviceEntry:
 
         assert obj.addr == addr
         assert obj.group == 0x03
-        assert obj.ctrl.in_use == ctrl.in_use
-        assert obj.ctrl.is_controller == ctrl.is_controller
-        assert obj.ctrl.high_water == ctrl.high_water
+        assert obj.db_flags.in_use == ctrl.in_use
+        assert obj.db_flags.is_controller == ctrl.is_controller
+        assert obj.db_flags.high_water == ctrl.high_water
         assert obj.mem_loc == mem_loc
         assert obj.data == data
         assert obj.on_level == data[0]
@@ -32,9 +32,9 @@ class Test_DeviceEntry:
         assert obj2.addr == obj.addr
         assert obj2.group == obj.group
         assert obj2.mem_loc == obj.mem_loc
-        assert obj2.ctrl.in_use == obj.ctrl.in_use
-        assert obj2.ctrl.is_controller == obj.ctrl.is_controller
-        assert obj2.ctrl.high_water == obj.ctrl.high_water
+        assert obj2.db_flags.in_use == obj.db_flags.in_use
+        assert obj2.db_flags.is_controller == obj.db_flags.is_controller
+        assert obj2.db_flags.high_water == obj.db_flags.high_water
         assert obj2.data == obj.data
         assert obj == obj2
 
@@ -48,9 +48,9 @@ class Test_DeviceEntry:
         assert obj3.addr == obj.addr
         assert obj3.group == obj.group
         assert obj3.mem_loc == obj.mem_loc
-        assert obj3.ctrl.in_use == obj.ctrl.in_use
-        assert obj3.ctrl.is_controller == obj.ctrl.is_controller
-        assert obj3.ctrl.high_water == obj.ctrl.high_water
+        assert obj3.db_flags.in_use == obj.db_flags.in_use
+        assert obj3.db_flags.is_controller == obj.db_flags.is_controller
+        assert obj3.db_flags.high_water == obj.db_flags.high_water
         assert obj3.data == obj.data
         assert obj == obj3
 

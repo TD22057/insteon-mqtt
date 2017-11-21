@@ -15,10 +15,7 @@ class Test_InpAllLinkComplete:
                    0x06, 0x07, 0x08])  # data
         obj = Msg.InpAllLinkComplete.from_bytes(b)
 
-        assert obj.link == Msg.InpAllLinkComplete.CONTROLLER
-        assert obj.plm_responder is False
-        assert obj.plm_controller is True
-        assert obj.is_delete is False
+        assert obj.cmd == Msg.InpAllLinkComplete.CONTROLLER
         assert obj.group == 0x02
         assert obj.addr.ids == [0x03, 0x04, 0x05]
         assert obj.dev_cat == 0x06
@@ -35,10 +32,7 @@ class Test_InpAllLinkComplete:
                    0x06, 0x07, 0x08])  # data
         obj = Msg.InpAllLinkComplete.from_bytes(b)
 
-        assert obj.link == Msg.InpAllLinkComplete.RESPONDER
-        assert obj.plm_responder is True
-        assert obj.plm_controller is False
-        assert obj.is_delete is False
+        assert obj.cmd == Msg.InpAllLinkComplete.RESPONDER
         assert obj.group == 0x02
         assert obj.addr.ids == [0x03, 0x04, 0x05]
         assert obj.dev_cat == 0x06
@@ -55,10 +49,7 @@ class Test_InpAllLinkComplete:
                    0x06, 0x07, 0x08])  # data
         obj = Msg.InpAllLinkComplete.from_bytes(b)
 
-        assert obj.link == Msg.InpAllLinkComplete.DELETE
-        assert obj.plm_responder is False
-        assert obj.plm_controller is False
-        assert obj.is_delete is True
+        assert obj.cmd == Msg.InpAllLinkComplete.DELETE
         assert obj.group == 0x02
         assert obj.addr.ids == [0x03, 0x04, 0x05]
         assert obj.dev_cat == 0x06

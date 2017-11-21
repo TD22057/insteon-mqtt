@@ -40,7 +40,7 @@ class Flags:
     def from_bytes(raw, offset=0):
         """Read from bytes.
 
-        The inverse of this is DbFlags.to_bytes().  This is used to
+        The inverse of this is Flags.to_bytes().  This is used to
         parse the flags from the raw serial byte.
 
         Args:
@@ -49,7 +49,7 @@ class Flags:
            offset: (int)The index in raw to read from.
 
         Returns:
-           Returns the constructed DbFlags object.
+           Returns the constructed Flags object.
         """
         b = raw[offset]
 

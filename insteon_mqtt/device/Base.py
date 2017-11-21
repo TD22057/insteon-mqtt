@@ -165,37 +165,32 @@ class Base:
 
         # TODO: move this to the database?
 
-
-
-
-
-
     #-----------------------------------------------------------------------
     def add_responder_of(self, addr, group, data=None):
         """TODO: doc
         """
         cmd = Msg.OutAllLinkUpdate.ADD_RESPONDER
-        is_ctrl = False
+        is_controller = False
         device_cmd = "add_controller_of"
-        self._modify_db(cmd, is_ctrl, addr, group, device_cmd, data)
+        self._modify_db(cmd, is_controller, addr, group, device_cmd, data)
 
     #-----------------------------------------------------------------------
     def del_controller_of(self, addr, group):
         """TODO: doc
         """
         cmd = Msg.OutAllLinkUpdate.DELETE
-        is_ctrl = True
+        is_controller = True
         device_cmd = "del_responder_of"
-        self._modify_db(cmd, is_ctrl, addr, group, device_cmd)
+        self._modify_db(cmd, is_controller, addr, group, device_cmd)
 
     #-----------------------------------------------------------------------
     def del_responder_of(self, addr, group):
         """TODO: doc
         """
         cmd = Msg.OutAllLinkUpdate.DELETE
-        is_ctrl = False
+        is_controller = False
         device_cmd = "del_controller_of"
-        self._modify_db(cmd, is_ctrl, addr, group, device_cmd)
+        self._modify_db(cmd, is_controller, addr, group, device_cmd)
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):

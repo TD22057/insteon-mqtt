@@ -12,8 +12,10 @@ class OutAllLinkStart(Base):
     msg_code = 0x64
     fixed_msg_size = 5
 
-    RESPONDER = 0x01
-    CONTROLLER = 0x03
+    # Valid command codes
+    RESPONDER = 0x00  # modem is responder
+    CONTROLLER = 0x01  # modem is controller
+    EITHER = 0x03  # modem 1st == modem is ctrl; device 1st == modem is resp
     DELETE = 0xff
 
     #-----------------------------------------------------------------------
@@ -43,11 +45,11 @@ class OutAllLinkStart(Base):
         return OutAllLinkStart(link, group, is_ack)
 
     #-----------------------------------------------------------------------
-    def __init__(self, link, group, is_ack=None):
+    def __init__(self, cmd, group, is_ack=None):
         """Constructor
 
         Args:
-          link:    (int) OutAllLinkStart.RESPONDER,
+          cmd:     (int) OutAllLinkStart.RESPONDER,
                    OutAllLinkStart.CONGTROLLER, or OutAllLinkStart.DELETE
                    command code.
           group:   (int) The group to link.
@@ -56,13 +58,10 @@ class OutAllLinkStart(Base):
         """
         super().__init__()
 
-        assert(link == self.RESPONDER or link == self.CONTROLLER or
-               link == self.DELETE)
+        assert cmd in [self.RESPONDER, self.CONTROLLER, self.EITHER,
+                       self.DELETE]
 
-        self.link = link
-        self.plm_responder = link == self.RESPONDER
-        self.plm_controller = link == self.CONTROLLER
-        self.is_delete = link == self.DELETE
+        self.cmd = cmd
         self.group = group
         self.is_ack = is_ack
 
@@ -73,18 +72,19 @@ class OutAllLinkStart(Base):
         Returns:
            (bytes) Returns the message as bytes.
         """
-        return bytes([0x02, self.msg_code, self.link, self.group])
+        return bytes([0x02, self.msg_code, self.cmd, self.group])
 
     #-----------------------------------------------------------------------
     def __str__(self):
         lbl = {
             self.RESPONDER : 'RESP',
             self.CONTROLLER : 'CTRL',
+            self.EITHER : 'ANY',
             self.DELETE : 'DEL',
             }
 
         return "All link start: grp: %s %s ack: %s" % \
-            (self.group, lbl[self.link], self.is_ack)
+            (self.group, lbl[self.cmd], self.is_ack)
 
     #-----------------------------------------------------------------------
 

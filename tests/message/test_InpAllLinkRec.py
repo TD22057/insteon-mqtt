@@ -16,10 +16,10 @@ class Test_InpAllLinkRec:
                    0x01, 0x0e, 0x43])  # data
         obj = Msg.InpAllLinkRec.from_bytes(b)
 
-        assert obj.flags.in_use is True
-        assert obj.flags.is_controller is True
-        assert obj.flags.is_responder is False
-        assert obj.flags.high_water is True
+        assert obj.db_flags.in_use is True
+        assert obj.db_flags.is_controller is True
+        assert obj.db_flags.is_responder is False
+        assert obj.db_flags.high_water is True
 
         assert obj.group == 0x01
         assert obj.addr.ids == [0x3a, 0x29, 0x84]

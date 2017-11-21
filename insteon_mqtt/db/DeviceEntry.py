@@ -3,6 +3,7 @@
 # Non-modem device all link database class
 #
 #===========================================================================
+import io
 import logging
 from ..Address import Address
 from .. import message as Msg
@@ -37,7 +38,7 @@ class DeviceEntry:
         return DeviceEntry(Address.from_json(data['addr']),
                            data['group'],
                            data['mem_loc'],
-                           Msg.DbFlags.from_json(data['ctrl']),
+                           Msg.DbFlags.from_json(data['db_flags']),
                            bytes(data['data']))
 
     #-----------------------------------------------------------------------
@@ -60,29 +61,29 @@ class DeviceEntry:
         # [1] = request/response flag
         mem_loc = (data[2] << 8) + data[3]
         # [4] = dump request flag
-        ctrl = Msg.DbFlags.from_bytes(data, 5)
+        db_flags = Msg.DbFlags.from_bytes(data, 5)
         group = data[6]
         link_addr = Address.from_bytes(data, 7)
         link_data = data[10:13]
 
-        return DeviceEntry(link_addr, group, mem_loc, ctrl, link_data)
+        return DeviceEntry(link_addr, group, mem_loc, db_flags, link_data)
 
     #-----------------------------------------------------------------------
-    def __init__(self, addr, group, mem_loc, ctrl, data):
+    def __init__(self, addr, group, mem_loc, db_flags, data):
         """Constructor
 
         Args:
-          addr:    (Address) The address of the device in the database.
-          group:   (int) The group the entry is for.
-          mem_loc: (int) The memory address location of the record.
-          ctrl:    (message.DbFlags) The db controler record flags.
-          data:    (bytes) 3 data bytes.  [0] is the on level, [1] is the
-                   ramp rate.
+          addr:     (Address) The address of the device in the database.
+          group:    (int) The group the entry is for.
+          mem_loc:  (int) The memory address location of the record.
+          db_flags: (message.DbFlags) The db controler record flags.
+          data:     (bytes) 3 data bytes.  [0] is the on level, [1] is the
+                    ramp rate.
         """
         self.addr = addr
         self.group = group
         self.mem_loc = mem_loc
-        self.ctrl = ctrl
+        self.db_flags = db_flags
         self.data = data
         self.on_level = data[0]
         self.ramp_rate = data[1]
@@ -109,7 +110,7 @@ class DeviceEntry:
             'addr' : self.addr.to_json(),
             'group' : self.group,
             'mem_loc' : self.mem_loc,
-            'ctrl' : self.ctrl.to_json(),
+            'db_flags' : self.db_flags.to_json(),
             'data' : list(self.data)
             }
 
@@ -133,7 +134,7 @@ class DeviceEntry:
         o.write(self.mem_bytes())  # D3,D4 record memory location
         o.write(bytes([0x08]))  # D5 number of bytes in record
         # 8 byte record (p116)
-        o.write(self.ctrl.to_bytes())  # D6 db control flags
+        o.write(self.db_flags.to_bytes())  # D6 db control flags
         o.write(bytes([self.group]))  # D7 group
         o.write(self.addr.to_bytes())  # D8-10 address
         o.write(self.data)  # D11-13 link data
@@ -146,7 +147,7 @@ class DeviceEntry:
     def __eq__(self, rhs):
         return (self.addr.id == rhs.addr.id and
                 self.group == rhs.group and
-                self.ctrl.is_controller == rhs.ctrl.is_controller)
+                self.db_flags.is_controller == rhs.db_flags.is_controller)
 
     #-----------------------------------------------------------------------
     def __lt__(self, rhs):
@@ -159,7 +160,7 @@ class DeviceEntry:
     def __str__(self):
         return "ID: %s  grp: %s  type: %s  data: %#04x %#04x %#04x" % \
             (self.addr.hex, self.group,
-             'CTRL' if self.ctrl.is_controller else 'RESP',
+             'CTRL' if self.db_flags.is_controller else 'RESP',
              self.data[0], self.data[1], self.data[2])
 
     #-----------------------------------------------------------------------

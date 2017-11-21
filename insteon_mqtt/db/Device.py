@@ -19,8 +19,8 @@ class Device:
     address, group, and type (controller vs responder).
 
     The database can be read to and written from JSOn format.
-    Normally the db is constructed via message.InpAllLinkRec objects
-    being read and parsed after requesting them from the modem.
+    Normally the db is constructed via message.InpExtended objects
+    being read and parsed after requesting them from the device.
     """
     @staticmethod
     def from_json(data):
@@ -130,7 +130,7 @@ class Device:
         entry = DeviceEntry.from_bytes(msg.data)
 
         # Entry is valid, store it in the database.
-        if entry.ctrl.in_use:
+        if entry.db_flags.in_use:
             LOG.info("Adding db record %s grp: %s lev: %s", entry.addr,
                      entry.group, entry.on_level)
             self._add_used(entry)
@@ -174,7 +174,7 @@ class Device:
 
         for entry in self.entries:
             if (entry.addr == addr and entry.group == group and
-                    entry.ctrl.is_controller == is_controller):
+                    entry.db_flags.is_controller == is_controller):
                 return entry
 
         return None
@@ -220,7 +220,7 @@ class Device:
 
         # If we're the controller for this entry, add it to the list
         # of entries for that group.
-        if entry.ctrl.is_controller:
+        if entry.db_flags.is_controller:
             responders = self.groups.setdefault(entry.group, [])
             if entry not in responders:
                 responders.append(entry)

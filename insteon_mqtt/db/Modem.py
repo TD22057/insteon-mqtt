@@ -72,12 +72,12 @@ class Modem:
             self.entries.append(entry)
 
     #-----------------------------------------------------------------------
-    def find(self, addr, group, is_ctrl):
+    def find(self, addr, group, is_controller):
         """TODO: doc
         """
         for e in self.entries:
             if (e.addr == addr and e.group == group and
-                    e.is_controller == is_ctrl):
+                    e.is_controller == is_controller):
                 return e
 
         return None
@@ -107,7 +107,7 @@ class Modem:
         assert isinstance(msg, Msg.InpAllLinkRec)
         LOG.info("Adding modem db record for %s grp: %s", msg.addr, msg.group)
 
-        entry = ModemEntry(msg.addr, msg.group, msg.flags.is_controller,
+        entry = ModemEntry(msg.addr, msg.group, msg.db_flags.is_controller,
                            msg.data)
         self.add_entry(entry)
 
