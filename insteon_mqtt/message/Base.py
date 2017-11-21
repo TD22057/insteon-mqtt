@@ -13,7 +13,11 @@ class Base:
     implement msg_size().
     """
     msg_code = None  # set to the message ID byte.
-    fixed_msg_size = None  # set if the message is fixed length.
+
+    # Read message size (including ack/nak byte).  Derived types
+    # should set this if the message has fixed size otherwise
+    # implement msg_size().
+    fixed_msg_size = None
 
     #-----------------------------------------------------------------------
     @classmethod
@@ -34,7 +38,10 @@ class Base:
     #-----------------------------------------------------------------------
     @classmethod
     def msg_size(cls, raw):
-        """Return the message size in bytes.
+        """Return the read message size in bytes.
+
+        This is the input message size to read when we see msg_code in
+        the byte stream.
 
         Standard and Extended messages depend on the message flags
         inside the message so some types will need to parse part of
@@ -46,6 +53,7 @@ class Base:
         Returns:
            (int) Returns the number of bytes needed to construct the
            message.
+
         """
         if cls.fixed_msg_size:
             return cls.fixed_msg_size

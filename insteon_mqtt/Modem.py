@@ -45,7 +45,12 @@ class Modem:
 
         # Add a generic read handler for any broadcast messages
         # initiated by the Insteon devices.
-        self.protocol.add_handler(handler.Broadcast(self))
+        msg_handler = handler.Broadcast(self)
+        self.protocol.add_handler(msg_handler)
+
+        # Handle user triggered factory reset of the modem.
+        msg_handler = handler.Callback(Msg.InpUserReset, self.handle_reset)
+        self.protocol.add_handler(msg_handler)
 
     #-----------------------------------------------------------------------
     def load_config(self, data):
@@ -261,6 +266,13 @@ class Modem:
         self._modify_db(cmd, is_ctrl, addr, group, device_cmd)
 
     #-----------------------------------------------------------------------
+    def factory_reset(self):
+        LOG.warning("Modem being reset.  All data will be lost")
+        msg = Msg.OutResetPlm()
+        msg_handler = handler.Callback(msg, self.handle_reset)
+        self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
         """Run arbitrary commands.
 
@@ -275,6 +287,8 @@ class Modem:
 
           reload_all: No arguments.  Reloads the modem database and tells
                       every device to reload it's database as well.
+
+          factory_reset: No arguments.  Full factory reset of the modem.
         """
         LOG.info("Modem command: %s", kwargs)
 
@@ -288,6 +302,8 @@ class Modem:
             self.get_db()
         elif cmd == 'reload_all':
             self.reload_all()
+        if cmd == 'factory_reset':
+            self.factory_reset()
         else:
             LOG.error("Unknown modem command '%s'.  Valid commands are: "
                       "'getdb'", cmd)
@@ -349,6 +365,20 @@ class Modem:
                 return
 
             self.db.handle_db_rec(msg)
+
+    #-----------------------------------------------------------------------
+    def handle_reset(self, msg):
+        """TODO: doc
+        """
+        assert isinstance(msg, (Msg.OutResetPlm, Msg.InpUserReset))
+
+        if msg.is_ack:
+            LOG.warning("Modem has been reset")
+            self.db.clear()
+            if os.path.exists(self.db_path()):
+                os.path.erase(self.db_path())
+        else:
+            LOG.error("Modem factory reset failed")
 
     #-----------------------------------------------------------------------
     def _load_devices(self, data):
@@ -460,7 +490,7 @@ class Modem:
         if msg.is_ack:
             LOG.info("Modem db updated: %s", msg)
             self.db.update_rec(msg)
-            self.db.save_db()
+            self.save_db()
         else:
             LOG.error("Modem db update error: %s", msg)
 

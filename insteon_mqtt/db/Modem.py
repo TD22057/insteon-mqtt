@@ -72,6 +72,12 @@ class Modem:
             self.entries.append(entry)
 
     #-----------------------------------------------------------------------
+    def clear(self):
+        """TODO: doc
+        """
+        self.entries = []
+
+    #-----------------------------------------------------------------------
     def find(self, addr, group, is_controller):
         """TODO: doc
         """
