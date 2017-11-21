@@ -32,6 +32,7 @@ Inbound messages can be:
 
 
 #===========================================================================
+from .Base import Base
 from .Broadcast import Broadcast
 from .Callback import Callback
 from .DeviceGetDb import DeviceGetDb

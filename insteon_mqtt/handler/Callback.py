@@ -6,11 +6,12 @@
 import inspect
 import logging
 from .. import message as Msg
+from .Base import Base
 
 LOG = logging.getLogger(__name__)
 
 
-class Callback:
+class Callback(Base):
     """Basic callback handler.
 
     This handler will call the input callback when the input message
@@ -26,6 +27,8 @@ class Callback:
                      Signature is callback(msg) where msg is the message
                      passed to msg_received.
         """
+        super().__init__()
+
         if inspect.isclass(msg):
             self.msg_type = msg
         else:

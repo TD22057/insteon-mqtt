@@ -43,6 +43,16 @@ class Modem:
         # Signal to emit when a new device is added.
         self.signal_new_device = Signal()  # emit(modem, device)
 
+        # Remove (mqtt) commands mapped to methods calls.  These are
+        # handled in run_command().  Commands should all be lower case
+        # (inputs are lowered).
+        self.cmd_map = {
+            'getdb' : self.get_db,
+            'reload_all' : self.reload_all,
+            'factory_reset' : self.factory_reset,
+            'setbtn' : self.set_btn,
+            }
+
         # Add a generic read handler for any broadcast messages
         # initiated by the Insteon devices.
         msg_handler = handler.Broadcast(self)
@@ -267,8 +277,21 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def factory_reset(self):
+        """TODO: doc
+        """
         LOG.warning("Modem being reset.  All data will be lost")
         msg = Msg.OutResetPlm()
+        msg_handler = handler.Callback(msg, self.handle_reset)
+        self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def set_btn(self, group=0x01):
+        """TODO: doc
+        """
+        # Tell the modem to enter all link mode for the group.  The
+        # callback will handle timeouts (to send the cancel message)
+        # if nothing happens.  See the handler for details.
+        msg = Msg.OutAllLinkStart(Msg.OutAllLinkStart.EITHER, group)
         msg_handler = handler.Callback(msg, self.handle_reset)
         self.protocol.send(msg, msg_handler)
 
@@ -289,24 +312,30 @@ class Modem:
                       every device to reload it's database as well.
 
           factory_reset: No arguments.  Full factory reset of the modem.
-        """
-        LOG.info("Modem command: %s", kwargs)
 
-        cmd = kwargs.get('cmd', None)
+          setbtn: Optional time_out argument (in seconds).  Simulates pressing
+                  the modem set button to put the modem in linking mode.
+        """
+        cmd = kwargs.pop('cmd', None)
         if not cmd:
-            LOG.error("Invalid command sent to modem.  No 'cmd' keyword: %s",
-                      kwargs)
+            LOG.error("Invalid command sent to modem %s.  No 'cmd' "
+                      "keyword: %s", self.addr, kwargs)
             return
 
-        if cmd == 'getdb':
-            self.get_db()
-        elif cmd == 'reload_all':
-            self.reload_all()
-        if cmd == 'factory_reset':
-            self.factory_reset()
-        else:
-            LOG.error("Unknown modem command '%s'.  Valid commands are: "
-                      "'getdb'", cmd)
+        cmd = cmd.lower().strip()
+        func = self.cmd_map.get(cmd, None)
+        if not func:
+            LOG.error("Invalid command sent to modem %s.  Input cmd "
+                      "'%s' not valid.  Valid commands: %s", self.addr,
+                      cmd, self.cmd_map.keys())
+            return
+
+        # Call the command function with any remaining arguments.
+        try:
+            func(**kwargs)
+        except:
+            LOG.exception("Invalid command inputs to modem %s.  Input "
+                          "cmd %s with args: %s", self.addr, cmd, str(kwargs))
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):

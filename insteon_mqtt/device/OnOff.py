@@ -243,11 +243,11 @@ class OnOff(Base):
         """
         # If this it the ACK we're expecting, update the internal
         # state and emit our signals.
-        if msg.flags.type == Msg.Flags.DIRECT_ACK:
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("OnOff %s ACK: %s", self.addr, msg)
             self._set_is_on(msg.cmd2 > 0x00)
 
-        elif msg.flags.type == Msg.Flags.DIRECT_NAK:
+        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("OnOff %s NAK error: %s", self.addr, msg)
 
     #-----------------------------------------------------------------------

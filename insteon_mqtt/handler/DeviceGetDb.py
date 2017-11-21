@@ -5,11 +5,12 @@
 #===========================================================================
 import logging
 from .. import message as Msg
+from .Base import Base
 
 LOG = logging.getLogger(__name__)
 
 
-class DeviceGetDb:
+class DeviceGetDb(Base):
     """Device database request message handler.
 
     To download the all link database from a device, we send a
@@ -29,12 +30,14 @@ class DeviceGetDb:
           callback: Callback function to pass database messages to or None
                     to indicate the end of the entries.
         """
+        super().__init__()
+
         self.addr = addr
         self.callback = callback
         self._have_ack = False
 
     #-----------------------------------------------------------------------
-    def msg_received(self, transport, msg):
+    def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
         See if the message is the expected ACK of our output or the

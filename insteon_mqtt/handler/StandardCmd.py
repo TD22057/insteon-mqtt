@@ -5,11 +5,12 @@
 #===========================================================================
 import logging
 from .. import message as Msg
+from .Base import Base
 
 LOG = logging.getLogger(__name__)
 
 
-class StandardCmd:
+class StandardCmd(Base):
     """Insteon standard input mesage handler.
 
     Standard messages are uesd for general commands that we send (turn
@@ -41,6 +42,8 @@ class StandardCmd:
                     used to match those.  -1 can be input to match any
                     message cmd1 field.
         """
+        super().__init__()
+
         self.addr = msg.to_addr
         self.cmd = msg.cmd1 if cmd is None else cmd
         self.callback = callback

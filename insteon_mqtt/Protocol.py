@@ -91,6 +91,11 @@ class Protocol:
         # write handler.
         self._read_handlers = []
 
+        # TODO: add message deduplication.
+        #    - Store last message and time tag
+        #    - add __eq__ check to messages (or to store bytes?)
+        #    - if no handler, arrival time near time tag, and same msg, ignore
+
     #-----------------------------------------------------------------------
     def add_handler(self, handler):
         """Add a universal message handler.
@@ -299,8 +304,8 @@ class Protocol:
         # code and look for more messages.  This might be better
         # by having a lookup by msg ID->msg size and use that to
         # skip the whole message.
-        LOG.warning("No read handler found for message type %#04x",
-                    msg.msg_code)
+        LOG.warning("No read handler found for message type %#04x: %s",
+                    msg.msg_code, msg)
 
     #-----------------------------------------------------------------------
     def _write_finished(self):

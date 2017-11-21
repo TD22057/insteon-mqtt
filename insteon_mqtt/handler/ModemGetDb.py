@@ -5,11 +5,12 @@
 #===========================================================================
 import logging
 from .. import message as Msg
+from .Base import Base
 
 LOG = logging.getLogger(__name__)
 
 
-class ModemGetDb:
+class ModemGetDb(Base):
     """PLM Modem database request message handler.
 
     To download the all link database from the PLM modem, we send a
@@ -30,6 +31,8 @@ class ModemGetDb:
           callback: Callback function to pass database messages to or None
                     to indicate the end of the entries.
         """
+        super().__init__()
+
         self.modem = modem
         self.callback = callback
 

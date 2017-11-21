@@ -126,7 +126,7 @@ class DeviceEntry:
 
         """
         # See p162 and p116 of insteon dev guide
-        o = io.BytesIO90
+        o = io.BytesIO()
         o.write(bytes([
             0x00,  # D1 unused
             0x02,  # D2 write record

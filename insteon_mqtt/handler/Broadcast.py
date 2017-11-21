@@ -5,11 +5,12 @@
 #===========================================================================
 import logging
 from .. import message as Msg
+from .Base import Base
 
 LOG = logging.getLogger(__name__)
 
 
-class Broadcast:
+class Broadcast(Base):
     """Broadcast message handler.
 
     Broadcast messages are sent when a device is triggered manually
@@ -31,6 +32,7 @@ class Broadcast:
         Args
           modem:   (Modem) The Insteon modem object.
         """
+        super().__init__()
         self.modem = modem
         self._handled = False
 

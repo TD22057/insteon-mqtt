@@ -5,11 +5,12 @@
 #===========================================================================
 import logging
 from .. import message as Msg
+from .Base import Base
 
 LOG = logging.getLogger(__name__)
 
 
-class ModemModifyDb:
+class ModemModifyDb(Base):
     """PLM Modem database modify message handler.
 
     This handles replies when we need to add, remove, or modify the
@@ -26,6 +27,8 @@ class ModemModifyDb:
         Args
           modem:   (Modem) The Insteon modem.
         """
+        super().__init__()
+
         self.modem = modem
 
     #-----------------------------------------------------------------------
