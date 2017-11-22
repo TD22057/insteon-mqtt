@@ -9,9 +9,12 @@ import insteon_mqtt.message as Msg
 
 class Test_ModemGetDb:
     def test_acks(self):
+        calls = []
+        def callback(msg):
+            calls.append(msg)
+
         proto = MockProtocol()
-        modem = MockModem()
-        handler = IM.handler.ModemGetDb(modem)
+        handler = IM.handler.ModemGetDb(callback)
 
         get_first = Msg.OutAllLinkGetFirst(is_ack=True)
         get_next = Msg.OutAllLinkGetNext(is_ack=True)
@@ -25,15 +28,18 @@ class Test_ModemGetDb:
 
         r = handler.msg_received(proto, get_nak)
         assert r == Msg.FINISHED
-        assert modem.msg is None
+        assert calls == [None]
 
         r = handler.msg_received(proto, "dummy")
         assert r == Msg.UNKNOWN
 
     #-----------------------------------------------------------------------
     def test_recs(self):
-        modem = IM.db.Modem()
-        handler = IM.handler.ModemGetDb(modem)
+        calls = []
+        def callback(msg):
+            calls.append(msg)
+
+        handler = IM.handler.ModemGetDb(callback)
         proto = MockProtocol()
 
         b = bytes([0x02, 0x57,
@@ -47,14 +53,7 @@ class Test_ModemGetDb:
         assert r == Msg.FINISHED
         assert isinstance(proto.sent, Msg.OutAllLinkGetNext)
         assert proto.handler == handler
-        assert len(modem) == 1
-
-#===========================================================================
-
-
-class MockModem:
-    def handle_db_rec(self, msg):
-        self.msg = msg
+        assert calls == [msg]
 
 #===========================================================================
 

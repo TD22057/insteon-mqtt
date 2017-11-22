@@ -23,17 +23,15 @@ class ModemGetDb(Base):
     constructor which is usually a method on the device to update it's
     database.
     """
-    def __init__(self, modem, callback):
+    def __init__(self, callback):
         """Constructor
 
         Args
-          modem:    (Modem) The Insteon modem.
           callback: Callback function to pass database messages to or None
                     to indicate the end of the entries.
         """
         super().__init__()
 
-        self.modem = modem
         self.callback = callback
 
     #-----------------------------------------------------------------------

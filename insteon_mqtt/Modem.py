@@ -120,7 +120,7 @@ class Modem:
         # Request the first db record from the handler.  The handler
         # will request each next record as the records arrive.
         msg = Msg.OutAllLinkGetFirst()
-        msg_handler = handler.ModemGetDb(self, self.handle_db_rec)
+        msg_handler = handler.ModemGetDb(self.handle_db_rec)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
