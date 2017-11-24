@@ -75,8 +75,8 @@ class OutAllLinkStart(Base):
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "All link start: grp: %s %s ack: %s" % (self.group, self.cmd,
-                                                       self.is_ack)
+        ack = "" if self.is_ack is None else "ack: %s" % self.is_ack
+        return "All link start: grp: %s %s %s" % (self.group, self.cmd, ack)
 
     #-----------------------------------------------------------------------
 

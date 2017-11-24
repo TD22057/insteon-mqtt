@@ -23,18 +23,47 @@ class ModemAllLink(Base):
     If no reply is received in the time out window, we'll send an
     OutAllLinkCancel message.
     """
-    def __init__(self, modem, callback):
+    def __init__(self, protocol, callback, time_out=60):
         """Constructor
 
         Args
-          modem:    (Modem) The Insteon modem.
+          protocol: (Protocol) The Insteon protocol object.
           callback: Callback function to pass database messages to or None
                     to indicate the end of the entries.
+          time_out: (int) Time out in seconds.  If we don't get an
+                    InpAllLinkComplete message in this time, we'll send a
+                    cancel message to the modem to cancel the all link mode.
         """
-        super().__init__()
+        super().__init__(time_out)
 
-        self.modem = modem
+        self.protocol = protocol
         self.callback = callback
+
+    #-----------------------------------------------------------------------
+    def is_expired(self, t):
+        """See if the time out time has been exceeded.
+
+        Args:
+          t:  (float) Current time tag as a Unix clock time.
+
+        Returns:
+          Returns True if the message has timed out or False otherwise.
+        """
+        # If we haven't expired, return.
+        if not super().is_expired(t):
+            return
+
+        # Linking window has expired.  Set a cancel command at the
+        # start of the message queue so it gets sent next.
+        msg = Msg.OutAllLinkCancel()
+        msg_handler = self
+        self.protocol.send(msg, msg_handler, high_priority=True)
+
+        # Tell the protocol that we're expired.  This will end this
+        # handler and send the next message which is the cancel
+        # message we just added at the start of the queue with
+        # ourselves as the handler.
+        return Msg.FINISHED
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):

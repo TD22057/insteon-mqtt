@@ -63,7 +63,8 @@ class OutAllLinkGetNext(Base):
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "All link get next: ack: %s" % self.is_ack
+        ack = "" if self.is_ack is None else "ack: %s" % self.is_ack
+        return "All link get next: %s" % ack
 
     #-----------------------------------------------------------------------
 

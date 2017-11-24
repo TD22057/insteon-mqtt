@@ -47,10 +47,10 @@ class Modem:
         # handled in run_command().  Commands should all be lower case
         # (inputs are lowered).
         self.cmd_map = {
-            'getdb' : self.get_db,
+            'get_db' : self.get_db,
             'reload_all' : self.reload_all,
             'factory_reset' : self.factory_reset,
-            'setbtn' : self.set_btn,
+            'set_btn' : self.set_btn,
             }
 
         # Add a generic read handler for any broadcast messages
@@ -243,7 +243,7 @@ class Modem:
     def add_controller_of(self, addr, group, data=None):
         """TODO: doc
         """
-        cmd = Msg.OutAllLinkUpdate.ADD_CONTROLLER
+        cmd = Msg.OutAllLinkUpdate.Cmd.ADD_CONTROLLER
         is_ctrl = True
         device_cmd = "add_responder_of"
         self._modify_db(cmd, is_ctrl, addr, group, device_cmd, data)
@@ -252,7 +252,7 @@ class Modem:
     def add_responder_of(self, addr, group, data=None):
         """TODO: doc
         """
-        cmd = Msg.OutAllLinkUpdate.ADD_RESPONDER
+        cmd = Msg.OutAllLinkUpdate.Cmd.ADD_RESPONDER
         is_ctrl = False
         device_cmd = "add_controller_of"
         self._modify_db(cmd, is_ctrl, addr, group, device_cmd, data)
@@ -261,7 +261,7 @@ class Modem:
     def del_controller_of(self, addr, group):
         """TODO: doc
         """
-        cmd = Msg.OutAllLinkUpdate.DELETE
+        cmd = Msg.OutAllLinkUpdate.Cmd.DELETE
         is_ctrl = True
         device_cmd = "del_responder_of"
         self._modify_db(cmd, is_ctrl, addr, group, device_cmd)
@@ -270,7 +270,7 @@ class Modem:
     def del_responder_of(self, addr, group):
         """TODO: doc
         """
-        cmd = Msg.OutAllLinkUpdate.DELETE
+        cmd = Msg.OutAllLinkUpdate.Cmd.DELETE
         is_ctrl = False
         device_cmd = "del_controller_of"
         self._modify_db(cmd, is_ctrl, addr, group, device_cmd)
@@ -285,14 +285,15 @@ class Modem:
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set_btn(self, group=0x01):
+    def set_btn(self, group=0x01, time_out=60):
         """TODO: doc
         """
         # Tell the modem to enter all link mode for the group.  The
-        # callback will handle timeouts (to send the cancel message)
-        # if nothing happens.  See the handler for details.
-        msg = Msg.OutAllLinkStart(Msg.OutAllLinkStart.EITHER, group)
-        msg_handler = handler.Callback(msg, self.handle_reset)
+        # handler will handle timeouts (to send the cancel message) if
+        # nothing happens.  See the handler for details.
+        msg = Msg.OutAllLinkStart(Msg.OutAllLinkStart.Cmd.EITHER, group)
+        msg_handler = handler.ModemAllLink(self.protocol, self.handle_all_link,
+                                           time_out)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -313,8 +314,8 @@ class Modem:
 
           factory_reset: No arguments.  Full factory reset of the modem.
 
-          setbtn: Optional time_out argument (in seconds).  Simulates pressing
-                  the modem set button to put the modem in linking mode.
+          set_btn: Optional time_out argument (in seconds).  Simulates pressing
+                   the modem set button to put the modem in linking mode.
         """
         cmd = kwargs.pop('cmd', None)
         if not cmd:
@@ -367,6 +368,19 @@ class Modem:
         pass
 
     #-----------------------------------------------------------------------
+    def handle_all_link(self, msg):
+        """Handle a successful all link (set button) action by the modem.
+
+        This is called when the modem set button is pressed and
+        another device is linked to the modem.
+
+        Args:
+           msg:    (message.InpAllLinkComplete) All link result message.
+        """
+        # TODO: update db.
+        pass
+
+    #-----------------------------------------------------------------------
     def handle_db_rec(self, msg):
         """New all link database record handler.
 
@@ -405,7 +419,7 @@ class Modem:
             LOG.warning("Modem has been reset")
             self.db.clear()
             if os.path.exists(self.db_path()):
-                os.path.erase(self.db_path())
+                os.remove(self.db_path())
         else:
             LOG.error("Modem factory reset failed")
 
@@ -494,8 +508,8 @@ class Modem:
         # combination.  If there is, change the command to update
         # unless we're removing it.
         entry = self.db.find(addr, group, is_ctrl)
-        if entry and cmd != Msg.OutAllLinkUpdate.DELETE:
-            cmd = Msg.OutAllLinkUpdate.UPDATE
+        if entry and cmd != Msg.OutAllLinkUpdate.Cmd.DELETE:
+            cmd = Msg.OutAllLinkUpdate.Cmd.UPDATE
 
         # Build the modem database update message.
         flags = Msg.DbFlags(in_use=True, is_controller=is_ctrl,

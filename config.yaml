@@ -10,13 +10,13 @@ mqtt:
   # Outbound messages:
   qos: 1
   retain: 0
-    
+
   # Topic: {state_topic}/ADDRESS
   # Payload: { values }
   state_topic: "insteon/state"
 
   # Inbound messages:
-    
+
   # Topic: {set_topic}/ADDRESS
   # Payload: { json_values }
   set_topic: "insteon/set"
@@ -59,6 +59,10 @@ insteon:
     - motion:
         name: "motion"
         address: 21.d6.d9
+
+    - dimmer:
+        name: "lamp2"
+        address: 3a.29.84
 
     - dimmer:
         name: "sw1"

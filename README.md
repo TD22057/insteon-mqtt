@@ -42,6 +42,9 @@ Things remaining to do:
 - possible device discovery
 - MQTT payload templates.
 - yaml config validator  (voluptuous like HA?)
+- heal network command (remove all db records for missing devices)
+- remove device command (remove device from all db records)
+- add erase_db function to devices and modem.
 
 
 ## Setup
@@ -80,7 +83,7 @@ All devices support the following commands:
   - 'refresh' will ping the device, update the device's internal state
     (on level, on/off, etc) and check the all link database for
     changes.
-  - 'getdb' will cause the device to re-download it's all link database.
+  - 'get_db' will cause the device to re-download it's all link database.
 
 ### PLM Modem
 
@@ -101,6 +104,8 @@ database or remove and reload the database for every device.
    Payload:
       'refresh'
       'reload_all'
+      'get_db'
+      'set_btn'
 ```
 
 
@@ -131,7 +136,7 @@ the dimmer level, refresh the state, or download it's database
       'UP' or 'DOWN'
       { "cmd" : "set", "level" : LEVEL }
       'refresh'
-      'getdb'
+      'get_db'
 
    Example command line:
       mosquitto_pub -t 'insteon/set/48.b0.ad' -m '{"cmd":"set", "level":128}'
@@ -163,7 +168,7 @@ the state, or download it's database
    Payload:
       'ON' or 'OFF'
       'refresh'
-      'getdb'
+      'get_db'
 ```
 
 
@@ -194,7 +199,7 @@ do not listen for arbitrary input commands.
    Topic: insteon/set/AA.BB.CC
    Payload:
       'refresh'
-      'getdb'
+      'get_db'
 ```
 
 
@@ -225,7 +230,7 @@ download it's database
    Topic: insteon/set/AA.BB.CC
    Payload:
       'refresh'
-      'getdb'
+      'get_db'
 ```
 
 

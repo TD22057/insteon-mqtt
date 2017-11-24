@@ -3,7 +3,7 @@
 # Message handler API definition
 #
 #===========================================================================
-from .. import message as Msg
+import time
 
 
 class Base:
@@ -11,6 +11,39 @@ class Base:
 
     TODO: doc
     """
+    #-----------------------------------------------------------------------
+    def __init__(self, time_out=5):
+        """Constructor
+
+        Args:
+          time_out:  (int) time out in seconds.
+        """
+        self.time_out = time_out
+        self.expire_time = None
+
+    #-----------------------------------------------------------------------
+    def update_expire_time(self):
+        """Record that valid messages were seen.
+
+        This resets the time out time to record that we saw a valid
+        message.
+        """
+        self.expire_time = time.time() + self.time_out
+
+    #-----------------------------------------------------------------------
+    def is_expired(self, t):
+        """See if the time out time has been exceeded.
+
+        Args:
+          t:  (float) Current time tag as a Unix clock time.
+
+        Returns:
+          Returns True if the message has timed out or False otherwise.
+        """
+        # Otherwise, result is Msg.UNKNOWN and we should use the time
+        # out time to see if the handler has expired.
+        return t >= self.expire_time
+
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
@@ -31,22 +64,5 @@ class Base:
         """
         raise NotImplementedError("%s.msg_received not implemented" %
                                   self.__class__)
-
-    #-----------------------------------------------------------------------
-    def poll(self, t):
-        """Periodic polling function.
-
-        The network stack calls this periodically.  This can be used
-        to time out message handlers or send new messages (retries,
-        cancels, etc).
-
-        Args:
-           t:   (float) Current Unix clock time tag.
-
-        Returns:
-          Msg.CONTINUE if the handler should still be active.
-          Msg.FINISHED if we handler should be removed.
-        """
-        return Msg.CONTINUE
 
     #-----------------------------------------------------------------------

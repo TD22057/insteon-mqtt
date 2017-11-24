@@ -4,7 +4,6 @@
 #
 #===========================================================================
 import logging
-import time
 from . import message as Msg
 
 LOG = logging.getLogger(__name__)
@@ -70,21 +69,20 @@ class Protocol:
         # Inbound message buffer.
         self._buf = bytearray()
 
-        # List of WriteData objects.  These contain the message
-        # object, message handler class, the time it was sent, and
-        # when to time out.  Messages from oldest to newest.  The
-        # handlers are used to process responses.  We have to wait
-        # until the handler says that it's done receiving replies
-        # until we can send the next message.  If we write to the
-        # modem before that, it basically cancels the previous action.
-        # When a message is written, it's WriteData object gets set
-        # into _write_data until that handler says that's received all
+        # List of messages to send.  These contain a tuple of (msg,
+        # handler) Messages from oldest to newest.  The handlers are
+        # used to process responses.  We have to wait until the
+        # handler says that it's done receiving replies until we can
+        # send the next message.  If we write to the modem before
+        # that, it basically cancels the previous action.  When a
+        # message is written, it's handler object gets set into
+        # _write_handler until that handler says that's received all
         # the expected replies (or times out).  At that point we'll
         # write the next message in the queue.
         self._write_queue = []
 
-        # WriteData object for the last message written.
-        self._write_data = None
+        # handler.Base message handler of the last written message.
+        self._write_handler = None
 
         # Set of possible message handlers to use.  These are handlers
         # that handle any message besides the replies expected by the
@@ -134,7 +132,7 @@ class Protocol:
         self.link.load_config(config)
 
     #-----------------------------------------------------------------------
-    def send(self, msg, msg_handler, time_out=5):
+    def send(self, msg, msg_handler, high_priority=False):
         """Write a message to the PLM modem.
 
         If there are no other messages in the queue, the message gets
@@ -149,22 +147,25 @@ class Protocol:
         and no more replies are expected.
 
         Arg:
-          msg:          Output message to write.  This should be an
-                        instance of a message in the message directory that
-                        that starts with 'Out'.
-          msg_handler:  Message handler instance to use when replies to the
-                        message are received.  Any message received after we
-                        write out the msg are passed to this handler until
-                        the handler returns the message.FINISHED flags.
-          time_out:     (int) Time in seconds after which we'll delete the
-                        handler as a time out and send any other messages.
-
+          msg:            Output message to write.  This should be an
+                          instance of a message in the message directory that
+                          that starts with 'Out'.
+          msg_handler:    Message handler instance to use when replies to the
+                          message are received.  Any message received after we
+                          write out the msg are passed to this handler until
+                          the handler returns the message.FINISHED flags.
+          high_priority:  (bool)False to add the message at the end of the
+                          queue.  True to insert this message at the start of
+                          the queue.
         """
-        self._write_queue.append(WriteData(msg, msg_handler, time_out))
+        if not high_priority:
+            self._write_queue.append((msg, msg_handler))
+        else:
+            self._write_queue.insert(0, (msg, msg_handler))
 
         # If there is an existing msg that we're processing replies
         # for then delay sending this until we're done.
-        if not self._write_data:
+        if not self._write_handler:
             self._send_next_msg()
 
     #-----------------------------------------------------------------------
@@ -178,13 +179,13 @@ class Protocol:
         Args:
            t:   (float) Current Unix clock time tag.
         """
-        if not self._write_data:
+        if not self._write_handler:
             return
 
-        # Ask the WriteData if it's past the time out in which case
-        # we'll mark this message as finished and move on.
-        if self._write_data.expired(t):
-            LOG.warning("Message time out: %s", self._write_data.msg)
+        # Ask the write handler if it's past the time out in which
+        # case we'll mark this message as finished and move on.
+        if self._write_handler.is_expired(t):
+            LOG.warning("Last message timed out")
             self._write_finished()
 
     #-----------------------------------------------------------------------
@@ -271,21 +272,22 @@ class Protocol:
         # seen all the messages it expects. If it's CONTINUE, it
         # processed the message but expects more.  If it's UNKNOWN,
         # the handler ignored that message.
-        if self._write_data:
+        if self._write_handler:
             LOG.debug("Passing msg to write handler")
-            status = self._write_data.handler.msg_received(self, msg)
+            status = self._write_handler.msg_received(self, msg)
 
             # Handler is finished.  Send the next outgoing message
             # if one is waiting.
             if status == Msg.FINISHED:
                 LOG.debug("Write handler finished")
                 self._write_finished()
+                return
 
             # If this message was understood by the write handler,
             # don't look in the read handlers and update the write
             # handlers time out into the future.
-            elif status != Msg.UNKNOWN:
-                self._write_data.traffic()
+            elif status == Msg.CONTINUE:
+                self._write_handler.update_expire_time()
                 return
 
         # No write handler or the message didn't match what the
@@ -316,9 +318,9 @@ class Protocol:
         been read.  The write handler is cleared and the next message
         in the queue is written.
         """
-        assert self._write_data
+        assert self._write_handler
 
-        self._write_data = None
+        self._write_handler = None
         if self._write_queue:
             self._send_next_msg()
 
@@ -339,61 +341,21 @@ class Protocol:
         This pops off the first message in the queue and sets it into
         the write_data field for later processing of replies.
         """
-        # Get the next message and handler from the write queue.
-        data = self._write_queue.pop(0)
+        # Get the next output message and handler from the write
+        # queue.
+        msg, handler = self._write_queue.pop(0)
 
-        LOG.info("Write to PLM: %s", data.msg)
+        LOG.info("Write to PLM: %s", msg)
 
         # Write the message to the PLM modem.
-        self.link.write(data.msg.to_bytes())
+        self.link.write(msg.to_bytes())
+
+        # Tell the msg data that we've sent the message to update the
+        # current time out time.
+        handler.update_expire_time()
 
         # Save the handler to have priority processing any inbound
         # messages.
-        self._write_data = data
-
-        # Tell the msg data that we've sent the message to update the
-        # time out time.
-        data.traffic()
+        self._write_handler = handler
 
     #-----------------------------------------------------------------------
-
-
-#===========================================================================
-class WriteData:
-    """Output message data.
-
-    Stores the message object, handler, and time out delta time.
-    """
-    def __init__(self, msg, handler, time_out):
-        """Constructor
-
-        Args:
-          msg:       Message object to send.
-          handler:   Message handler object to process replies.
-          time_out:  (int) time out in seconds.
-        """
-        self.msg = msg
-        self.handler = handler
-        self.time_out = time_out
-        self.expire_time = None
-
-    def traffic(self):
-        """Record that valid messages were seen.
-
-        This resets the time out time to record that we saw a valid
-        message.
-        """
-        self.expire_time = time.time() + self.time_out
-
-    def expired(self, t):
-        """See if the time out time has been exceeded.
-
-        Args:
-          t:  (float) Current time tag as a Unix clock time.
-
-        Returns:
-          Returns True if the message has timed out or False otherwise.
-        """
-        return t >= self.expire_time
-
-#===========================================================================

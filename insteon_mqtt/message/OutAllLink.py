@@ -74,8 +74,9 @@ class OutAllLink(Base):
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "All link: grp: %s cmd: %#04x %#04x ack: %s" % \
-            (self.group, self.cmd1, self.cmd2, self.is_ack)
+        ack = "" if self.is_ack is None else "ack: %s" % self.is_ack
+        return "All link: grp: %s cmd: %#04x %#04x %s" % \
+            (self.group, self.cmd1, self.cmd2, ack)
 
     #-----------------------------------------------------------------------
 

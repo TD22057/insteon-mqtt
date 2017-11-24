@@ -143,8 +143,8 @@ class OutStandard(Base):
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        ack = "" if self.is_ack is None else " ack: %s" % self.is_ack
-        return "Std: %s, %s, %02x %02x%s" % \
+        ack = "" if self.is_ack is None else "ack: %s" % self.is_ack
+        return "Std: %s, %s, %02x %02x %s" % \
             (self.to_addr, self.flags, self.cmd1, self.cmd2, ack)
 
     #-----------------------------------------------------------------------
@@ -211,10 +211,10 @@ class OutExtended(OutStandard):
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        ack = "" if self.is_ack is None else " ack: %s" % self.is_ack
+        ack = "" if self.is_ack is None else "ack: %s" % self.is_ack
 
         o = io.StringIO()
-        o.write("Ext: %s, %s, %02x %02x%s\n" %
+        o.write("Ext: %s, %s, %02x %02x %s\n" %
                 (self.to_addr, self.flags, self.cmd1, self.cmd2, ack))
         for i in self.data:
             o.write("%02x " % i)

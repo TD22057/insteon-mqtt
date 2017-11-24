@@ -62,7 +62,8 @@ class OutAllLinkCancel(Base):
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "All link cancel: ack: %s" % self.is_ack
+        ack = "" if self.is_ack is None else "ack: %s" % self.is_ack
+        return "All link cancel: %s" % ack
 
     #-----------------------------------------------------------------------
 
