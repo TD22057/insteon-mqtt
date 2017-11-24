@@ -11,7 +11,13 @@ features and devices.
 
 ## Current Status
 
-This is currently under development.  Here's what works so far:
+This is currently under active development.  Code and API's are
+changing as I'm working out issues so the current system is fairly
+unstable.  Once I get the minimum set of functionality implemented,
+I'll move to a more standard modem (dev branch, stable main branch)
+and try and keep the API's stable.
+
+Here's what works so far:
 
 - basic Insteon devices (dimmers, on/off modules, modem, smoke bridge,
   motion sensors)
@@ -24,20 +30,27 @@ This is currently under development.  Here's what works so far:
   triggered by the device.
 - send remote commands (get db, refresh state) to devices via MQTT
 - correctly handle commands arriving while db is being downloaded
+- modify the all link database on the PLM modem.
 
-Things remaining to do:
+Things remaining to do for the initial release:
 
-- user documentation (github)
+- modify the all link database on each device
+- automatically link devices to the modem including all needed groups
+  (for complicated devices like the fanlinkc, smoke bridge, and thermostat)
+- command line tool for sending messages (short cut to MQTT publish)
+- command line tool for running the server
+  - logging control
+  - config file and db save file location control
+- basic user documentation (github markdown pages)
+
+
+Things for future versions:
+
 - unit tests
 - more devices: mini-remotes, door sensors, leak sensors, keypads, thermostats,
   fanlincs, etc.
 - custom scene creation (PLM modem scenes) and scene triggering
 - simulate device scenes via MQTT (clicking dimmer button)
-- ability to modify the all link database on each device
-- automatically link devices to the modem including all groups (like the
-  smoke bridge or thermostat)
-- logging control
-- configuration file and database saving location control
 - pip packaging
 - possible device discovery
 - MQTT payload templates.
