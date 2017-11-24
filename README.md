@@ -105,7 +105,7 @@ database or remove and reload the database for every device.
       'refresh'
       'reload_all'
       'get_db'
-      'set_btn'
+      'set_btn' or '{ "cmd" : "set_btn", "time_out" : 30 }'
 ```
 
 
