@@ -344,11 +344,14 @@ class Protocol:
         # Get the next output message and handler from the write
         # queue.
         msg, handler = self._write_queue.pop(0)
+        bytes = msg.to_bytes()
 
-        LOG.info("Write to PLM: %s", msg)
+        LOG.info("Write to modem: %s", msg)
+        from . import util
+        LOG.debug("Write to modem: %s", util.to_hex(bytes))
 
         # Write the message to the PLM modem.
-        self.link.write(msg.to_bytes())
+        self.link.write(bytes)
 
         # Tell the msg data that we've sent the message to update the
         # current time out time.

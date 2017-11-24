@@ -49,11 +49,17 @@ class ModemModifyDb(Base):
           Msg.FINISHED if we handled the message and are done.
 
         """
-        # Message is an ACK/NAK of the record request.
-        if isinstance(msg, Msg.OutAllLinkUpdate):
-            self.modem.handle_db_update(msg)
-            return Msg.FINISHED
+        if not isinstance(msg, Msg.OutAllLinkUpdate):
+            return Msg.UNKNOWN
 
-        return Msg.UNKNOWN
+        # Message is an ACK/NAK of the record request.
+        if msg.is_ack:
+            LOG.info("Modem db updated: %s", msg)
+            self.modem.db.handle_db_update(msg)
+            self.modem.save_db()
+        else:
+            LOG.error("Modem db update error: %s", msg)
+
+        return Msg.FINISHED
 
     #-----------------------------------------------------------------------

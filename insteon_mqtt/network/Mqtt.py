@@ -5,8 +5,8 @@
 #===========================================================================
 import logging
 import paho.mqtt.client as paho
+from ..Signal import Signal
 from .Link import Link
-from .. import Signal
 
 LOG = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class Mqtt(Link):
                          the broker is unavailable.
 
         """
-        self.signal_message = Signal.Signal()    # (MqttLink, Message msg)
+        self.signal_message = Signal()    # (MqttLink, Message msg)
 
         super().__init__()
         self.host = host

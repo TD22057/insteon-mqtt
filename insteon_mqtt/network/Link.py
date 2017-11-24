@@ -3,7 +3,7 @@
 # Network Link base class definition.
 #
 #===========================================================================
-from .. import Signal
+from ..Signal import Signal
 
 
 class Link:
@@ -25,18 +25,18 @@ class Link:
         """
         # Sent when the link is going down.
         # signature: (Link link)
-        self.signal_closing = Signal.Signal()
+        self.signal_closing = Signal()
 
         # Sent when the link changes state on whether or not it has
         # bytes that need to be written to the link.
         # signature: (Link link, bool write_active)
-        self.signal_needs_write = Signal.Signal()
+        self.signal_needs_write = Signal()
 
         # The manager will emit this after the connection has been
         # established and everything is ready.  Links should usually
         # not emit this directly.
         # signature: (Link link, bool connected)
-        self.signal_connected = Signal.Signal()
+        self.signal_connected = Signal()
 
     #-----------------------------------------------------------------------
     def retry_connect_dt(self):

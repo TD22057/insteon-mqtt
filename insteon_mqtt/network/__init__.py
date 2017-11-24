@@ -23,7 +23,7 @@ from .Serial import Serial
 from .Mqtt import Mqtt
 
 # Use Poll on non-windows systems - For windows we have to use select.
-import platform
+import platform  # pylint: disable=wrong-import-order
 if platform.system() != 'Windows':
     from .poll import Manager
 else:

@@ -6,8 +6,8 @@
 import logging
 import os
 import serial
+from ..Signal import Signal
 from .Link import Link
-from .. import Signal
 
 LOG = logging.getLogger(__name__)
 
@@ -50,8 +50,8 @@ class Serial(Link):
 
         """
         # Public signals to connect to for read/write notification.
-        self.signal_read = Signal.Signal()   # (Serial, bytes)
-        self.signal_wrote = Signal.Signal()  # (Serial, bytes)
+        self.signal_read = Signal()   # (Serial, bytes)
+        self.signal_wrote = Signal()  # (Serial, bytes)
 
         super().__init__()
 

@@ -54,7 +54,7 @@ class Base:
         # commands to the dict to expand the list.  Commands should
         # all be lower case (inputs are lowered).
         self.cmd_map = {
-            'getdb' : self.get_db,
+            'getdb' : self.db_get,
             'refresh' : self.refresh,
             }
 
@@ -116,7 +116,7 @@ class Base:
         LOG.debug(str(self.db))
 
     #-----------------------------------------------------------------------
-    def get_db(self):
+    def db_get(self):
         """Load the all link database from the modem.
 
         This sends a message to the modem to start downloading the all

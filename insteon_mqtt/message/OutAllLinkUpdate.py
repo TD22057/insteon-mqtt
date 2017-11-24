@@ -76,7 +76,7 @@ class OutAllLinkUpdate(Base):
         super().__init__()
 
         assert isinstance(db_flags, DbFlags)
-        assert len(data) == 3
+        assert data is None or len(data) == 3
 
         self.cmd = self.Cmd(cmd)
         self.db_flags = db_flags

@@ -18,14 +18,15 @@ class Callback(Base):
     type matches the message class or message instance passed to the
     constructor.
     """
-    def __init__(self, msg, callback=None):
+    def __init__(self, msg, callback=None, **cb_args):
         """Constructor
 
         Args
           msg:       The message being to match or the message class to match.
           callback:  Optional callback to call when the message is matched.
-                     Signature is callback(msg) where msg is the message
-                     passed to msg_received.
+                     Signature is callback(msg, **kwargs) where msg is the
+                     message passed to msg_received.
+          cb_args:   Extra named arguments to pass to the callback.
         """
         super().__init__()
 
@@ -35,6 +36,7 @@ class Callback(Base):
             self.msg_type = type(msg)
 
         self.callback = callback
+        self.cb_args = cb_args
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
@@ -56,7 +58,7 @@ class Callback(Base):
 
         # Pass the message to the callback.
         if self.callback:
-            self.callback(msg)
+            self.callback(msg, **self.cb_args)
 
         return Msg.FINISHED
 

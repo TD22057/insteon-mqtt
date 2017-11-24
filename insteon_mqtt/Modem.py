@@ -47,10 +47,13 @@ class Modem:
         # handled in run_command().  Commands should all be lower case
         # (inputs are lowered).
         self.cmd_map = {
-            'get_db' : self.get_db,
             'reload_all' : self.reload_all,
             'factory_reset' : self.factory_reset,
             'set_btn' : self.set_btn,
+            'db_get' : self.db_get,
+            'db_add_ctrl' : self.db_add_ctrl_of,
+            'db_add_resp' : self.db_add_resp_of,
+            'db_del' : self.db_delete,
             }
 
         # Add a generic read handler for any broadcast messages
@@ -96,6 +99,10 @@ class Modem:
             self.save_path = data['storage']
             self.load_db()
 
+            LOG.info("Modem %s database loaded %s entries", self.addr,
+                     len(self.db))
+            LOG.debug(str(self.db))
+
         # Read the device definitions and scenes.
         self.devices = self._load_devices(data.get('devices', []))
         self.scenes = self._load_scenes(data.get('scenes', []))
@@ -108,7 +115,7 @@ class Modem:
                 device.refresh()
 
     #-----------------------------------------------------------------------
-    def get_db(self):
+    def db_get(self):
         """Load the all link database from the modem.
 
         This sends a message to the modem to start downloading the all
@@ -116,6 +123,9 @@ class Modem:
         process the replies and update the modem database.
         """
         LOG.info("Modem sending get first db record command")
+
+        # Clear the db so we can rebuild it.
+        self.db.clear()
 
         # Request the first db record from the handler.  The handler
         # will request each next record as the records arrive.
@@ -140,15 +150,7 @@ class Modem:
         self.db_path().  If the save_path configuration input wasn't
         set, nothing is done.
         """
-        if not self.save_path:
-            return
-
-        data = self.db.to_json()
-
-        with open(self.db_path(), "w") as f:
-            json.dump(data, f, indent=2)
-
-        LOG.info("%s database saved %s entries", self.addr, len(self.db))
+        self.db.save()
 
     #-----------------------------------------------------------------------
     def load_db(self):
@@ -158,8 +160,10 @@ class Modem:
         path self.db_path().  If the file doesn't exist, nothing is
         done.
         """
-        # See if the database file exists.
+        # See if the database file exists.  Tell the modem it's future
+        # path so it can save itself.
         path = self.db_path()
+        self.db.set_path(path)
         if not os.path.exists(path):
             return
 
@@ -168,7 +172,7 @@ class Modem:
             with open(path) as f:
                 data = json.load(f)
 
-            self.db = db.Modem.from_json(data)
+            self.db = db.Modem.from_json(data, path)
         except:
             LOG.exception("Error reading modem db file %s", path)
             return
@@ -179,14 +183,21 @@ class Modem:
     def add(self, device):
         """Add a device object to the modem.
 
+        This doesn't change the modem all link database, it just
+        allows us to find the input device by address.
+
         Args:
           device    The device object to add.
+
         """
         self.devices[device.addr.id] = device
 
     #-----------------------------------------------------------------------
     def remove(self, device):
         """Remove a device object from the modem.
+
+        This doesn't change the modem all link database, it just
+        removes the input device from our local look up.
 
         Args:
           device    The device object to add.  If the device doesn't exist,
@@ -233,47 +244,63 @@ class Modem:
         called if no other activity is expected on the network.
         """
         # Reload the modem database.
-        self.get_db()
+        self.db_get()
 
         # Reload all the device databases.
         for device in self.devices.values():
-            device.get_db()
+            device.db_get()
 
     #-----------------------------------------------------------------------
-    def add_controller_of(self, addr, group, data=None):
+    def db_add_ctrl_of(self, addr, group, data=None, force=False,
+                       add_remote=True):
         """TODO: doc
         """
-        cmd = Msg.OutAllLinkUpdate.Cmd.ADD_CONTROLLER
-        is_ctrl = True
-        device_cmd = "add_responder_of"
-        self._modify_db(cmd, is_ctrl, addr, group, device_cmd, data)
+        addr = Address(addr)
+
+        remote = self.find(addr)
+        if add_remote and not remote:
+            if force:
+                LOG.info("Modem.db_add_ctrl_of can't find remote device %s.  "
+                         "Link will be only one direction", addr)
+            else:
+                LOG.error("Modem.db_add_ctrl_of can't find remote device %s.  "
+                          "Link cannot be added", addr)
+                return
+
+        entry = db.ModemEntry(addr, group, is_controller=True, data=data)
+        self.db.add_on_device(self.protocol, entry)
+
+        if add_remote and remote:
+            remote.db_add_resp_of(self.addr, group, data, add_remote=False)
 
     #-----------------------------------------------------------------------
-    def add_responder_of(self, addr, group, data=None):
+    def db_add_resp_of(self, addr, group, data=None, force=False,
+                       add_remote=True):
         """TODO: doc
         """
-        cmd = Msg.OutAllLinkUpdate.Cmd.ADD_RESPONDER
-        is_ctrl = False
-        device_cmd = "add_controller_of"
-        self._modify_db(cmd, is_ctrl, addr, group, device_cmd, data)
+        addr = Address(addr)
+
+        remote = self.find(addr)
+        if add_remote and not remote:
+            if force:
+                LOG.info("Modem.db_add_resp_of can't find remote device %s.  "
+                         "Link will be only one direction", addr)
+            else:
+                LOG.error("Modem.db_add_resp_of can't find remote device %s.  "
+                          "Link cannot be added", addr)
+                return
+
+        entry = db.ModemEntry(addr, group, is_controller=False, data=data)
+        self.db.add_on_device(self.protocol, entry)
+
+        if add_remote and remote:
+            remote.db_add_ctrl_of(self.addr, group, data, add_remote=False)
 
     #-----------------------------------------------------------------------
-    def del_controller_of(self, addr, group):
+    def db_delete(self, addr, group):
         """TODO: doc
         """
-        cmd = Msg.OutAllLinkUpdate.Cmd.DELETE
-        is_ctrl = True
-        device_cmd = "del_responder_of"
-        self._modify_db(cmd, is_ctrl, addr, group, device_cmd)
-
-    #-----------------------------------------------------------------------
-    def del_responder_of(self, addr, group):
-        """TODO: doc
-        """
-        cmd = Msg.OutAllLinkUpdate.Cmd.DELETE
-        is_ctrl = False
-        device_cmd = "del_controller_of"
-        self._modify_db(cmd, is_ctrl, addr, group, device_cmd)
+        self.db.delete_entries(self.protocol, addr, group)
 
     #-----------------------------------------------------------------------
     def factory_reset(self):
@@ -403,7 +430,7 @@ class Modem:
         # Add the record to the database.
         else:
             assert isinstance(msg, Msg.InpAllLinkRec)
-            if not msg.flags.in_use:
+            if not msg.db_flags.in_use:
                 LOG.info("Ignoring modem db record in_use = False")
                 return
 
@@ -493,49 +520,5 @@ class Modem:
         # has, we need to update the device databases.
         scenes = {}
         return scenes
-
-    #-----------------------------------------------------------------------
-    def _modify_db(self, cmd, is_ctrl, addr, group, device_cmd, data=None):
-        """TODO: doc
-        """
-        # Find the device the link is for.
-        device = self.find(addr)
-        if not device:
-            # TODO???
-            return
-
-        # See if there is a current database entry for this
-        # combination.  If there is, change the command to update
-        # unless we're removing it.
-        entry = self.db.find(addr, group, is_ctrl)
-        if entry and cmd != Msg.OutAllLinkUpdate.Cmd.DELETE:
-            cmd = Msg.OutAllLinkUpdate.Cmd.UPDATE
-
-        # Build the modem database update message.
-        flags = Msg.DbFlags(in_use=True, is_controller=is_ctrl,
-                            last_record=False)
-        msg = Msg.OutAllLinkUpdate(cmd, flags, group, addr, data)
-
-        # Modem will ack/nak our message.  This calls handle_db_update()
-        # with the result.
-        msg_handler = handler.ModemModifyDb(self)
-        self.protocol.send(msg, msg_handler)
-
-        # Send a message to the device to update it's end of the link.
-        if device_cmd:
-            func = getattr(device, device_cmd)
-            func(self.addr, group, data)
-
-    #-----------------------------------------------------------------------
-    def handle_db_update(self, msg):
-        """TODO: doc
-        """
-        # TODO: callback handler?  might be easier to understand.
-        if msg.is_ack:
-            LOG.info("Modem db updated: %s", msg)
-            self.db.update_rec(msg)
-            self.save_db()
-        else:
-            LOG.error("Modem db update error: %s", msg)
 
     #-----------------------------------------------------------------------
