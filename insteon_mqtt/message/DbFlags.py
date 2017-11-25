@@ -27,7 +27,7 @@ class DbFlags:
            Returns the constructed DbFlags object.
         """
         return DbFlags(data['in_use'], data['is_controller'],
-                       data['last_record'])
+                       data['is_last_rec'])
 
     #-----------------------------------------------------------------------
     @classmethod
@@ -53,26 +53,25 @@ class DbFlags:
         # bits 2-5 are unused
 
         # high water bit: 0 for last record, 1 otherwise
-        last_record = not ((b & 0b00000010) >> 1)
+        is_last_rec = not ((b & 0b00000010) >> 1)
         # bit 0 is not needed
 
-        return DbFlags(bool(in_use), bool(is_controller), last_record)
+        return DbFlags(bool(in_use), bool(is_controller), is_last_rec)
 
     #-----------------------------------------------------------------------
-    def __init__(self, in_use, is_controller, last_record):
+    def __init__(self, in_use, is_controller, is_last_rec):
         """Constructor
 
         Args:
           in_use:         (bool) True if the record is in use.
           is_controller:  (bool) True means the device holding the record is
                           the controller.  False means it's a responder.
-          last_record:    (bool) True if this is the last record in the
+          is_last_rec:    (bool) True if this is the last record in the
                           database.
         """
         self.in_use = in_use
         self.is_controller = is_controller
-        self.is_responder = not is_controller
-        self.last_record = last_record
+        self.is_last_rec = is_last_rec
 
     #-----------------------------------------------------------------------
     def to_bytes(self):
@@ -84,9 +83,13 @@ class DbFlags:
         Returns:
            (bytes) Returns a 1 byte array containing the bit flags.
         """
-        data = self.in_use << 7 | \
-               self.is_controller << 6 | \
-               (not self.last_record) << 1
+        data = self.in_use << 7
+        data |= self.is_controller << 6
+        # Not sure why this is needed.  Insteon docs say bit 5 is
+        # unused.  But all the records have it set and if it's not set
+        # here, commands sent to modify the database will fail.
+        data |= 1 << 5
+        data |= (not self.is_last_rec) << 1
         return bytes([data])
 
     #-----------------------------------------------------------------------
@@ -102,13 +105,13 @@ class DbFlags:
         return {
             'in_use' : self.in_use,
             'is_controller' : self.is_controller,
-            'last_record' : self.last_record,
+            'is_last_rec' : self.is_last_rec,
             }
 
     #-----------------------------------------------------------------------
     def __str__(self):
         return "in_use: %s type: %s last: %s" % \
             (self.in_use, 'CTRL' if self.is_controller else 'RESP',
-             self.last_record)
+             self.is_last_rec)
 
     #-----------------------------------------------------------------------

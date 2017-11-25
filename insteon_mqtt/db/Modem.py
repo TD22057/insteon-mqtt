@@ -125,16 +125,16 @@ class Modem:
         else:
             cmd = Msg.OutAllLinkUpdate.Cmd.ADD_RESPONDER
 
-        # Create the flags for the entry.  last_record doesn't seem to
+        # Create the flags for the entry.  is_last_rec doesn't seem to
         # be used by the modem db so it's value doesn't matter.
         db_flags = Msg.DbFlags(in_use=True, is_controller=entry.is_controller,
-                               last_record=False)
+                               is_last_rec=False)
 
         # Build the modem database update message.
         msg = Msg.OutAllLinkUpdate(cmd, db_flags, entry.group, entry.addr,
                                    entry.data)
-        msg_handler = handler.Callback(msg, self._handle_db_update, entry=entry,
-                                       exists=exists)
+        msg_handler = handler.Callback(msg, self._handle_db_update,
+                                       entry=entry, exists=exists)
 
         # Send the message.
         protocol.send(msg, msg_handler)
@@ -246,8 +246,8 @@ class Modem:
         elif (msg.cmd == Msg.OutAllLinkUpdate.Cmd.ADD_CONTROLLER or
               msg.cmd == Msg.OutAllLinkUpdate.Cmd.ADD_RESPONDER):
             LOG.info("Adding modem db record for %s type: %s grp: %s data: %s",
-                     msg.addr, 'CTRL' if msg.db_flags.is_controller else 'RESP',
-                     msg.group, msg.data)
+                     msg.addr, 'CTRL' if msg.db_flags.is_controller else
+                     'RESP', msg.group, msg.data)
 
             self._add_entry(entry)
 
@@ -256,7 +256,6 @@ class Modem:
             return
 
         self.save()
-
 
     #-----------------------------------------------------------------------
     def __str__(self):

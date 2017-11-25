@@ -84,6 +84,8 @@ class DeviceEntry:
         self.group = group
         self.mem_loc = mem_loc
         self.db_flags = db_flags
+        self.is_controller = db_flags.is_controller
+        self.is_responder = not self.is_controller
         self.data = data
         self.on_level = data[0]
         self.ramp_rate = data[1]
@@ -115,16 +117,21 @@ class DeviceEntry:
             }
 
     #-----------------------------------------------------------------------
-    def to_bytes(self):
+    def to_bytes(self, db_flags=None):
         """Convert the entry to a 14 byte extended data byte array.
 
         Byte[1] will be set to 0x02 which is the command to update the
         remote database entry.
 
+        Args:
+          db_flags:  TODO
+
         Returns:
           (bytes) Returns the 14 byte data array.
 
         """
+        db_flags = self.db_flags if db_flags is None else db_flags
+
         # See p162 and p116 of insteon dev guide
         o = io.BytesIO()
         o.write(bytes([
@@ -134,10 +141,11 @@ class DeviceEntry:
         o.write(self.mem_bytes())  # D3,D4 record memory location
         o.write(bytes([0x08]))  # D5 number of bytes in record
         # 8 byte record (p116)
-        o.write(self.db_flags.to_bytes())  # D6 db control flags
+        o.write(db_flags.to_bytes())  # D6 db control flags
         o.write(bytes([self.group]))  # D7 group
         o.write(self.addr.to_bytes())  # D8-10 address
         o.write(self.data)  # D11-13 link data
+        o.write(bytes([0x00]))  # D14 unused
 
         data = o.getvalue()
         assert len(data) == 14
@@ -158,9 +166,11 @@ class DeviceEntry:
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "ID: %s  grp: %s  type: %s  data: %#04x %#04x %#04x" % \
+        last = " (LAST)" if self.db_flags.is_last_rec else ""
+
+        return "ID: %s  grp: %3s  type: %s  data: %#04x %#04x %#04x%s" % \
             (self.addr.hex, self.group,
              'CTRL' if self.db_flags.is_controller else 'RESP',
-             self.data[0], self.data[1], self.data[2])
+             self.data[0], self.data[1], self.data[2], last)
 
     #-----------------------------------------------------------------------

@@ -37,15 +37,6 @@ modem.startWatch()
 ---
 modem.addController("44.01.02", 3)
 
-WRITE 'OUT:Cmd:0x6F
-   controlCode:0x40
-   recordFlags:0xA2
-   ALLLinkGroup:0x03
-   linkAddress:44.01.02
-   linkData1:0x00
-   linkData2:0x00
-   linkData3:0x03
-   '
 sent msg: OUT:Cmd:0x6F
    controlCode:0x40
    recordFlags:0xA2
@@ -54,16 +45,6 @@ sent msg: OUT:Cmd:0x6F
    linkData1:0x00
    linkData2:0x00
    linkData3:0x03
-
-addController got msg: IN:Cmd:0x6F
-   controlCode:0x40
-   recordFlags:0xA2
-   ALLLinkGroup:0x03
-   linkAddress:44.01.02
-   linkData1:0x00
-   linkData2:0x00
-   linkData3:0x03
-   ACK/NACK:0x06
 
 modem got msg: IN:Cmd:0x6F
    controlCode:0x40
@@ -79,15 +60,6 @@ modem got msg: IN:Cmd:0x6F
 ---
 modem.addResponder("44.01.02", 3)
 
-WRITE 'OUT:Cmd:0x6F
-   controlCode:0x41
-   recordFlags:0xA2
-   ALLLinkGroup:0x03
-   linkAddress:44.01.02
-   linkData1:0x00
-   linkData2:0x00
-   linkData3:0x03
-   '
 sent msg: OUT:Cmd:0x6F
    controlCode:0x41
    recordFlags:0xA2
@@ -107,17 +79,6 @@ modem got msg: IN:Cmd:0x6F
    linkData3:0x03
    ACK/NACK:0x06
 
-addResponder got msg: IN:Cmd:0x6F
-   controlCode:0x41
-   recordFlags:0xA2
-   ALLLinkGroup:0x03
-   linkAddress:44.01.02
-   linkData1:0x00
-   linkData2:0x00
-   linkData3:0x03
-   ACK/NACK:0x06
-
-
 ---
 not supported by terminal:
 modem.removeController("44.01.02", 3)
@@ -128,15 +89,6 @@ removed both records.
 
 modem.removeResponderOrController("44.01.02", 3)
 
-WRITE 'OUT:Cmd:0x6F
-   controlCode:0x80
-   recordFlags:0x00
-   ALLLinkGroup:0x03
-   linkAddress:44.01.02
-   linkData1:0x00
-   linkData2:0x00
-   linkData3:0x00
-   '
 sent msg: OUT:Cmd:0x6F
    controlCode:0x80
    recordFlags:0x00
@@ -145,16 +97,6 @@ sent msg: OUT:Cmd:0x6F
    linkData1:0x00
    linkData2:0x00
    linkData3:0x00
-
-removeResponderOrController got msg: IN:Cmd:0x6F
-   controlCode:0x80
-   recordFlags:0x00
-   ALLLinkGroup:0x03
-   linkAddress:44.01.02
-   linkData1:0x00
-   linkData2:0x00
-   linkData3:0x00
-   ACK/NACK:0x06
 
 modem got msg: IN:Cmd:0x6F
    controlCode:0x80
@@ -352,20 +294,20 @@ sent msg: OUT:Cmd:0x62
    messageFlags:0x1F=DIRECT:3:3
    command1:0x2F
    command2:0x00
-   userData1:0x00
-   userData2:0x02
-   userData3:0x0F
-   userData4:0xBF
-   userData5:0x08
-   userData6:0x22
-   userData7:0x03
-   userData8:0x44
-   userData9:0x01
-   userData10:0x02
-   userData11:0x04
-   userData12:0x05
-   userData13:0x06
-   userData14:0x7E
+   userData1:0x00    unused
+   userData2:0x02    write record
+   userData3:0x0F    mem high
+   userData4:0xBF    mem low
+   userData5:0x08    8 bytes
+   userData6:0x22    db flags 0010 0010 = avail=0, resp=0, ..., used before=1
+   userData7:0x03    group
+   userData8:0x44    addr1
+   userData9:0x01    addr2
+   userData10:0x02   addr3
+   userData11:0x04   data1
+   userData12:0x05   data2
+   userData13:0x06   data3
+   userData14:0x7E   checksum/unused
 
 modem got msg: IN:Cmd:0x51
    fromAddress:48.3D.46
@@ -797,3 +739,60 @@ IN:Cmd:0x51
    userData14:0x8F
 
  11
+================================
+smoke bridge delete
+
+OUT:
+02 62
+to: 44.A3.79
+flags: 1F =DIRECT:3:3
+cmd12: 2F 00
+userData1: 00
+userData2: 02
+userData3: 0F
+userData4: CF
+userData5: 08
+userData6: 22
+userData7: 05
+userData8: 44
+userData9: 85
+userData10: 11
+userData11: 00
+userData12: 00
+userData13: 05
+userData14: E3
+
+
+got set record:  IN: Cmd: 50
+fromAddress: 44.A3.79
+toAddress: 44.85.11
+messageFlags: 2B=ACK_OF_DIRECT: 3: 2
+command1: 2F
+command2: 00
+
+======
+Ted version
+02 62
+44 a3 79
+1f
+2f 00
+00 02
+0f c7  <--- cf (ok - this is memory loc of entry)
+08
+42  <-- 22  (db flags: 0100 0010 vs 0010 0010
+06  (ok - group)
+44 85 11
+00 00 06
+00
+
+IMPORTANT: msg flags bit 5 needs to be 1 even though insteon docs say
+its unused.
+Protocol: Write to modem: 02 62 3a 29 84 1f 2f 00 00 02 0f e7 08 22 01 48 b0 ad fe 1c 00 00
+Serial: Wrote 22 bytes to serial /dev/insteon
+Protocol: Read 0x62: Ext: 3A.29.84, Type.DIRECT ext, 2f 00 ack: True
+ 48 b0 ad fe 1c 00 00
+Protocol: Passing msg to write handler
+Device: Device.delete removed entry: ID: 48.B0.AD  grp:   1  type: RESP  data: 0xfe 0x1c 0x00
+Protocol: Write handler finished
+Protocol: Read 0x50: Std: 3A.29.84->44.85.11 Type.DIRECT_ACK cmd: 2f 00
+WARNING Protocol: No read handler found for message type 0x50: Std: 3A.29.84->44.85.11 Type.DIRECT_ACK cmd: 2f 00

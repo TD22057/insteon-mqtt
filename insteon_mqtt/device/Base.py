@@ -47,14 +47,18 @@ class Base:
         self.addr = Address(address)
         self.name = name
         self.save_path = None  # set by the modem loading method
-        self.db = db.Device()
+        self.db = db.Device(self.addr)
 
         # Remove (mqtt) commands mapped to methods calls.  These are
         # handled in run_command().  Derived classes can add more
         # commands to the dict to expand the list.  Commands should
         # all be lower case (inputs are lowered).
         self.cmd_map = {
-            'getdb' : self.db_get,
+            'db_add_ctrl' : self.db_add_ctrl_of,
+            'db_add_resp' : self.db_add_resp_of,
+            'db_del_ctrl' : self.db_del_ctrl_of,
+            'db_del_resp' : self.db_del_resp_of,
+            'db_get' : self.db_get,
             'refresh' : self.refresh,
             }
 
@@ -116,21 +120,6 @@ class Base:
         LOG.debug(str(self.db))
 
     #-----------------------------------------------------------------------
-    def db_get(self):
-        """Load the all link database from the modem.
-
-        This sends a message to the modem to start downloading the all
-        link database.  The message handler handler.DeviceGetDb is
-        used to process the replies and update the modem database.
-        """
-        # We need to get the current db delta so we know which
-        # database we're getting.  So clear the current flag and then
-        # do a refresh which will find the delta and then trigger a
-        # download.
-        self.db.clear_delta()
-        self.refresh()
-
-    #-----------------------------------------------------------------------
     def refresh(self):
         """Refresh the current device state and database if needed.
 
@@ -153,9 +142,29 @@ class Base:
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def add_controller_of(self, addr, group, data=None):
+    def db_get(self):
+        """Load the all link database from the modem.
+
+        This sends a message to the modem to start downloading the all
+        link database.  The message handler handler.DeviceGetDb is
+        used to process the replies and update the modem database.
+        """
+        # We need to get the current db delta so we know which
+        # database we're getting.  So clear the current flag and then
+        # do a refresh which will find the delta and then trigger a
+        # download.
+        self.db.clear_delta()
+        self.refresh()
+
+    #-----------------------------------------------------------------------
+    def db_add_ctrl_of(self, addr, group, data=None):
         """TODO: doc
         """
+        # Insure types are ok - this way strings passed in from JSON
+        # or MQTT get converted to the type we expect.
+        addr = Address(addr)
+        group = int(group)
+
         # TODO: set controller flags.
 
         # Find the first unused record in the database.  If prev_last
@@ -166,31 +175,52 @@ class Base:
         # TODO: move this to the database?
 
     #-----------------------------------------------------------------------
-    def add_responder_of(self, addr, group, data=None):
+    def db_add_resp_of(self, addr, group, data=None):
         """TODO: doc
         """
+        # Insure types are ok - this way strings passed in from JSON
+        # or MQTT get converted to the type we expect.
+        addr = Address(addr)
+        group = int(group)
+
         cmd = Msg.OutAllLinkUpdate.ADD_RESPONDER
         is_controller = False
         device_cmd = "add_controller_of"
         self._modify_db(cmd, is_controller, addr, group, device_cmd, data)
 
     #-----------------------------------------------------------------------
-    def del_controller_of(self, addr, group):
+    def db_del_ctrl_of(self, addr, group):
         """TODO: doc
         """
-        cmd = Msg.OutAllLinkUpdate.DELETE
-        is_controller = True
-        device_cmd = "del_responder_of"
-        self._modify_db(cmd, is_controller, addr, group, device_cmd)
+        # Insure types are ok - this way strings passed in from JSON
+        # or MQTT get converted to the type we expect.
+        addr = Address(addr)
+        group = int(group)
+
+        entry = self.db.find(addr, group, is_controller=True)
+        if not entry:
+            LOG.warning("Device %s delete no match for %s grp %s CTRL",
+                        self.addr, addr, group)
+            return
+
+        self.db.delete_entry(self.protocol, self.addr, entry)
 
     #-----------------------------------------------------------------------
-    def del_responder_of(self, addr, group):
+    def db_del_resp_of(self, addr, group):
         """TODO: doc
         """
-        cmd = Msg.OutAllLinkUpdate.DELETE
-        is_controller = False
-        device_cmd = "del_controller_of"
-        self._modify_db(cmd, is_controller, addr, group, device_cmd)
+        # Insure types are ok - this way strings passed in from JSON
+        # or MQTT get converted to the type we expect.
+        addr = Address(addr)
+        group = int(group)
+
+        entry = self.db.find(addr, group, is_controller=False)
+        if not entry:
+            LOG.warning("Device %s delete no match for %s grp %s RESP",
+                        self.addr, addr, group)
+            return
+
+        self.db.delete_entry(self.protocol, self.addr, entry)
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
@@ -325,17 +355,24 @@ class Base:
           msg:   (message.Msg.InpExtended) Extended message that contains
                  the device database entry.  This is passed to
                  db.Device database to parse the message.
+
+        Returns:
+        TODO: doc
         """
         # New record - add it to the device database.
         if msg is not None:
-            self.db.handle_db_rec(msg)
+            result = self.db.handle_db_rec(msg)
+        else:
+            result = Msg.FINISHED
 
         # Finished - we have all the records.
-        else:
+        if result == Msg.FINISHED:
             self.db.delta = self._next_db_delta
             self._next_db_delta = None
 
             LOG.info("%s database download complete\n%s", self.addr, self.db)
             self.save_db()
+
+        return result
 
     #-----------------------------------------------------------------------

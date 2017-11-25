@@ -67,6 +67,7 @@ class Base:
         Returns:
            (bytes) Returns the message as bytes.
         """
+        # NOTE: This is only needed for output messages.
         raise NotImplementedError("%s.to_bytes() not implemented" %
                                   self.__class__)
 

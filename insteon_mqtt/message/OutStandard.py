@@ -4,6 +4,7 @@
 #
 #===========================================================================
 import io
+import itertools
 from ..Address import Address
 from .Base import Base
 from .Flags import Flags
@@ -201,13 +202,44 @@ class OutExtended(OutStandard):
         self.data = data
 
     #-----------------------------------------------------------------------
-    def to_bytes(self):
+    def to_bytes(self, crc_type="D14"):
         """Convert the message to a byte array.
+
+        TODO: doc
 
         Returns:
            (bytes) Returns the message as bytes.
         """
-        return OutStandard.to_bytes(self) + self.data
+        assert crc_type in [None, "D14", "CRC"]
+
+        # NOTE: both of these checksum/CRC algorithms were built from
+        # the insteon-terminal messages.py file at:
+        # https://github.com/pfrommerd/insteon-terminal
+
+        # Even though the Insteon docs say that the last byte is
+        # unused, db modification commands (cmd1=0x2f) require
+        # that a checksum be computed and put in the last byte.
+        if crc_type == "D14":
+            ck_byte = (~(self.cmd1 + self.cmd2 + sum(self.data)) + 1) & 0xff
+            ext_data = self.data[0:13] + bytes([ck_byte])
+
+        # Thermostats require a crc check
+        elif crc_type == "CRC":
+            crc = 0
+            for i in itertools.chain([self.cmd1, self.cmd2], self.data[0:12]):
+                for j in range(8):
+                    x = i & 0x01
+                    x = x ^ 0x01 if (crc & 0x8000) else x
+                    x = x ^ 0x01 if (crc & 0x4000) else x
+                    x = x ^ 0x01 if (crc & 0x1000) else x
+                    x = x ^ 0x01 if (crc & 0x0008) else x
+                    crc = ((crc << 1) | x) & 0xFFFF
+                    i = i >> 1
+            ext_data = self.data[0:12] + bytes([(crc >> 8) & 0xff, crc & 0xff])
+        else:
+            ext_data = self.data
+
+        return OutStandard.to_bytes(self) + ext_data
 
     #-----------------------------------------------------------------------
     def __str__(self):

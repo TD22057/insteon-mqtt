@@ -3,6 +3,7 @@
 # Device get all link database handler.
 #
 #===========================================================================
+# pylint: disable=too-many-return-statements
 import logging
 from .. import message as Msg
 from .Base import Base
@@ -65,6 +66,24 @@ class DeviceGetDb(Base):
 
             return Msg.UNKNOWN
 
+        # Probably an ACK/NAK from the device for our get command.
+        elif isinstance(msg, Msg.InpStandard):
+            # Filter by address and command.
+            if msg.from_addr != self.addr or msg.cmd1 != 0x2f:
+                return Msg.UNKNOWN
+
+            if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+                LOG.info("%s device ACK response", msg.from_addr)
+                return Msg.CONTINUE
+
+            elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+                LOG.error("%s device NAK error: %s", msg.from_addr, msg)
+                return Msg.FINISHED
+
+            else:
+                LOG.warning("%s device unexpected msg: %s", msg.from_addr, msg)
+                return Msg.UNKNOWN
+
         # Process the real reply.  Database reply is an extended messages.
         elif isinstance(msg, Msg.InpExtended):
             # Filter by address and command.
@@ -80,9 +99,9 @@ class DeviceGetDb(Base):
                 self.callback(None)
                 return Msg.FINISHED
 
-            # Pass the record to the callback and wait for more messages.
-            self.callback(msg)
-            return Msg.CONTINUE
+            # Pass the record to the callback - let the callback
+            # figure out if we need to wait for more messages.
+            return self.callback(msg)
 
         return Msg.UNKNOWN
 

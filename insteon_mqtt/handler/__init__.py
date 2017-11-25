@@ -36,6 +36,7 @@ from .Base import Base
 from .Broadcast import Broadcast
 from .Callback import Callback
 from .DeviceGetDb import DeviceGetDb
+from .DeviceModifyDb import DeviceModifyDb
 from .ModemAllLink import ModemAllLink
 from .ModemGetDb import ModemGetDb
 from .ModemModifyDb import ModemModifyDb

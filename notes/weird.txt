@@ -1,0 +1,23 @@
+
+Downloading smoke bridge db.  Get tons of duplicates some times.  Not
+sure why.
+
+Last valid record:
+0x51: Ext: 44.A3.79->44.85.11 Type.DIRECT ext cmd: 2f 00 01 01 0f bf 00 e2 07 44 85 11 00 00 07 37
+
+End of db:
+0x51: Ext: 44.A3.79->44.85.11 Type.DIRECT ext cmd: 2f 00 01 01 0f b7 00 00 00 00 00 00 00 00 00 09
+
+Then after last message, get this:
+
+0x51: Ext: 44.A3.79->44.85.11 Type.DIRECT ext cmd: 2f 00 01 01 0f b7 00 00 00 00 00 00 00 00 00 09
+
+0x51: Ext: 44.A3.79->44.85.11 Type.DIRECT ext cmd: 2f 00 01 01 0f b7 00 00 00 00 00 00 00 00 00 09
+
+0x51: Ext: 44.A3.79->44.85.11 Type.DIRECT ext cmd: 2f 00 01 01 0f b7 00 00 00 00 00 00 00 00 00 09
+
+0x51: Ext: 44.A3.79->44.85.11 Type.DIRECT ext cmd: 2f 00 01 01 0f b7 00 00 00 00 00 00 00 00 00 09
+
+
+These are all duplicates of the last record message.  Need message
+de-duplication in the Protocol class to handle this.

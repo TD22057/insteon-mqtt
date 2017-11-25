@@ -47,13 +47,14 @@ class Modem:
         # handled in run_command().  Commands should all be lower case
         # (inputs are lowered).
         self.cmd_map = {
-            'reload_all' : self.reload_all,
-            'factory_reset' : self.factory_reset,
-            'set_btn' : self.set_btn,
-            'db_get' : self.db_get,
             'db_add_ctrl' : self.db_add_ctrl_of,
             'db_add_resp' : self.db_add_resp_of,
             'db_del' : self.db_delete,
+            'db_get' : self.db_get,
+            'factory_reset' : self.factory_reset,
+            'refresh' : self.db_get,
+            'reload_all' : self.reload_all,
+            'set_btn' : self.set_btn,
             }
 
         # Add a generic read handler for any broadcast messages
@@ -255,7 +256,10 @@ class Modem:
                        add_remote=True):
         """TODO: doc
         """
+        # Insure types are ok - this way strings passed in from JSON
+        # or MQTT get converted to the type we expect.
         addr = Address(addr)
+        group = int(group)
 
         remote = self.find(addr)
         if add_remote and not remote:
@@ -278,7 +282,10 @@ class Modem:
                        add_remote=True):
         """TODO: doc
         """
+        # Insure types are ok - this way strings passed in from JSON
+        # or MQTT get converted to the type we expect.
         addr = Address(addr)
+        group = int(group)
 
         remote = self.find(addr)
         if add_remote and not remote:
@@ -300,6 +307,11 @@ class Modem:
     def db_delete(self, addr, group):
         """TODO: doc
         """
+        # Insure types are ok - this way strings passed in from JSON
+        # or MQTT get converted to the type we expect.
+        addr = Address(addr)
+        group = int(group)
+
         self.db.delete_entries(self.protocol, addr, group)
 
     #-----------------------------------------------------------------------

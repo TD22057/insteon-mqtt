@@ -5,6 +5,8 @@
 #===========================================================================
 import io
 import logging
+from ..Address import Address
+from .. import handler
 from .. import message as Msg
 from .DeviceEntry import DeviceEntry
 
@@ -34,7 +36,7 @@ class Device:
         Returns:
           Device: Returns the created Device object.
         """
-        obj = Device()
+        obj = Device(Address(data['address']))
 
         obj.delta = data['delta']
 
@@ -49,9 +51,11 @@ class Device:
         return obj
 
     #-----------------------------------------------------------------------
-    def __init__(self):
+    def __init__(self, addr):
         """Constructor
         """
+        self.addr = addr
+
         # All link delta number.  This is incremented by the device
         # when the db changes on the device.  It's returned in a
         # refresh (cmd=0x19) call to the device so we can check it
@@ -70,9 +74,11 @@ class Device:
         # respond to that group command.
         self.groups = {}
 
-        # Integer memory location which is the last entry in memory
-        # space - the lowest memory address record.
-        self._last_entry = None
+        # Set of memory addresses that we have entries for.  This is
+        # cleared when we start to download the db and used to filter
+        # out duplicate entries.  Some devcies (smoke bridge) report a
+        # lot of duplicate entries for some reason.
+        self._mem_locs = set()
 
     #-----------------------------------------------------------------------
     def is_current(self, delta):
@@ -105,14 +111,59 @@ class Device:
         """Clear the complete database of entries.
         """
         self.delta = None
-        self.entries = []
-        self.unused = []
-        self.groups = {}
-        self._last_entry = None
+        self.entries.clear()
+        self.unused.clear()
+        self.groups.clear()
+        self._mem_locs.clear()
 
     #-----------------------------------------------------------------------
     def __len__(self):
         return len(self.entries)
+
+    #-----------------------------------------------------------------------
+    def delete_entry(self, protocol, device_addr, entry):
+        """TODO: doc
+        """
+        # see p117 of insteon dev guide: To delete a record, set the
+        # in use flag in DbFlags to 0.
+
+        # Copy the DbFlags and mark it as unused.
+        db_flags = Msg.DbFlags.from_bytes(entry.db_flags.to_bytes())
+        db_flags.in_use = False
+        #db_flags.is_controller = not db_flags.is_controller  # TODO??
+
+        # If this is the last record in the database, set it's last
+        # record flag to 1.
+        if entry == self.entries[-1]:
+            db_flags.is_last_rec = True
+
+        # Build the extended db modification message.  This says to
+        # modify the entry in place w/ the new db flags.
+        ext_data = entry.to_bytes(db_flags)
+        msg = Msg.OutExtended.direct(device_addr, 0x2f, 0x00, ext_data)
+
+        msg_handler = handler.DeviceModifyDb(self, self._handle_delete,
+                                             entry=entry)
+
+        # Send the message.
+        protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def _handle_delete(self, msg, entry):
+        """TODO: doc
+        """
+        assert isinstance(msg, Msg.InpStandard)
+
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+            LOG.info("Device.delete removed entry: %s", entry)
+            self.entries.remove(entry)
+            self._mem_locs.remove(entry.mem_loc)
+            # TODO: self.save()
+
+        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+            LOG.error("Device.delete NAK removing entry: %s", entry)
+        else:
+            LOG.error("Device.delete unexpected msg type: %s", msg)
 
     #-----------------------------------------------------------------------
     def handle_db_rec(self, msg):
@@ -123,11 +174,18 @@ class Device:
 
         Args:
           msg:  (InpExtended) The database record to parse.
+
+        Returns:
+        TODO: doc
         """
         assert isinstance(msg, Msg.InpExtended)
         assert msg.data[1] == 0x01  # record response
 
         entry = DeviceEntry.from_bytes(msg.data)
+        if entry.mem_loc in self._mem_locs:
+            LOG.info("Skipping duplicate entry %s grp: %s lev: %s", entry.addr,
+                     entry.group, entry.on_level)
+            return Msg.CONTINUE
 
         # Entry is valid, store it in the database.
         if entry.db_flags.in_use:
@@ -141,6 +199,11 @@ class Device:
         else:
             LOG.info("Ignoring device db record in_use = False")
             self._add_unused(entry)
+
+        if entry.db_flags.is_last_rec:
+            return Msg.FINISHED
+        else:
+            return Msg.CONTINUE
 
     #-----------------------------------------------------------------------
     def find_group(self, group):
@@ -157,25 +220,22 @@ class Device:
         return entries
 
     #-----------------------------------------------------------------------
-    def find(self, addr, group, type):
+    def find(self, addr, group, is_controller):
         """Find a database record by address, group, and record type.
 
         Args:
           addr:   (Address) The device address.
           group:  (int) The group ID.
-          type:   ('RESP' or 'CTRL') Responder or controller record type.
-
+          TODO: doc type:   ('RESP' or 'CTRL') Responder or controller
+                     record type.
         Returns:
           (DeviceEntry) Returns the database DeviceEntry if found or None
           if the entry doesn't exist.
         """
-        assert type == 'RESP' or type == 'CTRL'
-        is_controller = type == 'CTRL'
-
-        for entry in self.entries:
-            if (entry.addr == addr and entry.group == group and
-                    entry.db_flags.is_controller == is_controller):
-                return entry
+        for e in self.entries:
+            if (e.addr == addr and e.group == group and
+                    e.is_controller == is_controller):
+                return e
 
         return None
 
@@ -189,6 +249,7 @@ class Device:
         used = [i.to_json() for i in self.entries]
         unused = [i.to_json() for i in self.unused]
         return {
+            'address' : self.addr.to_json(),
             'delta' : self.delta,
             'used' : used,
             'unused' : unused,
@@ -214,9 +275,8 @@ class Device:
         Args:
           entry:  (DeviceEntry) The entry to add.
         """
-        # Update the last memory location if needed and save the entry.
-        self._update_last(entry)
         self.entries.append(entry)
+        self._mem_locs.add(entry.mem_loc)
 
         # If we're the controller for this entry, add it to the list
         # of entries for that group.
@@ -232,23 +292,7 @@ class Device:
         Args:
           entry:  (DeviceEntry) The entry to add.
         """
-        # Update the last memory location if needed and save the entry.
-        self._update_last(entry)
         self.unused.append(entry)
-
-    #-----------------------------------------------------------------------
-    def _update_last(self, entry):
-        """Update the last memory location we've seen.
-
-        Memory goes from high->low so see if this is the lowest memory
-        addressed entry we've seen.  We need this to add new entries
-        if there are no unused spaces.
-
-        Args:
-          entry:  (DeviceEntry) The entry to check.
-        """
-        if (self._last_entry is None or
-                self._last_entry.mem_loc > entry.mem_loc):
-            self._last_entry = entry
+        self._mem_locs.add(entry.mem_loc)
 
     #-----------------------------------------------------------------------

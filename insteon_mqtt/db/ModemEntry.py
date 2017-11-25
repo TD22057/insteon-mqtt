@@ -36,8 +36,8 @@ class ModemEntry:
           group:           (int) The group the device is part of.
           is_controller:   (bool) True if this device is a controller of addr,
                            False if this device is a responder of addr.
-          data:            (bytes) 3 data bytes.  [0] is the on level, [1] is the
-                           ramp rate.
+          data:            (bytes) 3 data bytes.  [0] is the on level, [1]
+                           is the ramp rate.
         """
         data = data if data is not None else bytes(3)
         assert len(data) == 3
