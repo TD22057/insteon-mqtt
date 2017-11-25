@@ -15,6 +15,8 @@ class InpAllLinkRec(Base):
     record request and is the PLM modem all link database record that
     was requested.
     """
+    # pylint: disable=abstract-method
+
     msg_code = 0x57
     fixed_msg_size = 10
 

@@ -194,10 +194,7 @@ class Base:
         """
         # Insure types are ok - this way strings passed in from JSON
         # or MQTT get converted to the type we expect.
-        addr = Address(addr)
-        group = int(group)
-
-        entry = self.db.find(addr, group, is_controller=True)
+        entry = self.db.find(Address(addr), int(group), is_controller=True)
         if not entry:
             LOG.warning("Device %s delete no match for %s grp %s CTRL",
                         self.addr, addr, group)
@@ -211,10 +208,7 @@ class Base:
         """
         # Insure types are ok - this way strings passed in from JSON
         # or MQTT get converted to the type we expect.
-        addr = Address(addr)
-        group = int(group)
-
-        entry = self.db.find(addr, group, is_controller=False)
+        entry = self.db.find(Address(addr), int(group), is_controller=False)
         if not entry:
             LOG.warning("Device %s delete no match for %s grp %s RESP",
                         self.addr, addr, group)

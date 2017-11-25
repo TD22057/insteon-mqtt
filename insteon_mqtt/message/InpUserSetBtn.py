@@ -12,6 +12,8 @@ class InpUserSetBtn(Base):
     This is sent from the PLM modem to the host when the user presses
     the modem set button.
     """
+    # pylint: disable=abstract-method
+
     msg_code = 0x54
     fixed_msg_size = 3
 

@@ -13,6 +13,8 @@ class InpAllLinkFailure(Base):
     This is sent from the PLM modem to the host when all linking
     between the modem and a device fails.
     """
+    # pylint: disable=abstract-method
+
     msg_code = 0x56
     fixed_msg_size = 7
 

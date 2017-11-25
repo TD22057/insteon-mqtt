@@ -45,6 +45,7 @@ class DbFlags:
         Returns:
            Returns the constructed DbFlags object.
         """
+        # pylint: disable=superfluous-parens
         b = raw[offset]
 
         # Extract the bit flags we need for the record.

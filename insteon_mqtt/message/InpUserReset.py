@@ -12,6 +12,8 @@ class InpUserReset(Base):
     This is sent from the PLM modem to the host when the user does a
     factory reset on the modem.
     """
+    # pylint: disable=abstract-method
+
     msg_code = 0x55
     fixed_msg_size = 2
 
@@ -38,6 +40,7 @@ class InpUserReset(Base):
     def __init__(self):
         """Constructor
         """
+        # pylint: disable=useless-super-delegation
         super().__init__()
 
     #-----------------------------------------------------------------------

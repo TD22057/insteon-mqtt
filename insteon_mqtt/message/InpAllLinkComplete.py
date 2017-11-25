@@ -14,6 +14,8 @@ class InpAllLinkComplete(Base):
     This is sent from the PLM modem to the host when linking between
     the PLM modem and a device is completed.
     """
+    # pylint: disable=abstract-method
+
     msg_code = 0x53
     fixed_msg_size = 10
 

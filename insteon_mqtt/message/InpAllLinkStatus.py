@@ -13,6 +13,8 @@ class InpAllLinkStatus(Base):
     broadcast an all link broadcast message to activate a scene as an
     ACK/NAK of the broadcast.
     """
+    # pylint: disable=abstract-method
+
     msg_code = 0x58
     fixed_msg_size = 3
 

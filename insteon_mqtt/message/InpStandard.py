@@ -17,6 +17,8 @@ class InpStandard(Base):
     can contain a lot of different data and it's up to the message
     handler to interpret the results.
     """
+    # pylint: disable=abstract-method
+
     msg_code = 0x50
     fixed_msg_size = 11
 
@@ -95,6 +97,8 @@ class InpExtended(Base):
     state as well as when a device reports it's all link database
     records.
     """
+    # pylint: disable=abstract-method
+
     msg_code = 0x51
     fixed_msg_size = 25
 

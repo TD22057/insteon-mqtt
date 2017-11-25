@@ -5,7 +5,7 @@
 #===========================================================================
 import logging
 from .Base import Base
-from .. import Signal
+from ..Signal import Signal
 
 LOG = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class Motion(Base):
         """
         super().__init__(protocol, modem, address, name)
 
-        self.signal_active = Signal.Signal()  # (Device, bool)
+        self.signal_active = Signal()  # (Device, bool)
 
         self._is_on = False
 

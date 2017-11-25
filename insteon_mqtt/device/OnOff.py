@@ -7,7 +7,7 @@ import logging
 from .Base import Base
 from .. import handler
 from .. import message as Msg
-from .. import Signal
+from ..Signal import Signal
 
 LOG = logging.getLogger(__name__)
 
@@ -66,9 +66,9 @@ class OnOff(Base):
         self._is_on = False
 
         # TODO: Not sure we should do this?
-        #self.signal_level_changed = Signal.Signal()  # (Device, level)
+        #self.signal_level_changed = Signal()  # (Device, level)
         # Support on/off style signals.
-        self.signal_active = Signal.Signal()  # (Device, bool)
+        self.signal_active = Signal()  # (Device, bool)
 
         # Remove (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.

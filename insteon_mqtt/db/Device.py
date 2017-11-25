@@ -42,11 +42,11 @@ class Device:
 
         for d in data['used']:
             entry = DeviceEntry.from_json(d)
-            obj._add_used(entry)
+            obj._add_used(entry)  # pylint: disable=protected-access
 
         for d in data['unused']:
             entry = DeviceEntry.from_json(d)
-            obj._add_unused(entry)
+            obj._add_unused(entry)  # pylint: disable=protected-access
 
         return obj
 

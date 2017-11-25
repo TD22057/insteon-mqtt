@@ -167,6 +167,7 @@ class OutExtended(OutStandard):
     fixed_msg_size = 23
 
     #-----------------------------------------------------------------------
+    # pylint: disable=arguments-differ
     @classmethod
     def direct(cls, to_addr, cmd1, cmd2, data):
         """Construct a direct, extended message
@@ -227,7 +228,7 @@ class OutExtended(OutStandard):
         elif crc_type == "CRC":
             crc = 0
             for i in itertools.chain([self.cmd1, self.cmd2], self.data[0:12]):
-                for j in range(8):
+                for j in range(8):  # pylint: disable=unused-variable
                     x = i & 0x01
                     x = x ^ 0x01 if (crc & 0x8000) else x
                     x = x ^ 0x01 if (crc & 0x4000) else x

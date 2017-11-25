@@ -7,7 +7,7 @@ import logging
 from .Base import Base
 from .. import message as Msg
 from .. import handler
-from .. import Signal
+from ..Signal import Signal
 
 LOG = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class SmokeBridge(Base):
         super().__init__(protocol, modem, address, name)
 
         # emit(device, condition)
-        self.signal_state_change = Signal.Signal()
+        self.signal_state_change = Signal()
 
     #-----------------------------------------------------------------------
     def pair(self):
