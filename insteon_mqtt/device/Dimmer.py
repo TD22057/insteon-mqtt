@@ -315,7 +315,7 @@ class Dimmer(Base):
 
         # 0x11: on, 0x12: on fast
         if cmd in Dimmer.on_codes:
-            self._set_level(entry.on_level)
+            self._set_level(entry.data[0])
 
         # 0x13: off, 0x14: off fast
         elif cmd in Dimmer.off_codes:

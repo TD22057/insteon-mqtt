@@ -162,17 +162,9 @@ class Base:
         """
         # Insure types are ok - this way strings passed in from JSON
         # or MQTT get converted to the type we expect.
-        addr = Address(addr)
-        group = int(group)
-
-        # TODO: set controller flags.
-
-        # Find the first unused record in the database.  If prev_last
-        # is set, then we're adding a new entry and we need to update
-        # the old lsat entry at the same time.
-        rec, prev_last = self.db.find_unused(addr, group, True, data)
-
-        # TODO: move this to the database?
+        data = data if data else bytes(3)
+        self.db.add_entry(self.protocol, self.addr, Address(addr), int(group),
+                          data, is_controller=True)
 
     #-----------------------------------------------------------------------
     def db_add_resp_of(self, addr, group, data=None):
@@ -180,20 +172,17 @@ class Base:
         """
         # Insure types are ok - this way strings passed in from JSON
         # or MQTT get converted to the type we expect.
-        addr = Address(addr)
-        group = int(group)
-
-        cmd = Msg.OutAllLinkUpdate.ADD_RESPONDER
-        is_controller = False
-        device_cmd = "add_controller_of"
-        self._modify_db(cmd, is_controller, addr, group, device_cmd, data)
+        data = data if data else bytes(3)
+        self.db.add_entry(self.protocol, self.addr, Address(addr), int(group),
+                          data, is_controller=False)
 
     #-----------------------------------------------------------------------
     def db_del_ctrl_of(self, addr, group):
         """TODO: doc
         """
         # Insure types are ok - this way strings passed in from JSON
-        # or MQTT get converted to the type we expect.
+        # or MQTT get converted to the type we expect.  if the record
+        # doesn't exist, don't do anything.
         entry = self.db.find(Address(addr), int(group), is_controller=True)
         if not entry:
             LOG.warning("Device %s delete no match for %s grp %s CTRL",
@@ -207,7 +196,8 @@ class Base:
         """TODO: doc
         """
         # Insure types are ok - this way strings passed in from JSON
-        # or MQTT get converted to the type we expect.
+        # or MQTT get converted to the type we expect.  if the record
+        # doesn't exist, don't do anything.
         entry = self.db.find(Address(addr), int(group), is_controller=False)
         if not entry:
             LOG.warning("Device %s delete no match for %s grp %s RESP",

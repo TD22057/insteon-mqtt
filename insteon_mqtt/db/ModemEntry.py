@@ -45,10 +45,7 @@ class ModemEntry:
         self.addr = Address(addr)
         self.group = group
         self.is_controller = is_controller
-        self.is_responder = not is_controller
         self.data = data
-        self.on_level = data[0]
-        self.ramp_rate = data[1]
 
     #-----------------------------------------------------------------------
     def to_json(self):

@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Device modify all link database handler.
+# Device all link database deletion handler.
 #
 #===========================================================================
 import logging
@@ -10,8 +10,8 @@ from .Base import Base
 LOG = logging.getLogger(__name__)
 
 
-class DeviceModifyDb(Base):
-    """PLM Device database modify message handler.
+class DeviceDbDelete(Base):
+    """TODO: doc
 
     This handles replies when we need to add, remove, or modify the
     all link database on the PLM Device.  An output OutAllLinkUpdate
@@ -60,9 +60,9 @@ class DeviceModifyDb(Base):
                 if msg.is_ack:
                     return Msg.CONTINUE
 
-                # NAK - modem rejected command.
+                # NAK - device rejected command.
                 else:
-                    LOG.error("Modem NAK of device db modify: %s", msg)
+                    LOG.error("Device NAK of device db modify: %s", msg)
                     return Msg.FINISHED
 
         elif isinstance(msg, Msg.InpStandard):

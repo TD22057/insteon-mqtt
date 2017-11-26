@@ -75,6 +75,12 @@ class DbFlags:
         self.is_last_rec = is_last_rec
 
     #-----------------------------------------------------------------------
+    def copy(self):
+        """TODO: doc
+        """
+        return DbFlags(self.in_use, self.is_controller, self.is_last_rec)
+
+    #-----------------------------------------------------------------------
     def to_bytes(self):
         """Convert to bytes.
 

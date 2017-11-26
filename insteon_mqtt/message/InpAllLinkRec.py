@@ -63,8 +63,6 @@ class InpAllLinkRec(Base):
         self.group = group
         self.addr = addr
         self.data = data
-        self.on_level = data[0]
-        self.ramp_rate = data[1]
 
     #-----------------------------------------------------------------------
     def __str__(self):
