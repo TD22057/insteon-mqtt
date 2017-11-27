@@ -59,12 +59,10 @@ class Modem:
 
         # Add a generic read handler for any broadcast messages
         # initiated by the Insteon devices.
-        msg_handler = handler.Broadcast(self)
-        self.protocol.add_handler(msg_handler)
+        self.protocol.add_handler(handler.Broadcast(self))
 
         # Handle user triggered factory reset of the modem.
-        msg_handler = handler.Callback(Msg.InpUserReset, self.handle_reset)
-        self.protocol.add_handler(msg_handler)
+        self.protocol.add_handler(handler.ModemReset(self))
 
     #-----------------------------------------------------------------------
     def load_config(self, data):
@@ -120,7 +118,7 @@ class Modem:
         """Load the all link database from the modem.
 
         This sends a message to the modem to start downloading the all
-        link database.  The message handler handler.ModemGetDb is used to
+        link database.  The message handler handler.ModemDbGet is used to
         process the replies and update the modem database.
         """
         LOG.info("Modem sending get first db record command")
@@ -131,7 +129,7 @@ class Modem:
         # Request the first db record from the handler.  The handler
         # will request each next record as the records arrive.
         msg = Msg.OutAllLinkGetFirst()
-        msg_handler = handler.ModemGetDb(self.handle_db_rec)
+        msg_handler = handler.ModemDbGet(self.db)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -142,16 +140,6 @@ class Modem:
         file name will be the modem hex address with a .json suffix.
         """
         return os.path.join(self.save_path, self.addr.hex) + ".json"
-
-    #-----------------------------------------------------------------------
-    def save_db(self):
-        """Save the all link database to a file.
-
-        The file is stored in JSON forma and has the path
-        self.db_path().  If the save_path configuration input wasn't
-        set, nothing is done.
-        """
-        self.db.save()
 
     #-----------------------------------------------------------------------
     def load_db(self):
@@ -179,6 +167,7 @@ class Modem:
             return
 
         LOG.info("%s database loaded %s entries", self.addr, len(self.db))
+        LOG.debug("%s", self.db)
 
     #-----------------------------------------------------------------------
     def add(self, device):
@@ -253,16 +242,17 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def db_add_ctrl_of(self, addr, group, data=None, force=False,
-                       add_remote=True):
+                       two_way=True):
         """TODO: doc
         """
         # Insure types are ok - this way strings passed in from JSON
         # or MQTT get converted to the type we expect.
         addr = Address(addr)
         group = int(group)
+        data = data if data else bytes(3)
 
         remote = self.find(addr)
-        if add_remote and not remote:
+        if two_way and not remote:
             if force:
                 LOG.info("Modem.db_add_ctrl_of can't find remote device %s.  "
                          "Link will be only one direction", addr)
@@ -274,21 +264,22 @@ class Modem:
         entry = db.ModemEntry(addr, group, is_controller=True, data=data)
         self.db.add_on_device(self.protocol, entry)
 
-        if add_remote and remote:
+        if two_way and remote:
             remote.db_add_resp_of(self.addr, group, data, add_remote=False)
 
     #-----------------------------------------------------------------------
     def db_add_resp_of(self, addr, group, data=None, force=False,
-                       add_remote=True):
+                       two_way=True):
         """TODO: doc
         """
         # Insure types are ok - this way strings passed in from JSON
         # or MQTT get converted to the type we expect.
         addr = Address(addr)
         group = int(group)
+        data = data if data else bytes(3)
 
         remote = self.find(addr)
-        if add_remote and not remote:
+        if two_way and not remote:
             if force:
                 LOG.info("Modem.db_add_resp_of can't find remote device %s.  "
                          "Link will be only one direction", addr)
@@ -297,14 +288,18 @@ class Modem:
                           "Link cannot be added", addr)
                 return
 
-        entry = db.ModemEntry(addr, group, is_controller=False, data=data)
-        self.db.add_on_device(self.protocol, entry)
+        on_complete = None
+        if two_way and remote:
+            def on_complete(success, entry):
+                if success:
+                    remote.db_add_ctrl_of(self.addr, group, data,
+                                          add_remote=False)
 
-        if add_remote and remote:
-            remote.db_add_ctrl_of(self.addr, group, data, add_remote=False)
+        entry = db.ModemEntry(addr, group, is_controller=False, data=data)
+        self.db.add_on_device(self.protocol, entry)  # TODO: on_complete()
 
     #-----------------------------------------------------------------------
-    def db_delete(self, addr, group):
+    def db_delete(self, addr, group, force=False, two_way=True):
         """TODO: doc
         """
         # Insure types are ok - this way strings passed in from JSON
@@ -312,7 +307,20 @@ class Modem:
         addr = Address(addr)
         group = int(group)
 
-        self.db.delete_entries(self.protocol, addr, group)
+        # TODO: callback system
+        on_complete = None
+        if two_way:
+            def on_complete(success, entry):
+                remote = self.get_remote(entry.addr, force)
+                if not remote:
+                    return
+                elif entry.is_controller:
+                    remote.del_resp_of(self.addr, group, two_way=False)
+                else:
+                    remote.del_ctrl_of(self.addr, group, two_way=False)
+
+        # TODO: pass callback
+        self.db.delete_on_device(self.protocol, addr, group)
 
     #-----------------------------------------------------------------------
     def factory_reset(self):
@@ -320,7 +328,7 @@ class Modem:
         """
         LOG.warning("Modem being reset.  All data will be lost")
         msg = Msg.OutResetPlm()
-        msg_handler = handler.Callback(msg, self.handle_reset)
+        msg_handler = handler.ModemReset(self)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -331,8 +339,7 @@ class Modem:
         # handler will handle timeouts (to send the cancel message) if
         # nothing happens.  See the handler for details.
         msg = Msg.OutAllLinkStart(Msg.OutAllLinkStart.Cmd.EITHER, group)
-        msg_handler = handler.ModemAllLink(self.protocol, self.handle_all_link,
-                                           time_out)
+        msg_handler = handler.ModemAllLink(self.protocol, self.db, time_out)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -378,18 +385,6 @@ class Modem:
                           "cmd %s with args: %s", self.addr, cmd, str(kwargs))
 
     #-----------------------------------------------------------------------
-    def handle_broadcast(self, msg):
-        """Handle a broadcast message from the modem.
-
-        The modem has no scenes that can be triggered by the modem so
-        this should never be called.
-
-        Args:
-           msg:    (message.InpStandard) Broadcast group message.
-        """
-        pass
-
-    #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
         """Handle a group command addressed to the modem.
 
@@ -403,64 +398,8 @@ class Modem:
            addr:   (Address) The address the message is from.
            msg:    (message.InpStandard) Broadcast group message.
         """
-        # The modem mhas nothing to do for these messages.
+        # The modem has nothing to do for these messages.
         pass
-
-    #-----------------------------------------------------------------------
-    def handle_all_link(self, msg):
-        """Handle a successful all link (set button) action by the modem.
-
-        This is called when the modem set button is pressed and
-        another device is linked to the modem.
-
-        Args:
-           msg:    (message.InpAllLinkComplete) All link result message.
-        """
-        # TODO: update db.
-        pass
-
-    #-----------------------------------------------------------------------
-    def handle_db_rec(self, msg):
-        """New all link database record handler.
-
-        This is called by the handler.ModemGetDb message handler when a
-        new message.InpAllLinkRec message is read.  Each message is an
-        entry in the modem's all link database.
-
-        Args:
-          msg:   (InpAllLinkRec).  None if there are no more messages in
-                 which case the database is saved.  Otherwise the entry is
-                 passed to the db.Modem database for addition.
-        """
-        # Last database record read.
-        if msg is None:
-            LOG.info("PLM modem database download complete:\n%s", str(self.db))
-
-            # Save the database to a local file.
-            self.save_db()
-
-        # Add the record to the database.
-        else:
-            assert isinstance(msg, Msg.InpAllLinkRec)
-            if not msg.db_flags.in_use:
-                LOG.info("Ignoring modem db record in_use = False")
-                return
-
-            self.db.handle_db_rec(msg)
-
-    #-----------------------------------------------------------------------
-    def handle_reset(self, msg):
-        """TODO: doc
-        """
-        assert isinstance(msg, (Msg.OutResetPlm, Msg.InpUserReset))
-
-        if msg.is_ack:
-            LOG.warning("Modem has been reset")
-            self.db.clear()
-            if os.path.exists(self.db_path()):
-                os.remove(self.db_path())
-        else:
-            LOG.error("Modem factory reset failed")
 
     #-----------------------------------------------------------------------
     def _load_devices(self, data):

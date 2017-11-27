@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Device all link database deletion handler.
+# Device all link database modification handler.
 #
 #===========================================================================
 import logging
@@ -10,7 +10,7 @@ from .Base import Base
 LOG = logging.getLogger(__name__)
 
 
-class DeviceDbDelete(Base):
+class DeviceDbModify(Base):
     """TODO: doc
 
     This handles replies when we need to add, remove, or modify the
@@ -21,17 +21,27 @@ class DeviceDbDelete(Base):
     The reply is passed to the Device.handle_db_update so it knows
     whether to store the updated result or not.
     """
-    def __init__(self, device, callback, **cb_args):
+    def __init__(self, db, entry):
         """Constructor
 
+        TODO: doc
         Args
           Device:   (Device) The Insteon Device.
         """
         super().__init__()
 
-        self.device = device
-        self.callback = callback
-        self.cb_args = cb_args
+        self.db = db
+        self.entry = entry
+
+        # Tuple of values to send another message of if the first one
+        # gets an ACK.  See add_update()
+        self.next = []
+
+    #-----------------------------------------------------------------------
+    def add_update(self, msg, entry):
+        """TODO: doc
+        """
+        self.next.append((msg, entry))
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
@@ -55,7 +65,7 @@ class DeviceDbDelete(Base):
         """
         if isinstance(msg, Msg.OutExtended):
             # See if the message address matches our expected reply.
-            if msg.to_addr == self.device.addr and msg.cmd1 == 0x2f:
+            if msg.to_addr == self.db.addr and msg.cmd1 == 0x2f:
                 # ACK - command is ok - wait for ACK from device.
                 if msg.is_ack:
                     return Msg.CONTINUE
@@ -67,10 +77,27 @@ class DeviceDbDelete(Base):
 
         elif isinstance(msg, Msg.InpStandard):
             # See if the message address matches our expected reply.
-            if msg.from_addr == self.device.addr and msg.cmd1 == 0x2f:
+            if msg.from_addr == self.db.addr and msg.cmd1 == 0x2f:
                 # ACK = success, NAK = failure - either way this
                 # transaction is complete.
-                self.callback(msg, **self.cb_args)
+                if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+                    # Entry could be new entry, and update to an
+                    # existing entry, or an marked unused (deletion).
+                    LOG.info("Updating entry: %s", self.entry)
+                    self.db.add_entry(self.entry)
+
+                    # Send the next database update message.
+                    if self.next:
+                        LOG.info("%s sending next db update", self.db.addr)
+                        msg, self.entry = self.next.pop(0)
+                        protocol.send(msg, self)
+
+                elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+                    LOG.error("%s db mod NAK: %s", self.db.addr, msg)
+                else:
+                    LOG.error("%s db mod unexpected msg type: %s",
+                              self.db.addr, msg)
+
                 return Msg.FINISHED
 
         return Msg.UNKNOWN

@@ -95,11 +95,10 @@ class SmokeBridge(Base):
 
         # There is no way to get the current device status but we can
         # request the all link database delta so get that.  See smoke
-        # bridge dev guide p25.
+        # bridge dev guide p25.  See the Base.refresh() comments for
+        # more details.
         msg = Msg.OutStandard.direct(self.addr, 0x1f, 0x01)
-
-        # The returned message command will put the database delta in cmd2.
-        msg_handler = handler.StandardCmd(msg, self.handle_refresh)
+        msg_handler = handler.DeviceRefresh(self)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

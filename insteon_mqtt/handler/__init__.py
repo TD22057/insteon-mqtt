@@ -34,10 +34,11 @@ Inbound messages can be:
 #===========================================================================
 from .Base import Base
 from .Broadcast import Broadcast
-from .Callback import Callback
-from .DeviceDbAdd import DeviceDbAdd
-from .DeviceDbDelete import DeviceDbDelete
-from .DeviceGetDb import DeviceGetDb
+from .DeviceDbModify import DeviceDbModify
+from .DeviceDbGet import DeviceDbGet
+from .DeviceRefresh import DeviceRefresh
 from .ModemAllLink import ModemAllLink
-from .ModemGetDb import ModemGetDb
+from .ModemDbGet import ModemDbGet
+from .ModemDbModify import ModemDbModify
+from .ModemReset import ModemReset
 from .StandardCmd import StandardCmd

@@ -4,6 +4,7 @@
 #
 #===========================================================================
 import logging
+from .. import db
 from .. import message as Msg
 from .Base import Base
 
@@ -11,7 +12,7 @@ LOG = logging.getLogger(__name__)
 
 
 class ModemAllLink(Base):
-    """Modem all link mode message handler.
+    """Modem all link mode message handler (set button).
 
     This is used when the modem is placed in all-link mode (like
     pressing the set button).  We expect to get an ACK of the
@@ -23,13 +24,14 @@ class ModemAllLink(Base):
     If no reply is received in the time out window, we'll send an
     OutAllLinkCancel message.
     """
-    def __init__(self, protocol, callback, time_out=60):
+    def __init__(self, protocol, modem_db, time_out=60):
         """Constructor
+
+        TODO doc
 
         Args
           protocol: (Protocol) The Insteon protocol object.
-          callback: Callback function to pass database messages to or None
-                    to indicate the end of the entries.
+          modem:    TODO: doc
           time_out: (int) Time out in seconds.  If we don't get an
                     InpAllLinkComplete message in this time, we'll send a
                     cancel message to the modem to cancel the all link mode.
@@ -37,7 +39,7 @@ class ModemAllLink(Base):
         super().__init__(time_out)
 
         self.protocol = protocol
-        self.callback = callback
+        self.db = modem_db
 
     #-----------------------------------------------------------------------
     def is_expired(self, t):
@@ -69,6 +71,7 @@ class ModemAllLink(Base):
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
+        TODO: doc
         If all linking is finished, pass the message to the callback
         to update the device records (or re-download the database) if
         needed.
@@ -95,8 +98,28 @@ class ModemAllLink(Base):
 
         # All linking was successful.
         elif isinstance(msg, Msg.InpAllLinkComplete):
-            # Run the callback and tell the protocol we're finished.
-            self.callback(msg)
+            # TODO: future use msg.dev_cat and msg.dev_subcat for
+            # device discovery.
+            #   - build device class
+            #   - add device to modem (and save it in config? or db?)
+            #   - download device db
+            #   - link db to modem
+
+            if msg.cmd == Msg.InpAllLinkComplete.Cmd.DELETE:
+                # Can this ever occur?  Not sure - maybe just delete
+                # modem db and redownload it?  We can't tell
+                # controller vs responder from this message so we
+                # don't know what was deleted.
+                LOG.error("Modem delete via set button not supported")
+
+            # Set button was used to add a new controller or responder
+            # link to the modem.  Add the correct link to our modem
+            # database as well.
+            else:
+                is_ctrl = msg.cmd == Msg.InpAllLinkComplete.Cmd.CONTROLLER
+                entry = db.ModemEntry(msg.addr, msg.group, is_ctrl)
+                self.db.add_entry(entry)
+
             return Msg.FINISHED
 
         # All linking was canceled.  It probably doesn't matter if

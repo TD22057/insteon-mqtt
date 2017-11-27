@@ -157,20 +157,20 @@ class Motion(Base):
     def handle_refresh(self, msg):
         """Handle replies to the refresh command.
 
-        This checks the device database delta against the current all
-        link datatabase level.  If the database is out of date, a
-        message is sent to request the new database from the device.
+        The refresh command reply will contain the current device
+        state in cmd2 and this updates the device with that value.
 
         NOTE: refresh() will not work if the device is asleep.
+
+        Args:
+          msg:  (message.InpStandard) The refresh message reply.  The current
+                device state is in the msg.cmd2 field.
         """
         LOG.debug("Motion %s refresh message: %s", self.addr, msg)
 
         # Current on/off level is stored in cmd2 so update our state
         # to match.
         self._set_is_on(msg.cmd2 != 0x00)
-
-        # See if the database is up to date.
-        super().handle_refresh(msg)
 
     #-----------------------------------------------------------------------
     def _set_is_on(self, is_on):

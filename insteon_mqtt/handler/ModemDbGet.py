@@ -4,13 +4,14 @@
 #
 #===========================================================================
 import logging
+from .. import db
 from .. import message as Msg
 from .Base import Base
 
 LOG = logging.getLogger(__name__)
 
 
-class ModemGetDb(Base):
+class ModemDbGet(Base):
     """PLM Modem database request message handler.
 
     To download the all link database from the PLM modem, we send a
@@ -23,16 +24,17 @@ class ModemGetDb(Base):
     constructor which is usually a method on the device to update it's
     database.
     """
-    def __init__(self, callback):
+    def __init__(self, modem_db):
         """Constructor
 
         Args
+          modem TODO: doc
           callback: Callback function to pass database messages to or None
                     to indicate the end of the entries.
         """
         super().__init__()
 
-        self.callback = callback
+        self.db = modem_db
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
@@ -55,8 +57,11 @@ class ModemGetDb(Base):
         if isinstance(msg, (Msg.OutAllLinkGetFirst, Msg.OutAllLinkGetNext)):
             # If we get a NAK, then there are no more db records.
             if not msg.is_ack:
-                LOG.info("Modem finished - last db record received")
-                self.callback(None)
+                LOG.info("Modem database download complete:\n%s",
+                         str(self.db))
+
+                # Save the database to a local file.
+                self.db.save()
                 return Msg.FINISHED
 
             # ACK - keep reading until we get the record we requested.
@@ -64,8 +69,16 @@ class ModemGetDb(Base):
 
         # Message is the record we requested.
         if isinstance(msg, Msg.InpAllLinkRec):
-            LOG.info("Modem db record received")
-            self.callback(msg)
+            LOG.info("Adding modem db record for %s grp: %s", msg.addr,
+                     msg.group)
+            if not msg.db_flags.in_use:
+                LOG.info("Ignoring modem db record in_use = False")
+                return
+
+            # Save the record in the modem database.
+            entry = db.ModemEntry(msg.addr, msg.group,
+                                  msg.db_flags.is_controller, msg.data)
+            self.db.add_entry(entry)
 
             # Request the next record in the PLM database.
             LOG.info("Modem requesting next db record")

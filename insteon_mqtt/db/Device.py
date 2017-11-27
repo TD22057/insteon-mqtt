@@ -4,7 +4,9 @@
 #
 #===========================================================================
 import io
+import json
 import logging
+import os
 from ..Address import Address
 from .. import handler
 from .. import message as Msg
@@ -25,36 +27,36 @@ class Device:
     being read and parsed after requesting them from the device.
     """
     @staticmethod
-    def from_json(data):
+    def from_json(data, path):
         """Read a Device database from a JSON input.
 
         The inverse of this is to_json().
 
         Args:
           data:    (dict): The data to read from.
+          path: TODO
 
         Returns:
           Device: Returns the created Device object.
         """
-        obj = Device(Address(data['address']))
+        obj = Device(Address(data['address']), path)
 
         obj.delta = data['delta']
 
         for d in data['used']:
-            entry = DeviceEntry.from_json(d)
-            obj._add_used(entry)  # pylint: disable=protected-access
+            obj.add_entry(DeviceEntry.from_json(d))
 
         for d in data['unused']:
-            entry = DeviceEntry.from_json(d)
-            obj._add_unused(entry)  # pylint: disable=protected-access
+            obj.add_entry(DeviceEntry.from_json(d))
 
         return obj
 
     #-----------------------------------------------------------------------
-    def __init__(self, addr):
+    def __init__(self, addr, path=None):
         """Constructor
         """
         self.addr = addr
+        self.save_path = path
 
         # All link delta number.  This is incremented by the device
         # when the db changes on the device.  It's returned in a
@@ -103,13 +105,17 @@ class Device:
         return delta == self.delta
 
     #-----------------------------------------------------------------------
-    def clear_delta(self):
-        """Clear the current database device delta.
+    def set_delta(self, delta):
+        """TODO doc
+
+        Clear the current database device delta.
 
         This will cause any future is_current() check to fail in order
         to force a database download.
         """
-        self.delta = None
+        self.delta = delta
+        if delta is not None:
+            self.save()
 
     #-----------------------------------------------------------------------
     def clear(self):
@@ -121,13 +127,29 @@ class Device:
         self.groups.clear()
         self._mem_locs.clear()
 
+        if self.save_path and os.path.exists(self.save_path):
+            os.remove(self.save_path)
+
+    #-----------------------------------------------------------------------
+    def set_path(self, path):
+        """TODO: doc
+        """
+        self.save_path = path
+
+    #-----------------------------------------------------------------------
+    def save(self):
+        assert self.save_path
+
+        with open(self.save_path, "w") as f:
+            json.dump(self.to_json(), f, indent=2)
+
     #-----------------------------------------------------------------------
     def __len__(self):
         return len(self.entries)
 
     #-----------------------------------------------------------------------
-    def add_entry(self, protocol, device_addr, addr, group, data,
-                  is_controller):
+    def add_on_device(self, protocol, device_addr, addr, group, data,
+                      is_controller):
         # If the record already exists, don't do anything.
         if self.find(addr, group, is_controller):
             # TODO: support checking and updating data
@@ -144,19 +166,8 @@ class Device:
         # re-use those memory addresses and just update them w/ the
         # correct information and mark them as used.
         if self.unused:
-            # Grab the first unused entry.
-            entry = self.unused.pop(0)
-            LOG.info("Device %s using unused entry at mem %#06x",
-                     device_addr, entry.mem_loc)
-
-            # Update it w/ the new information.
-            entry.update_from(addr, group, is_controller, data)
-
-            # Build the extended db modification message.  This says to
-            # update the record at the entry memory location.
-            ext_data = entry.to_bytes()
-            msg = Msg.OutExtended.direct(device_addr, 0x2f, 0x00, ext_data)
-            msg_handler = handler.DeviceDbAdd(self, entry)
+            self._add_using_unused(protocol, device_addr, addr, group,
+                                   is_controller, data)
 
         # If there no unused entries, we need to append one.  Write a
         # new record at the next memory location below the current
@@ -166,38 +177,11 @@ class Device:
         # is important since if either operation fails, the db is
         # still in a valid order.
         else:
-            # Memory goes high->low so find the last entry by looking
-            # at the minimum value.  Then find the entry for that loc.
-            last_entry = self.find_mem_loc(min(self._mem_locs))
-
-            # Each rec is 8 bytes so move down 8 to get the next loc.
-            mem_loc = last_entry.mem_loc - 0x08
-            LOG.info("Device %s appending new record at mem %#06x",
-                     device_addr, mem_loc)
-
-            # Create the new entry and send it out.
-            db_flags = Msg.DbFlags(in_use=True, is_controller=is_controller,
-                                   is_last_rec=True)
-            entry = DeviceEntry(addr, group, mem_loc, db_flags, data)
-            ext_data = entry.to_bytes()
-            msg = Msg.OutExtended.direct(device_addr, 0x2f, 0x00, ext_data)
-            msg_handler = handler.DeviceDbAdd(self, entry)
-
-            # Now create the updated current last entry w/ the last
-            # record flag set to False since it's not longer last.
-            # The handler will send this message out if the first call
-            # above gets an ACK.
-            new_last = last_entry.copy()
-            new_last.db_flags.is_last_rec = False
-            ext_data = new_last.to_bytes()
-            next_msg = Msg.OutExtended.direct(device_addr, 0x2f, 0x00, ext_data)
-            msg_handler.add_update(next_msg, new_last)
-
-        # Send the message and handler.
-        protocol.send(msg, msg_handler)
+            self._add_using_new(protocol, device_addr, addr, group,
+                                is_controller, data)
 
     #-----------------------------------------------------------------------
-    def delete_entry(self, protocol, device_addr, entry):
+    def delete_on_device(self, protocol, device_addr, entry):
         """TODO: doc
         """
         # see p117 of insteon dev guide: To delete a record, set the
@@ -215,94 +199,10 @@ class Device:
         # record is no longer in use.
         ext_data = new_entry.to_bytes()
         msg = Msg.OutExtended.direct(device_addr, 0x2f, 0x00, ext_data)
-        # TODO: clean this up
-        #msg_handler = handler.DeviceDbDelete(self, self._handle_delete,
-        #                                     entry=new_entry)
-        msg_handler = handler.DeviceDbAdd(self, new_entry)
+        msg_handler = handler.DeviceDbModify(self, new_entry)
 
         # Send the message.
         protocol.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def handle_entry(self, entry):
-        """TODO: doc
-        """
-        # Entry could be new or an update to an existing entry.
-        if entry.db_flags.in_use:
-            LOG.info("Updating entry: %s", entry)
-            self._add_used(entry)
-        else:
-            # TODO: ?? can this ever happen?  SHoul donly happen on delete.
-            LOG.info("Removing entry: %s", entry)
-            if not self.entries.pop(entry.mem_loc, None):
-                LOG.error("TODO: entry didn't exit: %s\n5s", entry, self)
-
-            self._add_unused(entry)
-
-        # TODO: save db locally
-        LOG.error(self)
-
-    #-----------------------------------------------------------------------
-    def _handle_delete(self, msg, entry):
-        """TODO: doc
-        """
-        assert isinstance(msg, Msg.InpStandard)
-
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.info("Device.delete removed entry: %s", entry)
-
-            # Remove the original entry from the in use list.  The new
-            # entry with the correct flags is passed to us.  Set that
-            # into the unused list.
-            del self.entries[entry.mem_loc]
-            self.unused.append(entry)
-
-            # TODO: self.save()
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Device.delete NAK removing entry: %s", entry)
-        else:
-            LOG.error("Device.delete unexpected msg type: %s", msg)
-
-    #-----------------------------------------------------------------------
-    def handle_db_rec(self, msg):
-        """Handle a InpExtended database record message.
-
-        This parses the input message into a DeviceEntry record and
-        adds it to the database.
-
-        Args:
-          msg:  (InpExtended) The database record to parse.
-
-        Returns:
-        TODO: doc
-        """
-        assert isinstance(msg, Msg.InpExtended)
-        assert msg.data[1] == 0x01  # record response
-
-        entry = DeviceEntry.from_bytes(msg.data)
-        if entry.mem_loc in self._mem_locs:
-            LOG.info("Skipping duplicate entry %s grp: %s lev: %s", entry.addr,
-                     entry.group, entry.data[0])
-            return Msg.CONTINUE
-
-        # Entry is valid, store it in the database.
-        if entry.db_flags.in_use:
-            LOG.info("Adding db record %s grp: %s lev: %s", entry.addr,
-                     entry.group, entry.data[0])
-            self._add_used(entry)
-
-        # If the entry is marked as not in use, store it as unused so
-        # we can use the memory location for future additions to the
-        # database.
-        else:
-            LOG.info("Ignoring device db record in_use = False")
-            self._add_unused(entry)
-
-        if entry.db_flags.is_last_rec:
-            return Msg.FINISHED
-        else:
-            return Msg.CONTINUE
 
     #-----------------------------------------------------------------------
     def find_group(self, group):
@@ -382,7 +282,11 @@ class Device:
     def __str__(self):
         o = io.StringIO()
         o.write("DeviceDb: (delta %s)\n" % self.delta)
-        #TODO: for elem in sorted(self.entries.values(), key=lambda i: i.addr.id):
+
+        # Sorting by address:
+        #for elem in sorted(self.entries.values(), key=lambda i: i.addr.id):
+
+        # Sorting by memory location
         for elem in sorted(self.entries.values(), key=lambda i: i.mem_loc):
             o.write("  %s\n" % elem)
 
@@ -397,41 +301,105 @@ class Device:
         return o.getvalue()
 
     #-----------------------------------------------------------------------
-    def _add_used(self, entry):
-        """Add an in use DeviceEntry
-
-        Args:
-          entry:  (DeviceEntry) The entry to add.
+    def delete_entry(self, entry):
+        """TODO: doc
         """
-        # NOTE: this relies on no-one keeping a handle to this
-        # entry outside of this class.
-        self.entries[entry.mem_loc] = entry
-        self._mem_locs.add(entry.mem_loc)
-
-        # If we're the controller for this entry, add it to the list
-        # of entries for that group.
-        if entry.db_flags.is_controller:
-            responders = self.groups.setdefault(entry.group, [])
-            if entry not in responders:
-                responders.append(entry)
+        # TODO: implement this.
+        # TODO: save database
+        pass
 
     #-----------------------------------------------------------------------
-    def _add_unused(self, entry):
-        """Add a not in use DeviceEntry
-
-        Args:
-          entry:  (DeviceEntry) The entry to add.
+    def add_entry(self, entry):
+        """TODO: doc
         """
-        self.unused.append(entry)
-        self._mem_locs.add(entry.mem_loc)
+        # Entry has a valid database entry
+        if entry.db_flags.in_use:
+            # NOTE: this relies on no-one keeping a handle to this
+            # entry outside of this class.
+            self.entries[entry.mem_loc] = entry
+            self._mem_locs.add(entry.mem_loc)
 
-        # If the entry is a controller and it's in the group dict,
-        # erase it from the group map.
-        if entry.db_flags.is_controller and entry.group in self.groups:
-            responders = self.groups[entry.group]
-            for i in range(len(responders)):
-                if responders[i].addr == entry.addr:
-                    del responders[i]
-                    break
+            # If we're the controller for this entry, add it to the list
+            # of entries for that group.
+            if entry.db_flags.is_controller:
+                responders = self.groups.setdefault(entry.group, [])
+                if entry not in responders:
+                    responders.append(entry)
+
+        # Entry is not in use.
+        else:
+            self.unused.append(entry)
+            self._mem_locs.add(entry.mem_loc)
+
+            # If the entry is a controller and it's in the group dict,
+            # erase it from the group map.
+            if entry.db_flags.is_controller and entry.group in self.groups:
+                responders = self.groups[entry.group]
+                for i in range(len(responders)):
+                    if responders[i].addr == entry.addr:
+                        del responders[i]
+                        break
+
+        # Save the updated database.
+        self.save()
+
+    #-----------------------------------------------------------------------
+    def _add_using_unused(self, protocol, device_addr, addr, group,
+                          is_controller, data):
+        """TODO doc
+        """
+        # Grab the first unused entry.
+        entry = self.unused.pop(0)
+        LOG.info("Device %s using unused entry at mem %#06x",
+                 device_addr, entry.mem_loc)
+
+        # Update it w/ the new information.
+        entry.update_from(addr, group, is_controller, data)
+
+        # Build the extended db modification message.  This says to
+        # update the record at the entry memory location.
+        ext_data = entry.to_bytes()
+        msg = Msg.OutExtended.direct(device_addr, 0x2f, 0x00, ext_data)
+        msg_handler = handler.DeviceDbModify(self, entry)
+
+        # Send the message and handler.
+        protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def _add_using_new(self, protocol, device_addr, addr, group,
+                       is_controller, data):
+        """TODO doc
+        """
+        # pylint: disable=too-many-locals
+
+        # Memory goes high->low so find the last entry by looking
+        # at the minimum value.  Then find the entry for that loc.
+        last_entry = self.find_mem_loc(min(self._mem_locs))
+
+        # Each rec is 8 bytes so move down 8 to get the next loc.
+        mem_loc = last_entry.mem_loc - 0x08
+        LOG.info("Device %s appending new record at mem %#06x",
+                 device_addr, mem_loc)
+
+        # Create the new entry and send it out.
+        db_flags = Msg.DbFlags(in_use=True, is_controller=is_controller,
+                               is_last_rec=True)
+        entry = DeviceEntry(addr, group, mem_loc, db_flags, data)
+        ext_data = entry.to_bytes()
+        msg = Msg.OutExtended.direct(device_addr, 0x2f, 0x00, ext_data)
+        msg_handler = handler.DeviceDbModify(self, entry)
+
+        # Now create the updated current last entry w/ the last
+        # record flag set to False since it's not longer last.
+        # The handler will send this message out if the first call
+        # above gets an ACK.
+        new_last = last_entry.copy()
+        new_last.db_flags.is_last_rec = False
+        ext_data = new_last.to_bytes()
+        next_msg = Msg.OutExtended.direct(device_addr, 0x2f, 0x00, ext_data)
+        msg_handler.add_update(next_msg, new_last)
+
+        # Send the message and handler.
+        protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

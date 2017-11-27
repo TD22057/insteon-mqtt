@@ -6,6 +6,7 @@
 import io
 import json
 import logging
+import os
 from ..Address import Address
 from .. import handler
 from .. import message as Msg
@@ -57,20 +58,29 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def set_path(self, path):
+        """TODO: doc
+        """
         self.save_path = path
 
     #-----------------------------------------------------------------------
     def save(self):
+        """TODO: doc
+        """
         assert self.save_path
 
         with open(self.save_path, "w") as f:
             json.dump(self.to_json(), f, indent=2)
 
-        LOG.info("Modem database saved %s entries", len(self))
-
     #-----------------------------------------------------------------------
     def __len__(self):
         return len(self.entries)
+
+    #-----------------------------------------------------------------------
+    def delete_entry(self, entry):
+        """TODO: doc local only
+        """
+        self.entries.remove(entry)
+        self.save()
 
     #-----------------------------------------------------------------------
     def clear(self):
@@ -79,6 +89,9 @@ class Modem:
         This does NOT update the database on the device.
         """
         self.entries = []
+
+        if self.save_path and os.path.exists(self.save_path):
+            os.remove(self.save_path)
 
     #-----------------------------------------------------------------------
     def find(self, addr, group, is_controller):
@@ -133,14 +146,13 @@ class Modem:
         # Build the modem database update message.
         msg = Msg.OutAllLinkUpdate(cmd, db_flags, entry.group, entry.addr,
                                    entry.data)
-        msg_handler = handler.Callback(msg, self._handle_db_update,
-                                       entry=entry, exists=exists)
+        msg_handler = handler.ModemDbModify(self, entry, exists)
 
         # Send the message.
         protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def delete_entries(self, protocol, addr, group):
+    def delete_on_device(self, protocol, addr, group):
         """Delete the modem entries for an address and group.
 
         The modem doesn't support deleting a specific controller or
@@ -154,8 +166,7 @@ class Modem:
         addr = Address(addr)
         entries = self.find_all(addr, group)
         if not entries:
-            LOG.warning("Modem.delete_entries no match for %s grp %s", addr,
-                        group)
+            LOG.warning("Modem.delete no match for %s grp %s", addr, group)
             return
 
         # Modem will only delete if we pass it an empty flags input
@@ -171,9 +182,10 @@ class Modem:
         # Send the command once per entry in our database.  Callback
         # will remove the entry from our database if we get an ACK.
         for entry in entries:
-            msg_handler = handler.Callback(msg, self._handle_delete,
-                                           entry=entry)
+            msg_handler = handler.ModemDbModify(self, entry)
             protocol.send(msg, msg_handler)
+
+        return entries
 
     #-----------------------------------------------------------------------
     def to_json(self):
@@ -188,76 +200,6 @@ class Modem:
             }
 
     #-----------------------------------------------------------------------
-    def _handle_delete(self, msg, entry):
-        """TODO: doc
-        """
-        assert isinstance(msg, Msg.OutAllLinkUpdate)
-        if msg.is_ack:
-            LOG.info("Modem.delete removed entry: %s", entry)
-            self.entries.remove(entry)
-            self.save()
-        else:
-            LOG.error("Modem.delete NAK removing entry: %s", entry)
-
-    #-----------------------------------------------------------------------
-    def handle_db_rec(self, msg):
-        """Handle a InpAllLinkRec database record message.
-
-        This parses the input message into a ModemEntry record and
-        adds it to the database.
-
-        Args:
-          msg:  (InpAllLinkRec) The database record to parse.
-        """
-        assert isinstance(msg, Msg.InpAllLinkRec)
-        LOG.info("Adding modem db record for %s grp: %s", msg.addr, msg.group)
-
-        entry = ModemEntry(msg.addr, msg.group, msg.db_flags.is_controller,
-                           msg.data)
-        self._add_entry(entry)
-        self.save()
-
-    #-----------------------------------------------------------------------
-    def _handle_db_update(self, msg, entry, exists=None):
-        """Handle a OutAllLinkUpdate database record message.
-
-        This parses the input message into a ModemEntry record and
-        adds it to the database.
-
-        Args:
-          msg:  (OutAllLinkUpdate) The database record to update.
-          entry:  TODO: doc
-        """
-        assert isinstance(msg, Msg.OutAllLinkUpdate)
-
-        if not msg.is_ack:
-            LOG.error("Modem db updated failed: %s", msg)
-            return
-
-        # Update an existing entry w/ new data fields.
-        elif msg.cmd == Msg.OutAllLinkUpdate.Cmd.UPDATE:
-            LOG.info("Updating modem db record for %s grp: %s data: %s",
-                     msg.addr, msg.group, msg.data)
-
-            assert exists
-            exists.data = entry.data
-
-        # New controller or responder.
-        elif (msg.cmd == Msg.OutAllLinkUpdate.Cmd.ADD_CONTROLLER or
-              msg.cmd == Msg.OutAllLinkUpdate.Cmd.ADD_RESPONDER):
-            LOG.info("Adding modem db record for %s type: %s grp: %s data: %s",
-                     msg.addr, 'CTRL' if msg.db_flags.is_controller else
-                     'RESP', msg.group, msg.data)
-
-            self._add_entry(entry)
-
-        else:
-            LOG.error("Unexpected OutAllLinkUpdate command %s", msg.cmd)
-            return
-
-        self.save()
-
-    #-----------------------------------------------------------------------
     def __str__(self):
         o = io.StringIO()
         o.write("ModemDb:\n")
@@ -267,7 +209,7 @@ class Modem:
         return o.getvalue()
 
     #-----------------------------------------------------------------------
-    def _add_entry(self, entry):
+    def add_entry(self, entry):
         """Add a ModemEntry object to the database.
 
         If the entry already exists (matching address, group, and
@@ -284,5 +226,7 @@ class Modem:
             self.entries[idx] = entry
         except ValueError:
             self.entries.append(entry)
+
+        self.save()
 
 #===========================================================================

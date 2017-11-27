@@ -249,10 +249,7 @@ class Dimmer(Base):
         """Handle replies to the refresh command.
 
         The refresh command reply will contain the current device
-        level (on/off) and the database delta.  This checks the device
-        database delta against the current all link datatabase level.
-        If the database is out of date, a message is sent to request
-        the new database from the device.
+        state in cmd2 and this updates the device with that value.
 
         Args:
           msg:  (message.InpStandard) The refresh message reply.  The current
@@ -263,9 +260,6 @@ class Dimmer(Base):
         # Current dimmer level is stored in cmd2 so update our level
         # to match.
         self._set_level(msg.cmd2)
-
-        # See if the database is up to date.
-        super().handle_refresh(msg)
 
     #-----------------------------------------------------------------------
     def handle_ack(self, msg):
@@ -305,7 +299,7 @@ class Dimmer(Base):
         """
         # Make sure we're really a responder to this message.  This
         # shouldn't ever occur.
-        entry = self.db.find(addr, msg.group, 'RESP')
+        entry = self.db.find(addr, msg.group, is_controller=False)
         if not entry:
             LOG.error("Dimmer %s has no group %s entry from %s", self.addr,
                       msg.group, addr)

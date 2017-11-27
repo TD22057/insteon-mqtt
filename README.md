@@ -9,6 +9,19 @@ My initial intent with this package is better integrate Insteon into
 Home Assistant and make it easier and more understandable to add new
 features and devices.
 
+## Latest Update
+
+- 11/26/2017: Refactored all the message handlers to move as much code
+  as possible into the handlers - this keeps as much of the low level
+  message manipulation in the handlers and away from the device
+  classes.
+
+- 11/26/2017: First cut at bi-directional link manipulation.  Adding a
+  ctrl/resp link on device auto adds the opposite on the other device.
+  This greatly simplifies device set up and will allow device classes
+  to "register themselves" and configure all the correct links when
+  first seen or on discovery.  Still a lot of work left to do on this.
+
 ## Current Status
 
 This is currently under active development.  Code and API's are
@@ -31,13 +44,15 @@ Here's what works so far:
 - send remote commands (get db, refresh state) to devices via MQTT
 - correctly handle commands arriving while db is being downloaded
 - modify the all link database on the PLM modem.
+- modify the all link database on each device
 
 Things remaining to do for the initial release:
 
-- modify the all link database on each device
 - automatically link devices to the modem including all needed groups
   (for complicated devices like the fanlinkc, smoke bridge, and thermostat)
 - command line tool for sending messages (short cut to MQTT publish)
+  - include some kind of reply system (mqtt session ID) for getting results
+    back from command
 - command line tool for running the server
   - logging control
   - config file and db save file location control
@@ -46,19 +61,19 @@ Things remaining to do for the initial release:
 
 Things for future versions:
 
-- unit tests
+- full suite of unit tests
 - more devices: mini-remotes, door sensors, leak sensors, keypads, thermostats,
   fanlincs, etc.
 - custom scene creation (PLM modem scenes) and scene triggering
 - simulate device scenes via MQTT (clicking dimmer button)
 - pip packaging
-- possible device discovery
+- device discovery by examining modem all link db and pinging devices.
+  - needs some auto device/db creation system as well
 - MQTT payload templates.
 - yaml config validator  (voluptuous like HA?)
 - heal network command (remove all db records for missing devices)
 - remove device command (remove device from all db records)
-- add erase_db function to devices and modem.
-
+- add db_erase function to devices and modem.
 
 ## Setup
 
@@ -82,7 +97,15 @@ time that it's run.
 
 When each device has a local database, it will automatically notify
 each device in the scene when it's triggered to update it's state and
-send out an MQTT message.
+send out an MQTT message.  You can watch this by running mosquitto_sub
+and then clicking a dimmer on then off:
+
+```
+    > mosquitto_sub -v -t "insteon/state/#"
+    insteon/state/48.B0.AD {"level": 255}
+    insteon/state/48.B0.AD {"level": 0}
+```
+
 
 ## Supported Devices
 
@@ -121,8 +144,8 @@ database or remove and reload the database for every device.
       '{ "cmd" : "set_btn", "time_out" : 30 }'
       'db_get'
       '{ "cmd" : "db_del", "addr" : "AA.BB.CC", "group" : GROUP }'
-      '{ "cmd" : "db_add_ctrl", "addr" : "AA.BB.CC", "group" : GROUP, [force : 0/1] }'
-      '{ "cmd" : "db_add_resp", "addr" : "AA.BB.CC", "group" : GROUP, [force : 0/1] }'
+      '{ "cmd" : "db_add_ctrl", "addr" : "AA.BB.CC", "group" : GROUP, [force : 0/1], [add_remote : 0/1] }'
+      '{ "cmd" : "db_add_resp", "addr" : "AA.BB.CC", "group" : GROUP, [force : 0/1] , [add_remote : 0/1] }'
 ```
 
 
@@ -154,6 +177,10 @@ the dimmer level, refresh the state, or download it's database
       { "cmd" : "set", "level" : LEVEL }
       'refresh'
       'db_get'
+      '{ "cmd" : "db_add_ctrl", "addr" : "AA.BB.CC", "group" : GROUP, [force : 0/1], [add_remote : 0/1] }'
+      '{ "cmd" : "db_add_resp", "addr" : "AA.BB.CC", "group" : GROUP, [force : 0/1], [add_remote : 0/1] }'
+      '{ "cmd" : "db_del_ctrl", "addr" : "AA.BB.CC", "group" : GROUP }'
+      '{ "cmd" : "db_del_resp", "addr" : "AA.BB.CC", "group" : GROUP }'
 
    Example command line:
       mosquitto_pub -t 'insteon/set/48.b0.ad' -m '{"cmd":"set", "level":128}'
@@ -186,6 +213,10 @@ the state, or download it's database
       'ON' or 'OFF'
       'refresh'
       'db_get'
+      '{ "cmd" : "db_add_ctrl", "addr" : "AA.BB.CC", "group" : GROUP, [force : 0/1], [add_remote : 0/1] }'
+      '{ "cmd" : "db_add_resp", "addr" : "AA.BB.CC", "group" : GROUP, [force : 0/1], [add_remote : 0/1] }'
+      '{ "cmd" : "db_del_ctrl", "addr" : "AA.BB.CC", "group" : GROUP }'
+      '{ "cmd" : "db_del_resp", "addr" : "AA.BB.CC", "group" : GROUP }'
 ```
 
 
@@ -217,6 +248,10 @@ do not listen for arbitrary input commands.
    Payload:
       'refresh'
       'db_get'
+      '{ "cmd" : "db_add_ctrl", "addr" : "AA.BB.CC", "group" : GROUP, [force : 0/1], [add_remote : 0/1] }'
+      '{ "cmd" : "db_add_resp", "addr" : "AA.BB.CC", "group" : GROUP, [force : 0/1], [add_remote : 0/1] }'
+      '{ "cmd" : "db_del_ctrl", "addr" : "AA.BB.CC", "group" : GROUP }'
+      '{ "cmd" : "db_del_resp", "addr" : "AA.BB.CC", "group" : GROUP }'
 ```
 
 
@@ -248,6 +283,10 @@ download it's database
    Payload:
       'refresh'
       'db_get'
+      '{ "cmd" : "db_add_ctrl", "addr" : "AA.BB.CC", "group" : GROUP, [force : 0/1], [add_remote : 0/1] }'
+      '{ "cmd" : "db_add_resp", "addr" : "AA.BB.CC", "group" : GROUP, [force : 0/1], [add_remote : 0/1] }'
+      '{ "cmd" : "db_del_ctrl", "addr" : "AA.BB.CC", "group" : GROUP }'
+      '{ "cmd" : "db_del_resp", "addr" : "AA.BB.CC", "group" : GROUP }'
 ```
 
 

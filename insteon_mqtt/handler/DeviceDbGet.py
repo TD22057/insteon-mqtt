@@ -5,13 +5,14 @@
 #===========================================================================
 # pylint: disable=too-many-return-statements
 import logging
+from .. import db
 from .. import message as Msg
 from .Base import Base
 
 LOG = logging.getLogger(__name__)
 
 
-class DeviceGetDb(Base):
+class DeviceDbGet(Base):
     """Device database request message handler.
 
     To download the all link database from a device, we send a
@@ -23,7 +24,7 @@ class DeviceGetDb(Base):
     constructor which is usually a method on the device to update it's
     database.
     """
-    def __init__(self, addr, callback):
+    def __init__(self, device_db, callback):
         """Constructor
 
         Args
@@ -33,9 +34,8 @@ class DeviceGetDb(Base):
         """
         super().__init__()
 
-        self.addr = addr
+        self.db = device_db
         self.callback = callback
-        self._have_ack = False
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
@@ -59,9 +59,9 @@ class DeviceGetDb(Base):
         # ACK/NAK message.  These seem to be either extended or
         # standard message so allow for both.
         if isinstance(msg, (Msg.OutExtended, Msg.OutStandard)):
-            if msg.to_addr == self.addr and msg.cmd1 == 0x2f:
+            if msg.to_addr == self.db.addr and msg.cmd1 == 0x2f:
                 if not msg.is_ack:
-                    LOG.error("%s NAK response", self.addr)
+                    LOG.error("%s NAK response", self.db.addr)
                 return Msg.CONTINUE
 
             return Msg.UNKNOWN
@@ -69,7 +69,7 @@ class DeviceGetDb(Base):
         # Probably an ACK/NAK from the device for our get command.
         elif isinstance(msg, Msg.InpStandard):
             # Filter by address and command.
-            if msg.from_addr != self.addr or msg.cmd1 != 0x2f:
+            if msg.from_addr != self.db.addr or msg.cmd1 != 0x2f:
                 return Msg.UNKNOWN
 
             if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
@@ -87,21 +87,25 @@ class DeviceGetDb(Base):
         # Process the real reply.  Database reply is an extended messages.
         elif isinstance(msg, Msg.InpExtended):
             # Filter by address and command.
-            if msg.from_addr != self.addr or msg.cmd1 != 0x2f:
+            if msg.from_addr != self.db.addr or msg.cmd1 != 0x2f:
                 return Msg.UNKNOWN
 
-            # If all the data elements are zero, this is the last
-            # device database record and we can return FINISHED.
-            sum = 0
-            for i in msg.data[4:13]:
-                sum += i
-            if sum == 0x00:
-                self.callback(None)
+            # Convert the message to a database device entry.
+            entry = db.DeviceEntry.from_bytes(msg.data)
+
+            # Skip entries w/ a null memory location.
+            if entry.mem_loc:
+                self.db.add_entry(entry)
+
+            # Note that if the entry is a null entry (all zeros), then
+            # is_last_rec will be True as well.
+            if entry.db_flags.is_last_rec:
+                self.callback(success=True)
                 return Msg.FINISHED
 
-            # Pass the record to the callback - let the callback
-            # figure out if we need to wait for more messages.
-            return self.callback(msg)
+            # Otherwise keep processing records as they arrive.
+            else:
+                return Msg.CONTINUE
 
         return Msg.UNKNOWN
 

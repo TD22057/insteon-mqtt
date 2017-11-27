@@ -78,22 +78,6 @@ class Base:
         return os.path.join(self.save_path, self.addr.hex) + ".json"
 
     #-----------------------------------------------------------------------
-    def save_db(self):
-        """Save the all link database to a file.
-
-        The file is stored in JSON forma and has the path
-        self.db_path().  If the save_path attribute wasn't set,
-        nothing is done.
-        """
-        data = self.db.to_json()
-
-        with open(self.db_path(), "w") as f:
-            json.dump(data, f, indent=2)
-
-        LOG.info("Device %s database saved %s entries", self.addr,
-                 len(self.db))
-
-    #-----------------------------------------------------------------------
     def load_db(self):
         """Load the all link database from a file.
 
@@ -103,21 +87,22 @@ class Base:
         """
         # See if the database file exists.
         path = self.db_path()
+        self.db.set_path(path)
         if not os.path.exists(path):
             return
 
         try:
             with open(path) as f:
                 data = json.load(f)
+
+            self.db = db.Device.from_json(data, path)
         except:
             LOG.exception("Error reading file %s", path)
             return
 
-        self.db = db.Device.from_json(data)
-
         LOG.info("Device %s database loaded %s entries", self.addr,
                  len(self.db))
-        LOG.debug(str(self.db))
+        LOG.debug("%s", self.db)
 
     #-----------------------------------------------------------------------
     def refresh(self):
@@ -134,11 +119,12 @@ class Base:
         """
         LOG.info("Device %s cmd: status refresh", self.addr)
 
+        # This sends a refresh ping which will respond w/ the current
+        # database delta field.  The handler checks that against the
+        # current value.  If it's different, it will send a database
+        # download command to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
-
-        # The returned message command will be a data field so in this
-        # case don't check it against our input when matching messages.
-        msg_handler = handler.StandardCmd(msg, self.handle_refresh, cmd=-1)
+        msg_handler = handler.DeviceRefresh(self)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -146,38 +132,72 @@ class Base:
         """Load the all link database from the modem.
 
         This sends a message to the modem to start downloading the all
-        link database.  The message handler handler.DeviceGetDb is
+        link database.  The message handler handler.DeviceDbGet is
         used to process the replies and update the modem database.
         """
         # We need to get the current db delta so we know which
         # database we're getting.  So clear the current flag and then
         # do a refresh which will find the delta and then trigger a
         # download.
-        self.db.clear_delta()
+        self.db.set_delta(None)
         self.refresh()
 
     #-----------------------------------------------------------------------
-    def db_add_ctrl_of(self, addr, group, data=None):
+    def db_add_ctrl_of(self, addr, group, data=None, force=False,
+                       two_way=True):
         """TODO: doc
         """
         # Insure types are ok - this way strings passed in from JSON
         # or MQTT get converted to the type we expect.
+        addr = Address(addr)
+        group = int(group)
         data = data if data else bytes(3)
-        self.db.add_entry(self.protocol, self.addr, Address(addr), int(group),
-                          data, is_controller=True)
+
+        remote = self.modem.find(addr)
+        if two_way and not remote:
+            if force:
+                LOG.info("Device.db_add_ctrl_of can't find remote device %s.  "
+                         "Link will be only one direction", addr)
+            else:
+                LOG.error("Modem.db_add_ctrl_of can't find remote device %s.  "
+                          "Link cannot be added", addr)
+                return
+
+        self.db.add_on_device(self.protocol, self.addr, addr, group, data,
+                              is_controller=True)
+
+        if two_way and remote:
+            remote.db_add_resp_of(self.addr, group, data, two_way=False)
 
     #-----------------------------------------------------------------------
-    def db_add_resp_of(self, addr, group, data=None):
+    def db_add_resp_of(self, addr, group, data=None, force=False,
+                       two_way=True):
         """TODO: doc
         """
         # Insure types are ok - this way strings passed in from JSON
         # or MQTT get converted to the type we expect.
+        addr = Address(addr)
+        group = int(group)
         data = data if data else bytes(3)
-        self.db.add_entry(self.protocol, self.addr, Address(addr), int(group),
-                          data, is_controller=False)
+
+        remote = self.modem.find(addr)
+        if two_way and not remote:
+            if force:
+                LOG.info("Device.db_add_resp_of can't find remote device %s.  "
+                         "Link will be only one direction", addr)
+            else:
+                LOG.error("Modem.db_add_resp_of can't find remote device %s.  "
+                          "Link cannot be added", addr)
+                return
+
+        self.db.add_on_device(self.protocol, self.addr, addr, group, data,
+                              is_controller=False)
+
+        if two_way and remote:
+            remote.db_add_ctrl_of(self.addr, group, data, two_way=False)
 
     #-----------------------------------------------------------------------
-    def db_del_ctrl_of(self, addr, group):
+    def db_del_ctrl_of(self, addr, group, force=False, two_way=True):
         """TODO: doc
         """
         # Insure types are ok - this way strings passed in from JSON
@@ -189,10 +209,12 @@ class Base:
                         self.addr, addr, group)
             return
 
-        self.db.delete_entry(self.protocol, self.addr, entry)
+        self.db.delete_on_device(self.protocol, self.addr, entry)
+
+        # TODO: find remote and delete entry there as well.
 
     #-----------------------------------------------------------------------
-    def db_del_resp_of(self, addr, group):
+    def db_del_resp_of(self, addr, group, force=False, two_way=True):
         """TODO: doc
         """
         # Insure types are ok - this way strings passed in from JSON
@@ -204,7 +226,9 @@ class Base:
                         self.addr, addr, group)
             return
 
-        self.db.delete_entry(self.protocol, self.addr, entry)
+        self.db.delete_on_device(self.protocol, self.addr, entry)
+
+        # TODO: find remote and delete entry there as well.
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
@@ -248,33 +272,16 @@ class Base:
     def handle_refresh(self, msg):
         """Handle replies to the refresh command.
 
-        This checks the device database delta against the current all
-        link datatabase level.  If the database is out of date, a
-        message is sent to request the new database from the device.
-
-        Most derived devices should override this to handle the devie
-        state an dthen call this method to check the all link
-        database.
+        The refresh command reply will contain the current device
+        state in cmd2 and this updates the device with that value.
 
         Args:
-          msg:  (message.InpStandard) The refresh message reply.
+          msg:  (message.InpStandard) The refresh message reply.  The current
+                device state is in the msg.cmd2 field.
         """
-        # All link database delta is stored in cmd1 so we if we have
-        # the latest version.  If not, schedule an update.
-        if self.db.is_current(msg.cmd1):
-            return
-
-        LOG.info("Device %s db out of date - refreshing", self.addr)
-
-        # Clear the current database and store the db delta from cmd1.
-        self.db.clear()
-        self._next_db_delta = msg.cmd1
-
-        # Request that the device send us all of it's database
-        # records.  These will be streamed as fast as possible to us.
-        msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, bytes(14))
-        msg_handler = handler.DeviceGetDb(self.addr, self.handle_db_rec)
-        self.protocol.send(msg, msg_handler)
+        # Do nothing - derived types can override this if they have
+        # state to extract and update.
+        pass
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -325,38 +332,5 @@ class Base:
         """
         # Default implementation - derived classes should specialize this.
         LOG.info("Device %s ignoring group cmd - not implemented", self.addr)
-
-    #-----------------------------------------------------------------------
-    def handle_db_rec(self, msg):
-        """Handle reading an all link database entry.
-
-        This is called with a series of messages (one per entry) and
-        then None when the there are no more entries in the all link
-        database.  At that point the device database is written out to
-        disk.
-
-        Arg:
-          msg:   (message.Msg.InpExtended) Extended message that contains
-                 the device database entry.  This is passed to
-                 db.Device database to parse the message.
-
-        Returns:
-        TODO: doc
-        """
-        # New record - add it to the device database.
-        if msg is not None:
-            result = self.db.handle_db_rec(msg)
-        else:
-            result = Msg.FINISHED
-
-        # Finished - we have all the records.
-        if result == Msg.FINISHED:
-            self.db.delta = self._next_db_delta
-            self._next_db_delta = None
-
-            LOG.info("%s database download complete\n%s", self.addr, self.db)
-            self.save_db()
-
-        return result
 
     #-----------------------------------------------------------------------
