@@ -24,48 +24,47 @@ class ModemAllLink(Base):
     If no reply is received in the time out window, we'll send an
     OutAllLinkCancel message.
     """
-    def __init__(self, protocol, modem_db, time_out=60):
+    def __init__(self, modem_db, time_out=60):
         """Constructor
 
         TODO doc
 
         Args
-          protocol: (Protocol) The Insteon protocol object.
-          modem:    TODO: doc
+          modem_db: TODO: doc
           time_out: (int) Time out in seconds.  If we don't get an
                     InpAllLinkComplete message in this time, we'll send a
                     cancel message to the modem to cancel the all link mode.
         """
         super().__init__(time_out)
 
-        self.protocol = protocol
         self.db = modem_db
 
     #-----------------------------------------------------------------------
-    def is_expired(self, t):
+    def is_expired(self, protocol, t):
         """See if the time out time has been exceeded.
 
         Args:
-          t:  (float) Current time tag as a Unix clock time.
+          protocol:  (Protocol) The Insteon Protocol object.
+          t:         (float) Current time tag as a Unix clock time.
 
         Returns:
           Returns True if the message has timed out or False otherwise.
         """
         # If we haven't expired, return.
-        if not super().is_expired(t):
-            return
+        if not super().is_expired(protocol, t):
+            return False
 
         # Linking window has expired.  Set a cancel command at the
         # start of the message queue so it gets sent next.
         msg = Msg.OutAllLinkCancel()
         msg_handler = self
-        self.protocol.send(msg, msg_handler, high_priority=True)
+        protocol.send(msg, msg_handler, high_priority=True)
 
         # Tell the protocol that we're expired.  This will end this
         # handler and send the next message which is the cancel
         # message we just added at the start of the queue with
         # ourselves as the handler.
-        return Msg.FINISHED
+        return True
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):

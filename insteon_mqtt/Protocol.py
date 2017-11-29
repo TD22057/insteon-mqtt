@@ -184,7 +184,7 @@ class Protocol:
 
         # Ask the write handler if it's past the time out in which
         # case we'll mark this message as finished and move on.
-        if self._write_handler.is_expired(t):
+        if self._write_handler.is_expired(self, t):
             LOG.warning("Last message timed out")
             self._write_finished()
 

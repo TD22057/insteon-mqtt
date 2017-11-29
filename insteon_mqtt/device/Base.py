@@ -124,16 +124,23 @@ class Base:
         # current value.  If it's different, it will send a database
         # download command to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
-        msg_handler = handler.DeviceRefresh(self)
+        msg_handler = handler.DeviceRefresh(self, msg, num_retry=3)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def db_get(self):
         """Load the all link database from the modem.
 
-        This sends a message to the modem to start downloading the all
-        link database.  The message handler handler.DeviceDbGet is
-        used to process the replies and update the modem database.
+        This sends a refresh command to the device so we can get the
+        current database delta value so we know which db we're
+        downloading.  Then it sends a message to the device to start
+        downloading the all link database.  The message handler
+        handler.DeviceDbGet is used to process the replies and update
+        the modem database.
+
+        NOTE: Some devices that are plugged in (smoke bridge) seem to
+        be pretty bad about replying and multiple tries may be
+        necessary to actually get the database.
         """
         # We need to get the current db delta so we know which
         # database we're getting.  So clear the current flag and then
@@ -216,83 +223,18 @@ class Base:
                         on_done=on_done)
 
     #-----------------------------------------------------------------------
-    def _db_update(self, addr, group, data, two_way, is_controller, on_done):
-        """Update the device database.
-
-        See db_add_ctrl_of() or db_add_resp_of() for docs.
-        """
-        # Find the remote device.  If don't have an entry for this
-        # device, we can't sent it commands
-        remote = self.modem.find(addr)
-        if two_way and not remote:
-            lbl = "CTRL" if is_controller else "RESP"
-            LOG.info("Device db add %s can't find remote device %s.  "
-                     "Link will be only one direction", lbl, addr)
-
-        # For two way commands, insert a callback so that when the
-        # modem command finishes, it will send the next command to the
-        # device.  When that finishes, it will run the input callback.
-        use_cb = on_done
-        if two_way and remote:
-            use_cb = functools.partial(self._db_update_remote, remote, on_done)
-
-        # Create a new database entry for the device and send it.
-        self.db.add_on_device(self.protocol, addr, group, data, is_controller,
-                              on_done=use_cb)
-
-    #-----------------------------------------------------------------------
-    def _db_update_remote(self, remote, on_done, success, entry, msg):
-        """Device update complete callback.
-
-        This is called when the device finishes updating the database.
-        It triggers a corresponding call on the remote device to
-        establish the two way link.  This only occurs if the first
-        command works.
-        """
-        # If the command failed, just call the input callback.
-        if not success:
-            if on_done:
-                on_done(success, entry, msg)
-            return
-
-        # Send the command to the device.  Two way is false here since
-        # we just added the other link.
-        two_way = False
-        if entry.is_controller:
-            remote.db_add_resp_of(self.addr, entry.group, entry.data, two_way,
-                                  on_done)
-
-        else:
-            remote.db_add_ctrl_of(self.addr, entry.group, entry.data, two_way,
-                                  on_done)
-
-    #-----------------------------------------------------------------------
-    def db_del_ctrl_of(self, addr, group, force=False, two_way=True):
+    def db_del_ctrl_of(self, addr, group, two_way=True, on_done=None):
         """TODO: doc
         """
-        entry = self.db.find(addr, group, is_controller=True)
-        if not entry:
-            LOG.warning("Device %s delete no match for %s grp %s CTRL",
-                        self.addr, addr, group)
-            return
-
-        self.db.delete_on_device(self.protocol, self.addr, entry)
-
-        # TODO: find remote and delete entry there as well.
+        self._db_delete(self, addr, group, two_way, is_controller=True,
+                        on_done=on_done)
 
     #-----------------------------------------------------------------------
-    def db_del_resp_of(self, addr, group, force=False, two_way=True):
+    def db_del_resp_of(self, addr, group, two_way=True, on_done=None):
         """TODO: doc
         """
-        entry = self.db.find(addr, group, is_controller=False)
-        if not entry:
-            LOG.warning("Device %s delete no match for %s grp %s RESP",
-                        self.addr, addr, group)
-            return
-
-        self.db.delete_on_device(self.protocol, self.addr, entry)
-
-        # TODO: find remote and delete entry there as well.
+        self._db_delete(self, addr, group, two_way, is_controller=False,
+                        on_done=on_done)
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
@@ -396,5 +338,103 @@ class Base:
         """
         # Default implementation - derived classes should specialize this.
         LOG.info("Device %s ignoring group cmd - not implemented", self.addr)
+
+    #-----------------------------------------------------------------------
+    def _db_update(self, addr, group, data, two_way, is_controller, on_done):
+        """Update the device database.
+
+        See db_add_ctrl_of() or db_add_resp_of() for docs.
+        """
+        # Find the remote device.  If don't have an entry for this
+        # device, we can't sent it commands
+        remote = self.modem.find(addr)
+        if two_way and not remote:
+            lbl = "CTRL" if is_controller else "RESP"
+            LOG.info("Device db add %s can't find remote device %s.  "
+                     "Link will be only one direction", lbl, addr)
+
+        # For two way commands, insert a callback so that when the
+        # modem command finishes, it will send the next command to the
+        # device.  When that finishes, it will run the input callback.
+        use_cb = on_done
+        if two_way and remote:
+            use_cb = functools.partial(self._db_update_remote, remote, on_done)
+
+        # Create a new database entry for the device and send it.
+        self.db.add_on_device(self.protocol, addr, group, data, is_controller,
+                              on_done=use_cb)
+
+    #-----------------------------------------------------------------------
+    def _db_update_remote(self, remote, on_done, success, entry, msg):
+        """Device update complete callback.
+
+        This is called when the device finishes updating the database.
+        It triggers a corresponding call on the remote device to
+        establish the two way link.  This only occurs if the first
+        command works.
+        """
+        # If the command failed, just call the input callback.
+        if not success:
+            if on_done:
+                on_done(success, entry, msg)
+            return
+
+        # Send the command to the device.  Two way is false here since
+        # we just added the other link.
+        two_way = False
+        if entry.is_controller:
+            remote.db_add_resp_of(self.addr, entry.group, entry.data, two_way,
+                                  on_done)
+
+        else:
+            remote.db_add_ctrl_of(self.addr, entry.group, entry.data, two_way,
+                                  on_done)
+
+    #-----------------------------------------------------------------------
+    def _db_delete(self, addr, group, two_way, is_controller, on_done):
+        entry = self.db.find(addr, group, is_controller)
+        if not entry:
+            LOG.warning("Device %s delete no match for %s grp %s %s",
+                        self.addr, addr, group,
+                        'CTRL' if is_controller else 'RESP')
+            if on_done:
+                on_done(False, None, "Entry doesn't exist")
+            return
+
+        # Find the remote device.  If don't have an entry for this
+        # device, we can't sent it commands
+        remote = self.modem.find(addr)
+        if two_way and not remote:
+            lbl = "CTRL" if is_controller else "RESP"
+            LOG.info("Device db delete %s can't find remote device %s.  "
+                     "Link will be only one direction", lbl, addr)
+
+        # For two way commands, insert a callback so that when the
+        # modem command finishes, it will send the next command to the
+        # device.  When that finishes, it will run the input callback.
+        use_cb = on_done
+        if two_way and remote:
+            use_cb = functools.partial(self._db_delete_remote, remote, on_done)
+
+        self.db.delete_on_device(self.protocol, self.addr, entry, on_done)
+
+    #-----------------------------------------------------------------------
+    def _db_delete_remote(self, remote, on_done, success, entry, msg):
+        # If the command failed, just call the input callback.
+        if not success:
+            if on_done:
+                on_done(success, entry, msg)
+            return
+
+        # Send the command to the device.  Two way is false here since
+        # we just added the other link.
+        two_way = False
+        if entry.is_controller:
+            remote.db_del_resp_of(self.addr, entry.group, entry.data, two_way,
+                                  on_done)
+
+        else:
+            remote.db_del_ctrl_of(self.addr, entry.group, entry.data, two_way,
+                                  on_done)
 
     #-----------------------------------------------------------------------

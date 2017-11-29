@@ -31,11 +31,15 @@ class Base:
         self.expire_time = time.time() + self.time_out
 
     #-----------------------------------------------------------------------
-    def is_expired(self, t):
+    def is_expired(self, protocol, t):
         """See if the time out time has been exceeded.
 
+        This is called periodically to see if the message has expired
+        (and can also be used for any polling type behavior.
+
         Args:
-          t:  (float) Current time tag as a Unix clock time.
+          protocol:  (Protocol) The Insteon Protocol object.
+          t:         (float) Current time tag as a Unix clock time.
 
         Returns:
           Returns True if the message has timed out or False otherwise.
@@ -54,7 +58,7 @@ class Base:
         handlers.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
+          protocol:  (Protocol) The Insteon Protocol object.
           msg:       Insteon message object that was read.
 
         Returns:

@@ -22,7 +22,7 @@ class DeviceRefresh(Base):
     The reply is passed to the Device.handle_db_update so it knows
     whether to store the updated result or not.
     """
-    def __init__(self, device):
+    def __init__(self, device, msg, num_retry=3):
         """Constructor
 
         TODO: doc
@@ -33,6 +33,38 @@ class DeviceRefresh(Base):
 
         self.device = device
         self.addr = device.addr
+        self.msg = msg
+        self.send_count = 1
+        self.num_retry = num_retry
+
+    #-----------------------------------------------------------------------
+    def is_expired(self, protocol, t):
+        """See if the time out time has been exceeded.
+
+        Args:
+          protocol:  (Protocol) The Insteon Protocol object.
+          t:         (float) Current time tag as a Unix clock time.
+
+        Returns:
+          Returns True if the message has timed out or False otherwise.
+        """
+        # If we haven't expired, return.
+        if not super().is_expired(protocol, t):
+            return False
+
+        # Some devices like the smoke bridge have issues and don't
+        # seem to respond very well.  So we'll retry a few times to
+        # send the refresh command.
+        if self.send_cound <= self.num_retry:
+            self.send_count += 1
+
+            # Resend the refresh command.
+            protocol.send(self.msg, self)
+
+        # Tell the protocol that we're expired.  This will end this
+        # handler and send the next message which at some point will
+        # be our retry command.
+        return True
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
@@ -63,6 +95,9 @@ class DeviceRefresh(Base):
 
         # See if this is the standard message ack/nak we're expecting.
         elif isinstance(msg, Msg.InpStandard) and msg.from_addr == self.addr:
+            # Since we got the message we expected, turn off retries.
+            self.send_count = self.num_retry
+
             # Call the device refresh handler.  This sets the current
             # device state which is usually stored in cmd2.
             self.device.handle_refresh(msg)

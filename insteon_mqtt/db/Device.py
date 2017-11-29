@@ -193,7 +193,7 @@ class Device:
                                 on_done)
 
     #-----------------------------------------------------------------------
-    def delete_on_device(self, protocol, entry):
+    def delete_on_device(self, protocol, entry, on_done=None):
         """TODO: doc
         """
         # see p117 of insteon dev guide: To delete a record, set the
@@ -211,7 +211,7 @@ class Device:
         # record is no longer in use.
         ext_data = new_entry.to_bytes()
         msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-        msg_handler = handler.DeviceDbModify(self, new_entry)
+        msg_handler = handler.DeviceDbModify(self, new_entry, on_done)
 
         # Send the message.
         protocol.send(msg, msg_handler)
