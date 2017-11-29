@@ -76,7 +76,10 @@ class DbFlags:
 
     #-----------------------------------------------------------------------
     def copy(self):
-        """TODO: doc
+        """Make a copy of the object.
+
+        Returns:
+           Returns a new DbFlags object.
         """
         return DbFlags(self.in_use, self.is_controller, self.is_last_rec)
 

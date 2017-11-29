@@ -11,12 +11,11 @@ from .DbFlags import DbFlags
 
 
 class OutAllLinkUpdate(Base):
-    """TODO: doc
+    """Modem database all linking database update message.
 
-    When sending, this will be 8 bytes long.  When receiving back from
-    the modem, it will be 9 bytes (8+ack/nak).
-
-    The modem will respond with an echo/ACK of this message.
+    This message is used to change (add, edit, delete) an entry in the
+    modem's all link database.  After sending, the modem should ACK
+    this back with the result (ACK = success, NAK = failure).
     """
     msg_code = 0x6f
     fixed_msg_size = 12

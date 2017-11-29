@@ -206,7 +206,17 @@ class OutExtended(OutStandard):
     def to_bytes(self, crc_type="D14"):
         """Convert the message to a byte array.
 
-        TODO: doc
+        Some extended messages require a check sum or CRC value to be
+        computed and set into the last (D14) byte.  The Insteon
+        developer docs don't say this and say that bytes unused but it
+        is required.  Valid inputs are:
+
+        - "D14": Single byte checksum used by device database
+           modification messages.
+        - "CRC": 2 byte CRC (D13, D14) used by thermostat commands.
+
+        Args:
+          crc_type:   (str) None, "D14", or "CRC".
 
         Returns:
            (bytes) Returns the message as bytes.
