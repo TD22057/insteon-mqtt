@@ -55,7 +55,7 @@ class DeviceRefresh(Base):
         # Some devices like the smoke bridge have issues and don't
         # seem to respond very well.  So we'll retry a few times to
         # send the refresh command.
-        if self.send_cound <= self.num_retry:
+        if self.send_count <= self.num_retry:
             self.send_count += 1
 
             # Resend the refresh command.

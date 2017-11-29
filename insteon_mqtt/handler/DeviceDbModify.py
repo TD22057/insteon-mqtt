@@ -35,7 +35,7 @@ class DeviceDbModify(Base):
 
         # Use the input callback or a dummy function (so we don't have
         # to check to see if the callback exists).
-        self.on_done = on_done if on_done else lambda *x : x
+        self.on_done = on_done if on_done else lambda *x: x
 
         # Tuple of (msg, entry) to send next.  If the first calls
         # ACK's, we'll update self.entry and send the next msg and
