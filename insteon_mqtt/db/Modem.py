@@ -108,8 +108,10 @@ class Modem:
     def find_all(self, addr=None, group=None, is_controller=None):
         """TODO: doc
         """
-        results = []
+        addr = None if addr is None else Address(addr)
+        group = None if group is None else int(group)
 
+        results = []
         for e in self.entries:
             if addr is not None and e.addr != addr:
                 continue
@@ -123,11 +125,13 @@ class Modem:
         return results
 
     #-----------------------------------------------------------------------
-    def add_on_device(self, protocol, entry):
+    def add_on_device(self, protocol, entry, on_done=None):
         exists = self.find(entry.addr, entry.group, entry.is_controller)
         if exists:
             if exists.data == entry.data:
                 LOG.info("Modem.add skipping existing entry: %s", entry)
+                if on_done:
+                    on_done(True, exists, "Entry already exists")
                 return
 
             cmd = Msg.OutAllLinkUpdate.Cmd.UPDATE
@@ -146,7 +150,7 @@ class Modem:
         # Build the modem database update message.
         msg = Msg.OutAllLinkUpdate(cmd, db_flags, entry.group, entry.addr,
                                    entry.data)
-        msg_handler = handler.ModemDbModify(self, entry, exists)
+        msg_handler = handler.ModemDbModify(self, entry, exists, on_done)
 
         # Send the message.
         protocol.send(msg, msg_handler)
@@ -169,23 +173,24 @@ class Modem:
             LOG.warning("Modem.delete no match for %s grp %s", addr, group)
             return
 
-        # Modem will only delete if we pass it an empty flags input
-        # (see the method docs).  This deletes the first entry in the
-        # database that matches the inputs.
-        db_flags = Msg.DbFlags.from_bytes(bytes(1))
-
         # Build the delete command.  When the modem replies, we'll get
-        # the ack/nak.
+        # the ack/nak.  Modem will only delete if we pass it an empty
+        # flags input (see the method docs).  This deletes the first
+        # entry in the database that matches the inputs - we can't
+        # select by controller or responder.
+        db_flags = Msg.DbFlags.from_bytes(bytes(1))
         msg = Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.DELETE, db_flags,
                                    group, addr, bytes(3))
 
         # Send the command once per entry in our database.  Callback
         # will remove the entry from our database if we get an ACK.
-        for entry in entries:
-            msg_handler = handler.ModemDbModify(self, entry)
-            protocol.send(msg, msg_handler)
+        msg_handler = handler.ModemDbModify(self, entries[0])
+        for entry in entries[1:]:
+            msg_handler.add_update(msg, entry)
 
-        return entries
+        # Send the first message.  If it ACK's, it will keep sending
+        # more deletes - one per entry.
+        protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def to_json(self):

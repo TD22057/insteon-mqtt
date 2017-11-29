@@ -21,7 +21,7 @@ class DeviceDbModify(Base):
     The reply is passed to the Device.handle_db_update so it knows
     whether to store the updated result or not.
     """
-    def __init__(self, db, entry):
+    def __init__(self, db, entry, on_done):
         """Constructor
 
         TODO: doc
@@ -33,8 +33,13 @@ class DeviceDbModify(Base):
         self.db = db
         self.entry = entry
 
-        # Tuple of values to send another message of if the first one
-        # gets an ACK.  See add_update()
+        # Use the input callback or a dummy function (so we don't have
+        # to check to see if the callback exists).
+        self.on_done = on_done if on_done else lambda *x : x
+
+        # Tuple of (msg, entry) to send next.  If the first calls
+        # ACK's, we'll update self.entry and send the next msg and
+        # continue until this is empty.
         self.next = []
 
     #-----------------------------------------------------------------------
@@ -73,6 +78,8 @@ class DeviceDbModify(Base):
                 # NAK - device rejected command.
                 else:
                     LOG.error("Device NAK of device db modify: %s", msg)
+                    self.on_done(False, self.entry, "Device database update "
+                                 "failed")
                     return Msg.FINISHED
 
         elif isinstance(msg, Msg.InpStandard):
@@ -92,11 +99,20 @@ class DeviceDbModify(Base):
                         msg, self.entry = self.next.pop(0)
                         protocol.send(msg, self)
 
+                    # Only run the done callback if this is the last
+                    # message in the chain.
+                    else:
+                        self.on_done(True, self.entry, "Device database "
+                                     "update complete")
+
                 elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
                     LOG.error("%s db mod NAK: %s", self.db.addr, msg)
+                    self.on_done(False, self.entry, "Device database failed")
+
                 else:
                     LOG.error("%s db mod unexpected msg type: %s",
                               self.db.addr, msg)
+                    self.on_done(False, self.entry, "Device database failed")
 
                 return Msg.FINISHED
 

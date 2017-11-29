@@ -143,67 +143,134 @@ class Base:
         self.refresh()
 
     #-----------------------------------------------------------------------
-    def db_add_ctrl_of(self, addr, group, data=None, force=False,
-                       two_way=True):
-        """TODO: doc
+    def db_add_ctrl_of(self, addr, group, data=None, two_way=True,
+                       on_done=None):
+        """Add the device as a controller of another device.
+
+        This updates the devices's all link database to show that the
+        device is controlling another Insteon device.  If two_way is
+        True, the corresponding responder link on the other device is
+        also created.  This two-way link is required for the other
+        device to accept commands from this device.
+
+        The 3 byte data entry is usually (on_level, ramp_rate, unused)
+        where those values are 1 byte (0-255) values but those fields
+        are device dependent.
+
+        The optional callback has the signature:
+            on_done(bool success, entry, str message)
+
+        - success is True if both commands worked or False if one failed.
+        - entry is either the db.ModemEntry or db.DeviceEntry that was
+          updated.
+        - message is a string with a summary of what happened.  This is used
+          for user interface responses to sending this command.
+
+        Args:
+          addr:     (Address) The remote device address.
+          group:    (int) The group to add link for.
+          data:     (bytes[3]) 3 byte data entry.
+          two_way:  (bool) If True, after creating the controller link on the
+                    device, a responder link is created on the remote device
+                    to form the required pair of entries.
+          on_done:  Optional callback run when both commands are finished.
         """
-        # Insure types are ok - this way strings passed in from JSON
-        # or MQTT get converted to the type we expect.
-        addr = Address(addr)
-        group = int(group)
-        data = data if data else bytes(3)
-
-        remote = self.modem.find(addr)
-        if two_way and not remote:
-            if force:
-                LOG.info("Device.db_add_ctrl_of can't find remote device %s.  "
-                         "Link will be only one direction", addr)
-            else:
-                LOG.error("Modem.db_add_ctrl_of can't find remote device %s.  "
-                          "Link cannot be added", addr)
-                return
-
-        self.db.add_on_device(self.protocol, self.addr, addr, group, data,
-                              is_controller=True)
-
-        if two_way and remote:
-            remote.db_add_resp_of(self.addr, group, data, two_way=False)
+        self._db_update(addr, group, data, two_way, is_controller=True,
+                        on_done=on_done)
 
     #-----------------------------------------------------------------------
-    def db_add_resp_of(self, addr, group, data=None, force=False,
-                       two_way=True):
-        """TODO: doc
-        """
-        # Insure types are ok - this way strings passed in from JSON
-        # or MQTT get converted to the type we expect.
-        addr = Address(addr)
-        group = int(group)
-        data = data if data else bytes(3)
+    def db_add_resp_of(self, addr, group, data=None, two_way=True,
+                       on_done=None):
+        """Add the device as a responder of another device.
 
+        This updates the devices's all link database to show that the
+        device is responding to another Insteon device.  If two_way is
+        True, the corresponding controller link on the other device is
+        also created.  This two-way link is required for the other
+        device to accept commands from this device.
+
+        The 3 byte data entry is usually (on_level, ramp_rate, unused)
+        where those values are 1 byte (0-255) values but those fields
+        are device dependent.
+
+        The optional callback has the signature:
+            on_done(bool success, entry, str message)
+
+        - success is True if both commands worked or False if one failed.
+        - entry is either the db.ModemEntry or db.DeviceEntry that was
+          updated.
+        - message is a string with a summary of what happened.  This is used
+          for user interface responses to sending this command.
+
+        Args:
+          addr:     (Address) The remote device address.
+          group:    (int) The group to add link for.
+          data:     (bytes[3]) 3 byte data entry.
+          two_way:  (bool) If True, after creating the responder link on the
+                    device, a controller link is created on the remote device
+                    to form the required pair of entries.
+          on_done:  Optional callback run when both commands are finished.
+
+        """
+        self._db_update(addr, group, data, two_way, is_controller=False,
+                        on_done=on_done)
+
+    #-----------------------------------------------------------------------
+    def _db_update(self, addr, group, data, two_way, is_controller, on_done):
+        """Update the device database.
+
+        See db_add_ctrl_of() or db_add_resp_of() for docs.
+        """
+        # Find the remote device.  If don't have an entry for this
+        # device, we can't sent it commands
         remote = self.modem.find(addr)
         if two_way and not remote:
-            if force:
-                LOG.info("Device.db_add_resp_of can't find remote device %s.  "
-                         "Link will be only one direction", addr)
-            else:
-                LOG.error("Modem.db_add_resp_of can't find remote device %s.  "
-                          "Link cannot be added", addr)
-                return
+            lbl = "CTRL" if is_controller else "RESP"
+            LOG.info("Device db add %s can't find remote device %s.  "
+                     "Link will be only one direction", lbl, addr)
 
-        self.db.add_on_device(self.protocol, self.addr, addr, group, data,
-                              is_controller=False)
-
+        # For two way commands, insert a callback so that when the
+        # modem command finishes, it will send the next command to the
+        # device.  When that finishes, it will run the input callback.
+        use_cb = on_done
         if two_way and remote:
-            remote.db_add_ctrl_of(self.addr, group, data, two_way=False)
+            use_cb = functools.partial(self._db_update_remote, remote, on_done)
+
+        # Create a new database entry for the device and send it.
+        self.db.add_on_device(self.protocol, addr, group, data, is_controller,
+                              on_done=use_cb)
+
+    #-----------------------------------------------------------------------
+    def _db_update_remote(self, remote, on_done, success, entry, msg):
+        """Device update complete callback.
+
+        This is called when the device finishes updating the database.
+        It triggers a corresponding call on the remote device to
+        establish the two way link.  This only occurs if the first
+        command works.
+        """
+        # If the command failed, just call the input callback.
+        if not success:
+            if on_done:
+                on_done(success, entry, msg)
+            return
+
+        # Send the command to the device.  Two way is false here since
+        # we just added the other link.
+        two_way = False
+        if entry.is_controller:
+            remote.db_add_resp_of(self.addr, entry.group, entry.data, two_way,
+                                  on_done)
+
+        else:
+            remote.db_add_ctrl_of(self.addr, entry.group, entry.data, two_way,
+                                  on_done)
 
     #-----------------------------------------------------------------------
     def db_del_ctrl_of(self, addr, group, force=False, two_way=True):
         """TODO: doc
         """
-        # Insure types are ok - this way strings passed in from JSON
-        # or MQTT get converted to the type we expect.  if the record
-        # doesn't exist, don't do anything.
-        entry = self.db.find(Address(addr), int(group), is_controller=True)
+        entry = self.db.find(addr, group, is_controller=True)
         if not entry:
             LOG.warning("Device %s delete no match for %s grp %s CTRL",
                         self.addr, addr, group)
@@ -217,10 +284,7 @@ class Base:
     def db_del_resp_of(self, addr, group, force=False, two_way=True):
         """TODO: doc
         """
-        # Insure types are ok - this way strings passed in from JSON
-        # or MQTT get converted to the type we expect.  if the record
-        # doesn't exist, don't do anything.
-        entry = self.db.find(Address(addr), int(group), is_controller=False)
+        entry = self.db.find(addr, group, is_controller=False)
         if not entry:
             LOG.warning("Device %s delete no match for %s grp %s RESP",
                         self.addr, addr, group)

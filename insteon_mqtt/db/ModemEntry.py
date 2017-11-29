@@ -42,8 +42,9 @@ class ModemEntry:
         data = data if data is not None else bytes(3)
         assert len(data) == 3
 
+        # These should be these types but ctor them anyway to be sure.
         self.addr = Address(addr)
-        self.group = group
+        self.group = int(group)
         self.is_controller = is_controller
         self.data = data
 

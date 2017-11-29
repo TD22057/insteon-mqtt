@@ -3,6 +3,7 @@
 # Insteon modem class.
 #
 #===========================================================================
+import functools
 import json
 import logging
 import os
@@ -212,9 +213,8 @@ class Modem:
         Returns:
           Returns the device object or None if it doesn't exist.
         """
-        if not isinstance(addr, Address):
-            addr = Address(addr)
-
+        # Insure we have an Address object.
+        addr = Address(addr)
         if addr == self.addr:
             return self
 
@@ -241,71 +241,99 @@ class Modem:
             device.db_get()
 
     #-----------------------------------------------------------------------
-    def db_add_ctrl_of(self, addr, group, data=None, force=False,
-                       two_way=True):
-        """TODO: doc
+    def db_add_ctrl_of(self, addr, group, data=None, two_way=True,
+                       on_done=None):
+        """Add the modem as a controller of a device.
+
+        This updates the modem's all link database to show that the
+        model is controlling an Insteon device.  If two_way is True,
+        the corresponding responder link on the device is also
+        created.  This two-way link is required for the device to
+        accept commands from the modem.
+
+        Normally, pressing the set button the modem and then the
+        device will configure this link using group 1.
+
+        The 3 byte data entry is usually (on_level, ramp_rate, unused)
+        where those values are 1 byte (0-255) values but those fields
+        are device dependent.
+
+        The optional callback has the signature:
+            on_done(bool success, entry, str message)
+
+        - success is True if both commands worked or False if one failed.
+        - entry is either the db.ModemEntry or db.DeviceEntry that was
+          updated.
+        - message is a string with a summary of what happened.  This is used
+          for user interface responses to sending this command.
+
+        Args:
+          addr:     (Address) The remote device address.
+          group:    (int) The group to add link for.
+          data:     (bytes[3]) 3 byte data entry.
+          two_way:  (bool) If True, after creating the controller link on the
+                    modem, a responder link is created on the remote device
+                    to form the required pair of entries.
+          on_done:  Optional callback run when both commands are finished.
         """
-        # Insure types are ok - this way strings passed in from JSON
-        # or MQTT get converted to the type we expect.
-        addr = Address(addr)
-        group = int(group)
-        data = data if data else bytes(3)
-
-        remote = self.find(addr)
-        if two_way and not remote:
-            if force:
-                LOG.info("Modem.db_add_ctrl_of can't find remote device %s.  "
-                         "Link will be only one direction", addr)
-            else:
-                LOG.error("Modem.db_add_ctrl_of can't find remote device %s.  "
-                          "Link cannot be added", addr)
-                return
-
-        entry = db.ModemEntry(addr, group, is_controller=True, data=data)
-        self.db.add_on_device(self.protocol, entry)
-
-        if two_way and remote:
-            remote.db_add_resp_of(self.addr, group, data, add_remote=False)
+        self._db_update(addr, group, data, two_way, is_controller=True,
+                        on_done=on_done)
 
     #-----------------------------------------------------------------------
-    def db_add_resp_of(self, addr, group, data=None, force=False,
-                       two_way=True):
-        """TODO: doc
+    def db_add_resp_of(self, addr, group, data=None, two_way=True,
+                       on_done=None):
+        """Add the modem as a responder of a device.
+
+        This updates the modem's all link database to show that the
+        model is responding to an Insteon device.  If two_way is True,
+        the corresponding controller link on the device is also
+        created.  This two-way link is required for the device to send
+        commands to the modem and for the modem to report device state
+        changes.
+
+        Normally, pressing the set button the device and then the
+        modem will configure this link using group 1.
+
+        The 3 byte data entry is usually (on_level, ramp_rate, unused)
+        where those values are 1 byte (0-255) values but those fields
+        are device dependent.
+
+        The optional callback has the signature:
+            on_done(bool success, entry, str message)
+
+        - success is True if both commands worked or False if one failed.
+        - entry is either the db.ModemEntry or db.DeviceEntry that was
+          updated.
+        - message is a string with a summary of what happened.  This is used
+          for user interface responses to sending this command.
+
+        Args:
+          addr:     (Address) The remote device address.
+          group:    (int) The group to add link for.
+          data:     (bytes[3]) 3 byte data entry.
+          two_way:  (bool) If True, after creating the responder link on the
+                    modem, a controller link is created on the remote device
+                    to form the required pair of entries.
+          on_done:  Optional callback run when both commands are finished.
         """
-        # Insure types are ok - this way strings passed in from JSON
-        # or MQTT get converted to the type we expect.
-        addr = Address(addr)
-        group = int(group)
-        data = data if data else bytes(3)
-
-        remote = self.find(addr)
-        if two_way and not remote:
-            if force:
-                LOG.info("Modem.db_add_resp_of can't find remote device %s.  "
-                         "Link will be only one direction", addr)
-            else:
-                LOG.error("Modem.db_add_resp_of can't find remote device %s.  "
-                          "Link cannot be added", addr)
-                return
-
-        on_complete = None
-        if two_way and remote:
-            def on_complete(success, entry):
-                if success:
-                    remote.db_add_ctrl_of(self.addr, group, data,
-                                          add_remote=False)
-
-        entry = db.ModemEntry(addr, group, is_controller=False, data=data)
-        self.db.add_on_device(self.protocol, entry)  # TODO: on_complete()
+        self._db_update(addr, group, data, two_way, is_controller=False,
+                        on_done=on_done)
 
     #-----------------------------------------------------------------------
-    def db_delete(self, addr, group, force=False, two_way=True):
+    def db_delete(self, addr, group, two_way=True, on_done=None):
         """TODO: doc
         """
-        # Insure types are ok - this way strings passed in from JSON
-        # or MQTT get converted to the type we expect.
-        addr = Address(addr)
-        group = int(group)
+        # Find all the entries to delete.
+        entries = self.db.find_all(addr, group)
+
+        """
+        for i, entry in enumerate(entries):
+            cb = None
+            if i == len(entries)-1:
+                cb = on_done
+
+            self._db_delete_entry(entry, two_way, on_done=cb):
+
 
         # TODO: callback system
         on_complete = None
@@ -319,8 +347,9 @@ class Modem:
                 else:
                     remote.del_ctrl_of(self.addr, group, two_way=False)
 
-        # TODO: pass callback
-        self.db.delete_on_device(self.protocol, addr, group)
+        # TODO: pass callback - or something to handle two-way
+        self.db.delete_on_device(self.protocol, addr, group, force, two_way)
+        """
 
     #-----------------------------------------------------------------------
     def factory_reset(self):
@@ -376,6 +405,11 @@ class Modem:
                       "'%s' not valid.  Valid commands: %s", self.addr,
                       cmd, self.cmd_map.keys())
             return
+
+        # TODO: need session arg - if set, pass callback to func which
+        # it will call when finished.  Callback should publish a reply
+        # to message w/ results.  This callback should be an input to
+        # this function - set it in the MQTT client.
 
         # Call the command function with any remaining arguments.
         try:
@@ -471,5 +505,56 @@ class Modem:
         # has, we need to update the device databases.
         scenes = {}
         return scenes
+
+    #-----------------------------------------------------------------------
+    def _db_update(self, addr, group, data, two_way, is_controller, on_done):
+        """Update the modem database.
+
+        See db_add_ctrl_of() or db_add_resp_of() for docs.
+        """
+        # Find the remote device.  If don't have an entry for this
+        # device, we can't sent it commands
+        remote = self.find(addr)
+        if two_way and not remote:
+            lbl = "CTRL" if is_controller else "RESP"
+            LOG.info("Modem db add %s can't find remote device %s.  "
+                     "Link will be only one direction", lbl, addr)
+
+        # For two way commands, insert a callback so that when the
+        # modem command finishes, it will send the next command to the
+        # device.  When that finishes, it will run the input callback.
+        use_cb = on_done
+        if two_way and remote:
+            use_cb = functools.partial(self._db_update_remote, remote, on_done)
+
+        # Create a new database entry for the modem and send it to the
+        # modem for updating.
+        entry = db.ModemEntry(addr, group, is_controller, data)
+        self.db.add_on_device(self.protocol, entry, use_cb)
+
+    #-----------------------------------------------------------------------
+    def _db_update_remote(self, remote, on_done, success, entry, msg):
+        """Modem device update complete callback.
+
+        This is called when the modem finishes updating the database.
+        It triggers a corresponding call on the remote device to
+        establish the two way link.  This only occurs if the first
+        command works.
+        """
+        # If the command failed, just call the input callback.
+        if not success:
+            if on_done:
+                on_done(success, entry, msg)
+            return
+
+        # Send the command to the device.  Two way is false here since
+        # we just added the other link.
+        two_way = False
+        if entry.is_controller:
+            remote.db_add_resp_of(self.addr, entry.group, entry.data, two_way,
+                                  on_done)
+        else:
+            remote.db_add_ctrl_of(self.addr, entry.group, entry.data, two_way,
+                                  on_done)
 
     #-----------------------------------------------------------------------
