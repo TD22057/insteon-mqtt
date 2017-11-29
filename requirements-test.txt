@@ -1,5 +1,5 @@
-pytest
-pytest-assume
-pytest-cov
-flake8
-pylint
+pytest>=3.2
+pytest-assume>=1.2
+pytest-cov>=2.4
+flake8>=3.4
+pylint>=1.7
