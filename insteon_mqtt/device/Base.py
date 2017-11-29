@@ -3,6 +3,7 @@
 # Base device class
 #
 #===========================================================================
+import functools
 import json
 import logging
 import os.path
@@ -226,15 +227,15 @@ class Base:
     def db_del_ctrl_of(self, addr, group, two_way=True, on_done=None):
         """TODO: doc
         """
-        self._db_delete(self, addr, group, two_way, is_controller=True,
-                        on_done=on_done)
+        # Call with is_controller=True
+        self._db_delete(self, addr, group, two_way, True, on_done)
 
     #-----------------------------------------------------------------------
     def db_del_resp_of(self, addr, group, two_way=True, on_done=None):
         """TODO: doc
         """
-        self._db_delete(self, addr, group, two_way, is_controller=False,
-                        on_done=on_done)
+        # Call with is_controller=False
+        self._db_delete(self, addr, group, two_way, False, on_done)
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
@@ -416,7 +417,7 @@ class Base:
         if two_way and remote:
             use_cb = functools.partial(self._db_delete_remote, remote, on_done)
 
-        self.db.delete_on_device(self.protocol, self.addr, entry, on_done)
+        self.db.delete_on_device(self.protocol, self.addr, entry, use_cb)
 
     #-----------------------------------------------------------------------
     def _db_delete_remote(self, remote, on_done, success, entry, msg):
@@ -426,15 +427,18 @@ class Base:
                 on_done(success, entry, msg)
             return
 
-        # Send the command to the device.  Two way is false here since
-        # we just added the other link.
+        # Send the command to the remote device or modem.  Two way is
+        # false here since we just added the other link.  If the
+        # device is a modem, we don't have control of ctrl vs resp -
+        # it will just delete all the links for this addr and group.
         two_way = False
-        if entry.is_controller:
-            remote.db_del_resp_of(self.addr, entry.group, entry.data, two_way,
-                                  on_done)
+        if remote == self.modem:
+            remote.db_del(self.addr, entry.group, two_way, on_done)
+
+        elif entry.is_controller:
+            remote.db_del_resp_of(self.addr, entry.group, two_way, on_done)
 
         else:
-            remote.db_del_ctrl_of(self.addr, entry.group, entry.data, two_way,
-                                  on_done)
+            remote.db_del_ctrl_of(self.addr, entry.group, two_way, on_done)
 
     #-----------------------------------------------------------------------

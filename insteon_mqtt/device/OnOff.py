@@ -90,9 +90,14 @@ class OnOff(Base):
         on the modem, then set on the device) so we can update it's
         database.
         """
-        LOG.info("TODO: OnOff %s pairing", self.addr)
-        # TODO: check the modem db for the associations and call this if
-        # they're not there.
+        LOG.info("OnOff %s pairing", self.addr)
+
+        # Search our db to see if we have controller links for group 1
+        # back to the modem.  If one doesn't exist, add it on our
+        # device and the modem.
+        if not self.db.find(self.modem.addr, 1, True):
+            LOG.info("OnOff adding ctrl for group 1")
+            self.db_add_ctrl_of(self.modem.addr, 1)
 
     #-----------------------------------------------------------------------
     def is_on(self):

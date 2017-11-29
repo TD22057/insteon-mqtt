@@ -76,10 +76,19 @@ class Remote(Base):
         The device must already be a responder to the modem (push set
         on the modem, then set on the device) so we can update it's
         database.
+
+        NOTE: The remote code assumes the remote buttons are using
+        groups 1...num (as set in the constructor).
         """
-        LOG.info("TODO: Remote %s pairing", self.addr)
-        # TODO: check the modem db for the associations and call this if
-        # they're not there.
+        LOG.info("Remote %s pairing", self.addr)
+
+        # Search our db to see if we have controller links for the
+        # groups back to the modem.  If one doesn't exist, add it on
+        # our device and the modem.
+        for group in range(1, self.num + 1):
+            if not self.db.find(self.modem.addr, group, True):
+                LOG.info("Remote adding ctrl for group %s", group)
+                self.db_add_ctrl_of(self.modem.addr, group)
 
     #-----------------------------------------------------------------------
     def refresh(self):

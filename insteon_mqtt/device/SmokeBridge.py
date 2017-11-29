@@ -78,9 +78,16 @@ class SmokeBridge(Base):
         on the modem, then set on the device) so we can update it's
         database.
         """
-        LOG.info("TODO: Smoke bridge %s pairing", self.addr)
-        # TODO: check the modem db for the associations and call this if
-        # they're not there.
+        LOG.info("Smoke bridge %s pairing", self.addr)
+
+        # Search our db to see if we have controller links for all our
+        # groups back to the modem.  If one doesn't exist, add it on
+        # our device and the modem.
+        add_groups = []
+        for group in SmokeBridge.conditions.keys():
+            if not self.db.find(self.modem.addr, group, True):
+                LOG.info("Smoke bridge adding ctrl for group %s", group)
+                self.db_add_ctrl_of(self.modem.addr, group)
 
     #-----------------------------------------------------------------------
     def refresh(self):
