@@ -12,14 +12,16 @@ class Base:
     TODO: doc
     """
     #-----------------------------------------------------------------------
-    def __init__(self, time_out=5):
+    def __init__(self, time_out=5, on_done=None):
         """Constructor
 
         Args:
           time_out:  (int) time out in seconds.
+        TODO: doc
         """
         self.time_out = time_out
         self.expire_time = None
+        self.on_done = on_done
 
     #-----------------------------------------------------------------------
     def update_expire_time(self):
@@ -44,9 +46,12 @@ class Base:
         Returns:
           Returns True if the message has timed out or False otherwise.
         """
-        # Otherwise, result is Msg.UNKNOWN and we should use the time
-        # out time to see if the handler has expired.
-        return t >= self.expire_time
+        if t >= self.expire_time:
+            if self.on_done:
+                self.on_done(False, "Message handler timed out")
+            return True
+
+        return False
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):

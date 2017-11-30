@@ -3,6 +3,7 @@
 # Device all link database modification handler.
 #
 #===========================================================================
+import functools
 import logging
 from .. import message as Msg
 from .Base import Base
@@ -28,14 +29,20 @@ class DeviceDbModify(Base):
         Args
           Device:   (Device) The Insteon Device.
         """
-        super().__init__()
+        # Use the input callback or a dummy function (so we don't have
+        # to check to see if the callback exists).  Pass the callback
+        # to the base class constructor so that the time out code in
+        # the base class can also call the handler if we time out.
+        # Wrap the input to add the extra argument beyond the standard
+        # on_done callback.
+        if on_done:
+            cb = functools.partial(on_done, entry=entry)
+        else:
+            cb = lambda *x: x
+        super().__init__(on_done=cb)
 
         self.db = db
         self.entry = entry
-
-        # Use the input callback or a dummy function (so we don't have
-        # to check to see if the callback exists).
-        self.on_done = on_done if on_done else lambda *x: x
 
         # Tuple of (msg, entry) to send next.  If the first calls
         # ACK's, we'll update self.entry and send the next msg and
@@ -78,8 +85,7 @@ class DeviceDbModify(Base):
                 # NAK - device rejected command.
                 else:
                     LOG.error("Device NAK of device db modify: %s", msg)
-                    self.on_done(False, self.entry, "Device database update "
-                                 "failed")
+                    self.on_done(False, "Device database update failed")
                     return Msg.FINISHED
 
         elif isinstance(msg, Msg.InpStandard):
@@ -102,17 +108,16 @@ class DeviceDbModify(Base):
                     # Only run the done callback if this is the last
                     # message in the chain.
                     else:
-                        self.on_done(True, self.entry, "Device database "
-                                     "update complete")
+                        self.on_done(True, "Device database update complete")
 
                 elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
                     LOG.error("%s db mod NAK: %s", self.db.addr, msg)
-                    self.on_done(False, self.entry, "Device database failed")
+                    self.on_done(False, "Device database failed")
 
                 else:
                     LOG.error("%s db mod unexpected msg type: %s",
                               self.db.addr, msg)
-                    self.on_done(False, self.entry, "Device database failed")
+                    self.on_done(False, "Device database failed")
 
                 return Msg.FINISHED
 

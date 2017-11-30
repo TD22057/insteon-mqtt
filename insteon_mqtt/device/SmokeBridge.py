@@ -83,7 +83,6 @@ class SmokeBridge(Base):
         # Search our db to see if we have controller links for all our
         # groups back to the modem.  If one doesn't exist, add it on
         # our device and the modem.
-        add_groups = []
         for group in SmokeBridge.conditions.keys():
             if not self.db.find(self.modem.addr, group, True):
                 LOG.info("Smoke bridge adding ctrl for group %s", group)

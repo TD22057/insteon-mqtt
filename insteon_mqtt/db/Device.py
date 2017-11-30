@@ -3,6 +3,7 @@
 # Non-modem device all link database class
 #
 #===========================================================================
+import functools
 import io
 import json
 import logging
@@ -64,13 +65,14 @@ class Device:
         # against the version we have stored.
         self.delta = None
 
-        # Map of memory address (int) to DeviceEntry objects.
+        # Map of memory address (int) to DeviceEntry objects that are
+        # active and in use.
         self.entries = {}
 
-        # List of DeviceEntry objects that are on the device but
-        # unused.  We need to keep these so we can use these storage
-        # locations for future entries.
-        self.unused = []
+        # Map of memory address (int) to DeviceEntry objects that are
+        # on the device but unused.  We need to keep these so we can
+        # use these storage locations for future entries.
+        self.unused = {}
 
         # Map of all link group number to DeviceEntry objects that
         # respond to that group command.
@@ -80,12 +82,16 @@ class Device:
         # cleared when we start to download the db and used to filter
         # out duplicate entries.  Some devcies (smoke bridge) report a
         # lot of duplicate entries during db download for some reason.
+        # This is the superset of addresses of self.entries and
+        # self.unused.
         self._mem_locs = set()
 
-        # TODO: handle case where we send modify and get another
-        # modify request before the original is done.  Need to track
-        # memory locs.  Same w/ delete - need to wait until we know
-        # how the first one finished before we queue up the next one.
+        # Pending update function calls.  These are calls made to
+        # add/del_on_device while another call is pending.  We can't
+        # figure out what to do w/ the new call until the prev one
+        # finishes and so we know the memory layout out the device.
+        # These are function objects which are callable.
+        self._pending = []
 
     #-----------------------------------------------------------------------
     def is_current(self, delta):
@@ -154,6 +160,19 @@ class Device:
                       on_done=None):
         """TODO: doc
         """
+        # TODO: doc
+        if not self._pending:
+            self._add_on_device(protocol, addr, group, data, is_controller,
+                                on_done)
+        else:
+            LOG.info("Device %s busy - waiting to add to db")
+            func = functools.partial(self._add_on_device, protocol, addr, group,
+                                     data, is_controller, on_done)
+            self._pending.append(func)
+
+    #-----------------------------------------------------------------------
+    def _add_on_device(self, protocol, addr, group, data, is_controller,
+                       on_done):
         # Insure types are ok - this way strings passed in from JSON
         # or MQTT get converted to the type we expect.
         addr = Address(addr)
@@ -161,25 +180,39 @@ class Device:
         data = data if data else bytes(3)
 
         # If the record already exists, don't do anything.
-        if self.find(addr, group, is_controller):
+        entry = self.find(addr, group, is_controller)
+        if entry:
             # TODO: support checking and updating data
             LOG.warning("Device %s add db already exists for %s grp %s %s",
                         self.addr, addr, group,
                         'CTRL' if is_controller else 'RESP')
             if on_done:
-                on_done(True, exists, "Entry already exists")
+                on_done(True, "Entry already exists", entry)
             return
 
         LOG.info("Device %s adding db: %s grp %s %s %s", self.addr, addr,
                  group, 'CTRL' if is_controller else 'RESP', data)
         assert len(self.entries)
 
+        # Callback to remove the pending call, call the user input
+        # callback if supplied, and call the next pending call if one
+        # is waiting.
+        def done_cb(success, msg, entry):
+            LOG.debug("add_on_device done_cb %s", len(self._pending)) # TODO
+            self._pending.pop(0)
+            if on_done:
+                on_done(success, msg, entry)
+
+            if self._pending:
+                LOG.debug("add_on_device calling next")
+                self._pending[0]()
+
         # If there are entries in the db that are mark unused, we can
         # re-use those memory addresses and just update them w/ the
         # correct information and mark them as used.
         if self.unused:
             self._add_using_unused(protocol, addr, group, is_controller, data,
-                                   on_done)
+                                   done_cb)
 
         # If there no unused entries, we need to append one.  Write a
         # new record at the next memory location below the current
@@ -190,31 +223,65 @@ class Device:
         # still in a valid order.
         else:
             self._add_using_new(protocol, addr, group, is_controller, data,
-                                on_done)
+                                done_cb)
+
+        # Push a dummy pending entry to the list on the first call.
+        # This way cb() has something to remove and future calls to
+        # this know that there is a call in progress.
+        if not self._pending:
+            self._pending.append(True)
 
     #-----------------------------------------------------------------------
     def delete_on_device(self, protocol, entry, on_done=None):
         """TODO: doc
         """
+        # TODO: doc
+        if not self._pending:
+            self._delete_on_device(protocol, entry, on_done)
+        else:
+            LOG.info("Device %s busy - waiting to delete to db")
+            func = functools.partial(self._delete_on_device, protocol, entry,
+                                     on_done)
+            self._pending.append(func)
+            return
+
+    #-----------------------------------------------------------------------
+    def _delete_on_device(self, protocol, entry, on_done):
+        """TODO: doc
+        """
         # see p117 of insteon dev guide: To delete a record, set the
         # in use flag in DbFlags to 0.
+
+        # Callback to remove the pending call, call the user input
+        # callback if supplied, and call the next pending call if one
+        # is waiting.
+        def done_cb(success, msg, entry):
+            self._pending.pop(0)
+            if on_done:
+                on_done(success, msg, entry)
+
+            if self._pending:
+                self._pending[0]()
 
         # Copy the entry and mark it as unused.
         new_entry = entry.copy()
         new_entry.db_flags.in_use = False
-
-        # TODO: clean this up.  keep old?  pass both to handler?  or
-        # what?  have handler erase old and push new?
 
         # Build the extended db modification message.  This says to
         # modify the entry in place w/ the new db flags which say this
         # record is no longer in use.
         ext_data = new_entry.to_bytes()
         msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-        msg_handler = handler.DeviceDbModify(self, new_entry, on_done)
+        msg_handler = handler.DeviceDbModify(self, new_entry, done_cb)
 
         # Send the message.
         protocol.send(msg, msg_handler)
+
+        # Push a dummy pending entry to the list on the first call.
+        # This way cb() has something to remove and future calls to
+        # this know that there is a call in progress.
+        if not self._pending:
+            self._pending.append(True)
 
     #-----------------------------------------------------------------------
     def find_group(self, group):
@@ -285,7 +352,7 @@ class Device:
           (dict) Returns the database as a JSON dictionary.
         """
         used = [i.to_json() for i in self.entries.values()]
-        unused = [i.to_json() for i in self.unused]
+        unused = [i.to_json() for i in self.unused.values()]
         return {
             'address' : self.addr.to_json(),
             'delta' : self.delta,
@@ -306,7 +373,7 @@ class Device:
             o.write("  %s\n" % elem)
 
         o.write("Unused:\n")
-        for elem in sorted(self.unused, key=lambda i: i.mem_loc):
+        for elem in sorted(self.unused.values(), key=lambda i: i.mem_loc):
             o.write("  %s\n" % elem)
 
         o.write("GroupMap\n")
@@ -330,7 +397,9 @@ class Device:
         # Entry has a valid database entry
         if entry.db_flags.in_use:
             # NOTE: this relies on no-one keeping a handle to this
-            # entry outside of this class.
+            # entry outside of this class.  This also handles
+            # duplicate messages since they will have the same memory
+            # location key.
             self.entries[entry.mem_loc] = entry
             self._mem_locs.add(entry.mem_loc)
 
@@ -343,7 +412,11 @@ class Device:
 
         # Entry is not in use.
         else:
-            self.unused.append(entry)
+            # NOTE: this relies on no-one keeping a handle to this
+            # entry outside of this class.  This also handles
+            # duplicate messages since they will have the same memory
+            # location key.
+            self.unused[entry.mem_loc] = entry
             self._mem_locs.add(entry.mem_loc)
 
             # If the entry is a controller and it's in the group dict,
@@ -363,8 +436,8 @@ class Device:
                           on_done):
         """TODO doc
         """
-        # Grab the first unused entry.
-        entry = self.unused.pop(0)
+        # Grab the first unused entry (highest memory address).
+        entry = self.unused.pop(max(self.unused.keys()))
         LOG.info("Device %s using unused entry at mem %#06x", self.addr,
                  entry.mem_loc)
 

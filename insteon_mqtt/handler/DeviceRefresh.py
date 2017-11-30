@@ -115,7 +115,7 @@ class DeviceRefresh(Base):
 
                 # When the update message below ends, update the db
                 # delta w/ the current value and save the database.
-                def on_complete(success):
+                def on_done(success):
                     if success:
                         LOG.info("%s database download complete\n%s",
                                  self.addr, self.device.db)
@@ -126,7 +126,7 @@ class DeviceRefresh(Base):
                 # to us and the handler will update the database
                 db_msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00,
                                                 bytes(14))
-                msg_handler = DeviceDbGet(self.device.db, on_complete)
+                msg_handler = DeviceDbGet(self.device.db, on_done)
                 protocol.send(db_msg, msg_handler)
 
             # Either way - this transaction is complete.

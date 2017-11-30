@@ -259,13 +259,13 @@ class Modem:
         are device dependent.
 
         The optional callback has the signature:
-            on_done(bool success, entry, str message)
+            on_done(bool success, str message, entry)
 
         - success is True if both commands worked or False if one failed.
-        - entry is either the db.ModemEntry or db.DeviceEntry that was
-          updated.
         - message is a string with a summary of what happened.  This is used
           for user interface responses to sending this command.
+        - entry is either the db.ModemEntry or db.DeviceEntry that was
+          updated.
 
         Args:
           addr:     (Address) The remote device address.
@@ -299,13 +299,13 @@ class Modem:
         are device dependent.
 
         The optional callback has the signature:
-            on_done(bool success, entry, str message)
+            on_done(bool success, str message, entry)
 
         - success is True if both commands worked or False if one failed.
-        - entry is either the db.ModemEntry or db.DeviceEntry that was
-          updated.
         - message is a string with a summary of what happened.  This is used
           for user interface responses to sending this command.
+        - entry is either the db.ModemEntry or db.DeviceEntry that was
+          updated.
 
         Args:
           addr:     (Address) The remote device address.
@@ -323,8 +323,32 @@ class Modem:
     def db_delete(self, addr, group, two_way=True, on_done=None):
         """TODO: doc
         """
-        # Find all the entries to delete.
+
+        """
+        # Find all the entries that are going to be deleted.
         entries = self.db.find_all(addr, group)
+        for entry in entries:
+            self.db.delete_on_device(
+
+    def _db_delete_remote(self, remote, on_done, success, entry, msg):
+        # If the command failed, just call the input callback.
+        if not success:
+            if on_done:
+                on_done(success, msg, entry)
+            return
+
+        # Send the command to the device.  Two way is false here since
+        # we just added the other link.
+        two_way = False
+        if entry.is_controller:
+            remote.db_del_resp_of(self.addr, entry.group, entry.data, two_way,
+                                  on_done)
+        else:
+            remote.db_del_ctrl_of(self.addr, entry.group, entry.data, two_way,
+                                  on_done)
+        """
+        pass
+
 
         """
         for i, entry in enumerate(entries):
@@ -368,7 +392,7 @@ class Modem:
         # handler will handle timeouts (to send the cancel message) if
         # nothing happens.  See the handler for details.
         msg = Msg.OutAllLinkStart(Msg.OutAllLinkStart.Cmd.EITHER, group)
-        msg_handler = handler.ModemAllLink(self.protocol, self.db, time_out)
+        msg_handler = handler.ModemAllLink(self.db, time_out)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -533,7 +557,7 @@ class Modem:
         self.db.add_on_device(self.protocol, entry, use_cb)
 
     #-----------------------------------------------------------------------
-    def _db_update_remote(self, remote, on_done, success, entry, msg):
+    def _db_update_remote(self, remote, on_done, success, msg, entry):
         """Modem device update complete callback.
 
         This is called when the modem finishes updating the database.
@@ -544,7 +568,7 @@ class Modem:
         # If the command failed, just call the input callback.
         if not success:
             if on_done:
-                on_done(success, entry, msg)
+                on_done(success, msg, entry)
             return
 
         # Send the command to the device.  Two way is false here since

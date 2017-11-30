@@ -3,6 +3,7 @@
 # Modem database modification (add/del) handler.
 #
 #===========================================================================
+import functools
 import logging
 from .. import message as Msg
 from .Base import Base
@@ -37,15 +38,21 @@ class ModemDbModify(Base):
                     cancel message to the modem to cancel the all link mode.
           on_done:  Callback to call when finished.
         """
-        super().__init__()
+        # Use the input callback or a dummy function (so we don't have
+        # to check to see if the callback exists).  Pass the callback
+        # to the base class constructor so that the time out code in
+        # the base class can also call the handler if we time out.
+        # Wrap the input to add the extra argument beyond the standard
+        # on_done callback.
+        if on_done:
+            cb = functools.partial(on_done, entry=entry)
+        else:
+            cb = lambda *x: x
+        super().__init__(on_done=cb)
 
         self.db = modem_db
         self.entry = entry
         self.existing_entry = existing_entry
-
-        # Use the input callback or a dummy function (so we don't have
-        # to check to see if the callback exists).
-        self.on_done = on_done if on_done else lambda *x: x
 
         # Tuple of (msg, entry) to send next.  If the first calls
         # ACK's, we'll update self.entry and send the next msg and
@@ -80,7 +87,7 @@ class ModemDbModify(Base):
 
         if not msg.is_ack:
             LOG.error("Modem db updated failed: %s", msg)
-            self.on_done(False, self.entry, "Modem database update failed")
+            self.on_done(False, "Modem database update failed")
             return Msg.FINISHED
 
         # Delete an existing entry
@@ -121,7 +128,7 @@ class ModemDbModify(Base):
         # Only run the done callback if this is the last message in
         # the chain.
         else:
-            self.on_done(True, self.entry, "Modem database update complete")
+            self.on_done(True, "Modem database update complete")
 
         return Msg.FINISHED
 
