@@ -197,12 +197,12 @@ class OnOff(Base):
         # On command.  0x11: on, 0x12: on fast
         elif msg.cmd1 in OnOff.on_codes:
             LOG.info("OnOff %s broadcast ON grp: %s", self.addr, msg.group)
-            self._is_on(True)
+            self._set_is_on(True)
 
         # Off command. 0x13: off, 0x14: off fast
         elif msg.cmd1 in OnOff.off_codes:
             LOG.info("OnOff %s broadcast OFF grp: %s", self.addr, msg.group)
-            self._is_on(False)
+            self._set_is_on(False)
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
@@ -225,7 +225,7 @@ class OnOff(Base):
 
         # Current on/off level is stored in cmd2 so update our level
         # to match.
-        self._is_on(msg.cmd2 > 0x00)
+        self._set_is_on(msg.cmd2 > 0x00)
 
     #-----------------------------------------------------------------------
     def handle_ack(self, msg):
