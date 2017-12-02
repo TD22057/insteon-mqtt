@@ -131,7 +131,7 @@ class Modem:
             if exists.data == entry.data:
                 LOG.info("Modem.add skipping existing entry: %s", entry)
                 if on_done:
-                    on_done(True, exists, "Entry already exists")
+                    on_done(True, "Entry already exists", exists)
                 return
 
             cmd = Msg.OutAllLinkUpdate.Cmd.UPDATE
@@ -156,8 +156,9 @@ class Modem:
         protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def delete_on_device(self, protocol, addr, group):
-        """Delete the modem entries for an address and group.
+    def delete_on_device(self, protocol, addr, group, on_done=None):
+        """TODO
+        Delete the modem entries for an address and group.
 
         The modem doesn't support deleting a specific controller or
         responder entry - it just deletes the first one that matches
@@ -167,14 +168,15 @@ class Modem:
 
         TODO: doc
         """
-        addr = Address(addr)
+        # The modem will delete the first entry that matches.
         entries = self.find_all(addr, group)
         if not entries:
-            LOG.warning("Modem.delete no match for %s grp %s", addr, group)
+            LOG.error("No entries matching %s grp %s", add, group)
+            if on_done:
+                on_done(False, "Invalid entry to delete from modem", None)
             return
 
-        # Build the delete command.  When the modem replies, we'll get
-        # the ack/nak.  Modem will only delete if we pass it an empty
+        # Modem will only delete if we pass it an empty
         # flags input (see the method docs).  This deletes the first
         # entry in the database that matches the inputs - we can't
         # select by controller or responder.
@@ -184,9 +186,7 @@ class Modem:
 
         # Send the command once per entry in our database.  Callback
         # will remove the entry from our database if we get an ACK.
-        msg_handler = handler.ModemDbModify(self, entries[0])
-        for entry in entries[1:]:
-            msg_handler.add_update(msg, entry)
+        msg_handler = handler.ModemDbModify(self, entries[0], on_done=on_done)
 
         # Send the first message.  If it ACK's, it will keep sending
         # more deletes - one per entry.

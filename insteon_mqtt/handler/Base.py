@@ -5,7 +5,6 @@
 #===========================================================================
 import time
 
-
 class Base:
     """Protocol message handler API.
 
@@ -19,9 +18,13 @@ class Base:
           time_out:  (int) time out in seconds.
         TODO: doc
         """
-        self.time_out = time_out
-        self.expire_time = None
+        self._time_out = time_out
+        self._expire_time = None
         self.on_done = on_done
+
+        # TODO: dummy callback
+        if not on_done:
+            self.on_done = lambda *x : x
 
     #-----------------------------------------------------------------------
     def update_expire_time(self):
@@ -30,7 +33,7 @@ class Base:
         This resets the time out time to record that we saw a valid
         message.
         """
-        self.expire_time = time.time() + self.time_out
+        self._expire_time = time.time() + self._time_out
 
     #-----------------------------------------------------------------------
     def is_expired(self, protocol, t):
@@ -46,9 +49,8 @@ class Base:
         Returns:
           Returns True if the message has timed out or False otherwise.
         """
-        if t >= self.expire_time:
-            if self.on_done:
-                self.on_done(False, "Message handler timed out")
+        if t >= self._expire_time:
+            self.on_done(False, "Message handler timed out")
             return True
 
         return False

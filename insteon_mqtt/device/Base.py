@@ -169,7 +169,7 @@ class Base:
         The optional callback has the signature:
             on_done(bool success, str message, entry)
 
-        - success is True if both commands worked or False if one failed.
+        - success is True if both commands worked or False if any failed.
         - message is a string with a summary of what happened.  This is used
           for user interface responses to sending this command.
         - entry is either the db.ModemEntry or db.DeviceEntry that was
@@ -205,7 +205,7 @@ class Base:
         The optional callback has the signature:
             on_done(bool success, str message, entry)
 
-        - success is True if both commands worked or False if one failed.
+        - success is True if both commands worked or False if any failed.
         - message is a string with a summary of what happened.  This is used
           for user interface responses to sending this command.
         - entry is either the db.ModemEntry or db.DeviceEntry that was
@@ -375,10 +375,10 @@ class Base:
         establish the two way link.  This only occurs if the first
         command works.
         """
-        # If the command failed, just call the input callback.
+        # Update failed - call the user callback and return
         if not success:
             if on_done:
-                on_done(success, msg, entry)
+                on_done(False, msg, entry)
             return
 
         # Send the command to the device.  Two way is false here since
@@ -422,10 +422,10 @@ class Base:
 
     #-----------------------------------------------------------------------
     def _db_delete_remote(self, remote, on_done, success, msg, entry):
-        # If the command failed, just call the input callback.
+        # Update failed - call the user callback and return
         if not success:
             if on_done:
-                on_done(success, msg, entry)
+                on_done(False, msg, entry)
             return
 
         # Send the command to the remote device or modem.  Two way is
@@ -434,6 +434,7 @@ class Base:
         # it will just delete all the links for this addr and group.
         two_way = False
         if remote == self.modem:
+            # TODO: fix this
             #remote.db_delete(self.addr, entry.group, two_way, on_done)
             pass
 

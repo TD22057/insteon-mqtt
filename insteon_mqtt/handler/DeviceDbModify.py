@@ -112,12 +112,12 @@ class DeviceDbModify(Base):
 
                 elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
                     LOG.error("%s db mod NAK: %s", self.db.addr, msg)
-                    self.on_done(False, "Device database failed")
+                    self.on_done(False, "Device database update failed")
 
                 else:
                     LOG.error("%s db mod unexpected msg type: %s",
                               self.db.addr, msg)
-                    self.on_done(False, "Device database failed")
+                    self.on_done(False, "Device database update failed")
 
                 return Msg.FINISHED
 

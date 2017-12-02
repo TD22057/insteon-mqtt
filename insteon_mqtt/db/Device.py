@@ -198,14 +198,13 @@ class Device:
         # callback if supplied, and call the next pending call if one
         # is waiting.
         def done_cb(success, msg, entry):
-            LOG.debug("add_on_device done_cb %s", len(self._pending)) # TODO
+            LOG.debug("add_on_device done_cb %s", len(self._pending))
             self._pending.pop(0)
-            if on_done:
-                on_done(success, msg, entry)
-
             if self._pending:
                 LOG.debug("add_on_device calling next")
                 self._pending[0]()
+            elif on_done:
+                on_done(success, msg, entry)
 
         # If there are entries in the db that are mark unused, we can
         # re-use those memory addresses and just update them w/ the
@@ -243,7 +242,6 @@ class Device:
             func = functools.partial(self._delete_on_device, protocol, entry,
                                      on_done)
             self._pending.append(func)
-            return
 
     #-----------------------------------------------------------------------
     def _delete_on_device(self, protocol, entry, on_done):
@@ -257,11 +255,10 @@ class Device:
         # is waiting.
         def done_cb(success, msg, entry):
             self._pending.pop(0)
-            if on_done:
-                on_done(success, msg, entry)
-
             if self._pending:
                 self._pending[0]()
+            elif on_done:
+                on_done(success, msg, entry)
 
         # Copy the entry and mark it as unused.
         new_entry = entry.copy()

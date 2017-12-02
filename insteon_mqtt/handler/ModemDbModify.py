@@ -44,15 +44,13 @@ class ModemDbModify(Base):
         # the base class can also call the handler if we time out.
         # Wrap the input to add the extra argument beyond the standard
         # on_done callback.
-        if on_done:
-            cb = functools.partial(on_done, entry=entry)
-        else:
-            cb = lambda *x: x
-        super().__init__(on_done=cb)
+        # TODO
+        super().__init__(on_done=self.on_done)
 
         self.db = modem_db
         self.entry = entry
         self.existing_entry = existing_entry
+        self._on_done = on_done
 
         # Tuple of (msg, entry) to send next.  If the first calls
         # ACK's, we'll update self.entry and send the next msg and
@@ -64,6 +62,13 @@ class ModemDbModify(Base):
         """TODO: doc
         """
         self.next.append((msg, entry))
+
+    #-----------------------------------------------------------------------
+    def on_done(self, success, msg):
+        """TODO doc
+        """
+        if self._on_done:
+            self._on_done(success, msg, self.entry)
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):

@@ -261,7 +261,7 @@ class Modem:
         The optional callback has the signature:
             on_done(bool success, str message, entry)
 
-        - success is True if both commands worked or False if one failed.
+        - success is True if both commands worked or False if any failed.
         - message is a string with a summary of what happened.  This is used
           for user interface responses to sending this command.
         - entry is either the db.ModemEntry or db.DeviceEntry that was
@@ -301,7 +301,7 @@ class Modem:
         The optional callback has the signature:
             on_done(bool success, str message, entry)
 
-        - success is True if both commands worked or False if one failed.
+        - success is True if both commands worked or False if any failed.
         - message is a string with a summary of what happened.  This is used
           for user interface responses to sending this command.
         - entry is either the db.ModemEntry or db.DeviceEntry that was
@@ -323,57 +323,35 @@ class Modem:
     def db_delete(self, addr, group, two_way=True, on_done=None):
         """TODO: doc
         """
-
-        """
         # Find all the entries that are going to be deleted.
         entries = self.db.find_all(addr, group)
-        for entry in entries:
-            self.db.delete_on_device(
-
-    def _db_delete_remote(self, remote, on_done, success, entry, msg):
-        # If the command failed, just call the input callback.
-        if not success:
+        if not entries:
+            LOG.error("No entries matching %s grp %s", add, group)
             if on_done:
-                on_done(success, msg, entry)
+                on_done(Fail, "Invalid entry to delete from modem")
             return
 
-        # Send the command to the device.  Two way is false here since
-        # we just added the other link.
-        two_way = False
-        if entry.is_controller:
-            remote.db_del_resp_of(self.addr, entry.group, entry.data, two_way,
-                                  on_done)
-        else:
-            remote.db_del_ctrl_of(self.addr, entry.group, entry.data, two_way,
-                                  on_done)
-        """
-        pass
+        # Find the remote device.  If don't have an entry for this
+        # device, we can't sent it commands
+        remote = self.find(addr)
+        if two_way and not remote:
+            lbl = "CTRL" if is_controller else "RESP"
+            LOG.info("Modem db del %s can't find remote device %s.  "
+                     "Link will be only one direction", lbl, addr)
 
+        # For two way commands, insert a callback so that when the
+        # modem command finishes, it will send the next command to the
+        # device.  When that finishes, it will run the input callback.
+        use_cb = on_done
+        if two_way and remote:
+            use_cb = functools.partial(self._db_update_remote, remote, on_done,
+                                       False)
 
-        """
-        for i, entry in enumerate(entries):
-            cb = None
-            if i == len(entries)-1:
-                cb = on_done
-
-            self._db_delete_entry(entry, two_way, on_done=cb):
-
-
-        # TODO: callback system
-        on_complete = None
-        if two_way:
-            def on_complete(success, entry):
-                remote = self.get_remote(entry.addr, force)
-                if not remote:
-                    return
-                elif entry.is_controller:
-                    remote.del_resp_of(self.addr, group, two_way=False)
-                else:
-                    remote.del_ctrl_of(self.addr, group, two_way=False)
-
-        # TODO: pass callback - or something to handle two-way
-        self.db.delete_on_device(self.protocol, addr, group, force, two_way)
-        """
+        # Run the delete command once for each entry.
+        # TODO: how to mark command as done? - need to know how many
+        # calls are gong to be attempted.
+        for entry in entries:
+            self.db.delete_on_device(protocol, addr, group, use_cb)
 
     #-----------------------------------------------------------------------
     def factory_reset(self):
@@ -549,7 +527,8 @@ class Modem:
         # device.  When that finishes, it will run the input callback.
         use_cb = on_done
         if two_way and remote:
-            use_cb = functools.partial(self._db_update_remote, remote, on_done)
+            use_cb = functools.partial(self._db_update_remote, remote, on_done,
+                                       True)
 
         # Create a new database entry for the modem and send it to the
         # modem for updating.
@@ -557,7 +536,7 @@ class Modem:
         self.db.add_on_device(self.protocol, entry, use_cb)
 
     #-----------------------------------------------------------------------
-    def _db_update_remote(self, remote, on_done, success, msg, entry):
+    def _db_update_remote(self, remote, on_done, is_add, success, msg, entry):
         """Modem device update complete callback.
 
         This is called when the modem finishes updating the database.
@@ -565,20 +544,30 @@ class Modem:
         establish the two way link.  This only occurs if the first
         command works.
         """
-        # If the command failed, just call the input callback.
+        # Update failed - call the user callback and return
         if not success:
             if on_done:
-                on_done(success, msg, entry)
+                on_done(False, msg, entry)
             return
 
         # Send the command to the device.  Two way is false here since
         # we just added the other link.
         two_way = False
-        if entry.is_controller:
-            remote.db_add_resp_of(self.addr, entry.group, entry.data, two_way,
-                                  on_done)
+        if is_add:
+            if entry.is_controller:
+                remote.db_add_resp_of(self.addr, entry.group, entry.data,
+                                      two_way, on_done)
+            else:
+                remote.db_add_ctrl_of(self.addr, entry.group, entry.data,
+                                      two_way, on_done)
+
+        # Delete command
         else:
-            remote.db_add_ctrl_of(self.addr, entry.group, entry.data, two_way,
-                                  on_done)
+            if entry.is_controller:
+                remote.db_del_resp_of(self.addr, entry.group, entry.data,
+                                      two_way, on_done)
+            else:
+                remote.db_del_ctrl_of(self.addr, entry.group, entry.data,
+                                      two_way, on_done)
 
     #-----------------------------------------------------------------------

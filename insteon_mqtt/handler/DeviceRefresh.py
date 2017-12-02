@@ -115,7 +115,7 @@ class DeviceRefresh(Base):
 
                 # When the update message below ends, update the db
                 # delta w/ the current value and save the database.
-                def on_done(success):
+                def on_done(success, msg):
                     if success:
                         LOG.info("%s database download complete\n%s",
                                  self.addr, self.device.db)

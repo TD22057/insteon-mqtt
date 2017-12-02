@@ -24,18 +24,18 @@ class DeviceDbGet(Base):
     constructor which is usually a method on the device to update it's
     database.
     """
-    def __init__(self, device_db, callback):
+    def __init__(self, device_db, on_done):
         """Constructor
 
         Args
           addr:    (Address) The address of the device we're expecting
+        TODO
           callback: Callback function to pass database messages to or None
                     to indicate the end of the entries.
         """
-        super().__init__()
+        super().__init__(on_done=on_done)
 
         self.db = device_db
-        self.callback = callback
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
@@ -78,6 +78,7 @@ class DeviceDbGet(Base):
 
             elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
                 LOG.error("%s device NAK error: %s", msg.from_addr, msg)
+                self.on_done(False, "Database command NAK")
                 return Msg.FINISHED
 
             else:
@@ -100,7 +101,7 @@ class DeviceDbGet(Base):
             # Note that if the entry is a null entry (all zeros), then
             # is_last_rec will be True as well.
             if entry.db_flags.is_last_rec:
-                self.callback(success=True)
+                self.on_done(True, "Database received")
                 return Msg.FINISHED
 
             # Otherwise keep processing records as they arrive.
