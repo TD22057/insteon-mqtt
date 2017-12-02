@@ -326,18 +326,17 @@ class Modem:
         # Find all the entries that are going to be deleted.
         entries = self.db.find_all(addr, group)
         if not entries:
-            LOG.error("No entries matching %s grp %s", add, group)
+            LOG.error("No entries matching %s grp %s", addr, group)
             if on_done:
-                on_done(Fail, "Invalid entry to delete from modem")
+                on_done(False, "Invalid entry to delete from modem")
             return
 
         # Find the remote device.  If don't have an entry for this
         # device, we can't sent it commands
         remote = self.find(addr)
         if two_way and not remote:
-            lbl = "CTRL" if is_controller else "RESP"
-            LOG.info("Modem db del %s can't find remote device %s.  "
-                     "Link will be only one direction", lbl, addr)
+            LOG.info("Modem db delete can't find remote device %s.  "
+                     "Delete will be only one direction", addr)
 
         # For two way commands, insert a callback so that when the
         # modem command finishes, it will send the next command to the
@@ -350,8 +349,8 @@ class Modem:
         # Run the delete command once for each entry.
         # TODO: how to mark command as done? - need to know how many
         # calls are gong to be attempted.
-        for entry in entries:
-            self.db.delete_on_device(protocol, addr, group, use_cb)
+        for entry in entries:  # pylint: disable=unused-variable
+            self.db.delete_on_device(self.protocol, addr, group, use_cb)
 
     #-----------------------------------------------------------------------
     def factory_reset(self):

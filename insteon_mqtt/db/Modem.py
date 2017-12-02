@@ -171,7 +171,7 @@ class Modem:
         # The modem will delete the first entry that matches.
         entries = self.find_all(addr, group)
         if not entries:
-            LOG.error("No entries matching %s grp %s", add, group)
+            LOG.error("No entries matching %s grp %s", addr, group)
             if on_done:
                 on_done(False, "Invalid entry to delete from modem", None)
             return

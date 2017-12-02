@@ -3,8 +3,8 @@
 # Network link to an MQTT client class
 #
 #===========================================================================
-from .. import log
 import paho.mqtt.client as paho
+from .. import log
 from ..Signal import Signal
 from .Link import Link
 

@@ -107,6 +107,19 @@ class Base:
         LOG.debug("%s", self.db)
 
     #-----------------------------------------------------------------------
+    def pair(self):
+        """Pair the device with the modem.
+
+        This only needs to be called one time.  It will set the device
+        as a controller and the modem as a responder for all of the
+        groups that the device can alert on.
+
+        The default implementation does nothing - subclasses should
+        re-implement this to do proper pairing.
+        """
+        LOG.error("Device %s doesn't support pairing", self.addr)
+
+    #-----------------------------------------------------------------------
     def refresh(self):
         """Refresh the current device state and database if needed.
 

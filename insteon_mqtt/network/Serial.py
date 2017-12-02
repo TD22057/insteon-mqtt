@@ -3,9 +3,9 @@
 # Network link to a Serial device class
 #
 #===========================================================================
-from .. import log
 import os
 import serial
+from .. import log
 from ..Signal import Signal
 from .Link import Link
 

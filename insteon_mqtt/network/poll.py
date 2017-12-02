@@ -4,9 +4,9 @@
 #
 #===========================================================================
 import errno
-from .. import log
 import select
 import time
+from .. import log
 
 LOG = log.get_logger(__name__)
 

@@ -3,7 +3,6 @@
 # Modem database modification (add/del) handler.
 #
 #===========================================================================
-import functools
 from .. import log
 from .. import message as Msg
 from .Base import Base
@@ -64,7 +63,7 @@ class ModemDbModify(Base):
         self.next.append((msg, entry))
 
     #-----------------------------------------------------------------------
-    def on_done(self, success, msg):
+    def on_done(self, success, msg):  # pylint: disable=method-hidden
         """TODO doc
         """
         if self._on_done:

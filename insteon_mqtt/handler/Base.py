@@ -5,6 +5,7 @@
 #===========================================================================
 import time
 
+
 class Base:
     """Protocol message handler API.
 
@@ -24,7 +25,7 @@ class Base:
 
         # TODO: dummy callback
         if not on_done:
-            self.on_done = lambda *x : x
+            self.on_done = lambda *x: x
 
     #-----------------------------------------------------------------------
     def update_expire_time(self):

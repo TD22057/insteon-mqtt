@@ -38,7 +38,7 @@ class DeviceDbModify(Base):
         if on_done:
             cb = functools.partial(on_done, entry=entry)
         else:
-            cb = lambda *x: x
+            cb = lambda *x: x  # noqa
         super().__init__(on_done=cb)
 
         self.db = db

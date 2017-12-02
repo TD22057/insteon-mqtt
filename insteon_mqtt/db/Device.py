@@ -166,8 +166,8 @@ class Device:
                                 on_done)
         else:
             LOG.info("Device %s busy - waiting to add to db")
-            func = functools.partial(self._add_on_device, protocol, addr, group,
-                                     data, is_controller, on_done)
+            func = functools.partial(self._add_on_device, protocol, addr,
+                                     group, data, is_controller, on_done)
             self._pending.append(func)
 
     #-----------------------------------------------------------------------
