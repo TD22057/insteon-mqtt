@@ -3,12 +3,12 @@
 # Network link to an MQTT client class
 #
 #===========================================================================
-import logging
+from .. import log
 import paho.mqtt.client as paho
 from ..Signal import Signal
 from .Link import Link
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger(__name__)
 
 
 class Mqtt(Link):

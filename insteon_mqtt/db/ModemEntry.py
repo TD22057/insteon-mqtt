@@ -3,10 +3,10 @@
 # Insteon PLM modem all link database entry
 #
 #===========================================================================
-import logging
 from ..Address import Address
+from .. import log
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 class ModemEntry:

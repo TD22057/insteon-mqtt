@@ -14,6 +14,7 @@ For docs, see: https://www.github.com/TD22057/insteon-mqtt
 
 from . import db
 from . import device
+from . import log
 from . import message
 from . import network
 from . import util

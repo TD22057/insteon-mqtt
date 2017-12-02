@@ -5,16 +5,16 @@
 #===========================================================================
 import functools
 import json
-import logging
 import os
-from . import db
-from . import config
 from .Address import Address
+from . import config
+from . import db
 from . import handler
+from . import log
 from . import message as Msg
 from .Signal import Signal
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 class Modem:

@@ -3,10 +3,10 @@
 # Insteon Protocol class.  Parses PLM data and writes messages.
 #
 #===========================================================================
-import logging
+from . import log
 from . import message as Msg
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 class Protocol:

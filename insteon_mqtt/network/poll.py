@@ -4,11 +4,11 @@
 #
 #===========================================================================
 import errno
-import logging
+from .. import log
 import select
 import time
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger(__name__)
 
 
 class Manager:

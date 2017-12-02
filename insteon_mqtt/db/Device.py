@@ -6,14 +6,14 @@
 import functools
 import io
 import json
-import logging
 import os
 from ..Address import Address
 from .. import handler
-from .. import message as Msg
 from .DeviceEntry import DeviceEntry
+from .. import log
+from .. import message as Msg
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 class Device:

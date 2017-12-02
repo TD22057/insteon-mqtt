@@ -3,12 +3,12 @@
 # Modem get all link database handler.
 #
 #===========================================================================
-import logging
 from .. import db
+from .. import log
 from .. import message as Msg
 from .Base import Base
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 class ModemDbGet(Base):

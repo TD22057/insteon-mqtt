@@ -3,11 +3,11 @@
 # Insteon battery powered motion sensor
 #
 #===========================================================================
-import logging
 from .Base import Base
+from .. import log
 from ..Signal import Signal
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 class Motion(Base):

@@ -3,13 +3,13 @@
 # SmokeBridge module
 #
 #===========================================================================
-import logging
 from .Base import Base
+from .. import log
 from .. import message as Msg
 from .. import handler
 from ..Signal import Signal
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 class SmokeBridge(Base):

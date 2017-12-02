@@ -3,10 +3,10 @@
 # Dimmer module
 #
 #===========================================================================
-import logging
+from .. import log
 from .Base import Base
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 class Remote(Base):

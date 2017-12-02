@@ -4,11 +4,11 @@
 #
 #===========================================================================
 import functools
-import logging
+from .. import log
 from .. import message as Msg
 from .Base import Base
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 class ModemDbModify(Base):

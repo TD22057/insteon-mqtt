@@ -3,12 +3,12 @@
 # Device refresh (ping) command handler.
 #
 #===========================================================================
-import logging
+from .. import log
 from .. import message as Msg
 from .Base import Base
 from .DeviceDbGet import DeviceDbGet
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 class DeviceRefresh(Base):

@@ -4,13 +4,13 @@
 # including wall switches, lamp modules, and some remotes.
 #
 #===========================================================================
-import logging
 from .Base import Base
 from .. import handler
+from .. import log
 from .. import message as Msg
 from ..Signal import Signal
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 class Dimmer(Base):

@@ -5,14 +5,14 @@
 #===========================================================================
 import functools
 import json
-import logging
 import os.path
 from ..Address import Address
 from .. import db
 from .. import handler
+from .. import log
 from .. import message as Msg
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 class Base:

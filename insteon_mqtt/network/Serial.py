@@ -3,13 +3,13 @@
 # Network link to a Serial device class
 #
 #===========================================================================
-import logging
+from .. import log
 import os
 import serial
 from ..Signal import Signal
 from .Link import Link
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger(__name__)
 
 
 class Serial(Link):

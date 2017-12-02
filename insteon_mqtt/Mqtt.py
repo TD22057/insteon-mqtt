@@ -4,10 +4,10 @@
 #
 #===========================================================================
 import json
-import logging
 from . import device as Dev
+from . import log
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 class Mqtt:

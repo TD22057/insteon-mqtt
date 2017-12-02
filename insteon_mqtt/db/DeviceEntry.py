@@ -4,11 +4,11 @@
 #
 #===========================================================================
 import io
-import logging
 from ..Address import Address
+from .. import log
 from .. import message as Msg
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 #===========================================================================

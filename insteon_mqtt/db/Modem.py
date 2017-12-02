@@ -5,14 +5,14 @@
 #===========================================================================
 import io
 import json
-import logging
 import os
 from ..Address import Address
 from .. import handler
+from .. import log
 from .. import message as Msg
 from .ModemEntry import ModemEntry
 
-LOG = logging.getLogger(__name__)
+LOG = log.get_logger()
 
 
 class Modem:
