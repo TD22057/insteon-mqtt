@@ -32,7 +32,7 @@ class Base:
        refresh:  No arguments.  Ping the device and see if the database is
                  current.  Reloads the modem database if needed.
     """
-    def __init__(self, protocol, modem, address, name):
+    def __init__(self, protocol, modem, address, name=None):
         """Constructor
 
         Args:

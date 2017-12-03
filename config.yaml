@@ -1,92 +1,259 @@
-#pprint.pprint( yaml.load(open("config.yaml").read()))
+#==========================================================================
+#
+# Insteon <-> MQTT bridge configuration file.
+#
+#==========================================================================
 
-#----------------------------------------------------------------
-mqtt:
-  broker: 127.0.0.1
-  port: 1883
-  username:
-  password:
-
-  # Outbound messages:
-  qos: 1
-  retain: 0
-
-  # Topic: {state_topic}/ADDRESS
-  # Payload: { values }
-  state_topic: "insteon/state"
-
-  # Inbound messages:
-
-  # Topic: {set_topic}/ADDRESS
-  # Payload: { json_values }
-  set_topic: "insteon/set"
-
-  # Topic: {cmd_topic}
-  # Payload:
-  #    reload: reload config file
-  #    dbinit: clear and reload all insteon device databases
-  #    repair ADDRESS: clear and re-initialize links to the model for
-  #                    the device at ADDRESS.
-  cmd_topic: "insteon/cmd"
-
-  # TODO: payload templates?
-
-#----------------------------------------------------------------
-# One or the other of these:
+#==========================================================================
+#
+# Insteon configuration
+#
+#==========================================================================
 insteon:
+  # Serial device:
   # USB PLM modem
   port: "/dev/insteon"
   #baudrate: 19200
 
+  # Network socket:
   # Insteon HUB PLM network
   #port: "socket://192.168.1.5:9761"
 
-  # Modem address
+  # Modem Insteon address
   address: 44.85.11
+
+  # Database file location
   #storage: "/var/lib/insteon-mqtt"
   storage: "."
 
   # Automatically refresh device states and databases (if needed) at
-  # startup.
+  # startup.  This may be slow depending on the number of devices.
   startup_refresh: False
 
-  #----------------------------------------------------------------
+  #------------------------------------------------------------------------
+  # Devices require the Insteon hex address and an optional name.
   devices:
-    - on_off:
-        name: "lamp"
-        address: 37.2d.35
+    # On/off switch devices (outlets, wall switches, appliance modules, etc).
+    - switch:
+        - 37.2d.35: "lamp1"
 
+    # Dimming devices (outlets, wall switches, lamp modules, etc).
+    - dimmer:
+        - 3a.29.84: "lamp2"
+        - 48.3d.46: "sw1"
+        - 48.b0.ad: "sw2"
+
+    # Battery powered motion sensors.
     - motion:
-        name: "motion"
-        address: 21.d6.d9
+        - 21.d6.d9: "front door"
 
-    - dimmer:
-        name: "lamp2"
-        address: 3a.29.84
-
-    - dimmer:
-        name: "sw1"
-        address: 48.3d.46
-
-    - dimmer:
-        name: "sw2"
-        address: 48.b0.ad
-
-    - smoke_bridge:
-        address: 44.a3.79
+    # Battery powered mini remotes
+    - mini_remote4:
 
     - mini_remote8:
-        name: "remote_01"
-        address: 3f.07.d4
+        - 3f.07.d4: "remote1"
 
-  #----------------------------------------------------------------
-  scenes:
-    - scene_01:
-        id: 01
-        devices:
-          - a2.b3.c4: 50
-          - hallway: 100
+    # Smoke bridge module
+    - smoke_bridge:
+        - 44.a3.79: "smoke alarm"
 
-#----------------------------------------------------------------
+  #------------------------------------------------------------------------
+  # FUTURE: Insteon scene definitions.
+  #scenes:
+  #  - scene_01:
+
+
+#==========================================================================
+#
+# MQTT configuration
+#
+#==========================================================================
+mqtt:
+  broker: 127.0.0.1
+  port: 1883
+  # Optional broker login
+  #username:
+  #password:
+
+  # Outbound messages configuration.  Retain should generally be one
+  # so that the current state is available when someone subscribes.
+  qos: 1
+  retain: 0
+
+  # Input commands topic to allow changes to a device.  See the device
+  # documentation for details.  NOTE: This is usually not needed for
+  # home automation - it's used by the command line tool to modify the
+  # Insteon devices, network, and scenes.  The address or name of the
+  # device will follow the command topic (insteon/command/AA.BB.CC) to
+  # send these low level commands.
+  cmd_topic: 'insteon/command'
+
+  #------------------------------------------------------------------------
+  # On/off switches
+  #------------------------------------------------------------------------
+
+  # On/Off switch.  Non-dimming lamp modules and wall switches.
+  # In Home Assistant use MQTT switch with a configuration like:
+  #   switch:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/AA.BB.CC/state'
+  #       command_topic: 'insteon/AA.BB.CC/set'
+  switch:
+    # Output state change topic and template.  This message is sent
+    # whenever the device state changes for any reason.  Available
+    # variables for templating are:
+    #   address = 'AA.BB.CC'
+    #   name = 'nice name'
+    #   on = 0/1
+    #   on_str = 'off', 'on'
+    state_topic: 'insteon/{{address}}/state'
+    state_template: '{{on_str.upper()}}'
+
+    # Input on/off command.  Similar functionality to the cmd_topic
+    # but only for turning the device on and off.  The output of
+    # passing the payload through the template must match one of th
+    # following:
+    #   CMD
+    #   { "cmd" : CMD, ["instant" : 0/1] }
+    # where:
+    #   CMD = on, off, 0, 1
+    on_off_topic: 'insteon/{{address}}/set'
+    on_off_template:
+
+    # Input commands topic to allow changes to the device.  See above
+    # for details.
+    #   CMD = on, off, refresh, pair, get_db, add_ctrl, add_resp,
+    #         del_ctrl, del_resp
+    #cmd_topic: 'insteon/{{address}}/cmd'
+    #cmd_template:
+
+  #------------------------------------------------------------------------
+  # Dimmers
+  #------------------------------------------------------------------------
+
+  # Dimmer switch.  Dimming lamp modules and wall switches.
+  # In Home Assistant use MQTT JSON light with a configuration like:
+  #   light:
+  #     - platform: mqtt_json
+  #       state_topic: 'insteon/AA.BB.CC/state'
+  #       command_topic: 'insteon/AA.BB.CC/level'
+  #       brightness: true
+  dimmer:
+    # Output state change topic and template.  This message is sent
+    # whenever the device state changes for any reason.  Available
+    # variables for templating are:
+    #   address = 'AA.BB.CC'
+    #   name = 'nice name'
+    #   on = 0/1
+    #   on_str = 'off', 'on'
+    #   level_255 = 0-255
+    #   level_100 = 0-100
+    state_topic: 'insteon/{{address}}/state'
+    state_template: '{ "state" : "{{on_str}}", "brightness" : {{level_255}} }'
+
+    # Input on/off command.  Similar functionality to the cmd_topic
+    # but only for turning the device on and off.  The output of
+    # passing the payload through the template must match one of th
+    # following:
+    #   CMD
+    #   { "cmd" : CMD", ["instant" : 0/1] }
+    # where:
+    #   CMD = on, off, 0, 1
+    on_off_topic: 'insteon/{{address}}/set'
+    on_off_template:
+
+    # Dimming on/off command.  Similar functionality to the cmd_topic
+    # but only for turning the device on and off and setting the
+    # level.  The output of passing the payload through the template
+    # must match one of th following:
+    #   on/off
+    #   { "cmd" : CMD, "level" : LEVEL, ["instant" : 0/1] }
+    # where:
+    #   CMD = on, off, set
+    #   LEVEL = 0->255 dimmer level
+    level_topic: "insteon/{{address}}/level"
+    level_template: '{ "cmd" : {{json.state}}, "level" : {{json.brightness}}'
+
+    # Input commands topic to allow changes to the device.  See above
+    # for details.
+    #   CMD = on, off, refresh, pair, get_db, add_ctrl, add_resp,
+    #         del_ctrl, del_resp
+    #cmd_topic: 'insteon/{{address}}/cmd'
+    #cmd_template:
+
+  #------------------------------------------------------------------------
+  # Motion sensors
+  #------------------------------------------------------------------------
+
+  # In Home Assistant use MQTT binary sensor with a configuration like:
+  #   binary-sensor:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/AA.BB.CC/state'
+  #       device_class: 'motion'
+  motion:
+    # Output state change topic and template.  This message is sent
+    # whenever the device state changes for any reason.  Available
+    # variables for templating are:
+    #   address = 'AA.BB.CC'
+    #   name = 'nice name'
+    #   on = 0/1
+    #   on_str = 'off', 'on'
+    state_topic: 'insteon/{{address}}/state'
+    state_template: '{{on_str.upper()}}'
+
+    # Output dawn/duskc change topic and template.  This message is sent
+    # whenever the device light sensor detects dawn or dusk changes.
+    # Available variables for templating are:
+    #   address = 'AA.BB.CC'
+    #   name = 'nice name'
+    #   is_dawn = 0/1
+    #   is_dusk = 0/1
+    #   state = 'dawn', 'dusk'
+    dawn_dusk_topic: 'insteon/{{address}}/dawn'
+    dawn_dusk_template: '{{is_dawn}}'
+
+    # Input commands topic to allow changes to the device.  See above
+    # for details.
+    #   CMD = refresh, pair, get_db, add_ctrl, add_resp, del_ctrl, del_resp
+    #cmd_topic: 'insteon/{{address}}/cmd'
+    #cmd_template:
+
+  #------------------------------------------------------------------------
+  # Smoke Bridge
+  #------------------------------------------------------------------------
+
+  # In Home Assistant use MQTT binary sensor with a configuration like:
+  #   binary-sensor:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/AA.BB.CC/smoke'
+  #       device_class: 'smoke'
+  #     - platform: mqtt
+  #       state_topic: 'insteon/AA.BB.CC/battery'
+  #       device_class: 'battery'
+  #     - platform: mqtt
+  #       state_topic: 'insteon/AA.BB.CC/co'
+  #       device_class: 'gas'
+  smoke_bridge:
+    # Output state change topic and template.  This message is sent
+    # whenever the device state changes for any reason.  Available
+    # variables for templating are:
+    #   address = 'AA.BB.CC'
+    #   name = 'nice name'
+    #   on = 0/1
+    #   on_str = 'off', 'on'
+    smoke_topic: 'insteon/{{address}}/smoke'
+    smoke_template: '{{on_str}}'
+
+    co_topic: 'insteon/{{address}}/co'
+    co_template: '{{on_str}}'
+
+    battery_topic: 'insteon/{{address}}/battery'
+    battery_template: '{{on_str}}'
+
+    # Input commands topic to allow changes to the device.  See above
+    # for details.
+    #   CMD = refresh, pair, get_db, add_ctrl, add_resp, del_ctrl, del_resp
+    #cmd_topic: 'insteon/{{address}}/cmd'
+    #cmd_template:
 
 #----------------------------------------------------------------

@@ -15,7 +15,7 @@ from . import device
 devices = {
     'dimmer' : device.Dimmer,
     'motion' : device.Motion,
-    'on_off' : device.OnOff,
+    'switch' : device.Switch,
     'smoke_bridge' : device.SmokeBridge,
     'mini_remote4' : functools.partial(device.Remote, num=4),
     'mini_remote8' : functools.partial(device.Remote, num=8),

@@ -18,7 +18,7 @@ loop.add(plm_link, connected=False)
 
 insteon = IM.Protocol(plm_link)
 modem = IM.Modem(insteon)
-mqtt = IM.Mqtt(mqtt_link, modem)
+mqtt = IM.mqtt.Mqtt(mqtt_link, modem)
 
 modem.load_config(config['insteon'])
 mqtt.load_config(config['mqtt'])

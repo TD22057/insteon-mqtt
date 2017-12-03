@@ -12,13 +12,13 @@ from ..Signal import Signal
 LOG = log.get_logger()
 
 
-class OnOff(Base):
-    """Insteon on/off device.
+class Switch(Base):
+    """Insteon on/off switch device.
 
     This includes any device that turns on and off like an appliance
     module or non-dimming lamp module.
 
-    The Signal OnOff.signal_active will be emitted whenever
+    The Signal Switch.signal_active will be emitted whenever
     the device level is changed with the calling sequence (device,
     on) where on is True for on and False for off.
 
@@ -26,7 +26,7 @@ class OnOff(Base):
 
         insteon:
           devices:
-            - on_off:
+            - switch:
               name: "Washing machine"
               address: 44.a3.79
 
@@ -90,13 +90,13 @@ class OnOff(Base):
         on the modem, then set on the device) so we can update it's
         database.
         """
-        LOG.info("OnOff %s pairing", self.addr)
+        LOG.info("Switch %s pairing", self.addr)
 
         # Search our db to see if we have controller links for group 1
         # back to the modem.  If one doesn't exist, add it on our
         # device and the modem.
         if not self.db.find(self.modem.addr, 1, True):
-            LOG.info("OnOff adding ctrl for group 1")
+            LOG.info("Switch adding ctrl for group 1")
             self.db_add_ctrl_of(self.modem.addr, 1)
 
     #-----------------------------------------------------------------------
@@ -117,7 +117,7 @@ class OnOff(Base):
           instant:  (bool) False for a normal ramping change, True for an
                     instant change.
         """
-        LOG.info("OnOff %s cmd: on", self.addr)
+        LOG.info("Switch %s cmd: on", self.addr)
 
         # Send an on or instant on command.
         cmd1 = 0x11 if not instant else 0x21
@@ -142,7 +142,7 @@ class OnOff(Base):
           instant:  (bool) False for a normal ramping change, True for an
                     instant change.
         """
-        LOG.info("OnOff %s cmd: off", self.addr)
+        LOG.info("Switch %s cmd: off", self.addr)
 
         # Send an off or instant off command.  Instant off is the same
         # command as instant on, just with the level set to 0x00.
@@ -191,17 +191,17 @@ class OnOff(Base):
         """
         # ACK of the broadcast - ignore this.
         if msg.cmd1 == 0x06:
-            LOG.info("OnOff %s broadcast ACK grp: %s", self.addr, msg.group)
+            LOG.info("Switch %s broadcast ACK grp: %s", self.addr, msg.group)
             return
 
         # On command.  0x11: on, 0x12: on fast
-        elif msg.cmd1 in OnOff.on_codes:
-            LOG.info("OnOff %s broadcast ON grp: %s", self.addr, msg.group)
+        elif msg.cmd1 in Switch.on_codes:
+            LOG.info("Switch %s broadcast ON grp: %s", self.addr, msg.group)
             self._set_is_on(True)
 
         # Off command. 0x13: off, 0x14: off fast
-        elif msg.cmd1 in OnOff.off_codes:
-            LOG.info("OnOff %s broadcast OFF grp: %s", self.addr, msg.group)
+        elif msg.cmd1 in Switch.off_codes:
+            LOG.info("Switch %s broadcast OFF grp: %s", self.addr, msg.group)
             self._set_is_on(False)
 
         # This will find all the devices we're the controller of for
@@ -221,7 +221,7 @@ class OnOff(Base):
           msg:  (message.InpStandard) The refresh message reply.  The current
                 device state is in the msg.cmd2 field.
         """
-        LOG.debug("OnOff %s refresh message: %s", self.addr, msg)
+        LOG.debug("Switch %s refresh message: %s", self.addr, msg)
 
         # Current on/off level is stored in cmd2 so update our level
         # to match.
@@ -243,11 +243,11 @@ class OnOff(Base):
         # If this it the ACK we're expecting, update the internal
         # state and emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("OnOff %s ACK: %s", self.addr, msg)
+            LOG.debug("Switch %s ACK: %s", self.addr, msg)
             self._set_is_on(msg.cmd2 > 0x00)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("OnOff %s NAK error: %s", self.addr, msg)
+            LOG.error("Switch %s NAK error: %s", self.addr, msg)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
@@ -267,20 +267,20 @@ class OnOff(Base):
         # shouldn't ever occur.
         entry = self.db.find(addr, msg.group, is_controller=False)
         if not entry:
-            LOG.error("OnOff %s has no group %s entry from %s", self.addr,
+            LOG.error("Switch %s has no group %s entry from %s", self.addr,
                       msg.group, addr)
             return
 
         # 0x11: on, 0x12: on fast
-        if msg.cmd1 in OnOff.on_codes:
+        if msg.cmd1 in Switch.on_codes:
             self._set_is_on(True)
 
         # 0x13: off, 0x14: off fast
-        elif msg.cmd1 in OnOff.off_codes:
+        elif msg.cmd1 in Switch.off_codes:
             self._set_is_on(False)
 
         else:
-            LOG.warning("OnOff %s unknown group cmd %#04x", self.addr,
+            LOG.warning("Switch %s unknown group cmd %#04x", self.addr,
                         msg.cmd1)
 
     #-----------------------------------------------------------------------

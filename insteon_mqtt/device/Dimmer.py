@@ -54,7 +54,7 @@ class Dimmer(Base):
     on_codes = [0x11, 0x12, 0x21, 0x23]  # on, fast on, instant on, manual on
     off_codes = [0x13, 0x14, 0x22]  # off, fast off, instant off
 
-    def __init__(self, protocol, modem, address, name):
+    def __init__(self, protocol, modem, address, name=None):
         """Constructor
 
         Args:
@@ -286,7 +286,7 @@ class Dimmer(Base):
             self._set_level(msg.cmd2)
 
         elif msg.flags.Dimmer == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("OnOff %s NAK error: %s", self.addr, msg)
+            LOG.error("Dimmer %s NAK error: %s", self.addr, msg)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

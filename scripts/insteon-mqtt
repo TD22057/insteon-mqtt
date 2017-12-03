@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+
+import insteon_mqtt
+insteon_mqtt.cmd_line.main()
