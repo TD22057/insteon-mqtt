@@ -12,7 +12,7 @@ For docs, see: https://www.github.com/TD22057/insteon-mqtt
 
 #===========================================================================
 
-from . import cmd_line
+#from . import cmd_line
 from . import db
 from . import device
 from . import log

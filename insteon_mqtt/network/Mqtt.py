@@ -107,15 +107,21 @@ class Mqtt(Link):
                   retain)
 
     #-----------------------------------------------------------------------
-    def subscribe(self, topic, qos=0):
+    def subscribe(self, topic, qos=0, callback=None):
         """Subscribe the client to a topic.
 
         Args:
           topic:   (str) The topic to subscribe to.
+          qos:
+          callback:  TODO
         """
         # Tell the client about it and then notify the manager that we
         # have messages to send.
         self.client.subscribe(topic, qos)
+
+        if callback:
+            self.client.message_callback_add(topic, callback)
+
         self.signal_needs_write.emit(self, True)
 
         LOG.debug("MQTT subscribe %s qos=%s", topic, qos)

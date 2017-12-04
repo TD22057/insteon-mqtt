@@ -65,8 +65,6 @@ class Switch(Base):
 
         self._is_on = False
 
-        # TODO: Not sure we should do this?
-        #self.signal_level_changed = Signal()  # (Device, level)
         # Support on/off style signals.
         self.signal_active = Signal()  # (Device, bool)
 
@@ -118,6 +116,9 @@ class Switch(Base):
                     instant change.
         """
         LOG.info("Switch %s cmd: on", self.addr)
+        if self._is_on:
+            LOG.info("Device %s '%s' is already on", self.addr, self.name)
+            return
 
         # Send an on or instant on command.
         cmd1 = 0x11 if not instant else 0x21
@@ -143,6 +144,9 @@ class Switch(Base):
                     instant change.
         """
         LOG.info("Switch %s cmd: off", self.addr)
+        if not self._is_on:
+            LOG.info("Device %s '%s' is already off", self.addr, self.name)
+            return
 
         # Send an off or instant off command.  Instant off is the same
         # command as instant on, just with the level set to 0x00.
@@ -296,8 +300,7 @@ class Switch(Base):
         LOG.info("Setting device %s '%s' on %s", self.addr, self.name, is_on)
         self._is_on = bool(is_on)
 
-        # TODO: should we support this?
-        #self.signal_level_changed.emit(self, 0xff if is_on else 0x00)
+        # Notify others that the switch state has changed.
         self.signal_active.emit(self, self._is_on)
 
     #-----------------------------------------------------------------------

@@ -4,8 +4,9 @@
 #
 #===========================================================================
 import json
-from . import device as Dev
-from . import log
+from .. import log
+from . import config
+from . import util
 
 LOG = log.get_logger()
 
@@ -87,15 +88,30 @@ class Mqtt:
         self.link.signal_connected.connect(self._connected)
         self.link.signal_message.connect(self._message)
 
-        self._cmd_topic = None
-        self._set_topic = None
-        self._state_topic = None
-        self._qos = 1
-        self._retain = True
+        # Map of Address ID to MQTT device.
+        self.devices = {}
 
         self.cmds = {
             'reload_all' : self.modem.reload_all,
             }
+
+        self._cmd_topic = None
+        self._qos = 1
+        self._retain = True
+        self._config = None
+
+    #-----------------------------------------------------------------------
+    def clear_config(self):
+        """TODO: doc
+        """
+        self._config = None
+
+        # Unsubscribe from previous topics.  This also unsubscribes
+        # any devices.
+        if self.link.connected:
+            self._unsubscribe()
+
+        self.devices.clear()
 
     #-----------------------------------------------------------------------
     def load_config(self, config):
@@ -125,15 +141,13 @@ class Mqtt:
         # Pass connection data to the MQTT link.
         self.link.load_config(config)
 
-        # Unsubscribe from previous topics if needed.
-        if self._cmd_topic and self.link.connected:
-            self._unsubscribe()
-
-        self._cmd_topic = self._clean_topic(config['cmd_topic'])
-        self._set_topic = self._clean_topic(config['set_topic'])
-        self._state_topic = self._clean_topic(config['state_topic'])
+        self._cmd_topic = util.clean_topic(config['cmd_topic'])
         self._qos = config.get('qos', 1)
         self._retain = config.get('retain', True)
+
+        # Save the config for later passing to devices when they are
+        # created.
+        self._config = config
 
         # Subscribe to the new topics.
         if self.link.connected:
@@ -188,24 +202,22 @@ class Mqtt:
           modem:   (Modem) The Insteon modem device.
           device:  (device.Base) The Insteon device that was added.
         """
-        # TODO: what's the best way to handle this?  Don't want MQTT
-        # specific stuff in the insteon devices but it would be nice
-        # not to code up special cases for each here either.
+        mqtt_cls = config.find(device)
+        if not mqtt_cls:
+            LOG.error("Coding error - can't find MQTT device class for Insteon "
+                      "device %s: %s", device.__class__, device)
+            return
 
-        # On/off devices.
-        if hasattr(device, "signal_active"):
-            device.signal_active.connect(self._active)
+        # Create the MQTT device class.  This will also link signals
+        # from the Insteon device to the MQTT device.
+        obj = mqtt_cls(self, device, config)
 
-        # Dimmer devices.
-        elif hasattr(device, "signal_level_changed"):
-            LOG.info("MQTT adding level changed device %s '%s'", device.addr,
-                     device.name)
+        # Set the configuration input data for this device type.
+        if self._config:
+            obj.load_config(self._config)
 
-            device.signal_level_changed.connect(self._level_changed)
-
-        # Smoke bridge special case.
-        elif isinstance(device, Dev.SmokeBridge):
-            device.signal_state_change.connect(self._smoke_bridge)
+        # Save the MQTT device so we can find it again.
+        self.devices[device.addr.id] = obj
 
     #-----------------------------------------------------------------------
     def _level_changed(self, device, level):
@@ -223,25 +235,6 @@ class Mqtt:
 
         topic = "%s/%s" % (self._state_topic, device.addr.hex)
         payload = json.dumps({'level' : level})
-        self.publish(topic, payload, retain=self._retain)
-
-    #-----------------------------------------------------------------------
-    def _active(self, device, is_active):
-        """Device active on/off callback.
-
-        This is triggered via signal when the Insteon device goes
-        active or inactive.  It will publish an MQTT message with the
-        new state.
-
-        Args:
-          device:   (device.Base) The Insteon device that changed.
-          is_active (bool) True for on, False for off.
-        """
-        LOG.info("MQTT received active change %s '%s' = %s",
-                 device.addr, device.name, is_active)
-
-        topic = "%s/%s" % (self._state_topic, device.addr.hex)
-        payload = 'ON' if is_active else 'OFF'
         self.publish(topic, payload, retain=self._retain)
 
     #-----------------------------------------------------------------------
@@ -357,8 +350,8 @@ class Mqtt:
         if self._cmd_topic:
             self.link.subscribe(self._cmd_topic + "/#", qos=self._qos)
 
-        if self._set_topic:
-            self.link.subscribe(self._set_topic + "/#", qos=self._qos)
+        for device in self.devices.values():
+            device.subscribe(self.link, qos=self._qos)
 
     #-----------------------------------------------------------------------
     def _unsubscribe(self,):
@@ -367,26 +360,7 @@ class Mqtt:
         if self._cmd_topic:
             self.link.unsubscribe(self._cmd_topic + "/#")
 
-        if self._set_topic:
-            self.link.unsubscribe(self._set_topic + "/#")
-
-    #-----------------------------------------------------------------------
-    def _clean_topic(self, topic):
-        """Clean up input topics
-
-        This removes any trailing '/' characters and strips whitespace
-        from the ends.
-
-        Arg:
-          topic:  (str) The input topic.
-
-        Returns:
-          (str) Returns the cleaned topic.
-
-        """
-        if topic.endswith("/"):
-            return topic[:-1].strip()
-
-        return topic.strip()
+        for device in self.devices.values():
+            device.unsubscribe()
 
     #-----------------------------------------------------------------------

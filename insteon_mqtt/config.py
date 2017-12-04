@@ -9,6 +9,7 @@ __doc__ = """Configuration file utilties
 
 #===========================================================================
 import functools
+import yaml
 from . import device
 
 # Configuration file input description to class map.
@@ -20,6 +21,24 @@ devices = {
     'mini_remote4' : functools.partial(device.Remote, num=4),
     'mini_remote8' : functools.partial(device.Remote, num=8),
     }
+
+
+
+#===========================================================================
+def load(path, mqtt, modem):
+    """TODO: doc
+    """
+    config = yaml.load(open("config.yaml").read())
+
+    # Clear any existing configurations first.
+    mqtt.clear_config()
+    modem.clear_config()
+
+    # We must load the MQTT config first - loading the insteon config
+    # triggers device creation and we need the various MQTT config's set
+    # before that.
+    mqtt.load_config(config['mqtt'])
+    modem.load_config(config['insteon'])
 
 
 #===========================================================================

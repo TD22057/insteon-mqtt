@@ -11,16 +11,15 @@ features and devices.
 
 ## Latest Update
 
-- 11/26/2017: Refactored all the message handlers to move as much code
-  as possible into the handlers - this keeps as much of the low level
-  message manipulation in the handlers and away from the device
-  classes.
+- 12/03/2017: Switch (on/off) is now working with Home Assistant!
 
-- 11/26/2017: First cut at bi-directional link manipulation.  Adding a
-  ctrl/resp link on device auto adds the opposite on the other device.
-  This greatly simplifies device set up and will allow device classes
-  to "register themselves" and configure all the correct links when
-  first seen or on discovery.  Still a lot of work left to do on this.
+- 12/03/2017: Refactored MQTT into separate MQTT device classes to match
+  Insteon class.
+
+- 12/03/2017: Started adding MQTT topic and payload templating support.
+  This is ONLY working for Switch right now.  The other devices are turned
+  off until I can refactor those as well.
+
 
 ## Current Status
 
@@ -45,11 +44,11 @@ Here's what works so far:
 - correctly handle commands arriving while db is being downloaded
 - modify the all link database on the PLM modem.
 - modify the all link database on each device
+- automatically link devices to the modem including all needed groups
+  (for complicated devices like the fanlinkc, smoke bridge, and thermostat)
 
 Things remaining to do for the initial release:
 
-- automatically link devices to the modem including all needed groups
-  (for complicated devices like the fanlinkc, smoke bridge, and thermostat)
 - command line tool for sending messages (short cut to MQTT publish)
   - include some kind of reply system (mqtt session ID) for getting results
     back from command
@@ -57,6 +56,7 @@ Things remaining to do for the initial release:
   - logging control
   - config file and db save file location control
 - basic user documentation (github markdown pages)
+- MQTT payload templates.
 
 
 Things for future versions:
@@ -69,7 +69,6 @@ Things for future versions:
 - pip packaging
 - device discovery by examining modem all link db and pinging devices.
   - needs some auto device/db creation system as well
-- MQTT payload templates.
 - yaml config validator  (voluptuous like HA?)
 - heal network command (remove all db records for missing devices)
 - remove device command (remove device from all db records)
@@ -102,8 +101,8 @@ and then clicking a dimmer on then off:
 
 ```
     > mosquitto_sub -v -t "insteon/state/#"
-    insteon/state/48.B0.AD {"level": 255}
-    insteon/state/48.B0.AD {"level": 0}
+    insteon/state/48.b0.ad {"level": 255}
+    insteon/state/48.b0.ad {"level": 0}
 ```
 
 

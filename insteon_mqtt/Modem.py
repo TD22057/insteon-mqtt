@@ -66,6 +66,14 @@ class Modem:
         self.protocol.add_handler(handler.ModemReset(self))
 
     #-----------------------------------------------------------------------
+    def clear_config(self):
+        """TODO: doc
+        """
+        self.devices.clear()
+        self.scenes.clear()
+        self.db.clear()
+
+    #-----------------------------------------------------------------------
     def load_config(self, data):
         """Load a configuration dictionary.
 
@@ -105,7 +113,7 @@ class Modem:
 
         # Read the device definitions and scenes.
         self.devices = self._load_devices(data.get('devices', []))
-        self.scenes = self._load_scenes(data.get('scenes', []))
+        #FUTURE: self.scenes = self._load_scenes(data.get('scenes', []))
 
         # Send refresh messages to each device to check if the
         # database is up to date.
@@ -440,50 +448,55 @@ class Modem:
     def _load_devices(self, data):
         """Load device definitions from a configuration data object.
 
-        The input data object is a list of dictionaries.  Keys are the
-        device type (see config.devices dict for valid entries).  The
-        value is a dictionary of constructor arguments to pass to the
-        device class.  This includes the insteon address of
-        the device and any other inputs the class needs.
+        The input is the insteon.devices configuration dictionary.
+        Keys are the device type.  Value is the list of devices.  See
+        config.yaml or the package documentation for an example.
 
-        [ {'on_off': {'address': 'a2.b3.c4', 'name': 'lamp'}},
-          {'dimmer': {'address': 'a2.b3.c4', 'name': 'hallway'}},
-          {'smoke_bridge': {'address': 'a2.b3.c4'}},
-          {'remote8': {'address': 'a2.b3.c4', 'name': 'remote_01'}},
-        ]
-
-        Args:
-          data:   Configuration data list.
+        Ar gs:
+          data:   Configuration devices dictionary.
 
         Returns:
           Returns a dictionary mapping Insteon addresses to device objects.
         """
         device_map = {}
-        for device_dict in data:
-            assert len(device_dict) == 1
-
-            # Get the first key from the device dictionary.
-            type = next(iter(device_dict))
-            args = device_dict[type]
+        for device_type in data:
+            # Use a default list so that if the config field is empty,
+            # the loop below will still work.
+            values = data[device_type]
+            if not values:
+                values = []
 
             # Look up the device type in the configuration data and
             # call the constructor to build the device object.
-            ctor = config.find(type)
-            device = ctor(**args, protocol=self.protocol, modem=self)
-            LOG.info("Created %s at %s '%s'", device.__class__.__name__,
-                     device.addr, device.name)
+            ctor = config.find(device_type)
 
-            # Load any existing all link database for this device if
-            # it exists.
-            if self.save_path:
-                device.save_path = self.save_path
-                device.load_db()
+            # Call the ctor for each device that was input.
+            for device_config in values:
+                # If it's a dict, it's got a nice name set.
+                if isinstance(device_config, dict):
+                    assert(len(device_config) == 1)
+                    addr, name = next(iter(device_config.items()))
 
-            # Store the device by ID in the map.
-            device_map[device.addr.id] = device
+                # Otherwise it's just the address
+                else:
+                    addr = device_config
+                    name = None
 
-            # Notify anyone else tha ta new device is available.
-            self.signal_new_device.emit(self, device)
+                # Create the device
+                device = ctor(self.protocol, self, addr, name)
+                LOG.info("Created %s at %s '%s'", device_type, addr, name)
+
+                # Load any existing all link database for this device if
+                # it exists.
+                if self.save_path:
+                    device.save_path = self.save_path
+                    device.load_db()
+
+                # Store the device by ID in the map.
+                device_map[device.addr.id] = device
+
+                # Notify anyone else tha ta new device is available.
+                self.signal_new_device.emit(self, device)
 
         return device_map
 

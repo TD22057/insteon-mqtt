@@ -107,7 +107,7 @@ class Address:
         self.bytes = bytes(self.ids)
 
         # And a nicely formatted hex string output.
-        self.hex = "%02X.%02X.%02X" % tuple(self.ids)
+        self.hex = ("%02X.%02X.%02X" % tuple(self.ids)).lower()
 
     #-----------------------------------------------------------------------
     def to_bytes(self):

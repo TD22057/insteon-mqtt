@@ -32,30 +32,32 @@ insteon:
 
   #------------------------------------------------------------------------
   # Devices require the Insteon hex address and an optional name.
+  # Note that MQTT address topics are always the lower case hex address
+  # or the input name.
   devices:
     # On/off switch devices (outlets, wall switches, appliance modules, etc).
-    - switch:
-        - 37.2d.35: "lamp1"
+    switch:
+      - 37.2d.35: "lamp1"
 
     # Dimming devices (outlets, wall switches, lamp modules, etc).
-    - dimmer:
-        - 3a.29.84: "lamp2"
-        - 48.3d.46: "sw1"
-        - 48.b0.ad: "sw2"
+    dimmer:
+      - 3a.29.84: "lamp2"
+      - 48.3d.46
+      - 48.b0.ad
 
     # Battery powered motion sensors.
-    - motion:
-        - 21.d6.d9: "front door"
+    motion:
+      - 21.d6.d9: "front door"
 
     # Battery powered mini remotes
-    - mini_remote4:
+    mini_remote4:
 
-    - mini_remote8:
-        - 3f.07.d4: "remote1"
+    mini_remote8:
+      - 3f.07.d4: "remote1"
 
     # Smoke bridge module
-    - smoke_bridge:
-        - 44.a3.79: "smoke alarm"
+    smoke_bridge:
+      - 44.a3.79: "smoke alarm"
 
   #------------------------------------------------------------------------
   # FUTURE: Insteon scene definitions.
@@ -107,25 +109,15 @@ mqtt:
     #   on = 0/1
     #   on_str = 'off', 'on'
     state_topic: 'insteon/{{address}}/state'
-    state_template: '{{on_str.upper()}}'
+    state_payload: '{{on_str.upper()}}'
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
-    # passing the payload through the template must match one of th
+    # passing the payload through the payload must match one of th
     # following:
-    #   CMD
-    #   { "cmd" : CMD, ["instant" : 0/1] }
-    # where:
-    #   CMD = on, off, 0, 1
+    #   { "cmd" : 'on'/'off', ["instant" : 0/1] }
     on_off_topic: 'insteon/{{address}}/set'
-    on_off_template:
-
-    # Input commands topic to allow changes to the device.  See above
-    # for details.
-    #   CMD = on, off, refresh, pair, get_db, add_ctrl, add_resp,
-    #         del_ctrl, del_resp
-    #cmd_topic: 'insteon/{{address}}/cmd'
-    #cmd_template:
+    on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
   #------------------------------------------------------------------------
   # Dimmers
@@ -139,7 +131,7 @@ mqtt:
   #       command_topic: 'insteon/AA.BB.CC/level'
   #       brightness: true
   dimmer:
-    # Output state change topic and template.  This message is sent
+    # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
     #   address = 'AA.BB.CC'
@@ -149,37 +141,25 @@ mqtt:
     #   level_255 = 0-255
     #   level_100 = 0-100
     state_topic: 'insteon/{{address}}/state'
-    state_template: '{ "state" : "{{on_str}}", "brightness" : {{level_255}} }'
+    state_payload: '{ "state" : "{{on_str}}", "brightness" : {{level_255}} }'
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
-    # passing the payload through the template must match one of th
+    # passing the payload through the payload must match one of th
     # following:
-    #   CMD
-    #   { "cmd" : CMD", ["instant" : 0/1] }
-    # where:
-    #   CMD = on, off, 0, 1
+    #   { "cmd" : "on"/"off", ["instant" : 0/1] }
     on_off_topic: 'insteon/{{address}}/set'
-    on_off_template:
+    on_off_payload:
 
-    # Dimming on/off command.  Similar functionality to the cmd_topic
+    # Input dimming on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off and setting the
-    # level.  The output of passing the payload through the template
+    # level.  The output of passing the payload through the payload
     # must match one of th following:
-    #   on/off
-    #   { "cmd" : CMD, "level" : LEVEL, ["instant" : 0/1] }
+    #   { "cmd" : "on"/"off", "level" : LEVEL, ["instant" : 0/1] }
     # where:
-    #   CMD = on, off, set
     #   LEVEL = 0->255 dimmer level
     level_topic: "insteon/{{address}}/level"
-    level_template: '{ "cmd" : {{json.state}}, "level" : {{json.brightness}}'
-
-    # Input commands topic to allow changes to the device.  See above
-    # for details.
-    #   CMD = on, off, refresh, pair, get_db, add_ctrl, add_resp,
-    #         del_ctrl, del_resp
-    #cmd_topic: 'insteon/{{address}}/cmd'
-    #cmd_template:
+    level_payload: '{ "cmd" : "{{json.state.lower()}}", "level" : {{json.brightness}}'
 
   #------------------------------------------------------------------------
   # Motion sensors
@@ -191,7 +171,7 @@ mqtt:
   #       state_topic: 'insteon/AA.BB.CC/state'
   #       device_class: 'motion'
   motion:
-    # Output state change topic and template.  This message is sent
+    # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
     #   address = 'AA.BB.CC'
@@ -199,9 +179,9 @@ mqtt:
     #   on = 0/1
     #   on_str = 'off', 'on'
     state_topic: 'insteon/{{address}}/state'
-    state_template: '{{on_str.upper()}}'
+    state_payload: '{{on_str.lower()}}'
 
-    # Output dawn/duskc change topic and template.  This message is sent
+    # Output dawn/duskc change topic and payload.  This message is sent
     # whenever the device light sensor detects dawn or dusk changes.
     # Available variables for templating are:
     #   address = 'AA.BB.CC'
@@ -210,13 +190,7 @@ mqtt:
     #   is_dusk = 0/1
     #   state = 'dawn', 'dusk'
     dawn_dusk_topic: 'insteon/{{address}}/dawn'
-    dawn_dusk_template: '{{is_dawn}}'
-
-    # Input commands topic to allow changes to the device.  See above
-    # for details.
-    #   CMD = refresh, pair, get_db, add_ctrl, add_resp, del_ctrl, del_resp
-    #cmd_topic: 'insteon/{{address}}/cmd'
-    #cmd_template:
+    dawn_dusk_payload: '{{is_dawn}}'
 
   #------------------------------------------------------------------------
   # Smoke Bridge
@@ -234,7 +208,7 @@ mqtt:
   #       state_topic: 'insteon/AA.BB.CC/co'
   #       device_class: 'gas'
   smoke_bridge:
-    # Output state change topic and template.  This message is sent
+    # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
     #   address = 'AA.BB.CC'
@@ -242,18 +216,12 @@ mqtt:
     #   on = 0/1
     #   on_str = 'off', 'on'
     smoke_topic: 'insteon/{{address}}/smoke'
-    smoke_template: '{{on_str}}'
+    smoke_payload: '{{on_str}}'
 
     co_topic: 'insteon/{{address}}/co'
-    co_template: '{{on_str}}'
+    co_payload: '{{on_str}}'
 
     battery_topic: 'insteon/{{address}}/battery'
-    battery_template: '{{on_str}}'
-
-    # Input commands topic to allow changes to the device.  See above
-    # for details.
-    #   CMD = refresh, pair, get_db, add_ctrl, add_resp, del_ctrl, del_resp
-    #cmd_topic: 'insteon/{{address}}/cmd'
-    #cmd_template:
+    battery_payload: '{{on_str}}'
 
 #----------------------------------------------------------------
