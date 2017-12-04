@@ -11,7 +11,10 @@ features and devices.
 
 ## Latest Update
 
-- 12/03/2017: Switch (on/off) is now working with Home Assistant!
+- 12/03/2017: Switch (on/off) are now working with Home Assistant!
+
+- 12/03/2017: Dimmers almost work.  Home assistant won't send brigtness
+   even with it set to on which is annoying.
 
 - 12/03/2017: Refactored MQTT into separate MQTT device classes to match
   Insteon class.

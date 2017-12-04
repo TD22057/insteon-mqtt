@@ -210,7 +210,7 @@ class Mqtt:
 
         # Create the MQTT device class.  This will also link signals
         # from the Insteon device to the MQTT device.
-        obj = mqtt_cls(self, device, config)
+        obj = mqtt_cls(self, device)
 
         # Set the configuration input data for this device type.
         if self._config:

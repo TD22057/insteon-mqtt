@@ -72,8 +72,9 @@ class Base:
         try:
             return templ.render(data)
         except:
-            LOG.exception("Switch failed to render template %s: '%s'",
-                          template_name, data)
+            LOG.exception("MQTT failed to render template %s: %s with '%s'",
+                          template_name, getattr(self, template_name + "_str"),
+                          data)
             return None
 
     #-----------------------------------------------------------------------

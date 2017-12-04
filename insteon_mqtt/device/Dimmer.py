@@ -120,6 +120,10 @@ class Dimmer(Base):
         """
         LOG.info("Dimmer %s cmd: on %s", self.addr, level)
         assert level >= 0 and level <= 0xff
+        if self._level == level:
+            LOG.info("Dimmer %s '%s' is already on %s", self.addr, self.name,
+                     level)
+            return
 
         # Send an on or instant on command.
         cmd1 = 0x11 if not instant else 0x21
@@ -145,6 +149,9 @@ class Dimmer(Base):
                     instant change.
         """
         LOG.info("Dimmer %s cmd: off", self.addr)
+        if self._level == 0:
+            LOG.info("Dimmer %s '%s' is already off", self.addr, self.name)
+            return
 
         # Send an off or instant off command.
         cmd1 = 0x13 if not instant else 0x21

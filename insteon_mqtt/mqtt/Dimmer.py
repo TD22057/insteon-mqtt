@@ -1,73 +1,73 @@
 #===========================================================================
 #
-# MQTT On/Off switch device
+# MQTT dimmer switch device
 #
 #===========================================================================
 import json
 import jinja2
 from .. import log
-from .Base import Base
+from .Switch import Switch
 from . import util
 
 LOG = log.get_logger()
 
 
-class Switch(Base):
+class Dimmer(Switch):
     """TODO: doc
     """
-    def __init__(self, mqtt, device, handle_active=True):
+    def __init__(self, mqtt, device):
         """TODO: doc
         """
-        super().__init__(mqtt, device)
+        super().__init__(mqtt, device, handle_active=False)
 
         self.load_topic_template('state_topic', 'insteon/{{address}}/state')
-        self.load_payload_template('state_payload', '{{on_str.lower()}}')
+        self.load_payload_template('state_payload',
+                                   '{ "state" : "{{on_str.upper()}}", '
+                                   '"brightness" : {{level_255}} }')
 
-        # Default payload is ON/OFF or on/off
-        self.load_topic_template('on_off_topic', 'insteon/{{address}}/set')
-        self.load_payload_template('on_off_payload',
-                                   '{ "cmd" : "{{value.lower()}}" }')
+        self.load_topic_template('level_topic', 'insteon/{{address}}/level')
+        self.load_payload_template('level_payload',
+                                   '{ "cmd" : "{{json.state.lower()}}", '
+                                   '"level" : {{json.brightness}} }')
 
-        if handle_active:
-            device.signal_active.connect(self.handle_active)
+        device.signal_level_changed.connect(self.handle_level_changed)
 
     #-----------------------------------------------------------------------
     def load_config(self, config):
         """TODO: doc
         """
-        self.load_switch_config(config.get("switch", None))
+        data = config.get("dimmer", None)
+        super().load_switch_config(data)
+        self.load_dimmer_config(data)
 
     #-----------------------------------------------------------------------
-    def load_switch_config(self, config):
+    def load_dimmer_config(self, config):
         """TODO: doc
         """
         if not config:
             return
 
-        self.load_topic_template('state_topic',
-                                 config.get('state_topic', None))
-        self.load_payload_template('state_payload',
-                                   config.get('state_payload', None))
-
-        self.load_topic_template('on_off_topic',
-                                 config.get('on_off_topic', None))
-        self.load_payload_template('on_off_payload',
-                                   config.get('on_off_payload', None))
+        self.load_topic_template('level_topic',
+                                 config.get('level_topic', None))
+        self.load_payload_template('level_payload',
+                                   config.get('level_payload', None))
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
         """TODO: doc
         """
-        link.subscribe(self.on_off_topic, qos, self.handle_set)
+        super().subscribe(link, qos)
+        link.subscribe(self.level_topic, qos, self.handle_set)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self):
         """TODO: doc
         """
-        link.unsubscribe(self.on_off_topic, qos)
+        super().unsubscribe(link, qos)
+        link.unsubscribe(self.level_topic, qos)
 
     #-----------------------------------------------------------------------
-    def handle_active(self, device, is_active):
+    def handle_level_changed(self, device, level):
         """Device active on/off callback.
 
         This is triggered via signal when the Insteon device goes
@@ -76,16 +76,18 @@ class Switch(Base):
 
         Args:
           device:   (device.Base) The Insteon device that changed.
-          is_active (bool) True for on, False for off.
+          level     (int) True for on, False for off.
         """
-        LOG.info("MQTT received active change %s '%s' = %s",
-                 device.addr, device.name, is_active)
+        LOG.info("MQTT received level change %s '%s' = %s",
+                 device.addr, device.name, level)
 
         data = {
             "address" : device.addr.hex,
             "name" : device.name if device.name else device.addr.hex,
-            "on" : 1 if is_active else 0,
-            "on_str" : "on" if is_active else "off",
+            "on" : 1 if level else 0,
+            "on_str" : "on" if level else "off",
+            "level_255" : level,
+            "level_100" : int( 100.0 * level / 255.0),
             }
 
         payload = self.render( 'state_payload', data)
@@ -98,30 +100,27 @@ class Switch(Base):
     def handle_set(self, client, data, message):
         """TODO: doc
         """
-        LOG.info("Switch message %s %s", message.topic, message.payload)
+        LOG.info("Dimmer message %s %s", message.topic, message.payload)
 
-        data = self.input_to_json(message.payload, 'on_off_payload')
+        data = self.input_to_json(message.payload, 'level_payload')
         if not data:
             return
 
-        LOG.info("Switch input command: %s", data)
+        LOG.info("Dimmer input command: %s", data)
         try:
             cmd = data.get('cmd')
             if cmd == 'on':
-                is_on = True
+                level = int(data.get('level'))
             elif cmd == 'off':
-                is_on = False
+                level = 0
             else:
-                raise Exception("Invalid Switch cmd input '%s'" % cmd)
+                raise Exception("Invalid dimmer cmd input '%s'" % cmd)
 
             instant = bool(data.get('instant', False))
         except:
-            LOG.exception("Invalid switch command: %s", data)
+            LOG.exception("Invalid dimmer command: %s", data)
             return
 
-        if is_on:
-            self.device.on(instant=instant)
-        else:
-            self.device.off(instant=instant)
+        self.device.set(level, instant)
 
     #-----------------------------------------------------------------------

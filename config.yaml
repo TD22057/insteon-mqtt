@@ -141,7 +141,7 @@ mqtt:
     #   level_255 = 0-255
     #   level_100 = 0-100
     state_topic: 'insteon/{{address}}/state'
-    state_payload: '{ "state" : "{{on_str}}", "brightness" : {{level_255}} }'
+    state_payload: '{ "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }'
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
@@ -159,7 +159,7 @@ mqtt:
     # where:
     #   LEVEL = 0->255 dimmer level
     level_topic: "insteon/{{address}}/level"
-    level_payload: '{ "cmd" : "{{json.state.lower()}}", "level" : {{json.brightness}}'
+    level_payload: '{ "cmd" : "{{json.state.lower()}}", "level" : {{json.brightness}} }'
 
   #------------------------------------------------------------------------
   # Motion sensors
