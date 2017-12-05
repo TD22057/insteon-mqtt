@@ -23,14 +23,32 @@ def get_logger(name="insteon_mqtt"):
         logging.setLoggerClass(save)
 
 #===========================================================================
-def initialize(level=logging.INFO, screen=True, file=None):
+def initialize(level=None, screen=None, file=None, config=None):
     """TODO: doc
     """
-    print("LOG:",level,screen,file)
+    # Config variables are used if the config is input and if a direct
+    # input variable is not set.
+    if config:
+        # Read the logging config and initialize the library logger.
+        data = config.get("logging", {})
+
+        if level is None:
+            level = data.get("level", None)
+        if screen is None:
+            screen = data.get("screen", None)
+        if file is None:
+            file = data.get("file", None)
+
+    # Apply defaults if none were set.
+    level = level if level is not None else logging.INFO
+    screen = bool(screen) if screen is not None else True
+    file = file if file is not None else None
+
+    # Set the logging level into the library logging object.
     log_obj = get_logger()
     log_obj.setLevel(level)
 
-    # Initialize basic logging.
+    # Add handlers for the optional screen and file output.
     fmt = '%(asctime)s %(levelname)s %(module)s: %(message)s'
     datefmt = '%Y-%m-%d %H:%M:%S'
     formatter = logging.Formatter(fmt, datefmt)

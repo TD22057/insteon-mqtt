@@ -5,6 +5,7 @@ import yaml
 
 # Read the config first - that configures the logging system.
 config = IM.config.load("config.yaml")
+IM.log.initialize(config=config)
 
 loop = IM.network.Manager()
 mqtt_link = IM.network.Mqtt()
