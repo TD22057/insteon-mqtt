@@ -4,7 +4,7 @@
 #
 #===========================================================================
 from .. import log
-from .. import device
+from .. import device as IDev
 from .Base import Base
 
 LOG = log.get_logger()
@@ -91,7 +91,7 @@ class SmokeBridge(Base):
             "on_str" : "on",
             }
 
-        Type = devices.SmokeBridge.Type
+        Type = IDev.SmokeBridge.Type
 
         # Clear condition resets the status to off and calls all the
         # conditions.

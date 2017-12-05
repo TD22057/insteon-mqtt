@@ -22,6 +22,7 @@ def get_logger(name="insteon_mqtt"):
     finally:
         logging.setLoggerClass(save)
 
+
 #===========================================================================
 def initialize(level=None, screen=None, file=None, config=None):
     """TODO: doc
@@ -62,6 +63,7 @@ def initialize(level=None, screen=None, file=None, config=None):
         handler = logging.handlers.WatchedFileHandler(file)
         handler.setFormatter(formatter)
         log_obj.addHandler(handler)
+
 
 #===========================================================================
 class Logger(logging.getLoggerClass()):

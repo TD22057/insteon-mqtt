@@ -9,10 +9,8 @@ __doc__ = """Configuration file utilties
 
 #===========================================================================
 import functools
-import logging
 import yaml
 from . import device
-from . import log
 
 # Configuration file input description to class map.
 devices = {
@@ -32,6 +30,7 @@ def load(path):
     config = yaml.load(open("config.yaml").read())
     return config
 
+
 #===========================================================================
 def apply(config, mqtt, modem):
     """TODO: doc
@@ -41,6 +40,7 @@ def apply(config, mqtt, modem):
     # before that.
     mqtt.load_config(config['mqtt'])
     modem.load_config(config['insteon'])
+
 
 #===========================================================================
 def find(name):
