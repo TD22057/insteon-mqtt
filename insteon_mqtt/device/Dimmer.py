@@ -234,21 +234,35 @@ class Dimmer(Base):
         Args:
           msg:   (InptStandard) Broadcast message from the device.
         """
+        cmd = msg.cmd1
+
         # ACK of the broadcast - ignore this.
-        if msg.cmd1 == 0x06:
+        if cmd == 0x06:
             LOG.info("Dimmer %s broadcast ACK grp: %s", self.addr, msg.group)
             return
 
         # On command.  How do we tell the level?  It's not in the
         # message anywhere.
-        elif msg.cmd1 == 0x11:
+        elif cmd == 0x11:
             LOG.info("Dimmer %s broadcast ON grp: %s", self.addr, msg.group)
             self._set_level(0xff)
 
         # Off command.
-        elif msg.cmd1 == 0x13:
+        elif cmd == 0x13:
             LOG.info("Dimmer %s broadcast OFF grp: %s", self.addr, msg.group)
             self._set_level(0x00)
+
+        # Starting manual increment (cmd2 0x00=up, 0x01=down)
+        elif cmd == 0x17:
+            LOG.info("Dimmer %s starting manual change %s", self.addr,
+                     "UP" if msg.cmd2 == 0x00 else "DN")
+
+        # Stopping manual increment (cmd2 = unused)
+        elif cmd == 0x18:
+            LOG.info("Dimmer %s stopping manual change", self.addr)
+
+            # Ping the light to get the new level
+            self.refresh()
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
@@ -334,6 +348,15 @@ class Dimmer(Base):
         # Increment down
         elif cmd == 0x16:
             self._set_level(min(0x00, self._level - 8))
+
+        # Starting manual increment (cmd2 0x00=up, 0x01=down)
+        elif cmd == 0x17:
+            pass
+
+        # Stopping manual increment (cmd2 = unused)
+        elif cmd == 0x18:
+            # Ping the light to get the new level
+            self.refresh()
 
         else:
             LOG.warning("Dimmer %s unknown group cmd %#04x", self.addr, cmd)

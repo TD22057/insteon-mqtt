@@ -3,11 +3,8 @@
 # MQTT dimmer switch device
 #
 #===========================================================================
-import json
-import jinja2
 from .. import log
 from .Switch import Switch
-from . import util
 
 LOG = log.get_logger()
 
@@ -60,11 +57,11 @@ class Dimmer(Switch):
         link.subscribe(self.level_topic, qos, self.handle_set)
 
     #-----------------------------------------------------------------------
-    def unsubscribe(self):
+    def unsubscribe(self, link):
         """TODO: doc
         """
-        super().unsubscribe(link, qos)
-        link.unsubscribe(self.level_topic, qos)
+        super().unsubscribe(link)
+        self.mqtt.unsubscribe(self.level_topic)
 
     #-----------------------------------------------------------------------
     def handle_level_changed(self, device, level):
@@ -87,10 +84,10 @@ class Dimmer(Switch):
             "on" : 1 if level else 0,
             "on_str" : "on" if level else "off",
             "level_255" : level,
-            "level_100" : int( 100.0 * level / 255.0),
+            "level_100" : int(100.0 * level / 255.0),
             }
 
-        payload = self.render( 'state_payload', data)
+        payload = self.render('state_payload', data)
         if not payload:
             return
 

@@ -105,8 +105,8 @@ class Base:
         try:
             return json.loads(value)
         except:
-            LOG.exception("Invalid JSON message result for %s: %s" %
-                          (template_name, value))
+            LOG.exception("Invalid JSON message result for %s: %s",
+                          template_name, value)
             return None
 
     #-----------------------------------------------------------------------

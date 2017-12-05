@@ -474,7 +474,7 @@ class Modem:
             for device_config in values:
                 # If it's a dict, it's got a nice name set.
                 if isinstance(device_config, dict):
-                    assert(len(device_config) == 1)
+                    assert len(device_config) == 1
                     addr, name = next(iter(device_config.items()))
 
                 # Otherwise it's just the address

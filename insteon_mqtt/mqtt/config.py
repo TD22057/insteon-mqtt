@@ -23,6 +23,7 @@ devices = {
     device.Switch : Switch,
     }
 
+
 #===========================================================================
 def find(insteon_device):
     """Find a device class from a description.

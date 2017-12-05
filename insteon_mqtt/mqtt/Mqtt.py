@@ -114,7 +114,7 @@ class Mqtt:
         self.devices.clear()
 
     #-----------------------------------------------------------------------
-    def load_config(self, config):
+    def load_config(self, data):
         """Load a configuration dictionary.
 
         This should be the mqtt key in the configuration data.  Key
@@ -139,15 +139,15 @@ class Mqtt:
           data:   (dict) Configuration data to load.
         """
         # Pass connection data to the MQTT link.
-        self.link.load_config(config)
+        self.link.load_config(data)
 
-        self._cmd_topic = util.clean_topic(config['cmd_topic'])
-        self._qos = config.get('qos', 1)
-        self._retain = config.get('retain', True)
+        self._cmd_topic = util.clean_topic(data['cmd_topic'])
+        self._qos = data.get('qos', 1)
+        self._retain = data.get('retain', True)
 
         # Save the config for later passing to devices when they are
         # created.
-        self._config = config
+        self._config = data
 
         # Subscribe to the new topics.
         if self.link.connected:
@@ -204,8 +204,8 @@ class Mqtt:
         """
         mqtt_cls = config.find(device)
         if not mqtt_cls:
-            LOG.error("Coding error - can't find MQTT device class for Insteon "
-                      "device %s: %s", device.__class__, device)
+            LOG.error("Coding error - can't find MQTT device class for "
+                      "Insteon device %s: %s", device.__class__, device)
             return
 
         # Create the MQTT device class.  This will also link signals
@@ -218,24 +218,6 @@ class Mqtt:
 
         # Save the MQTT device so we can find it again.
         self.devices[device.addr.id] = obj
-
-    #-----------------------------------------------------------------------
-    def _level_changed(self, device, level):
-        """Device level changed callback.
-
-        This is triggered via signal when the Insteon device level
-        changes.  It will publish an MQTT message with the new state.
-
-        Args:
-          device:  (device.Base) The Insteon device that changed.
-          level:   (int) The new device level (0->255).
-        """
-        LOG.info("MQTT received level change %s '%s' = %#04x",
-                 device.addr, device.name, level)
-
-        topic = "%s/%s" % (self._state_topic, device.addr.hex)
-        payload = json.dumps({'level' : level})
-        self.publish(topic, payload, retain=self._retain)
 
     #-----------------------------------------------------------------------
     def _smoke_bridge(self, device, condition):
@@ -361,6 +343,6 @@ class Mqtt:
             self.link.unsubscribe(self._cmd_topic + "/#")
 
         for device in self.devices.values():
-            device.unsubscribe()
+            device.unsubscribe(self.link)
 
     #-----------------------------------------------------------------------

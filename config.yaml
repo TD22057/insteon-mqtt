@@ -116,6 +116,10 @@ mqtt:
     # passing the payload through the payload must match one of th
     # following:
     #   { "cmd" : 'on'/'off', ["instant" : 0/1] }
+    # Available variables for templating are:
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
     on_off_topic: 'insteon/{{address}}/set'
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
@@ -123,13 +127,21 @@ mqtt:
   # Dimmers
   #------------------------------------------------------------------------
 
-  # Dimmer switch.  Dimming lamp modules and wall switches.
-  # In Home Assistant use MQTT JSON light with a configuration like:
+  # Dimmer switch.  Dimming lamp modules and wall switches.  In Home
+  # Assistant use MQTT light with a configuration like the following -
+  # this gets HA to send the brightness value as the payload for all
+  # control of the light.
   #   light:
   #     - platform: mqtt_json
-  #       state_topic: 'insteon/AA.BB.CC/state'
-  #       command_topic: 'insteon/AA.BB.CC/level'
+  #       name: "insteon 1"
+  #       state_topic: "insteon/48.b0.ad/state"
+  #       command_topic: "insteon/48.b0.ad/level"
   #       brightness: true
+  #
+  # NOTE: this is not great.  HASS sends just ON when clicking on even
+  # though it remembers the last dimmer level and thinks that's what's
+  # going to be set.  I'm going to submit a PR in the future to fix
+  # this so that brightness is always sent in the JSON light payload.
   dimmer:
     # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
@@ -141,15 +153,22 @@ mqtt:
     #   level_255 = 0-255
     #   level_100 = 0-100
     state_topic: 'insteon/{{address}}/state'
-    state_payload: '{ "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }'
+    state_payload: >
+       { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
     # passing the payload through the payload must match one of th
     # following:
     #   { "cmd" : "on"/"off", ["instant" : 0/1] }
+    # Available variables for templating are:
+    #   address = 'AA.BB.CC'
+    #   name = 'nice name'
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
     on_off_topic: 'insteon/{{address}}/set'
-    on_off_payload:
+    on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
     # Input dimming on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off and setting the
@@ -158,8 +177,20 @@ mqtt:
     #   { "cmd" : "on"/"off", "level" : LEVEL, ["instant" : 0/1] }
     # where:
     #   LEVEL = 0->255 dimmer level
+    # Available variables for templating are:
+    #   address = 'AA.BB.CC'
+    #   name = 'nice name'
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
     level_topic: "insteon/{{address}}/level"
-    level_payload: '{ "cmd" : "{{json.state.lower()}}", "level" : {{json.brightness}} }'
+    level_payload: >
+       { "cmd" : "{{json.state.lower()}}",
+         "level" : {% if json.brightness is defined %}
+                      {{json.brightness}}
+                   {% else %}
+                      255
+                   {% endif %} }
 
   #------------------------------------------------------------------------
   # Motion sensors

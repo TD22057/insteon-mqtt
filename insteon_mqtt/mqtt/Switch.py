@@ -3,11 +3,8 @@
 # MQTT On/Off switch device
 #
 #===========================================================================
-import json
-import jinja2
 from .. import log
 from .Base import Base
-from . import util
 
 LOG = log.get_logger()
 
@@ -61,10 +58,10 @@ class Switch(Base):
         link.subscribe(self.on_off_topic, qos, self.handle_set)
 
     #-----------------------------------------------------------------------
-    def unsubscribe(self):
+    def unsubscribe(self, link):
         """TODO: doc
         """
-        link.unsubscribe(self.on_off_topic, qos)
+        link.unsubscribe(self.on_off_topic)
 
     #-----------------------------------------------------------------------
     def handle_active(self, device, is_active):
@@ -88,7 +85,7 @@ class Switch(Base):
             "on_str" : "on" if is_active else "off",
             }
 
-        payload = self.render( 'state_payload', data)
+        payload = self.render('state_payload', data)
         if not payload:
             return
 
