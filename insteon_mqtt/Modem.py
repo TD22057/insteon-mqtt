@@ -66,14 +66,6 @@ class Modem:
         self.protocol.add_handler(handler.ModemReset(self))
 
     #-----------------------------------------------------------------------
-    def clear_config(self):
-        """TODO: doc
-        """
-        self.devices.clear()
-        self.scenes.clear()
-        self.db.clear()
-
-    #-----------------------------------------------------------------------
     def load_config(self, data):
         """Load a configuration dictionary.
 

@@ -101,19 +101,6 @@ class Mqtt:
         self._config = None
 
     #-----------------------------------------------------------------------
-    def clear_config(self):
-        """TODO: doc
-        """
-        self._config = None
-
-        # Unsubscribe from previous topics.  This also unsubscribes
-        # any devices.
-        if self.link.connected:
-            self._unsubscribe()
-
-        self.devices.clear()
-
-    #-----------------------------------------------------------------------
     def load_config(self, data):
         """Load a configuration dictionary.
 
