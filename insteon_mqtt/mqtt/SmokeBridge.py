@@ -4,7 +4,7 @@
 #
 #===========================================================================
 from .. import log
-from .. import devices
+from .. import device
 from .Base import Base
 
 LOG = log.get_logger()
