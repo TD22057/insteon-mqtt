@@ -16,20 +16,14 @@ class Test_ModemEntry:
         assert obj.addr == addr
         assert obj.group == 0x03
         assert obj.is_controller is True
-        assert obj.is_responder is False
         assert obj.data == data
-        assert obj.on_level == data[0]
-        assert obj.ramp_rate == data[1]
 
         d = obj.to_json()
         obj2 = IM.db.ModemEntry.from_json(d)
         assert obj2.addr == obj.addr
         assert obj2.group == obj.group
         assert obj2.is_controller == obj.is_controller
-        assert obj2.is_responder == obj.is_responder
         assert obj2.data == obj.data
-        assert obj2.on_level == obj.on_level
-        assert obj2.ramp_rate == obj.ramp_rate
 
         assert obj2 == obj
         obj2.group = 0x01
@@ -54,20 +48,14 @@ class Test_ModemEntry:
         assert obj.addr == addr
         assert obj.group == 0x03
         assert obj.is_controller is False
-        assert obj.is_responder is True
         assert obj.data == data
-        assert obj.on_level == data[0]
-        assert obj.ramp_rate == data[1]
 
         d = obj.to_json()
         obj2 = IM.db.ModemEntry.from_json(d)
         assert obj2.addr == obj.addr
         assert obj2.group == obj.group
         assert obj2.is_controller == obj.is_controller
-        assert obj2.is_responder == obj.is_responder
         assert obj2.data == obj.data
-        assert obj2.on_level == obj.on_level
-        assert obj2.ramp_rate == obj.ramp_rate
 
         assert obj2 == obj
         obj2.group = 0x01

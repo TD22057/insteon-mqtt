@@ -14,7 +14,7 @@ class Test_Address:
         assert addr.id == id
         assert addr.ids == ids
         assert addr.bytes == bytes(ids)
-        assert addr.hex == hex
+        assert addr.hex == hex.lower()
         str(addr)
 
         b = addr.to_bytes()

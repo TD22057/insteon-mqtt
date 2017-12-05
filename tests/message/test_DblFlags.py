@@ -8,11 +8,10 @@ import insteon_mqtt.message as Msg
 
 class Test_DbFlags:
     #-----------------------------------------------------------------------
-    def check(self, obj, in_use, is_ctrl, last_record, raw):
+    def check(self, obj, in_use, is_ctrl, is_last_rec, raw):
         assert obj.in_use == in_use
         assert obj.is_controller == is_ctrl
-        assert obj.is_responder != obj.is_controller
-        assert obj.last_record == last_record
+        assert obj.is_last_rec == is_last_rec
 
         out = obj.to_bytes()
         assert len(out) == 1
@@ -22,18 +21,18 @@ class Test_DbFlags:
         obj2 = Msg.DbFlags.from_json(d)
         assert obj2.in_use == in_use
         assert obj2.is_controller == is_ctrl
-        assert obj2.last_record == last_record
+        assert obj2.is_last_rec == is_last_rec
 
         str(obj)
 
     #-----------------------------------------------------------------------
     def test_basic(self):
-        use_ctrl_high = 0b11000010
-        use_ctrl_low = 0b11000000
-        use_resp_high = 0b10000010
-        free_ctrl_high = 0b01000010
-        free_ctrl_low = 0b01000000
-        free_resp_high = 0b00000010
+        use_ctrl_high = 0b11100010
+        use_ctrl_low = 0b11100000
+        use_resp_high = 0b10100010
+        free_ctrl_high = 0b01100010
+        free_ctrl_low = 0b01100000
+        free_resp_high = 0b00100010
 
         b = bytes([use_ctrl_high, use_ctrl_low, use_resp_high,
                    free_ctrl_high, free_ctrl_low, free_resp_high])
