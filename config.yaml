@@ -197,10 +197,16 @@ mqtt:
   #------------------------------------------------------------------------
 
   # In Home Assistant use MQTT binary sensor with a configuration like:
-  #   binary-sensor:
+  #   binary_sensor:
   #     - platform: mqtt
   #       state_topic: 'insteon/AA.BB.CC/state'
   #       device_class: 'motion'
+  #     - platform: mqtt
+  #       state_topic: 'insteon/AA.BB.CC/dawn'
+  #       device_class: 'light'
+  #     - platform: mqtt
+  #       state_topic: 'insteon/AA.BB.CC/low_battery'
+  #       device_class: 'battery'
   motion:
     # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
@@ -210,25 +216,37 @@ mqtt:
     #   on = 0/1
     #   on_str = 'off', 'on'
     state_topic: 'insteon/{{address}}/state'
-    state_payload: '{{on_str.lower()}}'
+    state_payload: '{{on_str.upper()}}'
 
-    # Output dawn/duskc change topic and payload.  This message is sent
+    # Output dawn/dusk change topic and payload.  This message is sent
     # whenever the device light sensor detects dawn or dusk changes.
     # Available variables for templating are:
     #   address = 'AA.BB.CC'
     #   name = 'nice name'
     #   is_dawn = 0/1
+    #   is_dawn_str = 'off', 'on'
     #   is_dusk = 0/1
+    #   is_dusk_str = 'off', 'on'
     #   state = 'dawn', 'dusk'
     dawn_dusk_topic: 'insteon/{{address}}/dawn'
-    dawn_dusk_payload: '{{is_dawn}}'
+    dawn_dusk_payload: '{{is_dawn_str.upper()}}'
+
+    # Output low battery topic and payload.  This message is sent
+    # whenever the device detects a low battery. Available variables
+    # for templating are:
+    #   address = 'AA.BB.CC'
+    #   name = 'nice name'
+    #   is_low = 0/1
+    #   is_low_str = 'off', 'on'
+    low_battery_topic: 'insteon/{{address}}/battery'
+    low_battery_payload: '{{is_low_str.upper()}}'
 
   #------------------------------------------------------------------------
   # Smoke Bridge
   #------------------------------------------------------------------------
 
   # In Home Assistant use MQTT binary sensor with a configuration like:
-  #   binary-sensor:
+  #   binary_sensor:
   #     - platform: mqtt
   #       state_topic: 'insteon/AA.BB.CC/smoke'
   #       device_class: 'smoke'
