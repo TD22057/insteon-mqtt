@@ -9,8 +9,10 @@ __doc__ = """Configuration file utilties
 
 #===========================================================================
 import functools
+import logging
 import yaml
 from . import device
+from . import log
 
 # Configuration file input description to class map.
 devices = {
@@ -24,11 +26,25 @@ devices = {
 
 
 #===========================================================================
-def load(path, mqtt, modem):
+def load(path):
     """TODO: doc
     """
     config = yaml.load(open("config.yaml").read())
 
+    # Read the logging config and initialize the library logger.
+    log_config = config.get("logging", {})
+    log_level = log_config.get("level", logging.INFO)
+    log_screen = bool(log_config.get("screen", True))
+    log_file = log_config.get("file", None)
+
+    log.initialize(log_level, log_screen, log_file)
+
+    return config
+
+#===========================================================================
+def apply(config, mqtt, modem):
+    """TODO: doc
+    """
     # We must load the MQTT config first - loading the insteon config
     # triggers device creation and we need the various MQTT config's set
     # before that.

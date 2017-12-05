@@ -4,6 +4,7 @@
 #
 #===========================================================================
 import logging
+import logging.handlers
 
 # TODO: doc this stuff
 UI = 21
@@ -22,8 +23,29 @@ def get_logger(name="insteon_mqtt"):
         logging.setLoggerClass(save)
 
 #===========================================================================
+def initialize(level=logging.INFO, screen=True, file=None):
+    """TODO: doc
+    """
+    print("LOG:",level,screen,file)
+    log_obj = get_logger()
+    log_obj.setLevel(level)
 
+    # Initialize basic logging.
+    fmt = '%(asctime)s %(levelname)s %(module)s: %(message)s'
+    datefmt = '%Y-%m-%d %H:%M:%S'
+    formatter = logging.Formatter(fmt, datefmt)
 
+    if screen:
+        handler = logging.StreamHandler()
+        handler.setFormatter(formatter)
+        log_obj.addHandler(handler)
+
+    if file:
+        handler = logging.handlers.WatchedFileHandler(file)
+        handler.setFormatter(formatter)
+        log_obj.addHandler(handler)
+
+#===========================================================================
 class Logger(logging.getLoggerClass()):
     """TODO: doc
     """

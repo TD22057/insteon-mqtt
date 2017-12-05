@@ -6,6 +6,21 @@
 
 #==========================================================================
 #
+# Optional logging configuration (can also be set via the command line)
+#
+#==========================================================================
+logging:
+  # 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR
+  level: 10
+
+  # Print messages to the screen.
+  #screen: False
+
+  # Print messages to a file.
+  #file: /var/log/insteon_mqtt.log
+
+#==========================================================================
+#
 # Insteon configuration
 #
 #==========================================================================
