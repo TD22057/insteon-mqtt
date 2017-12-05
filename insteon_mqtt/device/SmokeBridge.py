@@ -63,8 +63,7 @@ class SmokeBridge(Base):
         """
         super().__init__(protocol, modem, address, name)
 
-        # emit(device, condition)
-        self.signal_state_change = Signal()
+        self.signal_state_change = Signal()  # emit(device, condition str)
 
     #-----------------------------------------------------------------------
     def pair(self):

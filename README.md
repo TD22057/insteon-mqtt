@@ -11,17 +11,9 @@ features and devices.
 
 ## Latest Update
 
-- 12/03/2017: Switch (on/off) are now working with Home Assistant!
-
-- 12/03/2017: Dimmers almost work.  Home assistant won't send brigtness
-   even with it set to on which is annoying.
-
-- 12/03/2017: Refactored MQTT into separate MQTT device classes to match
-  Insteon class.
-
-- 12/03/2017: Started adding MQTT topic and payload templating support.
-  This is ONLY working for Switch right now.  The other devices are turned
-  off until I can refactor those as well.
+- 12/04/2017: Switches, dimmers, motion sensors, and smoke bridge are now
+  working with Home Assistant.  See config.yaml for documentation on how
+  to configure the MQTT templates and HASS inputs.
 
 
 ## Current Status
@@ -49,6 +41,8 @@ Here's what works so far:
 - modify the all link database on each device
 - automatically link devices to the modem including all needed groups
   (for complicated devices like the fanlinkc, smoke bridge, and thermostat)
+- MQTT payload templates.
+
 
 Things remaining to do for the initial release:
 
@@ -59,7 +53,6 @@ Things remaining to do for the initial release:
   - logging control
   - config file and db save file location control
 - basic user documentation (github markdown pages)
-- MQTT payload templates.
 
 
 Things for future versions:

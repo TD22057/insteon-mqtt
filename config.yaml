@@ -105,7 +105,7 @@ mqtt:
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
     #   address = 'AA.BB.CC'
-    #   name = 'nice name'
+    #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off', 'on'
     state_topic: 'insteon/{{address}}/state'
@@ -147,7 +147,7 @@ mqtt:
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
     #   address = 'AA.BB.CC'
-    #   name = 'nice name'
+    #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off', 'on'
     #   level_255 = 0-255
@@ -163,7 +163,7 @@ mqtt:
     #   { "cmd" : "on"/"off", ["instant" : 0/1] }
     # Available variables for templating are:
     #   address = 'AA.BB.CC'
-    #   name = 'nice name'
+    #   name = 'device name'
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
@@ -179,7 +179,7 @@ mqtt:
     #   LEVEL = 0->255 dimmer level
     # Available variables for templating are:
     #   address = 'AA.BB.CC'
-    #   name = 'nice name'
+    #   name = 'device name'
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
@@ -201,9 +201,11 @@ mqtt:
   #     - platform: mqtt
   #       state_topic: 'insteon/AA.BB.CC/state'
   #       device_class: 'motion'
+  #
   #     - platform: mqtt
   #       state_topic: 'insteon/AA.BB.CC/dawn'
   #       device_class: 'light'
+  #
   #     - platform: mqtt
   #       state_topic: 'insteon/AA.BB.CC/low_battery'
   #       device_class: 'battery'
@@ -212,7 +214,7 @@ mqtt:
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
     #   address = 'AA.BB.CC'
-    #   name = 'nice name'
+    #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off', 'on'
     state_topic: 'insteon/{{address}}/state'
@@ -222,7 +224,7 @@ mqtt:
     # whenever the device light sensor detects dawn or dusk changes.
     # Available variables for templating are:
     #   address = 'AA.BB.CC'
-    #   name = 'nice name'
+    #   name = 'device name'
     #   is_dawn = 0/1
     #   is_dawn_str = 'off', 'on'
     #   is_dusk = 0/1
@@ -235,7 +237,7 @@ mqtt:
     # whenever the device detects a low battery. Available variables
     # for templating are:
     #   address = 'AA.BB.CC'
-    #   name = 'nice name'
+    #   name = 'device name'
     #   is_low = 0/1
     #   is_low_str = 'off', 'on'
     low_battery_topic: 'insteon/{{address}}/battery'
@@ -250,27 +252,35 @@ mqtt:
   #     - platform: mqtt
   #       state_topic: 'insteon/AA.BB.CC/smoke'
   #       device_class: 'smoke'
+  #
   #     - platform: mqtt
   #       state_topic: 'insteon/AA.BB.CC/battery'
   #       device_class: 'battery'
+  #
   #     - platform: mqtt
   #       state_topic: 'insteon/AA.BB.CC/co'
   #       device_class: 'gas'
+  #
+  #     - platform: mqtt
+  #       state_topic: 'insteon/AA.BB.CC/error'
   smoke_bridge:
     # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
     #   address = 'AA.BB.CC'
-    #   name = 'nice name'
+    #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off', 'on'
     smoke_topic: 'insteon/{{address}}/smoke'
-    smoke_payload: '{{on_str}}'
+    smoke_payload: '{{on_str.upper()}}'
 
     co_topic: 'insteon/{{address}}/co'
-    co_payload: '{{on_str}}'
+    co_payload: '{{on_str.upper()}}'
 
     battery_topic: 'insteon/{{address}}/battery'
-    battery_payload: '{{on_str}}'
+    battery_payload: '{{on_str.upper()}}'
+
+    error_topic: 'insteon/{{address}}/error'
+    error_payload: '{{on_str.upper()}}'
 
 #----------------------------------------------------------------
