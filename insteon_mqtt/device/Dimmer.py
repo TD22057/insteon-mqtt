@@ -79,8 +79,8 @@ class Dimmer(Base):
             'on' : self.on,
             'off' : self.off,
             'set' : self.set,
-            'up' : self.incrementUp,
-            'down' : self.incrementDown,
+            'increment_up' : self.increment_up,
+            'increment_down' : self.increment_down,
             })
 
     #-----------------------------------------------------------------------
@@ -165,7 +165,7 @@ class Dimmer(Base):
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def incrementUp(self):
+    def increment_up(self):
         """Increment the current level up.
 
         Levels increment in usits of 32 (8 divisions from off to on).
@@ -181,7 +181,7 @@ class Dimmer(Base):
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def incrementDown(self):
+    def increment_down(self):
         """Increment the current level down.
 
         Levels increment in usits of 32 (8 divisions from off to on).

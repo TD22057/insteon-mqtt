@@ -52,11 +52,10 @@ class Modem:
         # handled in run_command().  Commands should all be lower case
         # (inputs are lowered).
         self.cmd_map = {
-            'db_add_ctrl' : self.db_add_ctrl_of,
-            'db_add_resp' : self.db_add_resp_of,
-            'db_del' : self.db_delete,
+            'db_add_ctrl_of' : self.db_add_ctrl_of,
+            'db_add_resp_of' : self.db_add_resp_of,
+            'db_delete' : self.db_delete,
             'db_get' : self.db_get,
-            'factory_reset' : self.factory_reset,
             'refresh' : self.db_get,
             'reload_all' : self.reload_all,
             'set_btn' : self.set_btn,

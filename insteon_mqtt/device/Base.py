@@ -55,10 +55,10 @@ class Base:
         # commands to the dict to expand the list.  Commands should
         # all be lower case (inputs are lowered).
         self.cmd_map = {
-            'db_add_ctrl' : self.db_add_ctrl_of,
-            'db_add_resp' : self.db_add_resp_of,
-            'db_del_ctrl' : self.db_del_ctrl_of,
-            'db_del_resp' : self.db_del_resp_of,
+            'db_add_ctrl_of' : self.db_add_ctrl_of,
+            'db_add_resp_of' : self.db_add_resp_of,
+            'db_del_ctrl_of' : self.db_del_ctrl_of,
+            'db_del_resp_of' : self.db_del_resp_of,
             'db_get' : self.db_get,
             'refresh' : self.refresh,
             'pair' : self.pair,

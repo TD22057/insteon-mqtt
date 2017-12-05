@@ -86,14 +86,9 @@ class Mqtt:
 
         self.link = mqtt_link
         self.link.signal_connected.connect(self.handle_connected)
-        self.link.signal_message.connect(self.handle_message)
 
         # Map of Address ID to MQTT device.
         self.devices = {}
-
-        self.cmds = {
-            'reload_all' : self.modem.reload_all,
-            }
 
         self._cmd_topic = None
         self._qos = 1
@@ -207,8 +202,10 @@ class Mqtt:
         self.devices[device.addr.id] = obj
 
     #-----------------------------------------------------------------------
-    def handle_message(self, link, msg):
-        """MQTT inbound message callback.
+    def handle_cmd(self, client, data, message):
+        """MQTT command message callback.
+
+        TODO: doc
 
         This is called when an MQTT message is received.  Check it's
         topic and pass it off to the correct handler.
@@ -216,92 +213,55 @@ class Mqtt:
         Args:
           link:  (network.Link) The MQTT link the message was read from.
           msg:   Paho.mqtt message object.  has attributes topic and pyaload.
-
         """
-        # Commands for Insteon devices
-        if msg.topic.startswith(self._set_topic):
-            LOG.info("Insteon command: %s %s", msg.topic, msg.payload)
-            self._handle_set(msg.topic, msg.payload)
+        # Extract the device name/address from the topic and use
+        # it to find the device object to handle the command.
+        device_id = message.topic.topic.split("/")[-1]
+        device = self.modem.find(device_id)
+        if not device:
+            LOG.error("Unknown Insteon device '%s'", device_id)
+            return
 
-        # System comands:
-        if msg.topic.startswith(self._cmd_topic):
-            LOG.info("Command read: %s %s", msg.topic, msg.payload)
-            self._handle_cmd(msg.topic, msg.payload)
-
-    #-----------------------------------------------------------------------
-    def _handle_cmd(self, topic, payload):
-        """System command handler.
-
-        This is called to handle inbound MQTT messages for system commands.
-
-        Args:
-          topic:    (str) The MQTT topic.
-          payload:  (str) The MQTT message payload.
-        """
+        # Decode the JSON payload.
         try:
-            cmd = payload.strip()
-            args = {}
-
-            # If the input is a JSON payload, decode it and get the
-            # command.
-            if '{' in cmd:
-                args = json.loads(payload)
-                cmd = args.pop('cmd')
-
-            # Find the function by name and call it w/ any additional args.
-            func = self.cmds.get(cmd, None)
-            if func:
-                func(**args)
-            else:
-                LOG.error("Unknown MQTT command: %s %s", topic, payload)
+            data = json.loads(message.payload)
         except:
-            LOG.exception("Error running command: %s %s", topic, payload)
+            LOG.exception("Error decoding command payload: %s",
+                          message.payload)
+            return
 
-    #-----------------------------------------------------------------------
-    def _handle_set(self, topic, payload):
-        """Set command parser.
+        # Find the command string and map it to the method to use
+        # on the device.
+        cmd = data.pop("cmd", None)
+        if not cmd:
+            LOG.error("Input command has no 'cmd' key: %s", cmd)
+            return
 
-        Parse an input command, find the insteon device the command is
-        for and pass it the command.
+        cmd_func = device.cmd_map.get(cmd, None)
+        if not cmd_func:
+            LOG.error("Unknown command '%s' for device %s.  Valid commands: "
+                      "%s", cmd, device.__class__.__name__,
+                      device.cmd_map.keys())
+            return
 
-        Args:
-          topic:    (str) The MQTT topic.
-          payload:  (str) The MQTT message payload.
-        """
         try:
-            # Device address is the last element of the topic.
-            address = topic.split("/")[-1]
-            device = self.modem.find(address.strip())
-            if not device:
-                LOG.error("Unknown device requested: %s", address)
-                return
-
-            # If the device isn't JSON, turn it into JSON so we can
-            # just parse JSOn data.
-            s = payload.decode("utf-8").strip()
-
-            # Single command input.
-            if '{' not in s:
-                data = {'cmd' : s}
-
-            # JSON dictionary of command and arguments.
-            else:
-                data = json.loads(s)
-
-            # Pass everyting to the device for parsing.
-            device.run_command(**data)
+            # Pass the rest of the command arguments as keywords
+            # to the method.
+            cmd_func(**cmd)
         except:
-            LOG.exception("Error running set command %s %s", topic, payload)
+            LOG.exception("Error running command %s on device %s", cmd,
+                          device_id)
 
     #-----------------------------------------------------------------------
     def _subscribe(self):
         """Subscribe to the command and set topics.
         """
         if self._cmd_topic:
-            self.link.subscribe(self._cmd_topic + "/#", qos=self._qos)
+            self.link.subscribe(self._cmd_topic + "/#", self._qos,
+                                self.handle_cmd)
 
         for device in self.devices.values():
-            device.subscribe(self.link, qos=self._qos)
+            device.subscribe(self.link, self._qos)
 
     #-----------------------------------------------------------------------
     def _unsubscribe(self,):
