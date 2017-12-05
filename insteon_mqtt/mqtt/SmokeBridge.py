@@ -4,6 +4,7 @@
 #
 #===========================================================================
 from .. import log
+from .. import devices
 from .Base import Base
 
 LOG = log.get_logger()
@@ -78,7 +79,7 @@ class SmokeBridge(Base):
 
         Args:
           device:    (device.Base) The Insteon device that changed.
-          condition: (str) SmokeBridge condition code.
+          condition: SmokeBridge.Type condition code.
         """
         LOG.info("MQTT received active change %s '%s' = %s",
                  device.addr, device.name, condition)
@@ -90,25 +91,28 @@ class SmokeBridge(Base):
             "on_str" : "on",
             }
 
-        # Clear condition resets all the others to off.
-        clear = condition == "clear"
+        Type = devices.SmokeBridge.Type
+
+        # Clear condition resets the status to off and calls all the
+        # conditions.
+        clear = condition == Type.CLEAR
         if clear:
             data["on"] = 0
             data["on_str"] = "off"
 
-        if clear or condition == "smoke":
+        if clear or condition == Type.SMOKE:
             payload = self.render('smoke_payload', data)
             self.mqtt.publish(self.smoke_topic, payload)
 
-        if clear or condition == "CO":
+        if clear or condition == Type.CO:
             payload = self.render('co_payload', data)
             self.mqtt.publish(self.co_topic, payload)
 
-        if clear or condition == "low battery":
+        if clear or condition == Type.LOW_BATTERY:
             payload = self.render('battery_payload', data)
             self.mqtt.publish(self.battery_topic, payload)
 
-        if clear or condition == "error":
+        if clear or condition == Type.ERROR:
             payload = self.render('error_payload', data)
             self.mqtt.publish(self.error_topic, payload)
 

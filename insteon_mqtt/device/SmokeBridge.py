@@ -3,6 +3,7 @@
 # SmokeBridge module
 #
 #===========================================================================
+import enum
 from .Base import Base
 from .. import log
 from .. import message as Msg
@@ -39,16 +40,15 @@ class SmokeBridge(Base):
               address: 44.a3.79
     """
 
-    # broadcast group -> alert description
-    conditions = {
-        0x01 : 'smoke',
-        0x02 : 'CO',
-        0x03 : 'test',
-        0x05 : 'clear',
-        0x06 : 'low battery',
-        0x07 : 'error',
-        0x0a : 'heartbeat',
-        }
+    # broadcast group ID alert description
+    class Type(enum.IntEnum):
+        SMOKE = 0x01
+        CO = 0x02
+        TEST = 0x03
+        CLEAR = 0x05
+        LOW_BATTERY = 0x06
+        ERROR = 0x07
+        HEARTBEAT = 0x0A
 
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
@@ -63,7 +63,7 @@ class SmokeBridge(Base):
         """
         super().__init__(protocol, modem, address, name)
 
-        self.signal_state_change = Signal()  # emit(device, condition str)
+        self.signal_state_change = Signal()  # emit(device, Type type)
 
     #-----------------------------------------------------------------------
     def pair(self):
@@ -82,7 +82,8 @@ class SmokeBridge(Base):
         # Search our db to see if we have controller links for all our
         # groups back to the modem.  If one doesn't exist, add it on
         # our device and the modem.
-        for group in SmokeBridge.conditions:
+        for type in SmokeBridge.Type:
+            group = type.value
             if not self.db.find(self.modem.addr, group, True):
                 LOG.info("Smoke bridge adding ctrl for group %s", group)
                 self.db_add_ctrl_of(self.modem.addr, group)
@@ -131,22 +132,26 @@ class SmokeBridge(Base):
                      msg.group)
             return
 
-        # 0x11 ON command for the smoke bridge means the error is active.
-        elif msg.cmd1 == 0x11:
+        # 0x11 ON command for the smoke bridge means the error is
+        # active.  NOTE: there is no off command - that seems to be
+        # handled by the bridge sending the CLEAR condition group.
+        if msg.cmd1 == 0x11:
             LOG.info("Smoke bridge %s broadcast ON grp: %s", self.addr,
                      msg.group)
 
-            condition = self.conditions.get(msg.group, None)
-            if condition:
-                LOG.info("Smoke bridge %s signaling group %s", self.addr,
-                         msg.group)
-                self.signal_state_change.emit(self, condition)
-            else:
-                LOG.info("Smoke bridge %s ignoring group %s", self.addr,
-                         msg.group)
+            try:
+                condition = SmokeBridge.Type(msg.group)
+            except TypeError:
+                LOG.exception("Unknown smoke bridge group %s.", msg.group)
+                return
 
-        # Call handle_broadcast for any device that we're the
-        # controller of.
+            LOG.info("Smoke bridge %s signaling condition %s", self.addr,
+                     condition)
+            self.signal_state_change.emit(self, condition)
+
+        # As long as there is no errors (which return above), call
+        # handle_broadcast for any device that we're the controller
+        # of.
         super().handle_broadcast(msg)
 
     #-----------------------------------------------------------------------
