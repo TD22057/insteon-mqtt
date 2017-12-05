@@ -37,7 +37,11 @@ class Modem:
         self.protocol = protocol
         self.addr = None
         self.save_path = None
+
+        # Map of Address.id -> Device and name -> Device.  name is
+        # optional so devices might not be in that map.
         self.devices = {}
+        self.device_names = {}
         self.scenes = {}
         self.db = db.Modem()
 
@@ -104,7 +108,7 @@ class Modem:
             LOG.debug(str(self.db))
 
         # Read the device definitions and scenes.
-        self.devices = self._load_devices(data.get('devices', []))
+        self._load_devices(data.get('devices', []))
         #FUTURE: self.scenes = self._load_scenes(data.get('scenes', []))
 
         # Send refresh messages to each device to check if the
@@ -182,6 +186,8 @@ class Modem:
 
         """
         self.devices[device.addr.id] = device
+        if device.name:
+            self.device_names[device.name] = device
 
     #-----------------------------------------------------------------------
     def remove(self, device):
@@ -195,6 +201,8 @@ class Modem:
                     nothing is done.
         """
         self.devices.pop(device.addr.id, None)
+        if device.name:
+            self.device_names.pop(device.name, None)
 
     #-----------------------------------------------------------------------
     def find(self, addr):
@@ -213,6 +221,11 @@ class Modem:
         Returns:
           Returns the device object or None if it doesn't exist.
         """
+        # See if the input is a nice name first.
+        device = self.device_names.get(addr, None)
+        if device:
+            return device
+
         # Insure we have an Address object.
         addr = Address(addr)
         if addr == self.addr:
@@ -444,13 +457,12 @@ class Modem:
         Keys are the device type.  Value is the list of devices.  See
         config.yaml or the package documentation for an example.
 
-        Ar gs:
+        Args:
           data:   Configuration devices dictionary.
-
-        Returns:
-          Returns a dictionary mapping Insteon addresses to device objects.
         """
-        device_map = {}
+        self.devices.clear()
+        self.device_names.clear()
+
         for device_type in data:
             # Use a default list so that if the config field is empty,
             # the loop below will still work.
@@ -485,12 +497,10 @@ class Modem:
                     device.load_db()
 
                 # Store the device by ID in the map.
-                device_map[device.addr.id] = device
+                self.add(device)
 
-                # Notify anyone else tha ta new device is available.
+                # Notify anyone else that new device is available.
                 self.signal_new_device.emit(self, device)
-
-        return device_map
 
     #-----------------------------------------------------------------------
     def _load_scenes(self, data):
