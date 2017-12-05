@@ -82,11 +82,11 @@ class Mqtt:
     """
     def __init__(self, mqtt_link, modem):
         self.modem = modem
-        self.modem.signal_new_device.connect(self._new_device)
+        self.modem.signal_new_device.connect(self.handle_new_device)
 
         self.link = mqtt_link
-        self.link.signal_connected.connect(self._connected)
-        self.link.signal_message.connect(self._message)
+        self.link.signal_connected.connect(self.handle_connected)
+        self.link.signal_message.connect(self.handle_message)
 
         # Map of Address ID to MQTT device.
         self.devices = {}
@@ -176,7 +176,7 @@ class Mqtt:
         self.link.close()
 
     #-----------------------------------------------------------------------
-    def _connected(self, link, connected):
+    def handle_connected(self, link, connected):
         """MQTT (dis)connection callback.
 
         This is called when the low levle MQTT client connects to the
@@ -190,7 +190,7 @@ class Mqtt:
             self._subscribe()
 
     #-----------------------------------------------------------------------
-    def _new_device(self, modem, device):
+    def handle_new_device(self, modem, device):
         """New Insteon device callback.
 
         This is called when the Insteon modem creates a new device
@@ -220,26 +220,7 @@ class Mqtt:
         self.devices[device.addr.id] = obj
 
     #-----------------------------------------------------------------------
-    def _smoke_bridge(self, device, condition):
-        """Smoke bridge state change callback.
-
-        This is triggered via signal when the Insteon smoke bridge
-        sends an alert.  It will publish an MQTT message with the
-        alert.
-
-        Args:
-          device:    (device.Base) The Insteon device that changed.
-          condition: (str) The condition string.
-        """
-        LOG.info("MQTT received smoke bridge alert %s '%s' = %s",
-                 device.addr, device.name, condition)
-
-        topic = "%s/%s" % (self._state_topic, device.addr.hex)
-        payload = json.dumps({'condition' : condition})
-        self.publish(topic, payload, retain=self._retain)
-
-    #-----------------------------------------------------------------------
-    def _message(self, link, msg):
+    def handle_message(self, link, msg):
         """MQTT inbound message callback.
 
         This is called when an MQTT message is received.  Check it's

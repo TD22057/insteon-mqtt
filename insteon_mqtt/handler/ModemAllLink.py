@@ -103,6 +103,7 @@ class ModemAllLink(Base):
             #   - add device to modem (and save it in config? or db?)
             #   - download device db
             #   - link db to modem
+            #   - call pair() command to finish
 
             if msg.cmd == Msg.InpAllLinkComplete.Cmd.DELETE:
                 # Can this ever occur?  Not sure - maybe just delete
@@ -118,6 +119,9 @@ class ModemAllLink(Base):
                 is_ctrl = msg.cmd == Msg.InpAllLinkComplete.Cmd.CONTROLLER
                 entry = db.ModemEntry(msg.addr, msg.group, is_ctrl)
                 self.db.add_entry(entry)
+
+                # TODO: what about other end of link?  Need to see if
+                # device exists or not.
 
             return Msg.FINISHED
 

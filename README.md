@@ -15,6 +15,10 @@ features and devices.
   working with Home Assistant.  See config.yaml for documentation on how
   to configure the MQTT templates and HASS inputs.
 
+- 12/04/2017: Should be finished with the command line tools and basic
+  documentation this week at which point I'll create a dev branch and
+  use the main branch for deliveries.
+
 
 ## Current Status
 
@@ -69,6 +73,7 @@ Things for future versions:
 - heal network command (remove all db records for missing devices)
 - remove device command (remove device from all db records)
 - add db_erase function to devices and modem.
+
 
 ## Setup
 

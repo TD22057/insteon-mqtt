@@ -19,10 +19,10 @@ insteon:
   # Insteon HUB PLM network
   #port: "socket://192.168.1.5:9761"
 
-  # Modem Insteon address
+  # PLM modem Insteon hex address
   address: 44.85.11
 
-  # Database file location
+  # Device database file storage location.
   #storage: "/var/lib/insteon-mqtt"
   storage: "."
 
@@ -31,9 +31,9 @@ insteon:
   startup_refresh: False
 
   #------------------------------------------------------------------------
-  # Devices require the Insteon hex address and an optional name.
-  # Note that MQTT address topics are always the lower case hex address
-  # or the input name.
+  # Devices require the Insteon hex address and an optional name. Note
+  # that MQTT address topics are always the lower case hex address or
+  # the input name depending on how they are configured below.
   devices:
     # On/off switch devices (outlets, wall switches, appliance modules, etc).
     switch:
@@ -73,11 +73,11 @@ insteon:
 mqtt:
   broker: 127.0.0.1
   port: 1883
-  # Optional broker login
+  # Optional broker login data.
   #username:
   #password:
 
-  # Outbound messages configuration.  Retain should generally be one
+  # Outbound messages configuration.  Retain should generally be 1
   # so that the current state is available when someone subscribes.
   qos: 1
   retain: 0
@@ -86,7 +86,7 @@ mqtt:
   # documentation for details.  NOTE: This is usually not needed for
   # home automation - it's used by the command line tool to modify the
   # Insteon devices, network, and scenes.  The address or name of the
-  # device will follow the command topic (insteon/command/AA.BB.CC) to
+  # device will follow the command topic (insteon/command/aa.bb.cc) to
   # send these low level commands.
   cmd_topic: 'insteon/command'
 
@@ -98,13 +98,13 @@ mqtt:
   # In Home Assistant use MQTT switch with a configuration like:
   #   switch:
   #     - platform: mqtt
-  #       state_topic: 'insteon/AA.BB.CC/state'
-  #       command_topic: 'insteon/AA.BB.CC/set'
+  #       state_topic: 'insteon/aa.bb.cc/state'
+  #       command_topic: 'insteon/aa.bb.cc/set'
   switch:
     # Output state change topic and template.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
-    #   address = 'AA.BB.CC'
+    #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off', 'on'
@@ -146,7 +146,7 @@ mqtt:
     # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
-    #   address = 'AA.BB.CC'
+    #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off', 'on'
@@ -162,7 +162,7 @@ mqtt:
     # following:
     #   { "cmd" : "on"/"off", ["instant" : 0/1] }
     # Available variables for templating are:
-    #   address = 'AA.BB.CC'
+    #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
@@ -178,12 +178,15 @@ mqtt:
     # where:
     #   LEVEL = 0->255 dimmer level
     # Available variables for templating are:
-    #   address = 'AA.BB.CC'
+    #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
     level_topic: "insteon/{{address}}/level"
+    # NOTE: HASS JSON switch doesn't send brightness in some cases
+    # when actuated so handle that here in the template code.  The
+    # other HASS MQTT options also have this problem.
     level_payload: >
        { "cmd" : "{{json.state.lower()}}",
          "level" : {% if json.brightness is defined %}
@@ -199,21 +202,21 @@ mqtt:
   # In Home Assistant use MQTT binary sensor with a configuration like:
   #   binary_sensor:
   #     - platform: mqtt
-  #       state_topic: 'insteon/AA.BB.CC/state'
+  #       state_topic: 'insteon/aa.bb.cc/state'
   #       device_class: 'motion'
   #
   #     - platform: mqtt
-  #       state_topic: 'insteon/AA.BB.CC/dawn'
+  #       state_topic: 'insteon/aa.bb.cc/dawn'
   #       device_class: 'light'
   #
   #     - platform: mqtt
-  #       state_topic: 'insteon/AA.BB.CC/low_battery'
+  #       state_topic: 'insteon/aa.bb.cc/low_battery'
   #       device_class: 'battery'
   motion:
     # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
-    #   address = 'AA.BB.CC'
+    #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off', 'on'
@@ -223,7 +226,7 @@ mqtt:
     # Output dawn/dusk change topic and payload.  This message is sent
     # whenever the device light sensor detects dawn or dusk changes.
     # Available variables for templating are:
-    #   address = 'AA.BB.CC'
+    #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   is_dawn = 0/1
     #   is_dawn_str = 'off', 'on'
@@ -236,7 +239,7 @@ mqtt:
     # Output low battery topic and payload.  This message is sent
     # whenever the device detects a low battery. Available variables
     # for templating are:
-    #   address = 'AA.BB.CC'
+    #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   is_low = 0/1
     #   is_low_str = 'off', 'on'
@@ -250,24 +253,24 @@ mqtt:
   # In Home Assistant use MQTT binary sensor with a configuration like:
   #   binary_sensor:
   #     - platform: mqtt
-  #       state_topic: 'insteon/AA.BB.CC/smoke'
+  #       state_topic: 'insteon/aa.bb.cc/smoke'
   #       device_class: 'smoke'
   #
   #     - platform: mqtt
-  #       state_topic: 'insteon/AA.BB.CC/battery'
+  #       state_topic: 'insteon/aa.bb.cc/battery'
   #       device_class: 'battery'
   #
   #     - platform: mqtt
-  #       state_topic: 'insteon/AA.BB.CC/co'
+  #       state_topic: 'insteon/aa.bb.cc/co'
   #       device_class: 'gas'
   #
   #     - platform: mqtt
-  #       state_topic: 'insteon/AA.BB.CC/error'
+  #       state_topic: 'insteon/aa.bb.cc/error'
   smoke_bridge:
     # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
-    #   address = 'AA.BB.CC'
+    #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off', 'on'
