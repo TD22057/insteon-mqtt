@@ -216,7 +216,7 @@ class Mqtt:
         """
         # Extract the device name/address from the topic and use
         # it to find the device object to handle the command.
-        device_id = message.topic.topic.split("/")[-1]
+        device_id = message.topic.split("/")[-1]
         device = self.modem.find(device_id)
         if not device:
             LOG.error("Unknown Insteon device '%s'", device_id)
@@ -224,11 +224,14 @@ class Mqtt:
 
         # Decode the JSON payload.
         try:
-            data = json.loads(message.payload)
+            data = json.loads(message.payload.decode("utf-8"))
         except:
             LOG.exception("Error decoding command payload: %s",
                           message.payload)
             return
+
+        session = data.pop("session", None)
+        # TODO: handle session reply!
 
         # Find the command string and map it to the method to use
         # on the device.
@@ -247,7 +250,7 @@ class Mqtt:
         try:
             # Pass the rest of the command arguments as keywords
             # to the method.
-            cmd_func(**cmd)
+            cmd_func(**data)
         except:
             LOG.exception("Error running command %s on device %s", cmd,
                           device_id)

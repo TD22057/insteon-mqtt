@@ -163,11 +163,13 @@ class Manager:
         if self.unconnected:
             time_out = min(time_out, self.unconnected_time_out)
 
+        time_out *= 1000  # sec->msec
+
         # Keep polling until we get a successfull call with events.
         while True:
             try:
                 # events = (fileno, bit flags) of the actions.
-                events = self.poll.poll(1000 * time_out)  # sec->msec
+                events = self.poll.poll(time_out)
             except OSError as err:
                 # This error can occur sometimes when using a timeout.
                 # It should be ignored and the poll retried.

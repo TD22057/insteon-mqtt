@@ -220,6 +220,10 @@ class Modem:
         Returns:
           Returns the device object or None if it doesn't exist.
         """
+        addr = addr.lower()
+        if addr == "modem":
+            return self
+
         # See if the input is a nice name first.
         device = self.device_names.get(addr, None)
         if device:
@@ -479,6 +483,7 @@ class Modem:
                 if isinstance(device_config, dict):
                     assert len(device_config) == 1
                     addr, name = next(iter(device_config.items()))
+                    name = name.lower()
 
                 # Otherwise it's just the address
                 else:
