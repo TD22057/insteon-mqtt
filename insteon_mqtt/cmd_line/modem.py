@@ -40,7 +40,7 @@ def set_btn(args, config):
 def callback(client, data, message):
     global _loop
 
-    print("RECV:",message.payload.decode("utf-8"))
+    print("RECV:", message.payload.decode("utf-8"))
     _loop = False
 
 

@@ -220,25 +220,34 @@ class Modem:
         Returns:
           Returns the device object or None if it doesn't exist.
         """
-        addr = addr.lower()
+        # Handle string device name requests.
+        if isinstance(addr, str):
+            addr = addr.lower()
+
         if addr == "modem":
             return self
 
-        # See if the input is a nice name first.
+        # See if the input is one of the "nice" device names.
         device = self.device_names.get(addr, None)
         if device:
             return device
 
-        # Insure we have an Address object.
-        addr = Address(addr)
+        # Otherwise, try and parse the input as an Insteon address.
+        try:
+            addr = Address(addr)
+        except:
+            LOG.exception("Invalid Insteon address or unknown device name "
+                          "'%s'", addr)
+            return None
+
+        # Device address is the modem.
         if addr == self.addr:
             return self
 
+        # Otherwise try and find the device by address.  None is
+        # returned if it doesn't exist.
         device = self.devices.get(addr.id, None)
-        if device:
-            return device
-
-        return None
+        return device
 
     #-----------------------------------------------------------------------
     def reload_all(self):

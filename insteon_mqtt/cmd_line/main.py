@@ -4,8 +4,6 @@
 #
 #===========================================================================
 import argparse
-import logging
-import logging.handlers
 import sys
 import yaml
 from . import device
@@ -18,18 +16,17 @@ def parse_args(args):
     """
     p = argparse.ArgumentParser(prog="insteon-mqtt",
                                 description="Inseton<->MQTT tool")
-    p.add_argument("-l", "--log", metavar="log_File",
-                   help="Logging file to use.  Use 'stdout' for the screen.")
-    p.add_argument("--level", metavar="log_level", type=int,
-                   help="Logging level to use.  10=debug, 20=info,"
-                   "30=warn, 40=error, 50=critical")
-    p.add_argument("-c", "--config", metavar="config.yaml", required=True,
-                   help="Config file to load the command topic from.")
+    p.add_argument("config", metavar="config.yaml", help="Config file to use.")
     sub = p.add_subparsers()
 
     #---------------------------------------
     # START command
     sp = sub.add_parser("start", help="Start the Insteon<->MQTT server.")
+    sp.add_argument("-l", "--log", metavar="log_File",
+                   help="Logging file to use.  Use 'stdout' for the screen.")
+    sp.add_argument("--level", metavar="log_level", type=int,
+                   help="Logging level to use.  10=debug, 20=info,"
+                   "30=warn, 40=error, 50=critical")
     sp.set_defaults(func=start.start)
 
     #---------------------------------------
@@ -68,7 +65,7 @@ def parse_args(args):
                     help="Instant (rather than ramping) on.")
     sp.set_defaults(func=device.off)
 
-    s="""
+    s = """
     ALL:
     'db_add_ctrl_of': addr, group, [data], [two_way]
     'db_add_resp_of': addr, group, [data], [two_way]
@@ -91,7 +88,7 @@ def parse_args(args):
 
     #---------------------------------------
     # modem.add_ctrl command
-    s="""
+    s = """
     sp = sub.add_parser("addctrl", help="Turn on modem linking.")
     sp.set_defaults(func=add.add_ctrl)
     sp.add_argument("address", help="Device address or name or 'modem'.")
