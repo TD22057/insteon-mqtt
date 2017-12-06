@@ -46,16 +46,16 @@ Here's what works so far:
 - automatically link devices to the modem including all needed groups
   (for complicated devices like the fanlinkc, smoke bridge, and thermostat)
 - MQTT payload templates.
-
-
-Things remaining to do for the initial release:
-
 - command line tool for sending messages (short cut to MQTT publish)
   - include some kind of reply system (mqtt session ID) for getting results
     back from command
 - command line tool for running the server
   - logging control
   - config file and db save file location control
+
+
+Things remaining to do for the initial release:
+
 - basic user documentation (github markdown pages)
 
 
