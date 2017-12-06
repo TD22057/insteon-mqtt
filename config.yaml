@@ -128,8 +128,7 @@ mqtt:
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
-    # passing the payload through the payload must match one of th
-    # following:
+    # passing the payload through the payload must match the following:
     #   { "cmd" : 'on'/'off', ["instant" : 0/1] }
     # Available variables for templating are:
     #   value = the input payload
@@ -153,10 +152,6 @@ mqtt:
   #       command_topic: "insteon/48.b0.ad/level"
   #       brightness: true
   #
-  # NOTE: this is not great.  HASS sends just ON when clicking on even
-  # though it remembers the last dimmer level and thinks that's what's
-  # going to be set.  I'm going to submit a PR in the future to fix
-  # this so that brightness is always sent in the JSON light payload.
   dimmer:
     # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
@@ -173,8 +168,7 @@ mqtt:
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
-    # passing the payload through the payload must match one of th
-    # following:
+    # passing the payload through the payload must match the following:
     #   { "cmd" : "on"/"off", ["instant" : 0/1] }
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
@@ -188,7 +182,7 @@ mqtt:
     # Input dimming on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off and setting the
     # level.  The output of passing the payload through the payload
-    # must match one of th following:
+    # passing the payload through the payload must match the following:
     #   { "cmd" : "on"/"off", "level" : LEVEL, ["instant" : 0/1] }
     # where:
     #   LEVEL = 0->255 dimmer level
