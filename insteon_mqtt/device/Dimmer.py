@@ -168,7 +168,7 @@ class Dimmer(Base):
     def increment_up(self):
         """Increment the current level up.
 
-        Levels increment in usits of 32 (8 divisions from off to on).
+        Levels increment in units of 8 (32 divisions from off to on).
 
         This will send the command to the device to update it's state.
         When we get an ACK of the result, we'll change our internal
@@ -184,7 +184,7 @@ class Dimmer(Base):
     def increment_down(self):
         """Increment the current level down.
 
-        Levels increment in usits of 32 (8 divisions from off to on).
+        Levels increment in units of 8 (32 divisions from off to on).
 
         This will send the command to the device to update it's state.
         When we get an ACK of the result, we'll change our internal

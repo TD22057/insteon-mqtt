@@ -60,6 +60,8 @@ def initialize(level=None, screen=None, file=None, config=None):
         log_obj.addHandler(handler)
 
     if file:
+        # Use a watched file handler - that way LINUX system log
+        # rotation works properly.
         handler = logging.handlers.WatchedFileHandler(file)
         handler.setFormatter(formatter)
         log_obj.addHandler(handler)

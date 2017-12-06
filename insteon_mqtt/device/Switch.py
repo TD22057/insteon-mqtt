@@ -104,13 +104,14 @@ class Switch(Base):
         return self._is_on
 
     #-----------------------------------------------------------------------
-    def on(self, instant=False):
+    def on(self, level=None, instant=False):
         """Turn the device on.
 
         This will send the command to the device to update it's state.
         When we get an ACK of the result, we'll change our internal
         state and emit the state changed signals.
 
+        TODO: doc
         Args:
           instant:  (bool) False for a normal ramping change, True for an
                     instant change.
