@@ -1,0 +1,56 @@
+2017-11-25 18:31:41 INFO Protocol: Write to modem: Ext: 3A.29.84, Type.DIRECT ext, 2f 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00
+2017-11-25 18:31:41 DEBUG Protocol: Write to modem: 02 62 3a 29 84 1f 2f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 d1
+2017-11-25 18:31:41 DEBUG Mqtt: MQTT writing
+2017-11-25 18:31:41 DEBUG Serial: Wrote 22 bytes to serial /dev/insteon
+2017-11-25 18:31:41 INFO Protocol: Read 0x62: Ext: 3A.29.84, Type.DIRECT ext, 2f 00 ack: True
+00 00 00 00 00 00 00 00 00 00 00 00 00 d1
+2017-11-25 18:31:41 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:31:41 INFO Protocol: Read 0x50: Std: 3A.29.84->44.85.11 Type.DIRECT_ACK cmd: 2f 00
+2017-11-25 18:31:41 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:31:41 INFO DeviceGetDb: 3A.29.84 device ACK response
+2017-11-25 18:31:42 INFO Protocol: Read 0x51: Ext: 3A.29.84->44.85.11 Type.DIRECT ext cmd: 2f 00
+01 01 0f ff 00 a2 01 44 85 11 fe 1c 00 2a
+2017-11-25 18:31:42 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:31:42 INFO Device: Adding db record 44.85.11 grp: 1 lev: 254
+2017-11-25 18:31:43 INFO Protocol: Read 0x51: Ext: 3A.29.84->44.85.11 Type.DIRECT ext cmd: 2f 00
+01 01 0f f7 00 e2 01 44 85 11 03 1c 00 ed
+2017-11-25 18:31:43 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:31:43 INFO Device: Adding db record 44.85.11 grp: 1 lev: 3
+2017-11-25 18:31:43 INFO Protocol: Read 0x51: Ext: 3A.29.84->44.85.11 Type.DIRECT ext cmd: 2f 00
+01 01 0f ef 00 a2 01 48 3d 46 fe 1c 00 49
+2017-11-25 18:31:43 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:31:43 INFO Device: Adding db record 48.3D.46 grp: 1 lev: 254
+2017-11-25 18:31:43 INFO Protocol: Read 0x51: Ext: 3A.29.84->44.85.11 Type.DIRECT ext cmd: 2f 00
+01 01 0f e7 00 a2 03 44 85 11 00 00 00 5a
+2017-11-25 18:31:43 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:31:43 INFO Device: Adding db record 44.85.11 grp: 3 lev: 0
+2017-11-25 18:31:44 INFO Protocol: Read 0x51: Ext: 3A.29.84->44.85.11 Type.DIRECT ext cmd: 2f 00
+01 01 0f df 00 e2 01 48 b0 ad 03 1c 00 3a
+2017-11-25 18:31:44 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:31:44 INFO Device: Adding db record 48.B0.AD grp: 1 lev: 3
+2017-11-25 18:31:44 INFO Protocol: Read 0x51: Ext: 3A.29.84->44.85.11 Type.DIRECT ext cmd: 2f 00
+01 01 0f d7 00 e2 01 48 3d 46 03 1c 00 1c
+2017-11-25 18:31:44 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:31:44 INFO Device: Adding db record 48.3D.46 grp: 1 lev: 3
+2017-11-25 18:31:44 INFO Protocol: Read 0x51: Ext: 3A.29.84->44.85.11 Type.DIRECT ext cmd: 2f 00
+01 01 0f cf 00 22 02 48 80 ad 03 1c 00 39
+2017-11-25 18:31:44 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:31:44 INFO Device: Ignoring device db record in_use = False
+2017-11-25 18:31:45 INFO Protocol: Read 0x51: Ext: 3A.29.84->44.85.11 Type.DIRECT ext cmd: 2f 00
+01 01 0f c7 00 22 02 48 80 ad 03 1c 00 41
+2017-11-25 18:31:45 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:31:45 INFO Device: Ignoring device db record in_use = False
+2017-11-25 18:31:45 INFO Protocol: Read 0x51: Ext: 3A.29.84->44.85.11 Type.DIRECT ext cmd: 2f 00
+01 01 0f bf 00 00 00 00 00 00 00 00 00 01
+2017-11-25 18:31:45 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:31:45 INFO Base: 3A.29.84 database download complete
+DeviceDb: (delta 9)
+  0fff: 44.85.11 grp:   1 type: RESP data: 0xfe 0x1c 0x00
+  0ff7: 44.85.11 grp:   1 type: CTRL data: 0x03 0x1c 0x00
+  0fe7: 44.85.11 grp:   3 type: RESP data: 0x00 0x00 0x00
+  0fef: 48.3D.46 grp:   1 type: RESP data: 0xfe 0x1c 0x00
+  0fd7: 48.3D.46 grp:   1 type: CTRL data: 0x03 0x1c 0x00
+  0fdf: 48.B0.AD grp:   1 type: CTRL data: 0x03 0x1c 0x00
+GroupMap
+  1 -> ['44.85.11', '48.B0.AD', '48.3D.46']

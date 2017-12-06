@@ -1,0 +1,21 @@
+2017-11-25 18:31:40 INFO Mqtt: MQTT message insteon/set/3a.29.84 b'{ "cmd" : "refresh" }'
+2017-11-25 18:31:40 INFO Mqtt: Insteon command: insteon/set/3a.29.84 b'{ "cmd" : "refresh" }'
+2017-11-25 18:31:40 INFO Base: Device 3A.29.84 cmd: status refresh
+2017-11-25 18:31:40 INFO Protocol: Write to modem: Std: 3A.29.84, Type.DIRECT, 19 00
+2017-11-25 18:31:40 DEBUG Protocol: Write to modem: 02 62 3a 29 84 0f 19 00
+2017-11-25 18:31:40 DEBUG Serial: Wrote 8 bytes to serial /dev/insteon
+2017-11-25 18:31:41 INFO Protocol: Read 0x62: Std: 3A.29.84, Type.DIRECT, 19 00 ack: True
+2017-11-25 18:31:41 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:31:41 DEBUG StandardCmd: 3A.29.84 got msg ACK
+2017-11-25 18:31:41 INFO Protocol: Read 0x50: Std: 3A.29.84->44.85.11 Type.DIRECT_ACK cmd: 09 00
+2017-11-25 18:31:41 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:31:41 DEBUG Dimmer: Dimmer 3A.29.84 refresh message: Std: 3A.29.84->44.85.11 Type.DIRECT_ACK cmd: 09 00
+2017-11-25 18:31:41 INFO Dimmer: Setting device 3A.29.84 'lamp2' on 0
+2017-11-25 18:31:41 INFO Mqtt: MQTT received level change 3A.29.84 'lamp2' = 0x00
+2017-11-25 18:31:41 DEBUG Mqtt: MQTT publish insteon/state/3A.29.84 {"level": 0} qos=1 ret=0
+2017-11-25 18:31:41 INFO Base: Device 3A.29.84 db out of date - refreshing
+2017-11-25 18:31:41 DEBUG Protocol: Write handler finished
+
+==========================================
+
+then get_db: see str_getdb

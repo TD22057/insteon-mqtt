@@ -1,0 +1,17 @@
+add w/ unused entry available
+==========================================
+2017-11-25 18:30:54 INFO Mqtt: MQTT message insteon/set/3a.29.84 b'{ "cmd" : "db_add_resp", "addr" : "44.85.11", "group" : 3 }'
+2017-11-25 18:30:54 INFO Mqtt: Insteon command: insteon/set/3a.29.84 b'{ "cmd" : "db_add_resp", "addr" : "44.85.11", "group" : 3 }'
+2017-11-25 18:30:54 INFO Device: Device 3A.29.84 adding db: 44.85.11 grp 3 RESP b'\x00\x00\x00'
+2017-11-25 18:30:54 INFO Device: Device 3A.29.84 using unused entry at mem 0x0fe7
+2017-11-25 18:30:54 INFO Protocol: Write to modem: Ext: 3A.29.84, Type.DIRECT ext, 2f 00
+00 02 0f e7 08 a2 03 44 85 11 00 00 00 00
+2017-11-25 18:30:54 DEBUG Protocol: Write to modem: 02 62 3a 29 84 1f 2f 00 00 02 0f e7 08 a2 03 44 85 11 00 00 00 52
+2017-11-25 18:30:54 DEBUG Serial: Wrote 22 bytes to serial /dev/insteon
+2017-11-25 18:30:54 INFO Protocol: Read 0x62: Ext: 3A.29.84, Type.DIRECT ext, 2f 00 ack: True
+00 02 0f e7 08 a2 03 44 85 11 00 00 00 52
+2017-11-25 18:30:54 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:30:54 INFO Protocol: Read 0x50: Std: 3A.29.84->44.85.11 Type.DIRECT_ACK cmd: 2f 00
+2017-11-25 18:30:54 DEBUG Protocol: Passing msg to write handler
+2017-11-25 18:30:54 INFO Device: Device.update added entry: 0fe7: 44.85.11 grp:   3 type: RESP data: 0x00 0x00 0x00
+2017-11-25 18:30:54 DEBUG Protocol: Write handler finished

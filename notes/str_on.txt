@@ -1,0 +1,13 @@
+2017-12-06 12:33:15 INFO Dimmer: Dimmer 48.3d.46 cmd: on 255
+2017-12-06 12:33:15 INFO Protocol: Write to modem: Std: 48.3d.46, Type.DIRECT, 11 ff
+2017-12-06 12:33:15 DEBUG Protocol: Write to modem: 02 62 48 3d 46 0f 11 ff
+2017-12-06 12:33:15 DEBUG Serial: Wrote 8 bytes to serial /dev/insteon
+2017-12-06 12:33:15 INFO Protocol: Skipping unknown message type 0x02
+2017-12-06 12:33:15 DEBUG Protocol: No 0x02 starting byte found - clearing
+2017-12-06 12:33:16 INFO Protocol: Read 0x50: Std: 48.3d.46->44.85.11 Type.DIRECT_ACK cmd: 11 ff
+2017-12-06 12:33:16 DEBUG Protocol: Passing msg to write handler
+2017-12-06 12:33:16 DEBUG Dimmer: Dimmer 48.3d.46 ACK: Std: 48.3d.46->44.85.11 Type.DIRECT_ACK cmd: 11 ff
+2017-12-06 12:33:16 INFO Dimmer: Setting device 48.3d.46 'None' on 255
+2017-12-06 12:33:16 INFO Dimmer: MQTT received level change 48.3d.46 'None' = 255
+2017-12-06 12:33:16 DEBUG Mqtt: MQTT publish insteon/48.3d.46/state { "state" : "ON", "brightness" : 255 } qos=1 ret=0
+2017-12-06 12:33:16 DEBUG Protocol: Write handler finished

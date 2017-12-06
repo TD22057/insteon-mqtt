@@ -1,0 +1,65 @@
+2017-11-25 17:14:42 INFO Protocol: Read 0x50: Std: 21.D6.D9 Type.ALL_LINK_BROADCAST grp: 01 cmd: 11 01
+2017-11-25 17:14:42 INFO Broadcast: Handling all link broadcast for 21.D6.D9 'motion'
+2017-11-25 17:14:42 INFO Motion: Motion 21.D6.D9 broadcast ON grp: 1
+2017-11-25 17:14:42 INFO Motion: Setting device 21.D6.D9 'motion' on True
+2017-11-25 17:14:42 INFO Mqtt: MQTT received active change 21.D6.D9 'motion' = True
+2017-11-25 17:14:42 DEBUG Mqtt: MQTT publish insteon/state/21.D6.D9 ON qos=1 ret=0
+2017-11-25 17:14:42 DEBUG Motion: Motion 21.D6.D9 have db 0
+2017-11-25 17:14:42 DEBUG Base: Found 0 responders in group 1
+2017-11-25 17:14:42 DEBUG Base: Group 1 -> []
+2017-11-25 17:14:42 DEBUG Mqtt: MQTT writing
+2017-11-25 17:14:42 INFO Protocol: Read 0x50: Std: 21.D6.D9 Type.ALL_LINK_BROADCAST grp: 01 cmd: 11 01
+2017-11-25 17:14:42 INFO Broadcast: Handling all link broadcast for 21.D6.D9 'motion'
+2017-11-25 17:14:42 INFO Motion: Motion 21.D6.D9 broadcast ON grp: 1
+2017-11-25 17:14:42 INFO Motion: Setting device 21.D6.D9 'motion' on True
+2017-11-25 17:14:42 INFO Mqtt: MQTT received active change 21.D6.D9 'motion' = True
+2017-11-25 17:14:42 DEBUG Mqtt: MQTT publish insteon/state/21.D6.D9 ON qos=1 ret=0
+2017-11-25 17:14:42 DEBUG Motion: Motion 21.D6.D9 have db 0
+2017-11-25 17:14:42 DEBUG Base: Found 0 responders in group 1
+2017-11-25 17:14:42 DEBUG Base: Group 1 -> []
+2017-11-25 17:14:42 DEBUG Mqtt: MQTT writing
+==========================================
+pause 30 sec
+==========================================
+2017-11-25 17:15:12 INFO Protocol: Read 0x50: Std: 21.D6.D9 Type.ALL_LINK_CLEANUP grp: 01 cmd: 11 01
+2017-11-25 17:15:12 INFO Protocol: Read 0x50: Std: 21.D6.D9 Type.ALL_LINK_BROADCAST grp: 01 cmd: 06 02
+2017-11-25 17:15:12 INFO Broadcast: Handling all link broadcast for 21.D6.D9 'motion'
+2017-11-25 17:15:12 INFO Motion: Motion 21.D6.D9 broadcast ACK grp: 1
+2017-11-25 17:15:12 INFO Protocol: Read 0x50: Std: 21.D6.D9 Type.ALL_LINK_BROADCAST grp: 01 cmd: 06 02
+2017-11-25 17:15:12 INFO Broadcast: Handling all link broadcast for 21.D6.D9 'motion'
+2017-11-25 17:15:12 INFO Motion: Motion 21.D6.D9 broadcast ACK grp: 1
+
+==========================================
+
+
+2017-11-25 17:17:11 INFO Protocol: Read 0x50: Std: 21.D6.D9 Type.ALL_LINK_BROADCAST grp: 01 cmd: 13 01
+2017-11-25 17:17:11 INFO Broadcast: Handling all link broadcast for 21.D6.D9 'motion'
+2017-11-25 17:17:11 INFO Motion: Motion 21.D6.D9 broadcast OFF grp: 1
+2017-11-25 17:17:11 INFO Motion: Setting device 21.D6.D9 'motion' on False
+2017-11-25 17:17:11 INFO Mqtt: MQTT received active change 21.D6.D9 'motion' = False
+2017-11-25 17:17:11 DEBUG Mqtt: MQTT publish insteon/state/21.D6.D9 OFF qos=1 ret=0
+2017-11-25 17:17:11 DEBUG Motion: Motion 21.D6.D9 have db 0
+2017-11-25 17:17:11 DEBUG Base: Found 0 responders in group 1
+2017-11-25 17:17:11 DEBUG Base: Group 1 -> []
+2017-11-25 17:17:11 DEBUG Mqtt: MQTT writing
+2017-11-25 17:17:11 INFO Protocol: Read 0x50: Std: 21.D6.D9 Type.ALL_LINK_BROADCAST grp: 01 cmd: 13 01
+2017-11-25 17:17:11 INFO Broadcast: Handling all link broadcast for 21.D6.D9 'motion'
+2017-11-25 17:17:11 INFO Motion: Motion 21.D6.D9 broadcast OFF grp: 1
+2017-11-25 17:17:11 INFO Motion: Setting device 21.D6.D9 'motion' on False
+2017-11-25 17:17:11 INFO Mqtt: MQTT received active change 21.D6.D9 'motion' = False
+2017-11-25 17:17:11 DEBUG Mqtt: MQTT publish insteon/state/21.D6.D9 OFF qos=1 ret=0
+2017-11-25 17:17:11 DEBUG Motion: Motion 21.D6.D9 have db 0
+2017-11-25 17:17:11 DEBUG Base: Found 0 responders in group 1
+2017-11-25 17:17:11 DEBUG Base: Group 1 -> []
+2017-11-25 17:17:11 DEBUG Mqtt: MQTT writing
+==========================================
+pause 30 sec
+==========================================
+
+2017-11-25 17:17:41 INFO Protocol: Read 0x50: Std: 21.D6.D9 Type.ALL_LINK_CLEANUP grp: 01 cmd: 13 01
+2017-11-25 17:17:41 INFO Protocol: Read 0x50: Std: 21.D6.D9 Type.ALL_LINK_BROADCAST grp: 01 cmd: 06 02
+2017-11-25 17:17:41 INFO Broadcast: Handling all link broadcast for 21.D6.D9 'motion'
+2017-11-25 17:17:41 INFO Motion: Motion 21.D6.D9 broadcast ACK grp: 1
+2017-11-25 17:17:41 INFO Protocol: Read 0x50: Std: 21.D6.D9 Type.ALL_LINK_BROADCAST grp: 01 cmd: 06 02
+2017-11-25 17:17:41 INFO Broadcast: Handling all link broadcast for 21.D6.D9 'motion'
+2017-11-25 17:17:41 INFO Motion: Motion 21.D6.D9 broadcast ACK grp: 1

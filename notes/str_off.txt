@@ -1,0 +1,16 @@
+2017-12-06 12:33:16 DEBUG Mqtt: MQTT writing
+2017-12-06 12:34:30 INFO Dimmer: Dimmer 48.3d.46 cmd: off
+2017-12-06 12:34:30 INFO Protocol: Write to modem: Std: 48.3d.46, Type.DIRECT, 13 00
+2017-12-06 12:34:30 DEBUG Protocol: Write to modem: 02 62 48 3d 46 0f 13 00
+2017-12-06 12:34:30 DEBUG Serial: Wrote 8 bytes to serial /dev/insteon
+2017-12-06 12:34:30 INFO Protocol: Read 0x62: Std: 48.3d.46, Type.DIRECT, 13 00 ack: True
+2017-12-06 12:34:30 DEBUG Protocol: Passing msg to write handler
+2017-12-06 12:34:30 DEBUG StandardCmd: 48.3d.46 got msg ACK
+2017-12-06 12:34:31 INFO Protocol: Read 0x50: Std: 48.3d.46->44.85.11 Type.DIRECT_ACK cmd: 13 00
+2017-12-06 12:34:31 DEBUG Protocol: Passing msg to write handler
+2017-12-06 12:34:31 DEBUG Dimmer: Dimmer 48.3d.46 ACK: Std: 48.3d.46->44.85.11 Type.DIRECT_ACK cmd: 13 00
+2017-12-06 12:34:31 INFO Dimmer: Setting device 48.3d.46 'None' on 0
+2017-12-06 12:34:31 INFO Dimmer: MQTT received level change 48.3d.46 'None' = 0
+2017-12-06 12:34:31 DEBUG Mqtt: MQTT publish insteon/48.3d.46/state { "state" : "OFF", "brightness" : 0 } qos=1 ret=0
+2017-12-06 12:34:31 DEBUG Protocol: Write handler finished
+2017-12-06 12:34:31 DEBUG Mqtt: MQTT writing
