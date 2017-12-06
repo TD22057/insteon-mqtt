@@ -89,9 +89,11 @@ class Remote(Base):
             if not self.db.find(self.modem.addr, group, True):
                 LOG.info("Remote adding ctrl for group %s", group)
                 self.db_add_ctrl_of(self.modem.addr, group)
+            else:
+                LOG.info("Remote ctrl for group %s already exists", group)
 
     #-----------------------------------------------------------------------
-    def refresh(self):
+    def refresh(self, force=False):
         """Refresh the current device state and database if needed.
 
         This sends a ping to the device.  The reply has the current
@@ -105,7 +107,7 @@ class Remote(Base):
         """
         # TODO: figure out if we can ping the remote and get any kind
         # of state from it including the database version.
-        pass
+        super().refresh(force)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):

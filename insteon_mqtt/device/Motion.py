@@ -3,6 +3,7 @@
 # Insteon battery powered motion sensor
 #
 #===========================================================================
+import enum
 from .Base import Base
 from .. import log
 from ..Signal import Signal
@@ -54,6 +55,12 @@ class Motion(Base):
                  current.  Reloads the modem database if needed.
 
     """
+    # broadcast group ID alert description
+    class Type(enum.IntEnum):
+        MOTION = 0x01
+        DUSK = 0x02
+        LOW_BATTERY = 0x03
+
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
 
@@ -91,12 +98,19 @@ class Motion(Base):
         """
         LOG.info("Motion %s pairing", self.addr)
 
-        # Search our db to see if we have controller links for group 1
-        # back to the modem.  If one doesn't exist, add it on our
+        # Search our db to see if we have controller links for groups
+        # 1-3 back to the modem.  If one doesn't exist, add it on our
         # device and the modem.
-        if not self.db.find(self.modem.addr, 1, True):
-            LOG.info("Motion adding ctrl for group 1")
-            self.db_add_ctrl_of(self.modem.addr, 1)
+        # Search our db to see if we have controller links for all our
+        # groups back to the modem.  If one doesn't exist, add it on
+        # our device and the modem.
+        for type in Motion.Type:
+            group = type.value
+            if not self.db.find(self.modem.addr, group, True):
+                LOG.info("Motion adding ctrl for group %s", group)
+                self.db_add_ctrl_of(self.modem.addr, group)
+            else:
+                LOG.info("Motion ctrl for group %s already exists", group)
 
     #-----------------------------------------------------------------------
     def is_on(self):
@@ -139,21 +153,25 @@ class Motion(Base):
         # On command.
         elif msg.cmd1 == 0x11:
             LOG.info("Motion %s broadcast ON grp: %s", self.addr, msg.group)
-            if msg.group == 1:
+            if msg.group == Motion.Type.MOTION:
                 self._set_is_on(True)
-            elif msg.group == 2:
+
+            elif msg.group == Motion.Type.DUSK:
                 self.signal_dusk.emit(False)  # on = dawn
-            elif msg.group == 3:
+
+            elif msg.group == Motion.Type.LOW_BATTERY:
                 self.signal_low_battery.emit(True)
 
         # Off command.
         elif msg.cmd1 == 0x13:
             LOG.info("Motion %s broadcast OFF grp: %s", self.addr, msg.group)
-            if msg.group == 1:
+            if msg.group == Motion.Type.MOTION:
                 self._set_is_on(False)
-            elif msg.group == 2:
+
+            elif msg.group == Motion.Type.DUSK:
                 self.signal_dusk.emit(True)  # off = dusk
-            elif msg.group == 3:
+
+            elif msg.group == Motion.Type.LOW_BATTERY:
                 self.signal_low_battery.emit(False)
 
         # Broadcast to the devices we're linked to. Call

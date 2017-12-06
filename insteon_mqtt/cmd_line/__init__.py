@@ -11,5 +11,6 @@ __doc__ = """TODO: doc
 #===========================================================================
 from . import device
 from . import modem
+from . import util
 
 from .main import main

@@ -55,9 +55,8 @@ class Modem:
             'db_add_ctrl_of' : self.db_add_ctrl_of,
             'db_add_resp_of' : self.db_add_resp_of,
             'db_delete' : self.db_delete,
-            'db_get' : self.db_get,
             'refresh' : self.db_get,
-            'reload_all' : self.reload_all,
+            'refresh_all' : self.refresh_all,
             'set_btn' : self.set_btn,
             }
 
@@ -250,8 +249,8 @@ class Modem:
         return device
 
     #-----------------------------------------------------------------------
-    def reload_all(self):
-        """Reload all the all link databases.
+    def refresh_all(self, force=False):
+        """Refresh all the all link databases.
 
         This forces a refresh of the modem and device databases.  This
         can take a long time - up to 5 seconds per device some times
@@ -263,7 +262,7 @@ class Modem:
 
         # Reload all the device databases.
         for device in self.devices.values():
-            device.db_get()
+            device.refresh(force)
 
     #-----------------------------------------------------------------------
     def db_add_ctrl_of(self, addr, group, data=None, two_way=True,

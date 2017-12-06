@@ -87,9 +87,11 @@ class SmokeBridge(Base):
             if not self.db.find(self.modem.addr, group, True):
                 LOG.info("Smoke bridge adding ctrl for group %s", group)
                 self.db_add_ctrl_of(self.modem.addr, group)
+            else:
+                LOG.info("Motion ctrl for group %s already exists", group)
 
     #-----------------------------------------------------------------------
-    def refresh(self):
+    def refresh(self, force=False):
         """Refresh the current device state and database if needed.
 
         This sends a ping to the device.  Smoke bridge can't report
@@ -104,7 +106,7 @@ class SmokeBridge(Base):
         # bridge dev guide p25.  See the Base.refresh() comments for
         # more details.
         msg = Msg.OutStandard.direct(self.addr, 0x1f, 0x01)
-        msg_handler = handler.DeviceRefresh(self, msg, num_retry=3)
+        msg_handler = handler.DeviceRefresh(self, msg, force, num_retry=3)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

@@ -22,7 +22,7 @@ class DeviceRefresh(Base):
     The reply is passed to the Device.handle_db_update so it knows
     whether to store the updated result or not.
     """
-    def __init__(self, device, msg, num_retry=3):
+    def __init__(self, device, msg, force, num_retry=3):
         """Constructor
 
         TODO: doc
@@ -34,6 +34,7 @@ class DeviceRefresh(Base):
         self.device = device
         self.addr = device.addr
         self.msg = msg
+        self.force = force
         self.send_count = 1
         self.num_retry = num_retry
 
@@ -104,7 +105,7 @@ class DeviceRefresh(Base):
 
             # All link database delta is stored in cmd1 so we if we have
             # the latest version.  If not, schedule an update.
-            if self.device.db.is_current(msg.cmd1):
+            if not self.force and self.device.db.is_current(msg.cmd1):
                 LOG.info("Device database is current at delta %s", msg.cmd1)
 
             else:

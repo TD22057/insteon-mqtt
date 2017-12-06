@@ -214,6 +214,8 @@ class Mqtt:
           link:  (network.Link) The MQTT link the message was read from.
           msg:   Paho.mqtt message object.  has attributes topic and pyaload.
         """
+        LOG.info("MQTT message %s %s", message.topic, message.payload)
+
         # Extract the device name/address from the topic and use
         # it to find the device object to handle the command.
         device_id = message.topic.split("/")[-1]

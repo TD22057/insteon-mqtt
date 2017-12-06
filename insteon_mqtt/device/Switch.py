@@ -93,9 +93,12 @@ class Switch(Base):
         # Search our db to see if we have controller links for group 1
         # back to the modem.  If one doesn't exist, add it on our
         # device and the modem.
-        if not self.db.find(self.modem.addr, 1, True):
-            LOG.info("Switch adding ctrl for group 1")
-            self.db_add_ctrl_of(self.modem.addr, 1)
+        group = 1
+        if not self.db.find(self.modem.addr, group, True):
+            LOG.info("Switch adding ctrl for group %s", group)
+            self.db_add_ctrl_of(self.modem.addr, group)
+        else:
+            LOG.info("Switch ctrl for group %s already exists", group)
 
     #-----------------------------------------------------------------------
     def is_on(self):

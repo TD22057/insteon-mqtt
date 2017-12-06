@@ -4,6 +4,7 @@
 # including wall switches, lamp modules, and some remotes.
 #
 #===========================================================================
+import functools
 from .Base import Base
 from .. import handler
 from .. import log
@@ -100,9 +101,17 @@ class Dimmer(Base):
         # Search our db to see if we have controller links for group 1
         # back to the modem.  If one doesn't exist, add it on our
         # device and the modem.
-        if not self.db.find(self.modem.addr, 1, True):
-            LOG.info("Dimmer adding ctrl for group 1")
-            self.db_add_ctrl_of(self.modem.addr, 1)
+        group = 1
+
+        if not self.db.find(self.modem.addr, group, True):
+            LOG.info("Dimmer adding ctrl for group %s", group)
+            self.db_add_ctrl_of(self.modem.addr, group)
+        else:
+            LOG.info("Dimmer ctrl for group %s already exists", group)
+
+        # TODO: for a devices, check other end of the link -
+        # i.e. check the device and the modem.  This is especially a
+        # problem for battery devices which won't respond when asleep.
 
     #-----------------------------------------------------------------------
     def on(self, level=0xFF, instant=False):
@@ -177,7 +186,9 @@ class Dimmer(Base):
         LOG.info("Dimmer %s cmd: increment up", self.addr)
 
         msg = Msg.OutStandard.direct(self.addr, 0x15, 0x00)
-        msg_handler = handler.StandardCmd(msg, self.handle_ack)
+
+        callback = functools.partial(self.handle_increment, delta=+8)
+        msg_handler = handler.StandardCmd(msg, callback)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -193,7 +204,9 @@ class Dimmer(Base):
         LOG.info("Dimmer %s cmd: increment down", self.addr)
 
         msg = Msg.OutStandard.direct(self.addr, 0x16, 0x00)
-        msg_handler = handler.StandardCmd(msg, self.handle_ack)
+
+        callback = functools.partial(self.handle_increment, delta=-8)
+        msg_handler = handler.StandardCmd(msg, callback)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -281,6 +294,8 @@ class Dimmer(Base):
           msg:  (message.InpStandard) The refresh message reply.  The current
                 device state is in the msg.cmd2 field.
         """
+        # NOTE: This is called by the handler.DeviceRefresh class when
+        # the refresh message send by Base.refresh is ACK'ed.
         LOG.debug("Dimmer %s refresh message: %s", self.addr, msg)
 
         # Current dimmer level is stored in cmd2 so update our level
@@ -305,6 +320,19 @@ class Dimmer(Base):
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
             self._set_level(msg.cmd2)
+
+        elif msg.flags.Dimmer == Msg.Flags.Type.DIRECT_NAK:
+            LOG.error("Dimmer %s NAK error: %s", self.addr, msg)
+
+    #-----------------------------------------------------------------------
+    def handle_increment(self, msg, delta):
+        """TODO: doc
+        """
+        # If this it the ACK we're expecting, update the internal
+        # state and emit our signals.
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+            LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
+            self._set_level(self._level + delta)
 
         elif msg.flags.Dimmer == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("Dimmer %s NAK error: %s", self.addr, msg)

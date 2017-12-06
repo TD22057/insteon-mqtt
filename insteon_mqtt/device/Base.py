@@ -59,7 +59,6 @@ class Base:
             'db_add_resp_of' : self.db_add_resp_of,
             'db_del_ctrl_of' : self.db_del_ctrl_of,
             'db_del_resp_of' : self.db_del_resp_of,
-            'db_get' : self.db_get,
             'refresh' : self.refresh,
             'pair' : self.pair,
             }
@@ -120,7 +119,7 @@ class Base:
         LOG.error("Device %s doesn't support pairing", self.addr)
 
     #-----------------------------------------------------------------------
-    def refresh(self):
+    def refresh(self, force=False):
         """Refresh the current device state and database if needed.
 
         This sends a ping to the device.  The reply has the current
@@ -131,6 +130,8 @@ class Base:
 
         This will send out an updated signal for the current device
         status whenever possible (like dimmer levels).
+
+        TODO: doc force
         """
         LOG.info("Device %s cmd: status refresh", self.addr)
 
@@ -139,7 +140,7 @@ class Base:
         # current value.  If it's different, it will send a database
         # download command to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
-        msg_handler = handler.DeviceRefresh(self, msg, num_retry=3)
+        msg_handler = handler.DeviceRefresh(self, msg, force, num_retry=3)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

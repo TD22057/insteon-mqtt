@@ -3,85 +3,107 @@
 # Device commands
 #
 #===========================================================================
-import json
-import paho.mqtt.client as mqtt
-import random
-import time
-
-_loop = True
+from . import util
 
 
 #===========================================================================
 def on(args, config):
-    id = random.getrandbits(32)
-
-    client = mqtt.Client()
-    if config["mqtt"].get("user", None):
-        user = config["mqtt"]["user"]
-        password = config["mqtt"].get("password", None)
-        client.username_pw_set(user, password)
-
-    client.connect(config["mqtt"]["broker"], config["mqtt"]["port"])
-
-    rtn_topic = "%s/RTN/%s" % (args.topic, id)
-    client.message_callback_add(rtn_topic, callback)
-    client.subscribe(rtn_topic)
-
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
         "cmd" : "on",
         "level" : args.level,
         "instant" : args.instant,
-        "session" : id,
         }
-    client.publish(topic, json.dumps(payload), qos=2)
 
-    end = time.time() + 10
-    while _loop and time.time() < end:
-        client.loop()
-
-    if _loop:
-        print("Reply timed out")
+    reply = util.send(config, topic, payload)
+    return reply["result"]
 
 
 #===========================================================================
 def off(args, config):
-    id = random.getrandbits(32)
-
-    client = mqtt.Client()
-    if config["mqtt"].get("user", None):
-        user = config["mqtt"]["user"]
-        password = config["mqtt"].get("password", None)
-        client.username_pw_set(user, password)
-
-    client.connect(config["mqtt"]["broker"], config["mqtt"]["port"])
-
-    rtn_topic = "%s/RTN/%s" % (args.topic, id)
-    client.message_callback_add(rtn_topic, callback)
-    client.subscribe(rtn_topic)
-
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
         "cmd" : "off",
         "instant" : args.instant,
-        "session" : id,
         }
-    client.publish(topic, json.dumps(payload), qos=2)
 
-    end = time.time() + 10
-    while _loop and time.time() < end:
-        client.loop()
-
-    if _loop:
-        print("Reply timed out")
+    reply = util.send(config, topic, payload)
+    return reply["result"]
 
 
 #===========================================================================
-def callback(client, data, message):
-    global _loop
+def increment_up(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "increment_up",
+        }
 
-    print("RECV:", message.payload.decode("utf-8"))
-    _loop = False
+    reply = util.send(config, topic, payload)
+    return reply["result"]
 
+
+#===========================================================================
+def increment_down(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "increment_down",
+        }
+
+    reply = util.send(config, topic, payload)
+    return reply["result"]
+
+
+#===========================================================================
+def pair(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "pair",
+        }
+
+    reply = util.send(config, topic, payload)
+    return reply["result"]
+
+
+#===========================================================================
+def refresh(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "refresh",
+        "force" : args.force,
+        }
+
+    reply = util.send(config, topic, payload)
+    return reply["result"]
+
+
+#===========================================================================
+def db_add(args, config):
+    elem1 = args.link.split("->")
+    elem2 = args.link.split("<-")
+
+    if len(elem1) == 2:
+        address1 = elem1[0].strip()
+        address2 = elem1[1].strip()
+        cmd = "db_add_ctrl_of"
+
+    elif len(elem2) == 2:
+        address1 = elem2[0].strip()
+        address2 = elem2[1].strip()
+        cmd = "db_add_resp_of"
+
+    else:
+        raise ValueError("Input link '%s' should be 'addr1 <- addr2' or "
+                         "'addr1 -> addr2'." % config.link)
+
+    topic = "%s/%s" % (args.topic, address1)
+    payload = {
+        "cmd" : cmd,
+        "addr" : address2,
+        "group" : args.group,
+        "two_way" : not args.one_way,
+        }
+
+    reply = util.send(config, topic, payload)
+    return reply["result"]
 
 #===========================================================================
