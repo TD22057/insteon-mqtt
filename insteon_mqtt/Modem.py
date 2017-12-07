@@ -98,7 +98,11 @@ class Modem:
 
         # Load the modem database.
         if 'storage' in data:
-            self.save_path = data['storage']
+            save_path = data['storage']
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
+
+            self.save_path = save_path
             self.load_db()
 
             LOG.info("Modem %s database loaded %s entries", self.addr,
