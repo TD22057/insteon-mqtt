@@ -29,7 +29,7 @@ be identified by it's address or the string "modem".
 
    - [Switches](#Switches)
    - [Dimmers](#Dimmers)
-   - [Motion Sensors](#Motion-Sensors
+   - [Motion Sensors](#Motion-Sensors)
    - [Smoke Bridge](#Smoke-Bridge)
 
 ---
