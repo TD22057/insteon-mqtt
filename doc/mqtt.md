@@ -27,6 +27,11 @@ topics are case sensitive so all Insteon hex addresses must be entered
 in lower case format (e.g. "a1.b2.c3", not "A1.B2.B3").  The modem can
 be identified by it's address or the string "modem".
 
+   - (#Switches)
+   - (#Dimmers)
+   - (#Motion-Sensors
+   - (#Smoke-Bridge)
+
 ---
 
 ## Management commands
@@ -35,7 +40,7 @@ Management commands can be sent by using the command line tool
 "insteon-mqtt" or by publishing a MQTT message to the command topic
 (cmd_topic in the config file).  Management commands may be supported
 by the modem, by the devices, or by both.  For examples of the command
-style, see [command line module source code](../insteon-mqtt/cmd_line).
+style, see [command line module source code](../insteon_mqtt/cmd_line).
 
 All management commands use a payload that is JSON dictionary.  If the
 documentation below, if a key/value pair is enclosed in square
@@ -105,7 +110,7 @@ command payload is:
    ```
    { "cmd" : "db_add_ctrl_of", "addr" : aa.bb.cc, "group" : group,
      ["two_way" : True/False] }
-
+   ```
 
 ### Add the device as a responder of another device.
 

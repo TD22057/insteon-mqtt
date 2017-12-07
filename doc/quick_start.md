@@ -28,17 +28,19 @@ This package assumes that you:
 
 1) Clone the repository to your local machine via zip download or using git:
 
-    git clone 'https://github.com/TD22057/insteon-mqtt.git'
+   ```
+   git clone 'https://github.com/TD22057/insteon-mqtt.git'
+   ```
 
 2) Create a virtual-env to use for all the dependencies to avoid
    installing in the system directories.  The virtual env directory
-   'imenv' can be named anything or placed anywhere (I use
+   'venv' can be named anything or placed anywhere (I use
    /opt/insteon-mqtt).  The install the package and its dependencies.
 
    ```
    cd insteon-mqtt
-   python3 -m venv imenv
-   source imenv/bin/activate
+   python3 -m venv venv
+   source venv/bin/activate
    pip install .
    ```
 
@@ -64,13 +66,13 @@ This package assumes that you:
    there.
 
    ```
-   source imenv/bin/activate
+   source venv/bin/activate
    insteon-mqtt start config.yaml
    ```
 
-5) Download Insteon device database for every device.  This may take
-   awhile and battery operated devices (motion sensors, remotes, etc)
-   will fail because they aren't awake.
+5) Download an Insteon device database for every device.  This may
+   take awhile and battery operated devices (motion sensors, remotes,
+   etc) will fail because they aren't awake.
 
    ```
    insteon-mqtt config.yaml refresh-all
@@ -115,17 +117,18 @@ This package assumes that you:
 
    ```
    insteon-mqtt on config.yaml AA.BB.CC
-   mosquitto_pub -t 'insteon/set/AA.BB.CC' -m '{ "cmd" : "on" }'
+   mosquitto_pub -t 'insteon/command/AA.BB.CC' -m '{ "cmd" : "on" }'
    ```
 
    For a dimmer device, add the level:
 
    ```
-   mosquitto_pub -t 'insteon/set/AA.BB.CC' -m '{ "cmd" : "on", "level" : 128 }'
+   mosquitto_pub -t 'insteon/command/AA.BB.CC' -m '{ "cmd" : "on", "level" : 128 }'
    ```
 
    Run `insteon-mqtt -h` to see all the commands that can be sent.
 
+---
 
 After you have the basics working, you may want to consult:
 
