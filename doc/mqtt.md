@@ -347,8 +347,43 @@ send state changes on three different Insteon groups (1 for motion, 2
 for dusk/dawn, and 3 for low battery).  Each of these messages only
 has two states, on or off.
 
-TODO: finish this:
+The motion sensor sends motion events on the "state' configuraiton
+topic which defines the following variables defined which can be used
+in the templates:
 
+   - 'on' is 1 if the device is on and 0 if the device is off.
+   - 'on_str' is "on" if the device is on and "off" if the device is off.
+
+The dawn/dusk change defines the following variables for templates:
+
+   - 'is_dawn' is 1 for dawn, 0 for dusk
+   - 'is_dawn_str' is "on" for dawn", "off" for dusk
+   - 'is_dusk' is 1 for dusk, 0 for dawn
+   - 'is_dusk_str' is "on" for dusk", "off" for dawn
+   - 'state' is "dawn" or "dusk"
+
+The low battery condition defines the following variables for
+templates:
+
+   - 'is_low' is 1 for a low battery, 0 for normal.
+   - 'is_low_str' is 'on' for a low battery, 'off' for normal.
+
+A sample motion sensor topic and payload configuration is:
+
+   ```
+   motion:
+     # Motion events
+     state_topic: 'insteon/{{address}}/state'
+     state_payload: '{{on_str.upper()}}'
+
+     # Light level events
+     dawn_dusk_topic: 'insteon/{{address}}/dawn'
+     dawn_dusk_payload: '{{is_dawn_str.upper()}}'
+
+     # Low battery warning
+     low_battery_topic: 'insteon/{{address}}/battery'
+     low_battery_payload: '{{is_low_str.upper()}}'
+   ```
 
 ---
 
@@ -362,4 +397,25 @@ detected, CO warning, low battery, and a general error).  When the
 clear message is received internally, an off state is sent to each of
 the four topics.
 
-TODO: finish this
+The smoke bridge defines the following template variables for all of
+the alerts:
+
+   - 'on' is 1 if the alert is active, 0 if it's not
+   - 'on_str' is 'on' if the alert is active, 'off' if it's not
+
+A sample smoke bridge topic and payload configuration is:
+
+   ```
+   smoke_bridge:
+     smoke_topic: 'insteon/{{address}}/smoke'
+     smoke_payload: '{{on_str.upper()}}'
+
+     co_topic: 'insteon/{{address}}/co'
+     co_payload: '{{on_str.upper()}}'
+
+     battery_topic: 'insteon/{{address}}/battery'
+     battery_payload: '{{on_str.upper()}}'
+
+     error_topic: 'insteon/{{address}}/error'
+     error_payload: '{{on_str.upper()}}'
+   ```
