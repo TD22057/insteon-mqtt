@@ -143,6 +143,7 @@ The command payload is:
    ```
    { "cmd" : "db_del_ctrl_of", "addr" : aa.bb.cc, "group" : group,
      ["two_way" : True/False] }
+   ```
 
 NOTE: The modem doesn't support removal of specific links by type.
 The modem can only remove all the links for a given address and group
