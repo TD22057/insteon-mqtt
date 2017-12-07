@@ -54,7 +54,7 @@ class Dimmer(Switch):
         """TODO: doc
         """
         super().subscribe(link, qos)
-        link.subscribe(self.level_topic, qos, self.handle_set)
+        link.subscribe(self.level_topic, qos, self.handle_level)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
@@ -94,7 +94,7 @@ class Dimmer(Switch):
         self.mqtt.publish(self.state_topic, payload)
 
     #-----------------------------------------------------------------------
-    def handle_set(self, client, data, message):
+    def handle_level(self, client, data, message):
         """TODO: doc
         """
         LOG.info("Dimmer message %s %s", message.topic, message.payload)
