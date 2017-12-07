@@ -27,10 +27,10 @@ topics are case sensitive so all Insteon hex addresses must be entered
 in lower case format (e.g. "a1.b2.c3", not "A1.B2.B3").  The modem can
 be identified by it's address or the string "modem".
 
-   - [Switches](#Switches)
-   - [Dimmers](#Dimmers)
-   - [Motion Sensors](#Motion-Sensors)
-   - [Smoke Bridge](#Smoke-Bridge)
+   - [Switches](#switches)
+   - [Dimmers](#dimmers)
+   - [Motion Sensors](#motion-sensors)
+   - [Smoke Bridge](#smoke-bridge)
 
 ---
 
