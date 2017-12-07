@@ -34,7 +34,8 @@ class Modem:
 
         Args:
           data:    (dict): The data to read from.
-          path: TODO
+          path:    (str) The file to save the database to when changes are
+                   made.
 
         Returns:
           Modem: Returns the created Modem object.
@@ -46,6 +47,10 @@ class Modem:
     #-----------------------------------------------------------------------
     def __init__(self, path=None):
         """Constructor
+
+        Args:
+          path:  (str) The file to save the database to when changes are
+                 made.
         """
         self.save_path = path
 
@@ -58,13 +63,17 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def set_path(self, path):
-        """TODO: doc
+        """Set the save path to use for the database.
+
+        Args:
+          path:   (str) The file to save the database to when changes are
+                  made.
         """
         self.save_path = path
 
     #-----------------------------------------------------------------------
     def save(self):
-        """TODO: doc
+        """Save the database.  A save path must have been set.
         """
         assert self.save_path
 
@@ -73,20 +82,29 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def __len__(self):
+        """Return the number of entries in the database.
+        """
         return len(self.entries)
 
     #-----------------------------------------------------------------------
     def delete_entry(self, entry):
-        """TODO: doc local only
+        """Remove an entry from the database without updating the device.
+
+        After removal, the database will be saved.
+
+        Args:
+          entry:  (DeviceEntry) The entry to remove.  This entry must exist
+                  or an exception is raised.
         """
         self.entries.remove(entry)
         self.save()
 
     #-----------------------------------------------------------------------
     def clear(self):
-        """TODO: doc
+        """Clear the complete database of entries.
 
-        This does NOT update the database on the device.
+        This also removes the saved file if it exists.  It does NOT
+        modify the database on the device.
         """
         self.entries = []
 
@@ -95,7 +113,17 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def find(self, addr, group, is_controller):
-        """TODO: doc
+        """Find an entry
+
+        Args:
+          addr:           (Address) The address to match.
+          group:          (int) The group to match.
+          is_controller:  (bool) True for controller records.  False for
+                          responder records.
+
+        Returns:
+          (ModemEntry): Returns the entry that matches or None if it
+          doesn't exist.
         """
         for e in self.entries:
             if (e.addr == addr and e.group == group and
@@ -106,7 +134,19 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def find_all(self, addr=None, group=None, is_controller=None):
-        """TODO: doc
+        """Find all entries that match the inputs.
+
+        Returns all the entries that match any input that is set.  If
+        an input isn't set, that field isn't checked.
+
+        Args:
+          addr:           (Address) The address to match.  None for any.
+          group:          (int) The group to match.  None for any.
+          is_controller:  (bool) True for controller records.  False for
+                          responder records.  None for any.
+
+        Returns:
+          [ModemEntry] Returns a list of the entries that match.
         """
         addr = None if addr is None else Address(addr)
         group = None if group is None else int(group)
@@ -126,6 +166,26 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def add_on_device(self, protocol, entry, on_done=None):
+        """Add an entry and push the entry to the Insteon modem.
+
+        This sends the input record to the Insteon modem.  If that
+        command succeeds, it adds the new ModemEntry record to the
+        database and saves it.
+
+        The on_done callback will be passed a success flag
+        (True/False), a string message about what happened, and the
+        DeviceEntry that was created (if success=True).
+            on_done( success, message, ModemEntry )
+
+        If the entry already exists, nothing will be done.
+
+        Args:
+          protocol:      (Protocol) The Insteon protocol object to use for
+                         sending messages.
+          entry:         (ModemEntry) The entry to add.
+          on_done:       Optional callback which will be called when the
+                         command completes.
+        """
         exists = self.find(entry.addr, entry.group, entry.is_controller)
         if exists:
             if exists.data == entry.data:
@@ -157,16 +217,27 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def delete_on_device(self, protocol, addr, group, on_done=None):
-        """TODO
-        Delete the modem entries for an address and group.
+        """Delete a series of entries on the device.
 
+        This will delete ALL the entries for an address and group.
         The modem doesn't support deleting a specific controller or
         responder entry - it just deletes the first one that matches
         the address and group.  To avoid confusion about this, this
         method delete all the entries (controller and responder) that
         match the inputs.
 
-        TODO: doc
+        The on_done callback will be passed a success flag
+        (True/False), a string message about what happened, and the
+        DeviceEntry that was created (if success=True).
+            on_done( success, message, ModemEntry )
+
+        Args:
+          protocol:      (Protocol) The Insteon protocol object to use for
+                         sending messages.
+          addr:          (Address) The address to delete.
+          group:         (int) The group to delete.
+          on_done:       Optional callback which will be called when the
+                         command completes.
         """
         # The modem will delete the first entry that matches.
         entries = self.find_all(addr, group)
@@ -218,8 +289,8 @@ class Modem:
         """Add a ModemEntry object to the database.
 
         If the entry already exists (matching address, group, and
-        controller), it will be updated.  This does NOT update the
-        actual database on the device.
+        controller), it will be updated. It does NOT change the
+        database on the Insteon device.
 
         Args:
           entry   (ModemEntry) The new entry.

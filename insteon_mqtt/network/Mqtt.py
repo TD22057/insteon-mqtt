@@ -110,10 +110,16 @@ class Mqtt(Link):
     def subscribe(self, topic, qos=0, callback=None):
         """Subscribe the client to a topic.
 
+        If a callback is supplied, then that callback will be used for
+        all messages that match the input topic and NO other callbacks
+        or signals will be sent for that message.  The callback
+        signature is:
+           func(client, user_data, message)
+
         Args:
-          topic:   (str) The topic to subscribe to.
-          qos:
-          callback:  TODO
+          topic:    (str) The topic to subscribe to.
+          qos:      (int) The quality of service level to use (0,1,2).
+          callback: Optional message callback.
         """
         # Tell the client about it and then notify the manager that we
         # have messages to send.

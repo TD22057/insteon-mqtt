@@ -377,7 +377,7 @@ class Base:
             use_cb = functools.partial(self._db_update_remote, remote, on_done)
 
         # Create a new database entry for the device and send it.
-        self.db.add_on_device(self.protocol, addr, group, data, is_controller,
+        self.db.add_on_device(self.protocol, addr, group, is_controller, data,
                               on_done=use_cb)
 
     #-----------------------------------------------------------------------

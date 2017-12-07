@@ -89,14 +89,30 @@ class DeviceEntry:
 
     #-----------------------------------------------------------------------
     def copy(self):
-        """TODO: doc
+        """Make a copy of the DeviceEntry.
+
+        Returns:
+           Returns a copy of the DeviceEntry object.
         """
         return DeviceEntry(self.addr, self.group, self.mem_loc,
                            self.db_flags.copy(), self.data[:])
 
     #-----------------------------------------------------------------------
     def update_from(self, addr, group, is_controller, data):
-        """TODO: doc
+        """Update the entry from a set of data.
+
+        This modifies the entry using the input values.  The
+        DblFlags.in_use attribute will be set to True.  This is used
+        when an unused record is turned into an active record.  We
+        update the values but leave the memory location alone and mark
+        the record as now in use.
+
+        Args:
+          addr:          (Address) The address of the device in the database.
+          group:         (int) The group the entry is for.
+          is_controller: (bool) True if the device is a controller.
+          data:          (bytes) 3 data bytes.  [0] is the on level, [1] is the
+                         ramp rate.
         """
         self.addr = addr
         self.group = group
@@ -162,12 +178,21 @@ class DeviceEntry:
 
     #-----------------------------------------------------------------------
     def __eq__(self, rhs):
+        """Check for equality.
+
+        The address, group, and is_controller flags are all that are
+        used for the comparison.
+        """
         return (self.addr.id == rhs.addr.id and
                 self.group == rhs.group and
                 self.db_flags.is_controller == rhs.db_flags.is_controller)
 
     #-----------------------------------------------------------------------
     def __lt__(self, rhs):
+        """Less than.
+
+        Uses the address and groups in the comparison.
+        """
         if self.addr.id != rhs.addr.id:
             return self.addr.id < rhs.addr.id
 
@@ -175,6 +200,7 @@ class DeviceEntry:
 
     #-----------------------------------------------------------------------
     def __str__(self):
+        # Special tag for the last entry (memory wise) in the database.
         last = " (LAST)" if self.db_flags.is_last_rec else ""
 
         return "%04x: %s grp: %3s type: %s data: %#04x %#04x %#04x%s" % \
