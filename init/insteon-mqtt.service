@@ -1,0 +1,11 @@
+[Unit]
+Description=Insteon MQTT Bridge
+After=network.target
+
+[Service]
+Type=simple
+User=insteon
+ExecStart=/opt/insteon-mqtt/bin/insteon-mqtt start /opt/insteon-mqtt/config.yaml
+
+[Install]
+WantedBy=multi-user.target

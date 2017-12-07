@@ -11,7 +11,7 @@
 #==========================================================================
 logging:
   # 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR
-  level: 10
+  level: 20
 
   # Print messages to the screen.
   #screen: False
@@ -39,7 +39,7 @@ insteon:
 
   # Device database file storage location.
   #storage: "/var/lib/insteon-mqtt"
-  storage: "."
+  storage: "data"
 
   # Automatically refresh device states and databases (if needed) at
   # startup.  This may be slow depending on the number of devices.
