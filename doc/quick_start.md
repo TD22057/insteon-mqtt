@@ -129,7 +129,7 @@ This package assumes that you:
 
 After you have the basics working, you may want to consult:
 
-- [Detailed device documentation](devices.md) for information on
+- [Detailed device documentation](mqtt.md) for information on
   device configuration and available MQTT commands and options.
 
 - [System install and automatically starting the
