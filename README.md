@@ -55,8 +55,7 @@ what they are and how to interpret messages from them.
   Consult the [device documentation page](doc/mqtt.md) for details
   on each those commands.
 
-- [Full system install and automatically starting the server]
-  (doc/auto_start.md) on startup.
+- [Full system install and automatically starting the server](doc/auto_start.md) on startup.
 
 - [Development Guide](doc/development.md)
 
