@@ -43,7 +43,7 @@ def parse_args(args):
 
     #---------------------------------------
     # modem.db_delete command
-    sp = sub.add_parser("db_delete", help="Delete all entries from the "
+    sp = sub.add_parser("db-delete", help="Delete all entries from the "
                         "modem's all link database with the input address "
                         "and group.  Also deletes the corresponding entries "
                         "on the device unless --one-way is set.")
@@ -58,7 +58,7 @@ def parse_args(args):
 
     #---------------------------------------
     # modem.refresh_all command
-    sp = sub.add_parser("refresh_all", help="Call refresh all on the devices "
+    sp = sub.add_parser("refresh-all", help="Call refresh all on the devices "
                         "in the configuration.")
     sp.add_argument("config", metavar="config.yaml", help="Configuration "
                     "file to use.")
@@ -148,7 +148,7 @@ def parse_args(args):
 
     #---------------------------------------
     # device.db_add_ctrl_of command
-    sp = sub.add_parser("db_add", help="Add the device/modem as the "
+    sp = sub.add_parser("db-add", help="Add the device/modem as the "
                         "controller of another device.  Also adds the "
                         "corresponding entry on the linked device unless "
                         "--one-way is set.")
