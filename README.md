@@ -9,7 +9,7 @@ My initial intent with this package is better integrate Insteon into
 Home Assistant and make it easier and more understandable to add new
 features and devices.
 
-Version: 0.5.0
+Version: 0.5.1  ([History](HISTORY.md))
 
 
 # Quickstart
