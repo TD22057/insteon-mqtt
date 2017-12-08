@@ -397,7 +397,7 @@ class Modem:
         # handler will handle timeouts (to send the cancel message) if
         # nothing happens.  See the handler for details.
         msg = Msg.OutAllLinkStart(Msg.OutAllLinkStart.Cmd.EITHER, group)
-        msg_handler = handler.ModemAllLink(self.db, time_out)
+        msg_handler = handler.ModemAllLink(self, time_out)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

@@ -27,11 +27,16 @@ class DeviceDbGet(Base):
     def __init__(self, device_db, on_done):
         """Constructor
 
-        Args
-          addr:    (Address) The address of the device we're expecting
-        TODO
-          callback: Callback function to pass database messages to or None
-                    to indicate the end of the entries.
+        The on_done callback has the signature on_done(success, msg)
+        and will be called with success=True if the handler finishes
+        successfully or False if an error occurs or the handler times
+        out.  The message input is a string to help with logging the
+        result.
+
+        Args:
+          device_db: (db.Device) The device database being retrieved.
+          on_done:   Option finished callback.  This is called when the
+                     handler is finished for any reason.
         """
         super().__init__(on_done=on_done)
 

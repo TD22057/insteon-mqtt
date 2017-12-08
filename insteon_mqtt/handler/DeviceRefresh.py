@@ -12,22 +12,31 @@ LOG = log.get_logger()
 
 
 class DeviceRefresh(Base):
-    """TODO: doc
+    """Refresh the state and database version of a device handler.
 
-    This handles replies when we need to add, remove, or modify the
-    all link database on the PLM Device.  An output OutAllLinkUpdate
-    message is sent and the Device will ACK or NAK a reply back to
-    indicate the result.
+    This handles device refresh messages.  Some devices don't respond
+    very well (look at you SmokeBridge) so the handler has a built in
+    retry system to resend the initial message if the handler times
+    out.
 
-    The reply is passed to the Device.handle_db_update so it knows
-    whether to store the updated result or not.
+    When a response arrives, device.handle_refresh(msg) is called to
+    extract the current state of the device (on/off, dimmer level,
+    etc).  Additionally, we'll check the device's database delta
+    version to see if the database needs to re-downloaded from the
+    device.  If it does, the handler will send a new message to
+    request that.
     """
     def __init__(self, device, msg, force, num_retry=3):
         """Constructor
 
-        TODO: doc
         Args
-          Device:   (Device) The Insteon Device.
+          device:    (Device) The Insteon device.
+          msg:       (message) The refresh message being sent.  This will
+                     be sent again if we time out.
+          force:     (bool) If True, force a db download.  If False, only
+                     download the db if it's out of date.
+          num_retry: (int) The number of retries to attempt on the refresh
+                     message before giving up.
         """
         super().__init__()
 
@@ -64,18 +73,12 @@ class DeviceRefresh(Base):
 
         # Tell the protocol that we're expired.  This will end this
         # handler and send the next message which at some point will
-        # be our retry command.
+        # be our retry command with ourselves as the handler again.
         return True
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
-
-        TODO
-
-        See if the message is the expected ACK of our output.  If we
-        get a reply, pass it to the Device to update it's database with
-        the info.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object
@@ -85,7 +88,6 @@ class DeviceRefresh(Base):
           Msg.UNKNOWN if we can't handle this message.
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
-
         """
         # Probably an echo back of our sent message.
         if isinstance(msg, Msg.OutStandard) and msg.to_addr == self.addr:
@@ -133,6 +135,7 @@ class DeviceRefresh(Base):
             # Either way - this transaction is complete.
             return Msg.FINISHED
 
+        # Unknown message - not for us.
         return Msg.UNKNOWN
 
     #-----------------------------------------------------------------------

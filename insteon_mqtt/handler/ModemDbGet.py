@@ -20,17 +20,13 @@ class ModemDbGet(Base):
     send another message out requesting the next record, etc, etc
     until we get a NAK to indicate there are no more records.
 
-    Each reply is passed to the callback function set in the
-    constructor which is usually a method on the device to update it's
-    database.
+    Each reply is used to update the modem class's database recoreds.
     """
     def __init__(self, modem_db):
         """Constructor
 
         Args
-          modem TODO: doc
-          callback: Callback function to pass database messages to or None
-                    to indicate the end of the entries.
+          modem_db:  (db.Modem) The database to update.
         """
         super().__init__()
 
@@ -42,7 +38,7 @@ class ModemDbGet(Base):
 
         See if the message is the expected ACK of our output or the
         expected database reply message.  If we get a reply, pass it
-        to the modem to update it's database with the info.
+        to the modem database to update it's database with the info.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object
@@ -75,7 +71,8 @@ class ModemDbGet(Base):
                 LOG.info("Ignoring modem db record in_use = False")
                 return
 
-            # Save the record in the modem database.
+            # Create a modem database entry from the message data and
+            # write it into the database.
             entry = db.ModemEntry(msg.addr, msg.group,
                                   msg.db_flags.is_controller, msg.data)
             self.db.add_entry(entry)

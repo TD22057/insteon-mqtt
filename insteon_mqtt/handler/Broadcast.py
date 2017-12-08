@@ -21,7 +21,8 @@ class Broadcast(Base):
     The message sequence is an ALL_LINK_BROADCAST which we can get the
     device address and group from.  Then an ALL_LINK_CLEANUP is sent.
     Both messages can be used to trigger the scene but we'll only do
-    that once (so the 2nd message gets ignored).
+    that once (so the 2nd message gets ignored).  So if we get the
+    broadcast, the cleanup is ignored.
 
     This handler will call device.handle_broadcast(msg) for the device
     that sends the message.
@@ -30,7 +31,8 @@ class Broadcast(Base):
         """Constructor
 
         Args
-          modem:   (Modem) The Insteon modem object.
+          modem:   (Modem) The Insteon modem object.  Modem.handle_broadcast()
+                   is called with the messages that arrive.
         """
         super().__init__()
         self.modem = modem

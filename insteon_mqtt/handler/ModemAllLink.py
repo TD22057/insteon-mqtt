@@ -24,20 +24,18 @@ class ModemAllLink(Base):
     If no reply is received in the time out window, we'll send an
     OutAllLinkCancel message.
     """
-    def __init__(self, modem_db, time_out=60):
+    def __init__(self, modem, time_out=60):
         """Constructor
 
-        TODO doc
-
         Args
-          modem_db: TODO: doc
+          modem:    (Modem) The PLM modem to update.
           time_out: (int) Time out in seconds.  If we don't get an
                     InpAllLinkComplete message in this time, we'll send a
                     cancel message to the modem to cancel the all link mode.
         """
         super().__init__(time_out)
 
-        self.db = modem_db
+        self.modem = modem
 
     #-----------------------------------------------------------------------
     def is_expired(self, protocol, t):
@@ -70,11 +68,6 @@ class ModemAllLink(Base):
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
-        TODO: doc
-        If all linking is finished, pass the message to the callback
-        to update the device records (or re-download the database) if
-        needed.
-
         Args:
           protocol:  (Protocol) The Insteon Protocol object
           msg:       Insteon message object that was read.
@@ -83,9 +76,8 @@ class ModemAllLink(Base):
           Msg.UNKNOWN if we can't handle this message.
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
-
         """
-        # Message is an ACK of the all link activation.
+        # Message is an ACK of the all link activation request.
         if isinstance(msg, Msg.OutAllLinkStart):
             # If we get a NAK, then an error occured.
             if not msg.is_ack:
@@ -97,7 +89,7 @@ class ModemAllLink(Base):
 
         # All linking was successful.
         elif isinstance(msg, Msg.InpAllLinkComplete):
-            # TODO: future use msg.dev_cat and msg.dev_subcat for
+            # FUTURE: use msg.dev_cat and msg.dev_subcat for
             # device discovery.
             #   - build device class
             #   - add device to modem (and save it in config? or db?)
@@ -113,15 +105,23 @@ class ModemAllLink(Base):
                 LOG.error("Modem delete via set button not supported")
 
             # Set button was used to add a new controller or responder
-            # link to the modem.  Add the correct link to our modem
-            # database as well.
+            # link to the modem.
             else:
+                # Create a new entry and add it to the modem's database.
                 is_ctrl = msg.cmd == Msg.InpAllLinkComplete.Cmd.CONTROLLER
                 entry = db.ModemEntry(msg.addr, msg.group, is_ctrl)
-                self.db.add_entry(entry)
+                self.modem.db.add_entry(entry)
 
-                # TODO: what about other end of link?  Need to see if
-                # device exists or not.
+                # We also need to update the database for the device
+                # that was linked to.  We can't just create an entry
+                # for it because we don't know some of the link data
+                # like the memory address in the device.  So find the
+                # device and schedule a refresh of it's database.
+                device = self.modem.find(msg.addr)
+                if device:
+                    device.refresh()
+                else:
+                    LOG.warning("Modem linked to unknown device %s", msg.addr)
 
             return Msg.FINISHED
 

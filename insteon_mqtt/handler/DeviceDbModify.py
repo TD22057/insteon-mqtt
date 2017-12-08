@@ -3,7 +3,6 @@
 # Device all link database modification handler.
 #
 #===========================================================================
-import functools
 from .. import log
 from .. import message as Msg
 from .Base import Base
@@ -12,37 +11,44 @@ LOG = log.get_logger()
 
 
 class DeviceDbModify(Base):
-    """TODO: doc
+    """Device all link database modification handler.
 
-    This handles replies when we need to add, remove, or modify the
-    all link database on the PLM Device.  An output OutAllLinkUpdate
-    message is sent and the Device will ACK or NAK a reply back to
-    indicate the result.
+    This handles message that arrive from adding, changing, or
+    deleting records in the device's all link database.  It will make
+    the necessary modifications to the device's all link database
+    class to reflect what happened on the physical device.
 
-    The reply is passed to the Device.handle_db_update so it knows
-    whether to store the updated result or not.
+    In many cases, a series of commands must be sent to the device to
+    change the database. So the handler can be passed future commands
+    to send using add_update().  When a command is finished, the next
+    command in the queue will be sent.  If any command fails, the
+    sequence stops.
     """
-    def __init__(self, db, entry, on_done):
+    def __init__(self, device_db, entry, on_done):
         """Constructor
 
-        TODO: doc
-        Args
-          Device:   (Device) The Insteon Device.
+        Args:
+          device_db:       (db.Device) The device database being changed.
+          entry:           (db.DeviceEntry) The new record or record being
+                           erased.  This is the entry that the db will have
+                           if the command works.
+          on_done:         Finished callback.  This is called once for each
+                           call added to the handler.  Signature is:
+                              on_done(success, msg, entry)
         """
         # Use the input callback or a dummy function (so we don't have
         # to check to see if the callback exists).  Pass the callback
         # to the base class constructor so that the time out code in
         # the base class can also call the handler if we time out.
         # Wrap the input to add the extra argument beyond the standard
-        # on_done callback.
-        if on_done:
-            cb = functools.partial(on_done, entry=entry)
-        else:
-            cb = lambda *x: x  # noqa
-        super().__init__(on_done=cb)
+        # on_done callback.  Basically - we're passing our on_done
+        # method here as the callback.  Then we call the input
+        # callback passing it the addition ModemEntry argument.
+        super().__init__(on_done=self.on_done)
 
-        self.db = db
+        self.db = device_db
         self.entry = entry
+        self._on_done = on_done
 
         # Tuple of (msg, entry) to send next.  If the first calls
         # ACK's, we'll update self.entry and send the next msg and
@@ -51,19 +57,39 @@ class DeviceDbModify(Base):
 
     #-----------------------------------------------------------------------
     def add_update(self, msg, entry):
-        """TODO: doc
+        """Add a future call.
+
+        The input message and entry will be sent after the current
+        transaction completes successfully.
+
+        Args:
+          msg:    The next message to send.
+          entry:  (db.DeviceEntry) The new record or record being
+                  erased.  This is the entry that the db will have
+                  if the command works.
         """
         self.next.append((msg, entry))
+
+    #-----------------------------------------------------------------------
+    def on_done(self, success, msg):  # pylint: disable=method-hidden
+        """Finished callback.
+
+        This calls the user input callback with the addition
+        db.DeviceEntry argument.
+
+        Args:
+          success:   (bool) True if the command worked, False otherwise.
+          msg:       (str) Information message about the result.
+        """
+        if self._on_done:
+            self._on_done(success, msg, self.entry)
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
-        TODO
-
-        See if the message is the expected ACK of our output.  If we
-        get a reply, pass it to the Device to update it's database with
-        the info.
+        This will update the modem's database if the command works.
+        Then the next message is written out.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object
@@ -73,7 +99,6 @@ class DeviceDbModify(Base):
           Msg.UNKNOWN if we can't handle this message.
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
-
         """
         if isinstance(msg, Msg.OutExtended):
             # See if the message address matches our expected reply.

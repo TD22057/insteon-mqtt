@@ -29,23 +29,20 @@ class StandardCmd(Base):
     method on the device to handle the result (or the ACK that the
     command went through).
     """
-    def __init__(self, msg, callback, cmd=None):
+    def __init__(self, msg, callback):
         """Constructor
 
         Args
-          msg:      (OutStandard) The output message that was sent.
+          msg:      (OutStandard) The output message that was sent.  The
+                    reply must match the address and msg.cmd1 field to be
+                    processed by this handler.
           callback: Callback function to pass InpStandard messages that match
-                    the output to.
-          cmd:      (int) The expected cmd1 field in the InpStandard message
-                    to match against.  If this is None, msg.cmd1 is used.
-                    Some replies have different cmd1 fields so this can be
-                    used to match those.  -1 can be input to match any
-                    message cmd1 field.
+                    the output to.  Signature: callback(message)
         """
         super().__init__()
 
         self.addr = msg.to_addr
-        self.cmd = msg.cmd1 if cmd is None else cmd
+        self.cmd = msg.cmd1
         self.callback = callback
 
     #-----------------------------------------------------------------------
@@ -69,7 +66,7 @@ class StandardCmd(Base):
         if isinstance(msg, Msg.OutStandard):
             # If the message is the echo back of our message, then
             # continue waiting for a reply.
-            if self._match(msg.to_addr, msg.cmd1):
+            if msg.to_addr == self.addr and msg.cmd1 == self.cmd:
                 if not msg.is_ack:
                     LOG.error("%s NAK response", self.addr)
 
@@ -84,7 +81,7 @@ class StandardCmd(Base):
         elif isinstance(msg, Msg.InpStandard):
             # If this message matches our address and command, it's
             # probably the ACK we're expecting.
-            if self._match(msg.from_addr, msg.cmd1):
+            if msg.to_addr == self.addr and msg.cmd1 == self.cmd:
                 # Run the callback - it's up to the callback to check
                 # if this is really the ACK or not.
                 self.callback(msg)
@@ -97,24 +94,5 @@ class StandardCmd(Base):
                          self.addr, self.cmd)
 
         return Msg.UNKNOWN
-
-    #-----------------------------------------------------------------------
-    def _match(self, addr, cmd):
-        """See if a message matches the expected reply fields.
-
-        Args:
-          addr:   (Address) The message address.
-          cmd:    (int) The message cmd.
-
-        Returns:
-          (bool) Returns True if it matches.
-        """
-        if addr != self.addr:
-            return False
-
-        if self.cmd != -1 and cmd != self.cmd:
-            return False
-
-        return True
 
     #-----------------------------------------------------------------------
