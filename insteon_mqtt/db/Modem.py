@@ -27,7 +27,7 @@ class Modem:
     being read and parsed after requesting them from the modem.
     """
     @staticmethod
-    def from_json(data, path):
+    def from_json(data, path=None):
         """Read a Modem database from a JSON input.
 
         The inverse of this is to_json().
@@ -73,9 +73,12 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def save(self):
-        """Save the database.  A save path must have been set.
+        """Save the database.
+
+        If a save path wasn't set, nothing is done.
         """
-        assert self.save_path
+        if not self.save_path:
+            return
 
         with open(self.save_path, "w") as f:
             json.dump(self.to_json(), f, indent=2)

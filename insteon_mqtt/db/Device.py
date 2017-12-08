@@ -167,9 +167,12 @@ class Device:
 
     #-----------------------------------------------------------------------
     def save(self):
-        """Save the database.  A save path must have been set.
+        """Save the database.
+
+        If a save path wasn't set, nothing is done.
         """
-        assert self.save_path
+        if not self.save_path:
+            return
 
         with open(self.save_path, "w") as f:
             json.dump(self.to_json(), f, indent=2)

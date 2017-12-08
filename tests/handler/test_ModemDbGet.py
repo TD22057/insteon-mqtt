@@ -7,14 +7,14 @@ import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
 
 
-class Test_ModemGetDb:
+class Test_ModemDbGet:
     def test_acks(self):
         calls = []
         def callback(msg):
             calls.append(msg)
 
         proto = MockProtocol()
-        handler = IM.handler.ModemGetDb(callback)
+        handler = IM.handler.ModemDbGet(callback)
 
         get_first = Msg.OutAllLinkGetFirst(is_ack=True)
         get_next = Msg.OutAllLinkGetNext(is_ack=True)
@@ -39,7 +39,7 @@ class Test_ModemGetDb:
         def callback(msg):
             calls.append(msg)
 
-        handler = IM.handler.ModemGetDb(callback)
+        handler = IM.handler.ModemDbGet(callback)
         proto = MockProtocol()
 
         b = bytes([0x02, 0x57,
