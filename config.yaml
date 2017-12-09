@@ -11,7 +11,7 @@
 #==========================================================================
 logging:
   # 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR
-  level: 20
+  level: 10
 
   # Print messages to the screen.
   #screen: False
@@ -27,19 +27,19 @@ logging:
 insteon:
   # Serial device:
   # USB PLM modem
-  port: "/dev/insteon"
+  port: '/dev/insteon'
   #baudrate: 19200
 
   # Network socket:
   # Insteon HUB PLM network
-  #port: "socket://192.168.1.5:9761"
+  #port: 'socket://192.168.1.5:9761'
 
   # PLM modem Insteon hex address
   address: 44.85.11
 
   # Device database file storage location.
-  #storage: "/var/lib/insteon-mqtt"
-  storage: "data"
+  #storage: '/var/lib/insteon-mqtt'
+  storage: 'data'
 
   # Automatically refresh device states and databases (if needed) at
   # startup.  This may be slow depending on the number of devices.
@@ -52,27 +52,31 @@ insteon:
   devices:
     # On/off switch devices (outlets, wall switches, appliance modules, etc).
     switch:
-      - 37.2d.35: "lamp1"
+      - 37.2d.35: 'lamp1'
 
     # Dimming devices (outlets, wall switches, lamp modules, etc).
     dimmer:
-      - 3a.29.84: "lamp2"
+      - 3a.29.84: 'lamp2'
       - 48.3d.46
       - 48.b0.ad
 
     # Battery powered motion sensors.
     motion:
-      - 21.d6.d9: "front door"
+      - 21.d6.d9: 'front door'
 
     # Battery powered mini remotes
     mini_remote4:
 
     mini_remote8:
-      - 3f.07.d4: "remote1"
+      - 3f.07.d4: 'remote1'
 
     # Smoke bridge module
     smoke_bridge:
-      - 44.a3.79: "smoke alarm"
+      - 44.a3.79: 'smoke alarm'
+
+    # FanLinc fan controller (dimmer+fan)
+    fan_linc:
+      - 11.22.33
 
   #------------------------------------------------------------------------
   # FUTURE: Insteon scene definitions.
@@ -192,7 +196,7 @@ mqtt:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
-    level_topic: "insteon/{{address}}/level"
+    level_topic: 'insteon/{{address}}/level'
     # NOTE: HASS JSON switch doesn't send brightness in some cases
     # when actuated so handle that here in the template code.  The
     # other HASS MQTT options also have this problem.
@@ -309,5 +313,76 @@ mqtt:
     #   button = 1...n  (button number 1-4 or 1-8)
     state_topic: 'insteon/{{address}}/state/{{button}}'
     state_payload: '{{on_str.upper()}}'
+
+  #------------------------------------------------------------------------
+  # Fan Linc
+  #------------------------------------------------------------------------
+
+  # A FanLinc is a dimmer switch (Insteon group 1) plus a fan control
+  # (group 2).  The dimmer MQTT messages use the dimmer settings
+  # above.  The settings here are just for the fan input and output.
+  # The dimmer settings can be used to turn the fan on and off (and
+  # report on/off state changes).
+  #
+  # NOTE: Both the fan state and fan speed state topics will be
+  # published on ANY fan change.  So if you only need one of them, you
+  # can put both payloads in a single message and set the other inputs
+  # to blank (which will turn off the output).
+  #
+  # In Home Assistant, use the dimmer example above for the light and
+  # use MQTT fan with a configuration like this for the fan:
+  # fan:
+  #   - platform: mqtt
+  #     command_topic: 'insteon/aa.bb.cc/fan/set'
+  #     state_topic: 'insteon/aa.bb.cc/fan/state'
+  #     speed_command_topic: 'insteon/aa.bb.cc/fan/speed/set'
+  #     speed_state_topic: 'insteon/aa.bb.cc/fan/state'
+  fan_linc:
+    # Output fan state change topic and payload.  This message is sent
+    # whenever the fan state changes for any reason.  Available
+    # variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   on = 0/1
+    #   on_str = 'off', 'on'
+    #   level = 0, 1, 2, 3
+    #   level_str = 'off', 'low', 'medium', 'high'
+    fan_state_topic: 'insteon/{{address}}/fan/state'
+    fan_state_payload: '{{on_str.upper()}}'
+
+    # Fan on/off command.  Similar functionality to the cmd_topic
+    # but only for turning the device on and off.  The output of
+    # passing the payload through the payload must match the following:
+    #   { "cmd" : "on"/"off" }
+    # Available variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
+    fan_on_off_topic: 'insteon/{{address}}/fan/set'
+    fan_on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+    # Output fan speed state change topic and payload.  Set to empty
+    # to turn off.  The same templating variables are available as
+    # fan_state_topic agove.
+    fan_speed_topic: 'insteon/{{address}}/fan/speed/state'
+    fan_speed_payload: '{{level_str}}'
+
+    # Fan speed change command.  Similar functionality to the cmd_topic
+    # but only for turning the device on and off.  The output of
+    # passing the payload through the payload must match the following:
+    #   { "cmd" : SPEED }
+    # where
+    #   SPEED = 0, 1, 2, 3 (for off, low, medium, high)
+    #      or = "off", "low", "medium", "high"
+    # Available variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
+    fan_speed_set_topic: 'insteon/{{address}}/fan/speed/set'
+    fan_speed_set_payload: '{ "cmd" : "{{value.lower}}" }'
 
 #----------------------------------------------------------------

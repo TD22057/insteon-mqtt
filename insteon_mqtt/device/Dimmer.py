@@ -132,7 +132,7 @@ class Dimmer(Base):
         if self._level == level:
             LOG.info("Dimmer %s '%s' is already on %s", self.addr, self.name,
                      level)
-            self.signal_level_changed.emit(self, level)
+            self.signal_level_changed.emit(self, self._level)
             return
 
         # Send an on or instant on command.
@@ -161,7 +161,7 @@ class Dimmer(Base):
         LOG.info("Dimmer %s cmd: off", self.addr)
         if self._level == 0:
             LOG.info("Dimmer %s '%s' is already off", self.addr, self.name)
-            self.signal_level_changed.emit(self, 0)
+            self.signal_level_changed.emit(self, self._level)
             return
 
         # Send an off or instant off command.
@@ -323,7 +323,7 @@ class Dimmer(Base):
             LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
             self._set_level(msg.cmd2)
 
-        elif msg.flags.Dimmer == Msg.Flags.Type.DIRECT_NAK:
+        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("Dimmer %s NAK error: %s", self.addr, msg)
 
     #-----------------------------------------------------------------------

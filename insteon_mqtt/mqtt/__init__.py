@@ -12,6 +12,7 @@ __doc__ = """TODO: doc
 
 from .Mqtt import Mqtt
 from .Dimmer import Dimmer
+from .FanLinc import FanLinc
 from .MsgTemplate import MsgTemplate
 from .Motion import Motion
 from .Remote import Remote

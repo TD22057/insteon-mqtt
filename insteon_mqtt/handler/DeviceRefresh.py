@@ -26,11 +26,13 @@ class DeviceRefresh(Base):
     device.  If it does, the handler will send a new message to
     request that.
     """
-    def __init__(self, device, force, num_retry=3):
+    def __init__(self, device, callback, force, num_retry=3):
         """Constructor
 
         Args
           device:    (Device) The Insteon device.
+          callback:  Callback function to call when the reply arrives.  API:
+                        callback( Msg.InpStandard )
           force:     (bool) If True, force a db download.  If False, only
                      download the db if it's out of date.
           num_retry: (int) The number of times to retry the message if the
@@ -41,6 +43,7 @@ class DeviceRefresh(Base):
         super().__init__(num_retry=num_retry)
 
         self.device = device
+        self.callback = callback
         self.force = force
         self.addr = device.addr
 
@@ -73,7 +76,7 @@ class DeviceRefresh(Base):
 
             # Call the device refresh handler.  This sets the current
             # device state which is usually stored in cmd2.
-            self.device.handle_refresh(msg)
+            self.callback(msg)
 
             # All link database delta is stored in cmd1 so we if we have
             # the latest version.  If not, schedule an update.
