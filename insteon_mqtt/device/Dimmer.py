@@ -132,6 +132,7 @@ class Dimmer(Base):
         if self._level == level:
             LOG.info("Dimmer %s '%s' is already on %s", self.addr, self.name,
                      level)
+            self.signal_level_changed.emit(self, level)
             return
 
         # Send an on or instant on command.
@@ -160,6 +161,7 @@ class Dimmer(Base):
         LOG.info("Dimmer %s cmd: off", self.addr)
         if self._level == 0:
             LOG.info("Dimmer %s '%s' is already off", self.addr, self.name)
+            self.signal_level_changed.emit(self, level)
             return
 
         # Send an off or instant off command.

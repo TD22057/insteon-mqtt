@@ -122,6 +122,7 @@ class Switch(Base):
         LOG.info("Switch %s cmd: on", self.addr)
         if self._is_on:
             LOG.info("Device %s '%s' is already on", self.addr, self.name)
+            self.signal_active.emit(self, self._is_on)
             return
 
         # Send an on or instant on command.
@@ -150,6 +151,7 @@ class Switch(Base):
         LOG.info("Switch %s cmd: off", self.addr)
         if not self._is_on:
             LOG.info("Device %s '%s' is already off", self.addr, self.name)
+            self.signal_active.emit(self, self._is_on)
             return
 
         # Send an off or instant off command.  Instant off is the same
