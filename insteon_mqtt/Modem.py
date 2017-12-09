@@ -121,12 +121,16 @@ class Modem:
                 device.refresh()
 
     #-----------------------------------------------------------------------
-    def db_get(self):
+    def db_get(self, force=None):
         """Load the all link database from the modem.
 
         This sends a message to the modem to start downloading the all
         link database.  The message handler handler.ModemDbGet is used to
         process the replies and update the modem database.
+
+        Args:
+           force:   (bool) Ignored - this insures a consistent API with the
+                    device refresh command.
         """
         LOG.info("Modem sending get first db record command")
 

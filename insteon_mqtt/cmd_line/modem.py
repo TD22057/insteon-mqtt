@@ -11,7 +11,7 @@ def set_btn(args, config):
     topic = "%s/modem" % (args.topic)
     payload = {
         "cmd" : "set_btn",
-        "timeout" : args.timeout,
+        "time_out" : args.timeout,
         }
 
     reply = util.send(config, topic, payload)
