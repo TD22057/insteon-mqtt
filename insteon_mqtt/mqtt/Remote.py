@@ -22,14 +22,14 @@ class Remote(Base):
         self.device = device
 
         self.msg_state = MsgTemplate(
-            topic = 'insteon/{{address}}/state/{{button}}',
-            payload = '{{on_str.lower()}}',
+            topic='insteon/{{address}}/state/{{button}}',
+            payload='{{on_str.lower()}}',
             )
 
         device.signal_pressed.connect(self.handle_pressed)
 
     #-----------------------------------------------------------------------
-    def load_config(self, config, qos):
+    def load_config(self, config, qos=None):
         """TODO: doc
         """
         data = config.get("remote", None)

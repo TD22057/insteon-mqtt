@@ -22,19 +22,19 @@ class Switch(Base):
         self.device = device
 
         self.msg_state = MsgTemplate(
-            topic = 'insteon/{{address}}/state',
-            payload = '{{on_str.lower()}}',
+            topic='insteon/{{address}}/state',
+            payload='{{on_str.lower()}}',
             )
         self.msg_on_off = MsgTemplate(
-            topic = 'insteon/{{address}}/set',
-            payload = '{ "cmd" : "{{value.lower()}}" }',
+            topic='insteon/{{address}}/set',
+            payload='{ "cmd" : "{{value.lower()}}" }',
             )
 
         if handle_active:
             device.signal_active.connect(self.handle_active)
 
     #-----------------------------------------------------------------------
-    def load_config(self, config, qos):
+    def load_config(self, config, qos=None):
         """TODO: doc
         """
         self.load_switch_config(config.get("switch", None), qos)
@@ -70,7 +70,7 @@ class Switch(Base):
         """
         data = {
             "address" : self.device.addr.hex,
-            "name" : self.device.name if self.device.name \
+            "name" : self.device.name if self.device.name
                      else self.device.addr.hex,
             }
 

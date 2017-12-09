@@ -10,5 +10,7 @@ ignore =
   E722,
   # continuation line indentation
   E127,
+  # hanging indent indentation,
+  E131,
 
 exclude = notes,

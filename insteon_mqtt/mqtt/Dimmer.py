@@ -19,14 +19,14 @@ class Dimmer(Switch):
         super().__init__(mqtt, device, handle_active=False)
 
         self.msg_state = MsgTemplate(
-            topic = 'insteon/{{address}}/state',
-            payload = '{ "state" : "{{on_str.upper()}}", '
-                      '"brightness" : {{level_255}} }',
+            topic='insteon/{{address}}/state',
+            payload='{ "state" : "{{on_str.upper()}}", '
+                    '"brightness" : {{level_255}} }',
             )
         self.msg_level = MsgTemplate(
-            topic = 'insteon/{{address}}/level',
-            payload = '{ "cmd" : "{{json.state.lower()}}", '
-                      '"level" : {{json.brightness}} }',
+            topic='insteon/{{address}}/level',
+            payload='{ "cmd" : "{{json.state.lower()}}", '
+                    '"level" : {{json.brightness}} }',
             )
 
         device.signal_level_changed.connect(self.handle_level_changed)
@@ -67,12 +67,13 @@ class Dimmer(Switch):
         self.mqtt.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
+    # pylint: disable=arguments-differ
     def template_data(self, level=None):
         """TODO: doc
         """
         data = {
             "address" : self.device.addr.hex,
-            "name" : self.device.name if self.device.name \
+            "name" : self.device.name if self.device.name
                      else self.device.addr.hex,
             }
 

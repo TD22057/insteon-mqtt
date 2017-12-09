@@ -23,26 +23,26 @@ class SmokeBridge(Base):
         self.device = device
 
         self.msg_smoke = MsgTemplate(
-            topic = 'insteon/{{address}}/smoke',
-            payload = '{{on_str.upper()}}',
+            topic='insteon/{{address}}/smoke',
+            payload='{{on_str.upper()}}',
             )
         self.msg_co = MsgTemplate(
-            topic = 'insteon/{{address}}/co',
-            payload = '{{on_str.upper()}}',
+            topic='insteon/{{address}}/co',
+            payload='{{on_str.upper()}}',
             )
         self.msg_battery = MsgTemplate(
-            topic = 'insteon/{{address}}/battery',
-            payload = '{{on_str.upper()}}',
+            topic='insteon/{{address}}/battery',
+            payload='{{on_str.upper()}}',
             )
         self.msg_error = MsgTemplate(
-            topic = 'insteon/{{address}}/error',
-            payload = '{{on_str.upper()}}',
+            topic='insteon/{{address}}/error',
+            payload='{{on_str.upper()}}',
             )
 
         device.signal_state_change.connect(self.handle_change)
 
     #-----------------------------------------------------------------------
-    def load_config(self, config, qos):
+    def load_config(self, config, qos=None):
         """TODO: doc
         """
         data = config.get("smoke_bridge", None)

@@ -22,16 +22,16 @@ class Motion(Base):
         self.device = device
 
         self.msg_state = MsgTemplate(
-            topic = 'insteon/{{address}}/state',
-            payload = '{{on_str.lower()}}',
+            topic='insteon/{{address}}/state',
+            payload='{{on_str.lower()}}',
             )
         self.msg_dawn = MsgTemplate(
-            topic = 'insteon/{{address}}/dawn',
-            payload = '{{is_dawn_str.upper()}}',
+            topic='insteon/{{address}}/dawn',
+            payload='{{is_dawn_str.upper()}}',
             )
         self.msg_battery = MsgTemplate(
-            topic = 'insteon/{{address}}/low_battery',
-            payload = '{{is_low_str.upper()}}',
+            topic='insteon/{{address}}/low_battery',
+            payload='{{is_low_str.upper()}}',
             )
 
         device.signal_active.connect(self.handle_active)
@@ -39,7 +39,7 @@ class Motion(Base):
         device.signal_low_battery.connect(self.handle_low_battery)
 
     #-----------------------------------------------------------------------
-    def load_config(self, config, qos):
+    def load_config(self, config, qos=None):
         """TODO: doc
         """
         data = config.get("motion", None)
@@ -69,7 +69,7 @@ class Motion(Base):
 
         data = {
             "address" : self.device.addr.hex,
-            "name" : self.device.name if self.device.name \
+            "name" : self.device.name if self.device.name
                      else self.device.addr.hex,
             "on" : 1 if is_active else 0,
             "on_str" : "on" if is_active else "off",

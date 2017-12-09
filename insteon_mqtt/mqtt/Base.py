@@ -10,7 +10,7 @@ class Base:
     """
 
     #-----------------------------------------------------------------------
-    def load_config(self, confg, qos=None):
+    def load_config(self, config, qos=None):
         """TODO: doc
         """
         pass
@@ -22,7 +22,7 @@ class Base:
         pass
 
     #-----------------------------------------------------------------------
-    def unsubscribe(self, link, qos):
+    def unsubscribe(self, link):
         """TODO: doc
         """
         pass
