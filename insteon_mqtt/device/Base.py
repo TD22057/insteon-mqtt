@@ -140,7 +140,7 @@ class Base:
         # current value.  If it's different, it will send a database
         # download command to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
-        msg_handler = handler.DeviceRefresh(self, msg, force, num_retry=3)
+        msg_handler = handler.DeviceRefresh(self, force, num_retry=3)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

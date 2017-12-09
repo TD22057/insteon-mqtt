@@ -26,58 +26,23 @@ class DeviceRefresh(Base):
     device.  If it does, the handler will send a new message to
     request that.
     """
-    def __init__(self, device, msg, force, num_retry=3):
+    def __init__(self, device, force, num_retry=3):
         """Constructor
 
         Args
           device:    (Device) The Insteon device.
-          msg:       (message) The refresh message being sent.  This will
-                     be sent again if we time out.
           force:     (bool) If True, force a db download.  If False, only
                      download the db if it's out of date.
-          num_retry: (int) The number of retries to attempt on the refresh
-                     message before giving up.
+          num_retry: (int) The number of times to retry the message if the
+                     handler times out without returning Msg.FINISHED.
+                     This count does include the initial sending so a
+                     retry of 3 will send once and then retry 2 more times.
         """
-        super().__init__()
+        super().__init__(num_retry=num_retry)
 
         self.device = device
-        self.addr = device.addr
-        self.msg = msg
         self.force = force
-        self.send_count = 1
-        self.num_retry = num_retry
-
-    #-----------------------------------------------------------------------
-    def is_expired(self, protocol, t):
-        """See if the time out time has been exceeded.
-
-        Args:
-          protocol:  (Protocol) The Insteon Protocol object.
-          t:         (float) Current time tag as a Unix clock time.
-
-        Returns:
-          Returns True if the message has timed out or False otherwise.
-        """
-        # If we haven't expired, return.
-        if not super().is_expired(protocol, t):
-            return False
-
-        LOG.warning("Device %s refresh timed out with try %s of %s", self.addr,
-                    self.send_count, self.num_retry)
-
-        # Some devices like the smoke bridge have issues and don't
-        # seem to respond very well.  So we'll retry a few times to
-        # send the refresh command.
-        if self.send_count < self.num_retry:
-            self.send_count += 1
-
-            # Resend the refresh command.
-            protocol.send(self.msg, self)
-
-        # Tell the protocol that we're expired.  This will end this
-        # handler and send the next message which at some point will
-        # be our retry command with ourselves as the handler again.
-        return True
+        self.addr = device.addr
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
@@ -104,7 +69,7 @@ class DeviceRefresh(Base):
         # See if this is the standard message ack/nak we're expecting.
         elif isinstance(msg, Msg.InpStandard) and msg.from_addr == self.addr:
             # Since we got the message we expected, turn off retries.
-            self.send_count = self.num_retry
+            self.stop_retry()
 
             # Call the device refresh handler.  This sets the current
             # device state which is usually stored in cmd2.
@@ -131,11 +96,12 @@ class DeviceRefresh(Base):
 
                 # Request that the device send us all of it's database
                 # records.  These will be streamed as fast as possible
-                # to us and the handler will update the database
+                # to us and the handler will update the database.  We
+                # need a retry count here because battery powered
+                # devices don't always respond right away.
                 db_msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00,
                                                 bytes(14))
-                msg_handler = DeviceDbGet(self.device.db, on_done,
-                                          msg=db_msg)  # TODO: fix this
+                msg_handler = DeviceDbGet(self.device.db, on_done, num_retry=3)
                 protocol.send(db_msg, msg_handler)
 
             # Either way - this transaction is complete.

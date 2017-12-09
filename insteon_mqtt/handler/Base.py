@@ -4,6 +4,9 @@
 #
 #===========================================================================
 import time
+from .. import log
+
+LOG = log.get_logger()
 
 
 class Base:
@@ -24,7 +27,7 @@ class Base:
     Callbac: The on_done
     """
     #-----------------------------------------------------------------------
-    def __init__(self, time_out=5, on_done=None):
+    def __init__(self, time_out=5, on_done=None, num_retry=0):
         """Constructor
 
         The on_done callback has the signature on_done(success, msg)
@@ -37,15 +40,50 @@ class Base:
           time_out:  (int) Time out in seconds.
           on_done:   Option finished callback.  This is called when the
                      handler is finished for any reason.
+          num_retry: (int) The number of times to retry the message if the
+                     handler times out without returning Msg.FINISHED.
+                     This count does include the initial sending so a
+                     retry of 3 will send once and then retry 2 more times.
         """
+        # expire_time is the time after which we should time out.
         self._time_out = time_out
         self._expire_time = None
-        self.on_done = on_done
 
-        # Use a dummy callback if none was input.  This way we don't
-        # have to check if on_done is defined.
-        if not on_done:
+        # Retry variables.  The message to retry will get set in the
+        # sending_message callback.
+        self._num_sent = 0
+        self._num_retry = num_retry
+        self._msg = None
+
+        # Callback when finished.  Use a dummy callback if none was
+        # input.  This way we don't have to check if on_done is defined.
+        if on_done:
+            self.on_done = on_done
+        else:
             self.on_done = lambda *x: x
+
+    #-----------------------------------------------------------------------
+    def sending_message(self, msg):
+        """Messaging being sent callback.
+
+        The Protocol class calls this to notify that the message is
+        being sent.
+
+        Args:
+           msg:   (message.Base) The message being sent.
+        """
+        # Save the message for a later retry if requested.
+        self._num_sent += 1
+        self._msg = msg
+
+        # Update the expiration time.
+        self.update_expire_time()
+
+    #-----------------------------------------------------------------------
+    def stop_retry(self):
+        """Stop any more retries of sending the message.
+        """
+        self._num_sent = self._num_retry + 1
 
     #-----------------------------------------------------------------------
     def update_expire_time(self):
@@ -71,11 +109,30 @@ class Base:
         Returns:
           Returns True if the message has timed out or False otherwise.
         """
-        if t >= self._expire_time:
+        # Not enough time has elapsed to time out.
+        if t < self._expire_time:
+            return False
+
+        # If we've exhausted the number of sends, end the handler.
+        elif self._num_sent > self._num_retry or not self._msg:
+            LOG.warning("Handler timed out - no more retries (%s sent)",
+                        self._num_sent)
             self.on_done(False, "Message handler timed out")
             return True
 
-        return False
+        LOG.warning("Handler timed out %s of %s sent: %s",
+                    self._num_sent, self._num_retry, self._msg)
+
+        # Otherwise we should try and resend the message with
+        # ourselves as the handler again so we don't lose the count.
+        self._num_sent += 1
+        protocol.send(self._msg, self)
+
+        # Tell the protocol that we're expired.  This will end this
+        # handler and send the next message in the queue.  At some
+        # point that will be our retry command with ourselves as the
+        # handler again.
+        return True
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):

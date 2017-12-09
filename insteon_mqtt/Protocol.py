@@ -355,7 +355,7 @@ class Protocol:
 
         # Tell the msg data that we've sent the message to update the
         # current time out time.
-        handler.update_expire_time()
+        handler.sending_message(msg)
 
         # Save the handler to have priority processing any inbound
         # messages.
