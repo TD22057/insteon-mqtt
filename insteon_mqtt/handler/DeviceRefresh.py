@@ -81,7 +81,8 @@ class DeviceRefresh(Base):
                 LOG.info("Device database is current at delta %s", msg.cmd1)
 
             else:
-                LOG.info("Device %s db out of date - refreshing", self.addr)
+                LOG.info("Device %s db out of date (got %s vs %s) - refreshing",
+                         self.addr, msg.cmd1, self.device.db.delta)
 
                 # Clear the current database values.
                 self.device.db.clear()

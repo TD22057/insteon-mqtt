@@ -220,7 +220,7 @@ class Device:
             self._add_on_device(protocol, addr, group, is_controller, data,
                                 on_done)
         else:
-            LOG.info("Device %s busy - waiting to add to db")
+            LOG.info("Device %s busy - waiting to add to db", self.addr)
             func = functools.partial(self._add_on_device, protocol, addr,
                                      group, is_controller, data, on_done)
             self._pending.append(func)
@@ -574,6 +574,10 @@ class Device:
         # Memory goes high->low so find the last entry by looking
         # at the minimum value.  Then find the entry for that loc.
         last_entry = self.find_mem_loc(min(self._mem_locs))
+        # TODO???
+        if not last_entry:
+            LOG.error("MEM_LOCS error: %s", self._mem_locs)
+            return
 
         # Each rec is 8 bytes so move down 8 to get the next loc.
         mem_loc = last_entry.mem_loc - 0x08
