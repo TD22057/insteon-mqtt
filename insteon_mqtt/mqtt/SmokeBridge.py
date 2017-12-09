@@ -6,6 +6,7 @@
 from .. import log
 from .. import device as IDev
 from .Base import Base
+from .MsgTemplate import MsgTemplate
 
 LOG = log.get_logger()
 
@@ -16,58 +17,43 @@ class SmokeBridge(Base):
     def __init__(self, mqtt, device):
         """TODO: doc
         """
-        super().__init__(mqtt, device)
+        super().__init__()
 
-        self.load_topic_template('smoke_topic', 'insteon/{{address}}/smoke')
-        self.load_payload_template('smoke_payload', '{{on_str.upper()}}')
+        self.mqtt = mqtt
+        self.device = device
 
-        self.load_topic_template('co_topic', 'insteon/{{address}}/co')
-        self.load_payload_template('co_payload', '{{on_str.upper()}}')
-
-        self.load_topic_template('battery_topic',
-                                 'insteon/{{address}}/battery')
-        self.load_payload_template('battery_payload', '{{on_str.upper()}}')
-
-        self.load_topic_template('error_topic', 'insteon/{{address}}/error')
-        self.load_payload_template('error_payload', '{{on_str.upper()}}')
+        self.msg_smoke = MsgTemplate(
+            topic = 'insteon/{{address}}/smoke',
+            payload = '{{on_str.upper()}}',
+            )
+        self.msg_co = MsgTemplate(
+            topic = 'insteon/{{address}}/co',
+            payload = '{{on_str.upper()}}',
+            )
+        self.msg_battery = MsgTemplate(
+            topic = 'insteon/{{address}}/battery',
+            payload = '{{on_str.upper()}}',
+            )
+        self.msg_error = MsgTemplate(
+            topic = 'insteon/{{address}}/error',
+            payload = '{{on_str.upper()}}',
+            )
 
         device.signal_state_change.connect(self.handle_change)
 
     #-----------------------------------------------------------------------
-    def load_config(self, config):
+    def load_config(self, config, qos):
         """TODO: doc
         """
-        data = config.get("motion", None)
+        data = config.get("smoke_bridge", None)
         if not data:
             return
 
-        self.load_topic_template('smoke_topic', data.get('smoke_topic', None))
-        self.load_payload_template('smoke_payload',
-                                   data.get('smoke_payload', None))
-
-        self.load_topic_template('co_topic', data.get('co_topic', None))
-        self.load_payload_template('co_payload', data.get('co_payload', None))
-
-        self.load_topic_template('battery_topic',
-                                 data.get('battery_topic', None))
-        self.load_payload_template('battery_payload',
-                                   data.get('battery_payload', None))
-
-        self.load_topic_template('error_topic', data.get('error_topic', None))
-        self.load_payload_template('error_payload',
-                                   data.get('error_payload', None))
-
-    #-----------------------------------------------------------------------
-    def subscribe(self, link, qos):
-        """TODO: doc
-        """
-        pass
-
-    #-----------------------------------------------------------------------
-    def unsubscribe(self, link):
-        """TODO: doc
-        """
-        pass
+        self.msg_smoke.load_config(data, 'smoke_topic', 'smoke_payload', qos)
+        self.msg_co.load_config(data, 'co_topic', 'co_payload', qos)
+        self.msg_battery.load_config(data, 'battery_topic', 'battery_payload',
+                                     qos)
+        self.msg_error.load_config(data, 'error_topic', 'error_payload', qos)
 
     #-----------------------------------------------------------------------
     def handle_change(self, device, condition):
@@ -101,19 +87,15 @@ class SmokeBridge(Base):
             data["on_str"] = "off"
 
         if clear or condition == Type.SMOKE:
-            payload = self.render('smoke_payload', data)
-            self.mqtt.publish(self.smoke_topic, payload)
+            self.msg_smoke.publish(self.mqtt, data)
 
         if clear or condition == Type.CO:
-            payload = self.render('co_payload', data)
-            self.mqtt.publish(self.co_topic, payload)
+            self.msg_co.publish(self.mqtt, data)
 
         if clear or condition == Type.LOW_BATTERY:
-            payload = self.render('battery_payload', data)
-            self.mqtt.publish(self.battery_topic, payload)
+            self.msg_battery.publish(self.mqtt, data)
 
         if clear or condition == Type.ERROR:
-            payload = self.render('error_payload', data)
-            self.mqtt.publish(self.error_topic, payload)
+            self.msg_error.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

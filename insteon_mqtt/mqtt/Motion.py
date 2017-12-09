@@ -5,6 +5,7 @@
 #===========================================================================
 from .. import log
 from .Base import Base
+from .MsgTemplate import MsgTemplate
 
 LOG = log.get_logger()
 
@@ -15,58 +16,41 @@ class Motion(Base):
     def __init__(self, mqtt, device):
         """TODO: doc
         """
-        super().__init__(mqtt, device)
+        super().__init__()
 
-        self.load_topic_template('state_topic', 'insteon/{{address}}/state')
-        self.load_payload_template('state_payload', '{{on_str.lower()}}')
+        self.mqtt = mqtt
+        self.device = device
 
-        self.load_topic_template('dawn_dusk_topic', 'insteon/{{address}}/dawn')
-        self.load_payload_template('dawn_dusk_payload',
-                                   '{{is_dawn_str.upper()}}')
-
-        self.load_topic_template('low_battery_topic',
-                                 'insteon/{{address}}/low_battery')
-        self.load_payload_template('low_battery_payload',
-                                   '{{is_low_str.upper()}}')
+        self.msg_state = MsgTemplate(
+            topic = 'insteon/{{address}}/state',
+            payload = '{{on_str.lower()}}',
+            )
+        self.msg_dawn = MsgTemplate(
+            topic = 'insteon/{{address}}/dawn',
+            payload = '{{is_dawn_str.upper()}}',
+            )
+        self.msg_battery = MsgTemplate(
+            topic = 'insteon/{{address}}/low_battery',
+            payload = '{{is_low_str.upper()}}',
+            )
 
         device.signal_active.connect(self.handle_active)
         device.signal_dusk.connect(self.handle_dusk)
         device.signal_low_battery.connect(self.handle_low_battery)
 
     #-----------------------------------------------------------------------
-    def load_config(self, config):
+    def load_config(self, config, qos):
         """TODO: doc
         """
         data = config.get("motion", None)
         if not data:
             return
 
-        self.load_topic_template('state_topic',
-                                 data.get('state_topic', None))
-        self.load_payload_template('state_payload',
-                                   data.get('state_payload', None))
-
-        self.load_topic_template('dawn_dusk_topic',
-                                 config.get('dawn_dusk_topic', None))
-        self.load_payload_template('dawn_dusk_payload',
-                                   config.get('dawn_dusk_payload', None))
-
-        self.load_topic_template('low_battery_topic',
-                                 config.get('low_battery_topic', None))
-        self.load_payload_template('low_battery_payload',
-                                   config.get('low_battery_payload', None))
-
-    #-----------------------------------------------------------------------
-    def subscribe(self, link, qos):
-        """TODO: doc
-        """
-        pass
-
-    #-----------------------------------------------------------------------
-    def unsubscribe(self, link):
-        """TODO: doc
-        """
-        pass
+        self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
+        self.msg_dawn.load_config(data, 'dawn_dusk_topic', 'dawn_dusk_payload',
+                                  qos)
+        self.msg_battery.load_config(data, 'low_battery_topic',
+                                     'low_battery_payload', qos)
 
     #-----------------------------------------------------------------------
     def handle_active(self, device, is_active):
@@ -84,17 +68,14 @@ class Motion(Base):
                  device.addr, device.name, is_active)
 
         data = {
-            "address" : device.addr.hex,
-            "name" : device.name if device.name else device.addr.hex,
+            "address" : self.device.addr.hex,
+            "name" : self.device.name if self.device.name \
+                     else self.device.addr.hex,
             "on" : 1 if is_active else 0,
             "on_str" : "on" if is_active else "off",
             }
 
-        payload = self.render('state_payload', data)
-        if not payload:
-            return
-
-        self.mqtt.publish(self.state_topic, payload)
+        self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
     def handle_dusk(self, device, is_dusk):
@@ -122,11 +103,7 @@ class Motion(Base):
             "state" : "dusk" if is_dusk else "dawn",
             }
 
-        payload = self.render('dawn_dusk_payload', data)
-        if not payload:
-            return
-
-        self.mqtt.publish(self.dawn_dusk_topic, payload)
+        self.msg_dawn.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
     def handle_low_battery(self, device, is_low):
@@ -149,10 +126,6 @@ class Motion(Base):
             "is_low_str" : "on" if is_low else "off",
             }
 
-        payload = self.render('low_battery_payload', data)
-        if not payload:
-            return
-
-        self.mqtt.publish(self.low_battery_topic, payload)
+        self.msg_battery.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

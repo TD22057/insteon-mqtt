@@ -4,6 +4,7 @@
 #
 #===========================================================================
 from .. import log
+from ..Signal import Signal
 from .Base import Base
 
 LOG = log.get_logger()
@@ -33,6 +34,9 @@ class Remote(Base):
     see if the local database is current or what the current motion
     state is - we can really only respond to the remote when it sends
     out a message.
+
+    The Signal Switch.signal_active will be emitted whenever
+    the device button is pushed.
 
     The run_command() method is used for arbitrary remote commanding
     (via MQTT for example).  The input is a dict (or keyword args)
@@ -64,6 +68,8 @@ class Remote(Base):
         """
         super().__init__(protocol, modem, address, name)
         self.num = num
+
+        self.signal_pressed = Signal()  # (Device, int group, bool on)
 
     #-----------------------------------------------------------------------
     def pair(self):
@@ -132,12 +138,15 @@ class Remote(Base):
         # On command.  0x11: on, 0x12: on fast
         elif msg.cmd1 in Remote.on_codes:
             LOG.info("Remote %s broadcast ON grp: %s", self.addr, msg.group)
+            on = True
 
         # Off command. 0x13: off, 0x14: off fast
         elif msg.cmd1 in Remote.off_codes:
             LOG.info("Remote %s broadcast OFF grp: %s", self.addr, msg.group)
+            on = False
 
-        # TODO: test this w/ remote buttons to see what the groups are.
+        # Notify others that the button was pressed.
+        self.signal_pressed.emit(self, msg.group, on)
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
@@ -145,6 +154,7 @@ class Remote(Base):
         # broadcast and updated (without sending anything out).
         super().handle_broadcast(msg)
 
-        # TODO: once Motion is working - apply that here.
+        # TODO: figure out how to download the database if we can
+        # since we just saw a message got by.
 
     #-----------------------------------------------------------------------

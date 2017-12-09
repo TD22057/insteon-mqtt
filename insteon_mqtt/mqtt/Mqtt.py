@@ -6,7 +6,7 @@
 import json
 from .. import log
 from . import config
-from . import util
+from .MsgTemplate import MsgTemplate
 
 LOG = log.get_logger()
 
@@ -123,7 +123,7 @@ class Mqtt:
         # Pass connection data to the MQTT link.
         self.link.load_config(data)
 
-        self._cmd_topic = util.clean_topic(data['cmd_topic'])
+        self._cmd_topic = MsgTemplate.clean_topic(data['cmd_topic'])
         self._qos = data.get('qos', 1)
         self._retain = data.get('retain', True)
 
@@ -196,7 +196,7 @@ class Mqtt:
 
         # Set the configuration input data for this device type.
         if self._config:
-            obj.load_config(self._config)
+            obj.load_config(self._config, self._qos)
 
         # Save the MQTT device so we can find it again.
         self.devices[device.addr.id] = obj

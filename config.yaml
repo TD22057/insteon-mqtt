@@ -295,4 +295,19 @@ mqtt:
     error_topic: 'insteon/{{address}}/error'
     error_payload: '{{on_str.upper()}}'
 
+  #------------------------------------------------------------------------
+  # Mini remotes
+  #------------------------------------------------------------------------
+
+  # Battery powered remotes (usually 4 or 8 buttons).  A message is
+  # sent whenever one of the buttons is pressed.
+  remote:
+    # Output state change topic and template.  This message is sent
+    # whenever a button is pressed.  Available variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   button = 1...n  (button number 1-4 or 1-8)
+    state_topic: 'insteon/{{address}}/state/{{button}}'
+    state_payload: '{{on_str.upper()}}'
+
 #----------------------------------------------------------------

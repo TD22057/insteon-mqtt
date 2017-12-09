@@ -4,6 +4,7 @@
 #
 #===========================================================================
 from .. import log
+from .MsgTemplate import MsgTemplate
 from .Switch import Switch
 
 LOG = log.get_logger()
@@ -17,51 +18,71 @@ class Dimmer(Switch):
         """
         super().__init__(mqtt, device, handle_active=False)
 
-        self.load_topic_template('state_topic', 'insteon/{{address}}/state')
-        self.load_payload_template('state_payload',
-                                   '{ "state" : "{{on_str.upper()}}", '
-                                   '"brightness" : {{level_255}} }')
-
-        self.load_topic_template('level_topic', 'insteon/{{address}}/level')
-        self.load_payload_template('level_payload',
-                                   '{ "cmd" : "{{json.state.lower()}}", '
-                                   '"level" : {{json.brightness}} }')
+        self.msg_state = MsgTemplate(
+            topic = 'insteon/{{address}}/state',
+            payload = '{ "state" : "{{on_str.upper()}}", '
+                      '"brightness" : {{level_255}} }',
+            )
+        self.msg_level = MsgTemplate(
+            topic = 'insteon/{{address}}/level',
+            payload = '{ "cmd" : "{{json.state.lower()}}", '
+                      '"level" : {{json.brightness}} }',
+            )
 
         device.signal_level_changed.connect(self.handle_level_changed)
 
     #-----------------------------------------------------------------------
-    def load_config(self, config):
+    def load_config(self, config, qos=None):
         """TODO: doc
         """
         data = config.get("dimmer", None)
-        super().load_switch_config(data)
-        self.load_dimmer_config(data)
+        super().load_switch_config(data, qos)
+        self.load_dimmer_config(data, qos)
 
     #-----------------------------------------------------------------------
-    def load_dimmer_config(self, config):
+    def load_dimmer_config(self, config, qos):
         """TODO: doc
         """
         if not config:
             return
 
-        self.load_topic_template('level_topic',
-                                 config.get('level_topic', None))
-        self.load_payload_template('level_payload',
-                                   config.get('level_payload', None))
+        self.msg_level.load_config(config, 'level_topic', 'level_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
         """TODO: doc
         """
         super().subscribe(link, qos)
-        link.subscribe(self.level_topic, qos, self.handle_level)
+
+        topic = self.msg_level.render_topic(self.template_data())
+        link.subscribe(topic, qos, self.handle_level)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
         """TODO: doc
         """
         super().unsubscribe(link)
-        self.mqtt.unsubscribe(self.level_topic)
+
+        topic = self.msg_level.render_topic(self.template_data())
+        self.mqtt.unsubscribe(topic)
+
+    #-----------------------------------------------------------------------
+    def template_data(self, level=None):
+        """TODO: doc
+        """
+        data = {
+            "address" : self.device.addr.hex,
+            "name" : self.device.name if self.device.name \
+                     else self.device.addr.hex,
+            }
+
+        if level is not None:
+            data["on"] = 1 if level else 0,
+            data["on_str"] = "on" if level else "off"
+            data["level_255"] = level
+            data["level_100"] = int(100.0 * level / 255.0)
+
+        return data
 
     #-----------------------------------------------------------------------
     def handle_level_changed(self, device, level):
@@ -78,20 +99,8 @@ class Dimmer(Switch):
         LOG.info("MQTT received level change %s '%s' = %s",
                  device.addr, device.name, level)
 
-        data = {
-            "address" : device.addr.hex,
-            "name" : device.name if device.name else device.addr.hex,
-            "on" : 1 if level else 0,
-            "on_str" : "on" if level else "off",
-            "level_255" : level,
-            "level_100" : int(100.0 * level / 255.0),
-            }
-
-        payload = self.render('state_payload', data)
-        if not payload:
-            return
-
-        self.mqtt.publish(self.state_topic, payload)
+        data = self.template_data(level)
+        self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
     def handle_level(self, client, data, message):
@@ -99,7 +108,7 @@ class Dimmer(Switch):
         """
         LOG.info("Dimmer message %s %s", message.topic, message.payload)
 
-        data = self.input_to_json(message.payload, 'level_payload')
+        data = self.msg_level.to_json(message.payload)
         if not data:
             return
 

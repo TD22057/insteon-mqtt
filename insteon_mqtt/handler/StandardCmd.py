@@ -81,7 +81,7 @@ class StandardCmd(Base):
         elif isinstance(msg, Msg.InpStandard):
             # If this message matches our address and command, it's
             # probably the ACK we're expecting.
-            if msg.to_addr == self.addr and msg.cmd1 == self.cmd:
+            if msg.from_addr == self.addr and msg.cmd1 == self.cmd:
                 # Run the callback - it's up to the callback to check
                 # if this is really the ACK or not.
                 self.callback(msg)
