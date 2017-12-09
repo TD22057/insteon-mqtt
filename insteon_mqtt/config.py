@@ -15,11 +15,12 @@ from . import device
 # Configuration file input description to class map.
 devices = {
     'dimmer' : device.Dimmer,
-    'motion' : device.Motion,
-    'switch' : device.Switch,
-    'smoke_bridge' : device.SmokeBridge,
+    'fan_linc' : device.FanLinc,
     'mini_remote4' : functools.partial(device.Remote, num=4),
     'mini_remote8' : functools.partial(device.Remote, num=8),
+    'motion' : device.Motion,
+    'smoke_bridge' : device.SmokeBridge,
+    'switch' : device.Switch,
     }
 
 

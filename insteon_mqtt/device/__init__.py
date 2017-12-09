@@ -28,6 +28,7 @@ first (hold the modem set button, then the device.
 
 from .Base import Base
 from .Dimmer import Dimmer
+from .FanLinc import FanLinc
 from .Motion import Motion
 from .Remote import Remote
 from .SmokeBridge import SmokeBridge
