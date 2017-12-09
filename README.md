@@ -47,6 +47,9 @@ what they are and how to interpret messages from them.
 - Add and delete entries from the modem and device all link databases.
 - Command line tool for simpler sending of MQTT messages to send to
   the server.
+- Automatically attempt to download the all link database from battery
+  powered when a message is seen from them (i.e. trip a motion sensor
+  to get it to download the database.
 
 
 # Detailed Documentation

@@ -24,7 +24,7 @@ class DeviceDbGet(Base):
     constructor which is usually a method on the device to update it's
     database.
     """
-    def __init__(self, device_db, on_done):
+    def __init__(self, device_db, on_done, msg=None):
         """Constructor
 
         The on_done callback has the signature on_done(success, msg)
@@ -37,10 +37,50 @@ class DeviceDbGet(Base):
           device_db: (db.Device) The device database being retrieved.
           on_done:   Option finished callback.  This is called when the
                      handler is finished for any reason.
+        TODO
         """
         super().__init__(on_done=on_done)
 
         self.db = device_db
+
+        # TODO: move this to base class
+        self.msg = msg
+        self.send_count = 1
+        self.num_retry = 3
+
+    #-----------------------------------------------------------------------
+    def is_expired(self, protocol, t):
+        """See if the time out time has been exceeded.
+
+        Args:
+          protocol:  (Protocol) The Insteon Protocol object.
+          t:         (float) Current time tag as a Unix clock time.
+
+        Returns:
+          Returns True if the message has timed out or False otherwise.
+        """
+        # If we haven't expired, return.
+        if not super().is_expired(protocol, t):
+            return False
+        elif not self.msg:
+            return True
+
+        LOG.warning("Device db get timed out with try %s of %s",
+                    self.send_count, self.num_retry)
+
+        # Some devices like the smoke bridge have issues and don't
+        # seem to respond very well.  So we'll retry a few times to
+        # send the refresh command.
+        if self.send_count < self.num_retry:
+            self.send_count += 1
+
+            # Resend the refresh command.
+            protocol.send(self.msg, self)
+
+        # Tell the protocol that we're expired.  This will end this
+        # handler and send the next message which at some point will
+        # be our retry command with ourselves as the handler again.
+        return True
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):

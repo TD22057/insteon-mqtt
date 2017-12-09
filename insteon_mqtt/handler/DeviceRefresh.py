@@ -62,10 +62,13 @@ class DeviceRefresh(Base):
         if not super().is_expired(protocol, t):
             return False
 
+        LOG.warning("Device %s refresh timed out with try %s of %s", self.addr,
+                    self.send_count, self.num_retry)
+
         # Some devices like the smoke bridge have issues and don't
         # seem to respond very well.  So we'll retry a few times to
         # send the refresh command.
-        if self.send_count <= self.num_retry:
+        if self.send_count < self.num_retry:
             self.send_count += 1
 
             # Resend the refresh command.
@@ -93,8 +96,10 @@ class DeviceRefresh(Base):
         if isinstance(msg, Msg.OutStandard) and msg.to_addr == self.addr:
             if msg.is_ack:
                 LOG.debug("%s ACK response", self.addr)
+                return Msg.CONTINUE
             else:
                 LOG.error("%s NAK response", self.addr)
+                return Msg.FINISHED
 
         # See if this is the standard message ack/nak we're expecting.
         elif isinstance(msg, Msg.InpStandard) and msg.from_addr == self.addr:
@@ -118,7 +123,7 @@ class DeviceRefresh(Base):
 
                 # When the update message below ends, update the db
                 # delta w/ the current value and save the database.
-                def on_done(success, msg):
+                def on_done(success, message):
                     if success:
                         LOG.info("%s database download complete\n%s",
                                  self.addr, self.device.db)
@@ -129,7 +134,8 @@ class DeviceRefresh(Base):
                 # to us and the handler will update the database
                 db_msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00,
                                                 bytes(14))
-                msg_handler = DeviceDbGet(self.device.db, on_done)
+                msg_handler = DeviceDbGet(self.device.db, on_done,
+                                          msg=db_msg)  # TODO: fix this
                 protocol.send(db_msg, msg_handler)
 
             # Either way - this transaction is complete.

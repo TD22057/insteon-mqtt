@@ -162,6 +162,9 @@ class Base:
         # database we're getting.  So clear the current flag and then
         # do a refresh which will find the delta and then trigger a
         # download.
+        #
+        # If we just forced a db download, we don't get the delta - so
+        # we have to do this extra step.
         self.db.set_delta(None)
         self.refresh()
 

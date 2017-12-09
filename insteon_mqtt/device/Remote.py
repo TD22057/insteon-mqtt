@@ -99,23 +99,6 @@ class Remote(Base):
                 LOG.info("Remote ctrl for group %s already exists", group)
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False):
-        """Refresh the current device state and database if needed.
-
-        This sends a ping to the device.  The reply has the current
-        device state (on/off, level, etc) and the current db delta
-        value which is checked against the current db value.  If the
-        current db is out of date, it will trigger a download of the
-        database.
-
-        This will send out an updated signal for the current device
-        status whenever possible (like dimmer levels).
-        """
-        # TODO: figure out if we can ping the remote and get any kind
-        # of state from it including the database version.
-        super().refresh(force)
-
-    #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
         """Handle broadcast messages from this device.
 
@@ -154,7 +137,12 @@ class Remote(Base):
         # broadcast and updated (without sending anything out).
         super().handle_broadcast(msg)
 
-        # TODO: figure out how to download the database if we can
-        # since we just saw a message got by.
+        # Since we just saw a message got by, yse this opportunity to
+        # get the device db since we know the sensor is awake.  This
+        # doesn't always work - but it works enough times to be useful
+        # (probably?).
+        if len(self.db) == 0:
+            LOG.info("Remote %s awake - requesting database", self.addr)
+            self.refresh(force=True)
 
     #-----------------------------------------------------------------------

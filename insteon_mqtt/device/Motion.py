@@ -80,10 +80,6 @@ class Motion(Base):
 
         self._is_on = False
 
-        # True if we've got a local db.  If this is false, we'll try
-        # and download the db when the sensor is awake.
-        self._have_db = False
-
     #-----------------------------------------------------------------------
     def pair(self):
         """Pair the device with the modem.
@@ -119,17 +115,6 @@ class Motion(Base):
         return self._is_on
 
     #-----------------------------------------------------------------------
-    def load_db(self):
-        """Load the all link database from a file.
-
-        The file is stored in JSON format (by save_db()) and has the
-        path self.db_path().  If the file doesn't exist, nothing is
-        done.
-        """
-        super().load_db()
-        self._have_db = len(self.db) > 0
-
-    #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
         """Handle broadcast messages from this device.
 
@@ -148,6 +133,12 @@ class Motion(Base):
         # ACK of the broadcast - ignore this.
         if msg.cmd1 == 0x06:
             LOG.info("Motion %s broadcast ACK grp: %s", self.addr, msg.group)
+            # Use this opportunity to get the device db since we know the
+            # sensor is awake.
+            if len(self.db) == 0:
+                LOG.info("Motion %s awake - requesting database", self.addr)
+                self.refresh(force=True)
+                # TODO
             return
 
         # On command.
@@ -181,15 +172,9 @@ class Motion(Base):
 
         # Use this opportunity to get the device db since we know the
         # sensor is awake.
-        if not self._have_db:
-            # TODO: how to get db when sensor is awake.
-            # This isn't working - maybe need to wait for all the
-            # broadcast messages to arrive?
-            pass
-            #LOG.info("Motion %s awake - requesting database", self.addr)
-            #self._saved_broadcast = msg
-            #self.get_db(db_delta=0)
-            #self.refresh()
+        if len(self.db) == 0:
+            LOG.info("Motion %s awake - requesting database", self.addr)
+            self.refresh(force=True)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
@@ -220,7 +205,7 @@ class Motion(Base):
         Args:
           is_on:   (bool) True if motion is active, False if it isn't.
         """
-        LOG.info("Setting device %s '%s' on %s", self.addr, self.name, is_on)
+        LOG.info("Setting device %s '%s' on:%s", self.addr, self.name, is_on)
         self._is_on = is_on
         self.signal_active.emit(self, self._is_on)
 
