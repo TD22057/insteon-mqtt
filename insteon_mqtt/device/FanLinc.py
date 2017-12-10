@@ -19,8 +19,8 @@ class FanLinc(Dimmer):
 
     class Speed(enum.IntEnum):
         OFF = 0x00
-        LOW = 0x85   # arbitrary in range 0x01-0x7f
-        MED = 0xaa   # arbitrary in range 0x80-0xfe
+        LOW = 0x3a   # range 0x01-0x7f - arbitrarily picked the mid point
+        MED = 0xbf   # range 0x80-0xfe - arbitrarily picked the mid point
         HIGH = 0xff
         ON = -0x01   # turn on at last known speed
 
