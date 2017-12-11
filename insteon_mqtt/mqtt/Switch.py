@@ -21,10 +21,13 @@ class Switch(Base):
         self.mqtt = mqtt
         self.device = device
 
+        # Output state change reporting template.
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state',
             payload='{{on_str.lower()}}',
             )
+
+        # Input on/off command template.
         self.msg_on_off = MsgTemplate(
             topic='insteon/{{address}}/set',
             payload='{ "cmd" : "{{value.lower()}}" }',

@@ -18,11 +18,14 @@ class Dimmer(Switch):
         """
         super().__init__(mqtt, device, handle_active=False)
 
+        # Output state change reporting template.
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state',
             payload='{ "state" : "{{on_str.upper()}}", '
                     '"brightness" : {{level_255}} }',
             )
+
+        # Input level command template.
         self.msg_level = MsgTemplate(
             topic='insteon/{{address}}/level',
             payload='{ "cmd" : "{{json.state.lower()}}", '
@@ -46,6 +49,7 @@ class Dimmer(Switch):
         if not config:
             return
 
+        # The Switch base class will load the msg_state template for us.
         self.msg_level.load_config(config, 'level_topic', 'level_payload', qos)
 
     #-----------------------------------------------------------------------
@@ -55,7 +59,7 @@ class Dimmer(Switch):
         super().subscribe(link, qos)
 
         topic = self.msg_level.render_topic(self.template_data())
-        link.subscribe(topic, qos, self.handle_level)
+        link.subscribe(topic, qos, self.handle_set_level)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
@@ -104,7 +108,7 @@ class Dimmer(Switch):
         self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
-    def handle_level(self, client, data, message):
+    def handle_set_level(self, client, data, message):
         """TODO: doc
         """
         LOG.info("Dimmer message %s %s", message.topic, message.payload)

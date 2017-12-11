@@ -24,8 +24,10 @@ def parse_args(args):
     sp = sub.add_parser("start", help="Start the Insteon<->MQTT server.")
     sp.add_argument("config", metavar="config.yaml", help="Configuration "
                     "file to use.")
-    sp.add_argument("-l", "--log", metavar="log_File",
-                    help="Logging file to use.  Use 'stdout' for the screen.")
+    sp.add_argument("-l", "--log", metavar="log_file",
+                    help="Logging file to use.")
+    sp.add_argument("-ls", "--log-screen", action="store_true",
+                    help="Log to the screen")
     sp.add_argument("--level", metavar="log_level", type=int,
                     help="Logging level to use.  10=debug, 20=info,"
                     "30=warn, 40=error, 50=critical")
