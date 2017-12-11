@@ -5,12 +5,16 @@
 ### Additions
 - Battery powered devices will now attempt to download the all link
   database if it doesn't exist locally when a broadcast message from
-  that device is seen (since the device is awake)
+  that device is seen (since the device is awake).  This way you can
+  trip a battery device (motino sensor or push a remote button) and it
+  will initiate a database download.
+
+- Added FanLinc support ([Issue #4][I4]).  Thanks to @masterdka for testing.
 
 
 ## [0.5.1] - 2017-12-07
 
-### Fixed
+### Fixes
 - [Issue #3][I3]: Dimmer on/off topic using wrong template from config file
 
 
@@ -21,3 +25,4 @@
 
 
 [I3]: https://github.com/TD22057/insteon-mqtt/issues/3
+[I4]: https://github.com/TD22057/insteon-mqtt/issues/4
