@@ -29,6 +29,7 @@ be identified by it's address or the string "modem".
 
    - [Switches](#switches)
    - [Dimmers](#dimmers)
+   - [FanLinc](#fanlinc)
    - [Motion Sensors](#motion-sensors)
    - [Smoke Bridge](#smoke-bridge)
 
@@ -337,6 +338,72 @@ message like this to the level topic for the device:
    ```
    { "state" : "on", "brightness" : 175 }
    ```
+
+---
+
+## FanLinc
+
+A FanLinc device is an Insteon device for controlling a ceiling fan
+and light.  The light portion of the FanLinc uses the dimmer settings
+(see above).  The fan controller uses a four speed setting system
+(off, low, medium, and high).
+
+The fan portion of the device can be turned on and off (where on means
+use the last speed setting that was chosen) or set to a specific
+level.
+
+Output state change messages have the following variables defined
+which can be used in the templates:
+
+   - 'on' is 1 if the device is on and 0 if the device is off.
+   - 'on_str' is "on" if the device is on and "off" if the device is off.
+   - 'level' is the integer speed level 0-3 for off (0), low (1), medium (2),
+      and high (3)
+   - 'level_str' is the speed level 'off', 'low', 'medium', or 'high'.
+
+Input state change messages have the following variables defined which
+can be used in the templates:
+
+   - 'value' is the message payload (string)
+   - 'json' is the message payload converted to JSON format if the
+     conversion succeeds.  Values inside the JSON payload can be
+     accessed using the form 'json.ATTR'.  See the Jinja2 docs for
+     more details.
+
+The input state change has two inputs.  One is the same as the switch
+input system and only accepts on and off states.  The second is
+similar but also accepts the level argument to set the fan speed.  The
+speed payload template must convert the input message into the format
+(SPEED must be one of the valid level integers or strings).
+
+   ```
+   { "cmd" : "on"/"off" }
+   { "cmd" : SPEED }
+   ```
+
+Here is a sample configuration that accepts and publishes messages
+matching the Home Assistant MQTT fan configuration.
+
+   ```
+   fan_linc:
+      # Output state change:
+      fan_state_topic: 'insteon/{{address}}/fan/state'
+      fan_state_payload: '{{on_str}}"
+
+      # Input on/off change (payload should be 'ON' or 'OFF')
+      fan_on_off_topic: 'insteon/{{address}}/fan/set'
+      fan_on_off_payload: '{ "cmd" : "{{value.lower}}" }'
+
+      # Output speed state change.
+      fan_speed_topic: 'insteon/{{address}}/fan/speed/state'
+      fan_speed_payload: '{{level_str}}'
+
+      # Input fan speed change (payload should be 'off', 'low', 'medium',
+      # or 'high'.
+      fan_speed_set_topic: 'insteon/{{address}}/fan/speed/set'
+      fan_speed_set_payload: '{ "cmd" : "{{value.lower}}" }'
+   ```
+
 
 ---
 

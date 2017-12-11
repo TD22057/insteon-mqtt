@@ -36,10 +36,11 @@ what they are and how to interpret messages from them.
   scene is triggered.
 - Supported Insteon devices (future devices will be easy to add, these
   are just the set I currently own and can easily test).
-  - On/off switches (lamp modules, appliance modules, outlets)
+  - On/off switches (lamp modules, appliance modules, outlets, etc.)
   - Dimmer switches (lamp modules, dimmer switches, etc.)
+  - FanLinc dimmer and fan controller
+  - Mini-remotes (4 and 8 button battery remotes)
   - Motion sensors
-  - Mini-remotes
   - Smoke bridge
 - Automatically link new devices to the modem.  The system will
   correctly link all the Insteon groups for a device (like the smoke
@@ -48,8 +49,8 @@ what they are and how to interpret messages from them.
 - Command line tool for simpler sending of MQTT messages to send to
   the server.
 - Automatically attempt to download the all link database from battery
-  powered when a message is seen from them (i.e. trip a motion sensor
-  to get it to download the database.
+  powered devices when a message is seen from them (i.e. trip a motion
+  sensor or push a remote button to get it to download the database).
 
 
 # Detailed Documentation
