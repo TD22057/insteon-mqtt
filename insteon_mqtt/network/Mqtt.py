@@ -65,6 +65,7 @@ class Mqtt(Link):
         self.client.on_connect = self._on_connect
         self.client.on_disconnect = self._on_disconnect
         self.client.on_message = self._on_message
+        self.client.on_log = self._on_log
 
     #-----------------------------------------------------------------------
     def load_config(self, config):
@@ -291,6 +292,15 @@ class Mqtt(Link):
         """
         LOG.info("MQTT message %s %s", message.topic, message.payload)
         self.signal_message.emit(self, message)
+
+    #-----------------------------------------------------------------------
+    def _on_log(self, client, data, level, buf):
+        """MQTT client logging callback
+        """
+        # Send a very low level logging message so we can turn on
+        # level 5 logging at the top level to see what is happening in
+        # the MQTT client.
+        LOG.log(5, buf)
 
     #-----------------------------------------------------------------------
     def __str__(self):
