@@ -37,7 +37,8 @@ class Manager:
             # do something that requires polling here.
 
     """
-    # Minimum time out - used to poll links for reconnection.
+    # Minimum time out - used to poll links for reconnection and other
+    # random processing.
     min_time_out = 3  # seconds
 
     # Bit flags to watch for when registering a socket for read or

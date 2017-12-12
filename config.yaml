@@ -100,6 +100,11 @@ mqtt:
   #username:
   #password:
 
+  # Keep alive time in seconds.  This should be smaller than the
+  # server setting (which is usually ~60 seconds) to insure that
+  # connections aren't dropped.
+  keep_alive: 30
+
   # Outbound messages configuration.  Retain should generally be 1
   # so that the current state is available when someone subscribes.
   qos: 1

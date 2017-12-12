@@ -51,10 +51,11 @@ class Mqtt(Link):
         self.connected = False
         self.id = id if id is not None else "insteon-mqtt"
 
-        # Insure poll is called at least once every 15 seconds so we
+        # Insure poll is called at least once every 10 seconds so we
         # can send a keep alive message to the server so our
-        # connection doesn't get dropped.
-        self.time_out = 15
+        # connection doesn't get dropped.  This relies on poll()
+        # getting called more often than this time.
+        self.keep_alive = 30
 
         self._reconnect_dt = reconnect_dt
         self._fd = None
@@ -84,6 +85,7 @@ class Mqtt(Link):
 
         self.host = config['broker']
         self.port = config['port']
+        self.keep_alive = config.get("keep_alive", self.keep_alive)
 
         username = config.get('username', None)
         if username is not None:
@@ -191,10 +193,12 @@ class Mqtt(Link):
           it failed.
         """
         try:
-            self.client.connect(self.host, self.port, keepalive=60)
+            self.client.connect(self.host, self.port,
+                                keepalive=self.keep_alive)
             self._fd = self.client.socket().fileno()
 
-            LOG.info("MQTT device opened %s %s", self.host, self.port)
+            LOG.info("MQTT device opened %s %s with keepalive=%s", self.host,
+                     self.port, self.keep_alive)
             return True
         except:
             LOG.exception("MQTT connection error to %s %s", self.host,
