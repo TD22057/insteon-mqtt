@@ -11,6 +11,13 @@
 
 - Added FanLinc support ([Issue #4][I4]).  Thanks to @masterdka for testing.
 
+- Added battery powered sensors (door and window sensors) support
+  ([Issue #5][I5]).
+
+- Added reply system to the command line tool.  Messages are now sent
+  from the server back to the command line tool to indicate the result
+  of running the command.
+
 
 ## [0.5.1] - 2017-12-07
 
@@ -26,3 +33,4 @@
 
 [I3]: https://github.com/TD22057/insteon-mqtt/issues/3
 [I4]: https://github.com/TD22057/insteon-mqtt/issues/4
+[I5]: https://github.com/TD22057/insteon-mqtt/issues/5
