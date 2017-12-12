@@ -32,6 +32,7 @@ be identified by it's address or the string "modem".
    - [FanLinc](#fanlinc)
    - [Battery Sensors](#battery-sensors)
    - [Motion Sensors](#motion-sensors)
+   - [Leak Sensors](#leak-sensors)
    - [Smoke Bridge](#smoke-bridge)
 
 ---
@@ -444,8 +445,6 @@ A sample battery sensor topic and payload configuration is:
 
 ---
 
----
-
 ## Motion Sensors
 
 Motion sensors do not accept any input commands.  The motion
@@ -461,12 +460,6 @@ The dawn/dusk change defines the following variables for templates:
    - 'is_dusk_str' is "on" for dusk", "off" for dawn
    - 'state' is "dawn" or "dusk"
 
-The low battery condition defines the following variables for
-templates:
-
-   - 'is_low' is 1 for a low battery, 0 for normal.
-   - 'is_low_str' is 'on' for a low battery, 'off' for normal.
-
 A sample motion sensor topic and payload configuration is:
 
    ```
@@ -474,6 +467,30 @@ A sample motion sensor topic and payload configuration is:
      # Light level events
      dawn_dusk_topic: 'insteon/{{address}}/dawn'
      dawn_dusk_payload: '{{is_dawn_str.upper()}}'
+   ```
+
+---
+
+## Leak Sensors
+
+Leak sensors do not accept any input commands.  The low battery
+messages are inherited from the battery sensor inputs.  The leak
+sensor adds another possible state change for wet/dry events.
+
+The wet/dry change defines the following variables for templates:
+
+   - 'is_wet' is 0 for dry, 1 for wet
+   - 'is_wet_str' is 'on' for wet, 'off' for dry
+   - 'is_dry' is 0 for wet, 1 for dry
+   - 'is_dry_str' is 'on' for dry, 'off' for wet
+   - 'state' is 'wet' or 'dry'
+
+A sample leak sensor topic and payload configuration is:
+
+   ```
+   leak:
+     wet_dry_topic: 'insteon/{{address}}/leak'
+     wet_dry_payload: '{{state.upper()}}'
    ```
 
 ---

@@ -40,6 +40,7 @@ what they are and how to interpret messages from them.
   - FanLinc dimmer and fan controller
   - Mini-remotes (4 and 8 button battery remotes)
   - Battery powered sensors (door, hidden door, window, etc.)
+  - Leak sensors
   - Motion sensors
   - Smoke bridge
 - Automatically link new devices to the modem.  The system will
