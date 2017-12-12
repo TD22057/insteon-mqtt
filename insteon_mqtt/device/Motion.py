@@ -4,14 +4,14 @@
 #
 #===========================================================================
 import enum
-from .Base import Base
+from .BatterySensor import BatterySensor
 from .. import log
 from ..Signal import Signal
 
 LOG = log.get_logger()
 
 
-class Motion(Base):
+class Motion(BatterySensor):
     """Insteon battery powered motion sensor.
 
     A motion sensor is basically an on/off sensor except that it's
@@ -57,9 +57,10 @@ class Motion(Base):
     """
     # broadcast group ID alert description
     class Type(enum.IntEnum):
-        MOTION = 0x01
-        DUSK = 0x02
+        ACTIVE = 0x01
+        DAWN = 0x02
         LOW_BATTERY = 0x03
+        HEARTBEAT = 0x04
 
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
@@ -74,150 +75,10 @@ class Motion(Base):
         """
         super().__init__(protocol, modem, address, name)
 
-        self.signal_active = Signal()  # (Device, bool)
-        self.signal_dusk = Signal()  # (Device, bool)
-        self.signal_low_battery = Signal()  # (Device, bool)
+        self.signal_dawn = Signal()  # (Device, bool)
 
-        self._is_on = False
-
-    #-----------------------------------------------------------------------
-    def pair(self, on_done=None):
-        """Pair the device with the modem.
-
-        This only needs to be called one time.  It will set the device
-        as a controller and the modem as a responder for motion sensor
-        alerts.
-
-        The device must already be a responder to the modem (push set
-        on the modem, then set on the device) so we can update it's
-        database.
-        """
-        LOG.info("Motion %s pairing", self.addr)
-
-        # Search our db to see if we have controller links for groups
-        # 1-3 back to the modem.  If one doesn't exist, add it on our
-        # device and the modem.
-        # Search our db to see if we have controller links for all our
-        # groups back to the modem.  If one doesn't exist, add it on
-        # our device and the modem.
-        add_groups = []
-        for type in Motion.Type:
-            group = type.value
-            if not self.db.find(self.modem.addr, group, True):
-                LOG.info("Motion adding ctrl for group %s", group)
-                add_groups.append(group)
-            else:
-                LOG.ui("Motion ctrl for group %s already exists", group)
-
-        if add_groups:
-            for group in add_groups:
-                callback = on_done if group == add_groups[-1] else None
-                self.db_add_ctrl_of(self.modem.addr, group, on_done=callback)
-        elif on_done:
-            on_done(True, "Pairings already exist", None)
-
-    #-----------------------------------------------------------------------
-    def is_on(self):
-        """Return if motion has been sensed.
-        """
-        return self._is_on
-
-    #-----------------------------------------------------------------------
-    def handle_broadcast(self, msg):
-        """Handle broadcast messages from this device.
-
-        The broadcast message from a device is sent when the device is
-        triggered and when the motion expires.  The message has the
-        group ID in it.  We'll update the device state and look up the
-        group in the all link database.  For each device that is in
-        the group (as a reponsder), we'll call handle_group_cmd() on
-        that device to trigger it.  This way all the devices in the
-        group are updated to the correct values when we see the
-        broadcast message.
-
-        Args:
-          msg:   (InptStandard) Broadcast message from the device.
-        """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == 0x06:
-            LOG.info("Motion %s broadcast ACK grp: %s", self.addr, msg.group)
-            # Use this opportunity to get the device db since we know the
-            # sensor is awake.
-            if len(self.db) == 0:
-                LOG.info("Motion %s awake - requesting database", self.addr)
-                self.refresh(force=True)
-                # TODO
-            return
-
-        # On command.
-        elif msg.cmd1 == 0x11:
-            LOG.info("Motion %s broadcast ON grp: %s", self.addr, msg.group)
-            if msg.group == Motion.Type.MOTION:
-                self._set_is_on(True)
-
-            elif msg.group == Motion.Type.DUSK:
-                self.signal_dusk.emit(False)  # on = dawn
-
-            elif msg.group == Motion.Type.LOW_BATTERY:
-                self.signal_low_battery.emit(True)
-
-        # Off command.
-        elif msg.cmd1 == 0x13:
-            LOG.info("Motion %s broadcast OFF grp: %s", self.addr, msg.group)
-            if msg.group == Motion.Type.MOTION:
-                self._set_is_on(False)
-
-            elif msg.group == Motion.Type.DUSK:
-                self.signal_dusk.emit(True)  # off = dusk
-
-            elif msg.group == Motion.Type.LOW_BATTERY:
-                self.signal_low_battery.emit(False)
-
-        # Broadcast to the devices we're linked to. Call
-        # handle_broadcast for any device that we're the controller of.
-        LOG.debug("Motion %s have db %s", self.addr, len(self.db))
-        super().handle_broadcast(msg)
-
-        # Use this opportunity to get the device db since we know the
-        # sensor is awake.
-        if len(self.db) == 0:
-            LOG.info("Motion %s awake - requesting database", self.addr)
-            self.refresh(force=True)
-
-    #-----------------------------------------------------------------------
-    def handle_refresh(self, msg, on_done=None):
-        """Handle replies to the refresh command.
-
-        The refresh command reply will contain the current device
-        state in cmd2 and this updates the device with that value.
-
-        NOTE: refresh() will not work if the device is asleep.
-
-        Args:
-          msg:  (message.InpStandard) The refresh message reply.  The current
-                device state is in the msg.cmd2 field.
-        """
-        LOG.ui("Motion %s refresh on = %s", self.addr, msg.cmd2 != 0x00)
-
-        # Current on/off level is stored in cmd2 so update our state
-        # to match.
-        self._set_is_on(msg.cmd2 != 0x00)
-
-        if on_done:
-            on_done(True, "Motion refresh complete", msg.cmd2)
-
-    #-----------------------------------------------------------------------
-    def _set_is_on(self, is_on):
-        """Set the device on/off state.
-
-        This will change the internal state and emit the state changed
-        signal.
-
-        Args:
-          is_on:   (bool) True if motion is active, False if it isn't.
-        """
-        LOG.info("Setting device %s '%s' on:%s", self.addr, self.name, is_on)
-        self._is_on = is_on
-        self.signal_active.emit(self, self._is_on)
+        self.group_map.update({
+            self.Type.DAWN : self.TypeHandler(self.signal_dawn, True, False),
+            })
 
     #-----------------------------------------------------------------------

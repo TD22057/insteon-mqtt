@@ -9,6 +9,7 @@ __doc__ = """Configuration file utilties
 
 #===========================================================================
 from .. import device
+from .BatterySensor import BatterySensor
 from .Dimmer import Dimmer
 from .FanLinc import FanLinc
 from .Motion import Motion
@@ -17,6 +18,7 @@ from .SmokeBridge import SmokeBridge
 from .Switch import Switch
 
 devices = {
+    device.BatterySensor : BatterySensor,
     device.Dimmer : Dimmer,
     device.FanLinc : FanLinc,
     device.Motion : Motion,

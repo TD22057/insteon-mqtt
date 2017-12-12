@@ -34,12 +34,12 @@ what they are and how to interpret messages from them.
   payloads can be customized using Jinja templates.
 - Report state changes for any device in an Insteon scene when the
   scene is triggered.
-- Supported Insteon devices (future devices will be easy to add, these
-  are just the set I currently own and can easily test).
+- Currently supported Insteon devices
   - On/off switches (lamp modules, appliance modules, outlets, etc.)
   - Dimmer switches (lamp modules, dimmer switches, etc.)
   - FanLinc dimmer and fan controller
   - Mini-remotes (4 and 8 button battery remotes)
+  - Battery powered sensors (door, hidden door, window, etc.)
   - Motion sensors
   - Smoke bridge
 - Automatically link new devices to the modem.  The system will

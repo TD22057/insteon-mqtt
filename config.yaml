@@ -60,6 +60,10 @@ insteon:
       - 48.3d.46
       - 48.b0.ad
 
+    # Battery powered sensors (door, hidden door, window)
+    battery_sensor:
+      - 94.a9.12
+
     # Battery powered motion sensors.
     motion:
       - 21.d6.d9: 'front door'
@@ -76,7 +80,7 @@ insteon:
 
     # FanLinc fan controller (dimmer+fan)
     fan_linc:
-      - 11.22.33
+      - 9a.a1.b3
 
   #------------------------------------------------------------------------
   # FUTURE: Insteon scene definitions.
@@ -209,7 +213,8 @@ mqtt:
                    {% endif %} }
 
   #------------------------------------------------------------------------
-  # Motion sensors
+  # Battery powered sensors
+  #    door sensors, hidden door sensors, window sensors
   #------------------------------------------------------------------------
 
   # In Home Assistant use MQTT binary sensor with a configuration like:
@@ -219,13 +224,9 @@ mqtt:
   #       device_class: 'motion'
   #
   #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/dawn'
-  #       device_class: 'light'
-  #
-  #     - platform: mqtt
   #       state_topic: 'insteon/aa.bb.cc/low_battery'
   #       device_class: 'battery'
-  motion:
+  battery_sensor:
     # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
@@ -236,6 +237,29 @@ mqtt:
     state_topic: 'insteon/{{address}}/state'
     state_payload: '{{on_str.upper()}}'
 
+    # Output low battery topic and payload.  This message is sent
+    # whenever the device detects a low battery. Available variables
+    # for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   is_low = 0/1
+    #   is_low_str = 'off', 'on'
+    low_battery_topic: 'insteon/{{address}}/battery'
+    low_battery_payload: '{{is_low_str.upper()}}'
+
+  #------------------------------------------------------------------------
+  # Motion sensors
+  #------------------------------------------------------------------------
+
+  # Motion sensors will use the state and low battery configuration
+  # inputs from battery_sensor and some sensors add an addition
+  # dawn/dusk notification which is configured here.
+  #
+  # In Home Assistant use MQTT binary sensor with a configuration like:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/dawn'
+  #       device_class: 'light'
+  motion:
     # Output dawn/dusk change topic and payload.  This message is sent
     # whenever the device light sensor detects dawn or dusk changes.
     # Available variables for templating are:
@@ -248,16 +272,6 @@ mqtt:
     #   state = 'dawn', 'dusk'
     dawn_dusk_topic: 'insteon/{{address}}/dawn'
     dawn_dusk_payload: '{{is_dawn_str.upper()}}'
-
-    # Output low battery topic and payload.  This message is sent
-    # whenever the device detects a low battery. Available variables
-    # for templating are:
-    #   address = 'aa.bb.cc'
-    #   name = 'device name'
-    #   is_low = 0/1
-    #   is_low_str = 'off', 'on'
-    low_battery_topic: 'insteon/{{address}}/battery'
-    low_battery_payload: '{{is_low_str.upper()}}'
 
   #------------------------------------------------------------------------
   # Smoke Bridge
