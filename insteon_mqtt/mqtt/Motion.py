@@ -38,6 +38,16 @@ class Motion(BatterySensor):
         self.msg_dawn.load_config(data, 'dawn_dusk_topic', 'dawn_dusk_payload',
                                   qos)
 
+        # In versions < 0.6, these were in motion sensor so try and
+        # load them to insure old config files still work.
+        if "state_topic" in config:
+            self.msg_state.load_config(data, 'state_topic', 'state_payload',
+                                       qos)
+        if "low_battery_topic" in config:
+            self.msg_battery.load_config(data, 'low_battery_topic',
+                                         'low_battery_payload', qos)
+
+
     #-----------------------------------------------------------------------
     def handle_dawn(self, device, is_dawn):
         """Device dawn/dusk on/off callback.

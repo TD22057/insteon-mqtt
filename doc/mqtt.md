@@ -30,6 +30,7 @@ be identified by it's address or the string "modem".
    - [Switches](#switches)
    - [Dimmers](#dimmers)
    - [FanLinc](#fanlinc)
+   - [Battery Sensors](#battery-sensors)
    - [Motion Sensors](#motion-sensors)
    - [Smoke Bridge](#smoke-bridge)
 
@@ -407,19 +408,50 @@ matching the Home Assistant MQTT fan configuration.
 
 ---
 
-## Motion Sensors
+## Battery Sensors
 
-Motion sensors do not accept any input commands.  Interally, they will
-send state changes on three different Insteon groups (1 for motion, 2
-for dusk/dawn, and 3 for low battery).  Each of these messages only
-has two states, on or off.
+Battery powered sensors (which include door sensors, hidden door
+sensors, and window sensors) do not accept any input commands.
+Interally, they will send state changes on the Insteon groups 1 for
+motion and 3 for low battery.  Each of these messages only has two
+states, on or off.
 
-The motion sensor sends motion events on the "state' configuraiton
+The battery powered sensor sends motion events on the "state' configuraiton
 topic which defines the following variables defined which can be used
 in the templates:
 
    - 'on' is 1 if the device is on and 0 if the device is off.
    - 'on_str' is "on" if the device is on and "off" if the device is off.
+
+The low battery condition defines the following variables for
+templates:
+
+   - 'is_low' is 1 for a low battery, 0 for normal.
+   - 'is_low_str' is 'on' for a low battery, 'off' for normal.
+
+A sample battery sensor topic and payload configuration is:
+
+   ```
+   battery_sensor:
+     # Trigger events
+     state_topic: 'insteon/{{address}}/state'
+     state_payload: '{{on_str.upper()}}'
+
+     # Low battery warning
+     low_battery_topic: 'insteon/{{address}}/battery'
+     low_battery_payload: '{{is_low_str.upper()}}'
+   ```
+
+---
+
+---
+
+## Motion Sensors
+
+Motion sensors do not accept any input commands.  The motion
+triggering and low battery are inherited from the battery sensor
+inputs.  The motion sensors adds another possible state change for
+dawn/dusk (Insteon group 2)
 
 The dawn/dusk change defines the following variables for templates:
 
@@ -439,17 +471,9 @@ A sample motion sensor topic and payload configuration is:
 
    ```
    motion:
-     # Motion events
-     state_topic: 'insteon/{{address}}/state'
-     state_payload: '{{on_str.upper()}}'
-
      # Light level events
      dawn_dusk_topic: 'insteon/{{address}}/dawn'
      dawn_dusk_payload: '{{is_dawn_str.upper()}}'
-
-     # Low battery warning
-     low_battery_topic: 'insteon/{{address}}/battery'
-     low_battery_payload: '{{is_low_str.upper()}}'
    ```
 
 ---
