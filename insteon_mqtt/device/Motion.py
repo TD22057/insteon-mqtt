@@ -3,7 +3,6 @@
 # Insteon battery powered motion sensor
 #
 #===========================================================================
-import enum
 from .BatterySensor import BatterySensor
 from .. import log
 from ..Signal import Signal
@@ -53,15 +52,7 @@ class Motion(BatterySensor):
                  and save it to file.
        refresh:  No arguments.  Ping the device and see if the database is
                  current.  Reloads the modem database if needed.
-
     """
-    # broadcast group ID alert description
-    class Type(enum.IntEnum):
-        ACTIVE = 0x01
-        DAWN = 0x02
-        LOW_BATTERY = 0x03
-        HEARTBEAT = 0x04
-
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
 
@@ -77,8 +68,14 @@ class Motion(BatterySensor):
 
         self.signal_dawn = Signal()  # (Device, bool)
 
-        self.group_map.update({
-            self.Type.DAWN : self.TypeHandler(self.signal_dawn, True, False),
-            })
+        # Dawn/dusk is on group 02.
+        self.group_map[0x02] = self.handle_dawn
+
+    #-----------------------------------------------------------------------
+    def handle_dawn(self, msg):
+        """TODO: doc
+        """
+        # Send True for dawn, False for dusk.
+        self.signal_dawn.emit(msg.cmd1 == 0x11)
 
     #-----------------------------------------------------------------------

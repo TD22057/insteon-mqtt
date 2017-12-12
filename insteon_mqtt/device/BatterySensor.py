@@ -3,8 +3,6 @@
 # Insteon battery powered motion sensor
 #
 #===========================================================================
-from collections import namedtuple
-import enum
 from .Base import Base
 from .. import log
 from ..Signal import Signal
@@ -24,14 +22,6 @@ class BatterySensor(Base):
     broadcast group 03 = low battery (0x11) / good battery (0x13)
     broadcast group 04 = heartbeat (0x11)
     """
-    # broadcast group ID alert description
-    class Type(enum.IntEnum):
-        ACTIVE = 0x01
-        LOW_BATTERY = 0x03
-        HEARTBEAT = 0x04
-
-    TypeHandler = namedtuple("TypeHandler", ["signal", "on_arg", "off_arg" ])
-
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
 
@@ -49,12 +39,15 @@ class BatterySensor(Base):
         self.signal_low_battery = Signal()  # (Device, bool)
         self.signal_heartbeat = Signal()  # (Device, bool)
 
+        # Derived classes can override these or add to them.  Maps
+        # Insteon groups to message type for this sensor.
         self.group_map = {
-            self.Type.ACTIVE : self.TypeHandler(self.signal_active, True, False),
-            self.Type.LOW_BATTERY : self.TypeHandler(self.signal_low_battery,
-                                                     True, False),
-            self.Type.HEARTBEAT : self.TypeHandler(self.signal_heartbeat,
-                                                   True, True),
+            # General activity on group 1.
+            0x01 : self.handle_active,
+            # Low battery is on group 3
+            0x03 : self.handle_low_battery,
+            # Heartbeat is on group 4
+            0x04 : self.handle_heartbeat,
             }
 
         self._is_on = False
@@ -80,8 +73,7 @@ class BatterySensor(Base):
         # groups back to the modem.  If one doesn't exist, add it on
         # our device and the modem.
         add_groups = []
-        for type in self.Type:
-            group = type.value
+        for group in self.group_map:
             if not self.db.find(self.modem.addr, group, True):
                 LOG.info("BatterySensor adding ctrl for group %s", group)
                 add_groups.append(group)
@@ -129,38 +121,48 @@ class BatterySensor(Base):
                 self.refresh(force=True)
             return
 
-        # On command.
-        elif msg.cmd1 == 0x11:
-            LOG.info("BatterySensor %s broadcast ON grp: %s", self.addr,
-                     msg.group)
+        # On (0x11) and off (0x13) commands.
+        elif msg.cmd1 == 0x11 or msg.cmd1 == 0x13:
+            LOG.info("BatterySensor %s broadcast cmd %s grp: %s", self.addr,
+                     msg.cmd, msg.group)
 
             handler = self.group_map.get(msg.group, None)
             if not handler:
                 LOG.error("BatterySensor no handler for group %s", msg.group)
                 return
 
-            handler.signal.emit(self, handler.on_arg)
-
-        # Off command.
-        elif msg.cmd1 == 0x13:
-            LOG.info("Motion %s broadcast OFF grp: %s", self.addr, msg.group)
-            handler = self.group_map.get(msg.group, None)
-            if not handler:
-                LOG.error("BatterySensor no handler for group %s", msg.group)
-                return
-
-            handler.signal.emit(self, handler.off_arg)
+            handler(msg)
 
         # Broadcast to the devices we're linked to. Call
         # handle_broadcast for any device that we're the controller of.
-        LOG.debug("BatterySensor %s have db %s", self.addr, len(self.db))
         super().handle_broadcast(msg)
 
         # Use this opportunity to get the device db since we know the
         # sensor is awake.
+        LOG.debug("BatterySensor %s have db %s items", self.addr, len(self.db))
         if len(self.db) == 0:
             LOG.info("BatterySensor %s awake - requesting database", self.addr)
             self.refresh(force=True)
+
+    #-----------------------------------------------------------------------
+    def handle_active(self, msg):
+        """TODO: doc
+        """
+        self._set_is_on(msg.cmd1 == 0x11)
+
+    #-----------------------------------------------------------------------
+    def handle_low_battery(self, msg):
+        """TODO: doc
+        """
+        # Send True for low battery, False for regular.
+        self.signal_low_battery.emit(msg.cmd1 == 0x11)
+
+    #-----------------------------------------------------------------------
+    def handle_heartbeat(self, msg):
+        """TODO: doc
+        """
+        # Send True for any heart beat message
+        self.signal_heartbeat.emit(True)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg, on_done=None):

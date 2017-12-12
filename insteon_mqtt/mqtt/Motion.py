@@ -47,7 +47,6 @@ class Motion(BatterySensor):
             self.msg_battery.load_config(data, 'low_battery_topic',
                                          'low_battery_payload', qos)
 
-
     #-----------------------------------------------------------------------
     def handle_dawn(self, device, is_dawn):
         """Device dawn/dusk on/off callback.
