@@ -24,7 +24,7 @@ class Base:
     received by this handler so that a series of messages won't cause
     the time out to trigger.
 
-    Callbac: The on_done
+    Callbac: The on_done TODO
     """
     #-----------------------------------------------------------------------
     def __init__(self, time_out=5, on_done=None, num_retry=0):

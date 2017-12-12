@@ -72,7 +72,7 @@ class Remote(Base):
         self.signal_pressed = Signal()  # (Device, int group, bool on)
 
     #-----------------------------------------------------------------------
-    def pair(self):
+    def pair(self, on_done=None):
         """Pair the device with the modem.
 
         This only needs to be called one time.  It will set the device
@@ -91,12 +91,20 @@ class Remote(Base):
         # Search our db to see if we have controller links for the
         # groups back to the modem.  If one doesn't exist, add it on
         # our device and the modem.
+        add_groups = []
         for group in range(1, self.num + 1):
             if not self.db.find(self.modem.addr, group, True):
                 LOG.info("Remote adding ctrl for group %s", group)
-                self.db_add_ctrl_of(self.modem.addr, group)
+                add_groups.append(group)
             else:
-                LOG.info("Remote ctrl for group %s already exists", group)
+                LOG.ui("Remote ctrl for group %s already exists", group)
+
+        if add_groups:
+            for group in add_groups:
+                callback = on_done if group == add_groups[-1] else None
+                self.db_add_ctrl_of(self.modem.addr, group, on_done=callback)
+        elif on_done:
+            on_done(True, "Pairings already exist", None)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):

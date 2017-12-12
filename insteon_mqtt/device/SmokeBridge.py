@@ -4,6 +4,7 @@
 #
 #===========================================================================
 import enum
+import functools
 from .Base import Base
 from .. import log
 from .. import message as Msg
@@ -66,7 +67,7 @@ class SmokeBridge(Base):
         self.signal_state_change = Signal()  # emit(device, Type type)
 
     #-----------------------------------------------------------------------
-    def pair(self):
+    def pair(self, on_done=None):
         """Pair the device with the modem.
 
         This only needs to be called one time.  It will set the device
@@ -82,16 +83,24 @@ class SmokeBridge(Base):
         # Search our db to see if we have controller links for all our
         # groups back to the modem.  If one doesn't exist, add it on
         # our device and the modem.
+        add_groups = []
         for type in SmokeBridge.Type:
             group = type.value
             if not self.db.find(self.modem.addr, group, True):
                 LOG.info("Smoke bridge adding ctrl for group %s", group)
-                self.db_add_ctrl_of(self.modem.addr, group)
+                add_groups.append(group)
             else:
-                LOG.info("Motion ctrl for group %s already exists", group)
+                LOG.ui("Smoke bridge ctrl for group %s already exists", group)
+
+        if add_groups:
+            for group in add_groups:
+                callback = on_done if group == add_groups[-1] else None
+                self.db_add_ctrl_of(self.modem.addr, group, on_done=callback)
+        elif on_done:
+            on_done(True, "Pairings already exist", None)
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False):
+    def refresh(self, force=False, on_done=None):
         """Refresh the current device state and database if needed.
 
         This sends a ping to the device.  Smoke bridge can't report
@@ -106,8 +115,9 @@ class SmokeBridge(Base):
         # bridge dev guide p25.  See the Base.refresh() comments for
         # more details.
         msg = Msg.OutStandard.direct(self.addr, 0x1f, 0x01)
-        msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
-                                            num_retry=3)
+
+        callback = functools.partial(self.handle_refresh, on_done=on_done)
+        msg_handler = handler.DeviceRefresh(self, callback, force, num_retry=3)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

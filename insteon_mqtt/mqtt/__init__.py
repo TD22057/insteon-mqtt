@@ -16,5 +16,6 @@ from .FanLinc import FanLinc
 from .MsgTemplate import MsgTemplate
 from .Motion import Motion
 from .Remote import Remote
+from .Reply import Reply
 from .SmokeBridge import SmokeBridge
 from .Switch import Switch

@@ -12,5 +12,7 @@ ignore =
   E127,
   # hanging indent indentation,
   E131,
+  # allow lambda assignments
+  E731
 
 exclude = notes,

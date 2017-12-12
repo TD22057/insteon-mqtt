@@ -257,7 +257,7 @@ class Modem:
         return device
 
     #-----------------------------------------------------------------------
-    def refresh_all(self, force=False):
+    def refresh_all(self, force=False, on_done=None):
         """Refresh all the all link databases.
 
         This forces a refresh of the modem and device databases.  This
@@ -269,8 +269,9 @@ class Modem:
         self.db_get()
 
         # Reload all the device databases.
-        for device in self.devices.values():
-            device.refresh(force)
+        for i, device in enumerate(self.devices.values()):
+            callback = on_done if i == len(self.devices) - 1 else None
+            device.refresh(force, on_done=callback)
 
     #-----------------------------------------------------------------------
     def db_add_ctrl_of(self, addr, group, data=None, two_way=True,
@@ -394,14 +395,14 @@ class Modem:
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set_btn(self, group=0x01, time_out=60):
+    def set_btn(self, group=0x01, time_out=60, on_done=None):
         """TODO: doc
         """
         # Tell the modem to enter all link mode for the group.  The
         # handler will handle timeouts (to send the cancel message) if
         # nothing happens.  See the handler for details.
         msg = Msg.OutAllLinkStart(Msg.OutAllLinkStart.Cmd.EITHER, group)
-        msg_handler = handler.ModemAllLink(self, time_out)
+        msg_handler = handler.ModemAllLink(self, time_out, on_done)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

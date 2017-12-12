@@ -15,8 +15,8 @@ def on(args, config):
         "instant" : args.instant,
         }
 
-    reply = util.send(config, topic, payload)
-    return reply["result"]
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 
 
 #===========================================================================
@@ -27,8 +27,8 @@ def off(args, config):
         "instant" : args.instant,
         }
 
-    reply = util.send(config, topic, payload)
-    return reply["result"]
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 
 
 #===========================================================================
@@ -38,8 +38,8 @@ def increment_up(args, config):
         "cmd" : "increment_up",
         }
 
-    reply = util.send(config, topic, payload)
-    return reply["result"]
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 
 
 #===========================================================================
@@ -49,8 +49,8 @@ def increment_down(args, config):
         "cmd" : "increment_down",
         }
 
-    reply = util.send(config, topic, payload)
-    return reply["result"]
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 
 
 #===========================================================================
@@ -60,8 +60,8 @@ def pair(args, config):
         "cmd" : "pair",
         }
 
-    reply = util.send(config, topic, payload)
-    return reply["result"]
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 
 
 #===========================================================================
@@ -72,8 +72,8 @@ def refresh(args, config):
         "force" : args.force,
         }
 
-    reply = util.send(config, topic, payload)
-    return reply["result"]
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 
 
 #===========================================================================
@@ -103,7 +103,7 @@ def db_add(args, config):
         "two_way" : not args.one_way,
         }
 
-    reply = util.send(config, topic, payload)
-    return reply["result"]
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 
 #===========================================================================

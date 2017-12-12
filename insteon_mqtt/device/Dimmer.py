@@ -85,7 +85,7 @@ class Dimmer(Base):
             })
 
     #-----------------------------------------------------------------------
-    def pair(self):
+    def pair(self, on_done=None):
         """Pair the device with the modem.
 
         This only needs to be called one time.  It will set the device
@@ -104,17 +104,19 @@ class Dimmer(Base):
         group = 1
 
         if not self.db.find(self.modem.addr, group, True):
-            LOG.info("Dimmer adding ctrl for group %s", group)
-            self.db_add_ctrl_of(self.modem.addr, group)
+            LOG.ui("Dimmer adding ctrl for group %s", group)
+            self.db_add_ctrl_of(self.modem.addr, group, on_done=on_done)
         else:
-            LOG.info("Dimmer ctrl for group %s already exists", group)
+            LOG.ui("Dimmer ctrl for group %s already exists", group)
+            if on_done:
+                on_done(True, "Pairings already exist", None)
 
         # TODO: for a devices, check other end of the link -
         # i.e. check the device and the modem.  This is especially a
         # problem for battery devices which won't respond when asleep.
 
     #-----------------------------------------------------------------------
-    def on(self, level=0xFF, instant=False):
+    def on(self, level=0xFF, instant=False, on_done=None):
         """Turn the device on.
 
         This will send the command to the device to update it's state.
@@ -130,9 +132,11 @@ class Dimmer(Base):
         LOG.info("Dimmer %s cmd: on %s", self.addr, level)
         assert level >= 0 and level <= 0xff
         if self._level == level:
-            LOG.info("Dimmer %s '%s' is already on %s", self.addr, self.name,
-                     level)
+            LOG.ui("Dimmer %s '%s' is already on %s", self.addr, self.name,
+                   level)
             self.signal_level_changed.emit(self, self._level)
+            if on_done:
+                on_done(True, "Dimmer is already on", self._level)
             return
 
         # Send an on or instant on command.
@@ -141,13 +145,14 @@ class Dimmer(Base):
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_ack)
+        callback = functools.partial(self.handle_ack, on_done=on_done)
+        msg_handler = handler.StandardCmd(msg, callback)
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def off(self, instant=False):
+    def off(self, instant=False, on_done=None):
         """Turn the device off.
 
         This will send the command to the device to update it's state.
@@ -160,8 +165,10 @@ class Dimmer(Base):
         """
         LOG.info("Dimmer %s cmd: off", self.addr)
         if self._level == 0:
-            LOG.info("Dimmer %s '%s' is already off", self.addr, self.name)
+            LOG.ui("Dimmer %s '%s' is already off", self.addr, self.name)
             self.signal_level_changed.emit(self, self._level)
+            if on_done:
+                on_done(True, "Dimmer is already off", self._level)
             return
 
         # Send an off or instant off command.
@@ -170,13 +177,14 @@ class Dimmer(Base):
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_ack)
+        callback = functools.partial(self.handle_ack, on_done=on_done)
+        msg_handler = handler.StandardCmd(msg, callback)
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def increment_up(self):
+    def increment_up(self, on_done=None):
         """Increment the current level up.
 
         Levels increment in units of 8 (32 divisions from off to on).
@@ -189,12 +197,13 @@ class Dimmer(Base):
 
         msg = Msg.OutStandard.direct(self.addr, 0x15, 0x00)
 
-        callback = functools.partial(self.handle_increment, delta=+8)
+        callback = functools.partial(self.handle_increment, delta=+8,
+                                     on_done=on_done)
         msg_handler = handler.StandardCmd(msg, callback)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def increment_down(self):
+    def increment_down(self, on_done=None):
         """Increment the current level down.
 
         Levels increment in units of 8 (32 divisions from off to on).
@@ -207,12 +216,13 @@ class Dimmer(Base):
 
         msg = Msg.OutStandard.direct(self.addr, 0x16, 0x00)
 
-        callback = functools.partial(self.handle_increment, delta=-8)
+        callback = functools.partial(self.handle_increment, delta=-8,
+                                     on_done=on_done)
         msg_handler = handler.StandardCmd(msg, callback)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set(self, level, instant=False):
+    def set(self, level, instant=False, on_done=None):
         """Set the device on or off.
 
         This will send the command to the device to update it's state.
@@ -230,9 +240,9 @@ class Dimmer(Base):
             if level is True:
                 level = 0xff
 
-            self.on(level, instant)
+            self.on(level, instant, on_done)
         else:
-            self.off(instant)
+            self.off(instant, on_done)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -286,7 +296,7 @@ class Dimmer(Base):
         super().handle_broadcast(msg)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
+    def handle_refresh(self, msg, on_done=None):
         """Handle replies to the refresh command.
 
         The refresh command reply will contain the current device
@@ -298,14 +308,17 @@ class Dimmer(Base):
         """
         # NOTE: This is called by the handler.DeviceRefresh class when
         # the refresh message send by Base.refresh is ACK'ed.
-        LOG.debug("Dimmer %s refresh message: %s", self.addr, msg)
+        LOG.ui("Dimmer %s refresh at level %s", self.addr, msg.cmd2)
 
         # Current dimmer level is stored in cmd2 so update our level
         # to match.
         self._set_level(msg.cmd2)
 
+        if on_done:
+            on_done(True, "Refresh complete", msg.cmd2)
+
     #-----------------------------------------------------------------------
-    def handle_ack(self, msg):
+    def handle_ack(self, msg, on_done=None):
         """Callback for standard commanded messages.
 
         This callback is run when we get a reply back from one of our
@@ -322,12 +335,17 @@ class Dimmer(Base):
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
             self._set_level(msg.cmd2)
+            if on_done:
+                on_done(True, "Dimmer state updated to %s" % self._level,
+                        msg.cmd2)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("Dimmer %s NAK error: %s", self.addr, msg)
+            if on_done:
+                on_done(False, "Dimmer state update failed", None)
 
     #-----------------------------------------------------------------------
-    def handle_increment(self, msg, delta):
+    def handle_increment(self, msg, delta, on_done=None):
         """TODO: doc
         """
         # If this it the ACK we're expecting, update the internal
@@ -335,9 +353,14 @@ class Dimmer(Base):
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
             self._set_level(self._level + delta)
+            if on_done:
+                s = "Dimmer %s state updated to %s" % (self.addr, self._level)
+                on_done(True, s, msg.cmd2)
 
         elif msg.flags.Dimmer == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("Dimmer %s NAK error: %s", self.addr, msg)
+            if on_done:
+                on_done(False, "Dimmer %s state update failed", None)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

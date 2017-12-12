@@ -102,6 +102,7 @@ class DeviceDbGet(Base):
 
             # Convert the message to a database device entry.
             entry = db.DeviceEntry.from_bytes(msg.data)
+            LOG.ui("Entry: %s", entry)
 
             # Skip entries w/ a null memory location.
             if entry.mem_loc:

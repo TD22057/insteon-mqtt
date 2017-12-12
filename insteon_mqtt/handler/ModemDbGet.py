@@ -76,6 +76,7 @@ class ModemDbGet(Base):
             entry = db.ModemEntry(msg.addr, msg.group,
                                   msg.db_flags.is_controller, msg.data)
             self.db.add_entry(entry)
+            LOG.ui("Entry: %s", entry)
 
             # Request the next record in the PLM database.
             LOG.info("Modem requesting next db record")

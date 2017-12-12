@@ -3,6 +3,7 @@
 # Insteon on/off device
 #
 #===========================================================================
+import functools
 from .Base import Base
 from .. import handler
 from .. import log
@@ -77,7 +78,7 @@ class Switch(Base):
             })
 
     #-----------------------------------------------------------------------
-    def pair(self):
+    def pair(self, on_done=None):
         """Pair the device with the modem.
 
         This only needs to be called one time.  It will set the device
@@ -95,10 +96,12 @@ class Switch(Base):
         # device and the modem.
         group = 1
         if not self.db.find(self.modem.addr, group, True):
-            LOG.info("Switch adding ctrl for group %s", group)
-            self.db_add_ctrl_of(self.modem.addr, group)
+            LOG.ui("Switch adding ctrl for group %s", group)
+            self.db_add_ctrl_of(self.modem.addr, group, on_done=on_done)
         else:
-            LOG.info("Switch ctrl for group %s already exists", group)
+            LOG.ui("Switch ctrl for group %s already exists", group)
+            if on_done:
+                on_done(True, "Pairings already exist", None)
 
     #-----------------------------------------------------------------------
     def is_on(self):
@@ -107,7 +110,7 @@ class Switch(Base):
         return self._is_on
 
     #-----------------------------------------------------------------------
-    def on(self, level=None, instant=False):
+    def on(self, level=None, instant=False, on_done=None):
         """Turn the device on.
 
         This will send the command to the device to update it's state.
@@ -121,8 +124,10 @@ class Switch(Base):
         """
         LOG.info("Switch %s cmd: on", self.addr)
         if self._is_on:
-            LOG.info("Device %s '%s' is already on", self.addr, self.name)
+            LOG.ui("Switch %s '%s' is already on", self.addr, self.name)
             self.signal_active.emit(self, self._is_on)
+            if on_done:
+                on_done(True, "Switch is already on", self._is_on)
             return
 
         # Send an on or instant on command.
@@ -131,13 +136,14 @@ class Switch(Base):
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_ack)
+        callback = functools.partial(self.handle_ack, on_done=on_done)
+        msg_handler = handler.StandardCmd(msg, callback)
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def off(self, instant=False):
+    def off(self, instant=False, on_done=None):
         """Turn the device off.
 
         This will send the command to the device to update it's state.
@@ -150,8 +156,10 @@ class Switch(Base):
         """
         LOG.info("Switch %s cmd: off", self.addr)
         if not self._is_on:
-            LOG.info("Device %s '%s' is already off", self.addr, self.name)
+            LOG.ui("Switch %s '%s' is already off", self.addr, self.name)
             self.signal_active.emit(self, self._is_on)
+            if on_done:
+                on_done(True, "Switch is already off", self._is_on)
             return
 
         # Send an off or instant off command.  Instant off is the same
@@ -161,13 +169,14 @@ class Switch(Base):
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_ack)
+        callback = functools.partial(self.handle_ack, on_done=on_done)
+        msg_handler = handler.StandardCmd(msg, callback)
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set(self, level, instant=False):
+    def set(self, level, instant=False, on_done=None):
         """Set the device on or off.
 
         This will send the command to the device to update it's state.
@@ -180,9 +189,9 @@ class Switch(Base):
                     instant change.
         """
         if level:
-            self.on(instant)
+            self.on(instant, on_done=on_done)
         else:
-            self.off(instant)
+            self.off(instant, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -221,7 +230,7 @@ class Switch(Base):
         super().handle_broadcast(msg)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
+    def handle_refresh(self, msg, on_done=None):
         """Handle replies to the refresh command.
 
         The refresh command reply will contain the current device
@@ -231,14 +240,17 @@ class Switch(Base):
           msg:  (message.InpStandard) The refresh message reply.  The current
                 device state is in the msg.cmd2 field.
         """
-        LOG.debug("Switch %s refresh message: %s", self.addr, msg)
+        LOG.ui("Switch %s refresh on %s", self.addr, msg.cmd2 > 0x00)
 
         # Current on/off level is stored in cmd2 so update our level
         # to match.
         self._set_is_on(msg.cmd2 > 0x00)
 
+        if on_done:
+            on_done(True, "Refresh complete", msg.cmd2)
+
     #-----------------------------------------------------------------------
-    def handle_ack(self, msg):
+    def handle_ack(self, msg, on_done=None):
         """Callback for standard commanded messages.
 
         This callback is run when we get a reply back from one of our
@@ -255,9 +267,14 @@ class Switch(Base):
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("Switch %s ACK: %s", self.addr, msg)
             self._set_is_on(msg.cmd2 > 0x00)
+            if on_done:
+                on_done(True, "Switch state updated to %s" % self._is_on,
+                        self._is_on)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("Switch %s NAK error: %s", self.addr, msg)
+            if on_done:
+                on_done(False, "Switch state update failed", None)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

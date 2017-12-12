@@ -4,6 +4,7 @@
 #
 #===========================================================================
 import enum
+import functools
 from .Dimmer import Dimmer
 from .. import handler
 from .. import log
@@ -45,7 +46,7 @@ class FanLinc(Dimmer):
             })
 
     #-----------------------------------------------------------------------
-    def pair(self):
+    def pair(self, on_done=None):
         """Pair the device with the modem.
 
         This only needs to be called one time.  It will set the device
@@ -63,20 +64,20 @@ class FanLinc(Dimmer):
         # doesn't exist, add it on our device and the modem.
         group = 2
         if not self.db.find(self.modem.addr, group, True):
-            LOG.info("FanLinc adding ctrl for group %s", group)
+            LOG.ui("FanLinc adding ctrl for group %s", group)
             self.db_add_ctrl_of(self.modem.addr, group)
         else:
-            LOG.info("FanLinc ctrl for group %s already exists", group)
+            LOG.ui("FanLinc ctrl for group %s already exists", group)
 
         # TODO: for a devices, check other end of the link -
         # i.e. check the device and the modem.  This is especially a
         # problem for battery devices which won't respond when asleep.
 
         # Call the dimmer base class to add links for group 1.
-        super().pair()
+        super().pair(on_done=on_done)
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False):
+    def refresh(self, force=False, on_done=None):
         """TODO doc
         """
         # Send a 0x19 0x03 command to get the fan speed level.
@@ -93,10 +94,10 @@ class FanLinc(Dimmer):
         self.protocol.send(msg, msg_handler)
 
         # Get the light level state.
-        super().refresh(force)
+        super().refresh(force, on_done=on_done)
 
     #-----------------------------------------------------------------------
-    def fan_on(self, speed=None):
+    def fan_on(self, speed=None, on_done=None):
         """TODO: doc
         """
         assert isinstance(speed, FanLinc.Speed)
@@ -108,9 +109,10 @@ class FanLinc(Dimmer):
                 speed = FanLinc.Speed.MED
 
         if speed == self._fan_speed:
-            LOG.info("FanLinc %s '%s' is already on %s", self.addr, self.name,
-                     speed)
+            LOG.ui("Fan %s '%s' is already on %s", self.addr, self.name, speed)
             self.signal_fan_changed.emit(self, self._fan_speed)
+            if on_done:
+                on_done(True, "Fan already on", self._fan_speed)
             return
 
         # Send an on command.  The fan control is done via extended
@@ -122,13 +124,14 @@ class FanLinc(Dimmer):
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_speed_ack)
+        callback = functools.partial(self.handle_speed_ack, on_done=on_done)
+        msg_handler = handler.StandardCmd(msg, callback)
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def fan_off(self):
+    def fan_off(self, on_done=None):
         """TODO: doc
 
         This will send the command to the device to update it's state.
@@ -136,10 +139,12 @@ class FanLinc(Dimmer):
         state and emit the state changed signals.
 
         """
-        LOG.info("FanLinc %s cmd: off", self.addr)
+        LOG.info("Fan %s cmd: off", self.addr)
         if self._fan_speed == FanLinc.Speed.OFF:
-            LOG.info("FanLinc %s '%s' is already off", self.addr, self.name)
+            LOG.ui("Fan %s '%s' is already off", self.addr, self.name)
             self.signal_fan_changed.emit(self, self._fan_speed)
+            if on_done:
+                on_done(True, "Fan already off", self._fan_speed)
             return
 
         # Send an on command.  The fan control is done via extended
@@ -151,13 +156,14 @@ class FanLinc(Dimmer):
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_speed_ack)
+        callback = functools.partial(self.handle_speed_ack, on_done=on_done)
+        msg_handler = handler.StandardCmd(msg, callback)
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def fan_set(self, speed):
+    def fan_set(self, speed, on_done=None):
         """TODO: docSet the device on or off.
 
         This will send the command to the device to update it's state.
@@ -174,9 +180,9 @@ class FanLinc(Dimmer):
         assert isinstance(speed, FanLinc.Speed)
 
         if speed != FanLinc.Speed.OFF:
-            self.fan_on(speed)
+            self.fan_on(speed, on_done=on_done)
         else:
-            self.fan_off()
+            self.fan_off(on_done=on_done)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -214,14 +220,14 @@ class FanLinc(Dimmer):
         """
         # NOTE: This is called by the handler.DeviceRefresh class when
         # the refresh message send by Base.refresh is ACK'ed.
-        LOG.debug("FanLink %s fan refresh message: %s", self.addr, msg)
+        LOG.ui("Fan %s refresh speed at %s", self.addr, msg.cmd2)
 
         # Current fan speed is stored in cmd2 so update our speed to
         # match.
         self._set_fan_speed(msg.cmd2)
 
     #-----------------------------------------------------------------------
-    def handle_speed_ack(self, msg):
+    def handle_speed_ack(self, msg, on_done=None):
         """Callback for standard commanded messages.
 
         This callback is run when we get a reply back from one of our
@@ -238,9 +244,14 @@ class FanLinc(Dimmer):
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("FanLinc fan %s ACK: %s", self.addr, msg)
             self._set_fan_speed(msg.cmd2)
+            if on_done:
+                s = "Fan %s state updated to %s" % (self.addr, self._fan_speed)
+                on_done(True, s, msg.cmd2)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("FanLinc %s NAK error: %s", self.addr, msg)
+            LOG.error("FanLinc fan %s NAK error: %s", self.addr, msg)
+            if on_done:
+                on_done(False, "Fan %s state update failed", None)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

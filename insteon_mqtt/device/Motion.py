@@ -81,7 +81,7 @@ class Motion(Base):
         self._is_on = False
 
     #-----------------------------------------------------------------------
-    def pair(self):
+    def pair(self, on_done=None):
         """Pair the device with the modem.
 
         This only needs to be called one time.  It will set the device
@@ -100,13 +100,21 @@ class Motion(Base):
         # Search our db to see if we have controller links for all our
         # groups back to the modem.  If one doesn't exist, add it on
         # our device and the modem.
+        add_groups = []
         for type in Motion.Type:
             group = type.value
             if not self.db.find(self.modem.addr, group, True):
                 LOG.info("Motion adding ctrl for group %s", group)
-                self.db_add_ctrl_of(self.modem.addr, group)
+                add_groups.append(group)
             else:
-                LOG.info("Motion ctrl for group %s already exists", group)
+                LOG.ui("Motion ctrl for group %s already exists", group)
+
+        if add_groups:
+            for group in add_groups:
+                callback = on_done if group == add_groups[-1] else None
+                self.db_add_ctrl_of(self.modem.addr, group, on_done=callback)
+        elif on_done:
+            on_done(True, "Pairings already exist", None)
 
     #-----------------------------------------------------------------------
     def is_on(self):
@@ -177,7 +185,7 @@ class Motion(Base):
             self.refresh(force=True)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
+    def handle_refresh(self, msg, on_done=None):
         """Handle replies to the refresh command.
 
         The refresh command reply will contain the current device
@@ -189,11 +197,14 @@ class Motion(Base):
           msg:  (message.InpStandard) The refresh message reply.  The current
                 device state is in the msg.cmd2 field.
         """
-        LOG.debug("Motion %s refresh message: %s", self.addr, msg)
+        LOG.ui("Motion %s refresh on = %s", self.addr, msg.cmd2 != 0x00)
 
         # Current on/off level is stored in cmd2 so update our state
         # to match.
         self._set_is_on(msg.cmd2 != 0x00)
+
+        if on_done:
+            on_done(True, "Motion refresh complete", msg.cmd2)
 
     #-----------------------------------------------------------------------
     def _set_is_on(self, is_on):

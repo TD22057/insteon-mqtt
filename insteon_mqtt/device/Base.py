@@ -106,7 +106,7 @@ class Base:
         LOG.debug("%s", self.db)
 
     #-----------------------------------------------------------------------
-    def pair(self):
+    def pair(self, on_done=None):
         """Pair the device with the modem.
 
         This only needs to be called one time.  It will set the device
@@ -119,7 +119,7 @@ class Base:
         LOG.error("Device %s doesn't support pairing", self.addr)
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False):
+    def refresh(self, force=False, on_done=None):
         """Refresh the current device state and database if needed.
 
         This sends a ping to the device.  The reply has the current
@@ -140,8 +140,9 @@ class Base:
         # current value.  If it's different, it will send a database
         # download command to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
-        msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
-                                            num_retry=3)
+
+        callback = functools.partial(self.handle_refresh, on_done=on_done)
+        msg_handler = handler.DeviceRefresh(self, callback, force, num_retry=3)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -295,7 +296,7 @@ class Base:
                           str(kwargs))
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
+    def handle_refresh(self, msg, on_done=None):
         """Handle replies to the refresh command.
 
         The refresh command reply will contain the current device
@@ -307,7 +308,8 @@ class Base:
         """
         # Do nothing - derived types can override this if they have
         # state to extract and update.
-        pass
+        if on_done:
+            on_done(True, "Refresh complete", None)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -370,8 +372,8 @@ class Base:
         remote = self.modem.find(addr)
         if two_way and not remote:
             lbl = "CTRL" if is_controller else "RESP"
-            LOG.info("Device db add %s can't find remote device %s.  "
-                     "Link will be only one direction", lbl, addr)
+            LOG.ui("Device db add %s can't find remote device %s.  "
+                   "Link will be only one direction", lbl, addr)
 
         # For two way commands, insert a callback so that when the
         # modem command finishes, it will send the next command to the
@@ -426,8 +428,8 @@ class Base:
         remote = self.modem.find(addr)
         if two_way and not remote:
             lbl = "CTRL" if is_controller else "RESP"
-            LOG.info("Device db delete %s can't find remote device %s.  "
-                     "Link will be only one direction", lbl, addr)
+            LOG.ui("Device db delete %s can't find remote device %s.  "
+                   "Link will be only one direction", lbl, addr)
 
         # For two way commands, insert a callback so that when the
         # modem command finishes, it will send the next command to the

@@ -14,6 +14,10 @@ from ..Protocol import Protocol
 def start(args, cfg):
     """TODO: doc
     """
+    # Always log to the screen if a file isn't active.
+    if not args.log:
+        args.log_screen = True
+
     # Initialize the logging system either using the command line
     # inputs or the config file.  If these vars are None, then the
     # config file logging data is used.

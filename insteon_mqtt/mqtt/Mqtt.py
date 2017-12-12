@@ -3,10 +3,13 @@
 # MQTT main interface
 #
 #===========================================================================
+import functools
 import json
+import logging
 from .. import log
 from . import config
 from .MsgTemplate import MsgTemplate
+from .Reply import Reply
 
 LOG = log.get_logger()
 
@@ -216,14 +219,6 @@ class Mqtt:
         """
         LOG.info("MQTT message %s %s", message.topic, message.payload)
 
-        # Extract the device name/address from the topic and use
-        # it to find the device object to handle the command.
-        device_id = message.topic.split("/")[-1]
-        device = self.modem.find(device_id)
-        if not device:
-            LOG.error("Unknown Insteon device '%s'", device_id)
-            return
-
         # Decode the JSON payload.
         try:
             data = json.loads(message.payload.decode("utf-8"))
@@ -232,50 +227,99 @@ class Mqtt:
                           message.payload)
             return
 
-        session = data.pop("session", None)
-        # TODO: handle session reply!
+        # TODO: docs
+        end_reply = lambda dummy: 0
+        if "session" in data:
+            reply_topic = "%s/session/%s" % (message.topic,
+                                             data.pop("session"))
+            reply_cb = functools.partial(self.handle_reply, topic=reply_topic)
+            LOG.set_ui_callback(reply_cb)
+
+            end_reply = functools.partial(self.handle_reply, None,
+                                          topic=reply_topic)
+
+        # Extract the device name/address from the topic and use
+        # it to find the device object to handle the command.
+        device_id = message.topic.split("/")[-1]
+        device = self.modem.find(device_id)
+        if not device:
+            LOG.error("Unknown Insteon device '%s'", device_id)
+            end_reply()
+            return
 
         # Find the command string and map it to the method to use
         # on the device.
         cmd = data.pop("cmd", None)
         if not cmd:
             LOG.error("Input command has no 'cmd' key: %s", cmd)
+            end_reply()
             return
+
+        LOG.ui("Commanding %s device %s %s cmd=%s", device.__class__.__name__,
+               device_id, device.name if device.name else "", cmd)
 
         cmd_func = device.cmd_map.get(cmd, None)
         if not cmd_func:
             LOG.error("Unknown command '%s' for device %s.  Valid commands: "
                       "%s", cmd, device.__class__.__name__,
                       device.cmd_map.keys())
+            end_reply()
             return
+
+        def on_done(success, msg, data):
+            if success:
+                LOG.ui(msg)
+            else:
+                LOG.error(msg)
+            end_reply()
 
         try:
             # Pass the rest of the command arguments as keywords
             # to the method.
-            cmd_func(**data)
+            cmd_func(on_done=on_done, **data)
         except:
             LOG.exception("Error running command %s on device %s", cmd,
                           device_id)
+            end_reply()
+
+    #-----------------------------------------------------------------------
+    def handle_reply(self, record, topic):
+        """: TODO: doc
+        """
+        if record is None:
+            LOG.del_ui_callback()
+            reply = Reply(Reply.Type.END)
+        else:
+            type = Reply.Type.MESSAGE
+            if record.levelno >= logging.ERROR:
+                type = Reply.Type.ERROR
+
+            reply = Reply(type, record.msg % record.args)
+
+        payload = reply.to_json()
+        self.link.publish(topic, payload)
 
     #-----------------------------------------------------------------------
     def _subscribe(self):
         """Subscribe to the command and set topics.
         """
         if self._cmd_topic:
-            self.link.subscribe(self._cmd_topic + "/#", self._qos,
+            self.link.subscribe(self._cmd_topic + "/+", self._qos,
                                 self.handle_cmd)
 
         for device in self.devices.values():
             device.subscribe(self.link, self._qos)
 
     #-----------------------------------------------------------------------
-    def _unsubscribe(self,):
+    def _unsubscribe(self):
         """Unsubscribe to the command and set topics.
         """
         if self._cmd_topic:
-            self.link.unsubscribe(self._cmd_topic + "/#")
+            self.link.unsubscribe(self._cmd_topic + "/+")
 
         for device in self.devices.values():
             device.unsubscribe(self.link)
 
     #-----------------------------------------------------------------------
+
+#===========================================================================
