@@ -60,30 +60,35 @@ insteon:
       - 48.3d.46
       - 48.b0.ad
 
-    # Battery powered sensors (door, hidden door, window)
+    # Battery powered sensors (door, hidden door, window).
     battery_sensor:
       - 94.a9.12
 
     # Battery powered motion sensors.
     motion:
-      - 21.d6.d9: 'front door'
+    #  - 21.d6.d9: 'front door'
 
-    # Battery powered mini remotes
+    # Battery powered mini remotes.
     mini_remote4:
 
     mini_remote8:
       - 3f.07.d4: 'remote1'
 
-    # Smoke bridge module
+    # Smoke bridge module.
     smoke_bridge:
       - 44.a3.79: 'smoke alarm'
 
-    # FanLinc fan controller (dimmer+fan)
+    # FanLinc fan controller (dimmer+fan).
     fan_linc:
       - 9a.a1.b3
 
-    # Leak sensors
+    # KeypadLinc (dimmer+scene controller).
+    keypad_linc:
+      #- 3f.07.d4: 'hallway'
+
+    # Leak sensors.
     leak:
+      - 21.d6.d9: 'front door'
 
   #------------------------------------------------------------------------
   # FUTURE: Insteon scene definitions.
@@ -361,6 +366,8 @@ mqtt:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   button = 1...n  (button number 1-4 or 1-8)
+    #   on = 0/1
+    #   on_str = 'off', 'on'
     state_topic: 'insteon/{{address}}/state/{{button}}'
     state_payload: '{{on_str.upper()}}'
 
@@ -371,8 +378,8 @@ mqtt:
   # A FanLinc is a dimmer switch (Insteon group 1) plus a fan control
   # (group 2).  The dimmer MQTT messages use the dimmer settings
   # above.  The settings here are just for the fan input and output.
-  # The dimmer settings can be used to turn the fan on and off (and
-  # report on/off state changes).
+  # The settings can be used to turn the fan on and off (and report
+  # on/off state changes).
   #
   # NOTE: Both the fan state and fan speed state topics will be
   # published on ANY fan change.  So if you only need one of them, you
@@ -434,5 +441,40 @@ mqtt:
     #          a variable from a json payload.
     fan_speed_set_topic: 'insteon/{{address}}/fan/speed/set'
     fan_speed_set_payload: '{ "cmd" : "{{value.lower}}" }'
+
+  #------------------------------------------------------------------------
+  # Keypad Linc
+  #------------------------------------------------------------------------
+
+  # A KeypadLinc is a dimmer switch (Insteon group 1) plus a series of
+  # scene control buttons which operate on other groups.  The dimmer
+  # MQTT messages use the dimmer settings above.  The settings here
+  # are just for the other buttons.  The only input commands avaiable
+  # are for the dimmer which control the LED's on the device and the
+  # attached load.
+  #
+  # 6 button and 8 button keypads have use the following button numbers:
+  #    1 on           1       2
+  #  3       4        3       4
+  #  5       6        5       6
+  #    1 off          7       8
+  #
+  # In Home Assistant, use the dimmer example above for the dimmer
+  # module and use binary sensors to represent the other button
+  # presses.  Those buttons are not current commandable so there is no
+  # input command that can be sent to them.
+  #   binary_sensor:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/state/3'
+  keypad_linc:
+    # Output state change topic and template.  This message is sent
+    # whenever a button is pressed.  Available variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   button = 1...n  (button number 1-4 or 1-8)
+    #   on = 0/1
+    #   on_str = 'off', 'on'
+    button_topic: 'insteon/{{address}}/state/{{button}}'
+    button_payload: '{{on_str.upper()}}'
 
 #----------------------------------------------------------------

@@ -12,6 +12,7 @@ from .. import device
 from .BatterySensor import BatterySensor
 from .Dimmer import Dimmer
 from .FanLinc import FanLinc
+from .KeypadLinc import KeypadLinc
 from .Leak import Leak
 from .Motion import Motion
 from .Remote import Remote
@@ -22,6 +23,7 @@ devices = {
     device.BatterySensor : BatterySensor,
     device.Dimmer : Dimmer,
     device.FanLinc : FanLinc,
+    device.KeypadLinc : KeypadLinc,
     device.Leak : Leak,
     device.Motion : Motion,
     device.Remote : Remote,

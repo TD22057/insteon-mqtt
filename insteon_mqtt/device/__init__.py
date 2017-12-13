@@ -30,6 +30,7 @@ from .Base import Base
 from .BatterySensor import BatterySensor
 from .Dimmer import Dimmer
 from .FanLinc import FanLinc
+from .KeypadLinc import KeypadLinc
 from .Leak import Leak
 from .Motion import Motion
 from .Remote import Remote

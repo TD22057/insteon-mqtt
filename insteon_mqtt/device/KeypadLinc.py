@@ -1,60 +1,22 @@
 #===========================================================================
 #
-# Remote module
+# KeypadLinc module
 #
 #===========================================================================
 from .. import log
 from ..Signal import Signal
 from .Base import Base
+from .Dimmer import Dimmer
 
 LOG = log.get_logger()
 
 
-class Remote(Base):
-    """Insteon multi-button mini-remote device.
+class KeypadLinc(Dimmer):
+    """Insteon KeypadLinc dimmer plus remote module
 
     TODO: docs
-
-    Sample configuration input:
-
-        insteon:
-          devices:
-            - mini_remote4:
-              name: "Remote A"
-              address: 44.a3.79
-
-            - mini_remote8:
-              name: "Remote B"
-              address: 44.a3.80
-
-    The issue with a battery powered remotes is that we can't download
-    the link database without the remote being on.  You can trigger
-    the remote manually and then quickly send an MQTT command with the
-    payload 'getdb' to download the database.  We also can't test to
-    see if the local database is current or what the current motion
-    state is - we can really only respond to the remote when it sends
-    out a message.
-
-    The Signal Switch.signal_active will be emitted whenever
-    the device button is pushed.
-
-    The run_command() method is used for arbitrary remote commanding
-    (via MQTT for example).  The input is a dict (or keyword args)
-    containing a 'cmd' key with the value as the command name and any
-    additional arguments needed for the command as other key/value
-    pairs. Valid commands for all devices are:
-
-       getdb:    No arguments.  Download the PLM modem all link database
-                 and save it to file.
-       refresh:  No arguments.  Ping the device to get the current state and
-                 see if the database is current.  Reloads the modem database
-                 if needed.  This will emit the current state as a signal.
     """
-
-    on_codes = [0x11, 0x12, 0x21, 0x23]  # on, fast on, instant on, manual on
-    off_codes = [0x13, 0x14, 0x22]  # off, fast off, instant off
-
-    def __init__(self, protocol, modem, address, name, num):
+    def __init__(self, protocol, modem, address, name):
         """Constructor
 
         Args:
@@ -63,11 +25,9 @@ class Remote(Base):
                        the device to send messages to the PLM modem.
           modem:       (Modem) The Insteon modem used to find other devices.
           address:     (Address) The address of the device.
-          num:         (int) Number of buttons on the remote.
           name         (str) Nice alias name to use for the device.
         """
         super().__init__(protocol, modem, address, name)
-        self.num = num
 
         self.signal_pressed = Signal()  # (Device, int group, bool on)
 
@@ -86,18 +46,18 @@ class Remote(Base):
         NOTE: The remote code assumes the remote buttons are using
         groups 1...num (as set in the constructor).
         """
-        LOG.info("Remote %s pairing", self.addr)
+        LOG.info("KeypadLinc %s pairing", self.addr)
 
         # Search our db to see if we have controller links for the
         # groups back to the modem.  If one doesn't exist, add it on
         # our device and the modem.
         add_groups = []
-        for group in range(1, self.num + 1):
+        for group in range(1, 8):
             if not self.db.find(self.modem.addr, group, True):
-                LOG.info("Remote adding ctrl for group %s", group)
+                LOG.info("KeypadLinc adding ctrl for group %s", group)
                 add_groups.append(group)
             else:
-                LOG.ui("Remote ctrl for group %s already exists", group)
+                LOG.ui("KeypadLinc ctrl for group %s already exists", group)
 
         if add_groups:
             for group in add_groups:
@@ -123,34 +83,36 @@ class Remote(Base):
         """
         # ACK of the broadcast - ignore this.
         if msg.cmd1 == 0x06:
-            LOG.info("Remote %s broadcast ACK grp: %s", self.addr, msg.group)
+            LOG.info("KeypadLinc %s broadcast ACK grp: %s", self.addr,
+                     msg.group)
             return
 
         # On command.  0x11: on, 0x12: on fast
-        elif msg.cmd1 in Remote.on_codes:
-            LOG.info("Remote %s broadcast ON grp: %s", self.addr, msg.group)
+        elif msg.cmd1 in self.on_codes:
+            LOG.info("KeypadLinc %s broadcast ON grp: %s", self.addr,
+                     msg.group)
             on = True
 
         # Off command. 0x13: off, 0x14: off fast
-        elif msg.cmd1 in Remote.off_codes:
-            LOG.info("Remote %s broadcast OFF grp: %s", self.addr, msg.group)
+        elif msg.cmd1 in self.off_codes:
+            LOG.info("KeypadLinc %s broadcast OFF grp: %s", self.addr,
+                     msg.group)
             on = False
 
         # Notify others that the button was pressed.
         self.signal_pressed.emit(self, msg.group, on)
 
-        # This will find all the devices we're the controller of for
-        # this group and call their handle_group_cmd() methods to
-        # update their states since they will have seen the group
-        # broadcast and updated (without sending anything out).
-        super().handle_broadcast(msg)
+        # For the dimmer, we only want to have the dimmer process the
+        # message if it's group 1.  This also calls Base.handle_broadcast.
+        if msg.group == 1:
+            Dimmer.handle_broadcast(self, msg)
 
-        # Since we just saw a message got by, yse this opportunity to
-        # get the device db since we know the sensor is awake.  This
-        # doesn't always work - but it works enough times to be useful
-        # (probably?).
-        if len(self.db) == 0:
-            LOG.info("Remote %s awake - requesting database", self.addr)
-            self.refresh(force=True)
+        # Other call the device base handler.  This will find all the
+        # devices we're the controller of for this group and call
+        # their handle_group_cmd() methods to update their states
+        # since they will have seen the group broadcast and updated
+        # (without sending anything out).
+        else:
+            Base.handle_broadcast(self, msg)
 
     #-----------------------------------------------------------------------

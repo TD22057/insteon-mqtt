@@ -17,6 +17,7 @@ devices = {
     'dimmer' : device.Dimmer,
     'battery_sensor' : device.BatterySensor,
     'fan_linc' : device.FanLinc,
+    'keypad_linc' : device.KeypadLinc,
     'leak' : device.Leak,
     'mini_remote4' : functools.partial(device.Remote, num=4),
     'mini_remote8' : functools.partial(device.Remote, num=8),

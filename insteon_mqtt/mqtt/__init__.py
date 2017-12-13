@@ -14,6 +14,7 @@ from .Mqtt import Mqtt
 from .BatterySensor import BatterySensor
 from .Dimmer import Dimmer
 from .FanLinc import FanLinc
+from .KeypadLinc import KeypadLinc
 from .MsgTemplate import MsgTemplate
 from .Motion import Motion
 from .Remote import Remote
