@@ -449,7 +449,7 @@ mqtt:
   # A KeypadLinc is a dimmer switch (Insteon group 1) plus a series of
   # scene control buttons which operate on other groups.  The dimmer
   # MQTT messages use the dimmer settings above.  The settings here
-  # are just for the other buttons.  The only input commands avaiable
+  # are just for the other buttons.  The only input commands avaliable
   # are for the dimmer which control the LED's on the device and the
   # attached load.
   #
@@ -461,7 +461,7 @@ mqtt:
   #
   # In Home Assistant, use the dimmer example above for the dimmer
   # module and use binary sensors to represent the other button
-  # presses.  Those buttons are not current commandable so there is no
+  # presses.  Those buttons are not current command-able so there is no
   # input command that can be sent to them.
   #   binary_sensor:
   #     - platform: mqtt

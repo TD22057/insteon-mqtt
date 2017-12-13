@@ -30,9 +30,11 @@ be identified by it's address or the string "modem".
    - [Switches](#switches)
    - [Dimmers](#dimmers)
    - [FanLinc](#fanlinc)
+   - [KeypadLinc](#keypadlinc)
    - [Battery Sensors](#battery-sensors)
    - [Motion Sensors](#motion-sensors)
    - [Leak Sensors](#leak-sensors)
+   - [Remotes](#remote-controls)
    - [Smoke Bridge](#smoke-bridge)
 
 ---
@@ -409,6 +411,42 @@ matching the Home Assistant MQTT fan configuration.
 
 ---
 
+## KeypadLinc
+
+The KeypadLinc is a wall mounted dimmer control and scene controller.
+Basically it combines a dimmer switch and remote control.  The dimmer
+portion of the KeypadLinc uses the dimmer settings (see above).  The
+other buttons are output only buttons like a remote control which
+alternate sending on and off commands to trigger scens.  KeypadLincs
+are usually configured as 6 button or 8 button devices with the
+following button number layouts:
+
+```
+   6 button         8 button
+   ---------        --------
+     1 on           1      2
+   3       4        3      4
+   5       6        5      6
+     1 off          7      8
+```
+
+The button change defines the following variables for templates:
+
+   - 'button' is 1...n for the button number.
+   - 'on' is 1 if the button is on, 0 if it's off.
+   - 'on_str' is 'on' if the button is on, 'off' if it's off.
+
+A sample remote control topic and payload configuration is:
+
+   ```
+   keypad_linc:
+     button_topic: 'insteon/{{address}}/state/{{button}}'
+     button_payload: '{{on_str.upper()}}'
+   ```
+
+---
+
+
 ## Battery Sensors
 
 Battery powered sensors (which include door sensors, hidden door
@@ -491,6 +529,30 @@ A sample leak sensor topic and payload configuration is:
    leak:
      wet_dry_topic: 'insteon/{{address}}/leak'
      wet_dry_payload: '{{state.upper()}}'
+   ```
+
+---
+
+## Remote Controls
+
+Remote controls are battery powered scene controllers.  They do not
+accept any input commands.  The low battery messages are inherited
+from the battery sensor inputs.  The remote adds another state change
+for button on and off events.  Buttons on the remote alternate sending
+on and off commands each time they are pressed.
+
+The button change defines the following variables for templates:
+
+   - 'button' is 1...n for the button number.
+   - 'on' is 1 if the button is on, 0 if it's off.
+   - 'on_str' is 'on' if the button is on, 'off' if it's off.
+
+A sample remote control topic and payload configuration is:
+
+   ```
+   remote:
+     state_topic: 'insteon/{{address}}/state/{{button}}'
+     state_payload: '{{on_str.upper()}}'
    ```
 
 ---

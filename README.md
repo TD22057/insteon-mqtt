@@ -38,7 +38,8 @@ what they are and how to interpret messages from them.
   - On/off switches (lamp modules, appliance modules, outlets, etc.)
   - Dimmer switches (lamp modules, dimmer switches, etc.)
   - FanLinc dimmer and fan controller
-  - Mini-remotes (4 and 8 button battery remotes)
+  - KeypadLinc dimmer and scene controller
+  - Mini-remotes (4 and 8 button battery powered scene controllers)
   - Battery powered sensors (door, hidden door, window, etc.)
   - Leak sensors
   - Motion sensors

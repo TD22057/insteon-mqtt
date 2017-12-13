@@ -14,6 +14,10 @@
 - Added battery powered sensors (door and window sensors) support
   ([Issue #5][I5]).
 
+- Added leak sensor support ([Issue #6][I6]).
+
+- Added KeypadLinc support ([Issue #8][I8]).
+
 - Added reply system to the command line tool.  Messages are now sent
   from the server back to the command line tool to indicate the result
   of running the command.
@@ -34,3 +38,5 @@
 [I3]: https://github.com/TD22057/insteon-mqtt/issues/3
 [I4]: https://github.com/TD22057/insteon-mqtt/issues/4
 [I5]: https://github.com/TD22057/insteon-mqtt/issues/5
+[I6]: https://github.com/TD22057/insteon-mqtt/issues/6
+[I8]: https://github.com/TD22057/insteon-mqtt/issues/8
