@@ -22,6 +22,10 @@
   from the server back to the command line tool to indicate the result
   of running the command.
 
+- Added !include tag support to the yaml loader which reads the
+  configuration file to allow the file to be split into multiple
+  files ([Issue #11][I11]).
+
 
 ## [0.5.1] - 2017-12-07
 
@@ -40,3 +44,4 @@
 [I5]: https://github.com/TD22057/insteon-mqtt/issues/5
 [I6]: https://github.com/TD22057/insteon-mqtt/issues/6
 [I8]: https://github.com/TD22057/insteon-mqtt/issues/8
+[I11]: https://github.com/TD22057/insteon-mqtt/issues/11

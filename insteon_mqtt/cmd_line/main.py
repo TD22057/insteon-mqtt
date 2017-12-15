@@ -5,7 +5,7 @@
 #===========================================================================
 import argparse
 import sys
-import yaml
+from .. import config
 from . import device
 from . import modem
 from . import start
@@ -204,13 +204,12 @@ def main(mqtt_converter=None):
     args = parse_args(sys.argv[1:])
 
     # Load the configuration file.
-    with open(args.config) as f:
-        config = yaml.load(f.read())
+    cfg = config.load(args.config)
 
-    topic = config.get("mqtt", {}).get("cmd_topic", None)
+    topic = cfg.get("mqtt", {}).get("cmd_topic", None)
     if topic:
         args.topic = topic
 
-    return args.func(args, config)
+    return args.func(args, cfg)
 
 #===========================================================================

@@ -2,6 +2,12 @@
 #
 # Insteon <-> MQTT bridge configuration file.
 #
+# NOTE: the loader supports using a !include tag to load other as a
+# item entry so you can do things like this:
+#
+# insteon:
+#    devices: !include devices.yaml
+#
 #==========================================================================
 
 #==========================================================================
