@@ -228,7 +228,7 @@ class Mqtt:
             return
 
         # TODO: docs
-        end_reply = lambda dummy: 0
+        end_reply = lambda *x: None
         if "session" in data:
             reply_topic = "%s/session/%s" % (message.topic,
                                              data.pop("session"))
