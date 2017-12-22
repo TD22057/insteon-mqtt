@@ -3,7 +3,6 @@
 # Modem get all link database handler.
 #
 #===========================================================================
-from .. import db
 from .. import log
 from .. import message as Msg
 from .Base import Base
@@ -53,6 +52,10 @@ class ModemDbGet(Base):
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
         """
+        # Import here - at file scope this makes a circular import
+        # which is ok in Python>=3.5 but not 3.4.
+        from .. import db
+
         # Message is an ACK/NAK of the record request.
         if isinstance(msg, (Msg.OutAllLinkGetFirst, Msg.OutAllLinkGetNext)):
             # If we get a NAK, then there are no more db records.
