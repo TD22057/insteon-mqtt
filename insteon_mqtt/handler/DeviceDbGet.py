@@ -4,7 +4,6 @@
 #
 #===========================================================================
 # pylint: disable=too-many-return-statements
-from .. import db
 from .. import log
 from .. import message as Msg
 from .Base import Base
@@ -63,6 +62,10 @@ class DeviceDbGet(Base):
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
         """
+        # Import here - at file scope this makes a circular import
+        # which is ok in Python>=3.5 but not 3.4.
+        from .. import db
+
         # Probably an echo back of our sent message.  See if the
         # message matches the address we sent to and assume it's the
         # ACK/NAK message.  These seem to be either extended or

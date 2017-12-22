@@ -1,5 +1,6 @@
 # Revision Change History
 
+
 ## [0.6]
 
 ### Additions
@@ -27,6 +28,12 @@
   files ([Issue #11][I11]).
 
 
+## [0.5.2] - 2017-12-22
+
+### Fixed
+- [Issue #16][I16]: Python3.4 doesn't allow circular imports
+
+
 ## [0.5.1] - 2017-12-07
 
 ### Fixes
@@ -45,3 +52,4 @@
 [I6]: https://github.com/TD22057/insteon-mqtt/issues/6
 [I8]: https://github.com/TD22057/insteon-mqtt/issues/8
 [I11]: https://github.com/TD22057/insteon-mqtt/issues/11
+[I16]: https://github.com/TD22057/insteon-mqtt/issues/16

@@ -3,7 +3,6 @@
 # Modem all link mode handler.
 #
 #===========================================================================
-from .. import db
 from .. import log
 from .. import message as Msg
 from .Base import Base
@@ -78,7 +77,11 @@ class ModemAllLink(Base):
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
         """
-        # Message is an ACK of the all link activation request.
+        # Import here - at file scope this makes a circular import
+        # which is ok in Python>=3.5 but not 3.4.
+        from .. import db
+
+        # Message is an ACK of the all link activation.
         if isinstance(msg, Msg.OutAllLinkStart):
             # If we get a NAK, then an error occured.
             if not msg.is_ack:
