@@ -314,9 +314,9 @@ class Protocol:
         """Message written finished.
 
         This is called when the write message handler returns
-        message.FINISHED which means all the expected replies have
-        been read.  The write handler is cleared and the next message
-        in the queue is written.
+        message.FINISHED which means all the expected replies have been
+        read.  The write handler is cleared and the next message in the
+        queue is written.  It can also be called if the handler times out.
         """
         assert self._write_handler
 
