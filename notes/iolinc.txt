@@ -1,0 +1,159 @@
+==========================================================================
+=
+= Operating modes
+=
+==========================================================================
+latching:
+on turns relay on
+off turns relay off
+
+momentary A:
+on or off is programmed to trigger relay, other is ignored
+
+momentary B:
+on or off is will trigger relay
+
+momentary C:
+on will trigger only if sensor is open/close (programmable)
+off will trigger only if sensor is opposite
+
+garage doors use C:
+sensor on (apart) == door up
+sensor off (touching) == door closed
+on == open the door (ignored if sensor is on)
+off == close the door (ignored if sensor is off)
+
+==========================================================================
+=
+= Changing modes
+=
+==========================================================================
+latching:
+- tap iolink set button until relay is on/off state you want to be
+  triggered with an on command.
+- hold controller set button for 3 sec
+- hold iolink set button for 3 sec
+
+momentary A:
+one of these:
+  - off command to trigger relay: tab iolink set button until relay is off
+  - on command to trigger relay: tab iolink set button until relay is on
+- hold controller set button for 3 sec
+- hold iolink set button for 3 sec
+- set relay mode below
+
+momentary B:
+- hold controller set button for 3 sec
+- hold iolink set button for 3 sec
+- set relay mode below
+
+momentary C:
+one of these:
+  - set sensor to state where an on command will not do anything.  So if on
+    is garage door open, open the garage door
+- hold controller set button for 3 sec
+- hold iolink set button for 3 sec
+- set relay mode below
+
+Setting relay mode (hold set button 3 separate times in a row)
+- hold iolink set button for 3 sec
+- hold iolink set button for 3 sec
+- hold iolink set button for 3 sec
+  - iolink will rotate one slot: latching -> A -> B -> C
+To rotate to the next slot, repeat the 3 hold process)
+
+
+==========================================================================
+=
+= LATCHING
+=
+==========================================================================
+sensor closed (touching - i.e. garage door closed)
+0x50: Std: 45.33.d4 Type.ALL_LINK_BROADCAST grp: 01 cmd: 13 00
+
+sensor open (no touching - i.e. garage door open)
+0x50: Std: 45.33.d4 Type.ALL_LINK_BROADCAST grp: 01 cmd: 11 00
+
+sent off command (0x13) when not touching:
+
+INFO IOLinc: IOLinc 45.33.d4 cmd: off
+INFO Protocol: Write to modem: Std: 45.33.d4, Type.DIRECT, 13 00
+INFO Protocol: Read 0x62: Std: 45.33.d4, Type.DIRECT, 13 00 ack: True
+DEBUG StandardCmd: 45.33.d4 got msg ACK
+
+INFO Protocol: Read 0x50: Std: 45.33.d4->44.85.11 Type.DIRECT_ACK cmd: 13 00
+DEBUG IOLinc: IOLinc 45.33.d4 ACK: Std: 45.33.d4->44.85.11 Type.DIRECT_ACK cmd: 13 00
+INFO IOLinc: Setting device 45.33.d4 'garage' on False
+
+
+so basically, if broadcast, then it's the sensor reading.  If
+DIRECT_ACK, it's a "yes I clicked the relay" message.
+
+==========================================================================
+=
+= MOMENTARY A
+=
+==========================================================================
+same sensor messages as latching.  this does respect signal control -
+only one message type will trigger the relay.
+
+send off: didn't do anything:
+INFO Protocol: Write to modem: Std: 45.33.d4, Type.DIRECT, 13 00
+INFO Protocol: Read 0x62: Std: 45.33.d4, Type.DIRECT, 13 00 ack: True
+INFO Protocol: Read 0x50: Std: 45.33.d4->44.85.11 Type.DIRECT_ACK cmd: 13 00
+
+send on: trips relay 2 seconds, then turns off
+INFO Protocol: Write to modem: Std: 45.33.d4, Type.DIRECT, 11 ff
+INFO Protocol: Read 0x62: Std: 45.33.d4, Type.DIRECT, 11 ff ack: True
+INFO Protocol: Read 0x50: Std: 45.33.d4->44.85.11 Type.DIRECT_ACK cmd: 11 ff
+
+==========================================================================
+=
+= MOMENTARY B
+=
+==========================================================================
+either message trips relay
+
+broadcast from remote:
+on:
+INFO Protocol: Read 0x50: Std: 3f.07.d4 Type.ALL_LINK_BROADCAST grp: 06 cmd: 11 00
+INFO Remote: MQTT received button press 3f.07.d4 'remote1' = btn 6
+INFO Base: 3f.07.d4 broadcast to 44.85.11 for group 6
+INFO Protocol: Read 0x50: Std: 3f.07.d4 Type.ALL_LINK_BROADCAST grp: 06 cmd: 11 00
+INFO Protocol: Read 0x50: Std: 3f.07.d4 Type.ALL_LINK_CLEANUP grp: 06 cmd: 11 06
+INFO Protocol: Read 0x50: Std: 3f.07.d4 Type.ALL_LINK_BROADCAST grp: 06 cmd: 06 00
+INFO Protocol: Read 0x50: Std: 3f.07.d4 Type.ALL_LINK_BROADCAST grp: 06 cmd: 06 00
+
+off:
+INFO Protocol: Read 0x50: Std: 3f.07.d4 Type.ALL_LINK_BROADCAST grp: 06 cmd: 13 00
+INFO Remote: MQTT received button press 3f.07.d4 'remote1' = btn 6
+INFO Protocol: Read 0x50: Std: 3f.07.d4 Type.ALL_LINK_BROADCAST grp: 06 cmd: 13 00
+INFO Protocol: Read 0x50: Std: 3f.07.d4 Type.ALL_LINK_CLEANUP grp: 06 cmd: 13 06
+INFO Protocol: Read 0x50: Std: 3f.07.d4 Type.ALL_LINK_BROADCAST grp: 06 cmd: 06 00
+INFO Protocol: Read 0x50: Std: 3f.07.d4 Type.ALL_LINK_BROADCAST grp: 06 cmd: 06 00
+
+NOTE: using direct command, only ON trips the relay!
+
+==========================================================================
+=
+= MOMENTARY C
+=
+==========================================================================
+
+same as B - direct commands trip the relay.  Broadcast commands work properly.
+
+
+==========================================================================
+=
+= PHYSICAL TAP OF SET BUTTON IN MOMENTARY
+=
+==========================================================================
+INFO Protocol: Read 0x50: Std: 45.33.d4 Type.ALL_LINK_BROADCAST grp: 01 cmd: 11 00
+INFO IOLinc: IOLinc 45.33.d4 broadcast ON grp: 1
+INFO Protocol: Read 0x50: Std: 45.33.d4 Type.ALL_LINK_CLEANUP grp: 01 cmd: 11 01
+INFO Protocol: Read 0x50: Std: 45.33.d4 Type.ALL_LINK_CLEANUP grp: 01 cmd: 11 01
+INFO Protocol: Read 0x50: Std: 45.33.d4 Type.ALL_LINK_BROADCAST grp: 01 cmd: 06 00
+
+NOTE: this is identical to the sensor tripping message.  same group - everything.
+And this does NOT update and send the off command when the relay trips off.  And
+it's value is independent of the sensor being open or closed.
