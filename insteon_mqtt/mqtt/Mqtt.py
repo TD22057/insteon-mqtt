@@ -282,6 +282,10 @@ class Mqtt:
                           device_id)
             end_reply()
 
+        # TODO: needs some kind of time out - some commands are
+        # failing/exceptions/something like a time out which doesn't
+        # call on_done and so the callback is never removed.
+
     #-----------------------------------------------------------------------
     def handle_reply(self, record, topic):
         """: TODO: doc
