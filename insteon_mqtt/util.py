@@ -33,3 +33,17 @@ def to_hex(data, num=None, space=' '):
     return o.getvalue()
 
 #===========================================================================
+def make_callback(callback):
+    """Insure that callback is a valid function.
+
+    This is used when callbacks are optional.  It makes it so the
+    class can store the callback even if one wasn't entered so that it
+    can just be used.  If the input is None, then a dummy callback
+    that does nothing is returned.
+    """
+    if not callback:
+        return lambda *x: None
+    else:
+        return callback
+
+#===========================================================================
