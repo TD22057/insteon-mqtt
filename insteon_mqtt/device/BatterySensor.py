@@ -124,14 +124,13 @@ class BatterySensor(Base):
         # On (0x11) and off (0x13) commands.
         elif msg.cmd1 == 0x11 or msg.cmd1 == 0x13:
             LOG.info("BatterySensor %s broadcast cmd %s grp: %s", self.addr,
-                     msg.cmd, msg.group)
+                     msg.cmd1, msg.group)
 
             handler = self.group_map.get(msg.group, None)
-            if not handler:
+            if handler:
+                handler(msg)
+            else:
                 LOG.error("BatterySensor no handler for group %s", msg.group)
-                return
-
-            handler(msg)
 
         # Broadcast to the devices we're linked to. Call
         # handle_broadcast for any device that we're the controller of.
@@ -139,7 +138,6 @@ class BatterySensor(Base):
 
         # Use this opportunity to get the device db since we know the
         # sensor is awake.
-        LOG.debug("BatterySensor %s have db %s items", self.addr, len(self.db))
         if len(self.db) == 0:
             LOG.info("BatterySensor %s awake - requesting database", self.addr)
             self.refresh(force=True)
