@@ -261,7 +261,8 @@ class Mqtt:
         cmd_func = device.cmd_map.get(cmd, None)
         if not cmd_func:
             LOG.error("Unknown command '%s' for device type %s.  Valid "
-                      "commands: %s", cmd, device.type(), device.cmd_map.keys())
+                      "commands: %s", cmd, device.type(),
+                      device.cmd_map.keys())
             end_reply()
             return
 
@@ -280,10 +281,6 @@ class Mqtt:
             LOG.exception("Error running command %s on device %s", cmd,
                           device.label)
             end_reply()
-
-        # TODO: needs some kind of time out - some commands are
-        # failing/exceptions/something like a time out which doesn't
-        # call on_done and so the callback is never removed.
 
     #-----------------------------------------------------------------------
     def handle_reply(self, record, topic):

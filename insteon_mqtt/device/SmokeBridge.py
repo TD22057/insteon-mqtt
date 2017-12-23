@@ -4,7 +4,6 @@
 #
 #===========================================================================
 import enum
-import functools
 from .Base import Base
 from .. import log
 from .. import message as Msg

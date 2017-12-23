@@ -32,6 +32,7 @@ def to_hex(data, num=None, space=' '):
 
     return o.getvalue()
 
+
 #===========================================================================
 def make_callback(callback):
     """Insure that callback is a valid function.
@@ -45,5 +46,6 @@ def make_callback(callback):
         return lambda *x: None
     else:
         return callback
+
 
 #===========================================================================

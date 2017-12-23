@@ -90,7 +90,8 @@ class FanLinc(Dimmer):
         # database.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x03)
         msg_handler = handler.DeviceRefresh(self, self.handle_fan_refresh,
-                                            force=False, num_retry=3)
+                                            force=False, on_done=None,
+                                            num_retry=3)
         self.protocol.send(msg, msg_handler)
 
         # Get the light level state.

@@ -9,8 +9,8 @@ import time
 import paho.mqtt.client as mqtt
 from ..mqtt import Reply
 
-
 TIME_OUT = 10  # seconds between messages
+
 
 #===========================================================================
 def send(config, topic, payload, quiet=False):

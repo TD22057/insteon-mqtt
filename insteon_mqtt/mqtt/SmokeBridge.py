@@ -67,7 +67,8 @@ class SmokeBridge(Base):
           device:    (device.Base) The Insteon device that changed.
           condition: SmokeBridge.Type condition code.
         """
-        LOG.info("MQTT received active change %s = %s", device.label, condition)
+        LOG.info("MQTT received active change %s = %s", device.label,
+                 condition)
 
         data = {
             "address" : device.addr.hex,

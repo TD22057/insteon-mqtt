@@ -452,11 +452,6 @@ class Modem:
                       cmd, self.cmd_map.keys())
             return
 
-        # TODO: need session arg - if set, pass callback to func which
-        # it will call when finished.  Callback should publish a reply
-        # to message w/ results.  This callback should be an input to
-        # this function - set it in the MQTT client.
-
         # Call the command function with any remaining arguments.
         try:
             func(**kwargs)
