@@ -12,6 +12,7 @@ from . import db
 from . import handler
 from . import log
 from . import message as Msg
+from . import util
 from .Signal import Signal
 
 LOG = log.get_logger()
@@ -282,7 +283,11 @@ class Modem:
 
         # Reload all the device databases.
         for i, device in enumerate(self.devices.values()):
-            callback = on_done if i == len(self.devices) - 1 else None
+            # Only set the callback if this is the last element.
+            callback = None
+            if i == len(self.devices) - 1:
+                callback = on_done
+
             device.refresh(force, on_done=callback)
 
     #-----------------------------------------------------------------------
@@ -368,12 +373,13 @@ class Modem:
     def db_delete(self, addr, group, two_way=True, on_done=None):
         """TODO: doc
         """
+        on_done = util.make_callback(on_done)
+
         # Find all the entries that are going to be deleted.
         entries = self.db.find_all(addr, group)
         if not entries:
             LOG.error("No entries matching %s grp %s", addr, group)
-            if on_done:
-                on_done(False, "Invalid entry to delete from modem")
+            on_done(False, "Invalid entry to delete from modem")
             return
 
         # Find the remote device.  If don't have an entry for this
@@ -416,6 +422,16 @@ class Modem:
         msg = Msg.OutAllLinkStart(Msg.OutAllLinkStart.Cmd.EITHER, group)
         msg_handler = handler.ModemAllLink(self, time_out, on_done)
         self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def run_scene(self, group, is_on, cmd1=None, cmd2=0x00):
+        """TODO: doc
+        """
+        if cmd1 is None:
+            cmd1 = 0x11 if is_on else 0x13
+
+        msg = Msg.OutPlmScene(group, cmd1, cmd2)
+        #msg_handler = handler.
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
@@ -556,9 +572,12 @@ class Modem:
 
         See db_add_ctrl_of() or db_add_resp_of() for docs.
         """
-        # Find the remote device.  If don't have an entry for this
-        # device, we can't sent it commands
+        # Find the remote device.  Update addr since the input may be a name.
         remote = self.find(addr)
+        if remote:
+            addr = remote.addr
+
+        # If don't have an entry for this device, we can't sent it commands.
         if two_way and not remote:
             lbl = "CTRL" if is_controller else "RESP"
             LOG.info("Modem db add %s can't find remote device %s.  "
@@ -588,8 +607,7 @@ class Modem:
         """
         # Update failed - call the user callback and return
         if not success:
-            if on_done:
-                on_done(False, msg, entry)
+            on_done(False, msg, entry)
             return
 
         # Send the command to the device.  Two way is false here since

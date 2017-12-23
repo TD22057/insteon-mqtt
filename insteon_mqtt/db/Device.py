@@ -563,16 +563,14 @@ class Device:
                        on_done):
         """Add a anew entry at the end of the database.
 
-        First we send the new entry to the remote device.  If that
-        works, then we update the previously last entry to mart it as
-        "not the last entry" so the device knows there is one more
-        record.
-
+        First we send the new entry to the remote device.  If that works,
+        then we update the previously last entry to mart it as "not the last
+        entry" so the device knows there is one more record.
         """
         # pylint: disable=too-many-locals
 
-        # Memory goes high->low so find the last entry by looking
-        # at the minimum value.  Then find the entry for that loc.
+        # Memory goes high->low so find the last entry by looking at the
+        # minimum value.  Then find the entry for that loc.
         last_entry = self.find_mem_loc(min(self._mem_locs))
         # TODO???
         if not last_entry:
@@ -592,10 +590,9 @@ class Device:
         msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
         msg_handler = handler.DeviceDbModify(self, entry, on_done)
 
-        # Now create the updated current last entry w/ the last
-        # record flag set to False since it's not longer last.
-        # The handler will send this message out if the first call
-        # above gets an ACK.
+        # Now create the updated current last entry w/ the last record flag
+        # set to False since it's not longer last.  The handler will send
+        # this message out if the first call above gets an ACK.
         new_last = last_entry.copy()
         new_last.db_flags.is_last_rec = False
         ext_data = new_last.to_bytes()

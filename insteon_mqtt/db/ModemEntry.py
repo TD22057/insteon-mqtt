@@ -49,8 +49,12 @@ class ModemEntry:
           data:            (bytes) 3 data bytes.  [0] is the on level, [1]
                            is the ramp rate.
         """
-        data = data if data is not None else bytes(3)
-        assert len(data) == 3
+        # Accept either bytes, list of ints, or None for the data input.
+        if data is not None:
+            data = bytes(data)
+            assert len(data) == 3
+        else:
+            data = bytes(3)
 
         # These should be these types but ctor them anyway to be sure.
         self.addr = Address(addr)

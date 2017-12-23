@@ -187,6 +187,10 @@ def parse_args(args):
                     "as a controller of address2.  'address1 <- address2' to "
                     "update address1 as a responder of address2.")
     sp.add_argument("group", type=int, help="Group number to add (1-255)")
+    sp.add_argument("data", nargs="*",
+                    help="3 data element to set in the link database.  Each "
+                    "must be in the range 0->255.  May be hex with a '0x' "
+                    "prefix (0x10) or an integer input.  Default is [0,0,0].")
     sp.set_defaults(func=device.db_add)
 
     # TODO: add support for device.db_del_ctrl_of and db_del_resp_of.

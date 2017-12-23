@@ -351,9 +351,12 @@ class Base:
 
         See db_add_ctrl_of() or db_add_resp_of() for docs.
         """
-        # Find the remote device.  If don't have an entry for this
-        # device, we can't sent it commands
+        # Find the remote device.  Update addr since the input may be a name.
         remote = self.modem.find(addr)
+        if remote:
+            addr = remote.addr
+
+        # If don't have an entry for this device, we can't sent it commands.
         if two_way and not remote:
             lbl = "CTRL" if is_controller else "RESP"
             LOG.ui("Device db add %s can't find remote device %s.  "
@@ -374,10 +377,9 @@ class Base:
     def _db_update_remote(self, remote, on_done, success, msg, entry):
         """Device update complete callback.
 
-        This is called when the device finishes updating the database.
-        It triggers a corresponding call on the remote device to
-        establish the two way link.  This only occurs if the first
-        command works.
+        This is called when the device finishes updating the database.  It
+        triggers a corresponding call on the remote device to establish the
+        two way link.  This only occurs if the first command works.
         """
         # Update failed - call the user callback and return
         if not success:
@@ -398,6 +400,18 @@ class Base:
 
     #-----------------------------------------------------------------------
     def _db_delete(self, addr, group, two_way, is_controller, on_done):
+        # Find the remote device.  Update addr since the input may be a name.
+        remote = self.modem.find(addr)
+        if remote:
+            addr = remote.addr
+
+        # If don't have an entry for this device, we can't sent it commands
+        if two_way and not remote:
+            lbl = "CTRL" if is_controller else "RESP"
+            LOG.ui("Device db delete %s can't find remote device %s.  "
+                   "Link will be only deleted one direction", lbl, addr)
+
+        # Find teh database entry being deleted.
         entry = self.db.find(addr, group, is_controller)
         if not entry:
             LOG.warning("Device %s delete no match for %s grp %s %s",
@@ -406,14 +420,6 @@ class Base:
             if on_done:
                 on_done(False, "Entry doesn't exist", None)
             return
-
-        # Find the remote device.  If don't have an entry for this
-        # device, we can't sent it commands
-        remote = self.modem.find(addr)
-        if two_way and not remote:
-            lbl = "CTRL" if is_controller else "RESP"
-            LOG.ui("Device db delete %s can't find remote device %s.  "
-                   "Link will be only one direction", lbl, addr)
 
         # For two way commands, insert a callback so that when the
         # modem command finishes, it will send the next command to the

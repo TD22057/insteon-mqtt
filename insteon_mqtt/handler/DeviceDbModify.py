@@ -39,7 +39,15 @@ class DeviceDbModify(Base):
         super().__init__(on_done)
 
         self.db = device_db
+
+        # The entry being modified.  Also store the first entry - that's the
+        # one we'll pass to the on_done callback.  In theory on_done maybe?
+        # should be called with each call but the add_update() code is only
+        # used by db/Device.py to add an update after an addition so we want
+        # the first call entry passed to teh callback so that the remote
+        # updating system in device/Base.py works properly.
         self.entry = entry
+        self.orig_entry = entry
 
         # Tuple of (msg, entry) to send next.  If the first calls
         # ACK's, we'll update self.entry and send the next msg and
@@ -107,11 +115,11 @@ class DeviceDbModify(Base):
                         msg, self.entry = self.next.pop(0)
                         protocol.send(msg, self)
 
-                    # Only run the done callback if this is the last
-                    # message in the chain.
+                    # Only run the done callback if this is the last message
+                    # in the chain.
                     else:
                         self.on_done(True, "Device database update complete",
-                                     self.entry)
+                                     self.orig_entry)
 
                 elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
                     LOG.error("%s db mod NAK: %s", self.db.addr, msg)

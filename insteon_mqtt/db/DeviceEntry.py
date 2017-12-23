@@ -80,6 +80,13 @@ class DeviceEntry:
           data:     (bytes) 3 data bytes.  [0] is the on level, [1] is the
                     ramp rate.
         """
+        # Accept either bytes, list of ints, or None for the data input.
+        if data is not None:
+            data = bytes(data)
+            assert len(data) == 3
+        else:
+            data = bytes(3)
+
         self.addr = addr
         self.group = group
         self.mem_loc = mem_loc

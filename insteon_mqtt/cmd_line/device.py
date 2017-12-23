@@ -108,12 +108,32 @@ def db_add(args, config):
         raise ValueError("Input link '%s' should be 'addr1 <- addr2' or "
                          "'addr1 -> addr2'." % config.link)
 
+    if args.data is None:
+        args.data = [ "0", "0", "0" ]
+    elif len(args.data) > 3:
+        raise ValueError("Input data field %s should be 0-3 integer values."
+                         % args.data)
+
+    # Pad the data inputs out to 3 elements and convert any strings to
+    # integers.
+    data = []
+    for i in range(3):
+        value = 0
+        if i < len(args.data):
+            if "0x" in args.data[i]:
+                value = int(args.data[i], 16)
+            else:
+                value = int(args.data[i])
+
+        data.append(value)
+
     topic = "%s/%s" % (args.topic, address1)
     payload = {
         "cmd" : cmd,
         "addr" : address2,
         "group" : args.group,
         "two_way" : not args.one_way,
+        "data" : data,
         }
 
     reply = util.send(config, topic, payload, args.quiet)
