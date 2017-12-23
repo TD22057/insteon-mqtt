@@ -38,12 +38,12 @@ from .InpUserReset import InpUserReset
 from .InpUserSetBtn import InpUserSetBtn
 
 # Messages from the host to the PLM modem (codes < 0x06)
-from .OutAllLink import OutAllLink
 from .OutAllLinkCancel import OutAllLinkCancel
 from .OutAllLinkStart import OutAllLinkStart
 from .OutAllLinkGetFirst import OutAllLinkGetFirst
 from .OutAllLinkGetNext import OutAllLinkGetNext
 from .OutAllLinkUpdate import OutAllLinkUpdate
+from .OutPlmScene import OutPlmScene
 from .OutResetPlm import OutResetPlm
 from .OutStandard import OutStandard, OutExtended
 
@@ -65,7 +65,7 @@ types = {
     0x58 : InpAllLinkStatus,
 
     # host -> PLM messages
-    0x61 : OutAllLink,
+    0x61 : OutPlmScene,
     0x62 : OutStandard,  # Handles reading standard and extended
     0x64 : OutAllLinkStart,
     0x65 : OutAllLinkCancel,

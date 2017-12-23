@@ -6,8 +6,8 @@
 from .Base import Base
 
 
-class OutAllLink(Base):
-    """Send an all link command to a group.
+class OutPlmScene(Base):
+    """Trigger a virtual PLM modem scene activation.
 
     This triggers a PLM modem scene.  Any devices linked to the modem
     with this group ID will change state.  This basically triggers the
