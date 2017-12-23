@@ -5,6 +5,7 @@
 #===========================================================================
 from .. import log
 from .. import message as Msg
+from .. import util
 from .Base import Base
 
 LOG = log.get_logger()
@@ -57,8 +58,7 @@ class ModemDbGet(Base):
         if isinstance(msg, (Msg.OutAllLinkGetFirst, Msg.OutAllLinkGetNext)):
             # If we get a NAK, then there are no more db records.
             if not msg.is_ack:
-                LOG.info("Modem database download complete:\n%s",
-                         str(self.db))
+                LOG.ui("Modem database download complete:\n%s", str(self.db))
 
                 # Save the database to a local file.
                 self.db.save()

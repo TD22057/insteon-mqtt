@@ -35,7 +35,11 @@ class Modem:
           protocol:  (Protocol) Insteon message handling protocol object.
         """
         self.protocol = protocol
+
         self.addr = None
+        self.name = "modem"
+        self.label = self.name
+
         self.save_path = None
 
         # Map of Address.id -> Device and name -> Device.  name is
@@ -55,7 +59,7 @@ class Modem:
             'db_add_ctrl_of' : self.db_add_ctrl_of,
             'db_add_resp_of' : self.db_add_resp_of,
             'db_delete' : self.db_delete,
-            'refresh' : self.db_get,
+            'refresh' : self.refresh,
             'refresh_all' : self.refresh_all,
             'set_btn' : self.set_btn,
             }
@@ -66,6 +70,12 @@ class Modem:
 
         # Handle user triggered factory reset of the modem.
         self.protocol.add_handler(handler.ModemReset(self))
+
+    #-----------------------------------------------------------------------
+    def type(self):
+        """Return a nice class name for the device.
+        """
+        return "Modem"
 
     #-----------------------------------------------------------------------
     def load_config(self, data):
@@ -94,6 +104,7 @@ class Modem:
 
         # Read the modem address.
         self.addr = Address(data['address'])
+        self.label = "%s (%s)" % (self.addr, self.name)
         LOG.info("Modem address set to %s", self.addr)
 
         # Load the modem database.
@@ -121,7 +132,7 @@ class Modem:
                 device.refresh()
 
     #-----------------------------------------------------------------------
-    def db_get(self, force=None):
+    def refresh(self, force=False, on_done=None):
         """Load the all link database from the modem.
 
         This sends a message to the modem to start downloading the all
@@ -131,6 +142,7 @@ class Modem:
         Args:
            force:   (bool) Ignored - this insures a consistent API with the
                     device refresh command.
+        TODO: doc
         """
         LOG.info("Modem sending get first db record command")
 
@@ -140,7 +152,7 @@ class Modem:
         # Request the first db record from the handler.  The handler
         # will request each next record as the records arrive.
         msg = Msg.OutAllLinkGetFirst()
-        msg_handler = handler.ModemDbGet(self.db)
+        msg_handler = handler.ModemDbGet(self.db, on_done)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -266,7 +278,7 @@ class Modem:
         called if no other activity is expected on the network.
         """
         # Reload the modem database.
-        self.db_get()
+        self.refresh()
 
         # Reload all the device databases.
         for i, device in enumerate(self.devices.values()):

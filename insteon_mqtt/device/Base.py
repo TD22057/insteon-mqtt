@@ -47,6 +47,8 @@ class Base:
         self.modem = modem
         self.addr = Address(address)
         self.name = name
+
+        # Make some nice labels to make logging easier.
         self.label = str(self.addr)
         if self.name:
             self.label += " (%s)" % self.name
@@ -153,31 +155,6 @@ class Base:
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
                                             on_done, num_retry=3)
         self.protocol.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def db_get(self):
-        """Load the all link database from the modem.
-
-        This sends a refresh command to the device so we can get the
-        current database delta value so we know which db we're
-        downloading.  Then it sends a message to the device to start
-        downloading the all link database.  The message handler
-        handler.DeviceDbGet is used to process the replies and update
-        the modem database.
-
-        NOTE: Some devices that are plugged in (smoke bridge) seem to
-        be pretty bad about replying and multiple tries may be
-        necessary to actually get the database.
-        """
-        # We need to get the current db delta so we know which
-        # database we're getting.  So clear the current flag and then
-        # do a refresh which will find the delta and then trigger a
-        # download.
-        #
-        # If we just forced a db download, we don't get the delta - so
-        # we have to do this extra step.
-        self.db.set_delta(None)
-        self.refresh()
 
     #-----------------------------------------------------------------------
     def db_add_ctrl_of(self, addr, group, data=None, two_way=True,
