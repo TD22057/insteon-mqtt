@@ -59,8 +59,7 @@ class KeypadLinc(Dimmer):
           device:   (device.Base) The Insteon device that changed.
           button:   (int) The button number 1...n that was pressed.
         """
-        LOG.info("MQTT received button press %s '%s' = btn %s",
-                 device.addr, device.name, button)
+        LOG.info("MQTT received button press %s = btn %s", device.label, button)
 
         data = {
             "address" : device.addr.hex,

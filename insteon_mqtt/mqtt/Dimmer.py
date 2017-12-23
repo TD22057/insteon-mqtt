@@ -101,8 +101,7 @@ class Dimmer(Switch):
           device:   (device.Base) The Insteon device that changed.
           level     (int) True for on, False for off.
         """
-        LOG.info("MQTT received level change %s '%s' = %s",
-                 device.addr, device.name, level)
+        LOG.info("MQTT received level change %s = %s", device.label, level)
 
         data = self.template_data(level)
         self.msg_state.publish(self.mqtt, data)

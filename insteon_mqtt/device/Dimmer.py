@@ -131,13 +131,6 @@ class Dimmer(Base):
         """
         LOG.info("Dimmer %s cmd: on %s", self.addr, level)
         assert level >= 0 and level <= 0xff
-        if self._level == level:
-            LOG.ui("Dimmer %s '%s' is already on %s", self.addr, self.name,
-                   level)
-            self.signal_level_changed.emit(self, self._level)
-            if on_done:
-                on_done(True, "Dimmer is already on", self._level)
-            return
 
         # Send an on or instant on command.
         cmd1 = 0x11 if not instant else 0x21
@@ -164,12 +157,6 @@ class Dimmer(Base):
                     instant change.
         """
         LOG.info("Dimmer %s cmd: off", self.addr)
-        if self._level == 0:
-            LOG.ui("Dimmer %s '%s' is already off", self.addr, self.name)
-            self.signal_level_changed.emit(self, self._level)
-            if on_done:
-                on_done(True, "Dimmer is already off", self._level)
-            return
 
         # Send an off or instant off command.
         cmd1 = 0x13 if not instant else 0x21
@@ -424,7 +411,7 @@ class Dimmer(Base):
         Args:
           level:   (int) 0x00 for off, 0xff for 100%.
         """
-        LOG.info("Setting device %s '%s' on %s", self.addr, self.name, level)
+        LOG.info("Setting device %s on=%s", self.label, level)
         self._level = level
 
         self.signal_level_changed.emit(self, level)

@@ -123,12 +123,6 @@ class Switch(Base):
                     instant change.
         """
         LOG.info("Switch %s cmd: on", self.addr)
-        if self._is_on:
-            LOG.ui("Switch %s '%s' is already on", self.addr, self.name)
-            self.signal_active.emit(self, self._is_on)
-            if on_done:
-                on_done(True, "Switch is already on", self._is_on)
-            return
 
         # Send an on or instant on command.
         cmd1 = 0x11 if not instant else 0x21
@@ -155,12 +149,6 @@ class Switch(Base):
                     instant change.
         """
         LOG.info("Switch %s cmd: off", self.addr)
-        if not self._is_on:
-            LOG.ui("Switch %s '%s' is already off", self.addr, self.name)
-            self.signal_active.emit(self, self._is_on)
-            if on_done:
-                on_done(True, "Switch is already off", self._is_on)
-            return
 
         # Send an off or instant off command.  Instant off is the same
         # command as instant on, just with the level set to 0x00.
@@ -240,7 +228,7 @@ class Switch(Base):
           msg:  (message.InpStandard) The refresh message reply.  The current
                 device state is in the msg.cmd2 field.
         """
-        LOG.ui("Switch %s refresh on %s", self.addr, msg.cmd2 > 0x00)
+        LOG.ui("Switch %s refresh on=%s", self.label, msg.cmd2 > 0x00)
 
         # Current on/off level is stored in cmd2 so update our level
         # to match.
@@ -268,7 +256,7 @@ class Switch(Base):
             LOG.debug("Switch %s ACK: %s", self.addr, msg)
             self._set_is_on(msg.cmd2 > 0x00)
             if on_done:
-                on_done(True, "Switch state updated to %s" % self._is_on,
+                on_done(True, "Switch state updated to on=%s" % self._is_on,
                         self._is_on)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
@@ -320,7 +308,7 @@ class Switch(Base):
         Args:
           is_on:   (bool) True if motion is active, False if it isn't.
         """
-        LOG.info("Setting device %s '%s' on %s", self.addr, self.name, is_on)
+        LOG.info("Setting device %s on %s", self.label, is_on)
         self._is_on = bool(is_on)
 
         # Notify others that the switch state has changed.

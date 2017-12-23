@@ -57,8 +57,7 @@ class BatterySensor(Base):
           device:   (device.Base) The Insteon device that changed.
           is_active (bool) True for on, False for off.
         """
-        LOG.info("MQTT received active change %s '%s' = %s",
-                 device.addr, device.name, is_active)
+        LOG.info("MQTT received active change %s = %s", device.label, is_active)
 
         data = {
             "address" : self.device.addr.hex,
@@ -81,8 +80,7 @@ class BatterySensor(Base):
           device:   (device.Base) The Insteon device that changed.
           is_low:   (bool) True for low battery, False for not.
         """
-        LOG.info("MQTT received low battery %s '%s' = %s",
-                 device.addr, device.name, is_low)
+        LOG.info("MQTT received low battery %s = %s", device.label, is_low)
 
         data = {
             "address" : device.addr.hex,

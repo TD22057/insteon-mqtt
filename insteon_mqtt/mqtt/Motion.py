@@ -59,8 +59,7 @@ class Motion(BatterySensor):
           device:   (device.Base) The Insteon device that changed.
           is_dawn:  (bool) True for dawn, False for dusk.
         """
-        LOG.info("MQTT received dawn change %s '%s' = %s",
-                 device.addr, device.name, is_dawn)
+        LOG.info("MQTT received dawn change %s = %s", device.label, is_dawn)
 
         data = {
             "address" : device.addr.hex,

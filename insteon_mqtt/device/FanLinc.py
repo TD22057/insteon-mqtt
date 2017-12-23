@@ -108,13 +108,6 @@ class FanLinc(Dimmer):
             else:
                 speed = FanLinc.Speed.MED
 
-        if speed == self._fan_speed:
-            LOG.ui("Fan %s '%s' is already on %s", self.addr, self.name, speed)
-            self.signal_fan_changed.emit(self, self._fan_speed)
-            if on_done:
-                on_done(True, "Fan already on", self._fan_speed)
-            return
-
         # Send an on command.  The fan control is done via extended
         # message with the first byte set as 0x02 per the fanlinc
         # developers guide.
@@ -140,12 +133,6 @@ class FanLinc(Dimmer):
 
         """
         LOG.info("Fan %s cmd: off", self.addr)
-        if self._fan_speed == FanLinc.Speed.OFF:
-            LOG.ui("Fan %s '%s' is already off", self.addr, self.name)
-            self.signal_fan_changed.emit(self, self._fan_speed)
-            if on_done:
-                on_done(True, "Fan already off", self._fan_speed)
-            return
 
         # Send an on command.  The fan control is done via extended
         # message with the first byte set as 0x02 per the fanlinc
@@ -303,8 +290,7 @@ class FanLinc(Dimmer):
         Args:
           speed_level:   todo:
         """
-        LOG.info("Setting device %s '%s' on %s", self.addr, self.name,
-                 speed_level)
+        LOG.info("Setting device %s on %s", self.label, speed_level)
 
         self._fan_speed = FanLinc.Speed.OFF
 

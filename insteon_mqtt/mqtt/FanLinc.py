@@ -147,8 +147,7 @@ class FanLinc(Dimmer):
           device:   (device.Base) The Insteon device that changed.
           level     (device.FanLinc.Speed) The new fan level.
         """
-        LOG.info("MQTT received level change %s '%s' = %s",
-                 device.addr, device.name, level)
+        LOG.info("MQTT received level change %s = %s", device.label, level)
 
         data = self.template_data(level)
         self.msg_fan_state.publish(self.mqtt, data)

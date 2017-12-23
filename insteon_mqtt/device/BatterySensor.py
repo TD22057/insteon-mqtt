@@ -196,7 +196,7 @@ class BatterySensor(Base):
         Args:
           is_on:   (bool) True if motion is active, False if it isn't.
         """
-        LOG.info("Setting device %s '%s' on:%s", self.addr, self.name, is_on)
+        LOG.info("Setting device %s on:%s", self.label, is_on)
         self._is_on = is_on
         self.signal_active.emit(self, self._is_on)
 

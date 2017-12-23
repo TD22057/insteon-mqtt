@@ -255,14 +255,13 @@ class Mqtt:
             end_reply()
             return
 
-        LOG.ui("Commanding %s device %s %s cmd=%s", device.__class__.__name__,
-               device_id, device.name if device.name else "", cmd)
+        LOG.ui("Commanding %s device %s cmd=%s", device.type(), device.label,
+               cmd)
 
         cmd_func = device.cmd_map.get(cmd, None)
         if not cmd_func:
-            LOG.error("Unknown command '%s' for device %s.  Valid commands: "
-                      "%s", cmd, device.__class__.__name__,
-                      device.cmd_map.keys())
+            LOG.error("Unknown command '%s' for device type %s.  Valid "
+                      "commands: %s", cmd, device.type(), device.cmd_map.keys())
             end_reply()
             return
 
@@ -279,7 +278,7 @@ class Mqtt:
             cmd_func(on_done=on_done, **data)
         except:
             LOG.exception("Error running command %s on device %s", cmd,
-                          device_id)
+                          device.label)
             end_reply()
 
         # TODO: needs some kind of time out - some commands are

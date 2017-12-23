@@ -113,7 +113,7 @@ def parse_args(args):
     sp.add_argument("address", help="Device address or name.")
     sp.add_argument("level", type=int, default=255,
                     help="Level to use for dimmers (0-255)")
-    sp.set_defaults(func=device.on)  # on takes the same args to use that
+    sp.set_defaults(func=device.set)
 
     #---------------------------------------
     # device.off command

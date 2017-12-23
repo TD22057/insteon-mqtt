@@ -32,6 +32,19 @@ def off(args, config):
 
 
 #===========================================================================
+def set(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "set",
+        "level" : args.level,
+        "instant" : args.instant,
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
 def increment_up(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {

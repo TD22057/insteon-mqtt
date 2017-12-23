@@ -53,8 +53,8 @@ class Leak(BatterySensor):
           device:   (device.Base) The Insteon device that changed.
           is_wet:   (bool) True for wet, False for dry.
         """
-        LOG.info("MQTT received wet/dry change %s '%s' wet= %s",
-                 device.addr, device.name, is_wet)
+        LOG.info("MQTT received wet/dry change %s wet= %s", device.label,
+                 is_wet)
 
         data = {
             "address" : device.addr.hex,

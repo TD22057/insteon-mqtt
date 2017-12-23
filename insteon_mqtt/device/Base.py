@@ -47,6 +47,10 @@ class Base:
         self.modem = modem
         self.addr = Address(address)
         self.name = name
+        self.label = str(self.addr)
+        if self.name:
+            self.label += " (%s)" % self.name
+
         self.save_path = None  # set by the modem loading method
         self.db = db.Device(self.addr)
 
@@ -68,6 +72,12 @@ class Base:
         # refresh message out and getting the response - not by
         # downloading the database.
         self._next_db_delta = None
+
+    #-----------------------------------------------------------------------
+    def type(self):
+        """Return a nice class name for the device.
+        """
+        return self.__class__.__name__
 
     #-----------------------------------------------------------------------
     def db_path(self):
@@ -275,8 +285,8 @@ class Base:
         """
         cmd = kwargs.pop('cmd', None)
         if not cmd:
-            LOG.error("Invalid command sent to device %s '%s'.  No 'cmd' "
-                      "keyword: %s", self.addr, self.name, kwargs)
+            LOG.error("Invalid command sent to device %s.  No 'cmd' "
+                      "keyword: %s", self.label, kwargs)
             return
 
         cmd = cmd.lower().strip()
@@ -291,9 +301,8 @@ class Base:
         try:
             func(**kwargs)
         except:
-            LOG.exception("Invalid command inputs to device %s '%s'.  Input "
-                          "cmd %s with args: %s", self.addr, self.name, cmd,
-                          str(kwargs))
+            LOG.exception("Invalid command inputs to device %s'.  Input cmd "
+                          "%s with args: %s", self.label, cmd, str(kwargs))
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg, on_done=None):
