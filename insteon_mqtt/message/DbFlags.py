@@ -3,6 +3,7 @@
 # Database message bit flags
 #
 #===========================================================================
+from .. import util
 
 
 class DbFlags:
@@ -84,22 +85,30 @@ class DbFlags:
         return DbFlags(self.in_use, self.is_controller, self.is_last_rec)
 
     #-----------------------------------------------------------------------
-    def to_bytes(self):
+    def to_bytes(self, modem_delete=False):
         """Convert to bytes.
 
         The inverse of this is DbFlags.from_bytes().  This is used to
         output the flags as bytes.
+
+        Args:
+           is_delete:   (bool) Set to True if this is delete call to the
+                        modem to modify the database.
 
         Returns:
            (bytes) Returns a 1 byte array containing the bit flags.
         """
         data = self.in_use << 7
         data |= self.is_controller << 6
-        # Not sure why this is needed.  Insteon docs say bit 5 is
-        # unused.  But all the records have it set and if it's not set
-        # here, commands sent to modify the database will fail.
-        data |= 1 << 5
         data |= (not self.is_last_rec) << 1
+
+        # Not sure why this is needed.  Insteon docs say bit 5 is unused.
+        # But all the records have it set and if it's not set here, commands
+        # sent to modify the database will fail.  But, for delete calls to
+        # the modem db, this must be zero.
+        if not modem_delete:
+            data |= 1 << 5
+
         return bytes([data])
 
     #-----------------------------------------------------------------------
@@ -121,7 +130,6 @@ class DbFlags:
     #-----------------------------------------------------------------------
     def __str__(self):
         return "in_use: %s type: %s last: %s" % \
-            (self.in_use, 'CTRL' if self.is_controller else 'RESP',
-             self.is_last_rec)
+            (self.in_use, util.ctrl_str(self.is_controller), self.is_last_rec)
 
     #-----------------------------------------------------------------------

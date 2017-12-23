@@ -12,6 +12,7 @@ from .. import handler
 from .DeviceEntry import DeviceEntry
 from .. import log
 from .. import message as Msg
+from .. import util
 
 LOG = log.get_logger()
 
@@ -448,14 +449,13 @@ class Device:
         if entry:
             # TODO: support checking and updating data
             LOG.warning("Device %s add db already exists for %s grp %s %s",
-                        self.addr, addr, group,
-                        'CTRL' if is_controller else 'RESP')
+                        self.addr, addr, group, util.ctrl_str(is_controller))
             if on_done:
                 on_done(True, "Entry already exists", entry)
             return
 
         LOG.info("Device %s adding db: %s grp %s %s %s", self.addr, addr,
-                 group, 'CTRL' if is_controller else 'RESP', data)
+                 group, util.ctrl_str(is_controller), data)
         assert len(self.entries)
 
         # When complete, remove this call from the pending list.  Then

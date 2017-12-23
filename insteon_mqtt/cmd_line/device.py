@@ -106,10 +106,11 @@ def db_add(args, config):
 
     else:
         raise ValueError("Input link '%s' should be 'addr1 <- addr2' or "
-                         "'addr1 -> addr2'." % config.link)
+                         "'addr1 -> addr2'." % args.link)
 
+    # Use strings for the default - the parser below converts to int.
     if args.data is None:
-        args.data = [ "0", "0", "0" ]
+        args.data = ["0", "0", "0"]
     elif len(args.data) > 3:
         raise ValueError("Input data field %s should be 0-3 integer values."
                          % args.data)
@@ -138,5 +139,25 @@ def db_add(args, config):
 
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]
+
+
+#===========================================================================
+def db_delete(args, config):
+    if args.mode == "CTRL":
+        cmd = "db_del_ctrl_of"
+    else:
+        cmd = "db_del_resp_of"
+
+    topic = "%s/%s" % (args.topic, args.device)
+    payload = {
+        "cmd" : cmd,
+        "addr" : args.address,
+        "group" : args.group,
+        "two_way" : not args.one_way,
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
 
 #===========================================================================

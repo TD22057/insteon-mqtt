@@ -10,6 +10,7 @@ from ..Address import Address
 from .. import handler
 from .. import log
 from .. import message as Msg
+from .. import util
 from .ModemEntry import ModemEntry
 
 LOG = log.get_logger()
@@ -219,7 +220,7 @@ class Modem:
         protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def delete_on_device(self, protocol, addr, group, on_done=None):
+    def delete_on_device(self, protocol, entry, on_done=None):
         """Delete a series of entries on the device.
 
         This will delete ALL the entries for an address and group.
@@ -242,25 +243,63 @@ class Modem:
           on_done:       Optional callback which will be called when the
                          command completes.
         """
-        # The modem will delete the first entry that matches.
-        entries = self.find_all(addr, group)
-        if not entries:
-            LOG.error("No entries matching %s grp %s", addr, group)
-            if on_done:
-                on_done(False, "Invalid entry to delete from modem", None)
-            return
+        on_done = util.make_callback(on_done)
 
-        # Modem will only delete if we pass it an empty
-        # flags input (see the method docs).  This deletes the first
-        # entry in the database that matches the inputs - we can't
-        # select by controller or responder.
+        # Find all the entries that match the addr and group inputs.
+        entries = self.find_all(entry.addr, entry.group)
+
+        # The modem will erase entries in the order it finds them - we can't
+        # erase a specific entry.  So find the ctrl/resp entry we want and
+        # see if there is a different entry first - if there is call delete
+        # until we delete the one we actually want and then restore the other
+        # entry after we're done.
+        #
+        # In a proper database, we should only have found 1 or 2 entries but
+        # it's possible to push duplicate records into the db.  So just find
+        # the first entry that matches our request and only restore one other
+        # which which be the opposite ctrl/responder flag version.
+        restore = None
+        erase_idx = None
+        for i in range(len(entries)):
+            if entries[i].is_controller == entry.is_controller:
+                erase_idx = i
+                break
+            elif not restore:
+                restore = entries[i]
+
+        # Since the entry was passed in, it must exist.
+        assert erase_idx is not None
+
+        LOG.debug("Modem delete idx %d of [0,%d) entries", erase_idx,
+                  len(entries))
+
+        # Build the first delete message.  The Handler will remove the
+        # entries from our db when it get's an ACK.
+        #
+        # Modem will only delete if we pass it an empty flags input (see the
+        # method docs).  This deletes the first entry in the database that
+        # matches the inputs.
         db_flags = Msg.DbFlags.from_bytes(bytes(1))
         msg = Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.DELETE, db_flags,
-                                   group, addr, bytes(3))
-
-        # Send the command once per entry in our database.  Callback
-        # will remove the entry from our database if we get an ACK.
+                                   entry.group, entry.addr, bytes(3))
         msg_handler = handler.ModemDbModify(self, entries[0], on_done=on_done)
+
+        # Add the other delete calls to the handler - these will run in
+        # sequence as we get ACKs for each call.  The final call will call
+        # the on_done() callback.
+        for i in range(1, erase_idx + 1):
+            msg_handler.add_update(msg, entries[i])
+
+        # Add a command to restore the entry we didn't want to delete.
+        if restore:
+            if restore.is_controller:
+                cmd = Msg.OutAllLinkUpdate.Cmd.ADD_CONTROLLER
+            else:
+                cmd = Msg.OutAllLinkUpdate.Cmd.ADD_RESPONDER
+
+            msg2 = Msg.OutAllLinkUpdate(cmd, db_flags, restore.group,
+                                        restore.addr, restore.data)
+            msg_handler.add_update(msg2, restore)
 
         # Send the first message.  If it ACK's, it will keep sending
         # more deletes - one per entry.

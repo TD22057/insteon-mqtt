@@ -31,17 +31,3 @@ def refresh_all(args, config):
 
 
 #===========================================================================
-def db_delete(args, config):
-    topic = "%s/modem" % (args.topic)
-    payload = {
-        "cmd" : "db_delete",
-        "addr" : config.address,
-        "group" : config.group,
-        "two_way" : not args.one_way,
-        }
-
-    reply = util.send(config, topic, payload, args.quiet)
-    return reply["result"]
-
-
-#===========================================================================

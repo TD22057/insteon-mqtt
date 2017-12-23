@@ -46,23 +46,6 @@ def parse_args(args):
     sp.set_defaults(func=modem.set_btn)
 
     #---------------------------------------
-    # modem.db_delete command
-    sp = sub.add_parser("db-delete", help="Delete all entries from the "
-                        "modem's all link database with the input address "
-                        "and group.  Also deletes the corresponding entries "
-                        "on the device unless --one-way is set.")
-    sp.add_argument("-o", "--one-way", action="store_true",
-                    help="Only delete the modem entries.  Otherwise the "
-                    "corresponding entry on the device is also removed.")
-    sp.add_argument("-q", "--quiet", action="store_true",
-                    help="Don't print any command results to the screen.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
-    sp.add_argument("address", help="Device address of the entry to remove")
-    sp.add_argument("group", type=int, help="Group number to remove (1-255)")
-    sp.set_defaults(func=modem.db_delete)
-
-    #---------------------------------------
     # modem.refresh_all command
     sp = sub.add_parser("refresh-all", help="Call refresh all on the devices "
                         "in the configuration.")
@@ -171,7 +154,7 @@ def parse_args(args):
     sp.set_defaults(func=device.refresh)
 
     #---------------------------------------
-    # device.db_add_ctrl_of command
+    # device.db_add add ctrl/rspdr command
     sp = sub.add_parser("db-add", help="Add the device/modem as the "
                         "controller of another device.  Also adds the "
                         "corresponding entry on the linked device unless "
@@ -192,6 +175,28 @@ def parse_args(args):
                     "must be in the range 0->255.  May be hex with a '0x' "
                     "prefix (0x10) or an integer input.  Default is [0,0,0].")
     sp.set_defaults(func=device.db_add)
+
+    #---------------------------------------
+    # device.db_del delete ctrl/rspdr command
+    sp = sub.add_parser("db-delete", help="Delete an entry in the device/"
+                        "modem's all link database with the input address, "
+                        "group, and mode.  Also deletes the corresponding "
+                        "entry on the linked device unless --one-way is set.")
+    sp.add_argument("-o", "--one-way", action="store_true",
+                    help="Only delete the modem entries.  Otherwise the "
+                    "corresponding entry on the device is also removed.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.add_argument("config", metavar="config.yaml", help="Configuration "
+                    "file to use.")
+    sp.add_argument("device", help="Modem/Device address or name of the "
+                    "database to modify")
+    sp.add_argument("address", help="Modem/Device address or name of the "
+                    "entry to remove")
+    sp.add_argument("group", type=int, help="Group number to remove (1-255)")
+    sp.add_argument("mode", choices=["CTRL", "RESP"],
+                    help="Controller or responder flag of the entry to remove")
+    sp.set_defaults(func=device.db_delete)
 
     # TODO: add support for device.db_del_ctrl_of and db_del_resp_of.
     # The problem is the modem can't handle those commands.  Best way

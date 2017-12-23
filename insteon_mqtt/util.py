@@ -49,3 +49,13 @@ def make_callback(callback):
 
 
 #===========================================================================
+def ctrl_str(is_controller):
+    """ TODO: doc
+    """
+    if is_controller:
+        return "CTRL"
+    else:
+        return "RESP"
+
+
+#===========================================================================

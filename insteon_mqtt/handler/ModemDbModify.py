@@ -5,6 +5,7 @@
 #===========================================================================
 from .. import log
 from .. import message as Msg
+from .. import util
 from .Base import Base
 
 LOG = log.get_logger()
@@ -113,8 +114,8 @@ class ModemDbModify(Base):
         elif (msg.cmd == Msg.OutAllLinkUpdate.Cmd.ADD_CONTROLLER or
               msg.cmd == Msg.OutAllLinkUpdate.Cmd.ADD_RESPONDER):
             LOG.info("Adding modem db record for %s type: %s grp: %s data: %s",
-                     msg.addr, 'CTRL' if msg.db_flags.is_controller else
-                     'RESP', msg.group, msg.data)
+                     msg.addr, util.ctrl_str(msg.db_flags.is_controller),
+                     msg.group, msg.data)
 
             # This will also save the database.
             self.db.add_entry(self.entry)

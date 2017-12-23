@@ -11,6 +11,7 @@ from .. import db
 from .. import handler
 from .. import log
 from .. import message as Msg
+from .. import util
 
 LOG = log.get_logger()
 
@@ -234,14 +235,14 @@ class Base:
         """TODO: doc
         """
         # Call with is_controller=True
-        self._db_delete(addr, group, two_way, True, on_done)
+        self._db_delete(addr, group, True, two_way, on_done)
 
     #-----------------------------------------------------------------------
     def db_del_resp_of(self, addr, group, two_way=True, on_done=None):
         """TODO: doc
         """
         # Call with is_controller=False
-        self._db_delete(addr, group, two_way, False, on_done)
+        self._db_delete(addr, group, False, two_way, on_done)
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
@@ -358,9 +359,9 @@ class Base:
 
         # If don't have an entry for this device, we can't sent it commands.
         if two_way and not remote:
-            lbl = "CTRL" if is_controller else "RESP"
             LOG.ui("Device db add %s can't find remote device %s.  "
-                   "Link will be only one direction", lbl, addr)
+                   "Link will be only one direction",
+                   util.ctrl_str(is_controller), addr)
 
         # For two way commands, insert a callback so that when the
         # modem command finishes, it will send the next command to the
@@ -399,7 +400,11 @@ class Base:
                                   on_done)
 
     #-----------------------------------------------------------------------
-    def _db_delete(self, addr, group, two_way, is_controller, on_done):
+    def _db_delete(self, addr, group, is_controller, two_way, on_done):
+        """TODO: doc
+        """
+        on_done = util.make_callback(on_done)
+
         # Find the remote device.  Update addr since the input may be a name.
         remote = self.modem.find(addr)
         if remote:
@@ -407,23 +412,21 @@ class Base:
 
         # If don't have an entry for this device, we can't sent it commands
         if two_way and not remote:
-            lbl = "CTRL" if is_controller else "RESP"
             LOG.ui("Device db delete %s can't find remote device %s.  "
-                   "Link will be only deleted one direction", lbl, addr)
+                   "Link will be only deleted one direction",
+                   util.ctrl_str(is_controller), addr)
 
         # Find teh database entry being deleted.
         entry = self.db.find(addr, group, is_controller)
         if not entry:
             LOG.warning("Device %s delete no match for %s grp %s %s",
-                        self.addr, addr, group,
-                        'CTRL' if is_controller else 'RESP')
-            if on_done:
-                on_done(False, "Entry doesn't exist", None)
+                        self.addr, addr, group, util.ctrl_str(is_controller))
+            on_done(False, "Entry doesn't exist", None)
             return
 
-        # For two way commands, insert a callback so that when the
-        # modem command finishes, it will send the next command to the
-        # device.  When that finishes, it will run the input callback.
+        # For two way commands, insert a callback so that when the modem
+        # command finishes, it will send the next command to the device.
+        # When that finishes, it will run the input callback.
         use_cb = on_done
         if two_way and remote:
             use_cb = functools.partial(self._db_delete_remote, remote, on_done)
@@ -432,23 +435,17 @@ class Base:
 
     #-----------------------------------------------------------------------
     def _db_delete_remote(self, remote, on_done, success, msg, entry):
+        """TODO: doc
+        """
         # Update failed - call the user callback and return
         if not success:
-            if on_done:
-                on_done(False, msg, entry)
+            on_done(False, msg, entry)
             return
 
         # Send the command to the remote device or modem.  Two way is
-        # false here since we just added the other link.  If the
-        # device is a modem, we don't have control of ctrl vs resp -
-        # it will just delete all the links for this addr and group.
+        # false here since we just added the other link.
         two_way = False
-        if remote == self.modem:
-            # TODO: fix this
-            #remote.db_delete(self.addr, entry.group, two_way, on_done)
-            pass
-
-        elif entry.is_controller:
+        if entry.is_controller:
             remote.db_del_resp_of(self.addr, entry.group, two_way, on_done)
 
         else:

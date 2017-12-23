@@ -93,7 +93,7 @@ class OutAllLinkUpdate(Base):
         """
         o = io.BytesIO()
         o.write(bytes([0x02, self.msg_code, self.cmd.value]))
-        o.write(self.db_flags.to_bytes())
+        o.write(self.db_flags.to_bytes(self.cmd == self.Cmd.DELETE))
         o.write(bytes([self.group]))
         o.write(self.addr.to_bytes())
         o.write(self.data)

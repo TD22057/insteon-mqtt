@@ -59,7 +59,8 @@ class Modem:
         self.cmd_map = {
             'db_add_ctrl_of' : self.db_add_ctrl_of,
             'db_add_resp_of' : self.db_add_resp_of,
-            'db_delete' : self.db_delete,
+            'db_del_ctrl_of' : self.db_del_ctrl_of,
+            'db_del_resp_of' : self.db_del_resp_of,
             'refresh' : self.refresh,
             'refresh_all' : self.refresh_all,
             'set_btn' : self.set_btn,
@@ -370,38 +371,18 @@ class Modem:
                         on_done=on_done)
 
     #-----------------------------------------------------------------------
-    def db_delete(self, addr, group, two_way=True, on_done=None):
+    def db_del_ctrl_of(self, addr, group, two_way=True, on_done=None):
         """TODO: doc
         """
-        on_done = util.make_callback(on_done)
+        # Call with is_controller=True
+        self._db_delete(addr, group, True, two_way, on_done)
 
-        # Find all the entries that are going to be deleted.
-        entries = self.db.find_all(addr, group)
-        if not entries:
-            LOG.error("No entries matching %s grp %s", addr, group)
-            on_done(False, "Invalid entry to delete from modem")
-            return
-
-        # Find the remote device.  If don't have an entry for this
-        # device, we can't sent it commands
-        remote = self.find(addr)
-        if two_way and not remote:
-            LOG.info("Modem db delete can't find remote device %s.  "
-                     "Delete will be only one direction", addr)
-
-        # For two way commands, insert a callback so that when the
-        # modem command finishes, it will send the next command to the
-        # device.  When that finishes, it will run the input callback.
-        use_cb = on_done
-        if two_way and remote:
-            use_cb = functools.partial(self._db_update_remote, remote, on_done,
-                                       False)
-
-        # Run the delete command once for each entry.
-        # TODO: how to mark command as done? - need to know how many
-        # calls are gong to be attempted.
-        for entry in entries:  # pylint: disable=unused-variable
-            self.db.delete_on_device(self.protocol, addr, group, use_cb)
+    #-----------------------------------------------------------------------
+    def db_del_resp_of(self, addr, group, two_way=True, on_done=None):
+        """TODO: doc
+        """
+        # Call with is_controller=False
+        self._db_delete(addr, group, False, two_way, on_done)
 
     #-----------------------------------------------------------------------
     def factory_reset(self):
@@ -430,6 +411,7 @@ class Modem:
         if cmd1 is None:
             cmd1 = 0x11 if is_on else 0x13
 
+        # TODO: why doesn't this work?
         msg = Msg.OutPlmScene(group, cmd1, cmd2)
         #msg_handler = handler.
 
@@ -572,6 +554,8 @@ class Modem:
 
         See db_add_ctrl_of() or db_add_resp_of() for docs.
         """
+        on_done = util.make_callback(on_done)
+
         # Find the remote device.  Update addr since the input may be a name.
         remote = self.find(addr)
         if remote:
@@ -579,17 +563,16 @@ class Modem:
 
         # If don't have an entry for this device, we can't sent it commands.
         if two_way and not remote:
-            lbl = "CTRL" if is_controller else "RESP"
             LOG.info("Modem db add %s can't find remote device %s.  "
-                     "Link will be only one direction", lbl, addr)
+                     "Link will be only one direction",
+                     util.ctrl_str(is_controller), addr)
 
         # For two way commands, insert a callback so that when the
         # modem command finishes, it will send the next command to the
         # device.  When that finishes, it will run the input callback.
         use_cb = on_done
         if two_way and remote:
-            use_cb = functools.partial(self._db_update_remote, remote, on_done,
-                                       True)
+            use_cb = functools.partial(self._db_update_remote, remote, on_done)
 
         # Create a new database entry for the modem and send it to the
         # modem for updating.
@@ -597,7 +580,7 @@ class Modem:
         self.db.add_on_device(self.protocol, entry, use_cb)
 
     #-----------------------------------------------------------------------
-    def _db_update_remote(self, remote, on_done, is_add, success, msg, entry):
+    def _db_update_remote(self, remote, on_done, success, msg, entry):
         """Modem device update complete callback.
 
         This is called when the modem finishes updating the database.
@@ -613,21 +596,65 @@ class Modem:
         # Send the command to the device.  Two way is false here since
         # we just added the other link.
         two_way = False
-        if is_add:
-            if entry.is_controller:
-                remote.db_add_resp_of(self.addr, entry.group, entry.data,
-                                      two_way, on_done)
-            else:
-                remote.db_add_ctrl_of(self.addr, entry.group, entry.data,
-                                      two_way, on_done)
-
-        # Delete command
+        if entry.is_controller:
+            remote.db_add_resp_of(self.addr, entry.group, entry.data, two_way,
+                                  on_done)
         else:
-            if entry.is_controller:
-                remote.db_del_resp_of(self.addr, entry.group, entry.data,
-                                      two_way, on_done)
-            else:
-                remote.db_del_ctrl_of(self.addr, entry.group, entry.data,
-                                      two_way, on_done)
+            remote.db_add_ctrl_of(self.addr, entry.group, entry.data, two_way,
+                                  on_done)
+
+    #-----------------------------------------------------------------------
+    def _db_delete(self, addr, group, is_controller, two_way, on_done):
+        """TODO: doc
+        """
+        LOG.debug("db delete: %s grp=%s ctrl=%s 2w=%s", addr, group,
+                  util.ctrl_str(is_controller), two_way)
+
+        on_done = util.make_callback(on_done)
+
+        # Find the remote device.  Update addr since the input may be a name.
+        remote = self.find(addr)
+        if remote:
+            addr = remote.addr
+
+        # If don't have an entry for this device, we can't sent it commands
+        if two_way and not remote:
+            LOG.ui("Device db delete %s can't find remote device %s.  "
+                   "Link will be only deleted one direction",
+                   util.ctrl_str(is_controller), addr)
+
+        # Find teh database entry being deleted.
+        entry = self.db.find(addr, group, is_controller)
+        if not entry:
+            LOG.warning("Device %s delete no match for %s grp %s %s",
+                        self.addr, addr, group, util.ctrl_str(is_controller))
+            on_done(False, "Entry doesn't exist", None)
+            return
+
+        # For two way commands, insert a callback so that when the modem
+        # command finishes, it will send the next command to the device.
+        # When that finishes, it will run the input callback.
+        use_cb = on_done
+        if two_way and remote:
+            use_cb = functools.partial(self._db_delete_remote, remote, on_done)
+
+        self.db.delete_on_device(self.protocol, entry, use_cb)
+
+    #-----------------------------------------------------------------------
+    def _db_delete_remote(self, remote, on_done, success, msg, entry):
+        """TODO: doc
+        """
+        # Update failed - call the user callback and return
+        if not success:
+            on_done(False, msg, entry)
+            return
+
+        # Send the command to the remote device or modem.  Two way is
+        # false here since we just added the other link.
+        two_way = False
+        if entry.is_controller:
+            remote.db_del_resp_of(self.addr, entry.group, two_way, on_done)
+        else:
+            remote.db_del_ctrl_of(self.addr, entry.group, two_way, on_done)
 
     #-----------------------------------------------------------------------
