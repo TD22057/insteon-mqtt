@@ -10,6 +10,8 @@ import paho.mqtt.client as mqtt
 from ..mqtt import Reply
 
 
+TIME_OUT = 10  # seconds between messages
+
 #===========================================================================
 def send(config, topic, payload, quiet=False):
     session = {
@@ -37,7 +39,7 @@ def send(config, topic, payload, quiet=False):
 
     client.publish(topic, json.dumps(payload), qos=2)
 
-    session["end_time"] = time.time() + 3  # seconds
+    session["end_time"] = time.time() + TIME_OUT  # seconds
     while not session["done"] and time.time() < session["end_time"]:
         client.loop(timeout=0.5)
 
@@ -52,7 +54,7 @@ def send(config, topic, payload, quiet=False):
 def callback(client, session, message):
     quiet = session["quiet"]
 
-    session["end_time"] = time.time() + 3
+    session["end_time"] = time.time() + TIME_OUT
 
     msg = message.payload.decode("utf-8")
     reply = Reply.from_json(json.loads(msg))
