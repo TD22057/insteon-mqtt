@@ -5,7 +5,6 @@
 #===========================================================================
 from .. import log
 from .. import message as Msg
-from .. import util
 from .Base import Base
 
 LOG = log.get_logger()
@@ -32,18 +31,6 @@ class ModemDbGet(Base):
 
         self.db = modem_db
         self.on_done = util.make_callback(on_done)
-
-    #-----------------------------------------------------------------------
-    def handle_timeout(self, protocol):
-        """Handle a time out and retry failure occurring.
-
-        This is called when the message sent by the handler has timed
-        out and there are no more retries available.
-
-        Args:
-          protocol:  (Protocol) The Insteon Protocol object.
-        """
-        self.on_done(False, "Modem all link timed out", None)
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
