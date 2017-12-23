@@ -3,9 +3,10 @@ Description=Insteon MQTT Bridge
 After=network.target
 
 [Service]
+WorkingDirectory=/opt/insteon-mqtt
 Type=simple
 User=insteon
-ExecStart=/opt/insteon-mqtt/bin/insteon-mqtt start /opt/insteon-mqtt/config.yaml
+ExecStart=./bin/insteon-mqtt start config.yaml
 
 [Install]
 WantedBy=multi-user.target
