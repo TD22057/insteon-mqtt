@@ -283,7 +283,7 @@ class Dimmer(Base):
         super().handle_broadcast(msg)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg, on_done=None):
+    def handle_refresh(self, msg):
         """Handle replies to the refresh command.
 
         The refresh command reply will contain the current device
@@ -300,9 +300,6 @@ class Dimmer(Base):
         # Current dimmer level is stored in cmd2 so update our level
         # to match.
         self._set_level(msg.cmd2)
-
-        if on_done:
-            on_done(True, "Refresh complete", msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_ack(self, msg, on_done=None):

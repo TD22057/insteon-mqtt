@@ -150,9 +150,8 @@ class Base:
         # current value.  If it's different, it will send a database
         # download command to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
-
-        callback = functools.partial(self.handle_refresh, on_done=on_done)
-        msg_handler = handler.DeviceRefresh(self, callback, force, num_retry=3)
+        msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
+                                            on_done, num_retry=3)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -305,7 +304,7 @@ class Base:
                           "%s with args: %s", self.label, cmd, str(kwargs))
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg, on_done=None):
+    def handle_refresh(self, msg):
         """Handle replies to the refresh command.
 
         The refresh command reply will contain the current device
@@ -317,8 +316,7 @@ class Base:
         """
         # Do nothing - derived types can override this if they have
         # state to extract and update.
-        if on_done:
-            on_done(True, "Refresh complete", None)
+        pass
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):

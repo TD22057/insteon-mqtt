@@ -165,7 +165,7 @@ class BatterySensor(Base):
         self.signal_heartbeat.emit(True)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg, on_done=None):
+    def handle_refresh(self, msg):
         """Handle replies to the refresh command.
 
         The refresh command reply will contain the current device
@@ -182,9 +182,6 @@ class BatterySensor(Base):
         # Current on/off level is stored in cmd2 so update our state
         # to match.
         self._set_is_on(msg.cmd2 != 0x00)
-
-        if on_done:
-            on_done(True, "BatterySensor refresh complete", msg.cmd2)
 
     #-----------------------------------------------------------------------
     def _set_is_on(self, is_on):

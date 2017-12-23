@@ -115,9 +115,8 @@ class SmokeBridge(Base):
         # bridge dev guide p25.  See the Base.refresh() comments for
         # more details.
         msg = Msg.OutStandard.direct(self.addr, 0x1f, 0x01)
-
-        callback = functools.partial(self.handle_refresh, on_done=on_done)
-        msg_handler = handler.DeviceRefresh(self, callback, force, num_retry=3)
+        msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
+                                            on_done, num_retry=3)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

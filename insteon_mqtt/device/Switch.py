@@ -218,7 +218,7 @@ class Switch(Base):
         super().handle_broadcast(msg)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg, on_done=None):
+    def handle_refresh(self, msg):
         """Handle replies to the refresh command.
 
         The refresh command reply will contain the current device
@@ -233,9 +233,6 @@ class Switch(Base):
         # Current on/off level is stored in cmd2 so update our level
         # to match.
         self._set_is_on(msg.cmd2 > 0x00)
-
-        if on_done:
-            on_done(True, "Refresh complete", msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_ack(self, msg, on_done=None):

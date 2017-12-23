@@ -121,7 +121,7 @@ class Remote(Base):
         Args:
           msg:   (InptStandard) Broadcast message from the device.
         """
-        on = None
+        is_on = None
         cmd = msg.cmd1
 
         # ACK of the broadcast - ignore this.
@@ -132,19 +132,19 @@ class Remote(Base):
         # On command.  0x11: on, 0x12: on fast
         elif cmd in Remote.on_codes:
             LOG.info("Remote %s broadcast ON grp: %s", self.addr, msg.group)
-            on = True
+            is_on = True
 
         # Off command. 0x13: off, 0x14: off fast
         elif cmd in Remote.off_codes:
             LOG.info("Remote %s broadcast OFF grp: %s", self.addr, msg.group)
-            on = False
+            is_on = False
 
         # Starting manual increment (cmd2 0x00=up, 0x01=down)
         elif cmd == 0x17:
             # This is kind of arbitrary - but if the button is held
             # down we'll emit an on signal if it's dimming up and an
             # off signal if it's dimming down.
-            on = msg.cmd2 == 0x00  # on = up, off = down
+            is_on = msg.cmd2 == 0x00  # on = up, off = down
 
         # Stopping manual increment (cmd2 = unused)
         elif cmd == 0x18:
@@ -152,8 +152,8 @@ class Remote(Base):
             pass
 
         # Notify others that the button was pressed.
-        if on is not None:
-            self.signal_pressed.emit(self, msg.group, True)
+        if is_on is not None:
+            self.signal_pressed.emit(self, msg.group, is_on)
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
