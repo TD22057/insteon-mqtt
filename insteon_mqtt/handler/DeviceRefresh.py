@@ -26,7 +26,7 @@ class DeviceRefresh(Base):
     device.  If it does, the handler will send a new message to
     request that.
     """
-    def __init__(self, device, callback, force, num_retry=3):
+    def __init__(self, device, callback, force, on_done, num_retry=3):
         """Constructor
 
         Args
@@ -40,7 +40,7 @@ class DeviceRefresh(Base):
                      This count does include the initial sending so a
                      retry of 3 will send once and then retry 2 more times.
         """
-        super().__init__(num_retry=num_retry)
+        super().__init__(on_done, num_retry)
 
         self.device = device
         self.callback = callback
@@ -67,6 +67,7 @@ class DeviceRefresh(Base):
                 return Msg.CONTINUE
             else:
                 LOG.error("%s NAK response", self.addr)
+                self.on_done(False, "NAK response", None)
                 return Msg.FINISHED
 
         # See if this is the standard message ack/nak we're expecting.
@@ -74,29 +75,34 @@ class DeviceRefresh(Base):
             # Since we got the message we expected, turn off retries.
             self.stop_retry()
 
+            # All link database delta is stored in cmd1 so we if we have
+            # the latest version.  If not, schedule an update.
+            need_refresh = True
+            if not self.force and self.device.db.is_current(msg.cmd1):
+                LOG.ui("Device database is current at delta %s", msg.cmd1)
+                need_refresh = False
+
             # Call the device refresh handler.  This sets the current
             # device state which is usually stored in cmd2.
             self.callback(msg)
 
-            # All link database delta is stored in cmd1 so we if we have
-            # the latest version.  If not, schedule an update.
-            if not self.force and self.device.db.is_current(msg.cmd1):
-                LOG.info("Device database is current at delta %s", msg.cmd1)
-
+            if not need_refresh:
+                self.on_done(True, "Refresh complete", None)
             else:
-                LOG.info("Device %s db out of date (got %s vs %s), refreshing",
-                         self.addr, msg.cmd1, self.device.db.delta)
+                LOG.ui("Device %s db out of date (got %s vs %s), refreshing",
+                       self.addr, msg.cmd1, self.device.db.delta)
 
                 # Clear the current database values.
                 self.device.db.clear()
 
                 # When the update message below ends, update the db
                 # delta w/ the current value and save the database.
-                def on_done(success, message):
+                def on_done(success, message, data):
                     if success:
-                        LOG.info("%s database download complete\n%s",
-                                 self.addr, self.device.db)
                         self.device.db.set_delta(msg.cmd1)
+                        LOG.ui("%s database download complete\n%s",
+                               self.addr, self.device.db)
+                    self.on_done(success, message, data)
 
                 # Request that the device send us all of it's database
                 # records.  These will be streamed as fast as possible

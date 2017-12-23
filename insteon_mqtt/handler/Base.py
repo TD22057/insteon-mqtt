@@ -5,6 +5,7 @@
 #===========================================================================
 import time
 from .. import log
+from .. import util
 
 LOG = log.get_logger()
 
@@ -27,24 +28,19 @@ class Base:
     Callbac: The on_done TODO
     """
     #-----------------------------------------------------------------------
-    def __init__(self, time_out=5, on_done=None, num_retry=0):
+    def __init__(self, on_done=None, num_retry=0, time_out=5):
         """Constructor
 
-        The on_done callback has the signature on_done(success, msg)
-        and will be called with success=True if the handler finishes
-        successfully or False if an error occurs or the handler times
-        out.  The message input is a string to help with logging the
-        result.
-
+        TODO: doc
         Args:
-          time_out:  (int) Time out in seconds.
-          on_done:   Option finished callback.  This is called when the
-                     handler is finished for any reason.
           num_retry: (int) The number of times to retry the message if the
                      handler times out without returning Msg.FINISHED.
                      This count does include the initial sending so a
                      retry of 3 will send once and then retry 2 more times.
+          time_out:  (int) Time out in seconds.
         """
+        self.on_done = util.make_callback(on_done)
+
         # expire_time is the time after which we should time out.
         self._time_out = time_out
         self._expire_time = None
@@ -54,13 +50,6 @@ class Base:
         self._num_sent = 0
         self._num_retry = num_retry
         self._msg = None
-
-        # Callback when finished.  Use a dummy callback if none was
-        # input.  This way we don't have to check if on_done is defined.
-        if on_done:
-            self.on_done = on_done
-        else:
-            self.on_done = lambda *x: x
 
     #-----------------------------------------------------------------------
     def sending_message(self, msg):
@@ -83,7 +72,7 @@ class Base:
     def stop_retry(self):
         """Stop any more retries of sending the message.
         """
-        self._num_sent = self._num_retry + 1
+        self._msg = None
 
     #-----------------------------------------------------------------------
     def update_expire_time(self):
@@ -114,10 +103,10 @@ class Base:
             return False
 
         # If we've exhausted the number of sends, end the handler.
-        elif self._num_sent > self._num_retry or not self._msg:
+        elif not self._msg or self._num_sent > self._num_retry:
             LOG.warning("Handler timed out - no more retries (%s sent)",
-                        self._num_sent)
-            self.on_done(False, "Message handler timed out")
+                        self._num_sent - 1)
+            self.handle_timeout(protocol)
             return True
 
         LOG.warning("Handler timed out %s of %s sent: %s",
@@ -125,7 +114,6 @@ class Base:
 
         # Otherwise we should try and resend the message with
         # ourselves as the handler again so we don't lose the count.
-        self._num_sent += 1
         protocol.send(self._msg, self)
 
         # Tell the protocol that we're expired.  This will end this
@@ -154,5 +142,17 @@ class Base:
         """
         raise NotImplementedError("%s.msg_received not implemented" %
                                   self.__class__)
+
+    #-----------------------------------------------------------------------
+    def handle_timeout(self, protocol):
+        """Handle a time out and retry failure occurring.
+
+        This is called when the message sent by the handler has timed
+        out and there are no more retries available.
+
+        Args:
+          protocol:  (Protocol) The Insteon Protocol object.
+        """
+        self.on_done(False, "Command timed out", None)
 
     #-----------------------------------------------------------------------

@@ -38,20 +38,11 @@ class ModemDbModify(Base):
                            call added to the handler.  Signature is:
                               on_done(success, msg, entry)
         """
-        # Use the input callback or a dummy function (so we don't have
-        # to check to see if the callback exists).  Pass the callback
-        # to the base class constructor so that the time out code in
-        # the base class can also call the handler if we time out.
-        # Wrap the input to add the extra argument beyond the standard
-        # on_done callback.  Basically - we're passing our on_done
-        # method here as the callback.  Then we call the input
-        # callback passing it the addition ModemEntry argument.
-        super().__init__(on_done=self.on_done)
+        super().__init__(on_done)
 
         self.db = modem_db
         self.entry = entry
         self.existing_entry = existing_entry
-        self._on_done = on_done
 
         # Tuple of (msg, entry) to send next.  If the first calls
         # ACK's, we'll update self.entry and send the next msg and
@@ -72,20 +63,6 @@ class ModemDbModify(Base):
                   if the command works.
         """
         self.next.append((msg, entry))
-
-    #-----------------------------------------------------------------------
-    def on_done(self, success, msg):  # pylint: disable=method-hidden
-        """Finished callback.
-
-        This calls the user input callback with the addition
-        db.ModemEntry argument.
-
-        Args:
-          success:   (bool) True if the command worked, False otherwise.
-          msg:       (str) Information message about the result.
-        """
-        if self._on_done:
-            self._on_done(success, msg, self.entry)
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
@@ -110,7 +87,7 @@ class ModemDbModify(Base):
         # If we get a NAK message, signal an error and stop.
         if not msg.is_ack:
             LOG.error("Modem db updated failed: %s", msg)
-            self.on_done(False, "Modem database update failed")
+            self.on_done(False, "Modem database update failed", self.entry)
             return Msg.FINISHED
 
         # ACK of a message to delete an existing entry
@@ -151,7 +128,7 @@ class ModemDbModify(Base):
         # Only run the done callback if this is the last message in
         # the chain.
         else:
-            self.on_done(True, "Modem database update complete")
+            self.on_done(True, "Modem database update complete", self.entry)
 
         return Msg.FINISHED
 

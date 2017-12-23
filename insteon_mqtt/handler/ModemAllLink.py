@@ -33,7 +33,8 @@ class ModemAllLink(Base):
                     cancel message to the modem to cancel the all link mode.
         TODO: doc
         """
-        super().__init__(time_out, on_done)
+        super().__init__(on_done, time_out=time_out)
+
         self.modem = modem
 
     #-----------------------------------------------------------------------
@@ -49,8 +50,10 @@ class ModemAllLink(Base):
         """
         # If we haven't expired, return.
         if not super().is_expired(protocol, t):
-            self.on_done(False, "Message timed out")
             return False
+
+        LOG.warning("Modem all link expired with no link.  Sending cancel "
+                    "command to the modem")
 
         # Linking window has expired.  Set a cancel command at the
         # start of the message queue so it gets sent next.
@@ -86,7 +89,7 @@ class ModemAllLink(Base):
             # If we get a NAK, then an error occured.
             if not msg.is_ack:
                 LOG.error("Modem did not enter all link mode - NAK received")
-                self.on_done(False, "Message failed")
+                self.on_done(False, "Message failed", None)
                 return Msg.FINISHED
 
             # ACK - wait for more messages.
@@ -128,14 +131,14 @@ class ModemAllLink(Base):
                 else:
                     LOG.warning("Modem linked to unknown device %s", msg.addr)
 
-            self.on_done(True, "All link complete")
+            self.on_done(True, "All link complete", None)
             return Msg.FINISHED
 
         # All linking was canceled.  It probably doesn't matter if
         # this is an ack or nak - either way we're not going to link.
         elif isinstance(msg, Msg.OutAllLinkCancel):
             LOG.info("Modem all link mode canceled.")
-            self.on_done(False, "All link cancelled")
+            self.on_done(False, "All link cancelled", None)
             return Msg.FINISHED
 
         return Msg.UNKNOWN

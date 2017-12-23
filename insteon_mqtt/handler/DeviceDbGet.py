@@ -26,11 +26,11 @@ class DeviceDbGet(Base):
     def __init__(self, device_db, on_done, num_retry=0):
         """Constructor
 
-        The on_done callback has the signature on_done(success, msg)
-        and will be called with success=True if the handler finishes
-        successfully or False if an error occurs or the handler times
-        out.  The message input is a string to help with logging the
-        result.
+        The on_done callback has the signature on_done(success, msg,
+        entry) and will be called with success=True if the handler
+        finishes successfully or False if an error occurs or the
+        handler times out.  The message input is a string to help with
+        logging the result.
 
         Args:
           device_db: (db.Device) The device database being retrieved.
@@ -40,8 +40,9 @@ class DeviceDbGet(Base):
                      handler times out without returning Msg.FINISHED.
                      This count does include the initial sending so a
                      retry of 3 will send once and then retry 2 more times.
+
         """
-        super().__init__(on_done=on_done, num_retry=num_retry)
+        super().__init__(on_done, num_retry)
 
         self.db = device_db
 
@@ -90,7 +91,7 @@ class DeviceDbGet(Base):
 
             elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
                 LOG.error("%s device NAK error: %s", msg.from_addr, msg)
-                self.on_done(False, "Database command NAK")
+                self.on_done(False, "Database command NAK", None)
                 return Msg.FINISHED
 
             else:
@@ -114,7 +115,7 @@ class DeviceDbGet(Base):
             # Note that if the entry is a null entry (all zeros), then
             # is_last_rec will be True as well.
             if entry.db_flags.is_last_rec:
-                self.on_done(True, "Database received")
+                self.on_done(True, "Database received", entry)
                 return Msg.FINISHED
 
             # Otherwise keep processing records as they arrive.

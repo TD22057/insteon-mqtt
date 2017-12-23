@@ -5,6 +5,7 @@
 #===========================================================================
 from .. import log
 from .. import message as Msg
+from .. import util
 from .Base import Base
 
 LOG = log.get_logger()
@@ -21,7 +22,7 @@ class ModemDbGet(Base):
 
     Each reply is used to update the modem class's database recoreds.
     """
-    def __init__(self, modem_db):
+    def __init__(self, modem_db, on_done=None):
         """Constructor
 
         Args
@@ -30,6 +31,19 @@ class ModemDbGet(Base):
         super().__init__()
 
         self.db = modem_db
+        self.on_done = util.make_callback(on_done)
+
+    #-----------------------------------------------------------------------
+    def handle_timeout(self, protocol):
+        """Handle a time out and retry failure occurring.
+
+        This is called when the message sent by the handler has timed
+        out and there are no more retries available.
+
+        Args:
+          protocol:  (Protocol) The Insteon Protocol object.
+        """
+        self.on_done(False, "Modem all link timed out", None)
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
@@ -61,6 +75,8 @@ class ModemDbGet(Base):
 
                 # Save the database to a local file.
                 self.db.save()
+
+                self.on_done(True, "Database download complete", None)
                 return Msg.FINISHED
 
             # ACK - keep reading until we get the record we requested.
@@ -72,14 +88,13 @@ class ModemDbGet(Base):
                      msg.group)
             if not msg.db_flags.in_use:
                 LOG.info("Ignoring modem db record in_use = False")
-                return
-
-            # Create a modem database entry from the message data and
-            # write it into the database.
-            entry = db.ModemEntry(msg.addr, msg.group,
-                                  msg.db_flags.is_controller, msg.data)
-            self.db.add_entry(entry)
-            LOG.ui("Entry: %s", entry)
+            else:
+                # Create a modem database entry from the message data and
+                # write it into the database.
+                entry = db.ModemEntry(msg.addr, msg.group,
+                                      msg.db_flags.is_controller, msg.data)
+                self.db.add_entry(entry)
+                LOG.ui("Entry: %s", entry)
 
             # Request the next record in the PLM database.
             LOG.info("Modem requesting next db record")
