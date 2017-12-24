@@ -67,6 +67,7 @@ class Base:
             'db_del_ctrl_of' : self.db_del_ctrl_of,
             'db_del_resp_of' : self.db_del_resp_of,
             'refresh' : self.refresh,
+            'linking' : self.linking,
             'pair' : self.pair,
             }
 
@@ -114,9 +115,30 @@ class Base:
             LOG.exception("Error reading file %s", path)
             return
 
-        LOG.info("Device %s database loaded %s entries", self.addr,
+        LOG.info("Device %s database loaded %s entries", self.label,
                  len(self.db))
         LOG.debug("%s", self.db)
+
+    #-----------------------------------------------------------------------
+    def linking(self, group=0x01, on_done=None):
+        """TODO: doc
+        """
+        LOG.info("Device %s link mode grp %s", self.label, group)
+
+        # This sends a linking mode command to the device.  As far as I can
+        # see, there is no way to cancel it.
+        msg = Msg.OutExtended.direct(self.addr, 0x09, group,
+                                     bytes([0x00] * 14))
+
+        callback = functools.partial(self.handle_linking, on_done=on_done)
+        msg_handler = handler.StandardCmd(msg, callback)
+        self.protocol.send(msg, msg_handler)
+
+        # NOTE: this command is to enter linking mode - we get ACK back that
+        # it did, but unlike the modem, we don't get a message telling us
+        # what the result is when the linking actually completes.  So there
+        # to be a refresh call made to the device once the linking actually
+        # finishes.  So - the user must refresh the device.
 
     #-----------------------------------------------------------------------
     def pair(self, on_done=None):
@@ -129,7 +151,7 @@ class Base:
         The default implementation does nothing - subclasses should
         re-implement this to do proper pairing.
         """
-        LOG.error("Device %s doesn't support pairing", self.addr)
+        LOG.error("Device %s doesn't support pairing", self.label)
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
@@ -146,7 +168,7 @@ class Base:
 
         TODO: doc force
         """
-        LOG.info("Device %s cmd: status refresh", self.addr)
+        LOG.info("Device %s cmd: status refresh", self.label)
 
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the
@@ -245,6 +267,27 @@ class Base:
         self._db_delete(addr, group, False, two_way, on_done)
 
     #-----------------------------------------------------------------------
+    def link_data(self, group, is_controller):
+        """TODO: doc
+        """
+        # Most of this is from looking through Misterhouse bug reports.
+        if is_controller:
+            # D1 = 0x03 number of retries to use for the command
+            # D2 = ???
+            # D3 = some devices need 0x01 or group number others don't care
+            return bytes([0x03, 0x00, group])
+
+        # Responder data is always link dependent.  Since nothing was given,
+        # assume the user wants to turn the device on (0xff).
+        else:
+            # D1 = on level for on/off, dimmers
+            # D2 = ramp rate for on/off, dimmers.  I believe leaving this
+            #      at 0 uses the default ramp rate.
+            # D3 = unused.  Misterhouse sets this to the group so we'll
+            #      do the same even though it may not be necessary.
+            return bytes([0xff, 0x00, group])
+
+    #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
         """Run arbitrary commands.
 
@@ -270,7 +313,7 @@ class Base:
         func = self.cmd_map.get(cmd, None)
         if not func:
             LOG.error("Invalid command sent to device %s '%s'.  Input cmd "
-                      "'%s' not valid.  Valid commands: %s", self.addr,
+                      "'%s' not valid.  Valid commands: %s", self.label,
                       self.name, cmd, self.cmd_map.keys())
             return
 
@@ -322,11 +365,11 @@ class Base:
         for elem in responders:
             device = self.modem.find(elem.addr)
             if device:
-                LOG.info("%s broadcast to %s for group %s", self.addr,
+                LOG.info("%s broadcast to %s for group %s", self.label,
                          device.addr, msg.group)
                 device.handle_group_cmd(self.addr, msg)
             else:
-                LOG.warning("%s broadcast - device %s not found", self.addr,
+                LOG.warning("%s broadcast - device %s not found", self.label,
                             elem.addr)
 
     #-----------------------------------------------------------------------
@@ -344,7 +387,18 @@ class Base:
                  Use msg.group to find the scene group that was broadcast.
         """
         # Default implementation - derived classes should specialize this.
-        LOG.info("Device %s ignoring group cmd - not implemented", self.addr)
+        LOG.info("Device %s ignoring group cmd - not implemented", self.label)
+
+    #-----------------------------------------------------------------------
+    def handle_linking(self, msg, on_done=None):
+        """TODO: doc
+        """
+        on_done = util.make_callback(on_done)
+
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+            on_done(True, "Entered linking mode", None)
+        else:
+            on_done(False, "Linking mode failed", None)
 
     #-----------------------------------------------------------------------
     def _db_update(self, addr, group, data, two_way, is_controller, on_done):
@@ -370,6 +424,13 @@ class Base:
         if two_way and remote:
             use_cb = functools.partial(self._db_update_remote, remote, on_done)
 
+        # Get the data array to use.  See Github issue #7 for discussion.
+        # Use teh bytes() cast here so we can take a list as input.
+        if data is None:
+            data = self.link_data(group, is_controller)
+        else:
+            data = bytes(data)
+
         # Create a new database entry for the device and send it.
         self.db.add_on_device(self.protocol, addr, group, is_controller, data,
                               on_done=use_cb)
@@ -388,15 +449,20 @@ class Base:
                 on_done(False, msg, entry)
             return
 
-        # Send the command to the device.  Two way is false here since
-        # we just added the other link.
+        # Send the command to the device.  Two way is false here since we
+        # just added the other link.  Data is always None since we don't know
+        # what the remote device data should be and it never should be the
+        # same as our link (ctrl vs resp are always different).  So this
+        # forces it to use self.link_data() to get a reasonable data set to
+        # use in the link.
         two_way = False
+        data = None
         if entry.is_controller:
-            remote.db_add_resp_of(self.addr, entry.group, entry.data, two_way,
+            remote.db_add_resp_of(self.addr, entry.group, data, two_way,
                                   on_done)
 
         else:
-            remote.db_add_ctrl_of(self.addr, entry.group, entry.data, two_way,
+            remote.db_add_ctrl_of(self.addr, entry.group, data, two_way,
                                   on_done)
 
     #-----------------------------------------------------------------------
@@ -420,7 +486,7 @@ class Base:
         entry = self.db.find(addr, group, is_controller)
         if not entry:
             LOG.warning("Device %s delete no match for %s grp %s %s",
-                        self.addr, addr, group, util.ctrl_str(is_controller))
+                        self.label, addr, group, util.ctrl_str(is_controller))
             on_done(False, "Entry doesn't exist", None)
             return
 

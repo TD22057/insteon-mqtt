@@ -34,18 +34,6 @@ def parse_args(args):
     sp.set_defaults(func=start.start)
 
     #---------------------------------------
-    # modem.set command
-    sp = sub.add_parser("link", help="Turn on modem linking.  This is the "
-                        "same as pressing the modem set button.")
-    sp.add_argument("-w", "--timeout", type=int, metavar="timeout",
-                    default=30, help="Time out in seconds to end linking.")
-    sp.add_argument("-q", "--quiet", action="store_true",
-                    help="Don't print any command results to the screen.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
-    sp.set_defaults(func=modem.set_btn)
-
-    #---------------------------------------
     # modem.refresh_all command
     sp = sub.add_parser("refresh-all", help="Call refresh all on the devices "
                         "in the configuration.")
@@ -56,6 +44,20 @@ def parse_args(args):
     sp.add_argument("config", metavar="config.yaml", help="Configuration "
                     "file to use.")
     sp.set_defaults(func=modem.refresh_all)
+
+    #---------------------------------------
+    # device.linking command
+    sp = sub.add_parser("linking", help="Turn on device or modem linking.  "
+                        "This is the same as holding the modem set button "
+                        "for 3 seconds.")
+    sp.add_argument("-g", "--group", type=int, default=0x01,
+                    help="Group number to link with (1-255)")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.add_argument("config", metavar="config.yaml", help="Configuration "
+                    "file to use.")
+    sp.add_argument("address", help="Device address or name.")
+    sp.set_defaults(func=device.linking)
 
     #---------------------------------------
     # device.refresh command
@@ -197,13 +199,6 @@ def parse_args(args):
     sp.add_argument("mode", choices=["CTRL", "RESP"],
                     help="Controller or responder flag of the entry to remove")
     sp.set_defaults(func=device.db_delete)
-
-    # TODO: add support for device.db_del_ctrl_of and db_del_resp_of.
-    # The problem is the modem can't handle those commands.  Best way
-    # to fix this is to re-code Modem.db_delete to be smart and delete
-    # all the entries and then re-add the ones that weren't the input
-    # command.  That way from the outside the modem and devices have
-    # the same API.
 
     return p.parse_args(args)
 

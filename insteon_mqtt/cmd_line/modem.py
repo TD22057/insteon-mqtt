@@ -7,18 +7,6 @@ from . import util
 
 
 #===========================================================================
-def set_btn(args, config):
-    topic = "%s/modem" % (args.topic)
-    payload = {
-        "cmd" : "set_btn",
-        "time_out" : args.timeout,
-        }
-
-    reply = util.send(config, topic, payload, args.quiet)
-    return reply["result"]
-
-
-#===========================================================================
 def refresh_all(args, config):
     topic = "%s/modem" % (args.topic)
     payload = {

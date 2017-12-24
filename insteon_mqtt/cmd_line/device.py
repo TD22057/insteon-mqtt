@@ -7,6 +7,18 @@ from . import util
 
 
 #===========================================================================
+def linking(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "linking",
+        "group" : args.group,
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["result"]
+
+
+#===========================================================================
 def on(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
@@ -109,24 +121,24 @@ def db_add(args, config):
                          "'addr1 -> addr2'." % args.link)
 
     # Use strings for the default - the parser below converts to int.
-    if args.data is None:
-        args.data = ["0", "0", "0"]
-    elif len(args.data) > 3:
-        raise ValueError("Input data field %s should be 0-3 integer values."
-                         % args.data)
+    data = None
+    if args.data:
+        if len(args.data) > 3:
+            raise ValueError("Input data field %s should be 0-3 integer "
+                             "values." % args.data)
 
-    # Pad the data inputs out to 3 elements and convert any strings to
-    # integers.
-    data = []
-    for i in range(3):
-        value = 0
-        if i < len(args.data):
-            if "0x" in args.data[i]:
-                value = int(args.data[i], 16)
-            else:
-                value = int(args.data[i])
+        # Pad the data inputs out to 3 elements and convert any strings to
+        # integers.
+        data = []
+        for i in range(3):
+            value = 0
+            if i < len(args.data):
+                if "0x" in args.data[i]:
+                    value = int(args.data[i], 16)
+                else:
+                    value = int(args.data[i])
 
-        data.append(value)
+            data.append(value)
 
     topic = "%s/%s" % (args.topic, address1)
     payload = {

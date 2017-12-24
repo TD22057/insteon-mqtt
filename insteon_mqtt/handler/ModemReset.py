@@ -47,9 +47,9 @@ class ModemReset(Base):
         """
         # InpUserReset is sent when the user triggers a factory reset
         #     on the physical modem.
-        # OutResetPlm is sent when we send that command to the modem
+        # OutResetModem is sent when we send that command to the modem
         #     to reset it and we'll get an ack/nak back.
-        if isinstance(msg, (Msg.OutResetPlm, Msg.InpUserReset)):
+        if isinstance(msg, (Msg.OutResetModem, Msg.InpUserReset)):
             if msg.is_ack:
                 LOG.warning("Modem has been factory reset")
 

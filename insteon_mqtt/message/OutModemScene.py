@@ -6,7 +6,7 @@
 from .Base import Base
 
 
-class OutPlmScene(Base):
+class OutModemScene(Base):
     """Trigger a virtual PLM modem scene activation.
 
     This triggers a PLM modem scene.  Any devices linked to the modem
@@ -42,7 +42,7 @@ class OutPlmScene(Base):
         cmd1 = raw[3]
         cmd2 = raw[4]
         is_ack = raw[5] == 0x06
-        return OutPlmScene(group, cmd1, cmd2, is_ack)
+        return OutModemScene(group, cmd1, cmd2, is_ack)
 
     #-----------------------------------------------------------------------
     def __init__(self, group, cmd1, cmd2, is_ack=None):
@@ -75,7 +75,7 @@ class OutPlmScene(Base):
     #-----------------------------------------------------------------------
     def __str__(self):
         ack = "" if self.is_ack is None else "ack: %s" % self.is_ack
-        return "PLM Scene: grp: %s cmd: %#04x %#04x %s" % \
+        return "Modem Scene: grp: %s cmd: %#04x %#04x %s" % \
             (self.group, self.cmd1, self.cmd2, ack)
 
     #-----------------------------------------------------------------------

@@ -456,7 +456,6 @@ class Device:
 
         LOG.info("Device %s adding db: %s grp %s %s %s", self.addr, addr,
                  group, util.ctrl_str(is_controller), data)
-        assert len(self.entries)
 
         # When complete, remove this call from the pending list.  Then
         # call the user input callback if supplied, and call the next
@@ -571,14 +570,20 @@ class Device:
 
         # Memory goes high->low so find the last entry by looking at the
         # minimum value.  Then find the entry for that loc.
-        last_entry = self.find_mem_loc(min(self._mem_locs))
-        # TODO???
-        if not last_entry:
-            LOG.error("MEM_LOCS error: %s", self._mem_locs)
-            return
+        if self._mem_locs:
+            last_entry = self.find_mem_loc(min(self._mem_locs))
+            if not last_entry:
+                LOG.error("UNKNOWN error?? mem loc %s not in db:\n%s",
+                          min(self._mem_locs), self)
+                return
 
-        # Each rec is 8 bytes so move down 8 to get the next loc.
-        mem_loc = last_entry.mem_loc - 0x08
+            # Each rec is 8 bytes so move down 8 to get the next loc.
+            mem_loc = last_entry.mem_loc - 0x08
+        else:
+            # Starting memory location for db records.
+            last_entry = None
+            mem_loc = 0x0fff
+
         LOG.info("Device %s appending new record at mem %#06x", self.addr,
                  mem_loc)
 
@@ -593,11 +598,12 @@ class Device:
         # Now create the updated current last entry w/ the last record flag
         # set to False since it's not longer last.  The handler will send
         # this message out if the first call above gets an ACK.
-        new_last = last_entry.copy()
-        new_last.db_flags.is_last_rec = False
-        ext_data = new_last.to_bytes()
-        next_msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-        msg_handler.add_update(next_msg, new_last)
+        if last_entry:
+            new_last = last_entry.copy()
+            new_last.db_flags.is_last_rec = False
+            ext_data = new_last.to_bytes()
+            next_msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
+            msg_handler.add_update(next_msg, new_last)
 
         # Send the message and handler.
         protocol.send(msg, msg_handler)

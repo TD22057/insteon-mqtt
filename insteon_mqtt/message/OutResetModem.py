@@ -6,7 +6,7 @@
 from .Base import Base
 
 
-class OutResetPlm(Base):
+class OutResetModem(Base):
     """Command to reset the PLM modem.
 
     Send this command to reset the PLM modem.  This is probably a bad
@@ -34,13 +34,13 @@ class OutResetPlm(Base):
            raw   (bytes): The current byte stream to read from.
 
         Returns:
-           Returns the constructed OutResetPlm object.
+           Returns the constructed OutResetModem object.
         """
         assert len(raw) >= cls.fixed_msg_size
         assert raw[0] == 0x02 and raw[1] == cls.msg_code
 
         is_ack = raw[2] == 0x06
-        return OutResetPlm(is_ack)
+        return OutResetModem(is_ack)
 
     #-----------------------------------------------------------------------
     def __init__(self, is_ack=None):
@@ -66,7 +66,7 @@ class OutResetPlm(Base):
     #-----------------------------------------------------------------------
     def __str__(self):
         ack = "" if self.is_ack is None else "ack: %s" % str(self.is_ack)
-        return "OutResetPlm %s" % ack
+        return "OutResetModem %s" % ack
 
     #-----------------------------------------------------------------------
 

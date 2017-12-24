@@ -63,12 +63,16 @@ class Modem:
             'db_del_resp_of' : self.db_del_resp_of,
             'refresh' : self.refresh,
             'refresh_all' : self.refresh_all,
-            'set_btn' : self.set_btn,
+            'linking' : self.linking,
             }
 
         # Add a generic read handler for any broadcast messages
         # initiated by the Insteon devices.
         self.protocol.add_handler(handler.Broadcast(self))
+
+        # Handle all link complete messages that the modem sends when the set
+        # button or linking mode is finished.
+        self.protocol.add_handler(handler.ModemLinkComplete(self))
 
         # Handle user triggered factory reset of the modem.
         self.protocol.add_handler(handler.ModemReset(self))
@@ -389,20 +393,36 @@ class Modem:
         """TODO: doc
         """
         LOG.warning("Modem being reset.  All data will be lost")
-        msg = Msg.OutResetPlm()
+        msg = Msg.OutResetModem()
         msg_handler = handler.ModemReset(self)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set_btn(self, group=0x01, time_out=60, on_done=None):
+    def linking(self, group=0x01, on_done=None):
         """TODO: doc
         """
         # Tell the modem to enter all link mode for the group.  The
         # handler will handle timeouts (to send the cancel message) if
         # nothing happens.  See the handler for details.
-        msg = Msg.OutAllLinkStart(Msg.OutAllLinkStart.Cmd.EITHER, group)
-        msg_handler = handler.ModemAllLink(self, time_out, on_done)
+        msg = Msg.OutModemLinking(Msg.OutModemLinking.Cmd.EITHER, group)
+        msg_handler = handler.ModemLinkStart(on_done)
         self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def link_data(self, group, is_controller):
+        """TODO: doc
+        """
+        # Normally, the modem (ctrl) -> device (resp) link is created using
+        # the linking() command - then the handler.ModemLinkComplete will
+        # fill these values in for us using the device information.  But they
+        # probably aren't used so it doesn't really matter.
+        if is_controller:
+            return bytes([group, 0x00, 0x00])
+
+        # Responder data is a mystery on the modem.  This seems to work but
+        # it's unclear if it's needed at all.
+        else:
+            return bytes([group, 0x00, 0x00])
 
     #-----------------------------------------------------------------------
     def run_scene(self, group, is_on, cmd1=None, cmd2=0x00):
@@ -412,7 +432,7 @@ class Modem:
             cmd1 = 0x11 if is_on else 0x13
 
         # TODO: why doesn't this work?
-        msg = Msg.OutPlmScene(group, cmd1, cmd2)
+        #msg = Msg.OutModemScene(group, cmd1, cmd2)
         #msg_handler = handler.
 
     #-----------------------------------------------------------------------
@@ -574,6 +594,13 @@ class Modem:
         if two_way and remote:
             use_cb = functools.partial(self._db_update_remote, remote, on_done)
 
+        # Get the data array to use.  See Github issue #7 for discussion.
+        # Use teh bytes() cast here so we can take a list as input.
+        if data is None:
+            data = self.link_data(group, is_controller)
+        else:
+            data = bytes(data)
+
         # Create a new database entry for the modem and send it to the
         # modem for updating.
         entry = db.ModemEntry(addr, group, is_controller, data)
@@ -593,14 +620,19 @@ class Modem:
             on_done(False, msg, entry)
             return
 
-        # Send the command to the device.  Two way is false here since
-        # we just added the other link.
+        # Send the command to the device.  Two way is false here since we
+        # just added the other link.  Data is always None since we don't know
+        # what the remote device data should be and it never should be the
+        # same as our link (ctrl vs resp are always different).  So this
+        # forces it to use self.link_data() to get a reasonable data set to
+        # use in the link.
         two_way = False
+        data = None
         if entry.is_controller:
-            remote.db_add_resp_of(self.addr, entry.group, entry.data, two_way,
+            remote.db_add_resp_of(self.addr, entry.group, data, two_way,
                                   on_done)
         else:
-            remote.db_add_ctrl_of(self.addr, entry.group, entry.data, two_way,
+            remote.db_add_ctrl_of(self.addr, entry.group, data, two_way,
                                   on_done)
 
     #-----------------------------------------------------------------------

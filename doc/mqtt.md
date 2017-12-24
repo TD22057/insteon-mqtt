@@ -53,7 +53,7 @@ brackets [], then it's optional.  If a value can be one of many like
 true or false, then the possible values are separated by a slash /.
 
 The MQTT topic to publish managemeng commands to is (aa.bb.cc is the
-device address or name):
+device address or nice name from the config.yaml file):
 
    ```
    insteon/command/aa.bb.cc
@@ -62,14 +62,27 @@ device address or name):
 
 ### Activate all linking mode
 
-Supported: modem
+Supported: modem, devices
 
 This turns on all linking mode and is the same as pressing the set
-button on the modem.  The command payload is:
+button for 3 sec on the modem or device.  The default group is 1.
+
+This can be used to connect new devices to the modem.  Run 'linking modem',
+'linking aa.bb.cc' to control the device from the modem and 'linking
+aa.bb.cc', 'linking modem' so the modem will get broadcast messages from the
+device.  For more complicated devices, then run a 'pair device' command to
+configure the other links that the device needs.
+
+The command payload is:
 
    ```
-   { "cmd" : "set_btn", ["timeout" : time_sec] }
+   { "cmd" : "linking", ["group" : group] }
    ```
+
+Once you run the linking command, you should also run 'refresh' on the device
+to update it's local database.  The modem will automatically update, but the
+devices don't send a message when the linking is complete so there is no way
+to know when to update the database.
 
 
 ### Refresh the device state and download it's all link database
@@ -114,7 +127,7 @@ command payload is:
 
    ```
    { "cmd" : "db_add_ctrl_of", "addr" : aa.bb.cc, "group" : group,
-     ["two_way" : True/False] }
+     ["two_way" : True/False], ["data" : [D1, D2,D3]] }
    ```
 
 ### Add the device as a responder of another device.
@@ -130,13 +143,13 @@ command payload is:
 
    ```
    { "cmd" : "db_add_resp_of", "addr" : aa.bb.cc, "group" : group,
-     ["two_way" : True/False] }
+     ["two_way" : True/False], ["data" : [D1, D2,D3]] } }
    ```
 
 
 ### Delete the device as a controller of another device.
 
-Supported: devices
+Supported: modem, devices
 
 This commands modifies the all link database on the device to remove
 it as a controller of another device.  If the two-way flag is set
@@ -150,14 +163,10 @@ The command payload is:
      ["two_way" : True/False] }
    ```
 
-NOTE: The modem doesn't support removal of specific links by type.
-The modem can only remove all the links for a given address and group
-(see below).
-
 
 ### Delete the device as a responder of another device.
 
-Supported: devices
+Supported: modem, devices
 
 This commands modifies the all link database on the device to remove
 it as a responder of another device.  If the two-way flag is set (True
@@ -170,31 +179,6 @@ The command payload is:
    { "cmd" : "db_del_resp_of", "addr" : aa.bb.cc, "group" : group,
      ["two_way" : True/False] }
    ```
-
-NOTE: The modem doesn't support removal of specific links by type.
-The modem can only remove all the links for a given address and group
-(see below).
-
-
-### Delete a device and group from the modem all link database.
-
-Supported: modem
-
-THis command modifies the modem's all link database to remove both the
-controller and responder records for an address and group.  If the
-two-way flag is set (True is the default), it will also remove the
-corresponding link(s) on the remote device as well.
-
-   ```
-   { "cmd" : "db_delete", "addr" : aa.bb.cc, "group" : group,
-     ["two_way" : True/False] }
-   ```
-
-NOTE: A future enhancement is to make the modem code smarter to handle
-specific link removal.  Currenly the modem just removes the first link
-it finds (controller or responder).  So a future version could track
-that and remove links until the requested link is removed, then add
-back the links that sholdn't have been removed in the first place.
 
 ---
 

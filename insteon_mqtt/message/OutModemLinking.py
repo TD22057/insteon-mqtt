@@ -7,8 +7,10 @@ import enum
 from .Base import Base
 
 
-class OutAllLinkStart(Base):
+class OutModemLinking(Base):
     """Begin all linking command message.
+
+    This puts the modem into linking mode (like holding set for 3 sec).
     """
     msg_code = 0x64
     fixed_msg_size = 5
@@ -44,7 +46,7 @@ class OutAllLinkStart(Base):
         cmd = cls.Cmd(raw[2])
         group = raw[3]
         is_ack = raw[4] == 0x06
-        return OutAllLinkStart(cmd, group, is_ack)
+        return OutModemLinking(cmd, group, is_ack)
 
     #-----------------------------------------------------------------------
     def __init__(self, cmd, group, is_ack=None):
@@ -76,7 +78,7 @@ class OutAllLinkStart(Base):
     #-----------------------------------------------------------------------
     def __str__(self):
         ack = "" if self.is_ack is None else "ack: %s" % self.is_ack
-        return "All link start: grp: %s %s %s" % (self.group, self.cmd, ack)
+        return "Modem linking: grp: %s %s %s" % (self.group, self.cmd, ack)
 
     #-----------------------------------------------------------------------
 
