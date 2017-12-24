@@ -1,0 +1,310 @@
+===========================================================================
+SOMETHING THAT WORKS!!!
+
+insteon-mqtt linking modem
+insteon-mqtt linking device
+
+then
+
+insteon-mqtt linking device
+insteon-mqtt linking modem
+
+Modem:
+  ID: 37.2d.35  grp: 1  type: CTRL  data: 0x02 0x37 0x48
+  ID: 37.2d.35  grp: 1  type: RESP  data: 0x00 0x00 0x00
+DeviceDb: (delta 2)
+  0ff7: 44.85.11 grp:   1 type: CTRL data: 0x03 0x1c 0x01
+  0fff: 44.85.11 grp:   1 type: RESP data: 0xff 0x1c 0x01
+Unused:
+  0fef: 00.00.00 grp:   0 type: RESP data: 0x00 0x00 0x00 (LAST)
+
+
+===========================================================================
+SOMETHING THAT WORKS!!!
+
+insteon-mqtt linking device
+insteon-mqtt linking modem
+
+DeviceDb: (delta 2)
+  0ff7: 44.85.11 grp:   1 type: RESP data: 0xff 0x1c 0x01
+  0fff: 44.85.11 grp:   1 type: CTRL data: 0x03 0x1c 0x01
+Unused:
+  0fef: 00.00.00 grp:   0 type: RESP data: 0x00 0x00 0x00 (LAST)
+
+works!
+
+
+===========================================================================
+turn off insteon-mqtt
+
+on/off module: 37.2d.35
+link dev->plm, plm->dev
+
+Modem:
+  ID: 37.2d.35  grp: 1  type: RESP  data: 0x02 0x37 0x48
+  ID: 37.2d.35  grp: 1  type: CTRL  data: 0x02 0x37 0x48
+
+DeviceDb: (delta 2)
+  0ff7: 44.85.11 grp:   1 type: RESP data: 0x00 0x1c 0x01
+  0fff: 44.85.11 grp:   1 type: CTRL data: 0x03 0x1c 0x01
+Unused:
+  0fef: 00.00.00 grp:   0 type: RESP data: 0x00 0x00 0x00 (LAST)
+
+with this config, everything works after manual pairing.  But nothing works
+when paired with linking commands???
+
+------------------
+factory reset on/off module.  Leave modem links the same.
+  So device has no links, pushing buttons sends no messages to the modem
+  or other devices.  So must have CTRL in device db or it won't send messages.
+
+  Try to send refresh from modem - get NAK.
+
+  run 'linking modem', 'linking 37.2d.35'.
+
+  now run refresh - get messages:
+DeviceDb: (delta 1)
+  0fff: 44.85.11 grp:   1 type: RESP data: 0x00 0x1c 0x01
+Unused:
+  0ff7: 00.00.00 grp:   0 type: RESP data: 0x00 0x00 0x00 (LAST)
+
+Now add link manually:
+   insteon-mqtt db-add --one-way config.yaml '37.2d.35 -> modem' 1
+
+DeviceDb: (delta 2)
+  0ff7: 44.85.11 grp:   1 type: CTRL data: 0x03 0x00 0x01 (LAST)
+  0fff: 44.85.11 grp:   1 type: RESP data: 0x00 0x1c 0x01
+
+nothing - no messages
+try to recreate db entry from manual pairing:
+insteon-mqtt db-add --one-way config.yaml '37.2d.35 -> modem' 1 3 28 1
+
+DeviceDb: (delta 4)
+  0ff7: 44.85.11 grp:   1 type: CTRL data: 0x03 0x1c 0x01 (LAST)
+  0fff: 44.85.11 grp:   1 type: RESP data: 0x00 0x1c 0x01
+
+still nothing!!!
+
+is it the LAST? field?  Note that the manual one has a unused entry with all
+zeros marked as LAST.
+
+===========================================================================
+Linking an unknown device.
+
+Motion sensor:
+   modem  RESP: 0x01 0x0e 0x43
+   device CTRL: 0x03 0x00 0x00
+
+Switch:
+   modem  RESP: 0x01 0x0e 0x43
+   modem  CTRL: 0x02 0x37 x048
+   device RESP: 0xff 0x1c 0x01
+   device CTRL: 0x03 0x1c 0x01
+
+Dimmer:
+   modem  RESP: 0x00 0x00 0x00
+   modem  CTRL: 0x01 0x0e 0x43
+   device RESP: 0xff 0x1c 0x01
+   device CTRL: 0x03 0x1c 0x01
+
+Remote:
+   modem  RESP: 0x00 0x00 0x00
+   device CTRL: 0x03 0x00 0x00  (same for all groups)
+
+Smoke bridge:
+   modem  RESP: 0x01 0x0e 0x43 (grp 1 - others are 0x00 and work)
+   modem  CTRL: 0x10 0x0a 0x43
+   device RESP: 0xff 0x1c 0x00
+   device CTRL: 0x00 0x00 0x01
+
+IO Linc:
+   modem  RESP: 0x00 0x00 0x00
+   modem  CTRL: 0x07 0x00 0x41
+   device RESP: 0x00 0x00 0x00
+   device CTRL: 0x03 0x00 0x00
+
+MODEM
+   modem  RESP: 0x01 0x0e 0x43  motion
+   modem  RESP: 0x01 0x0e 0x43  switch
+   modem  RESP: 0x00 0x00 0x00  dimmer
+   modem  RESP: 0x00 0x00 0x00  remote
+   modem  RESP: 0x01 0x0e 0x43  smoke (grp 1 - others are 0x00 and work)
+   modem  RESP: 0x00 0x00 0x00  iolinc
+
+   modem  CTRL: 0x02 0x37 x048  switch
+   modem  CTRL: 0x01 0x0e 0x43  cimmer
+   modem  CTRL: 0x10 0x0a 0x43  smoke
+   modem  CTRL: 0x07 0x00 0x41  iolinc
+
+DEVICES
+   device RESP: 0xff 0x1c 0x01  switch
+   device RESP: 0xff 0x1c 0x01  dimmer
+   device RESP: 0xff 0x1c 0x00  smoke
+   device RESP: 0x00 0x00 0x00  iolinc
+
+   device CTRL: 0x03 0x00 0x00  motion
+   device CTRL: 0x03 0x1c 0x01  switch
+   device CTRL: 0x03 0x1c 0x01  dimmer
+   device CTRL: 0x03 0x00 0x00  remote (same for all groups)
+   device CTRL: 0x00 0x00 0x01  smoke
+   device CTRL: 0x03 0x00 0x00  iolinc
+
+remote group 4 -> dimmer
+   dimmer:  3f.07.d4 grp:   4 type: RESP data: 0xfe 0x1c 0x01  == level, ramp rate, responder group
+   remote:  48.b0.ad grp:   4 type: CTRL data: 0x03 0x00 0x00  == retries, ??, ??
+
+
+RESULTS:
+
+Devices, responder:
+   [ on level, ramp rate, unused (though group# is probably safe)
+Devices, controller:
+   [ 0x03, ??, group]
+
+Modem, responder:
+   [ group, 0, 0 ] - this is unknown.  may not matter?
+Modem, controller
+   [ cat, devcat, firmware ] (probably doesn't matter - modem sets this for us
+      and modem->device should be the first link that's made anyway so this
+      will be "right".
+
+
+TODO: for each device type, create manual link to/from modem for all groups
+TODO: for each device type, create manual link to/from another device for all groups.
+TODO: check keypadlinc behavior for responders on different groups
+TODO: set 0x03 0x00 0x04 as remote controller record for group 4 and see what happens.
+TODO: add link_data(group, is_controller, level=None, rate=None) -> [1,2,3] method to all devices
+      change db_add so data is optional - if not set use method above
+      implement method for various types and groups
+
+https://github.com/hollie/misterhouse/issues/262
+Responder Records
+Data 1    Link-specific data (e.g. On-Level)
+Data 2    Link-specific data (e.g. Ramp Rates, Setpoints, etc.)
+Data 3    Link-specific data (listed by Insteon as "normally unused"
+              but for multi-function items, we know that this is set to
+              the linked "group" on the responding device)
+
+Controller Records
+Data 1    Number of retries (Normally set to 03, FF = no retries,
+              00 = Broadcast for cleanup)
+Data 2    Listed as Ignored??
+Data 3    Listed as 00 for switchlinc type devices and 01-08 for
+              KPL type devices
+
+
+https://github.com/hollie/misterhouse/issues/327
+From my empirical testing the devices have significantly different behavior
+when manually linking. For instance my PLM's controller links have the
+responder's Device Category, Device Subcategory, and firmware version for
+D1-D3. Why? I don't know. Some of my devices use the most recent MH
+interpretation of d1=app retries(03), d3=controller's group; but d2 is some
+undetermined value (e.g. 1c). Some devices record local responder links with
+d3=00 while others use d3=01. ALL of my device are 2012 and later I2CS. The
+current MH behavior seems to work for the PLM controller links and for the
+I2CS devices (when using d3=01) even when the device would create d3=00
+responder links manually.
+
+other stuff:
+https://github.com/hollie/misterhouse/pull/293
+The Data3 value on control links is now properly set to the same value as the
+group value. (This will cause all old control links for buttons 2 and higher
+on devices to be deleted and resynced. Links on the PLM will not be touched
+as Data3 doesn't appear to have any ill effects if it is improperly set. All
+new controller links on the PLM will have the correct data3 value.)
+The default Data3 value for responder links is set to 01 for i2cs devices,
+but remains 00 for non i2cs devices for the root device.
+
+https://github.com/hollie/misterhouse/pull/328/files
+
+===========================================================================================
+
+Factory reset an on/off module 3a.29.84.
+
+./scripts/insteon-mqtt linking config.yaml modem
+
+2017-12-23 16:22:13 INFO Mqtt: MQTT message insteon/command/modem b'{"cmd": "linking", "session": "1650374910", "group": 1}'
+2017-12-23 16:22:13 UI Mqtt: Commanding Modem device 44.85.11 (modem) cmd=linking
+2017-12-23 16:22:13 DEBUG Mqtt: MQTT publish insteon/command/modem/session/1650374910 {"type": "MESSAGE", "data": "Commanding Modem device 44.85.11 (modem) cmd=linking"} qos=0 ret=False
+2017-12-23 16:22:13 INFO Protocol: Write to modem: All link start: grp: 1 Cmd.EITHER
+2017-12-23 16:22:13 DEBUG Protocol: Write to modem: 02 64 03 01
+2017-12-23 16:22:13 DEBUG Mqtt: MQTT writing
+2017-12-23 16:22:13 DEBUG Serial: Wrote 4 bytes to serial /dev/insteon
+2017-12-23 16:22:13 INFO Mqtt: MQTT message insteon/command/modem/session/1650374910 b'{"type": "MESSAGE", "data": "Commanding Modem device 44.85.11 (modem) cmd=linking"}'
+2017-12-23 16:22:13 INFO Protocol: Read 0x64: All link start: grp: 1 Cmd.EITHER ack: True
+2017-12-23 16:22:13 DEBUG Protocol: Passing msg to write handler
+
+./scripts/insteon-mqtt linking config.yaml 3a.29.84
+
+
+
+===========================================================================================
+This links device->modem which isn't idea because the modem can't send commands.
+
+Factory reset an on/off module 3a.29.84.
+
+Sent:
+link1 = bytes( [
+    0x02, 0x62,
+    0x3a, 0x29, 0x84,
+    0x1f,
+    0x09, 0x01,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf6 ] )
+which is:
+    group = 0x01
+    msg = Msg.OutExtended.direct(addr, 0x09, group, bytes([0x00]*14))
+
+RETURNS:
+modem ACK:
+   02 62 3a 29 84 1f 09 01 00 00 00 00 00 00 00 00 00 00 00 00 00 f6 06
+device standard message direct ack:
+   02 50
+   3a 29 84
+   44 85 11
+   2f
+   09 01
+
+on/off module starts flashing light.
+
+Then send to modem:
+./scripts/insteon-mqtt linking config.yaml modem
+
+which does:
+INFO Protocol: Write to modem: All link start: grp: 1 Cmd.EITHER
+DEBUG Protocol: Write to modem: 02 64 03 01
+INFO Protocol: Read 0x64: All link start: grp: 1 Cmd.EITHER ack: True
+INFO Protocol: Read 0x53: All link done: 3a.29.84 grp: 1 Cmd.RESPONDER cat: 0x00 0x00 0x00
+
+INFO Base: Device 3a.29.84 (lamp2) cmd: status refresh
+
+DEBUG Mqtt: MQTT publish insteon/command/modem/session/3398910610 {"type": "MESSAGE", "data": "All link complete"} qos=0 ret=False
+DEBUG Mqtt: MQTT publish insteon/command/modem/session/3398910610 {"type": "END", "data": null} qos=0 ret=False
+DEBUG Protocol: Write handler finished
+INFO Protocol: Write to modem: Std: 3a.29.84, Type.DIRECT, 19 00
+DEBUG Protocol: Write to modem: 02 62 3a 29 84 0f 19 00
+INFO Mqtt: MQTT message insteon/command/modem/session/3398910610 b'{"type": "MESSAGE", "data": "All link complete"}'
+DEBUG Mqtt: MQTT writing
+DEBUG Serial: Wrote 8 bytes to serial /dev/insteon
+INFO Mqtt: MQTT message insteon/command/modem/session/3398910610 b'{"type": "END", "data": null}'
+INFO Protocol: Read 0x62: Std: 3a.29.84, Type.DIRECT, 19 00 ack: True
+DEBUG Protocol: Passing msg to write handler
+DEBUG DeviceRefresh: 3a.29.84 ACK response
+INFO Protocol: Read 0x50: Std: 3a.29.84->44.85.11 Type.DIRECT_ACK cmd: 01 00
+DEBUG Protocol: Passing msg to write handler
+UI Dimmer: Dimmer 3a.29.84 refresh at level 0
+INFO Dimmer: Setting device 3a.29.84 (lamp2) on=0
+INFO Dimmer: MQTT received level change 3a.29.84 (lamp2) = 0
+DEBUG Mqtt: MQTT publish insteon/3a.29.84/state { "state" : "OFF", "brightness" : 0 } qos=1 ret=0
+UI DeviceRefresh: Device 3a.29.84 db out of date (got 1 vs None), refreshing
+DEBUG Protocol: Write handler finished
+INFO Protocol: Write to modem: Ext: 3a.29.84, Type.DIRECT ext, 2f 00  00 00 00 00 00 00 00 00 00 00 00 00 00 00
+DEBUG Protocol: Write to modem: 02 62 3a 29 84 1f 2f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 d1
+DEBUG Mqtt: MQTT writing
+DEBUG Serial: Wrote 22 bytes to serial /dev/insteon
+INFO Protocol: Read 0x62: Ext: 3a.29.84, Type.DIRECT ext, 2f 00 ack: True 00 00 00 00 00 00 00 00 00 00 00 00 00 d1
+DEBUG Protocol: Passing msg to write handler
+INFO Protocol: Read 0x50: Std: 3a.29.84->44.85.11 Type.DIRECT_NAK cmd: 2f ff
+DEBUG Protocol: Passing msg to write handler
+ERROR DeviceDbGet: 3a.29.84 device NAK error: Std: 3a.29.84->44.85.11 Type.DIRECT_NAK cmd: 2f ff
+DEBUG Protocol: Write handler finished
