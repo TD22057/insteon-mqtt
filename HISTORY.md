@@ -27,6 +27,17 @@
   configuration file to allow the file to be split into multiple
   files ([Issue #11][I11]).
 
+- Added linking command to put a modem/device into linking mode without
+  touching it.  This lets a new device be added purely through software
+  commands  ([Issue #7][I7]).
+
+- Updated the modem db delete commands so that specific records can be
+  removed.  Removed the modem only db_delete command and replaced it with
+  db_del_ctrl_of and db_del_resp_of just like the devices.
+
+- Low level MQTT commands now accept "nice" names from the config file for
+  all inputs including the topic.  "modem" is the nice name for the PLM modem.
+
 
 ## [0.5.2] - 2017-12-22
 
@@ -50,6 +61,7 @@
 [I4]: https://github.com/TD22057/insteon-mqtt/issues/4
 [I5]: https://github.com/TD22057/insteon-mqtt/issues/5
 [I6]: https://github.com/TD22057/insteon-mqtt/issues/6
+[I7]: https://github.com/TD22057/insteon-mqtt/issues/7
 [I8]: https://github.com/TD22057/insteon-mqtt/issues/8
 [I11]: https://github.com/TD22057/insteon-mqtt/issues/11
 [I16]: https://github.com/TD22057/insteon-mqtt/issues/16
