@@ -200,6 +200,20 @@ def parse_args(args):
                     help="Controller or responder flag of the entry to remove")
     sp.set_defaults(func=device.db_delete)
 
+    #---------------------------------------
+    # device.set_button_led
+    sp = sub.add_parser("set-button-led", help="Set the button LED state for "
+                        "a KeyPadLinc.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.add_argument("config", metavar="config.yaml", help="Configuration "
+                    "file to use.")
+    sp.add_argument("address", help="Device address or name.")
+    sp.add_argument("button", type=int, help="Button (group) number to set")
+    sp.add_argument("is_on", type=int, default=1, choices=[0,1],
+                    help="1 to turn the LED on, 0 to turn it off.")
+    sp.set_defaults(func=device.set_button_led)
+
     return p.parse_args(args)
 
 

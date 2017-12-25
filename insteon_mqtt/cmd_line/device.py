@@ -19,6 +19,20 @@ def linking(args, config):
 
 
 #===========================================================================
+def set_button_led(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "set_button_led",
+        "button" : args.button,
+        "is_on" : bool(args.is_on),
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+
+#===========================================================================
 def on(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {

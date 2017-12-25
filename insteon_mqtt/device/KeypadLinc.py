@@ -8,6 +8,7 @@ from .. import handler
 from .. import log
 from .. import message as Msg
 from ..Signal import Signal
+from .. import util
 from .Dimmer import Dimmer
 
 LOG = log.get_logger()
@@ -44,6 +45,12 @@ class KeypadLinc(Dimmer):
 
         self.signal_pressed = Signal()  # (Device, int group, bool on)
         self.signal_led_changed = Signal()  # (Device, int group, bool on)
+
+        # Remote (mqtt) commands mapped to methods calls.  Add to the
+        # base class defined commands.
+        self.cmd_map.update({
+            'set_button_led' : self.set_button_led,
+            })
 
     #-----------------------------------------------------------------------
     def pair(self, on_done=None):
@@ -87,6 +94,13 @@ class KeypadLinc(Dimmer):
         # Send a 0x19 0x01 command to get the LED light on/off flags.
         LOG.info("Device %s cmd: keypad status refresh", self.addr)
 
+        # Get the dimmer light level state if the initial refresh works.
+        def use_cb(success, msg, data):
+            if success:
+                Dimmer.refresh(self, force, on_done)
+            elif on_done:
+                on_done(False, "Refresh failed", None)
+
         # This sends a refresh ping which will respond w/ the LED bit
         # flags (1-8) and current database delta field.  The handler
         # checks that against the current value.  If it's different,
@@ -94,40 +108,45 @@ class KeypadLinc(Dimmer):
         # update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
         msg_handler = handler.DeviceRefresh(self, self.handle_led_refresh,
-                                            force=False, on_done=None,
+                                            force=False, on_done=use_cb,
                                             num_retry=3)
         self.protocol.send(msg, msg_handler)
 
-        # Get the light level state.
-        super().refresh(force, on_done=on_done)
-
     #-----------------------------------------------------------------------
-    def set_button_led(self, button, on, on_done=None):
+    def set_button_led(self, button, is_on, on_done=None):
         """TODO: doc
         """
-        LOG.info("KeypadLinc setting LED %s to %s", button, on)
+        on_done = util.make_callback(on_done)
+        LOG.info("KeypadLinc setting LED %s to %s", button, is_on)
 
         if button < 1 or button > 8:
             LOG.error("KeypadLinc button %s out of range [1,8]", button)
+            on_done(False, "Invalid button", None)
             return
 
-        is_on = self._led_bits & (1 << (button - 1))
-        if is_on == on:
-            LOG.info("KeypadLinc LED %s already at %s", button, on)
-            return
+        # New LED bit flags to send.  Either set the bit or clear it
+        # depending on the input flag.
+        if is_on:
+            led_bits = util.bit_set(self._led_bits, button - 1)
+        else:
+            led_bits = util.bit_clear(self._led_bits, button - 1)
 
-        # Extended message data - see Insteon dev guide p156.
+        # Extended message data - see Insteon dev guide p156.  NOTE: guide is
+        # wrong - it says send button, 0x09, 0x01/0x00 to turn that button
+        # on/off but that doesn't work.  Must send button 0x01 and the full
+        # LED bit mask to adjust the lights.
         data = bytes([
-            button,  # D1 button number
-            0x09,    # D2 set LED state for button
-            0x01 if on else 0x00,  # D3 turn on/off button
+            0x01,   # D1 only button 0x01 works
+            0x09,   # D2 set LED state for buttons
+            led_bits,  # D3 all 8 LED flags.
             ] + [0x00] * 11)
 
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        callback = functools.partial(self.handle_led_ack, on=on,
+        callback = functools.partial(self.handle_led_ack, button=button,
+                                     is_on=is_on, led_bits=led_bits,
                                      on_done=on_done)
         msg_handler = handler.StandardCmd(msg, callback)
 
@@ -135,30 +154,29 @@ class KeypadLinc(Dimmer):
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def handle_led_ack(self, msg, on, on_done=None):
+    def handle_led_ack(self, msg, button, is_on, led_bits, on_done=None):
         """TODO: doc
         """
         # If this it the ACK we're expecting, update the internal
         # state and emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("KeypadLinc LED %s ACK: %s", self.addr, msg)
+            LOG.debug("KeypadLinc LED %s button %s ACK: %s", self.addr, button,
+                      msg)
 
-            assert 1 <= msg.group <= 8
-
-            # Update the LED bit for the button.
-            self._led_bits |= (1 << (msg.group - 1))
+            # Update the LED bit for the updated button.
+            self._led_bits = led_bits
+            LOG.ui("KeypadLinc %s LED's changed to %s", self.addr,
+                   "{:08b}".format(self._led_bits))
 
             # Emit the LED change signal
-            self.signal_led_changed.emit(self, msg.group, on)
+            self.signal_led_changed.emit(self, button, is_on)
 
-            if on_done:
-                s = "KeypadLinc %s LED updated to %s" % (self.addr, on)
-                on_done(True, s, on)
+            msg = "KeypadLinc %s LED updated to %s" % (self.addr, is_on)
+            on_done(True, msg, is_on)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("KeypadLinc LED %s NAK error: %s", self.addr, msg)
-            if on_done:
-                on_done(False, "KeypadLinc %s LED update failed", None)
+            on_done(False, "KeypadLinc %s LED update failed", None)
 
     #-----------------------------------------------------------------------
     def handle_led_refresh(self, msg):
@@ -174,9 +192,8 @@ class KeypadLinc(Dimmer):
         # Loop over the bits and emit a signal for any that have been
         # changed.
         for i in range(8):
-            mask = 1 << i
-            is_on = led_bits & mask
-            was_on = self._led_bits & mask
+            is_on = util.bit_get(led_bits, i)
+            was_on = util.bit_get(self._led_bits, i)
             if is_on != was_on:
                 self.signal_led_changed.emit(self, i + 1, is_on)
 
@@ -209,8 +226,7 @@ class KeypadLinc(Dimmer):
         # keypadlinc.  Treat those the same as the remote control
         # does.  They don't have levels to find/set but have similar
         # messages to the dimmer load.
-
-        on = None
+        is_on = None
         cmd = msg.cmd1
 
         # ACK of the broadcast - ignore this.
@@ -223,33 +239,35 @@ class KeypadLinc(Dimmer):
         elif cmd in self.on_codes:
             LOG.info("KeypadLinc %s broadcast ON grp: %s", self.addr,
                      msg.group)
-            on = True
+            is_on = True
 
         # Off command. 0x13: off, 0x14: off fast
         elif cmd in self.off_codes:
             LOG.info("KeypadLinc %s broadcast OFF grp: %s", self.addr,
                      msg.group)
+            is_on = False
 
         # Starting manual increment (cmd2 0x00=up, 0x01=down)
         elif cmd == 0x17:
-            # This is kind of arbitrary - but if the button is held
-            # down we'll emit an on signal if it's dimming up and an
-            # off signal if it's dimming down.
-            on = msg.cmd2 == 0x00  # on = up, off = down
+            LOG.info("KeypadLinc %s starting manual change grp: %s %s",
+                     self.addr, msg.group, "UP" if msg.cmd2 == 0x00 else "DN")
 
         # Stopping manual increment (cmd2 = unused)
         elif cmd == 0x18:
-            # Nothing to do - the remote has no state to query about.
-            pass
+            LOG.info("KeypadLinc %s stopping manual change grp %s", self.addr,
+                     msg.group)
+
+            # Ping the device to get the button states.
+            self.refresh()
 
         # Notify others that the button was pressed.
-        if on is not None:
-            self.signal_pressed.emit(self, msg.group, True)
+        if is_on is not None:
+            self.signal_pressed.emit(self, msg.group, is_on)
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
         # update their states since they will have seen the group
         # broadcast and updated (without sending anything out).
-        super().handle_broadcast(msg)
+        super(Dimmer,self).handle_broadcast(msg)
 
     #-----------------------------------------------------------------------

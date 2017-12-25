@@ -74,7 +74,7 @@ class Dimmer(Base):
         # Support dimmer style signals and motion on/off style signals.
         self.signal_level_changed = Signal()  # (Device, level)
 
-        # Remove (mqtt) commands mapped to methods calls.  Add to the
+        # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
         self.cmd_map.update({
             'on' : self.on,

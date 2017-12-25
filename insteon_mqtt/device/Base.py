@@ -445,9 +445,13 @@ class Base:
         """
         # Update failed - call the user callback and return
         if not success:
+            LOG.warning("Skipping link on remote device %s - failed %s",
+                        remote.label, msg)
             if on_done:
                 on_done(False, msg, entry)
             return
+
+        LOG.info("Adding matching link on remote device %s", remote.label)
 
         # Send the command to the device.  Two way is false here since we
         # just added the other link.  Data is always None since we don't know

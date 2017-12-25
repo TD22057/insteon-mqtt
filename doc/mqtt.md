@@ -180,6 +180,20 @@ The command payload is:
      ["two_way" : True/False] }
    ```
 
+### Change KeypadLinc button LED state.
+
+Supported: KeypadLinc
+
+This command turns the LED on a KeypadLinc button on or off.  This also
+toggles the internal state of the button.  So if a button LED is turned off,
+the next click of the button will send out an ON command (and vice versa).
+Button is an integer in the range [1,8].  In the 6 button version, buttons
+1,2 and 7,8 are not commandable and can only be toggled by sending on/off
+commands.
+
+   ```
+   { "cmd": "set_button_led", "button" : button, "is_on" : True/False }
+
 ---
 
 # State change commands
