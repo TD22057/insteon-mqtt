@@ -97,7 +97,7 @@ database even if it's not out of date.  The command payload is:
 
 
    ```
-   { "cmd" : "refresh", ["force" : True/False] }
+   { "cmd" : "refresh", ["force" : true/false] }
    ```
 
 
@@ -110,7 +110,7 @@ about (i.e. devices defined in the config file).  The command payload
 is:
 
    ```
-   { "cmd" : "refresh_all", ["force" : True/False] }
+   { "cmd" : "refresh_all", ["force" : true/false] }
    ```
 
 
@@ -119,7 +119,7 @@ is:
 Supported: modem, devices
 
 This commands modifies the all link database on the device to add it
-as a controller of another device.  If the two-way flag is set (True
+as a controller of another device.  If the two-way flag is set (true
 is the default), it will also modify the other device database to have
 an entry as the responder of the first device.  The group is an
 integer (1-255) of the Insteon group number to use for the link.  The
@@ -127,7 +127,7 @@ command payload is:
 
    ```
    { "cmd" : "db_add_ctrl_of", "addr" : aa.bb.cc, "group" : group,
-     ["two_way" : True/False], ["data" : [D1, D2,D3]] }
+     ["two_way" : true/false], ["data" : [D1, D2,D3]] }
    ```
 
 ### Add the device as a responder of another device.
@@ -135,7 +135,7 @@ command payload is:
 Supported: modem, devices
 
 This commands modifies the all link database on the device to add it
-as a responder of another device.  If the two-way flag is set (True
+as a responder of another device.  If the two-way flag is set (true
 is the default), it will also modify the other device database to have
 an entry as the controller of the first device.  The group is an
 integer (1-255) of the Insteon group number to use for the link.  The
@@ -143,7 +143,7 @@ command payload is:
 
    ```
    { "cmd" : "db_add_resp_of", "addr" : aa.bb.cc, "group" : group,
-     ["two_way" : True/False], ["data" : [D1, D2,D3]] } }
+     ["two_way" : true/false], ["data" : [D1, D2,D3]] } }
    ```
 
 
@@ -153,14 +153,14 @@ Supported: modem, devices
 
 This commands modifies the all link database on the device to remove
 it as a controller of another device.  If the two-way flag is set
-(True is the default), it will also modify the other device database
+(true is the default), it will also modify the other device database
 to remove the entry as the responder of the first device.  The group
 is an integer (1-255) of the Insteon group number to use for the link.
 The command payload is:
 
    ```
    { "cmd" : "db_del_ctrl_of", "addr" : aa.bb.cc, "group" : group,
-     ["two_way" : True/False] }
+     ["two_way" : true/false] }
    ```
 
 
@@ -169,7 +169,7 @@ The command payload is:
 Supported: modem, devices
 
 This commands modifies the all link database on the device to remove
-it as a responder of another device.  If the two-way flag is set (True
+it as a responder of another device.  If the two-way flag is set (true
 is the default), it will also modify the other device database to
 remove the entry as the controller of the first device.  The group is
 an integer (1-255) of the Insteon group number to use for the link.
@@ -177,7 +177,7 @@ The command payload is:
 
    ```
    { "cmd" : "db_del_resp_of", "addr" : aa.bb.cc, "group" : group,
-     ["two_way" : True/False] }
+     ["two_way" : true/false] }
    ```
 
 ### Change KeypadLinc button LED state.
@@ -192,7 +192,7 @@ Button is an integer in the range [1,8].  In the 6 button version, buttons
 commands.
 
    ```
-   { "cmd": "set_button_led", "button" : button, "is_on" : True/False }
+   { "cmd": "set_button_led", "button" : button, "is_on" : true/false }
 
 ---
 
