@@ -126,7 +126,7 @@ class KeypadLinc(Dimmer):
 
         # New LED bit flags to send.  Either set the bit or clear it
         # depending on the input flag.
-        util.bit_set(self._led_bits, button - 1, is_on)
+        led_bits = util.bit_set(self._led_bits, button - 1, is_on)
 
         # Extended message data - see Insteon dev guide p156.  NOTE: guide is
         # wrong - it says send button, 0x09, 0x01/0x00 to turn that button
@@ -273,6 +273,6 @@ class KeypadLinc(Dimmer):
         # this group and call their handle_group_cmd() methods to
         # update their states since they will have seen the group
         # broadcast and updated (without sending anything out).
-        super(Dimmer,self).handle_broadcast(msg)
+        super(Dimmer, self).handle_broadcast(msg)
 
     #-----------------------------------------------------------------------

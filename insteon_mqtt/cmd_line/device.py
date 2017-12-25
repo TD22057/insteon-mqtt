@@ -31,7 +31,6 @@ def set_button_led(args, config):
     return reply["status"]
 
 
-
 #===========================================================================
 def on(args, config):
     topic = "%s/%s" % (args.topic, args.address)
