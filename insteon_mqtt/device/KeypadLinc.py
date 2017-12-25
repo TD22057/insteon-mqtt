@@ -126,10 +126,7 @@ class KeypadLinc(Dimmer):
 
         # New LED bit flags to send.  Either set the bit or clear it
         # depending on the input flag.
-        if is_on:
-            led_bits = util.bit_set(self._led_bits, button - 1)
-        else:
-            led_bits = util.bit_clear(self._led_bits, button - 1)
+        util.bit_set(self._led_bits, button - 1, is_on)
 
         # Extended message data - see Insteon dev guide p156.  NOTE: guide is
         # wrong - it says send button, 0x09, 0x01/0x00 to turn that button
@@ -194,8 +191,11 @@ class KeypadLinc(Dimmer):
         for i in range(8):
             is_on = util.bit_get(led_bits, i)
             was_on = util.bit_get(self._led_bits, i)
+
+            LOG.debug("Btn %d old: %d new %d", i + 1, is_on, was_on)
             if is_on != was_on:
                 self.signal_led_changed.emit(self, i + 1, is_on)
+                self.signal_pressed.emit(self, i + 1, is_on)
 
         self._led_bits = led_bits
 
@@ -257,11 +257,16 @@ class KeypadLinc(Dimmer):
             LOG.info("KeypadLinc %s stopping manual change grp %s", self.addr,
                      msg.group)
 
-            # Ping the device to get the button states.
+            # Ping the device to get the button states - we don't know what
+            # the keypadlinc things the state is - could be on or off.  Doing
+            # a dim down for a long time puts all the other devices "off" but
+            # the keypadlinc can still think that it's on.  So we have to do
+            # a refresh to find out.
             self.refresh()
 
         # Notify others that the button was pressed.
         if is_on is not None:
+            self._led_bits = util.bit_set(self._led_bits, msg.group - 1, is_on)
             self.signal_pressed.emit(self, msg.group, is_on)
 
         # This will find all the devices we're the controller of for

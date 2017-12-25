@@ -62,14 +62,17 @@ def ctrl_str(is_controller):
 def bit_get(value, bit):
     """TODO: doc
     """
-    return value & (1 << bit)
+    return (value >> bit) & 1
 
 
 #===========================================================================
-def bit_set(value, bit):
+def bit_set(value, bit, is_one):
     """TODO: doc
     """
-    return value | (1 << bit)
+    if is_one:
+        return value | (1 << bit)
+    else:
+        return value & ~(1 << bit)
 
 
 #===========================================================================
