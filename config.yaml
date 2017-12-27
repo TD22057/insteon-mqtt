@@ -306,7 +306,7 @@ mqtt:
   #     - platform: mqtt
   #       state_topic: 'insteon/aa.bb.cc/leak'
   #       device_class: 'moisture'
-  motion:
+  leak:
     # Output wet/dry change topic and payload.  This message is sent
     # whenever the device changes state to wet or dry.
     # Available variables for templating are:
