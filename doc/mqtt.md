@@ -84,6 +84,21 @@ to update it's local database.  The modem will automatically update, but the
 devices don't send a message when the linking is complete so there is no way
 to know when to update the database.
 
+For example, to add a new Insteon device, edit the config.yaml file to
+identify the device and address and restart insteon-mqtt.  Then link it with
+the modem both directions and run the pair command to add any other
+(non-group 1 links):
+
+   ```
+   insteon-mqtt linking config.yaml modem
+   insteon-mqtt linking config.yaml keypad1
+      [device will double beep]
+   insteon-mqtt linking config.yaml keypad1
+   insteon-mqtt linking config.yaml modem
+      [device will double beep]
+   insteon-mqtt pair config.yaml keypad1
+   ```
+
 
 ### Refresh the device state and download it's all link database
 

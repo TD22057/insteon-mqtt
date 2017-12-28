@@ -26,7 +26,8 @@ class DeviceRefresh(Base):
     device.  If it does, the handler will send a new message to
     request that.
     """
-    def __init__(self, device, callback, force, on_done, num_retry=3):
+    def __init__(self, device, callback, force, on_done, num_retry=3,
+                 skip_db=False):
         """Constructor
 
         Args
@@ -39,12 +40,14 @@ class DeviceRefresh(Base):
                      handler times out without returning Msg.FINISHED.
                      This count does include the initial sending so a
                      retry of 3 will send once and then retry 2 more times.
+        TODO: doc
         """
         super().__init__(on_done, num_retry)
 
         self.device = device
         self.callback = callback
         self.force = force
+        self.skip_db = skip_db
         self.addr = device.addr
 
     #-----------------------------------------------------------------------
@@ -78,7 +81,9 @@ class DeviceRefresh(Base):
             # All link database delta is stored in cmd1 so we if we have
             # the latest version.  If not, schedule an update.
             need_refresh = True
-            if not self.force and self.device.db.is_current(msg.cmd1):
+            if self.skip_db:
+                need_refresh = False
+            elif not self.force and self.device.db.is_current(msg.cmd1):
                 LOG.ui("Device database is current at delta %s", msg.cmd1)
                 need_refresh = False
 

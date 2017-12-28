@@ -47,6 +47,8 @@ what they are and how to interpret messages from them.
 - Automatically link new devices to the modem.  The system will
   correctly link all the Insteon groups for a device (like the smoke
   bridge which has 7 groups).
+- Link devices to the modem and each other via MQTT commands or the
+  command line tool.
 - Add and delete entries from the modem and device all link databases.
 - Command line tool for simpler sending of MQTT messages to send to
   the server.
@@ -73,8 +75,6 @@ future enhancements:
 
 - Finish commenting all of the code.
 - Full suite of unit tests.
-- More Insteon devices: door sensors, leak sensors, keypads, fanlincs,
-  etc.
 - Custom scene creation (software based scenes) and triggering.
 - PIP packaging and installation.
 - YAML input configuration validation.

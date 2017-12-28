@@ -24,6 +24,7 @@ from . import network
 from . import util
 
 from .Address import Address
+from .CommandSeq import CommandSeq
 from .Modem import Modem
 from .Protocol import Protocol
 from .Signal import Signal

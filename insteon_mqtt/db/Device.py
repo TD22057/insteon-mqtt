@@ -444,19 +444,6 @@ class Device:
         group = int(group)
         data = data if data else bytes(3)
 
-        # If the record already exists, don't do anything.
-        entry = self.find(addr, group, is_controller)
-        if entry:
-            # TODO: support checking and updating data
-            LOG.warning("Device %s add db already exists for %s grp %s %s",
-                        self.addr, addr, group, util.ctrl_str(is_controller))
-            if on_done:
-                on_done(True, "Entry already exists", entry)
-            return
-
-        LOG.info("Device %s adding db: %s grp %s %s %s", self.addr, addr,
-                 group, util.ctrl_str(is_controller), data)
-
         # When complete, remove this call from the pending list.  Then
         # call the user input callback if supplied, and call the next
         # pending call if one is waiting.
@@ -468,6 +455,24 @@ class Device:
                 self._pending[0]()
             elif on_done:
                 on_done(success, msg, entry)
+
+        # Push a dummy pending entry to the list on the first call.
+        # This way cb() has something to remove and future calls to
+        # this know that there is a call in progress.
+        if not self._pending:
+            self._pending.append(True)
+
+        # If the record already exists, don't do anything.
+        entry = self.find(addr, group, is_controller)
+        if entry:
+            # TODO: support checking and updating data
+            LOG.warning("Device %s add db already exists for %s grp %s %s",
+                        self.addr, addr, group, util.ctrl_str(is_controller))
+            done_cb(True, "Entry already exists", entry)
+            return
+
+        LOG.info("Device %s adding db: %s grp %s %s %s", self.addr, addr,
+                 group, util.ctrl_str(is_controller), data)
 
         # If there are entries in the db that are mark unused, we can
         # re-use those memory addresses and just update them w/ the
@@ -486,12 +491,6 @@ class Device:
         else:
             self._add_using_new(protocol, addr, group, is_controller, data,
                                 done_cb)
-
-        # Push a dummy pending entry to the list on the first call.
-        # This way cb() has something to remove and future calls to
-        # this know that there is a call in progress.
-        if not self._pending:
-            self._pending.append(True)
 
     #-----------------------------------------------------------------------
     def _delete_on_device(self, protocol, entry, on_done):

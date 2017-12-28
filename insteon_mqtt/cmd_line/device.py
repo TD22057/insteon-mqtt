@@ -23,7 +23,7 @@ def set_button_led(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
         "cmd" : "set_button_led",
-        "button" : args.button,
+        "group" : args.group,
         "is_on" : bool(args.is_on),
         }
 
@@ -38,6 +38,7 @@ def on(args, config):
         "cmd" : "on",
         "level" : args.level,
         "instant" : args.instant,
+        "group" : args.group,
         }
 
     reply = util.send(config, topic, payload, args.quiet)
@@ -50,6 +51,7 @@ def off(args, config):
     payload = {
         "cmd" : "off",
         "instant" : args.instant,
+        "group" : args.group,
         }
 
     reply = util.send(config, topic, payload, args.quiet)
@@ -63,6 +65,7 @@ def set(args, config):
         "cmd" : "set",
         "level" : args.level,
         "instant" : args.instant,
+        "group" : args.group,
         }
 
     reply = util.send(config, topic, payload, args.quiet)

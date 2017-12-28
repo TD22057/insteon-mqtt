@@ -3,6 +3,7 @@
 # Remote module
 #
 #===========================================================================
+from ..CommandSeq import CommandSeq
 from .. import log
 from ..Signal import Signal
 from .Base import Base
@@ -54,7 +55,7 @@ class Remote(Base):
     on_codes = [0x11, 0x12, 0x21, 0x23]  # on, fast on, instant on, manual on
     off_codes = [0x13, 0x14, 0x22]  # off, fast off, instant off
 
-    def __init__(self, protocol, modem, address, name, num):
+    def __init__(self, protocol, modem, address, name, num_button):
         """Constructor
 
         Args:
@@ -63,11 +64,11 @@ class Remote(Base):
                        the device to send messages to the PLM modem.
           modem:       (Modem) The Insteon modem used to find other devices.
           address:     (Address) The address of the device.
-          num:         (int) Number of buttons on the remote.
           name         (str) Nice alias name to use for the device.
+          num_button:  (int) Number of buttons on the remote.
         """
         super().__init__(protocol, modem, address, name)
-        self.num = num
+        self.num = num_button
 
         self.signal_pressed = Signal()  # (Device, int group, bool on)
 
@@ -88,23 +89,31 @@ class Remote(Base):
         """
         LOG.info("Remote %s pairing", self.addr)
 
-        # Search our db to see if we have controller links for the
-        # groups back to the modem.  If one doesn't exist, add it on
-        # our device and the modem.
-        add_groups = []
-        for group in range(1, self.num + 1):
-            if not self.db.find(self.modem.addr, group, True):
-                LOG.info("Remote adding ctrl for group %s", group)
-                add_groups.append(group)
-            else:
-                LOG.ui("Remote ctrl for group %s already exists", group)
+        # Build a sequence of calls to the do the pairing.  This insures each
+        # call finishes and works before calling the next one.  We have to do
+        # this for device db manipulation because we need to know the memory
+        # layout on the device before making changes.
+        seq = CommandSeq("Remote paired", on_done)
 
-        if add_groups:
-            for group in add_groups:
-                callback = on_done if group == add_groups[-1] else None
-                self.db_add_ctrl_of(self.modem.addr, group, on_done=callback)
-        elif on_done:
-            on_done(True, "Pairings already exist", None)
+        # Start with a refresh command - since we're changing the db, it must
+        # be up to date or bad things will happen.
+        seq.add(self.refresh)
+
+        # Add the device as a responder to the modem on group 1.  This is
+        # probably already there - and maybe needs to be there before we can
+        # even issue any commands but this check insures that the link is
+        # present on the device and the modem.
+        seq.add(self.db_add_resp_of, self.modem.addr, 0x01, refresh=False)
+
+        # Now add the device as the controller of the modem for all the
+        # remote buttons.
+        for group in range(1, self.num + 1):
+            seq.add(self.db_add_ctrl_of, self.modem.addr, group, refresh=False)
+
+        # Finally start the sequence running.  This will return so the
+        # network event loop can process everything and the on_done callbacks
+        # will chain everything together.
+        seq.run()
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):

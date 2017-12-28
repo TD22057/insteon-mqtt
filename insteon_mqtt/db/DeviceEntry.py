@@ -173,7 +173,7 @@ class DeviceEntry:
             ]))
         o.write(self.mem_bytes())  # D3,D4 record memory location
         o.write(bytes([0x08]))  # D5 number of bytes in record
-        # 8 byte record (p116)
+        # 8 byte record - see ALDB/L record format (page 116)
         o.write(self.db_flags.to_bytes())  # D6 db control flags
         o.write(bytes([self.group]))  # D7 group
         o.write(self.addr.to_bytes())  # D8-10 address

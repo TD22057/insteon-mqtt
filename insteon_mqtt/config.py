@@ -8,23 +8,24 @@ __doc__ = """Configuration file utilties
 """
 
 #===========================================================================
-import functools
 import os.path
 import yaml
 from . import device
 
 # Configuration file input description to class map.
 devices = {
-    'dimmer' : device.Dimmer,
-    'battery_sensor' : device.BatterySensor,
-    'fan_linc' : device.FanLinc,
-    'keypad_linc' : device.KeypadLinc,
-    'leak' : device.Leak,
-    'mini_remote4' : functools.partial(device.Remote, num=4),
-    'mini_remote8' : functools.partial(device.Remote, num=8),
-    'motion' : device.Motion,
-    'smoke_bridge' : device.SmokeBridge,
-    'switch' : device.Switch,
+    # Key is config file input.  Value is tuple of (class, **kwargs) of the
+    # class to use and any extra keyword args to pass to the constructor.
+    'dimmer' : (device.Dimmer, {}),
+    'battery_sensor' : (device.BatterySensor, {}),
+    'fan_linc' : (device.FanLinc, {}),
+    'keypad_linc' : (device.KeypadLinc, {}),
+    'leak' : (device.Leak, {}),
+    'mini_remote4' : (device.Remote, {'num_button': 4}),
+    'mini_remote8' : (device.Remote, {'num_button': 8}),
+    'motion' : (device.Motion, {}),
+    'smoke_bridge' : (device.SmokeBridge, {}),
+    'switch' : (device.Switch, {}),
     }
 
 
@@ -60,7 +61,8 @@ def find(name):
       name:   (str) The device type name.
 
     Returns:
-      Returns the device class to use for the input.
+      Returns a tuple of the device class to use for the input and
+      any extra keyword args to pass to the device class constructor.
     """
     name = name.lower()
     dev = devices.get(name, None)

@@ -76,7 +76,3 @@ def bit_set(value, bit, is_one):
 
 
 #===========================================================================
-def bit_clear(value, bit):
-    """TODO: doc
-    """
-    return value & ~(1 << bit)

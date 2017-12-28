@@ -4,12 +4,15 @@
 #
 #===========================================================================
 import functools
+from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg
 from ..Signal import Signal
 from .. import util
+from .Base import Base
 from .Dimmer import Dimmer
+from .Switch import Switch
 
 LOG = log.get_logger()
 
@@ -27,6 +30,8 @@ class KeypadLinc(Dimmer):
     # TODO: to set LED brightess: D1=0x00 D2 = 0x07 D3 = 0x11->0x7f
     # TODO: to trigger all link state: D2 = 0x0C
     """
+
+    #-----------------------------------------------------------------------
     def __init__(self, protocol, modem, address, name):
         """Constructor
 
@@ -36,15 +41,23 @@ class KeypadLinc(Dimmer):
                        the device to send messages to the PLM modem.
           modem:       (Modem) The Insteon modem used to find other devices.
           address:     (Address) The address of the device.
+          is_dimmer:   TODO
           name         (str) Nice alias name to use for the device.
         """
         super().__init__(protocol, modem, address, name)
 
-        # 8 bits representing the LED's on the device.
+        # 8 bits representing the LED's on the device for buttons 1-8.  For
+        # buttons 2-8 (8 button keypad) and 3-6 (6 button keypad), these also
+        # represent the state of the switch on vs off.  The load controller
+        # button (1 on 8 btn and 1,2,7,8 on 6 btn), cannot be controlled by
+        # changing the led state - only toggling the load changes the state.
+        # Since the non-load buttons have nothing to switch, the led state is
+        # the state of the switch.
         self._led_bits = 0x00
 
+        # Only used for buttons 2-8 (8 btn) or 3-6 (6 btn).  Load button
+        # signalling is handled through self.btn1 signals.
         self.signal_pressed = Signal()  # (Device, int group, bool on)
-        self.signal_led_changed = Signal()  # (Device, int group, bool on)
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
@@ -63,78 +76,116 @@ class KeypadLinc(Dimmer):
         The device must already be a responder to the modem (push set
         on the modem, then set on the device) so we can update it's
         database.
-
-        NOTE: The remote code assumes the remote buttons are using
-        groups 1...num (as set in the constructor).
         """
         LOG.info("KeypadLinc %s pairing", self.addr)
 
-        # Search our db to see if we have controller links for the
-        # groups back to the modem.  If one doesn't exist, add it on
-        # our device and the modem.
-        add_groups = []
-        for group in range(1, 8):
-            if not self.db.find(self.modem.addr, group, True):
-                LOG.info("KeypadLinc adding ctrl for group %s", group)
-                add_groups.append(group)
-            else:
-                LOG.ui("KeypadLinc ctrl for group %s already exists", group)
+        # Build a sequence of calls to the do the pairing.  This insures each
+        # call finishes and works before calling the next one.  We have to do
+        # this for device db manipulation because we need to know the memory
+        # layout on the device before making changes.
+        seq = CommandSeq("KeypadLinc paired", on_done)
 
-        if add_groups:
-            for group in add_groups:
-                callback = on_done if group == add_groups[-1] else None
-                self.db_add_ctrl_of(self.modem.addr, group, on_done=callback)
-        elif on_done:
-            on_done(True, "Pairings already exist", None)
+        # Start with a refresh command - since we're changing the db, it must
+        # be up to date or bad things will happen.
+        seq.add(self.refresh)
+
+        # Add the device as a responder to the modem on group 1.  This is
+        # probably already there - and maybe needs to be there before we can
+        # even issue any commands but this check insures that the link is
+        # present on the device and the modem.
+        seq.add(self.db_add_resp_of, self.modem.addr, 0x01, refresh=False)
+
+        # Now add the device as the controller of the modem for all 8
+        # buttons.  If this is a 6 button keypad, the extras will go unused
+        # but won't hurt anything.
+        for group in range(1, 9):
+            seq.add(self.db_add_ctrl_of, self.modem.addr, group, refresh=False)
+
+        # Finally start the sequence running.  This will return so the
+        # network event loop can process everything and the on_done callbacks
+        # will chain everything together.
+        seq.run()
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
         """TODO doc
         """
         # Send a 0x19 0x01 command to get the LED light on/off flags.
-        LOG.info("Device %s cmd: keypad status refresh", self.addr)
+        LOG.info("KeypadLinc %s cmd: keypad status refresh", self.addr)
 
-        # Get the dimmer light level state if the initial refresh works.
-        def use_cb(success, msg, data):
-            if success:
-                Dimmer.refresh(self, force, on_done)
-            elif on_done:
-                on_done(False, "Refresh failed", None)
+        # If we get the LED state correctly, then have the dimmer also get
+        # it's state and update the database if necessary.
+        seq = CommandSeq("Refresh complete", on_done)
+        seq.add(Dimmer.refresh, self, force)
 
-        # This sends a refresh ping which will respond w/ the LED bit
-        # flags (1-8) and current database delta field.  The handler
-        # checks that against the current value.  If it's different,
-        # it will send a database download command to the device to
-        # update the database.
+        # This sends a refresh ping which will respond w/ the LED bit flags
+        # (1-8) and current database delta field.  Pass skip_db here - we'll
+        # let the dimmer refresh handler above take care of getting the
+        # database updated.  Otherwise this handler and the one created in
+        # the dimmer refresh would download the database twice.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
         msg_handler = handler.DeviceRefresh(self, self.handle_led_refresh,
-                                            force=False, on_done=use_cb,
-                                            num_retry=3)
+                                            force=False, on_done=seq.on_done,
+                                            num_retry=3, skip_db=True)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set_button_led(self, button, is_on, on_done=None):
+    def on(self, group=1, level=None, instant=False, on_done=None):
+        """TODO: doc
+        """
+        assert 1 <= group <= 8
+
+        if group == 1:
+            level = level if level is not None else 0xff
+            super().on(group, level, instant, on_done)
+        else:
+            self.set_button_led(group, True, on_done)
+
+    #-----------------------------------------------------------------------
+    def off(self, group=1, instant=False, on_done=None):
+        """TODO: doc
+        """
+        assert 1 <= group <= 8
+
+        if group == 1:
+            super().off(group, instant, on_done)
+        else:
+            self.set_button_led(group, False, on_done)
+
+    #-----------------------------------------------------------------------
+    def set(self, level, group=1, instant=False, on_done=None):
+        """TODO: doc
+        """
+        assert 1 <= group <= 8
+
+        if group == 1:
+            super().set(level, group, instant, on_done)
+        else:
+            self.set_button_led(group, bool(level), on_done)
+
+    #-----------------------------------------------------------------------
+    def set_button_led(self, group, is_on, on_done=None):
         """TODO: doc
         """
         on_done = util.make_callback(on_done)
-        LOG.info("KeypadLinc setting LED %s to %s", button, is_on)
+        LOG.info("KeypadLinc setting LED %s to %s", group, is_on)
 
-        if button < 1 or button > 8:
-            LOG.error("KeypadLinc button %s out of range [1,8]", button)
-            on_done(False, "Invalid button", None)
+        if group < 1 or group > 8:
+            LOG.error("KeypadLinc group %s out of range [1,8]", group)
+            on_done(False, "Invalid group", None)
             return
 
         # New LED bit flags to send.  Either set the bit or clear it
         # depending on the input flag.
-        led_bits = util.bit_set(self._led_bits, button - 1, is_on)
+        led_bits = util.bit_set(self._led_bits, group - 1, is_on)
 
         # Extended message data - see Insteon dev guide p156.  NOTE: guide is
-        # wrong - it says send button, 0x09, 0x01/0x00 to turn that button
-        # on/off but that doesn't work.  Must send button 0x01 and the full
+        # wrong - it says send group, 0x09, 0x01/0x00 to turn that group
+        # on/off but that doesn't work.  Must send group 0x01 and the full
         # LED bit mask to adjust the lights.
         data = bytes([
-            0x01,   # D1 only button 0x01 works
-            0x09,   # D2 set LED state for buttons
+            0x01,   # D1 only group 0x01 works
+            0x09,   # D2 set LED state for groups
             led_bits,  # D3 all 8 LED flags.
             ] + [0x00] * 11)
 
@@ -142,7 +193,7 @@ class KeypadLinc(Dimmer):
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        callback = functools.partial(self.handle_led_ack, button=button,
+        callback = functools.partial(self.handle_led_ack, group=group,
                                      is_on=is_on, led_bits=led_bits,
                                      on_done=on_done)
         msg_handler = handler.StandardCmd(msg, callback)
@@ -151,22 +202,22 @@ class KeypadLinc(Dimmer):
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def handle_led_ack(self, msg, button, is_on, led_bits, on_done=None):
+    def handle_led_ack(self, msg, group, is_on, led_bits, on_done=None):
         """TODO: doc
         """
         # If this it the ACK we're expecting, update the internal
         # state and emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("KeypadLinc LED %s button %s ACK: %s", self.addr, button,
+            LOG.debug("KeypadLinc LED %s group %s ACK: %s", self.addr, group,
                       msg)
 
-            # Update the LED bit for the updated button.
+            # Update the LED bit for the updated group.
             self._led_bits = led_bits
             LOG.ui("KeypadLinc %s LED's changed to %s", self.addr,
                    "{:08b}".format(self._led_bits))
 
             # Emit the LED change signal
-            self.signal_led_changed.emit(self, button, is_on)
+            self.signal_pressed.emit(self, group, is_on)
 
             msg = "KeypadLinc %s LED updated to %s" % (self.addr, is_on)
             on_done(True, msg, is_on)
@@ -194,7 +245,6 @@ class KeypadLinc(Dimmer):
 
             LOG.debug("Btn %d old: %d new %d", i + 1, is_on, was_on)
             if is_on != was_on:
-                self.signal_led_changed.emit(self, i + 1, is_on)
                 self.signal_pressed.emit(self, i + 1, is_on)
 
         self._led_bits = led_bits
@@ -214,12 +264,11 @@ class KeypadLinc(Dimmer):
         Args:
           msg:   (InptStandard) Broadcast message from the device.
         """
-        # For the dimmer, we only want to have the dimmer process the
-        # message if it's group 1.  This also calls
-        # Base.handle_broadcast.  This correctly handles the dimmer
-        # and load settings.
+        # For the switch/dimmer, we only want to have that device process the
+        # message if it's group 1.  This also calls Base.handle_broadcast.
+        # This correctly handles the dimmer and load settings.
         if msg.group == 1:
-            Dimmer.handle_broadcast(self, msg)
+            super().handle_broadcast(msg)
             return
 
         # Non-group 1 messages are for the scene buttons on
@@ -236,13 +285,13 @@ class KeypadLinc(Dimmer):
             return
 
         # On command.  0x11: on, 0x12: on fast
-        elif cmd in self.on_codes:
+        elif cmd in Switch.on_codes:
             LOG.info("KeypadLinc %s broadcast ON grp: %s", self.addr,
                      msg.group)
             is_on = True
 
         # Off command. 0x13: off, 0x14: off fast
-        elif cmd in self.off_codes:
+        elif cmd in Switch.off_codes:
             LOG.info("KeypadLinc %s broadcast OFF grp: %s", self.addr,
                      msg.group)
             is_on = False
@@ -269,10 +318,52 @@ class KeypadLinc(Dimmer):
             self._led_bits = util.bit_set(self._led_bits, msg.group - 1, is_on)
             self.signal_pressed.emit(self, msg.group, is_on)
 
-        # This will find all the devices we're the controller of for
-        # this group and call their handle_group_cmd() methods to
-        # update their states since they will have seen the group
+        # Call the base class handler.  This will find all the devices we're
+        # the controller of for this group and call their handle_group_cmd()
+        # methods to update their states since they will have seen the group
         # broadcast and updated (without sending anything out).
-        super(Dimmer, self).handle_broadcast(msg)
+        Base.handle_broadcast(self, msg)
+
+    #-----------------------------------------------------------------------
+    def handle_group_cmd(self, addr, msg):
+        """Respond to a group command for this device.
+
+        This is called when this device is a responder to a scene.
+        The device should look up the responder entry for the group in
+        it's all link database and update it's state accordingly.
+
+        Args:
+          addr:  (Address) The device that sent the message.  This is the
+                 controller in the scene.
+          msg:   (message.InpStandard) The broadcast message that was sent.
+                 Use msg.group to find the scene group that was broadcast.
+        """
+        # Let the button 1 object handle it's commands.
+        if msg.group == 1:
+            super().handle_group_cmd(addr, msg)
+            return
+
+        # Make sure we're really a responder to this message.  This
+        # shouldn't ever occur.
+        entry = self.db.find(addr, msg.group, is_controller=False)
+        if not entry:
+            LOG.error("KeypadLinc %s has no group %s entry from %s", self.addr,
+                      msg.group, addr)
+            return
+
+        # For the LED buttons, we just need to update the internal state of
+        # the LED mask to keep track of what's on and off.
+
+        # 0x11: on, 0x12: on fast
+        if msg.cmd1 in Switch.on_codes:
+            self._led_bits = util.bit_set(self._led_bits, msg.group, 1)
+
+        # 0x13: off, 0x14: off fast
+        elif msg.cmd1 in Switch.off_codes:
+            self._led_bits = util.bit_set(self._led_bits, msg.group, 0)
+
+        else:
+            LOG.warning("KeypadLinc %s unknown group cmd %#04x", self.addr,
+                        msg.cmd1)
 
     #-----------------------------------------------------------------------

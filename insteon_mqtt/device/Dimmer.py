@@ -6,6 +6,7 @@
 #===========================================================================
 import functools
 from .Base import Base
+from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg
@@ -98,25 +99,34 @@ class Dimmer(Base):
         """
         LOG.info("Dimmer %s pairing", self.addr)
 
-        # Search our db to see if we have controller links for group 1
-        # back to the modem.  If one doesn't exist, add it on our
-        # device and the modem.
-        group = 1
+        # Build a sequence of calls to the do the pairing.  This insures each
+        # call finishes and works before calling the next one.  We have to do
+        # this for device db manipulation because we need to know the memory
+        # layout on the device before making changes.
+        seq = CommandSeq("Dimmer paired", on_done)
 
-        if not self.db.find(self.modem.addr, group, True):
-            LOG.ui("Dimmer adding ctrl for group %s", group)
-            self.db_add_ctrl_of(self.modem.addr, group, on_done=on_done)
-        else:
-            LOG.ui("Dimmer ctrl for group %s already exists", group)
-            if on_done:
-                on_done(True, "Pairings already exist", None)
+        # Start with a refresh command - since we're changing the db, it must
+        # be up to date or bad things will happen.
+        seq.add(self.refresh)
 
-        # TODO: for a devices, check other end of the link -
-        # i.e. check the device and the modem.  This is especially a
-        # problem for battery devices which won't respond when asleep.
+        # Add the device as a responder to the modem on group 1.  This is
+        # probably already there - and maybe needs to be there before we can
+        # even issue any commands but this check insures that the link is
+        # present on the device and the modem.
+        seq.add(self.db_add_resp_of, self.modem.addr, 0x01, refresh=False)
+
+        # Now add the device as the controller of the modem for all 8
+        # buttons.  If this is a 6 button keypad, the extras will go unused
+        # but won't hurt anything.
+        seq.add(self.db_add_ctrl_of, self.modem.addr, 0x01, refresh=False)
+
+        # Finally start the sequence running.  This will return so the
+        # network event loop can process everything and the on_done callbacks
+        # will chain everything together.
+        seq.run()
 
     #-----------------------------------------------------------------------
-    def on(self, level=0xFF, instant=False, on_done=None):
+    def on(self, group=0x01, level=0xFF, instant=False, on_done=None):
         """Turn the device on.
 
         This will send the command to the device to update it's state.
@@ -131,6 +141,7 @@ class Dimmer(Base):
         """
         LOG.info("Dimmer %s cmd: on %s", self.addr, level)
         assert level >= 0 and level <= 0xff
+        assert group == 0x01
 
         # Send an on or instant on command.
         cmd1 = 0x11 if not instant else 0x21
@@ -145,7 +156,7 @@ class Dimmer(Base):
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def off(self, instant=False, on_done=None):
+    def off(self, group=0x01, instant=False, on_done=None):
         """Turn the device off.
 
         This will send the command to the device to update it's state.
@@ -157,6 +168,7 @@ class Dimmer(Base):
                     instant change.
         """
         LOG.info("Dimmer %s cmd: off", self.addr)
+        assert group == 0x01
 
         # Send an off or instant off command.
         cmd1 = 0x13 if not instant else 0x21
@@ -169,6 +181,29 @@ class Dimmer(Base):
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def set(self, level, group=0x01, instant=False, on_done=None):
+        """Set the device on or off.
+
+        This will send the command to the device to update it's state.
+        When we get an ACK of the result, we'll change our internal
+        state and emit the state changed signals.
+
+        Args:
+          level:    (int/bool) If non zero, turn the device on.  Should be
+                    in the range 0x00 to 0xff.  If True, the level will be
+                    0xff.
+          instant:  (bool) False for a normal ramping change, True for an
+                    instant change.
+        """
+        if level:
+            if level is True:
+                level = 0xff
+
+            self.on(group, level, instant, on_done)
+        else:
+            self.off(group, instant, on_done)
 
     #-----------------------------------------------------------------------
     def increment_up(self, on_done=None):
@@ -207,29 +242,6 @@ class Dimmer(Base):
                                      on_done=on_done)
         msg_handler = handler.StandardCmd(msg, callback)
         self.protocol.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def set(self, level, instant=False, on_done=None):
-        """Set the device on or off.
-
-        This will send the command to the device to update it's state.
-        When we get an ACK of the result, we'll change our internal
-        state and emit the state changed signals.
-
-        Args:
-          level:    (int/bool) If non zero, turn the device on.  Should be
-                    in the range 0x00 to 0xff.  If True, the level will be
-                    0xff.
-          instant:  (bool) False for a normal ramping change, True for an
-                    instant change.
-        """
-        if level:
-            if level is True:
-                level = 0xff
-
-            self.on(level, instant, on_done)
-        else:
-            self.off(instant, on_done)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):

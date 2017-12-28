@@ -131,6 +131,6 @@ class Dimmer(Switch):
             LOG.exception("Invalid dimmer command: %s", data)
             return
 
-        self.device.set(level, instant)
+        self.device.set(level=level, instant=instant)
 
     #-----------------------------------------------------------------------

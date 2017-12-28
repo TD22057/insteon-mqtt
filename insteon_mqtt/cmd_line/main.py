@@ -81,6 +81,9 @@ def parse_args(args):
                     help="Instant (rather than ramping) on.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
+    sp.add_argument("-g", "--group", type=int, default=0x01,
+                    help="Group (button) number to turn on for multi-button "
+                    "devices." )
     sp.add_argument("config", metavar="config.yaml", help="Configuration "
                     "file to use.")
     sp.add_argument("address", help="Device address or name.")
@@ -93,6 +96,9 @@ def parse_args(args):
                     help="Instant (rather than ramping) on.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
+    sp.add_argument("-g", "--group", type=int, default=0x01,
+                    help="Group (button) number to set for multi-button "
+                    "devices." )
     sp.add_argument("config", metavar="config.yaml", help="Configuration "
                     "file to use.")
     sp.add_argument("address", help="Device address or name.")
@@ -107,6 +113,9 @@ def parse_args(args):
                     help="Don't print any command results to the screen.")
     sp.add_argument("-i", "--instant", action="store_true",
                     help="Instant (rather than ramping) on.")
+    sp.add_argument("-g", "--group", type=int, default=0x01,
+                    help="Group (button) number to turn off for multi-button "
+                    "devices." )
     sp.add_argument("config", metavar="config.yaml", help="Configuration "
                     "file to use.")
     sp.add_argument("address", help="Device address or name.")
@@ -209,7 +218,7 @@ def parse_args(args):
     sp.add_argument("config", metavar="config.yaml", help="Configuration "
                     "file to use.")
     sp.add_argument("address", help="Device address or name.")
-    sp.add_argument("button", type=int, help="Button (group) number to set")
+    sp.add_argument("group", type=int, help="Group (button) number to set")
     sp.add_argument("is_on", type=int, default=1, choices=[0, 1],
                     help="1 to turn the LED on, 0 to turn it off.")
     sp.set_defaults(func=device.set_button_led)
