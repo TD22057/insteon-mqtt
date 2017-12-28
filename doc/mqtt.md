@@ -427,12 +427,11 @@ matching the Home Assistant MQTT fan configuration.
 ## KeypadLinc
 
 The KeypadLinc is a wall mounted dimmer control and scene controller.
-Basically it combines a dimmer switch and remote control.  The dimmer
-portion of the KeypadLinc uses the dimmer settings (see above).  The
-other buttons are output only buttons like a remote control which
-alternate sending on and off commands to trigger scens.  KeypadLincs
-are usually configured as 6 button or 8 button devices with the
-following button number layouts:
+Basically it combines a dimmer switch and remote control.  The dimmer portion
+of the KeypadLinc uses the dimmer settings (see above).  The other buttons
+are treated as switches (see the switch documentation above) but have no load
+connected to them.  KeypadLincs are usually configured as 6 button or 8
+button devices with the following button number layouts:
 
 ```
    6 button         8 button
@@ -453,8 +452,13 @@ A sample remote control topic and payload configuration is:
 
    ```
    keypad_linc:
-     button_topic: 'insteon/{{address}}/state/{{button}}'
-     button_payload: '{{on_str.upper()}}'
+      # Output state change:
+      btn_state_topic: 'insteon/{{address}}/state/{{button}}'
+      btn_state_payload: '{{on_str.upper()}}'
+
+      # Input state change:
+      btn_on_off_topic: 'insteon/{{address}}/set/{{button}}'
+      btn_on_off_payload: '{ "cmd" : "{{json.state}}" }'
    ```
 
 ---
