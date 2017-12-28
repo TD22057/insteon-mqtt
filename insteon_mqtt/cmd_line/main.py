@@ -83,7 +83,7 @@ def parse_args(args):
                     help="Don't print any command results to the screen.")
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to turn on for multi-button "
-                    "devices." )
+                    "devices.")
     sp.add_argument("config", metavar="config.yaml", help="Configuration "
                     "file to use.")
     sp.add_argument("address", help="Device address or name.")
@@ -98,7 +98,7 @@ def parse_args(args):
                     help="Don't print any command results to the screen.")
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to set for multi-button "
-                    "devices." )
+                    "devices.")
     sp.add_argument("config", metavar="config.yaml", help="Configuration "
                     "file to use.")
     sp.add_argument("address", help="Device address or name.")
@@ -115,7 +115,7 @@ def parse_args(args):
                     help="Instant (rather than ramping) on.")
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to turn off for multi-button "
-                    "devices." )
+                    "devices.")
     sp.add_argument("config", metavar="config.yaml", help="Configuration "
                     "file to use.")
     sp.add_argument("address", help="Device address or name.")

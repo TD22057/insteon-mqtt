@@ -84,7 +84,7 @@ class BatterySensor(Base):
         seq.add(self.db_add_resp_of, self.modem.addr, 0x01, refresh=False)
 
         # Now add the device as the controller of the modem for groups 1-3.
-        for group in range(1,3):
+        for group in range(1, 4):
             seq.add(self.db_add_ctrl_of, self.modem.addr, group, refresh=False)
 
         # Finally start the sequence running.  This will return so the

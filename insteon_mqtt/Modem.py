@@ -3,7 +3,6 @@
 # Insteon modem class.
 #
 #===========================================================================
-import functools
 import json
 import os
 from .Address import Address
@@ -439,12 +438,15 @@ class Modem:
     def run_scene(self, group, is_on, cmd1=None, cmd2=0x00):
         """TODO: doc
         """
+        # TODO: add modem scene support.
         if cmd1 is None:
             cmd1 = 0x11 if is_on else 0x13
 
-        # TODO: why doesn't this work?
         #msg = Msg.OutModemScene(group, cmd1, cmd2)
-        #msg_handler = handler.
+        #msg_handler = handler.???
+        # see test script for reply - this does work.  Modem must be
+        # controller of device.  Modem(ctrl group)->Device(resp group) so we
+        # need multi group linking support before this can be done properly.
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
