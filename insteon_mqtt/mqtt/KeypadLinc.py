@@ -66,7 +66,7 @@ class KeypadLinc(Dimmer):
 
         # We need to subscribe to each button topic so we know which one is
         # which.
-        for group in range(8):
+        for group in range(1, 9):
             handler = functools.partial(self.handle_set, group=group)
             data = self.template_data(button=group)
             topic = self.msg_btn_on_off.render_topic(data)
@@ -78,7 +78,7 @@ class KeypadLinc(Dimmer):
         """
         super().unsubscribe(link)
 
-        for group in range(1,8):
+        for group in range(1, 9):
             data = self.template_data(button=group)
             topic = self.msg_btn_on_off.render_topic(data)
             link.unsubscribe(topic)
