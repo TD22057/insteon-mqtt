@@ -19,13 +19,13 @@ LOG = log.get_logger()
 class Modem:
     """Modem all link database.
 
-    This class stores the all link database for the PLM modem.  Each
-    item is a ModemEntry object that contains a single remote address,
-    group, and type (controller vs responder).
+    This class stores the all link database for the PLM modem.  Each item is
+    a ModemEntry object that contains a single remote address, group, and
+    type (controller vs responder).
 
-    The database can be read to and written from JSOn format.
-    Normally the db is constructed via message.InpAllLinkRec objects
-    being read and parsed after requesting them from the modem.
+    The database can be read to and written from JSOn format.  Normally the
+    db is constructed via message.InpAllLinkRec objects being read and parsed
+    after requesting them from the modem.
     """
     @staticmethod
     def from_json(data, path=None):
@@ -50,14 +50,12 @@ class Modem:
         """Constructor
 
         Args:
-          path:  (str) The file to save the database to when changes are
-                 made.
+          path:  (str) The file to save the database to when changes are made.
         """
         self.save_path = path
 
-        # Note: unlike devices, the PLM has no delta value so there
-        # doesn't seem to be any way to tell if the db value is
-        # current or not.
+        # Note: unlike devices, the PLM has no delta value so there doesn't
+        # seem to be any way to tell if the db value is current or not.
 
         # List of ModemEntry objects in the all link database.
         self.entries = []
@@ -107,8 +105,8 @@ class Modem:
     def clear(self):
         """Clear the complete database of entries.
 
-        This also removes the saved file if it exists.  It does NOT
-        modify the database on the device.
+        This also removes the saved file if it exists.  It does NOT modify
+        the database on the device.
         """
         self.entries = []
 
@@ -140,8 +138,8 @@ class Modem:
     def find_all(self, addr=None, group=None, is_controller=None):
         """Find all entries that match the inputs.
 
-        Returns all the entries that match any input that is set.  If
-        an input isn't set, that field isn't checked.
+        Returns all the entries that match any input that is set.  If an
+        input isn't set, that field isn't checked.
 
         Args:
           addr:           (Address) The address to match.  None for any.
@@ -172,14 +170,14 @@ class Modem:
     def add_on_device(self, protocol, entry, on_done=None):
         """Add an entry and push the entry to the Insteon modem.
 
-        This sends the input record to the Insteon modem.  If that
-        command succeeds, it adds the new ModemEntry record to the
-        database and saves it.
+        This sends the input record to the Insteon modem.  If that command
+        succeeds, it adds the new ModemEntry record to the database and saves
+        it.
 
-        The on_done callback will be passed a success flag
-        (True/False), a string message about what happened, and the
-        DeviceEntry that was created (if success=True).
-            on_done( success, message, ModemEntry )
+        The on_done callback will be passed a success flag (True/False), a
+        string message about what happened, and the DeviceEntry that was
+        created (if success=True).
+          on_done( success, message, ModemEntry )
 
         If the entry already exists, nothing will be done.
 
@@ -206,8 +204,8 @@ class Modem:
         else:
             cmd = Msg.OutAllLinkUpdate.Cmd.ADD_RESPONDER
 
-        # Create the flags for the entry.  is_last_rec doesn't seem to
-        # be used by the modem db so it's value doesn't matter.
+        # Create the flags for the entry.  is_last_rec doesn't seem to be
+        # used by the modem db so it's value doesn't matter.
         db_flags = Msg.DbFlags(in_use=True, is_controller=entry.is_controller,
                                is_last_rec=False)
 
@@ -223,17 +221,16 @@ class Modem:
     def delete_on_device(self, protocol, entry, on_done=None):
         """Delete a series of entries on the device.
 
-        This will delete ALL the entries for an address and group.
-        The modem doesn't support deleting a specific controller or
-        responder entry - it just deletes the first one that matches
-        the address and group.  To avoid confusion about this, this
-        method delete all the entries (controller and responder) that
-        match the inputs.
+        This will delete ALL the entries for an address and group.  The modem
+        doesn't support deleting a specific controller or responder entry -
+        it just deletes the first one that matches the address and group.  To
+        avoid confusion about this, this method delete all the entries
+        (controller and responder) that match the inputs.
 
-        The on_done callback will be passed a success flag
-        (True/False), a string message about what happened, and the
-        DeviceEntry that was created (if success=True).
-            on_done( success, message, ModemEntry )
+        The on_done callback will be passed a success flag (True/False), a
+        string message about what happened, and the DeviceEntry that was
+        created (if success=True).
+          on_done( success, message, ModemEntry )
 
         Args:
           protocol:      (Protocol) The Insteon protocol object to use for
@@ -301,8 +298,8 @@ class Modem:
                                         restore.addr, restore.data)
             msg_handler.add_update(msg2, restore)
 
-        # Send the first message.  If it ACK's, it will keep sending
-        # more deletes - one per entry.
+        # Send the first message.  If it ACK's, it will keep sending more
+        # deletes - one per entry.
         protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -331,8 +328,8 @@ class Modem:
         """Add a ModemEntry object to the database.
 
         If the entry already exists (matching address, group, and
-        controller), it will be updated. It does NOT change the
-        database on the Insteon device.
+        controller), it will be updated. It does NOT change the database on
+        the Insteon device.
 
         Args:
           entry   (ModemEntry) The new entry.

@@ -16,12 +16,11 @@ LOG = log.get_logger()
 class DeviceEntry:
     """Device all link database entry.
 
-    Each entry in the device's all link database has the address of
-    the remote device, the group the device is part of, and various
-    flags for the entry.
+    Each entry in the device's all link database has the address of the
+    remote device, the group the device is part of, and various flags for the
+    entry.
 
-    The entry can be converted to/from JSON with to_json() and
-    from_json().
+    The entry can be converted to/from JSON with to_json() and from_json().
     """
 
     @staticmethod
@@ -47,9 +46,8 @@ class DeviceEntry:
     def from_bytes(data):
         """Read a DeviceEntry from a byte array.
 
-        This is used to read an entry from an InpExtended insteon
-        message object.  See p162 of the Insteon dev guide for the
-        byte array layout.
+        This is used to read an entry from an InpExtended insteon message
+        object.  See p162 of the Insteon dev guide for the byte array layout.
 
         Args:
           data:  (bytes) The data 14 byte array from an InpExtended message.
@@ -109,11 +107,10 @@ class DeviceEntry:
     def update_from(self, addr, group, is_controller, data):
         """Update the entry from a set of data.
 
-        This modifies the entry using the input values.  The
-        DblFlags.in_use attribute will be set to True.  This is used
-        when an unused record is turned into an active record.  We
-        update the values but leave the memory location alone and mark
-        the record as now in use.
+        This modifies the entry using the input values.  The DblFlags.in_use
+        attribute will be set to True.  This is used when an unused record is
+        turned into an active record.  We update the values but leave the
+        memory location alone and mark the record as now in use.
 
         Args:
           addr:          (Address) The address of the device in the database.
@@ -188,8 +185,8 @@ class DeviceEntry:
     def __eq__(self, rhs):
         """Check for equality.
 
-        The address, group, and is_controller flags are all that are
-        used for the comparison.
+        The address, group, and is_controller flags are all that are used for
+        the comparison.
         """
         return (self.addr.id == rhs.addr.id and
                 self.group == rhs.group and

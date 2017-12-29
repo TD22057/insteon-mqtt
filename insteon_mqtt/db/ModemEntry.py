@@ -13,12 +13,10 @@ LOG = log.get_logger()
 class ModemEntry:
     """Modem all link database entry.
 
-    Each entry in the modem's all link database has the address of
-    the remote device, the group the device is part of, and various
-    flags for the entry.
+    Each entry in the modem's all link database has the address of the remote
+    device, the group the device is part of, and various flags for the entry.
 
-    The entry can be converted to/from JSON with to_json() and
-    from_json().
+    The entry can be converted to/from JSON with to_json() and from_json().
     """
 
     @staticmethod
@@ -81,8 +79,8 @@ class ModemEntry:
     def __eq__(self, rhs):
         """Check for equality.
 
-        The address, group, and is_controller flags are all that are
-        used for the comparison.
+        The address, group, and is_controller flags are all that are used for
+        the comparison.
         """
         return (self.addr.id == rhs.addr.id and
                 self.group == rhs.group and
