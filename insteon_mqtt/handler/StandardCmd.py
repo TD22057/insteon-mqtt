@@ -13,21 +13,18 @@ LOG = log.get_logger()
 class StandardCmd(Base):
     """Insteon standard input mesage handler.
 
-    Standard messages are uesd for general commands that we send (turn
-    light on) to the modem.  We'll send an Msg.OutStandard object, the
-    modem will echo that back with an ACK/NAK.  Then we'll get a reply
-    from the device as an Msg.InpStandard object which ends the
-    sequence.
+    Standard messages are uesd for general commands that we send (turn light
+    on) to the modem.  We'll send an Msg.OutStandard object, the modem will
+    echo that back with an ACK/NAK.  Then we'll get a reply from the device
+    as an Msg.InpStandard object which ends the sequence.
 
-    Since many things can be happening at once, the messages are
-    checked to see if the device address and command match the command
-    that was sent.  If they don't, it's not a message this handler
-    should take care of.
+    Since many things can be happening at once, the messages are checked to
+    see if the device address and command match the command that was sent.
+    If they don't, it's not a message this handler should take care of.
 
-    When we get the InptStandard message we expect to see, it will be
-    passed to the callback set in the constructor which is usually a
-    method on the device to handle the result (or the ACK that the
-    command went through).
+    When we get the InptStandard message we expect to see, it will be passed
+    to the callback set in the constructor which is usually a method on the
+    device to handle the result (or the ACK that the command went through).
     """
     def __init__(self, msg, callback):
         """Constructor
@@ -49,9 +46,9 @@ class StandardCmd(Base):
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
-        See if the message is the expected ACK of our output or the
-        expected InpStandard reply message.  If we get a reply, pass
-        it to the callback.
+        See if the message is the expected ACK of our output or the expected
+        InpStandard reply message.  If we get a reply, pass it to the
+        callback.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object
@@ -64,8 +61,8 @@ class StandardCmd(Base):
         """
         # Probably an echo back of our sent message.
         if isinstance(msg, Msg.OutStandard):
-            # If the message is the echo back of our message, then
-            # continue waiting for a reply.
+            # If the message is the echo back of our message, then continue
+            # waiting for a reply.
             if msg.to_addr == self.addr and msg.cmd1 == self.cmd:
                 if not msg.is_ack:
                     LOG.error("%s NAK response", self.addr)
@@ -79,11 +76,11 @@ class StandardCmd(Base):
 
         # See if this is the standard message ack/nak we're expecting.
         elif isinstance(msg, Msg.InpStandard):
-            # If this message matches our address and command, it's
-            # probably the ACK we're expecting.
+            # If this message matches our address and command, it's probably
+            # the ACK we're expecting.
             if msg.from_addr == self.addr and msg.cmd1 == self.cmd:
-                # Run the callback - it's up to the callback to check
-                # if this is really the ACK or not.
+                # Run the callback - it's up to the callback to check if this
+                # is really the ACK or not.
                 self.callback(msg)
 
                 # Indicate no more messages are expected.

@@ -13,26 +13,29 @@ LOG = log.get_logger()
 class Base:
     """Protocol message handler API.
 
-    This class defines the handler API and implements some basic
-    features that all the handlers use like a time out and finished
-    callback.
+    This class defines the handler API and implements some basic features
+    that all the handlers use like a time out and finished callback.
 
-    Time Outs: The Protocol class will call is_expired() at a
-    reasonable interval to see if the time out has been reached.
-    Handlers can use this to expire (normal behavior), send addition
-    messages, or whatever custom time out behavior they want.  The
-    Protocol will update_expire_time() whenever message traffic is
-    received by this handler so that a series of messages won't cause
-    the time out to trigger.
+    Time Outs: The Protocol class will call is_expired() at a reasonable
+    interval to see if the time out has been reached.  Handlers can use this
+    to expire (normal behavior), send addition messages, or whatever custom
+    time out behavior they want.  The Protocol will update_expire_time()
+    whenever message traffic is received by this handler so that a series of
+    messages won't cause the time out to trigger.
 
-    Callbac: The on_done TODO
+    Callbacks: most handlers have a "when finished" callback which is run
+    when the message sequence is finished.  For convenience, this on_done
+    callback is stored in the base class.  The API for the callback is
+    always:
+       on_done( bool success, str message, data )
     """
     #-----------------------------------------------------------------------
     def __init__(self, on_done=None, num_retry=0, time_out=5):
         """Constructor
 
-        TODO: doc
         Args:
+          on_done:   The finished callback.  Base.on_done will always be
+                     callable even if the input is None.
           num_retry: (int) The number of times to retry the message if the
                      handler times out without returning Msg.FINISHED.
                      This count does include the initial sending so a
@@ -55,8 +58,7 @@ class Base:
     def sending_message(self, msg):
         """Messaging being sent callback.
 
-        The Protocol class calls this to notify that the message is
-        being sent.
+        Protocol calls this to notify us the message is being sent.
 
         Args:
            msg:   (message.Base) The message being sent.
@@ -78,8 +80,7 @@ class Base:
     def update_expire_time(self):
         """Record that valid messages were seen.
 
-        This resets the time out time to record that we saw a valid
-        message.
+        This resets the time out time to record that we saw a valid message.
         """
         self._expire_time = time.time() + self._time_out
 
@@ -87,8 +88,8 @@ class Base:
     def is_expired(self, protocol, t):
         """See if the time out time has been exceeded.
 
-        This is called periodically to see if the message has expired
-        (and can also be used for any polling type behavior.
+        This is called periodically to see if the message has expired (and
+        can also be used for any polling type behavior.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object.  Used to allow
@@ -112,24 +113,22 @@ class Base:
         LOG.warning("Handler timed out %s of %s sent: %s",
                     self._num_sent, self._num_retry, self._msg)
 
-        # Otherwise we should try and resend the message with
-        # ourselves as the handler again so we don't lose the count.
+        # Otherwise we should try and resend the message with ourselves as
+        # the handler again so we don't lose the count.
         protocol.send(self._msg, self)
 
-        # Tell the protocol that we're expired.  This will end this
-        # handler and send the next message in the queue.  At some
-        # point that will be our retry command with ourselves as the
-        # handler again.
+        # Tell the protocol that we're expired.  This will end this handler
+        # and send the next message in the queue.  At some point that will be
+        # our retry command with ourselves as the handler again.
         return True
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
-        This is called by the Protocol when a message is read.  The
-        handler can handle the message and continue, handle the
-        message and be finished, or pass the message on to other
-        handlers.
+        This is called by the Protocol when a message is read.  The handler
+        can handle the message and continue, handle the message and be
+        finished, or pass the message on to other handlers.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object.
@@ -147,8 +146,8 @@ class Base:
     def handle_timeout(self, protocol):
         """Handle a time out and retry failure occurring.
 
-        This is called when the message sent by the handler has timed
-        out and there are no more retries available.
+        This is called when the message sent by the handler has timed out and
+        there are no more retries available.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object.

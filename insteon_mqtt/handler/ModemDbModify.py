@@ -14,16 +14,15 @@ LOG = log.get_logger()
 class ModemDbModify(Base):
     """Modem all link database modification handler.
 
-    This handles message that arrive from adding, changing, or
-    deleting records in the modem's all link database.  It will make
-    the necessary modifications to the modem's all link database class
-    to reflect what happened on the physical device.
+    This handles message that arrive from adding, changing, or deleting
+    records in the modem's all link database.  It will make the necessary
+    modifications to the modem's all link database class to reflect what
+    happened on the physical device.
 
-    In many cases, a series of commands must be sent to the modem to
-    change the database. So the handler can be passed future commands
-    to send using add_update().  When a command is finished, the next
-    command in the queue will be sent.  If any command fails, the
-    sequence stops.
+    In many cases, a series of commands must be sent to the modem to change
+    the database. So the handler can be passed future commands to send using
+    add_update().  When a command is finished, the next command in the queue
+    will be sent.  If any command fails, the sequence stops.
     """
     def __init__(self, modem_db, entry, existing_entry=None, on_done=None):
         """Constructor
@@ -45,9 +44,9 @@ class ModemDbModify(Base):
         self.entry = entry
         self.existing_entry = existing_entry
 
-        # Tuple of (msg, entry) to send next.  If the first calls
-        # ACK's, we'll update self.entry and send the next msg and
-        # continue until this is empty.
+        # Tuple of (msg, entry) to send next.  If the first calls ACK's,
+        # we'll update self.entry and send the next msg and continue until
+        # this is empty.
         self.next = []
 
     #-----------------------------------------------------------------------
@@ -69,8 +68,8 @@ class ModemDbModify(Base):
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
-        This will update the modem's database if the command works.
-        Then the next message is written out.
+        This will update the modem's database if the command works.  Then the
+        next message is written out.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object
@@ -104,9 +103,9 @@ class ModemDbModify(Base):
             assert self.existing_entry
 
             # Copy the data fields (they're the only thing that can be
-            # updated) from the new entry to the existing entry and
-            # save the db.  Since the existing entry is a handle to an
-            # entry in the db, this works fine.
+            # updated) from the new entry to the existing entry and save the
+            # db.  Since the existing entry is a handle to an entry in the
+            # db, this works fine.
             self.existing_entry.data = self.entry.data
             self.db.save()
 
@@ -126,8 +125,7 @@ class ModemDbModify(Base):
             msg, self.entry = self.next.pop(0)
             protocol.send(msg, self)
 
-        # Only run the done callback if this is the last message in
-        # the chain.
+        # Only run the callback if this is the last message in the chain.
         else:
             self.on_done(True, "Modem database update complete", self.entry)
 

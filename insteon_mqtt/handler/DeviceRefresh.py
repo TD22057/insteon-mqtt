@@ -14,17 +14,15 @@ LOG = log.get_logger()
 class DeviceRefresh(Base):
     """Refresh the state and database version of a device handler.
 
-    This handles device refresh messages.  Some devices don't respond
-    very well (look at you SmokeBridge) so the handler has a built in
-    retry system to resend the initial message if the handler times
-    out.
+    This handles device refresh messages.  Some devices don't respond very
+    well (look at you SmokeBridge) so the handler has a built in retry system
+    to resend the initial message if the handler times out.
 
-    When a response arrives, device.handle_refresh(msg) is called to
-    extract the current state of the device (on/off, dimmer level,
-    etc).  Additionally, we'll check the device's database delta
-    version to see if the database needs to re-downloaded from the
-    device.  If it does, the handler will send a new message to
-    request that.
+    When a response arrives, device.handle_refresh(msg) is called to extract
+    the current state of the device (on/off, dimmer level, etc).
+    Additionally, we'll check the device's database delta version to see if
+    the database needs to re-downloaded from the device.  If it does, the
+    handler will send a new message to request the database.
     """
     def __init__(self, device, callback, force, on_done, num_retry=3,
                  skip_db=False):
@@ -36,11 +34,14 @@ class DeviceRefresh(Base):
                         callback( Msg.InpStandard )
           force:     (bool) If True, force a db download.  If False, only
                      download the db if it's out of date.
+          on_done:   Finished callback.  Will be called when the refresh
+                     operation is done.
           num_retry: (int) The number of times to retry the message if the
                      handler times out without returning Msg.FINISHED.
                      This count does include the initial sending so a
                      retry of 3 will send once and then retry 2 more times.
-        TODO: doc
+          skip_db:   (bool) If True, ignore the database version and don't
+                     download the database.
         """
         super().__init__(on_done, num_retry)
 
@@ -78,8 +79,8 @@ class DeviceRefresh(Base):
             # Since we got the message we expected, turn off retries.
             self.stop_retry()
 
-            # All link database delta is stored in cmd1 so we if we have
-            # the latest version.  If not, schedule an update.
+            # All link database delta is stored in cmd1 so we if we have the
+            # latest version.  If not, schedule an update.
             need_refresh = True
             if self.skip_db:
                 need_refresh = False
@@ -87,8 +88,8 @@ class DeviceRefresh(Base):
                 LOG.ui("Device database is current at delta %s", msg.cmd1)
                 need_refresh = False
 
-            # Call the device refresh handler.  This sets the current
-            # device state which is usually stored in cmd2.
+            # Call the device refresh handler.  This sets the current device
+            # state which is usually stored in cmd2.
             self.callback(msg)
 
             if not need_refresh:
@@ -100,8 +101,8 @@ class DeviceRefresh(Base):
                 # Clear the current database values.
                 self.device.db.clear()
 
-                # When the update message below ends, update the db
-                # delta w/ the current value and save the database.
+                # When the update message below ends, update the db delta w/
+                # the current value and save the database.
                 def on_done(success, message, data):
                     if success:
                         self.device.db.set_delta(msg.cmd1)
@@ -110,10 +111,10 @@ class DeviceRefresh(Base):
                     self.on_done(success, message, data)
 
                 # Request that the device send us all of it's database
-                # records.  These will be streamed as fast as possible
-                # to us and the handler will update the database.  We
-                # need a retry count here because battery powered
-                # devices don't always respond right away.
+                # records.  These will be streamed as fast as possible to us
+                # and the handler will update the database.  We need a retry
+                # count here because battery powered devices don't always
+                # respond right away.
                 db_msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00,
                                                 bytes(14))
                 msg_handler = DeviceDbGet(self.device.db, on_done, num_retry=3)

@@ -14,19 +14,20 @@ LOG = log.get_logger()
 class ModemDbGet(Base):
     """PLM Modem database request message handler.
 
-    To download the all link database from the PLM modem, we send a
-    request.  The output message gets ACK'ed back to us.  Then the
-    modem sends us a single record.  After we receive the record, we
-    send another message out requesting the next record, etc, etc
-    until we get a NAK to indicate there are no more records.
+    To download the all link database from the PLM modem, we send a request.
+    The output message gets ACK'ed back to us.  Then the modem sends us a
+    single record.  After we receive the record, we send another message out
+    requesting the next record, etc, etc until we get a NAK to indicate there
+    are no more records.
 
-    Each reply is used to update the modem class's database recoreds.
+    Each reply is used to update the modem class's database records.
     """
     def __init__(self, modem_db, on_done=None):
         """Constructor
 
         Args
           modem_db:  (db.Modem) The database to update.
+          on_done:   Callback to run when the download finishes.
         """
         super().__init__()
 
@@ -37,9 +38,9 @@ class ModemDbGet(Base):
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
-        See if the message is the expected ACK of our output or the
-        expected database reply message.  If we get a reply, pass it
-        to the modem database to update it's database with the info.
+        See if the message is the expected ACK of our output or the expected
+        database reply message.  If we get a reply, pass it to the modem
+        database to update it's database with the info.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object
@@ -49,9 +50,10 @@ class ModemDbGet(Base):
           Msg.UNKNOWN if we can't handle this message.
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
+
         """
-        # Import here - at file scope this makes a circular import
-        # which is ok in Python>=3.5 but not 3.4.
+        # Import here - at file scope this makes a circular import which is
+        # ok in Python>=3.5 but not 3.4.
         from .. import db
 
         # Message is an ACK/NAK of the record request.
@@ -88,10 +90,9 @@ class ModemDbGet(Base):
             msg = Msg.OutAllLinkGetNext()
             protocol.send(msg, self)
 
-            # Return finished - this way the getnext message will go
-            # out.  We'll be used as the handler for that as well
-            # which repeats until we get a nak response (handled
-            # above).
+            # Return finished - this way the getnext message will go out.
+            # We'll be used as the handler for that as well which repeats
+            # until we get a nak response (handled above).
             return Msg.FINISHED
 
         return Msg.UNKNOWN

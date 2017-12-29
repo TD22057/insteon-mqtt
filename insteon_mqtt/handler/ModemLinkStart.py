@@ -21,8 +21,9 @@ class ModemLinkStart(Base):
     def __init__(self, on_done=None):
         """Constructor
 
-        Args
-        TODO: doc
+        Args:
+           on_done:    Callback to run when we get an ACK or NAK of the
+                       link message.
         """
         # pylint: disable=useless-super-delegation
         super().__init__(on_done)

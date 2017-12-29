@@ -18,18 +18,12 @@ class ModemLinkComplete(Base):
     This is called after the modem was placed in linking mode and a
     connection with a device was made.  The modem sends us the connection
     link data so we can update the modem's database.
-
-    TODO: first link
     """
     def __init__(self, modem):
         """Constructor
 
         Args
           modem:    (Modem) The PLM modem to update.
-          time_out: (int) Time out in seconds.  If we don't get an
-                    InpAllLinkComplete message in this time, we'll send a
-                    cancel message to the modem to cancel the all link mode.
-        TODO: doc
         """
         super().__init__()
         self.modem = modem
@@ -47,8 +41,8 @@ class ModemLinkComplete(Base):
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
         """
-        # Import here - at file scope this makes a circular import
-        # which is ok in Python>=3.5 but not 3.4.
+        # Import here - at file scope this makes a circular import which is
+        # ok in Python>=3.5 but not 3.4.
         from .. import db
 
         # All linking was successful.

@@ -13,16 +13,15 @@ LOG = log.get_logger()
 class DeviceDbModify(Base):
     """Device all link database modification handler.
 
-    This handles message that arrive from adding, changing, or
-    deleting records in the device's all link database.  It will make
-    the necessary modifications to the device's all link database
-    class to reflect what happened on the physical device.
+    This handles message that arrive from adding, changing, or deleting
+    records in the device's all link database.  It will make the necessary
+    modifications to the device's all link database class to reflect what
+    happened on the physical device.
 
-    In many cases, a series of commands must be sent to the device to
-    change the database. So the handler can be passed future commands
-    to send using add_update().  When a command is finished, the next
-    command in the queue will be sent.  If any command fails, the
-    sequence stops.
+    In many cases, a series of commands must be sent to the device to change
+    the database. So the handler can be passed future commands to send using
+    add_update().  When a command is finished, the next command in the queue
+    will be sent.  If any command fails, the sequence stops.
     """
     def __init__(self, device_db, entry, on_done):
         """Constructor
@@ -49,9 +48,9 @@ class DeviceDbModify(Base):
         self.entry = entry
         self.orig_entry = entry
 
-        # Tuple of (msg, entry) to send next.  If the first calls
-        # ACK's, we'll update self.entry and send the next msg and
-        # continue until this is empty.
+        # Tuple of (msg, entry) to send next.  If the first calls ACK's,
+        # we'll update self.entry and send the next msg and continue until
+        # this is empty.
         self.next = []
 
     #-----------------------------------------------------------------------
@@ -73,8 +72,8 @@ class DeviceDbModify(Base):
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
-        This will update the modem's database if the command works.
-        Then the next message is written out.
+        This will update the modem's database if the command works.  Then the
+        next message is written out.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object
@@ -101,11 +100,10 @@ class DeviceDbModify(Base):
         elif isinstance(msg, Msg.InpStandard):
             # See if the message address matches our expected reply.
             if msg.from_addr == self.db.addr and msg.cmd1 == 0x2f:
-                # ACK = success, NAK = failure - either way this
-                # transaction is complete.
+                # ACK or NAK - either way this transaction is complete.
                 if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-                    # Entry could be new entry, and update to an
-                    # existing entry, or an marked unused (deletion).
+                    # Entry could be new entry, and update to an existing
+                    # entry, or an marked unused (deletion).
                     LOG.info("Updating entry: %s", self.entry)
                     self.db.add_entry(self.entry)
 

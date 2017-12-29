@@ -13,9 +13,8 @@ LOG = log.get_logger()
 class ModemReset(Base):
     """Modem being factory reset handler.
 
-    This handles a factory reset command being sent to the modem and
-    the physically triggering a factory reset on the modem with the
-    set button.
+    This handles a factory reset command being sent to the modem and the
+    physically triggering a factory reset on the modem with the set button.
 
     When this happens, we'll clear the modem all link database.
     """
@@ -33,8 +32,7 @@ class ModemReset(Base):
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
-        If we get an ACK of the user reset, we'll clear the modem
-        database.
+        If we get an ACK of the user reset, we'll clear the modem database.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object
