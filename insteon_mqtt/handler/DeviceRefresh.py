@@ -24,7 +24,7 @@ class DeviceRefresh(Base):
     the database needs to re-downloaded from the device.  If it does, the
     handler will send a new message to request the database.
     """
-    def __init__(self, device, callback, force, on_done, num_retry=3,
+    def __init__(self, device, callback, force, on_done=None, num_retry=3,
                  skip_db=False):
         """Constructor
 

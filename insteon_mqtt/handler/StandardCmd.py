@@ -26,7 +26,7 @@ class StandardCmd(Base):
     to the callback set in the constructor which is usually a method on the
     device to handle the result (or the ACK that the command went through).
     """
-    def __init__(self, msg, callback):
+    def __init__(self, msg, callback, on_done=None):
         """Constructor
 
         Args
@@ -34,9 +34,9 @@ class StandardCmd(Base):
                     reply must match the address and msg.cmd1 field to be
                     processed by this handler.
           callback: Callback function to pass InpStandard messages that match
-                    the output to.  Signature: callback(message)
+                    the output to.  Signature: callback(message, on_done).
         """
-        super().__init__()
+        super().__init__(on_done)
 
         self.addr = msg.to_addr
         self.cmd = msg.cmd1
@@ -81,7 +81,7 @@ class StandardCmd(Base):
             if msg.from_addr == self.addr and msg.cmd1 == self.cmd:
                 # Run the callback - it's up to the callback to check if this
                 # is really the ACK or not.
-                self.callback(msg)
+                self.callback(msg, on_done=self.on_done)
 
                 # Indicate no more messages are expected.
                 return Msg.FINISHED
