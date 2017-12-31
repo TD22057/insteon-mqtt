@@ -169,6 +169,12 @@ mqtt:
     on_off_topic: 'insteon/{{address}}/set'
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
+    # Scene on/off command.  This triggers the scene broadcast on the switch
+    # in the same way clicking the button would.  The inputs are the same as
+    # those for the on_off topic and payload.
+    scene_topic: 'insteon/{{address}}/scene'
+    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+
   #------------------------------------------------------------------------
   # Dimmers
   #------------------------------------------------------------------------
@@ -235,6 +241,12 @@ mqtt:
                    {% else %}
                       255
                    {% endif %} }
+
+    # Scene on/off command.  This triggers the scene broadcast on the switch
+    # in the same way clicking the button would.  The inputs are the same as
+    # those for the on_off topic and payload.
+    scene_topic: 'insteon/{{address}}/scene'
+    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
   #------------------------------------------------------------------------
   # Battery powered sensors
@@ -498,6 +510,11 @@ mqtt:
     btn_on_off_topic: 'insteon/{{address}}/set/{{button}}'
     btn_on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
+    # Scene on/off command.  This triggers the scene broadcast on the switch
+    # in the same way clicking the button would.  The inputs are the same as
+    # those for the btn_on_off topic and payload.
+    btn_scene_topic: 'insteon/{{address}}/scene/{{button}}'
+    btn_scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
   #------------------------------------------------------------------------
   # IO Linc relay controllers
