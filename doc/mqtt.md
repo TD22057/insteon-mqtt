@@ -271,6 +271,11 @@ change.
    { "cmd" : "on"/"off", ["instant" : 0/1] }
    ```
 
+The input command can be either a direct on/off command which will just
+change the load connected to the switch (using the on_off inputs) or a scene
+on/off command which simulates pressing the button on the switch (using the
+scene inputs).
+
 Here is a sample configuration that accepts and publishes messages
 using upper case ON an OFF payloads.
 
@@ -280,9 +285,13 @@ using upper case ON an OFF payloads.
       state_topic: 'insteon/{{address}}/state'
       state_payload: '{{on_str}}'
 
-      # Input state change:
+      # Direct change only changes the load:
       on_off_topic: 'insteon/{{address}}/set'
       on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+      # Scene change simulates clicking the switch:
+      scene_topic: 'insteon/{{address}}/scene'
+      scene_payload: '{ "cmd" : "{{value.lower()}}" }'
    ```
 
 When the switch changes state a message like `ON` or `OFF` is
@@ -316,13 +325,13 @@ can be used in the templates:
      accessed using the form 'json.ATTR'.  See the Jinja2 docs for
      more details.
 
-The input state change has two inputs.  One is the same as the switch
-input system and only accepts on and off states.  The second is
-similar but also accepts the level argument to set the dimmer level.
-The dimmer payload template must convert the input message into the
+The input state change has two inputs.  One is the same as the switch input
+system and only accepts on and off states in either direct or scene mode.
+The second is similar but also accepts the level argument to set the dimmer
+level.  The dimmer payload template must convert the input message into the
 format (LEVEL must be in the range 0->255).  The optional instant key
-defaults to 0 (normal ramping behavior) but can be set to 1 to perform
-an instant state change.
+defaults to 0 (normal ramping behavior) but can be set to 1 to perform an
+instant state change.
 
    ```
    { "cmd" : "on"/"off", "level" : LEVEL, ["instant" : 0/1] }
@@ -338,10 +347,15 @@ using a JSON format that contains the level using the tag
       state_topic: 'insteon/{{address}}/state'
       state_payload: '{ "state" : "{{on_str}}", "brightness" : {{level}} }'
 
-      # Input state change:
+      # Input state change for the load:
       on_off_topic: 'insteon/{{address}}/set'
       on_off_payload: '{ "cmd" : "{{json.state}}" }'
 
+      # Scene change simulates clicking the switch:
+      scene_topic: 'insteon/{{address}}/scene'
+      scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+      # Dimming control:
       level_topic: 'insteon/{{address}}/level'
       level_payload: >
          { "cmd" : "{{json.state}}",
@@ -456,9 +470,14 @@ A sample remote control topic and payload configuration is:
       btn_state_topic: 'insteon/{{address}}/state/{{button}}'
       btn_state_payload: '{{on_str.upper()}}'
 
-      # Input state change:
+      # Input state change.  For any button besides 1, this just
+      # updates the LED state.
       btn_on_off_topic: 'insteon/{{address}}/set/{{button}}'
       btn_on_off_payload: '{ "cmd" : "{{json.state}}" }'
+
+      # Scene input - simulates clicking the button.
+      btn_scene_topic: 'insteon/{{address}}/scene/{{button}}'
+      btn_scene_payload: '{ "cmd" : "{{value.lower()}}" }'
    ```
 
 ---

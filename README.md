@@ -30,6 +30,7 @@ what they are and how to interpret messages from them.
 
 - Command Insteon devices using MQTT messages.  Topics and payloads
   can be customized using Jinja templates.
+- Simulate button presses using MQTT messages (device scene triggering).
 - Report Insteon device states changes by MQTT messages.  Topics and
   payloads can be customized using Jinja templates.
 - Report state changes for any device in an Insteon scene when the

@@ -29,7 +29,7 @@
 
 - Added linking command to put a modem/device into linking mode without
   touching it.  This lets a new device be added purely through software
-  commands  ([Issue #7][I7]).
+  commands ([Issue #7][I7]).
 
 - Updated the modem db delete commands so that specific records can be
   removed.  Removed the modem only db_delete command and replaced it with
@@ -38,10 +38,17 @@
 - Low level MQTT commands now accept "nice" names from the config file for
   all inputs including the topic.  "modem" is the nice name for the PLM modem.
 
+- Added support for simulating button presses on devices to trigger device
+  scenes ([Issue #9][I9]).
+
+### Fixes
+- [Issue #21][I21]: Fixed incorrect device database entries being created
+  on the last record of the database.
+
 
 ## [0.5.2] - 2017-12-22
 
-### Fixed
+### Fixes
 - [Issue #16][I16]: Python3.4 doesn't allow circular imports
 
 
@@ -63,5 +70,7 @@
 [I6]: https://github.com/TD22057/insteon-mqtt/issues/6
 [I7]: https://github.com/TD22057/insteon-mqtt/issues/7
 [I8]: https://github.com/TD22057/insteon-mqtt/issues/8
+[I9]: https://github.com/TD22057/insteon-mqtt/issues/9
 [I11]: https://github.com/TD22057/insteon-mqtt/issues/11
 [I16]: https://github.com/TD22057/insteon-mqtt/issues/16
+[I21]: https://github.com/TD22057/insteon-mqtt/issues/21
