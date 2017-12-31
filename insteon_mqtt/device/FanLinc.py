@@ -73,12 +73,15 @@ class FanLinc(Dimmer):
         # probably already there - and maybe needs to be there before we can
         # even issue any commands but this check insures that the link is
         # present on the device and the modem.
-        seq.add(self.db_add_resp_of, self.modem.addr, 0x01, refresh=False)
+        seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
+                refresh=False)
 
         # Now add the device as the controller of the modem for groups 1
         # (dimmer) and 2 (fan).
-        seq.add(self.db_add_ctrl_of, self.modem.addr, 0x01, refresh=False)
-        seq.add(self.db_add_ctrl_of, self.modem.addr, 0x02, refresh=False)
+        seq.add(self.db_add_ctrl_of, 0x01, self.modem.addr, 0x01,
+                refresh=False)
+        seq.add(self.db_add_ctrl_of, 0x02, self.modem.addr, 0x02,
+                refresh=False)
 
         # Finally start the sequence running.  This will return so the
         # network event loop can process everything and the on_done callbacks

@@ -37,6 +37,24 @@ be identified by it's address or the string "modem".
    - [Remotes](#remote-controls)
    - [Smoke Bridge](#smoke-bridge)
 
+
+## Required links (scenes)
+
+These commands assume that the devices have been linked correctly to the
+modem in order for the commands to work.  To use a new device, see the
+linking command - that can be used to pair the device with the modem (in both
+directions) for group 1 which is required to allow the device to accept any
+commands from the modem and report basic state changes.
+
+More complicated devices need more links than that to fully work.  FanLInc,
+KeypadLinc, multi-button remotes, battery sensors, and the Smoke bridge all
+require link to be created from the device to the modem for every
+group/button and/or message that the device publishes.  Multi-button devices
+also require that the modem have a link to the device for each button in
+order to allow scene simulation.  The pair command can be used to
+automatically configure these links and should used whenever adding a new
+device.
+
 ---
 
 ## Management commands

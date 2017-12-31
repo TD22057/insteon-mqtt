@@ -111,12 +111,14 @@ class Switch(Base):
         # probably already there - and maybe needs to be there before we can
         # even issue any commands but this check insures that the link is
         # present on the device and the modem.
-        seq.add(self.db_add_resp_of, self.modem.addr, 0x01, refresh=False)
+        seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
+                refresh=False)
 
-        # Now add the device as the controller of the modem for all 8
-        # buttons.  If this is a 6 button keypad, the extras will go unused
-        # but won't hurt anything.
-        seq.add(self.db_add_ctrl_of, self.modem.addr, 0x01, refresh=False)
+        # Now add the device as the controller of the modem for group 1.
+        # This lets the modem receive updates about the button presses and
+        # state changes.
+        seq.add(self.db_add_ctrl_of, 0x01, self.modem.addr, 0x01,
+                refresh=False)
 
         # Finally start the sequence running.  This will return so the
         # network event loop can process everything and the on_done callbacks
