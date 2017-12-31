@@ -133,32 +133,38 @@ is:
 
 Supported: modem, devices
 
-This commands modifies the all link database on the device to add it
-as a controller of another device.  If the two-way flag is set (true
-is the default), it will also modify the other device database to have
-an entry as the responder of the first device.  The group is an
-integer (1-255) of the Insteon group number to use for the link.  The
-command payload is:
+This commands modifies the all link database on the device to add it as a
+controller of another device.  If the two-way flag is set (true is the
+default), it will also modify the other device database to have an entry as
+the responder of the first device.  There is a group input (1-255) of the
+Insteon group number to use for the each end.  The controller group is the
+button being pressed.  The responder group is the button that should respond.
+The command payload is:
 
    ```
-   { "cmd" : "db_add_ctrl_of", "addr" : aa.bb.cc, "group" : group,
-     ["two_way" : true/false], ["data" : [D1, D2,D3]] }
+   { "cmd" : "db_add_ctrl_of", "local_group" : ctrl_group,
+     remote_addr" : aa.bb.cc, "remote_group" : resp_group,
+     ["two_way" : true/false], [refresh" : true/false],
+     ["local_data" : [D1,D2,D3]], ["remote_data" : [D1, D2,D3]] } }
    ```
 
 ### Add the device as a responder of another device.
 
 Supported: modem, devices
 
-This commands modifies the all link database on the device to add it
-as a responder of another device.  If the two-way flag is set (true
-is the default), it will also modify the other device database to have
-an entry as the controller of the first device.  The group is an
-integer (1-255) of the Insteon group number to use for the link.  The
-command payload is:
+This commands modifies the all link database on the device to add it as a
+responder of another device.  If the two-way flag is set (true is the
+default), it will also modify the other device database to have an entry as
+the controller of the first device.  There is a group input (1-255) of the
+Insteon group number to use for the each end.  The controller group is the
+button being pressed.  The responder group is the button that should respond.
+The command payload is:
 
    ```
-   { "cmd" : "db_add_resp_of", "addr" : aa.bb.cc, "group" : group,
-     ["two_way" : true/false], ["data" : [D1, D2,D3]] } }
+   { "cmd" : "db_add_resp_of", "local_group" : resp_group,
+     remote_addr" : aa.bb.cc, "remote_group" : ctrl_group,
+     ["two_way" : true/false], [refresh" : true/false],
+     ["local_data" : [D1,D2,D3]], ["remote_data" : [D1, D2,D3]] } }
    ```
 
 
@@ -175,7 +181,7 @@ The command payload is:
 
    ```
    { "cmd" : "db_del_ctrl_of", "addr" : aa.bb.cc, "group" : group,
-     ["two_way" : true/false] }
+     ["two_way" : true/false], [refresh" : true/false] }
    ```
 
 
@@ -192,7 +198,7 @@ The command payload is:
 
    ```
    { "cmd" : "db_del_resp_of", "addr" : aa.bb.cc, "group" : group,
-     ["two_way" : true/false] }
+     ["two_way" : true/false], [refresh" : true/false] }
    ```
 
 ### Change KeypadLinc button LED state.

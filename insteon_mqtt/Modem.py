@@ -61,6 +61,7 @@ class Modem:
             'db_add_resp_of' : self.db_add_resp_of,
             'db_del_ctrl_of' : self.db_del_ctrl_of,
             'db_del_resp_of' : self.db_del_resp_of,
+            'print_db' : self.print_db,
             'refresh' : self.refresh,
             'refresh_all' : self.refresh_all,
             'linking' : self.linking,
@@ -199,6 +200,14 @@ class Modem:
         LOG.debug("%s", self.db)
 
     #-----------------------------------------------------------------------
+    def print_db(self, on_done):
+        """Print the device database to the log UI.
+        """
+        LOG.ui("%s modem database", self.addr)
+        LOG.ui("%s", self.db)
+        on_done(True, "Complete", None)
+
+    #-----------------------------------------------------------------------
     def add(self, device):
         """Add a device object to the modem.
 
@@ -296,8 +305,9 @@ class Modem:
             device.refresh(force, on_done=callback)
 
     #-----------------------------------------------------------------------
-    def db_add_ctrl_of(self, addr, group, data=None, two_way=True,
-                       refresh=True, on_done=None):
+    def db_add_ctrl_of(self, local_group, remote_addr, remote_group,
+                       two_way=True, refresh=True, on_done=None,
+                       local_data=None, remote_data=None):
         """Add the modem as a controller of a device.
 
         This updates the modem's all link database to show that the
@@ -334,12 +344,14 @@ class Modem:
                     addresses and can't be corrupted.
           on_done:  Optional callback run when both commands are finished.
         """
-        self._db_update(addr, group, data, two_way, is_controller=True,
-                        refresh=refresh, on_done=on_done)
+        is_controller = True
+        self._db_update(local_group, is_controller, remote_addr, remote_group,
+                        two_way, refresh, on_done, local_data, remote_data)
 
     #-----------------------------------------------------------------------
-    def db_add_resp_of(self, addr, group, data=None, two_way=True,
-                       refresh=True, on_done=None):
+    def db_add_resp_of(self, local_group, remote_addr, remote_group,
+                       two_way=True, refresh=True, on_done=None,
+                       local_data=None, remote_data=None):
         """Add the modem as a responder of a device.
 
         This updates the modem's all link database to show that the
@@ -377,8 +389,9 @@ class Modem:
                     addresses and can't be corrupted.
           on_done:  Optional callback run when both commands are finished.
         """
-        self._db_update(addr, group, data, two_way, is_controller=False,
-                        refresh=refresh, on_done=on_done)
+        is_controller = False
+        self._db_update(local_group, is_controller, remote_addr, remote_group,
+                        two_way, refresh, on_done, local_data, remote_data)
 
     #-----------------------------------------------------------------------
     def db_del_ctrl_of(self, addr, group, two_way=True, refresh=True,
@@ -417,7 +430,7 @@ class Modem:
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def link_data(self, group, is_controller):
+    def link_data(self, is_controller, group, data=None):
         """TODO: doc
         """
         # Normally, the modem (ctrl) -> device (resp) link is created using
@@ -425,12 +438,15 @@ class Modem:
         # fill these values in for us using the device information.  But they
         # probably aren't used so it doesn't really matter.
         if is_controller:
-            return bytes([group, 0x00, 0x00])
+            defaults = [group, 0x00, 0x00]
 
         # Responder data is a mystery on the modem.  This seems to work but
         # it's unclear if it's needed at all.
         else:
-            return bytes([group, 0x00, 0x00])
+            defaults = [group, 0x00, 0x00]
+
+        # For each field, use the input if not -1, else the default.
+        return util.resolve_data3(defaults, data)
 
     #-----------------------------------------------------------------------
     def run_scene(self, group, is_on, cmd1=None, cmd2=0x00):
@@ -565,35 +581,33 @@ class Modem:
         return scenes
 
     #-----------------------------------------------------------------------
-    def _db_update(self, addr, group, data, two_way, is_controller, refresh,
-                   on_done):
+    def _db_update(self, local_group, is_controller, remote_addr, remote_group,
+                   two_way, refresh, on_done, local_data, remote_data):
         """Update the modem database.
 
         See db_add_ctrl_of() or db_add_resp_of() for docs.
         """
         # Find the remote device.  Update addr since the input may be a name.
-        remote = self.find(addr)
+        remote = self.find(remote_addr)
         if remote:
-            addr = remote.addr
+            remote_addr = remote.addr
 
         # If don't have an entry for this device, we can't sent it commands.
         if two_way and not remote:
             LOG.info("Modem db add %s can't find remote device %s.  "
                      "Link will be only one direction",
-                     util.ctrl_str(is_controller), addr)
+                     util.ctrl_str(is_controller), remote_addr)
+
+        # Get the modem data array to use.  See Github issue #7 for
+        # discussion.
+        local_data = self.link_data(is_controller, local_group, local_data)
 
         seq = CommandSeq(self.protocol, "Device db update complete", on_done)
 
-        # Get the data array to use.  See Github issue #7 for discussion.
-        # Use teh bytes() cast here so we can take a list as input.
-        if data is None:
-            data = self.link_data(group, is_controller)
-        else:
-            data = bytes(data)
-
         # Create a new database entry for the modem and send it to the
         # modem for updating.
-        entry = db.ModemEntry(addr, group, is_controller, data)
+        entry = db.ModemEntry(remote_addr, local_group, is_controller,
+                              local_data)
         seq.add(self.db.add_on_device, self.protocol, entry)
 
         # For two way commands, insert a callback so that when the
@@ -601,13 +615,13 @@ class Modem:
         # device.  When that finishes, it will run the input callback.
         if two_way and remote:
             two_way = False
-            remote_data = None
+            on_done = None
             if is_controller:
-                seq.add(remote.db_add_resp_of, self.addr, group, remote_data,
-                        two_way, refresh)
+                seq.add(remote.db_add_resp_of, remote_group, self.addr,
+                        local_group, two_way, refresh, remote_data=remote_data)
             else:
-                seq.add(remote.db_add_ctrl_of, self.addr, group, remote_data,
-                        two_way, refresh)
+                seq.add(remote.db_add_ctrl_of, remote_group, self.addr,
+                        local_group, two_way, refresh, remote_data=remote_data)
 
         # Start the command sequence.
         seq.run()

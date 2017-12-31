@@ -94,6 +94,7 @@ class Base:
             'db_add_resp_of' : self.db_add_resp_of,
             'db_del_ctrl_of' : self.db_del_ctrl_of,
             'db_del_resp_of' : self.db_del_resp_of,
+            'print_db' : self.print_db,
             'refresh' : self.refresh,
             'linking' : self.linking,
             'pair' : self.pair,
@@ -151,6 +152,14 @@ class Base:
         LOG.info("Device %s database loaded %s entries", self.label,
                  len(self.db))
         LOG.debug("%s", self.db)
+
+    #-----------------------------------------------------------------------
+    def print_db(self, on_done):
+        """Print the device database to the log UI.
+        """
+        LOG.ui("%s device database", self.label)
+        LOG.ui("%s", self.db)
+        on_done(True, "Complete", None)
 
     #-----------------------------------------------------------------------
     def linking(self, group=0x01, on_done=None):
@@ -211,8 +220,9 @@ class Base:
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def db_add_ctrl_of(self, addr, group, data=None, two_way=True,
-                       refresh=True, on_done=None):
+    def db_add_ctrl_of(self, local_group, remote_addr, remote_group,
+                       two_way=True, refresh=True, on_done=None,
+                       local_data=None, remote_data=None):
         """Add the device as a controller of another device.
 
         This updates the devices's all link database to show that the
@@ -247,12 +257,14 @@ class Base:
                     so this is important.
           on_done:  Optional callback run when both commands are finished.
         """
-        self._db_update(addr, group, data, two_way, is_controller=True,
-                        refresh=refresh, on_done=on_done)
+        is_controller = True
+        self._db_update(local_group, is_controller, remote_addr, remote_group,
+                        two_way, refresh, on_done, local_data, remote_data)
 
     #-----------------------------------------------------------------------
-    def db_add_resp_of(self, addr, group, data=None, two_way=True,
-                       refresh=True, on_done=None):
+    def db_add_resp_of(self, local_group, remote_addr, remote_group,
+                       two_way=True, refresh=True, on_done=None,
+                       local_data=None, remote_data=None):
         """Add the device as a responder of another device.
 
         This updates the devices's all link database to show that the
@@ -288,8 +300,9 @@ class Base:
           on_done:  Optional callback run when both commands are finished.
 
         """
-        self._db_update(addr, group, data, two_way, is_controller=False,
-                        refresh=refresh, on_done=on_done)
+        is_controller = False
+        self._db_update(local_group, is_controller, remote_addr, remote_group,
+                        two_way, refresh, on_done, local_data, remote_data)
 
     #-----------------------------------------------------------------------
     def db_del_ctrl_of(self, addr, group, two_way=True, refresh=True,
@@ -308,7 +321,7 @@ class Base:
         self._db_delete(addr, group, False, two_way, refresh, on_done)
 
     #-----------------------------------------------------------------------
-    def link_data(self, group, is_controller):
+    def link_data(self, is_controller, group, data=None):
         """TODO: doc
         """
         # Most of this is from looking through Misterhouse bug reports.
@@ -316,7 +329,7 @@ class Base:
             # D1 = 0x03 number of retries to use for the command
             # D2 = ???
             # D3 = some devices need 0x01 or group number others don't care
-            return bytes([0x03, 0x00, group])
+            defaults = [0x03, 0x00, group]
 
         # Responder data is always link dependent.  Since nothing was given,
         # assume the user wants to turn the device on (0xff).
@@ -327,7 +340,10 @@ class Base:
             # D3 = The local group number of the local button.  The input
             #      group is the controller group number (and broadcast msg)
             #      so this is the local button group number it maps to.
-            return bytes([0xff, 0x00, group])
+            defaults = [0xff, 0x00, group]
+
+        # For each field, use the input if not -1, else the default.
+        return util.resolve_data3(defaults, data)
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
@@ -443,22 +459,22 @@ class Base:
             on_done(False, "Linking mode failed", None)
 
     #-----------------------------------------------------------------------
-    def _db_update(self, addr, group, data, two_way, is_controller, refresh,
-                   on_done):
+    def _db_update(self, local_group, is_controller, remote_addr, remote_group,
+                   two_way, refresh, on_done, local_data, remote_data):
         """Update the device database.
 
         See db_add_ctrl_of() or db_add_resp_of() for docs.
         """
         # Find the remote device.  Update addr since the input may be a name.
-        remote = self.modem.find(addr)
+        remote = self.modem.find(remote_addr)
         if remote:
-            addr = remote.addr
+            remote_addr = remote.addr
 
         # If don't have an entry for this device, we can't sent it commands.
         if two_way and not remote:
             LOG.ui("Device db add %s can't find remote device %s.  "
                    "Link will be only one direction",
-                   util.ctrl_str(is_controller), addr)
+                   util.ctrl_str(is_controller), remote_addr)
 
         seq = CommandSeq(self.protocol, "Device db update complete", on_done)
 
@@ -470,26 +486,30 @@ class Base:
 
         # Get the data array to use.  See Github issue #7 for discussion.
         # Use teh bytes() cast here so we can take a list as input.
-        if data is None:
-            data = self.link_data(group, is_controller)
-        else:
-            data = bytes(data)
+        local_data = self.link_data(is_controller, local_group, local_data)
+
+        # Group number in the db is the group number of the controller since
+        # that's the group number in the broadcast message we'll receive.
+        db_group = local_group
+        if not is_controller:
+            db_group = remote_group
 
         # Create a new database entry for the device and send it.
-        seq.add(self.db.add_on_device, self.protocol, addr, group,
-                is_controller, data)
+        seq.add(self.db.add_on_device, self.protocol, remote_addr, db_group,
+                is_controller, local_data)
 
-        # For two way commands, insert a callback so that when the
-        # modem command finishes, it will send the next command to the
-        # device.  When that finishes, it will run the input callback.
+        # For two way commands, insert a callback so that when the modem
+        # command finishes, it will send the next command to the device.
+        # When that finishes, it will run the input callback.
         if two_way and remote:
-            remote_data = None
+            two_way = False
+            on_done = None
             if is_controller:
-                seq.add(remote.db_add_resp_of, self.addr, group,
-                        data=remote_data, two_way=False)
+                seq.add(remote.db_add_resp_of, remote_group, self.addr,
+                        local_group, two_way, refresh, local_data=remote_data)
             else:
-                seq.add(remote.db_add_ctrl_of, self.addr, group,
-                        data=remote_data, two_way=False)
+                seq.add(remote.db_add_ctrl_of, remote_group, self.addr,
+                        local_group, two_way, refresh, local_data=remote_data)
 
         # Start the command sequence.
         seq.run()

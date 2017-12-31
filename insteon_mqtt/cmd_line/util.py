@@ -73,22 +73,3 @@ def callback(client, session, message):
 
 
 #===========================================================================
-def parse_link(link):
-    elem1 = link.split("->")
-    elem2 = link.split("<-")
-
-    if len(elem1) == 2:
-        addr1 = elem1[0].strip()
-        addr2 = elem1[1].strip()
-        cmd = "CTRL"
-
-    elif len(elem2) == 2:
-        addr1 = elem2[0].strip()
-        addr2 = elem2[1].strip()
-        cmd = "RESP"
-
-    else:
-        raise ValueError("Input link '%s' should be 'addr1 <- addr2' or "
-                         "'addr1 -> addr2'." % args.link)
-
-    return addr1, addr2, cmd

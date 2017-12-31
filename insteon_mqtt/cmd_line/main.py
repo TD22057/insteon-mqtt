@@ -160,8 +160,9 @@ def parse_args(args):
     #---------------------------------------
     # device.db_add add ctrl/rspdr command
     sp = sub.add_parser("db-add", help="Add the device/modem as the "
-                        "controller of another device.  Also adds the "
-                        "corresponding entry on the linked device unless "
+                        "controller or responder of another device.  The "
+                        "addr1 input sets the device to modify.  Also adds "
+                        "the corresponding entry on the linked device unless "
                         "--one-way is set.")
     sp.add_argument("-o", "--one-way", action="store_true",
                     help="Only add the entry on address1.  Otherwise the "
@@ -171,14 +172,25 @@ def parse_args(args):
                     "be dangerous if the device db is out of date.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("link", help="'address1 -> address2' to update address1 "
-                    "as a controller of address2.  'address1 <- address2' to "
-                    "update address1 as a responder of address2.")
-    sp.add_argument("group", type=int, help="Group number to add (1-255)")
-    sp.add_argument("data", nargs="*",
-                    help="3 data element to set in the link database.  Each "
-                    "must be in the range 0->255.  May be hex with a '0x' "
-                    "prefix (0x10) or an integer input.  Default is [0,0,0].")
+    sp.add_argument("--level", type=int, help="On level (0-255) to use on "
+                    "the responder (default is 0xff).")
+    sp.add_argument("--ramp", type=int, help="Ramp rate (0-255) to use on "
+                    "the responder (default is to use the device default).")
+    sp.add_argument("--addr1-data", type=int, nargs=3, metavar="Dn",
+                    help="(0-255) 3 element data list to use in addr1.  "
+                    "Using wrong values can cause the link to not work (i.e. "
+                    "don't use this).")
+    sp.add_argument("--addr2-data", type=int, nargs=3, metavar="Dn",
+                    help="(0-255) 3 element data list to use in addr2.  "
+                    "Using wrong values can cause the link to not work (i.e. "
+                    "don't use this).")
+    sp.add_argument("addr1", help="Address of the device to update.")
+    sp.add_argument("group1", type=int, help="Group (button) number on addr1.")
+    sp.add_argument("mode", choices=["ctrl", "resp"],
+                    help="'ctrl' for addr1 as controller of addr2.  'resp' "
+                    "for addr1 as responder to addr2.")
+    sp.add_argument("addr2", help="Address of the device to add to the db.")
+    sp.add_argument("group2", type=int, help="Group (button) number on addr2.")
     sp.set_defaults(func=device.db_add)
 
     #---------------------------------------
@@ -195,10 +207,14 @@ def parse_args(args):
                     "be dangerous if the device db is out of date.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("link", help="'address1 -> address2' to delete address1 "
-                    "as a controller of address2.  'address1 <- address2' to "
-                    "delete address1 as a responder of address2.")
-    sp.add_argument("group", type=int, help="Group number to delete (1-255)")
+    sp.add_argument("addr1", help="Address of the device to delete.")
+    sp.add_argument("mode", choices=["ctrl", "resp"],
+                    help="'ctrl' for addr1 as controller of addr2.  'resp' "
+                    "for addr1 as responder to addr2.")
+    sp.add_argument("addr2", help="Address of the device to delete from the "
+                    "db.")
+    sp.add_argument("group", type=int, help="Group (button) number on the "
+                    "controller (i.e. the db group number).")
     sp.set_defaults(func=device.db_delete)
 
     #---------------------------------------
@@ -207,13 +223,17 @@ def parse_args(args):
                         "a KeyPadLinc.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
     sp.add_argument("address", help="Device address or name.")
     sp.add_argument("group", type=int, help="Group (button) number to set")
     sp.add_argument("is_on", type=int, default=1, choices=[0, 1],
                     help="1 to turn the LED on, 0 to turn it off.")
     sp.set_defaults(func=device.set_button_led)
+
+    #---------------------------------------
+    # device.print_db
+    sp = sub.add_parser("print-db", help="Print the current device database")
+    sp.add_argument("address", help="Device address or name.")
+    sp.set_defaults(func=device.print_db)
 
     return p.parse_args(args)
 

@@ -61,6 +61,11 @@ class CommandSeq:
           kwargs:   Keyword arguments to pass to the function.
 
         """
+        # Sequence override on_done calls to any function but some calls need
+        # to set it anyway because of kwarg name ordering requirements.  So
+        # remote it here to avoid getting a duplicate keyword error later..
+        if "on_done" in kwargs:
+            del kwargs["on_done"]
         self.calls.append(Entry.from_func(func, args, kwargs))
         self.total += 1
 

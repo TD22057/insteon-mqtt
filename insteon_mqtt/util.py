@@ -76,3 +76,15 @@ def bit_set(value, bit, is_one):
 
 
 #===========================================================================
+def resolve_data3(defaults, inputs):
+    """TODO: doc
+    """
+    values = []
+
+    for i in range(3):
+        if inputs is None or inputs[i] == -1:
+            values.append(defaults[i])
+        else:
+            values.append(inputs[i])
+
+    return bytes(values)
