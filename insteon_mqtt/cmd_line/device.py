@@ -132,22 +132,11 @@ def refresh(args, config):
 
 #===========================================================================
 def db_add(args, config):
-    elem1 = args.link.split("->")
-    elem2 = args.link.split("<-")
-
-    if len(elem1) == 2:
-        address1 = elem1[0].strip()
-        address2 = elem1[1].strip()
+    addr1, addr2, mode = util.parse_link(args.link)
+    if mode == "CTRL":
         cmd = "db_add_ctrl_of"
-
-    elif len(elem2) == 2:
-        address1 = elem2[0].strip()
-        address2 = elem2[1].strip()
-        cmd = "db_add_resp_of"
-
     else:
-        raise ValueError("Input link '%s' should be 'addr1 <- addr2' or "
-                         "'addr1 -> addr2'." % args.link)
+        cmd = "db_add_resp_of"
 
     # Use strings for the default - the parser below converts to int.
     data = None
@@ -169,10 +158,10 @@ def db_add(args, config):
 
             data.append(value)
 
-    topic = "%s/%s" % (args.topic, address1)
+    topic = "%s/%s" % (args.topic, addr1)
     payload = {
         "cmd" : cmd,
-        "addr" : address2,
+        "addr" : addr2,
         "group" : args.group,
         "two_way" : not args.one_way,
         "data" : data,
@@ -185,15 +174,16 @@ def db_add(args, config):
 
 #===========================================================================
 def db_delete(args, config):
-    if args.mode == "CTRL":
+    addr1, addr2, mode = util.parse_link(args.link)
+    if mode == "CTRL":
         cmd = "db_del_ctrl_of"
     else:
         cmd = "db_del_resp_of"
 
-    topic = "%s/%s" % (args.topic, args.device)
+    topic = "%s/%s" % (args.topic, addr1)
     payload = {
         "cmd" : cmd,
-        "addr" : args.address,
+        "addr" : addr2,
         "group" : args.group,
         "two_way" : not args.one_way,
         "refresh" : not args.no_refresh,

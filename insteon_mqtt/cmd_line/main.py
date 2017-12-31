@@ -17,6 +17,8 @@ def parse_args(args):
     # pylint: disable=too-many-statements
     p = argparse.ArgumentParser(prog="insteon-mqtt",
                                 description="Inseton<->MQTT tool")
+    p.add_argument("config", metavar="config.yaml", help="Configuration "
+                   "file to use.")
     sub = p.add_subparsers(help="Command help")
 
     #---------------------------------------
@@ -29,8 +31,6 @@ def parse_args(args):
     sp.add_argument("--level", metavar="log_level", type=int,
                     help="Logging level to use.  10=debug, 20=info,"
                     "30=warn, 40=error, 50=critical")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
     sp.set_defaults(func=start.start)
 
     #---------------------------------------
@@ -41,8 +41,6 @@ def parse_args(args):
                     help="Force the modem/device database to be downloaded.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
     sp.set_defaults(func=modem.refresh_all)
 
     #---------------------------------------
@@ -54,8 +52,6 @@ def parse_args(args):
                     help="Group number to link with (1-255)")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.linking)
 
@@ -67,8 +63,6 @@ def parse_args(args):
                     help="Force the device database to be downloaded.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.refresh)
 
@@ -84,8 +78,6 @@ def parse_args(args):
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to turn on for multi-button "
                     "devices.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.on)
 
@@ -99,8 +91,6 @@ def parse_args(args):
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to set for multi-button "
                     "devices.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
     sp.add_argument("address", help="Device address or name.")
     sp.add_argument("level", type=int, default=255,
                     help="Level to use for dimmers (0-255)")
@@ -116,8 +106,6 @@ def parse_args(args):
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to turn off for multi-button "
                     "devices.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.off)
 
@@ -126,8 +114,6 @@ def parse_args(args):
     sp = sub.add_parser("up", help="Increments a dimmer up.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.increment_up)
 
@@ -136,8 +122,6 @@ def parse_args(args):
     sp = sub.add_parser("down", help="Decrements a dimmer up.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.increment_down)
 
@@ -149,8 +133,6 @@ def parse_args(args):
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to use for multi-button "
                     "devices.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
     sp.add_argument("address", help="Device address or name.")
     sp.add_argument("is_on", type=int, default=1, choices=[0, 1],
                     help="1 to turn the scene on, 0 to turn it off.")
@@ -161,8 +143,6 @@ def parse_args(args):
     sp = sub.add_parser("pair", help="Pair a device with the modem.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.pair)
 
@@ -174,8 +154,6 @@ def parse_args(args):
                     help="Force the device database to be downloaded.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.refresh)
 
@@ -193,8 +171,6 @@ def parse_args(args):
                     "be dangerous if the device db is out of date.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
     sp.add_argument("link", help="'address1 -> address2' to update address1 "
                     "as a controller of address2.  'address1 <- address2' to "
                     "update address1 as a responder of address2.")
@@ -219,15 +195,10 @@ def parse_args(args):
                     "be dangerous if the device db is out of date.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("config", metavar="config.yaml", help="Configuration "
-                    "file to use.")
-    sp.add_argument("device", help="Modem/Device address or name of the "
-                    "database to modify")
-    sp.add_argument("address", help="Modem/Device address or name of the "
-                    "entry to remove")
-    sp.add_argument("group", type=int, help="Group number to remove (1-255)")
-    sp.add_argument("mode", choices=["CTRL", "RESP"],
-                    help="Controller or responder flag of the entry to remove")
+    sp.add_argument("link", help="'address1 -> address2' to delete address1 "
+                    "as a controller of address2.  'address1 <- address2' to "
+                    "delete address1 as a responder of address2.")
+    sp.add_argument("group", type=int, help="Group number to delete (1-255)")
     sp.set_defaults(func=device.db_delete)
 
     #---------------------------------------
