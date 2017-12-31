@@ -142,6 +142,21 @@ def parse_args(args):
     sp.set_defaults(func=device.increment_down)
 
     #---------------------------------------
+    # device.scene command
+    sp = sub.add_parser("scene", help="Simulate a scene command.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.add_argument("-g", "--group", type=int, default=0x01,
+                    help="Group (button) number to use for multi-button "
+                    "devices.")
+    sp.add_argument("config", metavar="config.yaml", help="Configuration "
+                    "file to use.")
+    sp.add_argument("address", help="Device address or name.")
+    sp.add_argument("is_on", type=int, default=1, choices=[0, 1],
+                    help="1 to turn the scene on, 0 to turn it off.")
+    sp.set_defaults(func=device.scene)
+
+    #---------------------------------------
     # device.pair command
     sp = sub.add_parser("pair", help="Pair a device with the modem.")
     sp.add_argument("-q", "--quiet", action="store_true",
@@ -173,6 +188,9 @@ def parse_args(args):
     sp.add_argument("-o", "--one-way", action="store_true",
                     help="Only add the entry on address1.  Otherwise the "
                     "corresponding entry on address2 is also added.")
+    sp.add_argument("--no-refresh", action="store_true", default=False,
+                    help="Don't refresh the db before adding.  This can "
+                    "be dangerous if the device db is out of date.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
     sp.add_argument("config", metavar="config.yaml", help="Configuration "
@@ -196,6 +214,9 @@ def parse_args(args):
     sp.add_argument("-o", "--one-way", action="store_true",
                     help="Only delete the modem entries.  Otherwise the "
                     "corresponding entry on the device is also removed.")
+    sp.add_argument("--no-refresh", action="store_true", default=False,
+                    help="Don't refresh the db before adding.  This can "
+                    "be dangerous if the device db is out of date.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
     sp.add_argument("config", metavar="config.yaml", help="Configuration "

@@ -32,11 +32,22 @@ class KeypadLinc(Dimmer):
             payload='{ "cmd" : "{{value.lower()}}" }',
             )
 
+        # Input scene on/off command template.
+        self.msg_btn_scene = MsgTemplate(
+            topic='insteon/{{address}}/scene/{{button}}',
+            payload='{ "cmd" : "{{value.lower()}}" }',
+            )
+
         device.signal_pressed.connect(self.handle_pressed)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
-        """TODO: doc
+        """Load values from a configuration data object.
+
+        Args:
+          config:   The configuration dictionary to load from.  The object
+                    config is stored in config['keypad_linc'].
+          qos:      The default quality of service level to use.
         """
         # Load the dimmer configuration from the dimmer area, not the
         # fanlinc area.
@@ -57,10 +68,16 @@ class KeypadLinc(Dimmer):
                                        'btn_state_payload', qos)
         self.msg_btn_on_off.load_config(config, 'btn_on_off_topic',
                                         'btn_on_off_payload', qos)
+        self.msg_btn_scene.load_config(config, 'btn_scene_topic',
+                                       'btn_scene_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
-        """TODO: doc
+        """Subscribe to any MQTT topics the object needs.
+
+        Args:
+          link:   The MQTT network client to use.
+          qos:    The quality of service to use.
         """
         super().subscribe(link, qos)
 
@@ -69,18 +86,29 @@ class KeypadLinc(Dimmer):
         for group in range(1, 9):
             handler = functools.partial(self.handle_set, group=group)
             data = self.template_data(button=group)
+
             topic = self.msg_btn_on_off.render_topic(data)
+            link.subscribe(topic, qos, handler)
+
+            topic = self.msg_btn_scene.render_topic(data)
             link.subscribe(topic, qos, handler)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
-        """TODO: doc
+        """Unsubscribe to any MQTT topics the object was subscribed to.
+
+        Args:
+          link:   The MQTT network client to use.
         """
         super().unsubscribe(link)
 
         for group in range(1, 9):
             data = self.template_data(button=group)
+
             topic = self.msg_btn_on_off.render_topic(data)
+            link.unsubscribe(topic)
+
+            topic = self.msg_btn_scene.render_topic(data)
             link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
@@ -128,6 +156,33 @@ class KeypadLinc(Dimmer):
         except:
             LOG.exception("Invalid button command: %s", data)
             return
+
+    #-----------------------------------------------------------------------
+    def handle_scene(self, client, data, message):
+        """TODO: doc
+        """
+        LOG.debug("KeypadLinc message %s %s", message.topic, message.payload)
+
+        # Parse the input MQTT message.
+        data = self.msg_scene_on_off.to_json(message.payload)
+        LOG.info("KeypadLinc input command: %s", data)
+
+        try:
+            cmd = data.get('cmd')
+            if cmd == 'on':
+                is_on = True
+            elif cmd == 'off':
+                is_on = False
+            else:
+                raise Exception("Invalid KeypadLinc cmd input '%s'" % cmd)
+
+            group = int(data.get('group', 0x01))
+        except:
+            LOG.exception("Invalid KeypadLinc command: %s", data)
+            return
+
+        # Tell the device to trigger the scene command.
+        self.device.scene(is_on, group)
 
     #-----------------------------------------------------------------------
     def handle_pressed(self, device, group, is_active):

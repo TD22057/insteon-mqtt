@@ -4,23 +4,29 @@
 #
 #===========================================================================
 from .. import log
-from .Base import Base
 from .MsgTemplate import MsgTemplate
 
 LOG = log.get_logger()
 
 
-class BatterySensor(Base):
-    """TODO: doc
+class BatterySensor:
+    """General battery powered sensor.
+
+    Battery sensors don't support any input commands - they're sleeping until
+    activated so they can't respond to commands.  Battery sensors have a
+    state topic and a low battery topic they will publish to.
     """
     def __init__(self, mqtt, device):
-        """TODO: doc
-        """
-        super().__init__()
+        """Constructor
 
+        Args:
+          mqtt:     The MQTT main interface.
+          device:   The Insteon BatterySensor object to link to.
+        """
         self.mqtt = mqtt
         self.device = device
 
+        # Default values for the topics.
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state',
             payload='{{on_str.lower()}}',
@@ -30,12 +36,19 @@ class BatterySensor(Base):
             payload='{{is_low_str.upper()}}',
             )
 
+        # Connect the two signals from the insteon device so we get notified
+        # of changes.
         device.signal_active.connect(self.handle_active)
         device.signal_low_battery.connect(self.handle_low_battery)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
-        """TODO: doc
+        """Load values from a configuration data object.
+
+        Args:
+          config:   The configuration dictionary to load from.  The object
+                    config is stored in config['battery_sensor'].
+          qos:      The default quality of service level to use.
         """
         data = config.get("battery_sensor", None)
         if not data:
@@ -44,6 +57,25 @@ class BatterySensor(Base):
         self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
         self.msg_battery.load_config(data, 'low_battery_topic',
                                      'low_battery_payload', qos)
+
+    #-----------------------------------------------------------------------
+    def subscribe(self, link, qos):
+        """Subscribe to any MQTT topics the object needs.
+
+        Args:
+          link:   The MQTT network client to use.
+          qos:    The quality of service to use.
+        """
+        pass
+
+    #-----------------------------------------------------------------------
+    def unsubscribe(self, link):
+        """Unsubscribe to any MQTT topics the object was subscribed to.
+
+        Args:
+          link:   The MQTT network client to use.
+        """
+        pass
 
     #-----------------------------------------------------------------------
     def handle_active(self, device, is_active):

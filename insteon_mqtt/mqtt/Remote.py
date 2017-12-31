@@ -4,20 +4,17 @@
 #
 #===========================================================================
 from .. import log
-from .Base import Base
 from .MsgTemplate import MsgTemplate
 
 LOG = log.get_logger()
 
 
-class Remote(Base):
+class Remote:
     """TODO: doc
     """
     def __init__(self, mqtt, device):
         """TODO: doc
         """
-        super().__init__()
-
         self.mqtt = mqtt
         self.device = device
 
@@ -30,13 +27,37 @@ class Remote(Base):
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
-        """TODO: doc
+        """Load values from a configuration data object.
+
+        Args:
+          config:   The configuration dictionary to load from.  The object
+                    config is stored in config['remote'].
+          qos:      The default quality of service level to use.
         """
         data = config.get("remote", None)
         if not data:
             return
 
         self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
+
+    #-----------------------------------------------------------------------
+    def subscribe(self, link, qos):
+        """Subscribe to any MQTT topics the object needs.
+
+        Args:
+          link:   The MQTT network client to use.
+          qos:    The quality of service to use.
+        """
+        pass
+
+    #-----------------------------------------------------------------------
+    def unsubscribe(self, link):
+        """Unsubscribe to any MQTT topics the object was subscribed to.
+
+        Args:
+          link:   The MQTT network client to use.
+        """
+        pass
 
     #-----------------------------------------------------------------------
     def handle_pressed(self, device, button, is_active):

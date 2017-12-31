@@ -27,7 +27,12 @@ class Motion(BatterySensor):
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
-        """TODO: doc
+        """Load values from a configuration data object.
+
+        Args:
+          config:   The configuration dictionary to load from.  The object
+                    config is stored in config['motion'].
+          qos:      The default quality of service level to use.
         """
         super().load_config(config, qos)
 

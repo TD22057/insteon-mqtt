@@ -56,7 +56,12 @@ class FanLinc(Dimmer):
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
-        """TODO: doc
+        """Load values from a configuration data object.
+
+        Args:
+          config:   The configuration dictionary to load from.  The object
+                    config is stored in config['fan_linc'].
+          qos:      The default quality of service level to use.
         """
         # Load the dimmer configuration from the dimmer area, not the
         # fanlinc area.
@@ -84,7 +89,11 @@ class FanLinc(Dimmer):
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
-        """TODO: doc
+        """Subscribe to any MQTT topics the object needs.
+
+        Args:
+          link:   The MQTT network client to use.
+          qos:    The quality of service to use.
         """
         super().subscribe(link, qos)
 
@@ -100,7 +109,10 @@ class FanLinc(Dimmer):
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
-        """TODO: doc
+        """Unsubscribe to any MQTT topics the object was subscribed to.
+
+        Args:
+          link:   The MQTT network client to use.
         """
         super().unsubscribe(link)
 

@@ -3,7 +3,6 @@
 # Base device class
 #
 #===========================================================================
-import functools
 import json
 import os.path
 from ..Address import Address
@@ -163,9 +162,7 @@ class Base:
         # see, there is no way to cancel it.
         msg = Msg.OutExtended.direct(self.addr, 0x09, group,
                                      bytes([0x00] * 14))
-
-        callback = functools.partial(self.handle_linking, on_done=on_done)
-        msg_handler = handler.StandardCmd(msg, callback)
+        msg_handler = handler.StandardCmd(msg, self.handle_linking, on_done)
         self.protocol.send(msg, msg_handler)
 
         # NOTE: this command is to enter linking mode - we get ACK back that
@@ -463,7 +460,13 @@ class Base:
                    "Link will be only one direction",
                    util.ctrl_str(is_controller), addr)
 
-        seq = CommandSeq("Device db update complete", on_done)
+        seq = CommandSeq(self.protocol, "Device db update complete", on_done)
+
+        # Check for a db update - otherwise we could be out of date and not
+        # know it in which case the memory addresses to add the record in
+        # will be wrong.
+        if refresh:
+            seq.add(self.refresh)
 
         # Get the data array to use.  See Github issue #7 for discussion.
         # Use teh bytes() cast here so we can take a list as input.
@@ -515,7 +518,14 @@ class Base:
             on_done(False, "Entry doesn't exist", None)
             return
 
-        seq = CommandSeq("Delete complete", on_done)
+        seq = CommandSeq(self.protocol, "Delete complete", on_done)
+
+        # Check for a db update - otherwise we could be out of date and not
+        # know it in which case the memory addresses to add the record in
+        # will be wrong.
+        if refresh:
+            seq.add(self.refresh)
+
         seq.add(self.db.delete_on_device, self.protocol, entry)
 
         # For two way commands, insert a callback so that when the modem

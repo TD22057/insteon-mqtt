@@ -3,11 +3,12 @@
 # Non-modem device all link database class
 #
 #===========================================================================
-import functools
 import io
+import itertools
 import json
 import os
 from ..Address import Address
+from ..CommandSeq import CommandSeq
 from .. import handler
 from .DeviceEntry import DeviceEntry
 from .. import log
@@ -15,6 +16,10 @@ from .. import message as Msg
 from .. import util
 
 LOG = log.get_logger()
+
+# From the docs - initial memory location for the entries.  Each entry is 8
+# bytes and moves down from this (0x0fff, 0x0ff7, ...)
+START_MEM_LOC = 0x0fff
 
 
 class Device:
@@ -59,6 +64,18 @@ class Device:
         for d in data['unused']:
             obj.add_entry(DeviceEntry.from_json(d))
 
+        if "last" in data:
+            obj.last = DeviceEntry.from_json(data["last"])
+
+        # When loading db's <= ver 0.6, no last field was saved to create
+        # one at the correct location.
+        if obj.last.mem_loc == START_MEM_LOC and len(obj):
+            for e in itertools.chain(obj.entries.values(),
+                                     obj.unused.values()):
+                obj.last.mem_loc = min(obj.last.mem_loc, e.mem_loc)
+
+            obj.last.mem_loc -= 0x08
+
         return obj
 
     #-----------------------------------------------------------------------
@@ -86,19 +103,24 @@ class Device:
 
         # Map of memory address (int) to DeviceEntry objects that are on the
         # device but unused.  We need to keep these so we can use these
-        # storage locations for future entries.
+        # storage locations for future entries.  This does not include the
+        # last entry in the db.
         self.unused = {}
+
+        # The last entry in the database.  Devices show an unused, null (all
+        # zeros) marked with the LAST bit set in the db.  From the docs this
+        # shouldn't be required - the LAST bit can be a usable entry but it
+        # doesn't appear to work.  So this is a null entry with the LAST bit
+        # set.  It's also the mem loc of the next entry to append to the db
+        # when adding a new entry.
+        flags = Msg.DbFlags(in_use=False, is_controller=False,
+                            is_last_rec=True)
+        self.last = DeviceEntry(Address(0, 0, 0), 0, START_MEM_LOC, flags,
+                                None)
 
         # Map of all link group number to DeviceEntry objects that respond to
         # that group command.
         self.groups = {}
-
-        # Set of memory addresses that we have entries for.  This is cleared
-        # when we start to download the db and used to filter out duplicate
-        # entries.  Some devcies (smoke bridge) report a lot of duplicate
-        # entries during db download for some reason.  This is the superset
-        # of addresses of self.entries and self.unused.
-        self._mem_locs = set()
 
     #-----------------------------------------------------------------------
     def is_current(self, delta):
@@ -142,7 +164,7 @@ class Device:
         self.entries.clear()
         self.unused.clear()
         self.groups.clear()
-        self._mem_locs.clear()
+        self.last.mem_loc = START_MEM_LOC
 
         if self.save_path and os.path.exists(self.save_path):
             os.remove(self.save_path)
@@ -388,6 +410,7 @@ class Device:
             'delta' : self.delta,
             'used' : used,
             'unused' : unused,
+            'last' : self.last.to_json(),
             }
 
     #-----------------------------------------------------------------------
@@ -406,6 +429,10 @@ class Device:
         for elem in sorted(self.unused.values(), key=lambda i: i.mem_loc):
             o.write("  %s\n" % elem)
 
+        if self.last:
+            o.write("Last:\n")
+            o.write("  %s\n" % self.last)
+
         o.write("GroupMap\n")
         for grp, elem in self.groups.items():
             o.write("  %s -> %s\n" % (grp, [i.addr.hex for i in elem]))
@@ -422,13 +449,12 @@ class Device:
         Args:
           entry:  (DeviceEntry) The entry to add.
         """
-        # Entry has a valid database entry
+        # Entry is an active entry.
         if entry.db_flags.in_use:
             # NOTE: this relies on no-one keeping a handle to this entry
             # outside of this class.  This also handles duplicate messages
             # since they will have the same memory location key.
             self.entries[entry.mem_loc] = entry
-            self._mem_locs.add(entry.mem_loc)
 
             # If we're the controller for this entry, add it to the list of
             # entries for that group.
@@ -437,13 +463,16 @@ class Device:
                 if entry not in responders:
                     responders.append(entry)
 
-        # Entry is not in use.
+        # Entry is not in use and is a new last record to use
+        elif entry.db_flags.is_last_rec:
+            self.last = entry
+
+        # Entry is a normal record but is not in use.
         else:
             # NOTE: this relies on no one keeping a handle to this entry
             # outside of this class.  This also handles duplicate messages
             # since they will have the same memory location key.
             self.unused[entry.mem_loc] = entry
-            self._mem_locs.add(entry.mem_loc)
 
             # If the entry is a controller and it's in the group dict, erase
             # it from the group map.
@@ -494,44 +523,37 @@ class Device:
         """
         # pylint: disable=too-many-locals
 
-        # Memory goes high->low so find the last entry by looking at the
-        # minimum value.  Then find the entry for that loc.
-        if self._mem_locs:
-            last_entry = self.find_mem_loc(min(self._mem_locs))
-            if not last_entry:
-                LOG.error("UNKNOWN error?? mem loc %s not in db:\n%s",
-                          min(self._mem_locs), self)
-                return
-
-            # Each rec is 8 bytes so move down 8 to get the next loc.
-            mem_loc = last_entry.mem_loc - 0x08
-        else:
-            # Starting memory location for db records.
-            last_entry = None
-            mem_loc = 0x0fff
-
+        # Start by moving the current last record down 8 bytes.  Write out
+        # the new last record and then create a new record with the input
+        # data at the location of the old last record.
         LOG.info("Device %s appending new record at mem %#06x", self.addr,
-                 mem_loc)
+                 self.last.mem_loc)
 
-        # Create the new entry and send it out.
+        seq = CommandSeq(protocol, "Device database update complete", on_done)
+
+        # Shift the current last record down 8 bytes.  Make a copy - we'll
+        # only update our member var if the write works.
+        last = self.last.copy()
+        last.mem_loc -= 0x08
+
+        # Start by writing the last record - that way if it fails, we don't
+        # try and update w/ the new data record.
+        ext_data = last.to_bytes()
+        msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
+        msg_handler = handler.DeviceDbModify(self, last)
+        seq.add_msg(msg, msg_handler)
+
+        # Create the new entry at the current last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=is_controller,
-                               is_last_rec=True)
-        entry = DeviceEntry(addr, group, mem_loc, db_flags, data)
+                               is_last_rec=False)
+        entry = DeviceEntry(addr, group, self.last.mem_loc, db_flags, data)
+
+        # Add the call to update the data record.
         ext_data = entry.to_bytes()
         msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-        msg_handler = handler.DeviceDbModify(self, entry, on_done)
+        msg_handler = handler.DeviceDbModify(self, entry)
+        seq.add_msg(msg, msg_handler)
 
-        # Now create the updated current last entry w/ the last record flag
-        # set to False since it's not longer last.  The handler will send
-        # this message out if the first call above gets an ACK.
-        if last_entry:
-            new_last = last_entry.copy()
-            new_last.db_flags.is_last_rec = False
-            ext_data = new_last.to_bytes()
-            next_msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-            msg_handler.add_update(next_msg, new_last)
-
-        # Send the message and handler.
-        protocol.send(msg, msg_handler)
+        seq.run()
 
     #-----------------------------------------------------------------------

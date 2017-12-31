@@ -70,7 +70,7 @@ class Dimmer(Base):
         super().__init__(protocol, modem, address, name)
 
         # Current dimming level. 0x00 -> 0xff
-        self._level = None
+        self._level = 0x00
 
         # Support dimmer style signals and motion on/off style signals.
         self.signal_level_changed = Signal()  # (Device, level)
@@ -83,7 +83,12 @@ class Dimmer(Base):
             'set' : self.set,
             'increment_up' : self.increment_up,
             'increment_down' : self.increment_down,
+            'scene' : self.scene,
             })
+
+        # Special callback to run when receiving a broadcast clean up.  See
+        # scene() for details.
+        self.broadcast_done = None
 
     #-----------------------------------------------------------------------
     def pair(self, on_done=None):
@@ -103,7 +108,7 @@ class Dimmer(Base):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq("Dimmer paired", on_done)
+        seq = CommandSeq(self.protocol, "Dimmer paired", on_done)
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -149,8 +154,7 @@ class Dimmer(Base):
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        callback = functools.partial(self.handle_ack, on_done=on_done)
-        msg_handler = handler.StandardCmd(msg, callback)
+        msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
@@ -176,8 +180,7 @@ class Dimmer(Base):
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        callback = functools.partial(self.handle_ack, on_done=on_done)
-        msg_handler = handler.StandardCmd(msg, callback)
+        msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
@@ -206,6 +209,43 @@ class Dimmer(Base):
             self.off(group, instant, on_done)
 
     #-----------------------------------------------------------------------
+    def scene(self, is_on, group=0x01, on_done=None):
+        """TODO: doc
+        """
+        LOG.info("Dimmer %s scene %s", self.addr, "on" if is_on else "off")
+        assert group == 0x01
+
+        # Send an 0x30 all link command to simulate the button being pressed
+        # on the switch.  See page 163 of insteon dev guide
+        cmd1 = 0x11 if is_on else 0x13
+        data = bytes([
+            group,  # D1 = group (button)
+            0x00,   # D2 = use level in scene db
+            0x00,   # D3 = on level if D2=0x01
+            cmd1,   # D4 = cmd1 to send
+            0x01,   # D5 = cmd2 to send
+            0x00,   # D6 = use ramp rate in scene db
+            ] + [0x00] * 8)
+        msg = Msg.OutExtended.direct(self.addr, 0x30, 0x00, data)
+
+        # Use the standard command handler which will notify us when
+        # the command is ACK'ed.
+        callback = on_done if is_on else None
+        msg_handler = handler.StandardCmd(msg, self.handle_scene, callback)
+        self.protocol.send(msg, msg_handler)
+
+        # Scene triggering will not turn the device off (no idea why), so we
+        # have to send an explicit off command to do that.  If this is None,
+        # we're triggering a scene and so should bypass the normal
+        # handle_broadcast logic to take this case into account.  Note that
+        # if we sent and off command either before or after the ACK of the
+        # command above, it doesn't work - we have to wait until the
+        # broadcast msg is finished.
+        if not is_on:
+            self.broadcast_done = functools.partial(self.off, group=group,
+                                                    on_done=on_done)
+
+    #-----------------------------------------------------------------------
     def increment_up(self, on_done=None):
         """Increment the current level up.
 
@@ -219,9 +259,8 @@ class Dimmer(Base):
 
         msg = Msg.OutStandard.direct(self.addr, 0x15, 0x00)
 
-        callback = functools.partial(self.handle_increment, delta=+8,
-                                     on_done=on_done)
-        msg_handler = handler.StandardCmd(msg, callback)
+        callback = functools.partial(self.handle_increment, delta=+8)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -238,9 +277,8 @@ class Dimmer(Base):
 
         msg = Msg.OutStandard.direct(self.addr, 0x16, 0x00)
 
-        callback = functools.partial(self.handle_increment, delta=-8,
-                                     on_done=on_done)
-        msg_handler = handler.StandardCmd(msg, callback)
+        callback = functools.partial(self.handle_increment, delta=-8)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -263,6 +301,9 @@ class Dimmer(Base):
         # ACK of the broadcast - ignore this.
         if cmd == 0x06:
             LOG.info("Dimmer %s broadcast ACK grp: %s", self.addr, msg.group)
+            if self.broadcast_done:
+                self.broadcast_done()
+            self.broadcast_done = None
             return
 
         # On command.  How do we tell the level?  It's not in the
@@ -274,7 +315,12 @@ class Dimmer(Base):
         # Off command.
         elif cmd == 0x13:
             LOG.info("Dimmer %s broadcast OFF grp: %s", self.addr, msg.group)
-            self._set_level(0x00)
+
+            # If broadcast_done is active, this is a generated broadcast and
+            # we need to manually turn the device off so don't update it's
+            # state until that occurs.
+            if not self.broadcast_done:
+                self._set_level(0x00)
 
         # Starting manual increment (cmd2 0x00=up, 0x01=down)
         elif cmd == 0x17:
@@ -314,7 +360,7 @@ class Dimmer(Base):
         self._set_level(msg.cmd2)
 
     #-----------------------------------------------------------------------
-    def handle_ack(self, msg, on_done=None):
+    def handle_ack(self, msg, on_done):
         """Callback for standard commanded messages.
 
         This callback is run when we get a reply back from one of our
@@ -331,32 +377,55 @@ class Dimmer(Base):
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
             self._set_level(msg.cmd2)
-            if on_done:
-                on_done(True, "Dimmer state updated to %s" % self._level,
-                        msg.cmd2)
+            on_done(True, "Dimmer state updated to %s" % self._level,
+                    msg.cmd2)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("Dimmer %s NAK error: %s", self.addr, msg)
-            if on_done:
-                on_done(False, "Dimmer state update failed", None)
+            on_done(False, "Dimmer state update failed", None)
 
     #-----------------------------------------------------------------------
-    def handle_increment(self, msg, delta, on_done=None):
-        """TODO: doc
+    def handle_scene(self, msg, on_done):
+        """Callback for scene simulation commanded messages.
+
+        This callback is run when we get a reply back from triggering a scene
+        on the device.  If the command was ACK'ed, we know it worked.  The
+        device will then send out standard broadcast messages which will
+        trigger other updates for the scene devices.
+
+        Args:
+          msg:  (message.InpStandard) The reply message from the device.
         """
         # If this it the ACK we're expecting, update the internal
         # state and emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
-            self._set_level(self._level + delta)
-            if on_done:
-                s = "Dimmer %s state updated to %s" % (self.addr, self._level)
-                on_done(True, s, msg.cmd2)
+            on_done(True, "Scene triggered", None)
+
+        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+            LOG.error("Dimmer %s NAK error: %s", self.addr, msg)
+            on_done(False, "Scene trigger failed failed", None)
+
+    #-----------------------------------------------------------------------
+    def handle_increment(self, msg, on_done, delta):
+        """TODO: doc
+        """
+
+        # If this it the ACK we're expecting, update the internal
+        # state and emit our signals.
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+            LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
+            # Add the delta and bound at [0, 255]
+            level = min(self._level + delta, 255)
+            level = max(level, 0)
+            self._set_level(level)
+
+            s = "Dimmer %s state updated to %s" % (self.addr, self._level)
+            on_done(True, s, msg.cmd2)
 
         elif msg.flags.Dimmer == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("Dimmer %s NAK error: %s", self.addr, msg)
-            if on_done:
-                on_done(False, "Dimmer %s state update failed", None)
+            on_done(False, "Dimmer %s state update failed", None)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

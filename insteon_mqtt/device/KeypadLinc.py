@@ -63,7 +63,12 @@ class KeypadLinc(Dimmer):
         # base class defined commands.
         self.cmd_map.update({
             'set_button_led' : self.set_button_led,
+            'scene' : self.scene,
             })
+
+        # Special callback to run when receiving a broadcast clean up.  See
+        # scene() for details.
+        self.broadcast_done = None
 
     #-----------------------------------------------------------------------
     def pair(self, on_done=None):
@@ -83,7 +88,7 @@ class KeypadLinc(Dimmer):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq("KeypadLinc paired", on_done)
+        seq = CommandSeq(self.protocol, "KeypadLinc paired", on_done)
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -113,10 +118,7 @@ class KeypadLinc(Dimmer):
         # Send a 0x19 0x01 command to get the LED light on/off flags.
         LOG.info("KeypadLinc %s cmd: keypad status refresh", self.addr)
 
-        # If we get the LED state correctly, then have the dimmer also get
-        # it's state and update the database if necessary.
-        seq = CommandSeq("Refresh complete", on_done)
-        seq.add(Dimmer.refresh, self, force)
+        seq = CommandSeq(self.protocol, "Refresh complete", on_done)
 
         # This sends a refresh ping which will respond w/ the LED bit flags
         # (1-8) and current database delta field.  Pass skip_db here - we'll
@@ -125,9 +127,15 @@ class KeypadLinc(Dimmer):
         # the dimmer refresh would download the database twice.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
         msg_handler = handler.DeviceRefresh(self, self.handle_led_refresh,
-                                            force=False, on_done=seq.on_done,
-                                            num_retry=3, skip_db=True)
-        self.protocol.send(msg, msg_handler)
+                                            force=False, num_retry=3,
+                                            skip_db=True)
+        seq.add_msg(msg, msg_handler)
+
+        # If we get the LED state correctly, then have the dimmer also get
+        # it's state and update the database if necessary.
+        seq.add(Dimmer.refresh, self, force)
+
+        seq.run()
 
     #-----------------------------------------------------------------------
     def on(self, group=1, level=None, instant=False, on_done=None):
@@ -164,6 +172,44 @@ class KeypadLinc(Dimmer):
             self.set_button_led(group, bool(level), on_done)
 
     #-----------------------------------------------------------------------
+    def scene(self, is_on, group=0x01, on_done=None):
+        """TODO: doc
+        """
+        LOG.info("KeypadLinc %s %s scene %s", self.addr, group,
+                 "on" if is_on else "off")
+        assert 1 <= group <= 8
+
+        # Send an 0x30 all link command to simulate the button being pressed
+        # on the switch.  See page 163 of insteon dev guide
+        cmd1 = 0x11 if is_on else 0x13
+        data = bytes([
+            group,  # D1 = group (button)
+            0x00,   # D2 = use level in scene db
+            0x00,   # D3 = on level if D2=0x01
+            cmd1,   # D4 = cmd1 to send
+            0x00,   # D5 = cmd2 to send
+            0x00,   # D6 = use ramp rate in scene db
+            ] + [0x00] * 8)
+        msg = Msg.OutExtended.direct(self.addr, 0x30, 0x00, data)
+
+        # Use the standard command handler which will notify us when
+        # the command is ACK'ed.
+        callback = on_done if is_on else None
+        msg_handler = handler.StandardCmd(msg, self.handle_scene, callback)
+        self.protocol.send(msg, msg_handler)
+
+        # Scene triggering will not turn the device off (no idea why), so we
+        # have to send an explicit off command to do that.  If this is None,
+        # we're triggering a scene and so should bypass the normal
+        # handle_broadcast logic to take this case into account.  Note that
+        # if we sent and off command either before or after the ACK of the
+        # command above, it doesn't work - we have to wait until the
+        # broadcast msg is finished.
+        if not is_on:
+            self.broadcast_done = functools.partial(self.off, group=group,
+                                                    on_done=on_done)
+
+    #-----------------------------------------------------------------------
     def set_button_led(self, group, is_on, on_done=None):
         """TODO: doc
         """
@@ -194,15 +240,14 @@ class KeypadLinc(Dimmer):
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
         callback = functools.partial(self.handle_led_ack, group=group,
-                                     is_on=is_on, led_bits=led_bits,
-                                     on_done=on_done)
-        msg_handler = handler.StandardCmd(msg, callback)
+                                     is_on=is_on, led_bits=led_bits)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def handle_led_ack(self, msg, group, is_on, led_bits, on_done=None):
+    def handle_led_ack(self, msg, on_done, group, is_on, led_bits):
         """TODO: doc
         """
         # If this it the ACK we're expecting, update the internal
@@ -275,26 +320,39 @@ class KeypadLinc(Dimmer):
         # keypadlinc.  Treat those the same as the remote control
         # does.  They don't have levels to find/set but have similar
         # messages to the dimmer load.
-        is_on = None
         cmd = msg.cmd1
 
-        # ACK of the broadcast - ignore this.
+        # ACK of the broadcast - ignore this.  Unless we sent a simulated off
+        # scene in which case run the broadcast done handler.  This is a
+        # weird special case - see scene() for details.
         if cmd == 0x06:
             LOG.info("KeypadLinc %s broadcast ACK grp: %s", self.addr,
                      msg.group)
+            if self.broadcast_done:
+                self.broadcast_done()
+            self.broadcast_done = None
             return
 
         # On command.  0x11: on, 0x12: on fast
         elif cmd in Switch.on_codes:
             LOG.info("KeypadLinc %s broadcast ON grp: %s", self.addr,
                      msg.group)
-            is_on = True
+            # Notify others that the button was pressed.
+            self._led_bits = util.bit_set(self._led_bits, msg.group - 1, 1)
+            self.signal_pressed.emit(self, msg.group, True)
 
         # Off command. 0x13: off, 0x14: off fast
         elif cmd in Switch.off_codes:
             LOG.info("KeypadLinc %s broadcast OFF grp: %s", self.addr,
                      msg.group)
-            is_on = False
+
+            # If broadcast_done is active, this is a generated broadcast and
+            # we need to manually turn the device off so don't update it's
+            # state until that occurs.
+            if not self.broadcast_done:
+                # Notify others that the button was pressed.
+                self._led_bits = util.bit_set(self._led_bits, msg.group - 1, 0)
+                self.signal_pressed.emit(self, msg.group, False)
 
         # Starting manual increment (cmd2 0x00=up, 0x01=down)
         elif cmd == 0x17:
@@ -313,16 +371,33 @@ class KeypadLinc(Dimmer):
             # a refresh to find out.
             self.refresh()
 
-        # Notify others that the button was pressed.
-        if is_on is not None:
-            self._led_bits = util.bit_set(self._led_bits, msg.group - 1, is_on)
-            self.signal_pressed.emit(self, msg.group, is_on)
-
         # Call the base class handler.  This will find all the devices we're
         # the controller of for this group and call their handle_group_cmd()
         # methods to update their states since they will have seen the group
         # broadcast and updated (without sending anything out).
         Base.handle_broadcast(self, msg)
+
+    #-----------------------------------------------------------------------
+    def handle_scene(self, msg, on_done):
+        """Callback for scene simulation commanded messages.
+
+        This callback is run when we get a reply back from triggering a scene
+        on the device.  If the command was ACK'ed, we know it worked.  The
+        device will then send out standard broadcast messages which will
+        trigger other updates for the scene devices.
+
+        Args:
+          msg:  (message.InpStandard) The reply message from the device.
+        """
+        # If this it the ACK we're expecting, update the internal
+        # state and emit our signals.
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+            LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
+            on_done(True, "Scene triggered", None)
+
+        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+            LOG.error("KeypadLinc %s NAK error: %s", self.addr, msg)
+            on_done(False, "Scene trigger failed failed", None)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

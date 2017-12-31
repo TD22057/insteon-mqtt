@@ -27,30 +27,59 @@ class CommandSeq:
     probably a good case for switching to asyncio type processing.
     """
     #-----------------------------------------------------------------------
-    def __init__(self, msg=None, on_done=None):
+    def __init__(self, protocol, msg=None, on_done=None):
         """Constructor
 
         Args:
-          msg:      Message to pass to on_done if the sequence works.
+          protocol: The Protocol object to use.
+          msg:      (str) String message to pass to on_done if the
+                    sequence works.
           on_done:  The callback to run when complete.  This will be run
                     when there is an error or when all the commands finish.
         """
+        self.protocol = protocol
+
         self._on_done = util.make_callback(on_done)
         self.msg = msg
-        self.calls = []
         self.total = 0
+
+        # List of Entry objects (see class below) to call for each step in
+        # the sequence.
+        self.calls = []
 
     #-----------------------------------------------------------------------
     def add(self, func, *args, **kwargs):
-        """Add a call to the sequence.
+        """Add a function call to the sequence.
+
+        This will call the input function with the supplied arguments when
+        it's next in the sequence.
 
         Args:
           func:     The function or method to call.  Must take an on_done
                     callback argument.
           args:     Arguments to pass to the function.
           kwargs:   Keyword arguments to pass to the function.
+
         """
-        self.calls.append((func, args, kwargs))
+        self.calls.append(Entry.from_func(func, args, kwargs))
+        self.total += 1
+
+    #-----------------------------------------------------------------------
+    def add_msg(self, msg, handler):
+        """Add a message and handler to the sequence.
+
+        This will pass the message and handler to the protocol object when
+        it's next in the sequence.
+
+        NOTE: the on_done callback in the handler will NOT be called.  The
+        on_done callback supplied to the CommandSeq constructor will be
+        called if this is the last entry.
+
+        Args:
+          msg:      The message object to send.
+          handler:  The handler to use for the message.
+        """
+        self.calls.append(Entry.from_msg(msg, handler))
         self.total += 1
 
     #-----------------------------------------------------------------------
@@ -80,7 +109,41 @@ class CommandSeq:
             LOG.debug("Running command %d of %d", self.total + 1 -
                       len(self.calls), self.total)
 
-            func, args, kwargs = self.calls.pop(0)
-            func(*args, on_done=self.on_done, **kwargs)
+            entry = self.calls.pop(0)
+            entry.run(self.protocol, self.on_done)
 
     #-----------------------------------------------------------------------
+
+
+#===========================================================================
+class Entry:
+    #pylint: disable=attribute-defined-outside-init
+
+    @classmethod
+    def from_func(cls, func, args, kwargs):
+        obj = cls()
+        obj.msg = None
+        obj.func = func
+        obj.args = args
+        obj.kwargs = kwargs
+        return obj
+
+    #-----------------------------------------------------------------------
+    @classmethod
+    def from_msg(cls, msg, handler):
+        obj = cls()
+        obj.func = None
+        obj.msg = msg
+        obj.handler = handler
+        return obj
+
+    #-----------------------------------------------------------------------
+    def run(self, protocol, on_done):
+        if self.func is None:
+            self.handler.on_done = on_done
+            protocol.send(self.msg, self.handler)
+
+        else:
+            self.func(*self.args, on_done=on_done, **self.kwargs)
+
+#===========================================================================

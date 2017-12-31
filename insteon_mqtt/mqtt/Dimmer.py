@@ -11,10 +11,17 @@ LOG = log.get_logger()
 
 
 class Dimmer(Switch):
-    """TODO: doc
+    """Insteon dimmer MQTT interface.
+
+    Dimmers will report their state and brightness (level) and can be
+    commanded to turn on and off or on at a specific level (0-255).
     """
     def __init__(self, mqtt, device):
-        """TODO: doc
+        """Constructor
+
+        Args:
+          mqtt:     The MQTT main interface.
+          device:   The Insteon Dimmer object to link to.
         """
         super().__init__(mqtt, device, handle_active=False)
 
@@ -32,11 +39,22 @@ class Dimmer(Switch):
                     '"level" : {{json.brightness}} }',
             )
 
+        # Input scene on/off command template.
+        self.msg_scene_on_off = MsgTemplate(
+            topic='insteon/{{address}}/scene',
+            payload='{ "cmd" : "{{value.lower()}}" }',
+            )
+
         device.signal_level_changed.connect(self.handle_level_changed)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
-        """TODO: doc
+        """Load values from a configuration data object.
+
+        Args:
+          config:   The configuration dictionary to load from.  The object
+                    config is stored in config['dimmer'].
+          qos:      The default quality of service level to use.
         """
         data = config.get("dimmer", None)
         super().load_switch_config(data, qos)
@@ -51,24 +69,39 @@ class Dimmer(Switch):
 
         # The Switch base class will load the msg_state template for us.
         self.msg_level.load_config(config, 'level_topic', 'level_payload', qos)
+        self.msg_scene_on_off.load_config(config, 'scene_on_off_topic',
+                                          'scene_on_off_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
-        """TODO: doc
+        """Subscribe to any MQTT topics the object needs.
+
+        Args:
+          link:   The MQTT network client to use.
+          qos:    The quality of service to use.
         """
         super().subscribe(link, qos)
 
         topic = self.msg_level.render_topic(self.template_data())
         link.subscribe(topic, qos, self.handle_set_level)
 
+        topic = self.msg_scene_on_off.render_topic(self.template_data())
+        link.subscribe(topic, qos, self.handle_scene)
+
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
-        """TODO: doc
+        """Unsubscribe to any MQTT topics the object was subscribed to.
+
+        Args:
+          link:   The MQTT network client to use.
         """
         super().unsubscribe(link)
 
         topic = self.msg_level.render_topic(self.template_data())
         self.mqtt.unsubscribe(topic)
+
+        topic = self.msg_scene_on_off.render_topic(self.template_data())
+        link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
@@ -132,5 +165,32 @@ class Dimmer(Switch):
             return
 
         self.device.set(level=level, instant=instant)
+
+    #-----------------------------------------------------------------------
+    def handle_scene(self, client, data, message):
+        """TODO: doc
+        """
+        LOG.debug("Dimmer message %s %s", message.topic, message.payload)
+
+        # Parse the input MQTT message.
+        data = self.msg_scene_on_off.to_json(message.payload)
+        LOG.info("Dimmer input command: %s", data)
+
+        try:
+            cmd = data.get('cmd')
+            if cmd == 'on':
+                is_on = True
+            elif cmd == 'off':
+                is_on = False
+            else:
+                raise Exception("Invalid dimmer cmd input '%s'" % cmd)
+
+            group = int(data.get('group', 0x01))
+        except:
+            LOG.exception("Invalid dimmer command: %s", data)
+            return
+
+        # Tell the device to trigger the scene command.
+        self.device.scene(is_on, group)
 
     #-----------------------------------------------------------------------

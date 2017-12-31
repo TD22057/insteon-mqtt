@@ -95,6 +95,19 @@ def increment_down(args, config):
 
 
 #===========================================================================
+def scene(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "scene",
+        "group" : args.group,
+        "is_on" : bool(args.is_on),
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
 def pair(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
@@ -163,6 +176,7 @@ def db_add(args, config):
         "group" : args.group,
         "two_way" : not args.one_way,
         "data" : data,
+        "refresh" : not args.no_refresh,
         }
 
     reply = util.send(config, topic, payload, args.quiet)
@@ -182,6 +196,7 @@ def db_delete(args, config):
         "addr" : args.address,
         "group" : args.group,
         "two_way" : not args.one_way,
+        "refresh" : not args.no_refresh,
         }
 
     reply = util.send(config, topic, payload, args.quiet)

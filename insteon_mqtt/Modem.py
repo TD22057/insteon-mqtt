@@ -330,9 +330,8 @@ class Modem:
                     modem, a responder link is created on the remote device
                     to form the required pair of entries.
           refresh:  (bool) If True, call refresh before changing the db.
-                    Changing the db w/o an out of date db will likely require
-                    a factory reset (since memory addresses are manipulated)
-                    so this is important.
+                    This is ignored on the modem since it doesn't use memory
+                    addresses and can't be corrupted.
           on_done:  Optional callback run when both commands are finished.
         """
         self._db_update(addr, group, data, two_way, is_controller=True,
@@ -374,9 +373,8 @@ class Modem:
                     modem, a controller link is created on the remote device
                     to form the required pair of entries.
           refresh:  (bool) If True, call refresh before changing the db.
-                    Changing the db w/o an out of date db will likely require
-                    a factory reset (since memory addresses are manipulated)
-                    so this is important.
+                    This is ignored on the modem since it doesn't use memory
+                    addresses and can't be corrupted.
           on_done:  Optional callback run when both commands are finished.
         """
         self._db_update(addr, group, data, two_way, is_controller=False,
@@ -584,7 +582,7 @@ class Modem:
                      "Link will be only one direction",
                      util.ctrl_str(is_controller), addr)
 
-        seq = CommandSeq("Device db update complete", on_done)
+        seq = CommandSeq(self.protocol, "Device db update complete", on_done)
 
         # Get the data array to use.  See Github issue #7 for discussion.
         # Use teh bytes() cast here so we can take a list as input.
@@ -606,16 +604,17 @@ class Modem:
             remote_data = None
             if is_controller:
                 seq.add(remote.db_add_resp_of, self.addr, group, remote_data,
-                        two_way)
+                        two_way, refresh)
             else:
                 seq.add(remote.db_add_ctrl_of, self.addr, group, remote_data,
-                        two_way)
+                        two_way, refresh)
 
         # Start the command sequence.
         seq.run()
 
     #-----------------------------------------------------------------------
-    def _db_delete(self, addr, group, is_controller, two_way, on_done):
+    def _db_delete(self, addr, group, is_controller, two_way, refresh,
+                   on_done):
         """TODO: doc
         """
         LOG.debug("db delete: %s grp=%s ctrl=%s 2w=%s", addr, group,
@@ -641,17 +640,20 @@ class Modem:
             return
 
         # Add the function delete call to the sequence.
-        seq = CommandSeq("Delete complete", on_done)
+        seq = CommandSeq(self.protocol, "Delete complete", on_done)
         seq.add(self.db.delete_on_device, self.protocol, entry)
 
         # For two way commands, insert a callback so that when the modem
         # command finishes, it will send the next command to the device.
         # When that finishes, it will run the input callback.
         if two_way and remote:
+            two_way = False
             if is_controller:
-                seq.add(remote.db_del_resp_of, self.addr, group, two_way=False)
+                seq.add(remote.db_del_resp_of, self.addr, group, two_way,
+                        refresh)
             else:
-                seq.add(remote.db_del_ctrl_of, self.addr, group, two_way=False)
+                seq.add(remote.db_del_ctrl_of, self.addr, group, two_way,
+                        refresh)
 
         # Start running the commands.
         seq.run()

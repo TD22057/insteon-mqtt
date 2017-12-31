@@ -5,20 +5,17 @@
 #===========================================================================
 from .. import log
 from .. import device as IDev
-from .Base import Base
 from .MsgTemplate import MsgTemplate
 
 LOG = log.get_logger()
 
 
-class SmokeBridge(Base):
+class SmokeBridge:
     """TODO: doc
     """
     def __init__(self, mqtt, device):
         """TODO: doc
         """
-        super().__init__()
-
         self.mqtt = mqtt
         self.device = device
 
@@ -43,7 +40,12 @@ class SmokeBridge(Base):
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
-        """TODO: doc
+        """Load values from a configuration data object.
+
+        Args:
+          config:   The configuration dictionary to load from.  The object
+                    config is stored in config['smoke_bridge'].
+          qos:      The default quality of service level to use.
         """
         data = config.get("smoke_bridge", None)
         if not data:
@@ -54,6 +56,25 @@ class SmokeBridge(Base):
         self.msg_battery.load_config(data, 'battery_topic', 'battery_payload',
                                      qos)
         self.msg_error.load_config(data, 'error_topic', 'error_payload', qos)
+
+    #-----------------------------------------------------------------------
+    def subscribe(self, link, qos):
+        """Subscribe to any MQTT topics the object needs.
+
+        Args:
+          link:   The MQTT network client to use.
+          qos:    The quality of service to use.
+        """
+        pass
+
+    #-----------------------------------------------------------------------
+    def unsubscribe(self, link):
+        """Unsubscribe to any MQTT topics the object was subscribed to.
+
+        Args:
+          link:   The MQTT network client to use.
+        """
+        pass
 
     #-----------------------------------------------------------------------
     def handle_change(self, device, condition):

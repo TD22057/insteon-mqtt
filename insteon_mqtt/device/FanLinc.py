@@ -4,7 +4,6 @@
 #
 #===========================================================================
 import enum
-import functools
 from .Dimmer import Dimmer
 from ..CommandSeq import CommandSeq
 from .. import handler
@@ -64,7 +63,7 @@ class FanLinc(Dimmer):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq("FanLinc paired", on_done)
+        seq = CommandSeq(self.protocol, "FanLinc paired", on_done)
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -93,10 +92,7 @@ class FanLinc(Dimmer):
         # Send a 0x19 0x03 command to get the fan speed level.
         LOG.info("Device %s cmd: fan status refresh", self.addr)
 
-        # If we get the FAN state correctly, then have the dimmer also get
-        # it's state and update the database if necessary.
-        seq = CommandSeq("Refresh complete", on_done)
-        seq.add(Dimmer.refresh, self, force)
+        seq = CommandSeq(self.protocol, "Refresh complete", on_done)
 
         # This sends a refresh ping which will respond w/ the fan
         # level and current database delta field.  Pass skip_db here - we'll
@@ -105,9 +101,15 @@ class FanLinc(Dimmer):
         # the dimmer refresh would download the database twice.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x03)
         msg_handler = handler.DeviceRefresh(self, self.handle_fan_refresh,
-                                            force=False, on_done=seq.on_done,
-                                            num_retry=3, skip_db=True)
-        self.protocol.send(msg, msg_handler)
+                                            force=False, num_retry=3,
+                                            skip_db=True)
+        seq.add_msg(msg, msg_handler)
+
+        # If we get the FAN state correctly, then have the dimmer also get
+        # it's state and update the database if necessary.
+        seq.add(Dimmer.refresh, self, force)
+
+        seq.run()
 
     #-----------------------------------------------------------------------
     def fan_on(self, speed=None, on_done=None):
@@ -130,8 +132,8 @@ class FanLinc(Dimmer):
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        callback = functools.partial(self.handle_speed_ack, on_done=on_done)
-        msg_handler = handler.StandardCmd(msg, callback)
+        msg_handler = handler.StandardCmd(msg, self.handle_speed_ack,
+                                          on_done)
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
@@ -156,8 +158,8 @@ class FanLinc(Dimmer):
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        callback = functools.partial(self.handle_speed_ack, on_done=on_done)
-        msg_handler = handler.StandardCmd(msg, callback)
+        msg_handler = handler.StandardCmd(msg, self.handle_speed_ack,
+                                          on_done)
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
