@@ -15,8 +15,11 @@ This package assumes that you:
   ```
   sudo apt update
   sudo apt install python3-dev python3-pip
-  sudo pip3 install --upgrade virtualenv
+  sudo pip3 install --upgrade virtualenv wheel
   ```
+
+  If you python 3 version is < 3.3, you may also need to do `sudo apt-install
+  python3-venv`
 
 - Have read access to the serial/USB line the modem is connected to.
   On Ubuntu, this means your user should be a member of the dialout
