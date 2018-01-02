@@ -19,6 +19,8 @@
 
 - Added KeypadLinc support ([Issue #8][I8]).
 
+- Added IOLinc support  ([Issue #12][I12]).
+
 - Added reply system to the command line tool.  Messages are now sent
   from the server back to the command line tool to indicate the result
   of running the command.
@@ -40,6 +42,10 @@
 
 - Added support for simulating button presses on devices to trigger device
   scenes ([Issue #9][I9]).
+
+- Added support for triggering virtual scenes defined on the modem.
+  ([Issue #24][I24]).
+
 
 ### Fixes
 - [Issue #21][I21]: Fixed incorrect device database entries being created
@@ -72,5 +78,7 @@
 [I8]: https://github.com/TD22057/insteon-mqtt/issues/8
 [I9]: https://github.com/TD22057/insteon-mqtt/issues/9
 [I11]: https://github.com/TD22057/insteon-mqtt/issues/11
+[I12]: https://github.com/TD22057/insteon-mqtt/issues/12
 [I16]: https://github.com/TD22057/insteon-mqtt/issues/16
 [I21]: https://github.com/TD22057/insteon-mqtt/issues/21
+[I24]: https://github.com/TD22057/insteon-mqtt/issues/24

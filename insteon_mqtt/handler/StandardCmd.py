@@ -26,7 +26,7 @@ class StandardCmd(Base):
     to the callback set in the constructor which is usually a method on the
     device to handle the result (or the ACK that the command went through).
     """
-    def __init__(self, msg, callback, on_done=None):
+    def __init__(self, msg, callback, on_done=None, num_retry=0):
         """Constructor
 
         Args
@@ -36,7 +36,7 @@ class StandardCmd(Base):
           callback: Callback function to pass InpStandard messages that match
                     the output to.  Signature: callback(message, on_done).
         """
-        super().__init__(on_done)
+        super().__init__(on_done, num_retry)
 
         self.addr = msg.to_addr
         self.cmd = msg.cmd1

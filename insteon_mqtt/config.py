@@ -19,6 +19,7 @@ devices = {
     'dimmer' : (device.Dimmer, {}),
     'battery_sensor' : (device.BatterySensor, {}),
     'fan_linc' : (device.FanLinc, {}),
+    'io_linc' : (device.IOLinc, {}),
     'keypad_linc' : (device.KeypadLinc, {}),
     'leak' : (device.Leak, {}),
     'mini_remote4' : (device.Remote, {'num_button': 4}),

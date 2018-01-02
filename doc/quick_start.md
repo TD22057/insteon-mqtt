@@ -97,6 +97,11 @@ This package assumes that you:
    needed for complicated devices like the smoke bridge which require
    multiple Insteon groups to be configured.
 
+   IMPORTANT: If you do not call pair for each device one time (it only needs
+   to be done once) means that the correct controller/responder links from
+   the device to the PLM modem may not exist and the functionality of the
+   device with the Insteon-MQTT system may not work until pair() is called.
+
    ```
    insteon-mqtt pair config.yaml AA.BB.CC
    ```

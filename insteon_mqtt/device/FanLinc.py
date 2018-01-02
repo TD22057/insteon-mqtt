@@ -259,7 +259,7 @@ class FanLinc(Dimmer):
                 on_done(False, "Fan %s state update failed", None)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, msg):
+    def handle_group_cmd(self, addr, group, cmd):
         """Respond to a group command for this device.
 
         This is called when this device is a responder to a scene.
@@ -269,27 +269,25 @@ class FanLinc(Dimmer):
         Args:
           addr:  (Address) The device that sent the message.  This is the
                  controller in the scene.
-          msg:   (message.InpStandard) The broadcast message that was sent.
-                 Use msg.group to find the scene group that was broadcast.
+          group: (int) The group being triggered.
+          cmd:   (int) The command byte being sent.
         """
         # Group 1 is for the dimmer - pass that to the base class:
-        if msg.group == 1:
-            super().handle_group_cmd(addr, msg)
+        if group == 1:
+            super().handle_group_cmd(addr, group, cmd)
             return
 
         # Make sure we're really a responder to this message.  This
         # shouldn't ever occur.
-        entry = self.db.find(addr, msg.group, is_controller=False)
+        entry = self.db.find(addr, group, is_controller=False)
         if not entry:
             LOG.error("FanLinc %s has no group %s entry from %s", self.addr,
-                      msg.group, addr)
+                      group, addr)
             return
 
-        cmd = msg.cmd1
-
-        # 0x11: on, speed in cmd2
+        # 0x11: on
         if cmd == 0x11:
-            self._set_fan_speed(msg.cmd2)
+            self._set_fan_speed(entry.data[0])
 
         # 0x13: off
         elif cmd == 0x13:

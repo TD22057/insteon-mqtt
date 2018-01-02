@@ -59,10 +59,10 @@ class Device:
         obj.delta = data['delta']
 
         for d in data['used']:
-            obj.add_entry(DeviceEntry.from_json(d))
+            obj.add_entry(DeviceEntry.from_json(d), save=False)
 
         for d in data['unused']:
-            obj.add_entry(DeviceEntry.from_json(d))
+            obj.add_entry(DeviceEntry.from_json(d), save=False)
 
         if "last" in data:
             obj.last = DeviceEntry.from_json(data["last"])
@@ -440,7 +440,7 @@ class Device:
         return o.getvalue()
 
     #-----------------------------------------------------------------------
-    def add_entry(self, entry):
+    def add_entry(self, entry, save=True):
         """Add an entry to the database without updating the device.
 
         This is used when reading entries from disk.  It does NOT change the
@@ -484,7 +484,8 @@ class Device:
                         break
 
         # Save the updated database.
-        self.save()
+        if save:
+            self.save()
 
     #-----------------------------------------------------------------------
     def _add_using_unused(self, protocol, addr, group, is_controller, data,

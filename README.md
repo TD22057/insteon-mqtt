@@ -40,6 +40,7 @@ what they are and how to interpret messages from them.
   - Dimmer switches (lamp modules, dimmer switches, etc.)
   - FanLinc dimmer and fan controller
   - KeypadLinc dimmer and scene controller
+  - IOLinc relay and sensor module
   - Mini-remotes (4 and 8 button battery powered scene controllers)
   - Battery powered sensors (door, hidden door, window, etc.)
   - Leak sensors
@@ -56,6 +57,7 @@ what they are and how to interpret messages from them.
 - Automatically attempt to download the all link database from battery
   powered devices when a message is seen from them (i.e. trip a motion
   sensor or push a remote button to get it to download the database).
+- Trigger modem virtual scenes
 
 
 # Detailed Documentation
@@ -76,7 +78,6 @@ future enhancements:
 
 - Finish commenting all of the code.
 - Full suite of unit tests.
-- Custom scene creation (software based scenes) and triggering.
 - PIP packaging and installation.
 - YAML input configuration validation.
 - Heal network (remove records for missing devices, fix missing links).

@@ -21,7 +21,9 @@ MQTT messages.
 from .BatterySensor import BatterySensor
 from .Dimmer import Dimmer
 from .FanLinc import FanLinc
+from .IOLinc import IOLinc
 from .KeypadLinc import KeypadLinc
+from .Modem import Modem
 from .Motion import Motion
 from .Mqtt import Mqtt
 from .MsgTemplate import MsgTemplate

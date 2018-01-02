@@ -88,3 +88,45 @@ def resolve_data3(defaults, inputs):
             values.append(inputs[i])
 
     return bytes(values)
+
+
+#===========================================================================
+def input_choice(inputs, field, choices):
+    """TODO: doc
+    """
+    value = inputs.pop(field, None)
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        value = value.lower()
+
+    if value not in choices:
+        msg = "Invalid %s input.  Valid inputs are on of %s" % \
+              (value, str(choices))
+        raise ValueError(msg)
+
+    return value
+
+
+#===========================================================================
+def input_bool(inputs, field):
+    """TODO: doc
+    """
+    value = inputs.pop(field, None)
+    if value is None:
+        return None
+
+    lv = value.lower()
+    if lv == "true":
+        value = True
+    elif lv == "false":
+        value = False
+
+    try:
+        # Use int() because bool("asdf") also returns true.  This insures
+        # only true/false or 1/0 is allowed.
+        return bool(int(value))
+    except ValueError:
+        msg = "Invalid %s input.  Valid inputs are 1/0 or True/False" % input
+        raise ValueError(msg)

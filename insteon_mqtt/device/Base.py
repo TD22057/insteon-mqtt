@@ -98,6 +98,7 @@ class Base:
             'refresh' : self.refresh,
             'linking' : self.linking,
             'pair' : self.pair,
+            'get_flags' : self.get_flags,
             }
 
         # Device database delta.  The delta tells us if the database
@@ -217,6 +218,20 @@ class Base:
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
                                             on_done, num_retry=3)
+        self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def get_flags(self, on_done=None):
+        """TODO: doc
+        """
+        LOG.info("Device %s cmd: get operation flags", self.label)
+
+        # This sends a refresh ping which will respond w/ the current
+        # database delta field.  The handler checks that against the
+        # current value.  If it's different, it will send a database
+        # download command to the device to update the database.
+        msg = Msg.OutStandard.direct(self.addr, 0x1f, 0x00)
+        msg_handler = handler.StandardCmd(msg, self.handle_flags, on_done)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -398,6 +413,14 @@ class Base:
         pass
 
     #-----------------------------------------------------------------------
+    def handle_flags(self, msg, on_done):
+        """TODO: doc
+        """
+        LOG.ui("Device %s operating flags: %s", self.addr,
+               "{:08b}".format(msg.cmd2))
+        on_done(True, "Operation complete", msg.cmd2)
+
+    #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
         """Handle broadcast messages from this device.
 
@@ -412,11 +435,11 @@ class Base:
         Args:
           msg:   (InptStandard) Broadcast message from the device.
         """
-        responders = self.db.find_group(msg.group)
-        LOG.debug("Found %s responders in group %s", len(responders),
-                  msg.group)
-        LOG.debug("Group %s -> %s", msg.group,
-                  [i.addr.hex for i in responders])
+        group = msg.group
+
+        responders = self.db.find_group(group)
+        LOG.debug("Found %s responders in group %s", len(responders), group)
+        LOG.debug("Group %s -> %s", group, [i.addr.hex for i in responders])
 
         # For each device that we're the controller of call it's
         # handler for the broadcast message.
@@ -424,14 +447,14 @@ class Base:
             device = self.modem.find(elem.addr)
             if device:
                 LOG.info("%s broadcast to %s for group %s", self.label,
-                         device.addr, msg.group)
-                device.handle_group_cmd(self.addr, msg)
+                         device.addr, group)
+                device.handle_group_cmd(self.addr, group, msg.cmd1)
             else:
                 LOG.warning("%s broadcast - device %s not found", self.label,
                             elem.addr)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, msg):
+    def handle_group_cmd(self, addr, group, cmd):
         """Respond to a group command for this device.
 
         This is called when this device is a responder to a scene.
@@ -441,8 +464,8 @@ class Base:
         Args:
           addr:  (Address) The device that sent the message.  This is the
                  controller in the scene.
-          msg:   (message.InpStandard) The broadcast message that was sent.
-                 Use msg.group to find the scene group that was broadcast.
+          group: (int) The group being triggered.
+          cmd:   (int) The command byte being sent.
         """
         # Default implementation - derived classes should specialize this.
         LOG.info("Device %s ignoring group cmd - not implemented", self.label)

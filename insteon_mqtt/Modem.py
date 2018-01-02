@@ -47,7 +47,6 @@ class Modem:
         # optional so devices might not be in that map.
         self.devices = {}
         self.device_names = {}
-        self.scenes = {}
         self.db = db.Modem()
 
         # Signal to emit when a new device is added.
@@ -65,6 +64,7 @@ class Modem:
             'refresh' : self.refresh,
             'refresh_all' : self.refresh_all,
             'linking' : self.linking,
+            'scene' : self.scene,
             }
 
         # Add a generic read handler for any broadcast messages
@@ -449,18 +449,43 @@ class Modem:
         return util.resolve_data3(defaults, data)
 
     #-----------------------------------------------------------------------
-    def run_scene(self, group, is_on, cmd1=None, cmd2=0x00):
+    def scene(self, is_on, group, num_retry=3, on_done=None):
         """TODO: doc
         """
-        # TODO: add modem scene support.
-        if cmd1 is None:
-            cmd1 = 0x11 if is_on else 0x13
+        assert 0x01 <= group <= 0xff
+        LOG.info("Modem scene %s on=%s", group, "on" if is_on else "off")
 
-        #msg = Msg.OutModemScene(group, cmd1, cmd2)
-        #msg_handler = handler.???
-        # see test script for reply - this does work.  Modem must be
-        # controller of device.  Modem(ctrl group)->Device(resp group) so we
-        # need multi group linking support before this can be done properly.
+        cmd1 = 0x11 if is_on else 0x13
+        msg = Msg.OutModemScene(group, cmd1, 0x00)
+        msg_handler = handler.ModemScene(self, msg, on_done)
+        self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def handle_scene(self, group, cmd):
+        """Callback for scene simulation commanded messages.
+
+        This callback is run when we get a reply back from triggering a scene
+        on the device.  If the command was ACK'ed, we know it worked.  The
+        device will then send out standard broadcast messages which will
+        trigger other updates for the scene devices.
+
+        TODO: doc
+        """
+        responders = self.db.find_group(group)
+        LOG.debug("Found %s responders in group %s", len(responders), group)
+        LOG.debug("Group %s -> %s", group, [i.addr.hex for i in responders])
+
+        # For each device that we're the controller of call it's
+        # handler for the broadcast message.
+        for elem in responders:
+            device = self.find(elem.addr)
+            if device:
+                LOG.info("%s broadcast to %s for group %s", self.label,
+                         device.addr, group)
+                device.handle_group_cmd(self.addr, group, cmd)
+            else:
+                LOG.warning("%s broadcast - device %s not found", self.label,
+                            elem.addr)
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
@@ -505,7 +530,7 @@ class Modem:
                           "cmd %s with args: %s", self.addr, cmd, str(kwargs))
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, msg):
+    def handle_group_cmd(self, addr, group, cmd):
         """Handle a group command addressed to the modem.
 
         This is called when a broadcast message is sent from a device
@@ -532,6 +557,9 @@ class Modem:
         Args:
           data:   Configuration devices dictionary.
         """
+        # Add ourselves as a device.
+        self.signal_new_device.emit(self, self)
+
         self.devices.clear()
         self.device_names.clear()
 

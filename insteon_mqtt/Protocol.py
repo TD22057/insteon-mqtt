@@ -5,6 +5,7 @@
 #===========================================================================
 from . import log
 from . import message as Msg
+#from . import util
 
 LOG = log.get_logger()
 
@@ -207,7 +208,7 @@ class Protocol:
         # type code.
         while len(self._buf) > 1:
             #LOG.debug("Searching message (len %d): %s... ",
-            #               len(self._buf), tohex(self._buf,10))
+            #               len(self._buf), util.to_hex(self._buf,20))
 
             # Find a message start token.  Note that this token could
             # also appear in the middle of a message so we can't be
@@ -245,9 +246,17 @@ class Protocol:
                 break
 
             # Read the message and move the buffer forward.
-            msg = msg_class.from_bytes(self._buf)
-            self._buf = self._buf[msg_size:]
+            try:
+                msg = msg_class.from_bytes(self._buf)
+            except:
+                LOG.exception()
+                # Skip the initial 0x02 - this way if we got a weird message
+                # with a 0x02 in the message, we won't miss an actual message
+                # by moving msg_size bytes forward which could be wrong.
+                self._buf = self._buf[1:]
+                continue
 
+            self._buf = self._buf[msg_size:]
             LOG.info("Read %#04x: %s", msg_type, msg)
 
             # And try to process the message using the handlers.

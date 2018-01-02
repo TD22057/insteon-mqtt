@@ -15,6 +15,13 @@ from .ModemEntry import ModemEntry
 
 LOG = log.get_logger()
 
+# First group to use for virtual scene generation.  Groups 1-8 are needed for
+# simulated scenes - the modem must be a controller of a device for the
+# device button group to send it a simulated scene.  So skip the first 20
+# just to avoid any future items that might have more buttons.  Max scene
+# number is 254 (255 is all devices).
+GROUP_START = 20
+
 
 class Modem:
     """Modem all link database.
@@ -42,7 +49,9 @@ class Modem:
           Modem: Returns the created Modem object.
         """
         obj = Modem(path)
-        obj.entries = [ModemEntry.from_json(i) for i in data['entries']]
+        for d in data['entries']:
+            obj.add_entry(ModemEntry.from_json(d), save=False)
+
         return obj
 
     #-----------------------------------------------------------------------
@@ -59,6 +68,13 @@ class Modem:
 
         # List of ModemEntry objects in the all link database.
         self.entries = []
+
+        # Map of all link group number to ModemEntry objects that respond to
+        # that group command.
+        self.groups = {}
+
+        # Map of string scene names to integer controller groups
+        self.aliases = {}
 
     #-----------------------------------------------------------------------
     def set_path(self, path):
@@ -89,6 +105,16 @@ class Modem:
         return len(self.entries)
 
     #-----------------------------------------------------------------------
+    def next_group(self):
+        """TODO: doc
+        """
+        for i in range(GROUP_START, 255):
+            if i not in self.groups:
+                return i
+
+        return None
+
+    #-----------------------------------------------------------------------
     def delete_entry(self, entry):
         """Remove an entry from the database without updating the device.
 
@@ -99,6 +125,9 @@ class Modem:
                   or an exception is raised.
         """
         self.entries.remove(entry)
+        if entry.is_controller:
+            del self.groups[entry.group]
+
         self.save()
 
     #-----------------------------------------------------------------------
@@ -112,6 +141,20 @@ class Modem:
 
         if self.save_path and os.path.exists(self.save_path):
             os.remove(self.save_path)
+
+    #-----------------------------------------------------------------------
+    def find_group(self, group):
+        """Find all the database entries in a group.
+
+        Args:
+          group:  (int) The group ID to find.
+
+        Returns:
+          [DeviceEntry] Returns a list of the database device entries that
+          match the input group ID.
+        """
+        entries = self.groups.get(group, [])
+        return entries
 
     #-----------------------------------------------------------------------
     def find(self, addr, group, is_controller):
@@ -321,10 +364,14 @@ class Modem:
         for entry in sorted(self.entries):
             o.write("  %s\n" % entry)
 
+        o.write("GroupMap\n")
+        for grp, elem in self.groups.items():
+            o.write("  %s -> %s\n" % (grp, [i.addr.hex for i in elem]))
+
         return o.getvalue()
 
     #-----------------------------------------------------------------------
-    def add_entry(self, entry):
+    def add_entry(self, entry, save=True):
         """Add a ModemEntry object to the database.
 
         If the entry already exists (matching address, group, and
@@ -342,6 +389,14 @@ class Modem:
         except ValueError:
             self.entries.append(entry)
 
-        self.save()
+        # If we're the controller for this entry, add it to the list of
+        # entries for that group.
+        if entry.is_controller:
+            responders = self.groups.setdefault(entry.group, [])
+            if entry not in responders:
+                responders.append(entry)
+
+        if save:
+            self.save()
 
 #===========================================================================

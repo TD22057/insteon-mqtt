@@ -31,6 +31,7 @@ be identified by it's address or the string "modem".
    - [Dimmers](#dimmers)
    - [FanLinc](#fanlinc)
    - [KeypadLinc](#keypadlinc)
+   - [IOLinc](#iolinc)
    - [Battery Sensors](#battery-sensors)
    - [Motion Sensors](#motion-sensors)
    - [Leak Sensors](#leak-sensors)
@@ -47,8 +48,8 @@ directions) for group 1 which is required to allow the device to accept any
 commands from the modem and report basic state changes.
 
 More complicated devices need more links than that to fully work.  FanLInc,
-KeypadLinc, multi-button remotes, battery sensors, and the Smoke bridge all
-require link to be created from the device to the modem for every
+KeypadLinc, IOLinc, multi-button remotes, battery sensors, and the Smoke
+bridge all require link to be created from the device to the modem for every
 group/button and/or message that the device publishes.  Multi-button devices
 also require that the modem have a link to the device for each button in
 order to allow scene simulation.  The pair command can be used to
@@ -232,6 +233,53 @@ commands.
 
    ```
    { "cmd": "set_button_led", "button" : button, "is_on" : true/false }
+
+
+### Get and set operating flags.
+
+Supported: IOLinc
+
+This command gets and sets the Insteon extended operating flags.  For the
+IOLinc device, this allows control of the latching and momentary A/B/C mode
+selection as well as configuring how the device responds to sensor changes.
+Each flag field is optional.
+
+   ```
+   { "cmd": "set_flags",
+     ["mode" : "latching" / "momentary-a" / "momentary-b" / "momentary-c"],
+     ["trigger_reverse" : 0/1],
+     ["relay_linked" : 0/1],
+     }
+   ```
+
+### Print the current all link database.
+
+Supported: modem, devices
+
+This command is mainly used from the command line tool and allows printing of
+the current all link database for a device.
+
+   ```
+   { "cmd": "print_db" }
+   ```
+
+
+### Scene triggering.
+
+Supported: modem, devices
+
+This command triggers scenes from the modem or device.  For the modem, this
+triggers virtual modem scenes (i.e. any group number where the modem is the
+controller).  For devices, the group is the button number and this will
+simulate pressing the button on the device.  Note that devices do not work
+properly with the off command - they will emit the off scene message but not
+actually turn off themselves so insteon-mqtt will send an off command to the
+device once the scene messages are done.
+
+   ```
+   { "cmd": "scene", "group" : group, "is_on" : 0/1 }
+   ```
+
 
 ---
 

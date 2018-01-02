@@ -98,8 +98,8 @@ insteon:
     #  - 21.d6.d9: 'bathroom'
 
     # IOLinc relay controllers
-    #io_linc:
-    #  - 45.33.d4: 'garage'
+    io_linc:
+      - 45.33.d4: 'garage'
 
   #------------------------------------------------------------------------
   # FUTURE: Insteon scene definitions.
@@ -137,6 +137,36 @@ mqtt:
   # send these low level commands.
   cmd_topic: 'insteon/command'
 
+
+  # Trigger modem virtual scenes.  Modem scenes are where the modem is a
+  # controller and emits a scene broadcast with the specified group number.
+  # There is no state topic since the scene doesn't have an on/off state.
+  #
+  # In Home Assistant use MQTT switch with a configuration like this to trigger
+  # modem scene 10:
+  #   switch:
+  #     - platform: mqtt
+  #       name: "scene #10"
+  #       command_topic: "insteon/modem/scene"
+  #       payload_on: { "cmd" : "on", "group" : 10 }
+  #       payload_off: { "cmd" : "off", "group" : 10 }
+  modem:
+    # The output of passing the payload through the template must match the
+    # following where group is in the range 1-255.
+    #   { "cmd" : 'on'/'off', "group" : GROUP }
+    # Available variables for templating are:
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
+    scene_topic: 'insteon/modem/scene'
+    scene_payload: '{{value}}'
+
+
+  # IMPORTANT: all devices must have the pair() command run one time to make
+  # sure that the all the necessary controller/responder links are defined
+  # between the device and the modem.  If these links are there, the commands
+  # and outputs below will not work properly.
+
   #------------------------------------------------------------------------
   # On/off switches
   #------------------------------------------------------------------------
@@ -160,7 +190,7 @@ mqtt:
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
-    # passing the payload through the payload must match the following:
+    # passing the payload through the template must match the following:
     #   { "cmd" : 'on'/'off', ["instant" : 0/1] }
     # Available variables for templating are:
     #   value = the input payload
@@ -206,7 +236,7 @@ mqtt:
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
-    # passing the payload through the payload must match the following:
+    # passing the payload through the template must match the following:
     #   { "cmd" : "on"/"off", ["instant" : 0/1] }
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
@@ -219,8 +249,8 @@ mqtt:
 
     # Input dimming on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off and setting the
-    # level.  The output of passing the payload through the payload
-    # passing the payload through the payload must match the following:
+    # level.  The output of passing the payload through the template
+    # must match the following:
     #   { "cmd" : "on"/"off", "level" : LEVEL, ["instant" : 0/1] }
     # where:
     #   LEVEL = 0->255 dimmer level
@@ -341,6 +371,9 @@ mqtt:
   # Smoke Bridge
   #------------------------------------------------------------------------
 
+  # The smoke bridge will broadcast on a variety of groups for various error
+  # conditions.
+  #
   # In Home Assistant use MQTT binary sensor with a configuration like:
   #   binary_sensor:
   #     - platform: mqtt
@@ -432,7 +465,7 @@ mqtt:
 
     # Fan on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
-    # passing the payload through the payload must match the following:
+    # passing the payload through the template must match the following:
     #   { "cmd" : "on"/"off" }
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
@@ -451,7 +484,7 @@ mqtt:
 
     # Fan speed change command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
-    # passing the payload through the payload must match the following:
+    # passing the payload through the template must match the following:
     #   { "cmd" : SPEED }
     # where
     #   SPEED = 0, 1, 2, 3 (for off, low, medium, high)
@@ -501,7 +534,7 @@ mqtt:
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the button LED on and off.  The output of
-    # passing the payload through the payload must match the following:
+    # passing the payload through the template must match the following:
     #   { "cmd" : 'on'/'off', "button": button }
     # Available variables for templating are:
     #   value = the input payload
@@ -520,21 +553,27 @@ mqtt:
   # IO Linc relay controllers
   #------------------------------------------------------------------------
 
-  # The IOLinc is both a switch (momentary or latching on/off) and a
-  # sensor that can be on or off.  If you configure the IOLinc to be
-  # momentary, then the on command will trigger it for the duration
-  # that is configured and the off command is ignored.  If it's
-  # configured as a latching switch, then the on and off commands work
-  # like a normal switch.
+  # The IOLinc is both a switch (momentary or latching on/off) and a sensor
+  # that can be on or off.  If you configure the IOLinc to be momentary, then
+  # the on command will trigger it for the duration that is configured and
+  # the off command is ignored.  If it's configured as a latching switch,
+  # then the on and off commands work like a normal switch.  The set-flags
+  # command line command can be used to change the settings.
+  #
+  # NOTE: the on/off payload forces the relay to on or off so it's most
+  # likely NOT the way you want to use this.  The scene payload is the same
+  # trigger the IOLinc as a responder which respects the sensors settings in
+  # momentary-C mode and is most likely the way you do want to use this.
+  #
   # In Home Assistant use MQTT switch with a configuration like:
   #   switch:
   #     - platform: mqtt
   #       state_topic: 'insteon/aa.bb.cc/state'
-  #       command_topic: 'insteon/aa.bb.cc/set'
+  #       command_topic: 'insteon/aa.bb.cc/scene'
   io_linc:
-    # Output state change topic and template.  This message is sent
-    # whenever the device state changes for any reason.  Available
-    # variables for templating are:
+    # Output state change topic and template.  This message is sent whenever
+    # the device sensor state changes.  Available variables for templating
+    # are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   on = 0/1
@@ -542,9 +581,11 @@ mqtt:
     state_topic: 'insteon/{{address}}/state'
     state_payload: '{{on_str.upper()}}'
 
-    # Input on/off command.  Similar functionality to the cmd_topic
-    # but only for turning the device on and off.  The output of
-    # passing the payload through the payload must match the following:
+    # Input on/off command.  This forces the relay on/off and ignores the
+    # momentary-C sensor setting.  Use this to force the relay to respond.
+    # If momentary mode is active, it will turn off after the delay.  The
+    # output of passing the payload through the template must match the
+    # following:
     #   { "cmd" : 'on'/'off' }
     # Available variables for templating are:
     #   value = the input payload
@@ -552,5 +593,12 @@ mqtt:
     #          a variable from a json payload.
     on_off_topic: 'insteon/{{address}}/set'
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+    # Scene on/off command.  This triggers the IOLinc as if it were a
+    # responder to a scene command and is the "correct" way to trigger the
+    # IOLinc relay in that it respects the momentary settings.  The inputs
+    # are the same as those for the on_off topic and payload.
+    scene_topic: 'insteon/{{address}}/scene'
+    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
 #----------------------------------------------------------------

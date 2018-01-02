@@ -67,6 +67,20 @@ def parse_args(args):
     sp.set_defaults(func=device.refresh)
 
     #---------------------------------------
+    # device.get_flags command
+    sp = sub.add_parser("get-flags", help="Get device operating flags.")
+    sp.add_argument("address", help="Device address or name.")
+    sp.set_defaults(func=device.get_flags)
+
+    #---------------------------------------
+    # device.set_flags command
+    sp = sub.add_parser("set-flags", help="Set device operating flags.")
+    sp.add_argument("address", help="Device address or name.")
+    sp.add_argument("flags", nargs="+", help="FLAG=VALUE to set.  Valid "
+                    "flags names are device dependent.")
+    sp.set_defaults(func=device.set_flags)
+
+    #---------------------------------------
     # device.on command
     sp = sub.add_parser("on", help="Turn a device on.")
     sp.add_argument("-l", "--level", metavar="level", type=int, default=255,
@@ -130,10 +144,9 @@ def parse_args(args):
     sp = sub.add_parser("scene", help="Simulate a scene command.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("-g", "--group", type=int, default=0x01,
-                    help="Group (button) number to use for multi-button "
-                    "devices.")
     sp.add_argument("address", help="Device address or name.")
+    sp.add_argument("group", type=int, help="Group (button) number of the "
+                    "scene to trigger (use 0x01 for single buttons.")
     sp.add_argument("is_on", type=int, default=1, choices=[0, 1],
                     help="1 to turn the scene on, 0 to turn it off.")
     sp.set_defaults(func=device.scene)

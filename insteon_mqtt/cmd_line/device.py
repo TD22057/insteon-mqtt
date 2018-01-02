@@ -32,6 +32,36 @@ def set_button_led(args, config):
 
 
 #===========================================================================
+def get_flags(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "get_flags",
+        }
+
+    reply = util.send(config, topic, payload, False)
+    return reply["status"]
+
+
+#===========================================================================
+def set_flags(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "set_flags",
+        }
+
+    for flag in args.flags:
+        elem = flag.split("=")
+        assert len(elem) == 2
+
+        key = elem[0].strip().lower()
+        value = elem[1].strip()
+        payload[key] = value
+
+    reply = util.send(config, topic, payload, False)
+    return reply["status"]
+
+
+#===========================================================================
 def print_db(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {

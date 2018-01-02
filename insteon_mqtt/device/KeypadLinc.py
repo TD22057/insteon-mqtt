@@ -409,7 +409,7 @@ class KeypadLinc(Dimmer):
             on_done(False, "Scene trigger failed failed", None)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, msg):
+    def handle_group_cmd(self, addr, group, cmd):
         """Respond to a group command for this device.
 
         This is called when this device is a responder to a scene.
@@ -423,31 +423,30 @@ class KeypadLinc(Dimmer):
                  Use msg.group to find the scene group that was broadcast.
         """
         # Let the button 1 object handle it's commands.
-        if msg.group == 1:
-            super().handle_group_cmd(addr, msg)
+        if group == 1:
+            super().handle_group_cmd(addr, group, cmd)
             return
 
         # Make sure we're really a responder to this message.  This
         # shouldn't ever occur.
-        entry = self.db.find(addr, msg.group, is_controller=False)
+        entry = self.db.find(addr, group, is_controller=False)
         if not entry:
             LOG.error("KeypadLinc %s has no group %s entry from %s", self.addr,
-                      msg.group, addr)
+                      group, addr)
             return
 
         # For the LED buttons, we just need to update the internal state of
         # the LED mask to keep track of what's on and off.
 
         # 0x11: on, 0x12: on fast
-        if msg.cmd1 in Switch.on_codes:
-            self._led_bits = util.bit_set(self._led_bits, msg.group, 1)
+        if cmd in Switch.on_codes:
+            self._led_bits = util.bit_set(self._led_bits, group, 1)
 
         # 0x13: off, 0x14: off fast
-        elif msg.cmd1 in Switch.off_codes:
-            self._led_bits = util.bit_set(self._led_bits, msg.group, 0)
+        elif cmd in Switch.off_codes:
+            self._led_bits = util.bit_set(self._led_bits, group, 0)
 
         else:
-            LOG.warning("KeypadLinc %s unknown group cmd %#04x", self.addr,
-                        msg.cmd1)
+            LOG.warning("KeypadLinc %s unknown cmd %#04x", self.addr, cmd)
 
     #-----------------------------------------------------------------------
