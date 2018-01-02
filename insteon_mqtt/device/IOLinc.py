@@ -188,7 +188,7 @@ class IOLinc(Base):
         # properly so find an unused group number.
         group = self.modem.db.next_group()
         if group is not None:
-            seq.add(self.add_resp_of, 0x01, self.modem.addr, group,
+            seq.add(self.db_add_resp_of, 0x01, self.modem.addr, group,
                     refresh=False)
         else:
             LOG.error("Can't create IOLinc simulated scene - there are no "
@@ -498,7 +498,8 @@ class IOLinc(Base):
           msg:  (message.InpStandard) The reply message from the device.
                 The on/off level will be in the cmd2 field.
         """
-        # TODO: don't update state the sensor does that.
+        # Note: don't update the state - the sensor does that.  This state is
+        # for the relay.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
             on_done(True, "IOLinc command complete", None)
@@ -551,7 +552,9 @@ class IOLinc(Base):
                       group, addr)
             return
 
-        # TODO? what happens here?
+        # Nothing to do - there is no "state" to update since the state we
+        # care about is the sensor state and this command tells us that the
+        # relay state was tripped.
         LOG.debug("IOLinc %s cmd %#04x", self.addr, cmd)
 
     #-----------------------------------------------------------------------

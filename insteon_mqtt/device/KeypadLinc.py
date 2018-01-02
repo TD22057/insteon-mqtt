@@ -28,7 +28,6 @@ class KeypadLinc(Dimmer):
     cmd2=LED bit flags.
 
     # TODO: to set LED brightess: D1=0x00 D2 = 0x07 D3 = 0x11->0x7f
-    # TODO: to trigger all link state: D2 = 0x0C
     """
 
     #-----------------------------------------------------------------------

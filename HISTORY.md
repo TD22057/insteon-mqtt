@@ -46,6 +46,10 @@
 - Added support for triggering virtual scenes defined on the modem.
   ([Issue #24][I24]).
 
+- Added support for creating multi-group controller/responder links to
+  allow linking between different buttons on multi-button devices.
+  ([Issue #20][I20]).
+
 
 ### Fixes
 - [Issue #21][I21]: Fixed incorrect device database entries being created
@@ -80,5 +84,6 @@
 [I11]: https://github.com/TD22057/insteon-mqtt/issues/11
 [I12]: https://github.com/TD22057/insteon-mqtt/issues/12
 [I16]: https://github.com/TD22057/insteon-mqtt/issues/16
+[I20]: https://github.com/TD22057/insteon-mqtt/issues/20
 [I21]: https://github.com/TD22057/insteon-mqtt/issues/21
 [I24]: https://github.com/TD22057/insteon-mqtt/issues/24
