@@ -13,48 +13,42 @@ LOG = log.get_logger()
 class StandardCmd(Base):
     """Insteon standard input mesage handler.
 
-    Standard messages are uesd for general commands that we send (turn
-    light on) to the modem.  We'll send an Msg.OutStandard object, the
-    modem will echo that back with an ACK/NAK.  Then we'll get a reply
-    from the device as an Msg.InpStandard object which ends the
-    sequence.
+    Standard messages are uesd for general commands that we send (turn light
+    on) to the modem.  We'll send an Msg.OutStandard object, the modem will
+    echo that back with an ACK/NAK.  Then we'll get a reply from the device
+    as an Msg.InpStandard object which ends the sequence.
 
-    Since many things can be happening at once, the messages are
-    checked to see if the device address and command match the command
-    that was sent.  If they don't, it's not a message this handler
-    should take care of.
+    Since many things can be happening at once, the messages are checked to
+    see if the device address and command match the command that was sent.
+    If they don't, it's not a message this handler should take care of.
 
-    When we get the InptStandard message we expect to see, it will be
-    passed to the callback set in the constructor which is usually a
-    method on the device to handle the result (or the ACK that the
-    command went through).
+    When we get the InptStandard message we expect to see, it will be passed
+    to the callback set in the constructor which is usually a method on the
+    device to handle the result (or the ACK that the command went through).
     """
-    def __init__(self, msg, callback, cmd=None):
+    def __init__(self, msg, callback, on_done=None, num_retry=0):
         """Constructor
 
         Args
-          msg:      (OutStandard) The output message that was sent.
+          msg:      (OutStandard) The output message that was sent.  The
+                    reply must match the address and msg.cmd1 field to be
+                    processed by this handler.
           callback: Callback function to pass InpStandard messages that match
-                    the output to.
-          cmd:      (int) The expected cmd1 field in the InpStandard message
-                    to match against.  If this is None, msg.cmd1 is used.
-                    Some replies have different cmd1 fields so this can be
-                    used to match those.  -1 can be input to match any
-                    message cmd1 field.
+                    the output to.  Signature: callback(message, on_done).
         """
-        super().__init__()
+        super().__init__(on_done, num_retry)
 
         self.addr = msg.to_addr
-        self.cmd = msg.cmd1 if cmd is None else cmd
+        self.cmd = msg.cmd1
         self.callback = callback
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
-        See if the message is the expected ACK of our output or the
-        expected InpStandard reply message.  If we get a reply, pass
-        it to the callback.
+        See if the message is the expected ACK of our output or the expected
+        InpStandard reply message.  If we get a reply, pass it to the
+        callback.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object
@@ -67,9 +61,9 @@ class StandardCmd(Base):
         """
         # Probably an echo back of our sent message.
         if isinstance(msg, Msg.OutStandard):
-            # If the message is the echo back of our message, then
-            # continue waiting for a reply.
-            if self._match(msg.to_addr, msg.cmd1):
+            # If the message is the echo back of our message, then continue
+            # waiting for a reply.
+            if msg.to_addr == self.addr and msg.cmd1 == self.cmd:
                 if not msg.is_ack:
                     LOG.error("%s NAK response", self.addr)
 
@@ -82,12 +76,12 @@ class StandardCmd(Base):
 
         # See if this is the standard message ack/nak we're expecting.
         elif isinstance(msg, Msg.InpStandard):
-            # If this message matches our address and command, it's
-            # probably the ACK we're expecting.
-            if self._match(msg.from_addr, msg.cmd1):
-                # Run the callback - it's up to the callback to check
-                # if this is really the ACK or not.
-                self.callback(msg)
+            # If this message matches our address and command, it's probably
+            # the ACK we're expecting.
+            if msg.from_addr == self.addr and msg.cmd1 == self.cmd:
+                # Run the callback - it's up to the callback to check if this
+                # is really the ACK or not.
+                self.callback(msg, on_done=self.on_done)
 
                 # Indicate no more messages are expected.
                 return Msg.FINISHED
@@ -97,24 +91,5 @@ class StandardCmd(Base):
                          self.addr, self.cmd)
 
         return Msg.UNKNOWN
-
-    #-----------------------------------------------------------------------
-    def _match(self, addr, cmd):
-        """See if a message matches the expected reply fields.
-
-        Args:
-          addr:   (Address) The message address.
-          cmd:    (int) The message cmd.
-
-        Returns:
-          (bool) Returns True if it matches.
-        """
-        if addr != self.addr:
-            return False
-
-        if self.cmd != -1 and cmd != self.cmd:
-            return False
-
-        return True
 
     #-----------------------------------------------------------------------

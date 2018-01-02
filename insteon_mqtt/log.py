@@ -7,8 +7,8 @@ import logging
 import logging.handlers
 
 # TODO: doc this stuff
-UI = 21
-logging.addLevelName(UI, "UI")
+UI_LEVEL = 21
+logging.addLevelName(UI_LEVEL, "UI")
 
 
 #===========================================================================
@@ -75,44 +75,44 @@ class Logger(logging.getLoggerClass()):
         """TODO: doc
         """
         super().__init__(name)
-        self._recorder = None
+        self._ui_handler = None
 
     #-----------------------------------------------------------------------
     def ui(self, msg, *args, **kwargs):
         """TODO: doc
         """
-        if self.isEnabledFor(UI):
-            self._log(UI, msg, args, **kwargs)
+        if self.isEnabledFor(UI_LEVEL):
+            self._log(UI_LEVEL, msg, args, **kwargs)
 
     #-----------------------------------------------------------------------
-    def begin_record(self, min_level=UI):
-        self._recorder = RecordingHandler(min_level)
-        self.addHandler(self._recorder)
+    def set_ui_callback(self, callback):
+        """TODO: doc
+        """
+        self._ui_handler = CallbackHandler(callback)
+        self.addHandler(self._ui_handler)
 
     #-----------------------------------------------------------------------
-    def end_record(self):
-        if not self._recorder:
-            return []
+    def del_ui_callback(self):
+        """TODO: doc
+        """
+        self.removeHandler(self._ui_handler)
 
-        self.removeHandler(self._recorder)
-
-        records = self._recorder.records
-        self._recorder = None
-
-        return records
-
+    #-----------------------------------------------------------------------
 
 #===========================================================================
-class RecordingHandler(logging.Handler):
+
+
+class CallbackHandler(logging.Handler):
     """TODO: doc
     """
-
-    def __init__(self, level):
-        super().__init__(level)
-        self.records = []
+    def __init__(self, callback):
+        super().__init__(UI_LEVEL)
+        self.callback = callback
 
     #-----------------------------------------------------------------------
     def emit(self, record):
         """TODO: doc
         """
-        self.records.append(record)
+        self.callback(record)
+
+#===========================================================================

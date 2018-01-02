@@ -2,6 +2,12 @@
 #
 # Insteon <-> MQTT bridge configuration file.
 #
+# NOTE: the loader supports using a !include tag to load other as a
+# item entry so you can do things like this:
+#
+# insteon:
+#    devices: !include devices.yaml
+#
 #==========================================================================
 
 #==========================================================================
@@ -11,7 +17,7 @@
 #==========================================================================
 logging:
   # 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR
-  level: 20
+  level: 10
 
   # Print messages to the screen.
   #screen: False
@@ -27,19 +33,19 @@ logging:
 insteon:
   # Serial device:
   # USB PLM modem
-  port: "/dev/insteon"
+  port: '/dev/insteon'
   #baudrate: 19200
 
   # Network socket:
   # Insteon HUB PLM network
-  #port: "socket://192.168.1.5:9761"
+  #port: 'socket://192.168.1.5:9761'
 
   # PLM modem Insteon hex address
   address: 44.85.11
 
   # Device database file storage location.
-  #storage: "/var/lib/insteon-mqtt"
-  storage: "data"
+  #storage: '/var/lib/insteon-mqtt'
+  storage: 'data'
 
   # Automatically refresh device states and databases (if needed) at
   # startup.  This may be slow depending on the number of devices.
@@ -52,27 +58,48 @@ insteon:
   devices:
     # On/off switch devices (outlets, wall switches, appliance modules, etc).
     switch:
-      - 37.2d.35: "lamp1"
+      - 37.2d.35: 'lamp1'
 
     # Dimming devices (outlets, wall switches, lamp modules, etc).
     dimmer:
-      - 3a.29.84: "lamp2"
+      - 3a.29.84: 'lamp2'
       - 48.3d.46
-      - 48.b0.ad
+      - 48.b0.ad: 'dim1'
+
+    # Battery powered sensors (door, hidden door, window).
+    battery_sensor:
+      - 94.a9.12
 
     # Battery powered motion sensors.
     motion:
-      - 21.d6.d9: "front door"
+      - 21.d6.d9: 'door'
 
-    # Battery powered mini remotes
+    # Battery powered mini remotes.
     mini_remote4:
 
     mini_remote8:
-      - 3f.07.d4: "remote1"
+      - 3f.07.d4: 'remote1'
 
-    # Smoke bridge module
+    # Smoke bridge module.
     smoke_bridge:
-      - 44.a3.79: "smoke alarm"
+      - 44.a3.79: 'smoke alarm'
+
+    # FanLinc fan controller (dimmer+fan).
+    #fan_linc:
+    #  - 9a.a1.b3
+
+    # KeypadLinc (dimmer+scene controller).
+    keypad_linc:
+      - 46.7b.bc: 'kp1'
+      - 3c.42.9b: 'kp2'
+
+    # Leak sensors.
+    #leak:
+    #  - 21.d6.d9: 'bathroom'
+
+    # IOLinc relay controllers
+    io_linc:
+      - 45.33.d4: 'garage'
 
   #------------------------------------------------------------------------
   # FUTURE: Insteon scene definitions.
@@ -92,6 +119,11 @@ mqtt:
   #username:
   #password:
 
+  # Keep alive time in seconds.  This should be smaller than the
+  # server setting (which is usually ~60 seconds) to insure that
+  # connections aren't dropped.
+  keep_alive: 30
+
   # Outbound messages configuration.  Retain should generally be 1
   # so that the current state is available when someone subscribes.
   qos: 1
@@ -104,6 +136,36 @@ mqtt:
   # device will follow the command topic (insteon/command/aa.bb.cc) to
   # send these low level commands.
   cmd_topic: 'insteon/command'
+
+
+  # Trigger modem virtual scenes.  Modem scenes are where the modem is a
+  # controller and emits a scene broadcast with the specified group number.
+  # There is no state topic since the scene doesn't have an on/off state.
+  #
+  # In Home Assistant use MQTT switch with a configuration like this to trigger
+  # modem scene 10:
+  #   switch:
+  #     - platform: mqtt
+  #       name: "scene #10"
+  #       command_topic: "insteon/modem/scene"
+  #       payload_on: { "cmd" : "on", "group" : 10 }
+  #       payload_off: { "cmd" : "off", "group" : 10 }
+  modem:
+    # The output of passing the payload through the template must match the
+    # following where group is in the range 1-255.
+    #   { "cmd" : 'on'/'off', "group" : GROUP }
+    # Available variables for templating are:
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
+    scene_topic: 'insteon/modem/scene'
+    scene_payload: '{{value}}'
+
+
+  # IMPORTANT: all devices must have the pair() command run one time to make
+  # sure that the all the necessary controller/responder links are defined
+  # between the device and the modem.  If these links are there, the commands
+  # and outputs below will not work properly.
 
   #------------------------------------------------------------------------
   # On/off switches
@@ -128,7 +190,7 @@ mqtt:
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
-    # passing the payload through the payload must match the following:
+    # passing the payload through the template must match the following:
     #   { "cmd" : 'on'/'off', ["instant" : 0/1] }
     # Available variables for templating are:
     #   value = the input payload
@@ -136,6 +198,12 @@ mqtt:
     #          a variable from a json payload.
     on_off_topic: 'insteon/{{address}}/set'
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+    # Scene on/off command.  This triggers the scene broadcast on the switch
+    # in the same way clicking the button would.  The inputs are the same as
+    # those for the on_off topic and payload.
+    scene_topic: 'insteon/{{address}}/scene'
+    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
   #------------------------------------------------------------------------
   # Dimmers
@@ -168,7 +236,7 @@ mqtt:
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
-    # passing the payload through the payload must match the following:
+    # passing the payload through the template must match the following:
     #   { "cmd" : "on"/"off", ["instant" : 0/1] }
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
@@ -181,8 +249,8 @@ mqtt:
 
     # Input dimming on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off and setting the
-    # level.  The output of passing the payload through the payload
-    # passing the payload through the payload must match the following:
+    # level.  The output of passing the payload through the template
+    # must match the following:
     #   { "cmd" : "on"/"off", "level" : LEVEL, ["instant" : 0/1] }
     # where:
     #   LEVEL = 0->255 dimmer level
@@ -192,7 +260,7 @@ mqtt:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
-    level_topic: "insteon/{{address}}/level"
+    level_topic: 'insteon/{{address}}/level'
     # NOTE: HASS JSON switch doesn't send brightness in some cases
     # when actuated so handle that here in the template code.  The
     # other HASS MQTT options also have this problem.
@@ -204,8 +272,15 @@ mqtt:
                       255
                    {% endif %} }
 
+    # Scene on/off command.  This triggers the scene broadcast on the switch
+    # in the same way clicking the button would.  The inputs are the same as
+    # those for the on_off topic and payload.
+    scene_topic: 'insteon/{{address}}/scene'
+    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+
   #------------------------------------------------------------------------
-  # Motion sensors
+  # Battery powered sensors
+  #    door sensors, hidden door sensors, window sensors
   #------------------------------------------------------------------------
 
   # In Home Assistant use MQTT binary sensor with a configuration like:
@@ -215,13 +290,9 @@ mqtt:
   #       device_class: 'motion'
   #
   #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/dawn'
-  #       device_class: 'light'
-  #
-  #     - platform: mqtt
   #       state_topic: 'insteon/aa.bb.cc/low_battery'
   #       device_class: 'battery'
-  motion:
+  battery_sensor:
     # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
@@ -232,6 +303,30 @@ mqtt:
     state_topic: 'insteon/{{address}}/state'
     state_payload: '{{on_str.upper()}}'
 
+    # Output low battery topic and payload.  This message is sent
+    # whenever the device detects a low battery. Available variables
+    # for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   is_low = 0/1
+    #   is_low_str = 'off', 'on'
+    low_battery_topic: 'insteon/{{address}}/battery'
+    low_battery_payload: '{{is_low_str.upper()}}'
+
+  #------------------------------------------------------------------------
+  # Motion sensors
+  #------------------------------------------------------------------------
+
+  # Motion sensors will use the state and low battery configuration
+  # inputs from battery_sensor and some sensors add an addition
+  # dawn/dusk notification which is configured here.
+  #
+  # In Home Assistant use MQTT binary sensor with a configuration like:
+  #   binary_sensor:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/dawn'
+  #       device_class: 'light'
+  motion:
     # Output dawn/dusk change topic and payload.  This message is sent
     # whenever the device light sensor detects dawn or dusk changes.
     # Available variables for templating are:
@@ -245,20 +340,40 @@ mqtt:
     dawn_dusk_topic: 'insteon/{{address}}/dawn'
     dawn_dusk_payload: '{{is_dawn_str.upper()}}'
 
-    # Output low battery topic and payload.  This message is sent
-    # whenever the device detects a low battery. Available variables
-    # for templating are:
+  #------------------------------------------------------------------------
+  # Leak sensors
+  #------------------------------------------------------------------------
+
+  # Leak sensors will use the state and low battery configuration
+  # inputs from battery_sensor and add in the leak topic which is
+  # configured here.
+  #
+  # In Home Assistant use MQTT binary sensor with a configuration like:
+  #   binary_sensor:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/leak'
+  #       device_class: 'moisture'
+  leak:
+    # Output wet/dry change topic and payload.  This message is sent
+    # whenever the device changes state to wet or dry.
+    # Available variables for templating are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
-    #   is_low = 0/1
-    #   is_low_str = 'off', 'on'
-    low_battery_topic: 'insteon/{{address}}/battery'
-    low_battery_payload: '{{is_low_str.upper()}}'
+    #   is_wet = 0/1
+    #   is_wet_str = 'off', 'on'
+    #   is_dry = 0/1
+    #   is_dry_str = 'off', 'on'
+    #   state = 'wet', 'dry'
+    wet_dry_topic: 'insteon/{{address}}/wet'
+    wet_dry_payload: '{{is_wet_str.upper()}}'
 
   #------------------------------------------------------------------------
   # Smoke Bridge
   #------------------------------------------------------------------------
 
+  # The smoke bridge will broadcast on a variety of groups for various error
+  # conditions.
+  #
   # In Home Assistant use MQTT binary sensor with a configuration like:
   #   binary_sensor:
   #     - platform: mqtt
@@ -294,5 +409,196 @@ mqtt:
 
     error_topic: 'insteon/{{address}}/error'
     error_payload: '{{on_str.upper()}}'
+
+  #------------------------------------------------------------------------
+  # Mini remotes
+  #------------------------------------------------------------------------
+
+  # Battery powered remotes (usually 4 or 8 buttons).  A message is
+  # sent whenever one of the buttons is pressed.
+  remote:
+    # Output state change topic and template.  This message is sent
+    # whenever a button is pressed.  Available variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   button = 1...n  (button number 1-4 or 1-8)
+    #   on = 0/1
+    #   on_str = 'off', 'on'
+    state_topic: 'insteon/{{address}}/state/{{button}}'
+    state_payload: '{{on_str.upper()}}'
+
+  #------------------------------------------------------------------------
+  # Fan Linc
+  #------------------------------------------------------------------------
+
+  # A FanLinc is a dimmer switch (Insteon group 1) plus a fan control
+  # (group 2).  The dimmer MQTT messages use the dimmer settings
+  # above.  The settings here are just for the fan input and output.
+  # The settings can be used to turn the fan on and off (and report
+  # on/off state changes).
+  #
+  # NOTE: Both the fan state and fan speed state topics will be
+  # published on ANY fan change.  So if you only need one of them, you
+  # can put both payloads in a single message and set the other inputs
+  # to blank (which will turn off the output).
+  #
+  # In Home Assistant, use the dimmer example above for the light and
+  # use MQTT fan with a configuration like this for the fan:
+  # fan:
+  #   - platform: mqtt
+  #     command_topic: 'insteon/aa.bb.cc/fan/set'
+  #     state_topic: 'insteon/aa.bb.cc/fan/state'
+  #     speed_command_topic: 'insteon/aa.bb.cc/fan/speed/set'
+  #     speed_state_topic: 'insteon/aa.bb.cc/fan/state'
+  fan_linc:
+    # Output fan state change topic and payload.  This message is sent
+    # whenever the fan state changes for any reason.  Available
+    # variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   on = 0/1
+    #   on_str = 'off', 'on'
+    #   level = 0, 1, 2, 3
+    #   level_str = 'off', 'low', 'medium', 'high'
+    fan_state_topic: 'insteon/{{address}}/fan/state'
+    fan_state_payload: '{{on_str.upper()}}'
+
+    # Fan on/off command.  Similar functionality to the cmd_topic
+    # but only for turning the device on and off.  The output of
+    # passing the payload through the template must match the following:
+    #   { "cmd" : "on"/"off" }
+    # Available variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
+    fan_on_off_topic: 'insteon/{{address}}/fan/set'
+    fan_on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+    # Output fan speed state change topic and payload.  Set to empty
+    # to turn off.  The same templating variables are available as
+    # fan_state_topic agove.
+    fan_speed_topic: 'insteon/{{address}}/fan/speed/state'
+    fan_speed_payload: '{{level_str}}'
+
+    # Fan speed change command.  Similar functionality to the cmd_topic
+    # but only for turning the device on and off.  The output of
+    # passing the payload through the template must match the following:
+    #   { "cmd" : SPEED }
+    # where
+    #   SPEED = 0, 1, 2, 3 (for off, low, medium, high)
+    #      or = "off", "low", "medium", "high"
+    # Available variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
+    fan_speed_set_topic: 'insteon/{{address}}/fan/speed/set'
+    fan_speed_set_payload: '{ "cmd" : "{{value.lower}}" }'
+
+  #------------------------------------------------------------------------
+  # Keypad Linc
+  #------------------------------------------------------------------------
+
+  # A KeypadLinc is a dimmer switch (Insteon group 1) plus a series of scene
+  # control buttons which operate on other groups.  The dimmer MQTT messages
+  # use the dimmer settings above.  The settings here are just for the other
+  # buttons.  The dimmer settings above allow control of the load.  The other
+  # buttons are controlled like switches - but the only affect is turning on
+  # and off the LED on the button since they have no directly attached load.
+  #
+  # 6 button and 8 button keypads have use the following button numbers:
+  #    1 on           1       2
+  #  3       4        3       4
+  #  5       6        5       6
+  #    1 off          7       8
+  #
+  # In Home Assistant, use the dimmer example above for the dimmer
+  # module and use MQTT switches to represent the other buttons:
+  #   switch:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/state/1'
+  #       command_topic: 'insteon/aa.bb.cc/set/1'
+  keypad_linc:
+    # Output state change topic and template.  This message is sent
+    # whenever a button is pressed.  Available variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   button = 2-7  (8 button keypads) or 3-6 (6 button keypads)
+    #   on = 0/1
+    #   on_str = 'off', 'on'
+    btn_state_topic: 'insteon/{{address}}/state/{{button}}'
+    btn_state_payload: '{{on_str.upper()}}'
+
+    # Input on/off command.  Similar functionality to the cmd_topic
+    # but only for turning the button LED on and off.  The output of
+    # passing the payload through the template must match the following:
+    #   { "cmd" : 'on'/'off', "button": button }
+    # Available variables for templating are:
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
+    btn_on_off_topic: 'insteon/{{address}}/set/{{button}}'
+    btn_on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+    # Scene on/off command.  This triggers the scene broadcast on the switch
+    # in the same way clicking the button would.  The inputs are the same as
+    # those for the btn_on_off topic and payload.
+    btn_scene_topic: 'insteon/{{address}}/scene/{{button}}'
+    btn_scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+  #------------------------------------------------------------------------
+  # IO Linc relay controllers
+  #------------------------------------------------------------------------
+
+  # The IOLinc is both a switch (momentary or latching on/off) and a sensor
+  # that can be on or off.  If you configure the IOLinc to be momentary, then
+  # the on command will trigger it for the duration that is configured and
+  # the off command is ignored.  If it's configured as a latching switch,
+  # then the on and off commands work like a normal switch.  The set-flags
+  # command line command can be used to change the settings.
+  #
+  # NOTE: the on/off payload forces the relay to on or off so it's most
+  # likely NOT the way you want to use this.  The scene payload is the same
+  # trigger the IOLinc as a responder which respects the sensors settings in
+  # momentary-C mode and is most likely the way you do want to use this.
+  #
+  # In Home Assistant use MQTT switch with a configuration like:
+  #   switch:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/state'
+  #       command_topic: 'insteon/aa.bb.cc/scene'
+  io_linc:
+    # Output state change topic and template.  This message is sent whenever
+    # the device sensor state changes.  Available variables for templating
+    # are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   on = 0/1
+    #   on_str = 'off', 'on'
+    state_topic: 'insteon/{{address}}/state'
+    state_payload: '{{on_str.upper()}}'
+
+    # Input on/off command.  This forces the relay on/off and ignores the
+    # momentary-C sensor setting.  Use this to force the relay to respond.
+    # If momentary mode is active, it will turn off after the delay.  The
+    # output of passing the payload through the template must match the
+    # following:
+    #   { "cmd" : 'on'/'off' }
+    # Available variables for templating are:
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
+    on_off_topic: 'insteon/{{address}}/set'
+    on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+    # Scene on/off command.  This triggers the IOLinc as if it were a
+    # responder to a scene command and is the "correct" way to trigger the
+    # IOLinc relay in that it respects the momentary settings.  The inputs
+    # are the same as those for the on_off topic and payload.
+    scene_topic: 'insteon/{{address}}/scene'
+    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
 #----------------------------------------------------------------

@@ -11,29 +11,18 @@ LOG = log.get_logger()
 
 
 class ModemReset(Base):
-    """TODO: handles user reset or reset by command.
+    """Modem being factory reset handler.
 
+    This handles a factory reset command being sent to the modem and the
+    physically triggering a factory reset on the modem with the set button.
 
-    This is used when the modem is placed in all-link mode (like
-    pressing the set button).  We expect to get an ACK of the
-    OutAllLinkStart message first.  If the all link mode is canceled,
-    we'll get an OutAllLinkCancel ACK.  If linking completes (a device
-    set button is held down to finish the link), we'll get an
-    InpAllLinkComplete message
-
-    If no reply is received in the time out window, we'll send an
-    OutAllLinkCancel message.
+    When this happens, we'll clear the modem all link database.
     """
     def __init__(self, modem):
         """Constructor
 
         Args
-          protocol: (Protocol) The Insteon protocol object.
-          callback: Callback function to pass database messages to or None
-                    to indicate the end of the entries.
-          time_out: (int) Time out in seconds.  If we don't get an
-                    InpAllLinkComplete message in this time, we'll send a
-                    cancel message to the modem to cancel the all link mode.
+          modem:    (Modem) The Insteon modem object.
         """
         super().__init__()
 
@@ -43,9 +32,7 @@ class ModemReset(Base):
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
-        If all linking is finished, pass the message to the callback
-        to update the device records (or re-download the database) if
-        needed.
+        If we get an ACK of the user reset, we'll clear the modem database.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object
@@ -55,13 +42,12 @@ class ModemReset(Base):
           Msg.UNKNOWN if we can't handle this message.
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
-
         """
         # InpUserReset is sent when the user triggers a factory reset
         #     on the physical modem.
-        # OutResetPlm is sent when we send that command to the modem
+        # OutResetModem is sent when we send that command to the modem
         #     to reset it and we'll get an ack/nak back.
-        if isinstance(msg, (Msg.OutResetPlm, Msg.InpUserReset)):
+        if isinstance(msg, (Msg.OutResetModem, Msg.InpUserReset)):
             if msg.is_ack:
                 LOG.warning("Modem has been factory reset")
 

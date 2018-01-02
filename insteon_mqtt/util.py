@@ -32,4 +32,101 @@ def to_hex(data, num=None, space=' '):
 
     return o.getvalue()
 
+
 #===========================================================================
+def make_callback(callback):
+    """Insure that callback is a valid function.
+
+    This is used when callbacks are optional.  It makes it so the
+    class can store the callback even if one wasn't entered so that it
+    can just be used.  If the input is None, then a dummy callback
+    that does nothing is returned.
+    """
+    if not callback:
+        return lambda *x: None
+    else:
+        return callback
+
+
+#===========================================================================
+def ctrl_str(is_controller):
+    """ TODO: doc
+    """
+    if is_controller:
+        return "CTRL"
+    else:
+        return "RESP"
+
+
+#===========================================================================
+def bit_get(value, bit):
+    """TODO: doc
+    """
+    return (value >> bit) & 1
+
+
+#===========================================================================
+def bit_set(value, bit, is_one):
+    """TODO: doc
+    """
+    if is_one:
+        return value | (1 << bit)
+    else:
+        return value & ~(1 << bit)
+
+
+#===========================================================================
+def resolve_data3(defaults, inputs):
+    """TODO: doc
+    """
+    values = []
+
+    for i in range(3):
+        if inputs is None or inputs[i] == -1:
+            values.append(defaults[i])
+        else:
+            values.append(inputs[i])
+
+    return bytes(values)
+
+
+#===========================================================================
+def input_choice(inputs, field, choices):
+    """TODO: doc
+    """
+    value = inputs.pop(field, None)
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        value = value.lower()
+
+    if value not in choices:
+        msg = "Invalid %s input.  Valid inputs are on of %s" % \
+              (value, str(choices))
+        raise ValueError(msg)
+
+    return value
+
+
+#===========================================================================
+def input_bool(inputs, field):
+    """TODO: doc
+    """
+    value = inputs.pop(field, None)
+    if value is None:
+        return None
+
+    lv = value.lower()
+    if lv == "true":
+        value = True
+    elif lv == "false":
+        value = False
+
+    try:
+        # Use int() because bool("asdf") also returns true.  This insures
+        # only true/false or 1/0 is allowed.
+        return bool(int(value))
+    except ValueError:
+        msg = "Invalid %s input.  Valid inputs are 1/0 or True/False" % input
+        raise ValueError(msg)

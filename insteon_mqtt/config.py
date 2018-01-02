@@ -8,18 +8,25 @@ __doc__ = """Configuration file utilties
 """
 
 #===========================================================================
-import functools
+import os.path
 import yaml
 from . import device
 
 # Configuration file input description to class map.
 devices = {
-    'dimmer' : device.Dimmer,
-    'motion' : device.Motion,
-    'switch' : device.Switch,
-    'smoke_bridge' : device.SmokeBridge,
-    'mini_remote4' : functools.partial(device.Remote, num=4),
-    'mini_remote8' : functools.partial(device.Remote, num=8),
+    # Key is config file input.  Value is tuple of (class, **kwargs) of the
+    # class to use and any extra keyword args to pass to the constructor.
+    'dimmer' : (device.Dimmer, {}),
+    'battery_sensor' : (device.BatterySensor, {}),
+    'fan_linc' : (device.FanLinc, {}),
+    'io_linc' : (device.IOLinc, {}),
+    'keypad_linc' : (device.KeypadLinc, {}),
+    'leak' : (device.Leak, {}),
+    'mini_remote4' : (device.Remote, {'num_button': 4}),
+    'mini_remote8' : (device.Remote, {'num_button': 8}),
+    'motion' : (device.Motion, {}),
+    'smoke_bridge' : (device.SmokeBridge, {}),
+    'switch' : (device.Switch, {}),
     }
 
 
@@ -27,8 +34,8 @@ devices = {
 def load(path):
     """TODO: doc
     """
-    config = yaml.load(open("config.yaml").read())
-    return config
+    with open(path, "r") as f:
+        return yaml.load(f, Loader)
 
 
 #===========================================================================
@@ -55,7 +62,8 @@ def find(name):
       name:   (str) The device type name.
 
     Returns:
-      Returns the device class to use for the input.
+      Returns a tuple of the device class to use for the input and
+      any extra keyword args to pass to the device class constructor.
     """
     name = name.lower()
     dev = devices.get(name, None)
@@ -64,5 +72,55 @@ def find(name):
                         "%s." % (name, devices.keys()))
 
     return dev
+
+#===========================================================================
+
+
+# YAML multi-file loading helper.  Original code is from here:
+# https://davidchall.github.io/yaml-includes.html (with no license so
+# I'm assuming it's in the public domain).
+class Loader(yaml.Loader):
+    def __init__(self, file):
+        """Constructor
+
+        Args:
+          file:  (file) File like object to read from.
+        """
+        yaml.Loader.add_constructor('!include', Loader.include)
+
+        super().__init__(file)
+        self._base_dir = os.path.split(file.name)[0]
+
+    #-----------------------------------------------------------------------
+    def include(self, node):
+        """!include file command.  Supports:
+
+        foo: !include file.yaml
+        foo: !include [file1.yaml, file2.yaml]
+        """
+        # input is a single file to load.
+        if isinstance(node, yaml.ScalarNode):
+            include_file = self.construct_scalar(node)
+            return self._load_file(include_file)
+
+        # input is a list of files to load.
+        elif isinstance(node, yaml.SequenceNode):
+            result = []
+            for include_file in self.construct_sequence(node):
+                result += self._load_file(include_file)
+            return result
+
+        else:
+            msg = "Error: unrecognized node type in !include statement: " \
+                  "%s" % str(node)
+            raise yaml.constructor.ConstructorError(msg)
+
+    #-----------------------------------------------------------------------
+    def _load_file(self, filename):
+        """Read the requested file.
+        """
+        path = os.path.join(self._base_dir, filename)
+        with open(path, 'r') as f:
+            return yaml.load(f, Loader)
 
 #===========================================================================

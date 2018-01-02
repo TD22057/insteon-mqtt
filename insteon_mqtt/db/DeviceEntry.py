@@ -7,6 +7,7 @@ import io
 from ..Address import Address
 from .. import log
 from .. import message as Msg
+from .. import util
 
 LOG = log.get_logger()
 
@@ -15,12 +16,11 @@ LOG = log.get_logger()
 class DeviceEntry:
     """Device all link database entry.
 
-    Each entry in the device's all link database has the address of
-    the remote device, the group the device is part of, and various
-    flags for the entry.
+    Each entry in the device's all link database has the address of the
+    remote device, the group the device is part of, and various flags for the
+    entry.
 
-    The entry can be converted to/from JSON with to_json() and
-    from_json().
+    The entry can be converted to/from JSON with to_json() and from_json().
     """
 
     @staticmethod
@@ -46,9 +46,8 @@ class DeviceEntry:
     def from_bytes(data):
         """Read a DeviceEntry from a byte array.
 
-        This is used to read an entry from an InpExtended insteon
-        message object.  See p162 of the Insteon dev guide for the
-        byte array layout.
+        This is used to read an entry from an InpExtended insteon message
+        object.  See p162 of the Insteon dev guide for the byte array layout.
 
         Args:
           data:  (bytes) The data 14 byte array from an InpExtended message.
@@ -80,6 +79,13 @@ class DeviceEntry:
           data:     (bytes) 3 data bytes.  [0] is the on level, [1] is the
                     ramp rate.
         """
+        # Accept either bytes, list of ints, or None for the data input.
+        if data is not None:
+            data = bytes(data)
+            assert len(data) == 3
+        else:
+            data = bytes(3)
+
         self.addr = addr
         self.group = group
         self.mem_loc = mem_loc
@@ -89,14 +95,29 @@ class DeviceEntry:
 
     #-----------------------------------------------------------------------
     def copy(self):
-        """TODO: doc
+        """Make a copy of the DeviceEntry.
+
+        Returns:
+           Returns a copy of the DeviceEntry object.
         """
         return DeviceEntry(self.addr, self.group, self.mem_loc,
                            self.db_flags.copy(), self.data[:])
 
     #-----------------------------------------------------------------------
     def update_from(self, addr, group, is_controller, data):
-        """TODO: doc
+        """Update the entry from a set of data.
+
+        This modifies the entry using the input values.  The DblFlags.in_use
+        attribute will be set to True.  This is used when an unused record is
+        turned into an active record.  We update the values but leave the
+        memory location alone and mark the record as now in use.
+
+        Args:
+          addr:          (Address) The address of the device in the database.
+          group:         (int) The group the entry is for.
+          is_controller: (bool) True if the device is a controller.
+          data:          (bytes) 3 data bytes.  [0] is the on level, [1] is the
+                         ramp rate.
         """
         self.addr = addr
         self.group = group
@@ -149,7 +170,7 @@ class DeviceEntry:
             ]))
         o.write(self.mem_bytes())  # D3,D4 record memory location
         o.write(bytes([0x08]))  # D5 number of bytes in record
-        # 8 byte record (p116)
+        # 8 byte record - see ALDB/L record format (page 116)
         o.write(self.db_flags.to_bytes())  # D6 db control flags
         o.write(bytes([self.group]))  # D7 group
         o.write(self.addr.to_bytes())  # D8-10 address
@@ -162,12 +183,21 @@ class DeviceEntry:
 
     #-----------------------------------------------------------------------
     def __eq__(self, rhs):
+        """Check for equality.
+
+        The address, group, and is_controller flags are all that are used for
+        the comparison.
+        """
         return (self.addr.id == rhs.addr.id and
                 self.group == rhs.group and
                 self.db_flags.is_controller == rhs.db_flags.is_controller)
 
     #-----------------------------------------------------------------------
     def __lt__(self, rhs):
+        """Less than.
+
+        Uses the address and groups in the comparison.
+        """
         if self.addr.id != rhs.addr.id:
             return self.addr.id < rhs.addr.id
 
@@ -175,11 +205,12 @@ class DeviceEntry:
 
     #-----------------------------------------------------------------------
     def __str__(self):
+        # Special tag for the last entry (memory wise) in the database.
         last = " (LAST)" if self.db_flags.is_last_rec else ""
 
         return "%04x: %s grp: %3s type: %s data: %#04x %#04x %#04x%s" % \
             (self.mem_loc, self.addr.hex, self.group,
-             'CTRL' if self.db_flags.is_controller else 'RESP',
+             util.ctrl_str(self.db_flags.is_controller),
              self.data[0], self.data[1], self.data[2], last)
 
     #-----------------------------------------------------------------------

@@ -10,7 +10,7 @@ __doc__ = """Insteon <-> MQTT bridge package
 For docs, see: https://www.github.com/TD22057/insteon-mqtt
 """
 
-__version__ = "0.5.2"
+__version__ = "0.6.0"
 
 #===========================================================================
 
@@ -24,6 +24,7 @@ from . import network
 from . import util
 
 from .Address import Address
+from .CommandSeq import CommandSeq
 from .Modem import Modem
 from .Protocol import Protocol
 from .Signal import Signal

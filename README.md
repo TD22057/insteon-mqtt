@@ -9,7 +9,7 @@ My initial intent with this package is better integrate Insteon into
 Home Assistant and make it easier and more understandable to add new
 features and devices.
 
-Version: 0.5.2  ([History](HISTORY.md))
+Version: 0.6.0  ([History](HISTORY.md))
 
 
 # Quickstart
@@ -30,23 +30,34 @@ what they are and how to interpret messages from them.
 
 - Command Insteon devices using MQTT messages.  Topics and payloads
   can be customized using Jinja templates.
+- Simulate button presses using MQTT messages (device scene triggering).
 - Report Insteon device states changes by MQTT messages.  Topics and
   payloads can be customized using Jinja templates.
 - Report state changes for any device in an Insteon scene when the
   scene is triggered.
-- Supported Insteon devices (future devices will be easy to add, these
-  are just the set I currently own and can easily test).
-  - On/off switches (lamp modules, appliance modules, outlets)
+- Currently supported Insteon devices
+  - On/off switches (lamp modules, appliance modules, outlets, etc.)
   - Dimmer switches (lamp modules, dimmer switches, etc.)
+  - FanLinc dimmer and fan controller
+  - KeypadLinc dimmer and scene controller
+  - IOLinc relay and sensor module
+  - Mini-remotes (4 and 8 button battery powered scene controllers)
+  - Battery powered sensors (door, hidden door, window, etc.)
+  - Leak sensors
   - Motion sensors
-  - Mini-remotes
   - Smoke bridge
 - Automatically link new devices to the modem.  The system will
   correctly link all the Insteon groups for a device (like the smoke
   bridge which has 7 groups).
+- Link devices to the modem and each other via MQTT commands or the
+  command line tool.
 - Add and delete entries from the modem and device all link databases.
 - Command line tool for simpler sending of MQTT messages to send to
   the server.
+- Automatically attempt to download the all link database from battery
+  powered devices when a message is seen from them (i.e. trip a motion
+  sensor or push a remote button to get it to download the database).
+- Trigger modem virtual scenes
 
 
 # Detailed Documentation
@@ -67,9 +78,6 @@ future enhancements:
 
 - Finish commenting all of the code.
 - Full suite of unit tests.
-- More Insteon devices: door sensors, leak sensors, keypads, fanlincs,
-  etc.
-- Custom scene creation (software based scenes) and triggering.
 - PIP packaging and installation.
 - YAML input configuration validation.
 - Heal network (remove records for missing devices, fix missing links).

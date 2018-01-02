@@ -4,64 +4,107 @@
 #
 #===========================================================================
 from .. import log
-from .Base import Base
+from .MsgTemplate import MsgTemplate
 
 LOG = log.get_logger()
 
 
-class Switch(Base):
+class Switch:
     """TODO: doc
     """
     def __init__(self, mqtt, device, handle_active=True):
         """TODO: doc
         """
-        super().__init__(mqtt, device)
+        self.mqtt = mqtt
+        self.device = device
 
-        self.load_topic_template('state_topic', 'insteon/{{address}}/state')
-        self.load_payload_template('state_payload', '{{on_str.lower()}}')
+        # Output state change reporting template.
+        self.msg_state = MsgTemplate(
+            topic='insteon/{{address}}/state',
+            payload='{{on_str.lower()}}',
+            )
 
-        # Default payload is ON/OFF or on/off
-        self.load_topic_template('on_off_topic', 'insteon/{{address}}/set')
-        self.load_payload_template('on_off_payload',
-                                   '{ "cmd" : "{{value.lower()}}" }')
+        # Input on/off command template.
+        self.msg_on_off = MsgTemplate(
+            topic='insteon/{{address}}/set',
+            payload='{ "cmd" : "{{value.lower()}}" }',
+            )
+
+        # Input scene on/off command template.
+        self.msg_scene_on_off = MsgTemplate(
+            topic='insteon/{{address}}/scene',
+            payload='{ "cmd" : "{{value.lower()}}" }',
+            )
 
         if handle_active:
             device.signal_active.connect(self.handle_active)
 
     #-----------------------------------------------------------------------
-    def load_config(self, config):
-        """TODO: doc
+    def load_config(self, config, qos=None):
+        """Load values from a configuration data object.
+
+        Args:
+          config:   The configuration dictionary to load from.  The object
+                    config is stored in config['switch'].
+          qos:      The default quality of service level to use.
         """
-        self.load_switch_config(config.get("switch", None))
+        self.load_switch_config(config.get("switch", None), qos)
 
     #-----------------------------------------------------------------------
-    def load_switch_config(self, config):
+    def load_switch_config(self, config, qos):
         """TODO: doc
         """
         if not config:
             return
 
-        self.load_topic_template('state_topic',
-                                 config.get('state_topic', None))
-        self.load_payload_template('state_payload',
-                                   config.get('state_payload', None))
-
-        self.load_topic_template('on_off_topic',
-                                 config.get('on_off_topic', None))
-        self.load_payload_template('on_off_payload',
-                                   config.get('on_off_payload', None))
+        self.msg_state.load_config(config, 'state_topic', 'state_payload', qos)
+        self.msg_on_off.load_config(config, 'on_off_topic', 'on_off_payload',
+                                    qos)
+        self.msg_scene_on_off.load_config(config, 'scene_on_off_topic',
+                                          'scene_on_off_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
-        """TODO: doc
+        """Subscribe to any MQTT topics the object needs.
+
+        Args:
+          link:   The MQTT network client to use.
+          qos:    The quality of service to use.
         """
-        link.subscribe(self.on_off_topic, qos, self.handle_set)
+        topic = self.msg_on_off.render_topic(self.template_data())
+        link.subscribe(topic, qos, self.handle_set)
+
+        topic = self.msg_scene_on_off.render_topic(self.template_data())
+        link.subscribe(topic, qos, self.handle_scene)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
+        """Unsubscribe to any MQTT topics the object was subscribed to.
+
+        Args:
+          link:   The MQTT network client to use.
+        """
+        topic = self.msg_on_off.render_topic(self.template_data())
+        link.unsubscribe(topic)
+
+        topic = self.msg_scene_on_off.render_topic(self.template_data())
+        link.unsubscribe(topic)
+
+    #-----------------------------------------------------------------------
+    def template_data(self, is_active=None):
         """TODO: doc
         """
-        link.unsubscribe(self.on_off_topic)
+        data = {
+            "address" : self.device.addr.hex,
+            "name" : self.device.name if self.device.name
+                     else self.device.addr.hex,
+            }
+
+        if is_active is not None:
+            data["on"] = 1 if is_active else 0,
+            data["on_str"] = "on" if is_active else "off"
+
+        return data
 
     #-----------------------------------------------------------------------
     def handle_active(self, device, is_active):
@@ -75,33 +118,22 @@ class Switch(Base):
           device:   (device.Base) The Insteon device that changed.
           is_active (bool) True for on, False for off.
         """
-        LOG.info("MQTT received active change %s '%s' = %s",
-                 device.addr, device.name, is_active)
+        LOG.info("MQTT received active change %s = %s", device.label,
+                 is_active)
 
-        data = {
-            "address" : device.addr.hex,
-            "name" : device.name if device.name else device.addr.hex,
-            "on" : 1 if is_active else 0,
-            "on_str" : "on" if is_active else "off",
-            }
-
-        payload = self.render('state_payload', data)
-        if not payload:
-            return
-
-        self.mqtt.publish(self.state_topic, payload)
+        data = self.template_data(is_active)
+        self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
     def handle_set(self, client, data, message):
         """TODO: doc
         """
-        LOG.info("Switch message %s %s", message.topic, message.payload)
+        LOG.debug("Switch message %s %s", message.topic, message.payload)
 
-        data = self.input_to_json(message.payload, 'on_off_payload')
-        if not data:
-            return
-
+        # Parse the input MQTT message.
+        data = self.msg_on_off.to_json(message.payload)
         LOG.info("Switch input command: %s", data)
+
         try:
             cmd = data.get('cmd')
             if cmd == 'on':
@@ -109,16 +141,41 @@ class Switch(Base):
             elif cmd == 'off':
                 is_on = False
             else:
-                raise Exception("Invalid Switch cmd input '%s'" % cmd)
+                raise Exception("Invalid switch cmd input '%s'" % cmd)
 
             instant = bool(data.get('instant', False))
         except:
             LOG.exception("Invalid switch command: %s", data)
             return
 
-        if is_on:
-            self.device.on(instant=instant)
-        else:
-            self.device.off(instant=instant)
+        # Tell the device to update it's state.
+        self.device.set(is_on, instant=instant)
+
+    #-----------------------------------------------------------------------
+    def handle_scene(self, client, data, message):
+        """TODO: doc
+        """
+        LOG.debug("Switch message %s %s", message.topic, message.payload)
+
+        # Parse the input MQTT message.
+        data = self.msg_scene_on_off.to_json(message.payload)
+        LOG.info("Switch input command: %s", data)
+
+        try:
+            cmd = data.get('cmd')
+            if cmd == 'on':
+                is_on = True
+            elif cmd == 'off':
+                is_on = False
+            else:
+                raise Exception("Invalid switch cmd input '%s'" % cmd)
+
+            group = int(data.get('group', 0x01))
+        except:
+            LOG.exception("Invalid switch command: %s", data)
+            return
+
+        # Tell the device to trigger the scene command.
+        self.device.scene(is_on, group)
 
     #-----------------------------------------------------------------------

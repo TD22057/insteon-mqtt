@@ -11,7 +11,7 @@ class Test_DeviceEntry:
     #-----------------------------------------------------------------------
     def test_ctrl(self):
         addr = IM.Address('12.34.ab')
-        ctrl = Msg.DbFlags(in_use=True, is_controller=True, last_record=False)
+        ctrl = Msg.DbFlags(in_use=True, is_controller=True, is_last_rec=False)
         data = bytes([0x01, 0x02, 0x03])
         mem_loc = (0xfe << 8) + 0x10
         obj = IM.db.DeviceEntry(addr, 0x03, mem_loc, ctrl, data)
@@ -20,11 +20,9 @@ class Test_DeviceEntry:
         assert obj.group == 0x03
         assert obj.db_flags.in_use == ctrl.in_use
         assert obj.db_flags.is_controller == ctrl.is_controller
-        assert obj.db_flags.last_record == ctrl.last_record
+        assert obj.db_flags.is_last_rec == ctrl.is_last_rec
         assert obj.mem_loc == mem_loc
         assert obj.data == data
-        assert obj.on_level == data[0]
-        assert obj.ramp_rate == data[1]
         assert obj.mem_bytes() == bytes([0xfe, 0x10])
 
         d = obj.to_json()
@@ -34,7 +32,7 @@ class Test_DeviceEntry:
         assert obj2.mem_loc == obj.mem_loc
         assert obj2.db_flags.in_use == obj.db_flags.in_use
         assert obj2.db_flags.is_controller == obj.db_flags.is_controller
-        assert obj2.db_flags.last_record == obj.db_flags.last_record
+        assert obj2.db_flags.is_last_rec == obj.db_flags.is_last_rec
         assert obj2.data == obj.data
         assert obj == obj2
 
@@ -50,7 +48,7 @@ class Test_DeviceEntry:
         assert obj3.mem_loc == obj.mem_loc
         assert obj3.db_flags.in_use == obj.db_flags.in_use
         assert obj3.db_flags.is_controller == obj.db_flags.is_controller
-        assert obj3.db_flags.last_record == obj.db_flags.last_record
+        assert obj3.db_flags.is_last_rec == obj.db_flags.is_last_rec
         assert obj3.data == obj.data
         assert obj == obj3
 

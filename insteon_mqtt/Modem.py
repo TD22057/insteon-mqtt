@@ -3,15 +3,16 @@
 # Insteon modem class.
 #
 #===========================================================================
-import functools
 import json
 import os
 from .Address import Address
+from .CommandSeq import CommandSeq
 from . import config
 from . import db
 from . import handler
 from . import log
 from . import message as Msg
+from . import util
 from .Signal import Signal
 
 LOG = log.get_logger()
@@ -35,14 +36,17 @@ class Modem:
           protocol:  (Protocol) Insteon message handling protocol object.
         """
         self.protocol = protocol
+
         self.addr = None
+        self.name = "modem"
+        self.label = self.name
+
         self.save_path = None
 
         # Map of Address.id -> Device and name -> Device.  name is
         # optional so devices might not be in that map.
         self.devices = {}
         self.device_names = {}
-        self.scenes = {}
         self.db = db.Modem()
 
         # Signal to emit when a new device is added.
@@ -54,18 +58,31 @@ class Modem:
         self.cmd_map = {
             'db_add_ctrl_of' : self.db_add_ctrl_of,
             'db_add_resp_of' : self.db_add_resp_of,
-            'db_delete' : self.db_delete,
-            'refresh' : self.db_get,
+            'db_del_ctrl_of' : self.db_del_ctrl_of,
+            'db_del_resp_of' : self.db_del_resp_of,
+            'print_db' : self.print_db,
+            'refresh' : self.refresh,
             'refresh_all' : self.refresh_all,
-            'set_btn' : self.set_btn,
+            'linking' : self.linking,
+            'scene' : self.scene,
             }
 
         # Add a generic read handler for any broadcast messages
         # initiated by the Insteon devices.
         self.protocol.add_handler(handler.Broadcast(self))
 
+        # Handle all link complete messages that the modem sends when the set
+        # button or linking mode is finished.
+        self.protocol.add_handler(handler.ModemLinkComplete(self))
+
         # Handle user triggered factory reset of the modem.
         self.protocol.add_handler(handler.ModemReset(self))
+
+    #-----------------------------------------------------------------------
+    def type(self):
+        """Return a nice class name for the device.
+        """
+        return "Modem"
 
     #-----------------------------------------------------------------------
     def load_config(self, data):
@@ -94,6 +111,7 @@ class Modem:
 
         # Read the modem address.
         self.addr = Address(data['address'])
+        self.label = "%s (%s)" % (self.addr, self.name)
         LOG.info("Modem address set to %s", self.addr)
 
         # Load the modem database.
@@ -121,12 +139,17 @@ class Modem:
                 device.refresh()
 
     #-----------------------------------------------------------------------
-    def db_get(self):
+    def refresh(self, force=False, on_done=None):
         """Load the all link database from the modem.
 
         This sends a message to the modem to start downloading the all
         link database.  The message handler handler.ModemDbGet is used to
         process the replies and update the modem database.
+
+        Args:
+           force:   (bool) Ignored - this insures a consistent API with the
+                    device refresh command.
+        TODO: doc
         """
         LOG.info("Modem sending get first db record command")
 
@@ -136,7 +159,7 @@ class Modem:
         # Request the first db record from the handler.  The handler
         # will request each next record as the records arrive.
         msg = Msg.OutAllLinkGetFirst()
-        msg_handler = handler.ModemDbGet(self.db)
+        msg_handler = handler.ModemDbGet(self.db, on_done)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -175,6 +198,14 @@ class Modem:
 
         LOG.info("%s database loaded %s entries", self.addr, len(self.db))
         LOG.debug("%s", self.db)
+
+    #-----------------------------------------------------------------------
+    def print_db(self, on_done):
+        """Print the device database to the log UI.
+        """
+        LOG.ui("%s modem database", self.addr)
+        LOG.ui("%s", self.db)
+        on_done(True, "Complete", None)
 
     #-----------------------------------------------------------------------
     def add(self, device):
@@ -253,7 +284,7 @@ class Modem:
         return device
 
     #-----------------------------------------------------------------------
-    def refresh_all(self, force=False):
+    def refresh_all(self, force=False, on_done=None):
         """Refresh all the all link databases.
 
         This forces a refresh of the modem and device databases.  This
@@ -262,15 +293,21 @@ class Modem:
         called if no other activity is expected on the network.
         """
         # Reload the modem database.
-        self.db_get()
+        self.refresh()
 
         # Reload all the device databases.
-        for device in self.devices.values():
-            device.refresh(force)
+        for i, device in enumerate(self.devices.values()):
+            # Only set the callback if this is the last element.
+            callback = None
+            if i == len(self.devices) - 1:
+                callback = on_done
+
+            device.refresh(force, on_done=callback)
 
     #-----------------------------------------------------------------------
-    def db_add_ctrl_of(self, addr, group, data=None, two_way=True,
-                       on_done=None):
+    def db_add_ctrl_of(self, local_group, remote_addr, remote_group,
+                       two_way=True, refresh=True, on_done=None,
+                       local_data=None, remote_data=None):
         """Add the modem as a controller of a device.
 
         This updates the modem's all link database to show that the
@@ -302,14 +339,19 @@ class Modem:
           two_way:  (bool) If True, after creating the controller link on the
                     modem, a responder link is created on the remote device
                     to form the required pair of entries.
+          refresh:  (bool) If True, call refresh before changing the db.
+                    This is ignored on the modem since it doesn't use memory
+                    addresses and can't be corrupted.
           on_done:  Optional callback run when both commands are finished.
         """
-        self._db_update(addr, group, data, two_way, is_controller=True,
-                        on_done=on_done)
+        is_controller = True
+        self._db_update(local_group, is_controller, remote_addr, remote_group,
+                        two_way, refresh, on_done, local_data, remote_data)
 
     #-----------------------------------------------------------------------
-    def db_add_resp_of(self, addr, group, data=None, two_way=True,
-                       on_done=None):
+    def db_add_resp_of(self, local_group, remote_addr, remote_group,
+                       two_way=True, refresh=True, on_done=None,
+                       local_data=None, remote_data=None):
         """Add the modem as a responder of a device.
 
         This updates the modem's all link database to show that the
@@ -342,63 +384,108 @@ class Modem:
           two_way:  (bool) If True, after creating the responder link on the
                     modem, a controller link is created on the remote device
                     to form the required pair of entries.
+          refresh:  (bool) If True, call refresh before changing the db.
+                    This is ignored on the modem since it doesn't use memory
+                    addresses and can't be corrupted.
           on_done:  Optional callback run when both commands are finished.
         """
-        self._db_update(addr, group, data, two_way, is_controller=False,
-                        on_done=on_done)
+        is_controller = False
+        self._db_update(local_group, is_controller, remote_addr, remote_group,
+                        two_way, refresh, on_done, local_data, remote_data)
 
     #-----------------------------------------------------------------------
-    def db_delete(self, addr, group, two_way=True, on_done=None):
+    def db_del_ctrl_of(self, addr, group, two_way=True, refresh=True,
+                       on_done=None):
         """TODO: doc
         """
-        # Find all the entries that are going to be deleted.
-        entries = self.db.find_all(addr, group)
-        if not entries:
-            LOG.error("No entries matching %s grp %s", addr, group)
-            if on_done:
-                on_done(False, "Invalid entry to delete from modem")
-            return
+        # Call with is_controller=True
+        self._db_delete(addr, group, True, two_way, refresh, on_done)
 
-        # Find the remote device.  If don't have an entry for this
-        # device, we can't sent it commands
-        remote = self.find(addr)
-        if two_way and not remote:
-            LOG.info("Modem db delete can't find remote device %s.  "
-                     "Delete will be only one direction", addr)
-
-        # For two way commands, insert a callback so that when the
-        # modem command finishes, it will send the next command to the
-        # device.  When that finishes, it will run the input callback.
-        use_cb = on_done
-        if two_way and remote:
-            use_cb = functools.partial(self._db_update_remote, remote, on_done,
-                                       False)
-
-        # Run the delete command once for each entry.
-        # TODO: how to mark command as done? - need to know how many
-        # calls are gong to be attempted.
-        for entry in entries:  # pylint: disable=unused-variable
-            self.db.delete_on_device(self.protocol, addr, group, use_cb)
+    #-----------------------------------------------------------------------
+    def db_del_resp_of(self, addr, group, two_way=True, refresh=True,
+                       on_done=None):
+        """TODO: doc
+        """
+        # Call with is_controller=False
+        self._db_delete(addr, group, False, two_way, refresh, on_done)
 
     #-----------------------------------------------------------------------
     def factory_reset(self):
         """TODO: doc
         """
         LOG.warning("Modem being reset.  All data will be lost")
-        msg = Msg.OutResetPlm()
+        msg = Msg.OutResetModem()
         msg_handler = handler.ModemReset(self)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set_btn(self, group=0x01, time_out=60):
+    def linking(self, group=0x01, on_done=None):
         """TODO: doc
         """
         # Tell the modem to enter all link mode for the group.  The
         # handler will handle timeouts (to send the cancel message) if
         # nothing happens.  See the handler for details.
-        msg = Msg.OutAllLinkStart(Msg.OutAllLinkStart.Cmd.EITHER, group)
-        msg_handler = handler.ModemAllLink(self.db, time_out)
+        msg = Msg.OutModemLinking(Msg.OutModemLinking.Cmd.EITHER, group)
+        msg_handler = handler.ModemLinkStart(on_done)
         self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def link_data(self, is_controller, group, data=None):
+        """TODO: doc
+        """
+        # Normally, the modem (ctrl) -> device (resp) link is created using
+        # the linking() command - then the handler.ModemLinkComplete will
+        # fill these values in for us using the device information.  But they
+        # probably aren't used so it doesn't really matter.
+        if is_controller:
+            defaults = [group, 0x00, 0x00]
+
+        # Responder data is a mystery on the modem.  This seems to work but
+        # it's unclear if it's needed at all.
+        else:
+            defaults = [group, 0x00, 0x00]
+
+        # For each field, use the input if not -1, else the default.
+        return util.resolve_data3(defaults, data)
+
+    #-----------------------------------------------------------------------
+    def scene(self, is_on, group, num_retry=3, on_done=None):
+        """TODO: doc
+        """
+        assert 0x01 <= group <= 0xff
+        LOG.info("Modem scene %s on=%s", group, "on" if is_on else "off")
+
+        cmd1 = 0x11 if is_on else 0x13
+        msg = Msg.OutModemScene(group, cmd1, 0x00)
+        msg_handler = handler.ModemScene(self, msg, on_done)
+        self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def handle_scene(self, group, cmd):
+        """Callback for scene simulation commanded messages.
+
+        This callback is run when we get a reply back from triggering a scene
+        on the device.  If the command was ACK'ed, we know it worked.  The
+        device will then send out standard broadcast messages which will
+        trigger other updates for the scene devices.
+
+        TODO: doc
+        """
+        responders = self.db.find_group(group)
+        LOG.debug("Found %s responders in group %s", len(responders), group)
+        LOG.debug("Group %s -> %s", group, [i.addr.hex for i in responders])
+
+        # For each device that we're the controller of call it's
+        # handler for the broadcast message.
+        for elem in responders:
+            device = self.find(elem.addr)
+            if device:
+                LOG.info("%s broadcast to %s for group %s", self.label,
+                         device.addr, group)
+                device.handle_group_cmd(self.addr, group, cmd)
+            else:
+                LOG.warning("%s broadcast - device %s not found", self.label,
+                            elem.addr)
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
@@ -435,11 +522,6 @@ class Modem:
                       cmd, self.cmd_map.keys())
             return
 
-        # TODO: need session arg - if set, pass callback to func which
-        # it will call when finished.  Callback should publish a reply
-        # to message w/ results.  This callback should be an input to
-        # this function - set it in the MQTT client.
-
         # Call the command function with any remaining arguments.
         try:
             func(**kwargs)
@@ -448,7 +530,7 @@ class Modem:
                           "cmd %s with args: %s", self.addr, cmd, str(kwargs))
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, msg):
+    def handle_group_cmd(self, addr, group, cmd):
         """Handle a group command addressed to the modem.
 
         This is called when a broadcast message is sent from a device
@@ -475,6 +557,9 @@ class Modem:
         Args:
           data:   Configuration devices dictionary.
         """
+        # Add ourselves as a device.
+        self.signal_new_device.emit(self, self)
+
         self.devices.clear()
         self.device_names.clear()
 
@@ -487,36 +572,21 @@ class Modem:
 
             # Look up the device type in the configuration data and
             # call the constructor to build the device object.
-            ctor = config.find(device_type)
+            dev_class, kwargs = config.find(device_type)
 
-            # Call the ctor for each device that was input.
-            for device_config in values:
-                # If it's a dict, it's got a nice name set.
-                if isinstance(device_config, dict):
-                    assert len(device_config) == 1
-                    addr, name = next(iter(device_config.items()))
-                    name = name.lower()
+            # Have the device type parse the config values below here and
+            # return us a list of devices.
+            devices = dev_class.from_config(values, self.protocol, self,
+                                            **kwargs)
 
-                # Otherwise it's just the address
-                else:
-                    addr = device_config
-                    name = None
-
-                # Create the device
-                device = ctor(self.protocol, self, addr, name)
-                LOG.info("Created %s at %s '%s'", device_type, addr, name)
-
-                # Load any existing all link database for this device if
-                # it exists.
-                if self.save_path:
-                    device.save_path = self.save_path
-                    device.load_db()
+            for dev in devices:
+                LOG.info("Created %s at %s", device_type, dev.label)
 
                 # Store the device by ID in the map.
-                self.add(device)
+                self.add(dev)
 
                 # Notify anyone else that new device is available.
-                self.signal_new_device.emit(self, device)
+                self.signal_new_device.emit(self, dev)
 
     #-----------------------------------------------------------------------
     def _load_scenes(self, data):
@@ -539,65 +609,95 @@ class Modem:
         return scenes
 
     #-----------------------------------------------------------------------
-    def _db_update(self, addr, group, data, two_way, is_controller, on_done):
+    def _db_update(self, local_group, is_controller, remote_addr, remote_group,
+                   two_way, refresh, on_done, local_data, remote_data):
         """Update the modem database.
 
         See db_add_ctrl_of() or db_add_resp_of() for docs.
         """
-        # Find the remote device.  If don't have an entry for this
-        # device, we can't sent it commands
-        remote = self.find(addr)
+        # Find the remote device.  Update addr since the input may be a name.
+        remote = self.find(remote_addr)
+        if remote:
+            remote_addr = remote.addr
+
+        # If don't have an entry for this device, we can't sent it commands.
         if two_way and not remote:
-            lbl = "CTRL" if is_controller else "RESP"
             LOG.info("Modem db add %s can't find remote device %s.  "
-                     "Link will be only one direction", lbl, addr)
+                     "Link will be only one direction",
+                     util.ctrl_str(is_controller), remote_addr)
+
+        # Get the modem data array to use.  See Github issue #7 for
+        # discussion.
+        local_data = self.link_data(is_controller, local_group, local_data)
+
+        seq = CommandSeq(self.protocol, "Device db update complete", on_done)
+
+        # Create a new database entry for the modem and send it to the
+        # modem for updating.
+        entry = db.ModemEntry(remote_addr, local_group, is_controller,
+                              local_data)
+        seq.add(self.db.add_on_device, self.protocol, entry)
 
         # For two way commands, insert a callback so that when the
         # modem command finishes, it will send the next command to the
         # device.  When that finishes, it will run the input callback.
-        use_cb = on_done
         if two_way and remote:
-            use_cb = functools.partial(self._db_update_remote, remote, on_done,
-                                       True)
+            two_way = False
+            on_done = None
+            if is_controller:
+                seq.add(remote.db_add_resp_of, remote_group, self.addr,
+                        local_group, two_way, refresh, remote_data=remote_data)
+            else:
+                seq.add(remote.db_add_ctrl_of, remote_group, self.addr,
+                        local_group, two_way, refresh, remote_data=remote_data)
 
-        # Create a new database entry for the modem and send it to the
-        # modem for updating.
-        entry = db.ModemEntry(addr, group, is_controller, data)
-        self.db.add_on_device(self.protocol, entry, use_cb)
+        # Start the command sequence.
+        seq.run()
 
     #-----------------------------------------------------------------------
-    def _db_update_remote(self, remote, on_done, is_add, success, msg, entry):
-        """Modem device update complete callback.
-
-        This is called when the modem finishes updating the database.
-        It triggers a corresponding call on the remote device to
-        establish the two way link.  This only occurs if the first
-        command works.
+    def _db_delete(self, addr, group, is_controller, two_way, refresh,
+                   on_done):
+        """TODO: doc
         """
-        # Update failed - call the user callback and return
-        if not success:
-            if on_done:
-                on_done(False, msg, entry)
+        LOG.debug("db delete: %s grp=%s ctrl=%s 2w=%s", addr, group,
+                  util.ctrl_str(is_controller), two_way)
+
+        # Find the remote device.  Update addr since the input may be a name.
+        remote = self.find(addr)
+        if remote:
+            addr = remote.addr
+
+        # If don't have an entry for this device, we can't sent it commands
+        if two_way and not remote:
+            LOG.ui("Device db delete %s can't find remote device %s.  "
+                   "Link will be only deleted one direction",
+                   util.ctrl_str(is_controller), addr)
+
+        # Find teh database entry being deleted.
+        entry = self.db.find(addr, group, is_controller)
+        if not entry:
+            LOG.warning("Device %s delete no match for %s grp %s %s",
+                        self.addr, addr, group, util.ctrl_str(is_controller))
+            on_done(False, "Entry doesn't exist", None)
             return
 
-        # Send the command to the device.  Two way is false here since
-        # we just added the other link.
-        two_way = False
-        if is_add:
-            if entry.is_controller:
-                remote.db_add_resp_of(self.addr, entry.group, entry.data,
-                                      two_way, on_done)
-            else:
-                remote.db_add_ctrl_of(self.addr, entry.group, entry.data,
-                                      two_way, on_done)
+        # Add the function delete call to the sequence.
+        seq = CommandSeq(self.protocol, "Delete complete", on_done)
+        seq.add(self.db.delete_on_device, self.protocol, entry)
 
-        # Delete command
-        else:
-            if entry.is_controller:
-                remote.db_del_resp_of(self.addr, entry.group, entry.data,
-                                      two_way, on_done)
+        # For two way commands, insert a callback so that when the modem
+        # command finishes, it will send the next command to the device.
+        # When that finishes, it will run the input callback.
+        if two_way and remote:
+            two_way = False
+            if is_controller:
+                seq.add(remote.db_del_resp_of, self.addr, group, two_way,
+                        refresh)
             else:
-                remote.db_del_ctrl_of(self.addr, entry.group, entry.data,
-                                      two_way, on_done)
+                seq.add(remote.db_del_ctrl_of, self.addr, group, two_way,
+                        refresh)
+
+        # Start running the commands.
+        seq.run()
 
     #-----------------------------------------------------------------------

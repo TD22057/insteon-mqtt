@@ -7,16 +7,83 @@ from . import util
 
 
 #===========================================================================
+def linking(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "linking",
+        "group" : args.group,
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["result"]
+
+
+#===========================================================================
+def set_button_led(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "set_button_led",
+        "group" : args.group,
+        "is_on" : bool(args.is_on),
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
+def get_flags(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "get_flags",
+        }
+
+    reply = util.send(config, topic, payload, False)
+    return reply["status"]
+
+
+#===========================================================================
+def set_flags(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "set_flags",
+        }
+
+    for flag in args.flags:
+        elem = flag.split("=")
+        assert len(elem) == 2
+
+        key = elem[0].strip().lower()
+        value = elem[1].strip()
+        payload[key] = value
+
+    reply = util.send(config, topic, payload, False)
+    return reply["status"]
+
+
+#===========================================================================
+def print_db(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "print_db",
+        }
+
+    reply = util.send(config, topic, payload, False)
+    return reply["status"]
+
+
+#===========================================================================
 def on(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
         "cmd" : "on",
         "level" : args.level,
         "instant" : args.instant,
+        "group" : args.group,
         }
 
-    reply = util.send(config, topic, payload)
-    return reply["result"]
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 
 
 #===========================================================================
@@ -25,10 +92,25 @@ def off(args, config):
     payload = {
         "cmd" : "off",
         "instant" : args.instant,
+        "group" : args.group,
         }
 
-    reply = util.send(config, topic, payload)
-    return reply["result"]
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
+def set(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "set",
+        "level" : args.level,
+        "instant" : args.instant,
+        "group" : args.group,
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 
 
 #===========================================================================
@@ -38,8 +120,8 @@ def increment_up(args, config):
         "cmd" : "increment_up",
         }
 
-    reply = util.send(config, topic, payload)
-    return reply["result"]
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 
 
 #===========================================================================
@@ -49,8 +131,21 @@ def increment_down(args, config):
         "cmd" : "increment_down",
         }
 
-    reply = util.send(config, topic, payload)
-    return reply["result"]
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
+def scene(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "scene",
+        "group" : args.group,
+        "is_on" : bool(args.is_on),
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 
 
 #===========================================================================
@@ -60,8 +155,8 @@ def pair(args, config):
         "cmd" : "pair",
         }
 
-    reply = util.send(config, topic, payload)
-    return reply["result"]
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 
 
 #===========================================================================
@@ -72,38 +167,76 @@ def refresh(args, config):
         "force" : args.force,
         }
 
-    reply = util.send(config, topic, payload)
-    return reply["result"]
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 
 
 #===========================================================================
 def db_add(args, config):
-    elem1 = args.link.split("->")
-    elem2 = args.link.split("<-")
+    # Resolve the data elements to set for each item.  Defaults are None or
+    # -1 for each element.
 
-    if len(elem1) == 2:
-        address1 = elem1[0].strip()
-        address2 = elem1[1].strip()
+    # The controller data is either None or the full input args.
+    if args.mode == "ctrl":
         cmd = "db_add_ctrl_of"
-
-    elif len(elem2) == 2:
-        address1 = elem2[0].strip()
-        address2 = elem2[1].strip()
-        cmd = "db_add_resp_of"
-
+        addr1_data = args.addr1_data
     else:
-        raise ValueError("Input link '%s' should be 'addr1 <- addr2' or "
-                         "'addr1 -> addr2'." % config.link)
+        cmd = "db_add_resp_of"
+        addr2_data = args.addr2_data
 
-    topic = "%s/%s" % (args.topic, address1)
+    if args.mode == "ctrl":
+        resp_data = args.addr2_data
+    else:
+        resp_data = args.addr1_data
+
+    # Responder data may contains the level and ramp rates.
+    if args.level is not None or args.ramp is not None:
+        if resp_data is None:
+            resp_data = [-1, -1, -1]
+            if args.level is not None:
+                resp_data[0] = args.level
+            if args.ramp is not None:
+                resp_data[1] = args.ramp
+
+    if args.mode == "ctrl":
+        addr2_data = resp_data
+    else:
+        addr1_data = resp_data
+
+    topic = "%s/%s" % (args.topic, args.addr1)
     payload = {
         "cmd" : cmd,
-        "addr" : address2,
-        "group" : args.group,
+        "local_group" : args.group1,
+        "remote_addr" : args.addr2,
+        "remote_group" : args.group2,
         "two_way" : not args.one_way,
+        "refresh" : not args.no_refresh,
+        "local_data" : addr1_data,
+        "remote_data" : addr2_data,
         }
 
-    reply = util.send(config, topic, payload)
-    return reply["result"]
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
+def db_delete(args, config):
+    if args.mode == "ctrl":
+        cmd = "db_del_ctrl_of"
+    else:
+        cmd = "db_del_resp_of"
+
+    topic = "%s/%s" % (args.topic, args.addr1)
+    payload = {
+        "cmd" : cmd,
+        "addr" : args.addr2,
+        "group" : args.group,
+        "two_way" : not args.one_way,
+        "refresh" : not args.no_refresh,
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
 
 #===========================================================================

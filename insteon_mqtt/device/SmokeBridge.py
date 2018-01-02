@@ -5,6 +5,7 @@
 #===========================================================================
 import enum
 from .Base import Base
+from ..CommandSeq import CommandSeq
 from .. import log
 from .. import message as Msg
 from .. import handler
@@ -66,7 +67,7 @@ class SmokeBridge(Base):
         self.signal_state_change = Signal()  # emit(device, Type type)
 
     #-----------------------------------------------------------------------
-    def pair(self):
+    def pair(self, on_done=None):
         """Pair the device with the modem.
 
         This only needs to be called one time.  It will set the device
@@ -79,19 +80,37 @@ class SmokeBridge(Base):
         """
         LOG.info("Smoke bridge %s pairing", self.addr)
 
-        # Search our db to see if we have controller links for all our
-        # groups back to the modem.  If one doesn't exist, add it on
-        # our device and the modem.
+        # Build a sequence of calls to the do the pairing.  This insures each
+        # call finishes and works before calling the next one.  We have to do
+        # this for device db manipulation because we need to know the memory
+        # layout on the device before making changes.
+        seq = CommandSeq(self.protocol, "SmokeBridge paired", on_done)
+
+        # Start with a refresh command - since we're changing the db, it must
+        # be up to date or bad things will happen.
+        seq.add(self.refresh)
+
+        # Add the device as a responder to the modem on group 1.  This is
+        # probably already there - and maybe needs to be there before we can
+        # even issue any commands but this check insures that the link is
+        # present on the device and the modem.
+        seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
+                refresh=False)
+
+        # Now add the device as the controller of the modem for all the smoke
+        # types.
         for type in SmokeBridge.Type:
             group = type.value
-            if not self.db.find(self.modem.addr, group, True):
-                LOG.info("Smoke bridge adding ctrl for group %s", group)
-                self.db_add_ctrl_of(self.modem.addr, group)
-            else:
-                LOG.info("Motion ctrl for group %s already exists", group)
+            seq.add(self.db_add_ctrl_of, group, self.modem.addr, group,
+                    refresh=False)
+
+        # Finally start the sequence running.  This will return so the
+        # network event loop can process everything and the on_done callbacks
+        # will chain everything together.
+        seq.run()
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False):
+    def refresh(self, force=False, on_done=None):
         """Refresh the current device state and database if needed.
 
         This sends a ping to the device.  Smoke bridge can't report
@@ -106,7 +125,8 @@ class SmokeBridge(Base):
         # bridge dev guide p25.  See the Base.refresh() comments for
         # more details.
         msg = Msg.OutStandard.direct(self.addr, 0x1f, 0x01)
-        msg_handler = handler.DeviceRefresh(self, msg, force, num_retry=3)
+        msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
+                                            on_done, num_retry=3)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

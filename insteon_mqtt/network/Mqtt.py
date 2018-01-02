@@ -51,10 +51,11 @@ class Mqtt(Link):
         self.connected = False
         self.id = id if id is not None else "insteon-mqtt"
 
-        # Insure poll is called at least once every 15 seconds so we
+        # Insure poll is called at least once every 10 seconds so we
         # can send a keep alive message to the server so our
-        # connection doesn't get dropped.
-        self.time_out = 15
+        # connection doesn't get dropped.  This relies on poll()
+        # getting called more often than this time.
+        self.keep_alive = 30
 
         self._reconnect_dt = reconnect_dt
         self._fd = None
@@ -64,6 +65,7 @@ class Mqtt(Link):
         self.client.on_connect = self._on_connect
         self.client.on_disconnect = self._on_disconnect
         self.client.on_message = self._on_message
+        self.client.on_log = self._on_log
 
     #-----------------------------------------------------------------------
     def load_config(self, config):
@@ -84,6 +86,7 @@ class Mqtt(Link):
 
         self.host = config['broker']
         self.port = config['port']
+        self.keep_alive = config.get("keep_alive", self.keep_alive)
 
         username = config.get('username', None)
         if username is not None:
@@ -110,10 +113,16 @@ class Mqtt(Link):
     def subscribe(self, topic, qos=0, callback=None):
         """Subscribe the client to a topic.
 
+        If a callback is supplied, then that callback will be used for
+        all messages that match the input topic and NO other callbacks
+        or signals will be sent for that message.  The callback
+        signature is:
+           func(client, user_data, message)
+
         Args:
-          topic:   (str) The topic to subscribe to.
-          qos:
-          callback:  TODO
+          topic:    (str) The topic to subscribe to.
+          qos:      (int) The quality of service level to use (0,1,2).
+          callback: Optional message callback.
         """
         # Tell the client about it and then notify the manager that we
         # have messages to send.
@@ -185,10 +194,12 @@ class Mqtt(Link):
           it failed.
         """
         try:
-            self.client.connect(self.host, self.port, keepalive=60)
+            self.client.connect(self.host, self.port,
+                                keepalive=self.keep_alive)
             self._fd = self.client.socket().fileno()
 
-            LOG.info("MQTT device opened %s %s", self.host, self.port)
+            LOG.info("MQTT device opened %s %s with keepalive=%s", self.host,
+                     self.port, self.keep_alive)
             return True
         except:
             LOG.exception("MQTT connection error to %s %s", self.host,
@@ -281,6 +292,15 @@ class Mqtt(Link):
         """
         LOG.info("MQTT message %s %s", message.topic, message.payload)
         self.signal_message.emit(self, message)
+
+    #-----------------------------------------------------------------------
+    def _on_log(self, client, data, level, buf):
+        """MQTT client logging callback
+        """
+        # Send a very low level logging message so we can turn on
+        # level 5 logging at the top level to see what is happening in
+        # the MQTT client.
+        LOG.log(5, buf)
 
     #-----------------------------------------------------------------------
     def __str__(self):

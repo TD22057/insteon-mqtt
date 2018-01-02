@@ -3,14 +3,15 @@
 # Base device class
 #
 #===========================================================================
-import functools
 import json
 import os.path
 from ..Address import Address
+from ..CommandSeq import CommandSeq
 from .. import db
 from .. import handler
 from .. import log
 from .. import message as Msg
+from .. import util
 
 LOG = log.get_logger()
 
@@ -32,6 +33,33 @@ class Base:
        refresh:  No arguments.  Ping the device and see if the database is
                  current.  Reloads the modem database if needed.
     """
+    @classmethod
+    def from_config(cls, values, protocol, modem, **kwargs):
+        """TODO: doc
+        """
+        devices = []
+        for config in values:
+            # If it's a dict, it's got a nice name set.
+            if isinstance(config, dict):
+                assert len(config) == 1
+                addr, name = next(iter(config.items()))
+                name = name.lower()
+
+            # Otherwise it's just the address
+            else:
+                addr = config
+                name = None
+
+            # Create the device using the class constructor.  Use kwargs
+            # syntax so any extra keyword args don't have to be at the end of
+            # the arg list.
+            device = cls(protocol=protocol, modem=modem, address=addr,
+                         name=name, **kwargs)
+            devices.append(device)
+
+        return devices
+
+    #-----------------------------------------------------------------------
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
 
@@ -47,8 +75,15 @@ class Base:
         self.modem = modem
         self.addr = Address(address)
         self.name = name
-        self.save_path = None  # set by the modem loading method
+
+        # Make some nice labels to make logging easier.
+        self.label = str(self.addr)
+        if self.name:
+            self.label += " (%s)" % self.name
+
+        self.save_path = modem.save_path
         self.db = db.Device(self.addr)
+        self.load_db()
 
         # Remove (mqtt) commands mapped to methods calls.  These are
         # handled in run_command().  Derived classes can add more
@@ -59,8 +94,11 @@ class Base:
             'db_add_resp_of' : self.db_add_resp_of,
             'db_del_ctrl_of' : self.db_del_ctrl_of,
             'db_del_resp_of' : self.db_del_resp_of,
+            'print_db' : self.print_db,
             'refresh' : self.refresh,
+            'linking' : self.linking,
             'pair' : self.pair,
+            'get_flags' : self.get_flags,
             }
 
         # Device database delta.  The delta tells us if the database
@@ -68,6 +106,12 @@ class Base:
         # refresh message out and getting the response - not by
         # downloading the database.
         self._next_db_delta = None
+
+    #-----------------------------------------------------------------------
+    def type(self):
+        """Return a nice class name for the device.
+        """
+        return self.__class__.__name__
 
     #-----------------------------------------------------------------------
     def db_path(self):
@@ -86,13 +130,18 @@ class Base:
         path self.db_path().  If the file doesn't exist, nothing is
         done.
         """
+        # TODO: fix this - kind of backward - should just set this into the
+        # db and have it load itself.
+
         # See if the database file exists.
         path = self.db_path()
         self.db.set_path(path)
         if not os.path.exists(path):
+            LOG.debug("Device %s db doesn't exist", self.label)
             return
 
         try:
+            LOG.debug("Device %s reading db file", self.label)
             with open(path) as f:
                 data = json.load(f)
 
@@ -101,12 +150,39 @@ class Base:
             LOG.exception("Error reading file %s", path)
             return
 
-        LOG.info("Device %s database loaded %s entries", self.addr,
+        LOG.info("Device %s database loaded %s entries", self.label,
                  len(self.db))
         LOG.debug("%s", self.db)
 
     #-----------------------------------------------------------------------
-    def pair(self):
+    def print_db(self, on_done):
+        """Print the device database to the log UI.
+        """
+        LOG.ui("%s device database", self.label)
+        LOG.ui("%s", self.db)
+        on_done(True, "Complete", None)
+
+    #-----------------------------------------------------------------------
+    def linking(self, group=0x01, on_done=None):
+        """TODO: doc
+        """
+        LOG.info("Device %s link mode grp %s", self.label, group)
+
+        # This sends a linking mode command to the device.  As far as I can
+        # see, there is no way to cancel it.
+        msg = Msg.OutExtended.direct(self.addr, 0x09, group,
+                                     bytes([0x00] * 14))
+        msg_handler = handler.StandardCmd(msg, self.handle_linking, on_done)
+        self.protocol.send(msg, msg_handler)
+
+        # NOTE: this command is to enter linking mode - we get ACK back that
+        # it did, but unlike the modem, we don't get a message telling us
+        # what the result is when the linking actually completes.  So there
+        # to be a refresh call made to the device once the linking actually
+        # finishes.  So - the user must refresh the device.
+
+    #-----------------------------------------------------------------------
+    def pair(self, on_done=None):
         """Pair the device with the modem.
 
         This only needs to be called one time.  It will set the device
@@ -116,10 +192,10 @@ class Base:
         The default implementation does nothing - subclasses should
         re-implement this to do proper pairing.
         """
-        LOG.error("Device %s doesn't support pairing", self.addr)
+        LOG.error("Device %s doesn't support pairing", self.label)
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False):
+    def refresh(self, force=False, on_done=None):
         """Refresh the current device state and database if needed.
 
         This sends a ping to the device.  The reply has the current
@@ -133,41 +209,35 @@ class Base:
 
         TODO: doc force
         """
-        LOG.info("Device %s cmd: status refresh", self.addr)
+        LOG.info("Device %s cmd: status refresh", self.label)
 
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the
         # current value.  If it's different, it will send a database
         # download command to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
-        msg_handler = handler.DeviceRefresh(self, msg, force, num_retry=3)
+        msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
+                                            on_done, num_retry=3)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def db_get(self):
-        """Load the all link database from the modem.
-
-        This sends a refresh command to the device so we can get the
-        current database delta value so we know which db we're
-        downloading.  Then it sends a message to the device to start
-        downloading the all link database.  The message handler
-        handler.DeviceDbGet is used to process the replies and update
-        the modem database.
-
-        NOTE: Some devices that are plugged in (smoke bridge) seem to
-        be pretty bad about replying and multiple tries may be
-        necessary to actually get the database.
+    def get_flags(self, on_done=None):
+        """TODO: doc
         """
-        # We need to get the current db delta so we know which
-        # database we're getting.  So clear the current flag and then
-        # do a refresh which will find the delta and then trigger a
-        # download.
-        self.db.set_delta(None)
-        self.refresh()
+        LOG.info("Device %s cmd: get operation flags", self.label)
+
+        # This sends a refresh ping which will respond w/ the current
+        # database delta field.  The handler checks that against the
+        # current value.  If it's different, it will send a database
+        # download command to the device to update the database.
+        msg = Msg.OutStandard.direct(self.addr, 0x1f, 0x00)
+        msg_handler = handler.StandardCmd(msg, self.handle_flags, on_done)
+        self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def db_add_ctrl_of(self, addr, group, data=None, two_way=True,
-                       on_done=None):
+    def db_add_ctrl_of(self, local_group, remote_addr, remote_group,
+                       two_way=True, refresh=True, on_done=None,
+                       local_data=None, remote_data=None):
         """Add the device as a controller of another device.
 
         This updates the devices's all link database to show that the
@@ -196,14 +266,20 @@ class Base:
           two_way:  (bool) If True, after creating the controller link on the
                     device, a responder link is created on the remote device
                     to form the required pair of entries.
+          refresh:  (bool) If True, call refresh before changing the db.
+                    Changing the db w/o an out of date db will likely require
+                    a factory reset (since memory addresses are manipulated)
+                    so this is important.
           on_done:  Optional callback run when both commands are finished.
         """
-        self._db_update(addr, group, data, two_way, is_controller=True,
-                        on_done=on_done)
+        is_controller = True
+        self._db_update(local_group, is_controller, remote_addr, remote_group,
+                        two_way, refresh, on_done, local_data, remote_data)
 
     #-----------------------------------------------------------------------
-    def db_add_resp_of(self, addr, group, data=None, two_way=True,
-                       on_done=None):
+    def db_add_resp_of(self, local_group, remote_addr, remote_group,
+                       two_way=True, refresh=True, on_done=None,
+                       local_data=None, remote_data=None):
         """Add the device as a responder of another device.
 
         This updates the devices's all link database to show that the
@@ -232,25 +308,57 @@ class Base:
           two_way:  (bool) If True, after creating the responder link on the
                     device, a controller link is created on the remote device
                     to form the required pair of entries.
+          refresh:  (bool) If True, call refresh before changing the db.
+                    Changing the db w/o an out of date db will likely require
+                    a factory reset (since memory addresses are manipulated)
+                    so this is important.
           on_done:  Optional callback run when both commands are finished.
 
         """
-        self._db_update(addr, group, data, two_way, is_controller=False,
-                        on_done=on_done)
+        is_controller = False
+        self._db_update(local_group, is_controller, remote_addr, remote_group,
+                        two_way, refresh, on_done, local_data, remote_data)
 
     #-----------------------------------------------------------------------
-    def db_del_ctrl_of(self, addr, group, two_way=True, on_done=None):
+    def db_del_ctrl_of(self, addr, group, two_way=True, refresh=True,
+                       on_done=None):
         """TODO: doc
         """
         # Call with is_controller=True
-        self._db_delete(addr, group, two_way, True, on_done)
+        self._db_delete(addr, group, True, two_way, refresh, on_done)
 
     #-----------------------------------------------------------------------
-    def db_del_resp_of(self, addr, group, two_way=True, on_done=None):
+    def db_del_resp_of(self, addr, group, two_way=True, refresh=True,
+                       on_done=None):
         """TODO: doc
         """
         # Call with is_controller=False
-        self._db_delete(addr, group, two_way, False, on_done)
+        self._db_delete(addr, group, False, two_way, refresh, on_done)
+
+    #-----------------------------------------------------------------------
+    def link_data(self, is_controller, group, data=None):
+        """TODO: doc
+        """
+        # Most of this is from looking through Misterhouse bug reports.
+        if is_controller:
+            # D1 = 0x03 number of retries to use for the command
+            # D2 = ???
+            # D3 = some devices need 0x01 or group number others don't care
+            defaults = [0x03, 0x00, group]
+
+        # Responder data is always link dependent.  Since nothing was given,
+        # assume the user wants to turn the device on (0xff).
+        else:
+            # D1 = on level for on/off, dimmers
+            # D2 = ramp rate for on/off, dimmers.  I believe leaving this
+            #      at 0 uses the default ramp rate.
+            # D3 = The local group number of the local button.  The input
+            #      group is the controller group number (and broadcast msg)
+            #      so this is the local button group number it maps to.
+            defaults = [0xff, 0x00, group]
+
+        # For each field, use the input if not -1, else the default.
+        return util.resolve_data3(defaults, data)
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
@@ -270,15 +378,15 @@ class Base:
         """
         cmd = kwargs.pop('cmd', None)
         if not cmd:
-            LOG.error("Invalid command sent to device %s '%s'.  No 'cmd' "
-                      "keyword: %s", self.addr, self.name, kwargs)
+            LOG.error("Invalid command sent to device %s.  No 'cmd' "
+                      "keyword: %s", self.label, kwargs)
             return
 
         cmd = cmd.lower().strip()
         func = self.cmd_map.get(cmd, None)
         if not func:
             LOG.error("Invalid command sent to device %s '%s'.  Input cmd "
-                      "'%s' not valid.  Valid commands: %s", self.addr,
+                      "'%s' not valid.  Valid commands: %s", self.label,
                       self.name, cmd, self.cmd_map.keys())
             return
 
@@ -286,9 +394,8 @@ class Base:
         try:
             func(**kwargs)
         except:
-            LOG.exception("Invalid command inputs to device %s '%s'.  Input "
-                          "cmd %s with args: %s", self.addr, self.name, cmd,
-                          str(kwargs))
+            LOG.exception("Invalid command inputs to device %s'.  Input cmd "
+                          "%s with args: %s", self.label, cmd, str(kwargs))
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
@@ -306,6 +413,14 @@ class Base:
         pass
 
     #-----------------------------------------------------------------------
+    def handle_flags(self, msg, on_done):
+        """TODO: doc
+        """
+        LOG.ui("Device %s operating flags: %s", self.addr,
+               "{:08b}".format(msg.cmd2))
+        on_done(True, "Operation complete", msg.cmd2)
+
+    #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
         """Handle broadcast messages from this device.
 
@@ -320,26 +435,26 @@ class Base:
         Args:
           msg:   (InptStandard) Broadcast message from the device.
         """
-        responders = self.db.find_group(msg.group)
-        LOG.debug("Found %s responders in group %s", len(responders),
-                  msg.group)
-        LOG.debug("Group %s -> %s", msg.group,
-                  [i.addr.hex for i in responders])
+        group = msg.group
+
+        responders = self.db.find_group(group)
+        LOG.debug("Found %s responders in group %s", len(responders), group)
+        LOG.debug("Group %s -> %s", group, [i.addr.hex for i in responders])
 
         # For each device that we're the controller of call it's
         # handler for the broadcast message.
         for elem in responders:
             device = self.modem.find(elem.addr)
             if device:
-                LOG.info("%s broadcast to %s for group %s", self.addr,
-                         device.addr, msg.group)
-                device.handle_group_cmd(self.addr, msg)
+                LOG.info("%s broadcast to %s for group %s", self.label,
+                         device.addr, group)
+                device.handle_group_cmd(self.addr, group, msg.cmd1)
             else:
-                LOG.warning("%s broadcast - device %s not found", self.addr,
+                LOG.warning("%s broadcast - device %s not found", self.label,
                             elem.addr)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, msg):
+    def handle_group_cmd(self, addr, group, cmd):
         """Respond to a group command for this device.
 
         This is called when this device is a responder to a scene.
@@ -349,113 +464,123 @@ class Base:
         Args:
           addr:  (Address) The device that sent the message.  This is the
                  controller in the scene.
-          msg:   (message.InpStandard) The broadcast message that was sent.
-                 Use msg.group to find the scene group that was broadcast.
+          group: (int) The group being triggered.
+          cmd:   (int) The command byte being sent.
         """
         # Default implementation - derived classes should specialize this.
-        LOG.info("Device %s ignoring group cmd - not implemented", self.addr)
+        LOG.info("Device %s ignoring group cmd - not implemented", self.label)
 
     #-----------------------------------------------------------------------
-    def _db_update(self, addr, group, data, two_way, is_controller, on_done):
+    def handle_linking(self, msg, on_done=None):
+        """TODO: doc
+        """
+        on_done = util.make_callback(on_done)
+
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+            on_done(True, "Entered linking mode", None)
+        else:
+            on_done(False, "Linking mode failed", None)
+
+    #-----------------------------------------------------------------------
+    def _db_update(self, local_group, is_controller, remote_addr, remote_group,
+                   two_way, refresh, on_done, local_data, remote_data):
         """Update the device database.
 
         See db_add_ctrl_of() or db_add_resp_of() for docs.
         """
-        # Find the remote device.  If don't have an entry for this
-        # device, we can't sent it commands
-        remote = self.modem.find(addr)
-        if two_way and not remote:
-            lbl = "CTRL" if is_controller else "RESP"
-            LOG.info("Device db add %s can't find remote device %s.  "
-                     "Link will be only one direction", lbl, addr)
+        # Find the remote device.  Update addr since the input may be a name.
+        remote = self.modem.find(remote_addr)
+        if remote:
+            remote_addr = remote.addr
 
-        # For two way commands, insert a callback so that when the
-        # modem command finishes, it will send the next command to the
-        # device.  When that finishes, it will run the input callback.
-        use_cb = on_done
-        if two_way and remote:
-            use_cb = functools.partial(self._db_update_remote, remote, on_done)
+        # If don't have an entry for this device, we can't sent it commands.
+        if two_way and not remote:
+            LOG.ui("Device db add %s can't find remote device %s.  "
+                   "Link will be only one direction",
+                   util.ctrl_str(is_controller), remote_addr)
+
+        seq = CommandSeq(self.protocol, "Device db update complete", on_done)
+
+        # Check for a db update - otherwise we could be out of date and not
+        # know it in which case the memory addresses to add the record in
+        # will be wrong.
+        if refresh:
+            seq.add(self.refresh)
+
+        # Get the data array to use.  See Github issue #7 for discussion.
+        # Use teh bytes() cast here so we can take a list as input.
+        local_data = self.link_data(is_controller, local_group, local_data)
+
+        # Group number in the db is the group number of the controller since
+        # that's the group number in the broadcast message we'll receive.
+        db_group = local_group
+        if not is_controller:
+            db_group = remote_group
 
         # Create a new database entry for the device and send it.
-        self.db.add_on_device(self.protocol, addr, group, data, is_controller,
-                              on_done=use_cb)
+        seq.add(self.db.add_on_device, self.protocol, remote_addr, db_group,
+                is_controller, local_data)
+
+        # For two way commands, insert a callback so that when the modem
+        # command finishes, it will send the next command to the device.
+        # When that finishes, it will run the input callback.
+        if two_way and remote:
+            two_way = False
+            on_done = None
+            if is_controller:
+                seq.add(remote.db_add_resp_of, remote_group, self.addr,
+                        local_group, two_way, refresh, local_data=remote_data)
+            else:
+                seq.add(remote.db_add_ctrl_of, remote_group, self.addr,
+                        local_group, two_way, refresh, local_data=remote_data)
+
+        # Start the command sequence.
+        seq.run()
 
     #-----------------------------------------------------------------------
-    def _db_update_remote(self, remote, on_done, success, msg, entry):
-        """Device update complete callback.
-
-        This is called when the device finishes updating the database.
-        It triggers a corresponding call on the remote device to
-        establish the two way link.  This only occurs if the first
-        command works.
+    def _db_delete(self, addr, group, is_controller, two_way, refresh,
+                   on_done):
+        """TODO: doc
         """
-        # Update failed - call the user callback and return
-        if not success:
-            if on_done:
-                on_done(False, msg, entry)
-            return
+        # Find the remote device.  Update addr since the input may be a name.
+        remote = self.modem.find(addr)
+        if remote:
+            addr = remote.addr
 
-        # Send the command to the device.  Two way is false here since
-        # we just added the other link.
-        two_way = False
-        if entry.is_controller:
-            remote.db_add_resp_of(self.addr, entry.group, entry.data, two_way,
-                                  on_done)
+        # If don't have an entry for this device, we can't sent it commands
+        if two_way and not remote:
+            LOG.ui("Device db delete %s can't find remote device %s.  "
+                   "Link will be only deleted one direction",
+                   util.ctrl_str(is_controller), addr)
 
-        else:
-            remote.db_add_ctrl_of(self.addr, entry.group, entry.data, two_way,
-                                  on_done)
-
-    #-----------------------------------------------------------------------
-    def _db_delete(self, addr, group, two_way, is_controller, on_done):
+        # Find the database entry being deleted.
         entry = self.db.find(addr, group, is_controller)
         if not entry:
             LOG.warning("Device %s delete no match for %s grp %s %s",
-                        self.addr, addr, group,
-                        'CTRL' if is_controller else 'RESP')
-            if on_done:
-                on_done(False, "Entry doesn't exist", None)
+                        self.label, addr, group, util.ctrl_str(is_controller))
+            on_done(False, "Entry doesn't exist", None)
             return
 
-        # Find the remote device.  If don't have an entry for this
-        # device, we can't sent it commands
-        remote = self.modem.find(addr)
-        if two_way and not remote:
-            lbl = "CTRL" if is_controller else "RESP"
-            LOG.info("Device db delete %s can't find remote device %s.  "
-                     "Link will be only one direction", lbl, addr)
+        seq = CommandSeq(self.protocol, "Delete complete", on_done)
 
-        # For two way commands, insert a callback so that when the
-        # modem command finishes, it will send the next command to the
-        # device.  When that finishes, it will run the input callback.
-        use_cb = on_done
+        # Check for a db update - otherwise we could be out of date and not
+        # know it in which case the memory addresses to add the record in
+        # will be wrong.
+        if refresh:
+            seq.add(self.refresh)
+
+        seq.add(self.db.delete_on_device, self.protocol, entry)
+
+        # For two way commands, insert a callback so that when the modem
+        # command finishes, it will send the next command to the device.
+        # When that finishes, it will run the input callback.
         if two_way and remote:
-            use_cb = functools.partial(self._db_delete_remote, remote, on_done)
+            if is_controller:
+                seq.add(remote.db_del_resp_of, self.addr, group, two_way=False)
+            else:
+                seq.add(remote.db_del_ctrl_of, self.addr, group, two_way=False)
 
-        self.db.delete_on_device(self.protocol, entry, use_cb)
-
-    #-----------------------------------------------------------------------
-    def _db_delete_remote(self, remote, on_done, success, msg, entry):
-        # Update failed - call the user callback and return
-        if not success:
-            if on_done:
-                on_done(False, msg, entry)
-            return
-
-        # Send the command to the remote device or modem.  Two way is
-        # false here since we just added the other link.  If the
-        # device is a modem, we don't have control of ctrl vs resp -
-        # it will just delete all the links for this addr and group.
-        two_way = False
-        if remote == self.modem:
-            # TODO: fix this
-            #remote.db_delete(self.addr, entry.group, two_way, on_done)
-            pass
-
-        elif entry.is_controller:
-            remote.db_del_resp_of(self.addr, entry.group, two_way, on_done)
-
-        else:
-            remote.db_del_ctrl_of(self.addr, entry.group, two_way, on_done)
+        # Start running the commands.
+        seq.run()
 
     #-----------------------------------------------------------------------

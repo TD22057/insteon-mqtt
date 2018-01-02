@@ -3,7 +3,9 @@
 # Insteon on/off device
 #
 #===========================================================================
+import functools
 from .Base import Base
+from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg
@@ -74,10 +76,15 @@ class Switch(Base):
             'on' : self.on,
             'off' : self.off,
             'set' : self.set,
+            'scene' : self.scene,
             })
 
+        # Special callback to run when receiving a broadcast clean up.  See
+        # scene() for details.
+        self.broadcast_done = None
+
     #-----------------------------------------------------------------------
-    def pair(self):
+    def pair(self, on_done=None):
         """Pair the device with the modem.
 
         This only needs to be called one time.  It will set the device
@@ -90,15 +97,33 @@ class Switch(Base):
         """
         LOG.info("Switch %s pairing", self.addr)
 
-        # Search our db to see if we have controller links for group 1
-        # back to the modem.  If one doesn't exist, add it on our
-        # device and the modem.
-        group = 1
-        if not self.db.find(self.modem.addr, group, True):
-            LOG.info("Switch adding ctrl for group %s", group)
-            self.db_add_ctrl_of(self.modem.addr, group)
-        else:
-            LOG.info("Switch ctrl for group %s already exists", group)
+        # Build a sequence of calls to the do the pairing.  This insures each
+        # call finishes and works before calling the next one.  We have to do
+        # this for device db manipulation because we need to know the memory
+        # layout on the device before making changes.
+        seq = CommandSeq(self.protocol, "Switch paired", on_done)
+
+        # Start with a refresh command - since we're changing the db, it must
+        # be up to date or bad things will happen.
+        seq.add(self.refresh)
+
+        # Add the device as a responder to the modem on group 1.  This is
+        # probably already there - and maybe needs to be there before we can
+        # even issue any commands but this check insures that the link is
+        # present on the device and the modem.
+        seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
+                refresh=False)
+
+        # Now add the device as the controller of the modem for group 1.
+        # This lets the modem receive updates about the button presses and
+        # state changes.
+        seq.add(self.db_add_ctrl_of, 0x01, self.modem.addr, 0x01,
+                refresh=False)
+
+        # Finally start the sequence running.  This will return so the
+        # network event loop can process everything and the on_done callbacks
+        # will chain everything together.
+        seq.run()
 
     #-----------------------------------------------------------------------
     def is_on(self):
@@ -107,7 +132,7 @@ class Switch(Base):
         return self._is_on
 
     #-----------------------------------------------------------------------
-    def on(self, level=None, instant=False):
+    def on(self, group=0x01, level=None, instant=False, on_done=None):
         """Turn the device on.
 
         This will send the command to the device to update it's state.
@@ -120,9 +145,7 @@ class Switch(Base):
                     instant change.
         """
         LOG.info("Switch %s cmd: on", self.addr)
-        if self._is_on:
-            LOG.info("Device %s '%s' is already on", self.addr, self.name)
-            return
+        assert group == 0x01
 
         # Send an on or instant on command.
         cmd1 = 0x11 if not instant else 0x21
@@ -130,13 +153,13 @@ class Switch(Base):
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_ack)
+        msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def off(self, instant=False):
+    def off(self, group=0x01, instant=False, on_done=None):
         """Turn the device off.
 
         This will send the command to the device to update it's state.
@@ -148,9 +171,7 @@ class Switch(Base):
                     instant change.
         """
         LOG.info("Switch %s cmd: off", self.addr)
-        if not self._is_on:
-            LOG.info("Device %s '%s' is already off", self.addr, self.name)
-            return
+        assert group == 0x01
 
         # Send an off or instant off command.  Instant off is the same
         # command as instant on, just with the level set to 0x00.
@@ -159,13 +180,13 @@ class Switch(Base):
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_ack)
+        msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set(self, level, instant=False):
+    def set(self, level, group=0x01, instant=False, on_done=None):
         """Set the device on or off.
 
         This will send the command to the device to update it's state.
@@ -178,9 +199,46 @@ class Switch(Base):
                     instant change.
         """
         if level:
-            self.on(instant)
+            self.on(group, level, instant, on_done)
         else:
-            self.off(instant)
+            self.off(group, instant, on_done)
+
+    #-----------------------------------------------------------------------
+    def scene(self, is_on, group=0x01, on_done=None):
+        """TODO: doc
+        """
+        LOG.info("Switch %s scene %s", self.addr, "on" if is_on else "off")
+        assert group == 0x01
+
+        # Send an 0x30 all link command to simulate the button being pressed
+        # on the switch.  See page 163 of insteon dev guide
+        cmd1 = 0x11 if is_on else 0x13
+        data = bytes([
+            group,  # D1 = group (button)
+            0x00,   # D2 = use level in scene db
+            0x00,   # D3 = on level if D2=0x01
+            cmd1,   # D4 = cmd1 to send
+            0x00,   # D5 = cmd2 to send
+            0x00,   # D6 = use ramp rate in scene db
+            ] + [0x00] * 8)
+        msg = Msg.OutExtended.direct(self.addr, 0x30, 0x00, data)
+
+        # Use the standard command handler which will notify us when
+        # the command is ACK'ed.
+        callback = on_done if is_on else None
+        msg_handler = handler.StandardCmd(msg, self.handle_scene, callback)
+        self.protocol.send(msg, msg_handler)
+
+        # Scene triggering will not turn the device off (no idea why), so we
+        # have to send an explicit off command to do that.  If this is None,
+        # we're triggering a scene and so should bypass the normal
+        # handle_broadcast logic to take this case into account.  Note that
+        # if we sent and off command either before or after the ACK of the
+        # command above, it doesn't work - we have to wait until the
+        # broadcast msg is finished.
+        if not is_on:
+            self.broadcast_done = functools.partial(self.off, group=group,
+                                                    on_done=on_done)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -200,6 +258,9 @@ class Switch(Base):
         # ACK of the broadcast - ignore this.
         if msg.cmd1 == 0x06:
             LOG.info("Switch %s broadcast ACK grp: %s", self.addr, msg.group)
+            if self.broadcast_done:
+                self.broadcast_done()
+            self.broadcast_done = None
             return
 
         # On command.  0x11: on, 0x12: on fast
@@ -210,7 +271,12 @@ class Switch(Base):
         # Off command. 0x13: off, 0x14: off fast
         elif msg.cmd1 in Switch.off_codes:
             LOG.info("Switch %s broadcast OFF grp: %s", self.addr, msg.group)
-            self._set_is_on(False)
+
+            # If broadcast_done is active, this is a generated broadcast and
+            # we need to manually turn the device off so don't update it's
+            # state until that occurs.
+            if not self.broadcast_done:
+                self._set_is_on(False)
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
@@ -229,14 +295,14 @@ class Switch(Base):
           msg:  (message.InpStandard) The refresh message reply.  The current
                 device state is in the msg.cmd2 field.
         """
-        LOG.debug("Switch %s refresh message: %s", self.addr, msg)
+        LOG.ui("Switch %s refresh on=%s", self.label, msg.cmd2 > 0x00)
 
         # Current on/off level is stored in cmd2 so update our level
         # to match.
         self._set_is_on(msg.cmd2 > 0x00)
 
     #-----------------------------------------------------------------------
-    def handle_ack(self, msg):
+    def handle_ack(self, msg, on_done):
         """Callback for standard commanded messages.
 
         This callback is run when we get a reply back from one of our
@@ -253,12 +319,37 @@ class Switch(Base):
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("Switch %s ACK: %s", self.addr, msg)
             self._set_is_on(msg.cmd2 > 0x00)
+            on_done(True, "Switch state updated to on=%s" % self._is_on,
+                    self._is_on)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("Switch %s NAK error: %s", self.addr, msg)
+            on_done(False, "Switch state update failed", None)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, msg):
+    def handle_scene(self, msg, on_done):
+        """Callback for scene simulation commanded messages.
+
+        This callback is run when we get a reply back from triggering a scene
+        on the device.  If the command was ACK'ed, we know it worked.  The
+        device will then send out standard broadcast messages which will
+        trigger other updates for the scene devices.
+
+        Args:
+          msg:  (message.InpStandard) The reply message from the device.
+        """
+        # If this it the ACK we're expecting, update the internal
+        # state and emit our signals.
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+            LOG.debug("Switch %s ACK: %s", self.addr, msg)
+            on_done(True, "Scene triggered", None)
+
+        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+            LOG.error("Switch %s NAK error: %s", self.addr, msg)
+            on_done(False, "Scene trigger failed failed", None)
+
+    #-----------------------------------------------------------------------
+    def handle_group_cmd(self, addr, group, cmd):
         """Respond to a group command for this device.
 
         This is called when this device is a responder to a scene.
@@ -268,28 +359,27 @@ class Switch(Base):
         Args:
           addr:  (Address) The device that sent the message.  This is the
                  controller in the scene.
-          msg:   (message.InpStandard) The broadcast message that was sent.
-                 Use msg.group to find the scene group that was broadcast.
+          group: (int) The group being triggered.
+          cmd:   (int) The command byte being sent.
         """
         # Make sure we're really a responder to this message.  This
         # shouldn't ever occur.
-        entry = self.db.find(addr, msg.group, is_controller=False)
+        entry = self.db.find(addr, group, is_controller=False)
         if not entry:
             LOG.error("Switch %s has no group %s entry from %s", self.addr,
-                      msg.group, addr)
+                      group, addr)
             return
 
         # 0x11: on, 0x12: on fast
-        if msg.cmd1 in Switch.on_codes:
+        if cmd in Switch.on_codes:
             self._set_is_on(True)
 
         # 0x13: off, 0x14: off fast
-        elif msg.cmd1 in Switch.off_codes:
+        elif cmd in Switch.off_codes:
             self._set_is_on(False)
 
         else:
-            LOG.warning("Switch %s unknown group cmd %#04x", self.addr,
-                        msg.cmd1)
+            LOG.warning("Switch %s unknown group cmd %#04x", self.addr, cmd)
 
     #-----------------------------------------------------------------------
     def _set_is_on(self, is_on):
@@ -301,7 +391,7 @@ class Switch(Base):
         Args:
           is_on:   (bool) True if motion is active, False if it isn't.
         """
-        LOG.info("Setting device %s '%s' on %s", self.addr, self.name, is_on)
+        LOG.info("Setting device %s on %s", self.label, is_on)
         self._is_on = bool(is_on)
 
         # Notify others that the switch state has changed.

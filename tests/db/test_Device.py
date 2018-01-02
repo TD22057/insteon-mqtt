@@ -10,19 +10,19 @@ import insteon_mqtt.message as Msg
 class Test_Device:
     #-----------------------------------------------------------------------
     def test_basic(self):
-        obj = IM.db.Device()
+        obj = IM.db.Device(IM.Address(0x01, 0x02, 0x03))
         assert len(obj) == 0
 
         assert obj.is_current(0) is False
         obj.delta = 1
         assert obj.is_current(1) is True
-        obj.clear_delta()
+        obj.set_delta(None)
         assert obj.is_current(1) is False
 
         addr = IM.Address(0x10, 0xab, 0x1c)
         flags = Msg.Flags(Msg.Flags.Type.DIRECT, True)
         db_flags = Msg.DbFlags(in_use=True, is_controller=True,
-                               last_record=False)
+                               is_last_rec=False)
         data = bytes([0x01, 0x02, 0x03])
         raw = [0x00, 0x01,
                0xfe, 0x10,  # mem_loc
@@ -46,14 +46,14 @@ class Test_Device:
 
         # responder - not in a group
         db_flags = Msg.DbFlags(in_use=True, is_controller=False,
-                               last_record=False)
+                               is_last_rec=False)
         raw[5] = db_flags.to_bytes()[0]
         msg.data = raw
         obj.handle_db_rec(msg)
 
         # in use = False
         db_flags = Msg.DbFlags(in_use=False, is_controller=True,
-                               last_record=False)
+                               is_last_rec=False)
         raw[5] = db_flags.to_bytes()[0]
         msg.data = raw
         obj.handle_db_rec(msg)

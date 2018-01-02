@@ -14,16 +14,14 @@ from ..Protocol import Protocol
 def start(args, cfg):
     """TODO: doc
     """
+    # Always log to the screen if a file isn't active.
+    if not args.log:
+        args.log_screen = True
+
     # Initialize the logging system either using the command line
     # inputs or the config file.  If these vars are None, then the
     # config file logging data is used.
-    log_screen, log_file = None, None
-    if args.log == 'stdout':
-        log_screen = True
-    elif args.log:
-        log_file = args.log
-
-    log.initialize(args.level, log_screen, log_file, config=cfg)
+    log.initialize(args.level, args.log_screen, args.log, config=cfg)
 
     # Create the network event loop and MQTT and serial modem clients.
     loop = network.Manager()

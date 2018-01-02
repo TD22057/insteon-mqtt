@@ -1,22 +1,26 @@
 #===========================================================================
 #
-# Output insteon reset the PLM modem message.
+# Output insteon start all link mode message.
 #
 #===========================================================================
+import enum
 from .Base import Base
 
 
-class OutResetPlm(Base):
-    """Command to reset the PLM modem.
+class OutModemLinking(Base):
+    """Begin all linking command message.
 
-    Send this command to reset the PLM modem.  This is probably a bad
-    idea since it will loose all associations and the software
-    currently doesn't handle this case automatically.
-
-    The modem will respond with an echo/ACK of this message.
+    This puts the modem into linking mode (like holding set for 3 sec).
     """
-    msg_code = 0x67
-    fixed_msg_size = 3
+    msg_code = 0x64
+    fixed_msg_size = 5
+
+    # Valid command codes
+    class Cmd(enum.IntEnum):
+        RESPONDER = 0x00  # modem is responder
+        CONTROLLER = 0x01  # modem is controller
+        EITHER = 0x03  # modem 1st: modem is ctrl; device 1st: modem is resp
+        DELETE = 0xff
 
     #-----------------------------------------------------------------------
     @classmethod
@@ -34,24 +38,32 @@ class OutResetPlm(Base):
            raw   (bytes): The current byte stream to read from.
 
         Returns:
-           Returns the constructed OutResetPlm object.
+           Returns the constructed OutAllLinkStart object.
         """
         assert len(raw) >= cls.fixed_msg_size
         assert raw[0] == 0x02 and raw[1] == cls.msg_code
 
-        is_ack = raw[2] == 0x06
-        return OutResetPlm(is_ack)
+        cmd = cls.Cmd(raw[2])
+        group = raw[3]
+        is_ack = raw[4] == 0x06
+        return OutModemLinking(cmd, group, is_ack)
 
     #-----------------------------------------------------------------------
-    def __init__(self, is_ack=None):
+    def __init__(self, cmd, group, is_ack=None):
         """Constructor
 
         Args:
+          cmd:     (int) OutAllLinkStart.RESPONDER,
+                   OutAllLinkStart.CONGTROLLER, or OutAllLinkStart.DELETE
+                   command code.
+          group:   (int) The group to link.
           is_ack:  (bool) True for ACK, False for NAK.  None for output
                    commands to the modem.
         """
         super().__init__()
 
+        self.cmd = self.Cmd(cmd)
+        self.group = group
         self.is_ack = is_ack
 
     #-----------------------------------------------------------------------
@@ -61,12 +73,12 @@ class OutResetPlm(Base):
         Returns:
            (bytes) Returns the message as bytes.
         """
-        return bytes([0x02, self.msg_code])
+        return bytes([0x02, self.msg_code, self.cmd.value, self.group])
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        ack = "" if self.is_ack is None else "ack: %s" % str(self.is_ack)
-        return "OutResetPlm %s" % ack
+        ack = "" if self.is_ack is None else "ack: %s" % self.is_ack
+        return "Modem linking: grp: %s %s %s" % (self.group, self.cmd, ack)
 
     #-----------------------------------------------------------------------
 

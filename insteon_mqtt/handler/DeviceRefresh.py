@@ -12,70 +12,48 @@ LOG = log.get_logger()
 
 
 class DeviceRefresh(Base):
-    """TODO: doc
+    """Refresh the state and database version of a device handler.
 
-    This handles replies when we need to add, remove, or modify the
-    all link database on the PLM Device.  An output OutAllLinkUpdate
-    message is sent and the Device will ACK or NAK a reply back to
-    indicate the result.
+    This handles device refresh messages.  Some devices don't respond very
+    well (look at you SmokeBridge) so the handler has a built in retry system
+    to resend the initial message if the handler times out.
 
-    The reply is passed to the Device.handle_db_update so it knows
-    whether to store the updated result or not.
+    When a response arrives, device.handle_refresh(msg) is called to extract
+    the current state of the device (on/off, dimmer level, etc).
+    Additionally, we'll check the device's database delta version to see if
+    the database needs to re-downloaded from the device.  If it does, the
+    handler will send a new message to request the database.
     """
-    def __init__(self, device, msg, force, num_retry=3):
+    def __init__(self, device, callback, force, on_done=None, num_retry=3,
+                 skip_db=False):
         """Constructor
 
-        TODO: doc
         Args
-          Device:   (Device) The Insteon Device.
+          device:    (Device) The Insteon device.
+          callback:  Callback function to call when the reply arrives.  API:
+                        callback( Msg.InpStandard )
+          force:     (bool) If True, force a db download.  If False, only
+                     download the db if it's out of date.
+          on_done:   Finished callback.  Will be called when the refresh
+                     operation is done.
+          num_retry: (int) The number of times to retry the message if the
+                     handler times out without returning Msg.FINISHED.
+                     This count does include the initial sending so a
+                     retry of 3 will send once and then retry 2 more times.
+          skip_db:   (bool) If True, ignore the database version and don't
+                     download the database.
         """
-        super().__init__()
+        super().__init__(on_done, num_retry)
 
         self.device = device
-        self.addr = device.addr
-        self.msg = msg
+        self.callback = callback
         self.force = force
-        self.send_count = 1
-        self.num_retry = num_retry
-
-    #-----------------------------------------------------------------------
-    def is_expired(self, protocol, t):
-        """See if the time out time has been exceeded.
-
-        Args:
-          protocol:  (Protocol) The Insteon Protocol object.
-          t:         (float) Current time tag as a Unix clock time.
-
-        Returns:
-          Returns True if the message has timed out or False otherwise.
-        """
-        # If we haven't expired, return.
-        if not super().is_expired(protocol, t):
-            return False
-
-        # Some devices like the smoke bridge have issues and don't
-        # seem to respond very well.  So we'll retry a few times to
-        # send the refresh command.
-        if self.send_count <= self.num_retry:
-            self.send_count += 1
-
-            # Resend the refresh command.
-            protocol.send(self.msg, self)
-
-        # Tell the protocol that we're expired.  This will end this
-        # handler and send the next message which at some point will
-        # be our retry command.
-        return True
+        self.skip_db = skip_db
+        self.addr = device.addr
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
-
-        TODO
-
-        See if the message is the expected ACK of our output.  If we
-        get a reply, pass it to the Device to update it's database with
-        the info.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object
@@ -85,54 +63,67 @@ class DeviceRefresh(Base):
           Msg.UNKNOWN if we can't handle this message.
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
-
         """
         # Probably an echo back of our sent message.
         if isinstance(msg, Msg.OutStandard) and msg.to_addr == self.addr:
             if msg.is_ack:
                 LOG.debug("%s ACK response", self.addr)
+                return Msg.CONTINUE
             else:
                 LOG.error("%s NAK response", self.addr)
+                self.on_done(False, "NAK response", None)
+                return Msg.FINISHED
 
         # See if this is the standard message ack/nak we're expecting.
         elif isinstance(msg, Msg.InpStandard) and msg.from_addr == self.addr:
             # Since we got the message we expected, turn off retries.
-            self.send_count = self.num_retry
+            self.stop_retry()
 
-            # Call the device refresh handler.  This sets the current
-            # device state which is usually stored in cmd2.
-            self.device.handle_refresh(msg)
+            # All link database delta is stored in cmd1 so we if we have the
+            # latest version.  If not, schedule an update.
+            need_refresh = True
+            if self.skip_db:
+                need_refresh = False
+            elif not self.force and self.device.db.is_current(msg.cmd1):
+                LOG.ui("Device database is current at delta %s", msg.cmd1)
+                need_refresh = False
 
-            # All link database delta is stored in cmd1 so we if we have
-            # the latest version.  If not, schedule an update.
-            if not self.force and self.device.db.is_current(msg.cmd1):
-                LOG.info("Device database is current at delta %s", msg.cmd1)
+            # Call the device refresh handler.  This sets the current device
+            # state which is usually stored in cmd2.
+            self.callback(msg)
 
+            if not need_refresh:
+                self.on_done(True, "Refresh complete", None)
             else:
-                LOG.info("Device %s db out of date - refreshing", self.addr)
+                LOG.ui("Device %s db out of date (got %s vs %s), refreshing",
+                       self.addr, msg.cmd1, self.device.db.delta)
 
                 # Clear the current database values.
                 self.device.db.clear()
 
-                # When the update message below ends, update the db
-                # delta w/ the current value and save the database.
-                def on_done(success, msg):
+                # When the update message below ends, update the db delta w/
+                # the current value and save the database.
+                def on_done(success, message, data):
                     if success:
-                        LOG.info("%s database download complete\n%s",
-                                 self.addr, self.device.db)
                         self.device.db.set_delta(msg.cmd1)
+                        LOG.ui("%s database download complete\n%s",
+                               self.addr, self.device.db)
+                    self.on_done(success, message, data)
 
                 # Request that the device send us all of it's database
-                # records.  These will be streamed as fast as possible
-                # to us and the handler will update the database
+                # records.  These will be streamed as fast as possible to us
+                # and the handler will update the database.  We need a retry
+                # count here because battery powered devices don't always
+                # respond right away.
                 db_msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00,
                                                 bytes(14))
-                msg_handler = DeviceDbGet(self.device.db, on_done)
+                msg_handler = DeviceDbGet(self.device.db, on_done, num_retry=3)
                 protocol.send(db_msg, msg_handler)
 
             # Either way - this transaction is complete.
             return Msg.FINISHED
 
+        # Unknown message - not for us.
         return Msg.UNKNOWN
 
     #-----------------------------------------------------------------------

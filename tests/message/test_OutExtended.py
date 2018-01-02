@@ -36,8 +36,21 @@ class Test_OutExtended:
 
         assert obj.msg_size(b) == Msg.OutExtended.fixed_msg_size
 
-        ob = obj.to_bytes()
+        ob = obj.to_bytes(crc_type=None)
         assert ob == b[:-1]  # output has no ack
+
+        # Test CRC computations.  No good way to generate right
+        # answers for these so these came from inspection.
+        ob = obj.to_bytes(crc_type="D14")
+        raw = list(b[:-1])  # output has no ack
+        raw[21] = 0x85
+        assert ob == bytes(raw)
+
+        ob = obj.to_bytes(crc_type="CRC")
+        raw = list(b[:-1])  # output has no ack
+        raw[20] = 0x41
+        raw[21] = 0xf8
+        assert ob == bytes(raw)
 
         str(obj)
 

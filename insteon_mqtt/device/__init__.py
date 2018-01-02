@@ -27,7 +27,12 @@ first (hold the modem set button, then the device.
 #===========================================================================
 
 from .Base import Base
+from .BatterySensor import BatterySensor
 from .Dimmer import Dimmer
+from .FanLinc import FanLinc
+from .IOLinc import IOLinc
+from .KeypadLinc import KeypadLinc
+from .Leak import Leak
 from .Motion import Motion
 from .Remote import Remote
 from .SmokeBridge import SmokeBridge

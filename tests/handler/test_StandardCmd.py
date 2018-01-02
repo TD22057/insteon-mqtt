@@ -70,7 +70,7 @@ class Test_StandardCmd:
 
         # sent message, match input command
         out = Msg.OutStandard.direct(addr, 0x11, 0xff)
-        handler = IM.handler.StandardCmd(out, calls.append, 0x13)
+        handler = IM.handler.StandardCmd(out, calls.append)
 
         # wrong cmd
         r = handler.msg_received(proto, out)
@@ -106,7 +106,7 @@ class Test_StandardCmd:
 
         # sent message, match input command
         out = Msg.OutStandard.direct(addr, 0x11, 0x00)
-        handler = IM.handler.StandardCmd(out, calls.append, -1)
+        handler = IM.handler.StandardCmd(out, calls.append)
 
         r = handler.msg_received(proto, out)
         assert r == Msg.CONTINUE

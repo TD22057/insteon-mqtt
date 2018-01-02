@@ -14,35 +14,41 @@ LOG = log.get_logger()
 class DeviceDbGet(Base):
     """Device database request message handler.
 
-    To download the all link database from a device, we send a
-    request.  The output message gets ACK'ed back to us.  Then the
-    device sends us a series of messages with the database entries.
-    The last message will be all zeros to indicate no more records.
+    To download the all link database from a device, we send a request.  The
+    output message gets ACK'ed back to us.  Then the device sends us a series
+    of messages with the database entries.  The last message will be all
+    zeros to indicate no more records.
 
-    Each reply is passed to the callback function set in the
-    constructor which is usually a method on the device to update it's
-    database.
+    Each reply is passed to the callback function set in the constructor
+    which is usually a method on the device to update it's database.
     """
-    def __init__(self, device_db, on_done):
+    def __init__(self, device_db, on_done, num_retry=0):
         """Constructor
 
-        Args
-          addr:    (Address) The address of the device we're expecting
-        TODO
-          callback: Callback function to pass database messages to or None
-                    to indicate the end of the entries.
-        """
-        super().__init__(on_done=on_done)
+        The on_done callback has the signature on_done(success, msg, entry)
+        and will be called with success=True if the handler finishes
+        successfully or False if an error occurs or the handler times out.
+        The message input is a string to help with logging the result.
 
+        Args:
+          device_db: (db.Device) The device database being retrieved.
+          on_done:   Option finished callback.  This is called when the
+                     handler is finished for any reason.
+          num_retry: (int) The number of times to retry the message if the
+                     handler times out without returning Msg.FINISHED.
+                     This count does include the initial sending so a
+                     retry of 3 will send once and then retry 2 more times.
+        """
+        super().__init__(on_done, num_retry)
         self.db = device_db
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
-        See if the message is the expected ACK of our output or the
-        expected database reply message.  If we get a reply, pass it
-        to the device to update it's database with the info.
+        See if the message is the expected ACK of our output or the expected
+        database reply message.  If we get a reply, pass it to the device to
+        update it's database with the info.
 
         Args:
           protocol:  (Protocol) The Insteon Protocol object
@@ -53,14 +59,14 @@ class DeviceDbGet(Base):
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
         """
-        # Import here - at file scope this makes a circular import
-        # which is ok in Python>=3.5 but not 3.4.
+        # Import here - at file scope this makes a circular import which is
+        # ok in Python>=3.5 but not 3.4.
         from .. import db
 
-        # Probably an echo back of our sent message.  See if the
-        # message matches the address we sent to and assume it's the
-        # ACK/NAK message.  These seem to be either extended or
-        # standard message so allow for both.
+        # Probably an echo back of our sent message.  See if the message
+        # matches the address we sent to and assume it's the ACK/NAK message.
+        # These seem to be either extended or standard message so allow for
+        # both.
         if isinstance(msg, (Msg.OutExtended, Msg.OutStandard)):
             if msg.to_addr == self.db.addr and msg.cmd1 == 0x2f:
                 if not msg.is_ack:
@@ -81,7 +87,7 @@ class DeviceDbGet(Base):
 
             elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
                 LOG.error("%s device NAK error: %s", msg.from_addr, msg)
-                self.on_done(False, "Database command NAK")
+                self.on_done(False, "Database command NAK", None)
                 return Msg.FINISHED
 
             else:
@@ -96,6 +102,7 @@ class DeviceDbGet(Base):
 
             # Convert the message to a database device entry.
             entry = db.DeviceEntry.from_bytes(msg.data)
+            LOG.ui("Entry: %s", entry)
 
             # Skip entries w/ a null memory location.
             if entry.mem_loc:
@@ -104,7 +111,7 @@ class DeviceDbGet(Base):
             # Note that if the entry is a null entry (all zeros), then
             # is_last_rec will be True as well.
             if entry.db_flags.is_last_rec:
-                self.on_done(True, "Database received")
+                self.on_done(True, "Database received", entry)
                 return Msg.FINISHED
 
             # Otherwise keep processing records as they arrive.

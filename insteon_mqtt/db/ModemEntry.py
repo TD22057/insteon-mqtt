@@ -5,11 +5,20 @@
 #===========================================================================
 from ..Address import Address
 from .. import log
+from .. import util
 
 LOG = log.get_logger()
 
 
 class ModemEntry:
+    """Modem all link database entry.
+
+    Each entry in the modem's all link database has the address of the remote
+    device, the group the device is part of, and various flags for the entry.
+
+    The entry can be converted to/from JSON with to_json() and from_json().
+    """
+
     @staticmethod
     def from_json(data):
         """Read a ModemEntry from a JSON input.
@@ -39,8 +48,12 @@ class ModemEntry:
           data:            (bytes) 3 data bytes.  [0] is the on level, [1]
                            is the ramp rate.
         """
-        data = data if data is not None else bytes(3)
-        assert len(data) == 3
+        # Accept either bytes, list of ints, or None for the data input.
+        if data is not None:
+            data = bytes(data)
+            assert len(data) == 3
+        else:
+            data = bytes(3)
 
         # These should be these types but ctor them anyway to be sure.
         self.addr = Address(addr)
@@ -64,12 +77,21 @@ class ModemEntry:
 
     #-----------------------------------------------------------------------
     def __eq__(self, rhs):
+        """Check for equality.
+
+        The address, group, and is_controller flags are all that are used for
+        the comparison.
+        """
         return (self.addr.id == rhs.addr.id and
                 self.group == rhs.group and
                 self.is_controller == rhs.is_controller)
 
     #-----------------------------------------------------------------------
     def __lt__(self, rhs):
+        """Less than.
+
+        Uses the address and groups in the comparison.
+        """
         if self.addr.id != rhs.addr.id:
             return self.addr.id < rhs.addr.id
 
@@ -78,8 +100,7 @@ class ModemEntry:
     #-----------------------------------------------------------------------
     def __str__(self):
         return "ID: %s  grp: %s  type: %s  data: %#04x %#04x %#04x" % \
-            (self.addr.hex, self.group,
-             'CTRL' if self.is_controller else 'RESP',
+            (self.addr.hex, self.group, util.ctrl_str(self.is_controller),
              self.data[0], self.data[1], self.data[2])
 
     #-----------------------------------------------------------------------
