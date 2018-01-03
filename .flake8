@@ -16,5 +16,3 @@ ignore =
   E731
 
 exclude = notes,
-jobs = auto
-

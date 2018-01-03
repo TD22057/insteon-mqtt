@@ -10,7 +10,6 @@ from .. import handler
 from .. import log
 from .. import message as Msg
 from ..Signal import Signal
-from .. import util
 
 LOG = log.get_logger()
 
@@ -78,7 +77,6 @@ class Switch(Base):
             'off' : self.off,
             'set' : self.set,
             'scene' : self.scene,
-            'set_flags' : self.set_flags,
             })
 
         # Special callback to run when receiving a broadcast clean up.  See
@@ -241,65 +239,6 @@ class Switch(Base):
         if not is_on:
             self.broadcast_done = functools.partial(self.off, group=group,
                                                     on_done=on_done)
-
-    #-----------------------------------------------------------------------
-    def set_backlight(self, level, on_done=None):
-        """TODO: doc
-
-        NOTE: default factory backlight == 0x1f
-        NOTE: only switches with LED display will do anything with this
-              command.
-        """
-        LOG.info("Switch %s setting backlight to %s", self.label, level)
-
-        # Bound to 0x11 <= level <= 0xff per page 157 of insteon dev guide.
-        level = max(0x11, min(level, 0xff))
-
-        # Extended message data - see Insteon dev guide p156.
-        data = bytes([
-            0x01,   # D1 must be group 0x01
-            0x07,   # D2 set global led brightness
-            level,  # D3 brightness level
-            ] + [0x00] * 11)
-
-        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-
-        # Use the standard command handler which will notify us when
-        # the command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_backlight,
-                                          on_done)
-
-        # Send the message to the PLM modem for protocol.
-        self.protocol.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def set_flags(self, on_done, **kwargs):
-        """TODO: doc
-        valid kwargs:
-           backlight: 0x11-0xff (factory default 0x1f)
-        """
-        LOG.info("Switch %s cmd: set flags", self.label)
-
-        # Check the input flags to make sure only ones we can understand were
-        # passed in.
-        flags = set(["backlight"])
-        unknown = set(kwargs.keys()).difference(flags)
-        if unknown:
-            raise Exception("Unknown Switch flags input: %s.\n Valid flags "
-                            "are: %s" % unknown, flags)
-
-        # FUTURE: to support other flags, use a CommandSeq
-        backlight = util.input_byte(kwargs, "backlight")
-        self.set_backlight(backlight, on_done)
-
-    #-----------------------------------------------------------------------
-    def handle_backlight(self, msg, on_done):
-        """TODO: doc
-        """
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            on_done(True, "Backlight level updated", None)
-        else:
-            on_done(False, "Backlight level failed", None)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
