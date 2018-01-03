@@ -233,7 +233,7 @@ commands.
 
    ```
    { "cmd": "set_button_led", "button" : button, "is_on" : true/false }
-
+   ```
 
 ### Get and set operating flags.
 
