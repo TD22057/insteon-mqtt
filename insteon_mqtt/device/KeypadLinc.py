@@ -26,8 +26,6 @@ class KeypadLinc(Dimmer):
     Each button (up to 8) has an LED light.  Light status can be
     retrieved by sending 0x19 0x01 which returns cmd1=db delta and
     cmd2=LED bit flags.
-
-    # TODO: to set LED brightess: D1=0x00 D2 = 0x07 D3 = 0x11->0x7f
     """
 
     #-----------------------------------------------------------------------

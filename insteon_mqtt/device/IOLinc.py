@@ -209,12 +209,26 @@ class IOLinc(Base):
         """
         LOG.info("IOLinc %s cmd: set operation flags", self.label)
 
+        # Check the input flags to make sure only ones we can understand were
+        # passed in.
+        flags = set(["mode", "trigger_reverse", "relay_linked"])
+        unknown = set(kwargs.keys()).difference(flags)
+        if unknown:
+            raise Exception("Unknown IOLinc flags input: %s.\n Valid flags "
+                            "are: %s" % unknown, flags)
+
+        # We need the existing bit set before we change it.  So to insure
+        # that we are starting from the correct values, get the current bits
+        # and pass that to the callback which will update them to make the
+        # changes.
         callback = functools.partial(self._change_flags, kwargs=kwargs,
                                      on_done=util.make_callback(on_done))
         self.get_flags(on_done=callback)
-        # momentary_time: extended set command: cmd: 0x2e 0x00
+
+        # FUTURE:momentary_time: extended set command: cmd: 0x2e 0x00
         #    D3 = 0x06
         #    D4 = momentary time in 0.10 sec: 0x02 -> 0xff
+        # FUTURE: led backlight
 
     #-----------------------------------------------------------------------
     def _change_flags(self, success, msg, bits, kwargs, on_done):
@@ -224,8 +238,10 @@ class IOLinc(Base):
             on_done(success, msg, None)
             return
 
+        # Mode might be None in which case it wasn't input.
         choices = ["latching", "momentary-a", "momentary-b", "momentary-c"]
         mode = util.input_choice(kwargs, "mode", choices)
+
         if mode == "latching":
             bits = util.bit_set(bits, 3, 0)
             bits = util.bit_set(bits, 4, 0)
@@ -251,16 +267,12 @@ class IOLinc(Base):
         if relay_linked is not None:
             bits = util.bit_set(bits, 2, trigger_reverse)
 
-        if kwargs:
-            raise Exception("Invalid flag keywords passed to IOLinc.set_"
-                            "flags().  Unknown inputs: %s" % kwargs.keys())
-
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the
         # current value.  If it's different, it will send a database
         # download command to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x20, bits)
-        msg_handler = handler.StandardCmd(msg, self.handle_flags, on_done)
+        msg_handler = handler.StandardCmd(msg, self.handle_flags)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
