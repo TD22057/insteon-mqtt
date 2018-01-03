@@ -130,3 +130,26 @@ def input_bool(inputs, field):
     except ValueError:
         msg = "Invalid %s input.  Valid inputs are 1/0 or True/False" % input
         raise ValueError(msg)
+
+
+#===========================================================================
+def input_byte(inputs, field):
+    """TODO: doc
+    """
+    value = inputs.pop(field, None)
+    if value is None:
+        return None
+
+    try:
+        if '0x' in value:
+            v = int(value, 16)
+        else:
+            v = int(value)
+
+        if v < 0 or v > 255:
+            raise ValueError("Value out of range")
+
+        return v
+    except ValueError:
+        msg = "Invalid %s input.  Valid inputs are 0-255" % input
+        raise ValueError(msg)

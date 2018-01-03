@@ -77,7 +77,8 @@ def parse_args(args):
     sp = sub.add_parser("set-flags", help="Set device operating flags.")
     sp.add_argument("address", help="Device address or name.")
     sp.add_argument("flags", nargs="+", help="FLAG=VALUE to set.  Valid "
-                    "flags names are device dependent.")
+                    "flags names are device dependent.  See the device "
+                    "docs for details.")
     sp.set_defaults(func=device.set_flags)
 
     #---------------------------------------

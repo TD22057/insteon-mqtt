@@ -233,24 +233,40 @@ commands.
 
    ```
    { "cmd": "set_button_led", "button" : button, "is_on" : true/false }
-
+   ```
 
 ### Get and set operating flags.
 
-Supported: IOLinc
+Supported: devices
 
-This command gets and sets the Insteon extended operating flags.  For the
-IOLinc device, this allows control of the latching and momentary A/B/C mode
-selection as well as configuring how the device responds to sensor changes.
-Each flag field is optional.
+This command gets and sets various Insteon device flags.  The set of
+supported flags depends on the device type.  The command line tool accepts an
+arbitrary list of "key=value" strings which get sent to the device for
+validation.  For example, to change the backlight level of a switch:
 
    ```
-   { "cmd": "set_flags",
-     ["mode" : "latching" / "momentary-a" / "momentary-b" / "momentary-c"],
-     ["trigger_reverse" : 0/1],
-     ["relay_linked" : 0/1],
-     }
+   insteon-mqtt config.yaml set-flags aa.bb.cc backlight=0x11
    ```
+
+The MQTT format of the command is:
+
+   ```
+   { "cmd" : "set_flags", "KEY" : "VALUE", ... }
+   ```
+
+Switch, KeypadLinc, and Dimmer all support the flags:
+
+   - backlight: integer in the range 0x11-0xff which changes the LED backlight
+     level on the device.
+
+IOLinc supports the flags:
+
+   - mode: "latching" / "momentary-a" / "momentary-b" / "momentary-c" to
+     change the relay mode (see the IOLinc user's guide for details)
+   - trigger_reverse: 0/1 reverses the trigger command state
+   - relay_linked: 0/1 links the relay to the sensor value
+
+
 
 ### Print the current all link database.
 
