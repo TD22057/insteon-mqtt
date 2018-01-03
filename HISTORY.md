@@ -1,11 +1,5 @@
 # Revision Change History
 
-## Undelivered
-
-### Additions
-- Switch, Dimmer, and KeypadLinc LED backlight levels can be changed with the
-  set-flags command using the keyword "backlight" ([Issue #13][I13]).
-
 
 ## [0.6]
 
@@ -89,9 +83,7 @@
 [I9]: https://github.com/TD22057/insteon-mqtt/issues/9
 [I11]: https://github.com/TD22057/insteon-mqtt/issues/11
 [I12]: https://github.com/TD22057/insteon-mqtt/issues/12
-[I13]: https://github.com/TD22057/insteon-mqtt/issues/13
 [I16]: https://github.com/TD22057/insteon-mqtt/issues/16
-[I18]: https://github.com/TD22057/insteon-mqtt/issues/18
 [I20]: https://github.com/TD22057/insteon-mqtt/issues/20
 [I21]: https://github.com/TD22057/insteon-mqtt/issues/21
 [I24]: https://github.com/TD22057/insteon-mqtt/issues/24
