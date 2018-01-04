@@ -109,13 +109,13 @@ the modem both directions and run the pair command to add any other
 (non-group 1 links):
 
    ```
-   insteon-mqtt linking config.yaml modem
-   insteon-mqtt linking config.yaml keypad1
+   insteon-mqtt config.yaml linking modem
+   insteon-mqtt config.yaml linking keypad1
       [device will double beep]
-   insteon-mqtt linking config.yaml keypad1
-   insteon-mqtt linking config.yaml modem
+   insteon-mqtt config.yaml linking keypad1
+   insteon-mqtt config.yaml linking modem
       [device will double beep]
-   insteon-mqtt pair config.yaml keypad1
+   insteon-mqtt config.yaml pair keypad1
    ```
 
 
