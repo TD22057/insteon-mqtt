@@ -1,6 +1,13 @@
 # Revision Change History
 
-## Undelivered
+## [0.6.1]
+
+### Fixes
+- Fixed ordering of config.yaml in command line examples ([Issue #27][I27]
+  and [Issue #28][I28]).
+
+- Changed default retain flag to True in config file ([Issue #29][I29]).
+
 
 ### Additions
 - Switch, Dimmer, and KeypadLinc LED backlight levels can be changed with the
@@ -95,3 +102,6 @@
 [I20]: https://github.com/TD22057/insteon-mqtt/issues/20
 [I21]: https://github.com/TD22057/insteon-mqtt/issues/21
 [I24]: https://github.com/TD22057/insteon-mqtt/issues/24
+[I27]: https://github.com/TD22057/insteon-mqtt/issues/27
+[I28]: https://github.com/TD22057/insteon-mqtt/issues/28
+[I29]: https://github.com/TD22057/insteon-mqtt/issues/29
