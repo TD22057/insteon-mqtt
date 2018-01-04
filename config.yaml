@@ -127,7 +127,7 @@ mqtt:
   # Outbound messages configuration.  Retain should generally be 1
   # so that the current state is available when someone subscribes.
   qos: 1
-  retain: 0
+  retain: 1
 
   # Input commands topic to allow changes to a device.  See the device
   # documentation for details.  NOTE: This is usually not needed for

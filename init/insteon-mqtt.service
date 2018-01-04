@@ -6,7 +6,7 @@ After=network.target
 WorkingDirectory=/opt/insteon-mqtt
 Type=simple
 User=insteon
-ExecStart=./bin/insteon-mqtt start config.yaml
+ExecStart=/opt/insteon-mqtt/bin/insteon-mqtt config.yaml start
 
 [Install]
 WantedBy=multi-user.target

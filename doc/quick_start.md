@@ -70,7 +70,7 @@ This package assumes that you:
 
    ```
    source venv/bin/activate
-   insteon-mqtt start config.yaml
+   insteon-mqtt config.yaml start
    ```
 
 5) Download an Insteon device database for every device.  This may
@@ -88,7 +88,7 @@ This package assumes that you:
    automatic in the future).
 
    ```
-   insteon-mqtt refresh config.yaml AA.BB.CC
+   insteon-mqtt config.yaml refresh AA.BB.CC
    ```
 
    If you haven't linked the device as a controller of the modem
@@ -103,7 +103,7 @@ This package assumes that you:
    device with the Insteon-MQTT system may not work until pair() is called.
 
    ```
-   insteon-mqtt pair config.yaml AA.BB.CC
+   insteon-mqtt config.yaml pair AA.BB.CC
    ```
 
    Downloading the device database and pairing only needs to be done
@@ -124,7 +124,7 @@ This package assumes that you:
    the same affect:
 
    ```
-   insteon-mqtt on config.yaml AA.BB.CC
+   insteon-mqtt config.yaml on AA.BB.CC
    mosquitto_pub -t 'insteon/command/AA.BB.CC' -m '{ "cmd" : "on" }'
    ```
 

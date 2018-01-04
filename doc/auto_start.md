@@ -70,7 +70,7 @@ running OK, stop the process (ctrl-c), and exit the insteon-mqtt user
 back to your regular user.
 
    ```
-   insteon-mqtt start config.yaml
+   insteon-mqtt config.yaml start
    [ctrl-c]
    exit
    ```
