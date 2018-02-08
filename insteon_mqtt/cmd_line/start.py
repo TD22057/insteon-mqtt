@@ -12,7 +12,13 @@ from ..Protocol import Protocol
 
 
 def start(args, cfg):
-    """TODO: doc
+    """Main start command
+
+    This will start the main MQTT<->Insteon bridge and never return.
+
+    Args:
+      args:  The command line arguments.
+      cfg:   The configuration dictionary.
     """
     # Always log to the screen if a file isn't active.
     if not args.log:

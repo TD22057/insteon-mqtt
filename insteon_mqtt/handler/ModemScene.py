@@ -20,8 +20,14 @@ class ModemScene(Base):
         """Constructor
 
         Args
-          modem:    (Modem) The Insteon modem object.
-          msg:      (OutModemScene) The scene message being sent.
+          modem:     (Modem) The Insteon modem object.
+          msg:       (OutModemScene) The scene message being sent.
+          on_done:   The finished callback.  Calling signature:
+                         on_done( bool success, str message, data )
+          num_retry: (int) The number of times to retry the message if the
+                     handler times out without returning Msg.FINISHED.
+                     This count does include the initial sending so a
+                     retry of 3 will send once and then retry 2 more times.
         """
         super().__init__(on_done, num_retry)
 
@@ -65,7 +71,6 @@ class ModemScene(Base):
         # NOTE: The devices in the scene will also send an all link clean up
         # report when they respond.  But we don't need to handle those. The
         # regular device scene broadcast will take care of that.
-
         return Msg.UNKNOWN
 
     #-----------------------------------------------------------------------

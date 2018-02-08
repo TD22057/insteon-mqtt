@@ -16,15 +16,15 @@ class CommandSeq:
     on_done callbacks to trigger the next command).  If any command fails, it
     stops the sequence.
 
-    Ideally there is a better way to this but I couldn't come up with any.
-    Since each call is via callback, the stack grows longer and longer so
-    this shouldn't be used for 100+ calls but for the small number of calls
-    this library needs, it works ok.
-
     This type of class is needed because we need to send series of commands.
     And each one needs to return so that the event loop can process the
     network activity to actually run the command.  In the future, this is
     probably a good case for switching to asyncio type processing.
+
+    Ideally there is a better way to this but I couldn't come up with any.
+    Since each call is via callback, the stack grows longer and longer so
+    this shouldn't be used for 100+ calls but for the small number of calls
+    this library needs, it works ok.
     """
     #-----------------------------------------------------------------------
     def __init__(self, protocol, msg=None, on_done=None):
@@ -59,7 +59,6 @@ class CommandSeq:
                     callback argument.
           args:     Arguments to pass to the function.
           kwargs:   Keyword arguments to pass to the function.
-
         """
         # Sequence override on_done calls to any function but some calls need
         # to set it anyway because of kwarg name ordering requirements.  So
@@ -99,7 +98,20 @@ class CommandSeq:
 
     #-----------------------------------------------------------------------
     def on_done(self, success, msg, data):
-        """TODO: doc
+        """Finished callback.
+
+        This method is passed as the on_done callback to to all the commands.
+        When the command finishes, it calls this method.  If there is another
+        command in the sequence, it will execute.  Otherwise, the on_done
+        callback passed to the constructor is called to complete the
+        sequence.
+
+        If any command fails, it stops the sequence.
+
+        Args:
+          success:  (bool) True for success, False for failure.
+          msg:      (str) Message result.
+          data:     Callback data.
         """
         # Last function failed with an error.
         if not success:
@@ -122,10 +134,27 @@ class CommandSeq:
 
 #===========================================================================
 class Entry:
+    """Command entry to call in the CommandSeq.
+
+    This stores the necessary data to run a command.  It can either be a
+    function to call or a msg+handler to send to the modem.
+    """
     #pylint: disable=attribute-defined-outside-init
 
     @classmethod
     def from_func(cls, func, args, kwargs):
+        """Call a function to run the command.
+
+        Args:
+          cls:     Entry class.
+          func:    The function to call.  In addition to the input arguments,
+                   this must accept an on_done command as a keyword argument.
+          args:    The positional arguments to pass to func.
+          kwargs:  The keyword arguments to pass to func.
+
+        Returns:
+          (Entry) Returns the contructed Entry object.
+        """
         obj = cls()
         obj.msg = None
         obj.func = func
@@ -136,6 +165,16 @@ class Entry:
     #-----------------------------------------------------------------------
     @classmethod
     def from_msg(cls, msg, handler):
+        """Send a message w/ handler to run the command.
+
+        Args:
+          cls:     Entry class.
+          msg:     The message to send.
+          handler: The message handler to use.
+
+        Returns:
+          (Entry) Returns the contructed Entry object.
+        """
         obj = cls()
         obj.func = None
         obj.msg = msg
@@ -144,6 +183,13 @@ class Entry:
 
     #-----------------------------------------------------------------------
     def run(self, protocol, on_done):
+        """Run the command.
+
+        Args:
+          protocol:   The Protocol object to use to send messages.
+          on_done:    The finished calllback.  This will be passed to the
+                      handler or the function.
+        """
         if self.func is None:
             self.handler.on_done = on_done
             protocol.send(self.msg, self.handler)

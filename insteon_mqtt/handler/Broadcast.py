@@ -26,6 +26,9 @@ class Broadcast(Base):
 
     This handler will call device.handle_broadcast(msg) for the device that
     sends the message.
+
+    NOTE: This handler is designed to always be active - it never returns
+    FINISHED.
     """
     def __init__(self, modem):
         """Constructor
@@ -37,7 +40,12 @@ class Broadcast(Base):
         """
         super().__init__()
         self.modem = modem
-        self._handled = False
+
+        # We get a broadcast, then a cleanup.  So when we receive the
+        # broadcast, store it here.  That way when we see the cleanup, we
+        # don't call the device again.  But if we miss the broadcast, the
+        # cleanup will trigger the device call.
+        self._last_broadcast = None
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
@@ -62,6 +70,7 @@ class Broadcast(Base):
 
         # Process the all link broadcast.
         if msg.flags.type == Msg.Flags.Type.ALL_LINK_BROADCAST:
+            self._last_broadcast = msg
             return self._process(msg)
 
         # Clean up message is basically the same data but addressed to the
@@ -69,9 +78,11 @@ class Broadcast(Base):
         # if we missed the broadcast, this gives us a second chance to
         # trigger the scene.
         elif msg.flags.type == Msg.Flags.Type.ALL_LINK_CLEANUP:
-            if not self._handled:
+            if self._should_process(msg):
                 return self._process(msg)
-            return Msg.FINISHED
+
+            self._last_broadcast = None
+            return Msg.CONTINUE
 
         # Different message flags than we exepcted.
         return Msg.UNKNOWN
@@ -100,5 +111,24 @@ class Broadcast(Base):
         # Tell the device about it.  This will look up all the responders for
         # this group and tell them that the scene has been activated.
         device.handle_broadcast(msg)
-        self._handled = True
-        return Msg.FINISHED
+        return Msg.CONTINUE
+
+    #-----------------------------------------------------------------------
+    def _should_process(self, msg):
+        """Should we process a cleanup message?
+
+        Args:
+          msg:   (Msg.InpStandard) Cleanup message to handle.
+
+        Returns:
+          (bool) True if the message should be procssed, False otherwise.
+        """
+        if not self._last_broadcast:
+            return True
+
+        # If we just got a broadcast from the same device, don't process the
+        # cleanup.
+        if self._last_broadcast.from_addr == msg.from_addr:
+            return False
+
+        return True

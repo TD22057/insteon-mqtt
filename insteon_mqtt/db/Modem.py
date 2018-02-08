@@ -106,7 +106,15 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def next_group(self):
-        """TODO: doc
+        """Find the next free internal PLM group number that is available.
+
+        This is used to find an available group number for creating a virtual
+        modem scene.  The modem supports 1-255 for groups.  Groups 1-8 are
+        needed for simulated scenes - the modem must be a controller of a
+        device for the device button group to send it a simulated scene.
+
+        Returns:
+          (int) Returns the next group number of None if there are none.
         """
         for i in range(GROUP_START, 255):
             if i not in self.groups:

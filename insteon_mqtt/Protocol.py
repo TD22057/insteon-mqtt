@@ -90,7 +90,7 @@ class Protocol:
         # write handler.
         self._read_handlers = []
 
-        # TODO: add message deduplication.
+        # FUTURE: add message deduplication.
         #    - Store last message and time tag
         #    - add __eq__ check to messages (or to store bytes?)
         #    - if no handler, arrival time near time tag, and same msg, ignore
