@@ -1,5 +1,12 @@
 # Revision Change History
 
+## [0.6.2]
+
+### Fixes
+- Fixed a bug where the MQTT client might close in an area that triggered an
+  exception instead of a reconnect ([Issue #32][I32]).
+
+
 ## [0.6.1]
 
 ### Fixes
@@ -105,3 +112,4 @@
 [I27]: https://github.com/TD22057/insteon-mqtt/issues/27
 [I28]: https://github.com/TD22057/insteon-mqtt/issues/28
 [I29]: https://github.com/TD22057/insteon-mqtt/issues/29
+[I32]: https://github.com/TD22057/insteon-mqtt/issues/32
