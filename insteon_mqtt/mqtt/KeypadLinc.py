@@ -90,6 +90,7 @@ class KeypadLinc(Dimmer):
             topic = self.msg_btn_on_off.render_topic(data)
             link.subscribe(topic, qos, handler)
 
+            handler = functools.partial(self.handle_scene, group=group)
             topic = self.msg_btn_scene.render_topic(data)
             link.subscribe(topic, qos, handler)
 
@@ -158,15 +159,18 @@ class KeypadLinc(Dimmer):
             return
 
     #-----------------------------------------------------------------------
-    def handle_scene(self, client, data, message):
+    def handle_scene(self, client, data, message, group):
         """TODO: doc
         """
-        LOG.debug("KeypadLinc message %s %s", message.topic, message.payload)
+        LOG.debug("KeypadLinc scene %s message %s %s", group, message.topic,
+                  message.payload)
 
         # Parse the input MQTT message.
         data = self.msg_scene_on_off.to_json(message.payload)
-        LOG.info("KeypadLinc input command: %s", data)
+        if not data:
+            return
 
+        LOG.info("KeypadLinc input command: %s", data)
         try:
             cmd = data.get('cmd')
             if cmd == 'on':
@@ -175,8 +179,6 @@ class KeypadLinc(Dimmer):
                 is_on = False
             else:
                 raise Exception("Invalid KeypadLinc cmd input '%s'" % cmd)
-
-            group = int(data.get('group', 0x01))
         except:
             LOG.exception("Invalid KeypadLinc command: %s", data)
             return

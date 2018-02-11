@@ -6,6 +6,7 @@
 - Fixed a bug where the MQTT client might close in an area that triggered an
   exception instead of a reconnect ([Issue #32][I32]).
 
+- KeypadLinc was using the wrong handler for scene commands ([Issue #34][I34]).
 
 ## [0.6.1]
 
