@@ -6,7 +6,8 @@
 - Fixed a bug where the MQTT client might close in an area that triggered an
   exception instead of a reconnect ([Issue #32][I32]).
 
-- KeypadLinc was using the wrong handler for scene commands ([Issue #34][I34]).
+- Fixed bug where the KeypadLinc was using the wrong handler for input MQTT
+  scene simulation commands ([Issue #34][I34]).
 
 ## [0.6.1]
 
@@ -114,3 +115,4 @@
 [I28]: https://github.com/TD22057/insteon-mqtt/issues/28
 [I29]: https://github.com/TD22057/insteon-mqtt/issues/29
 [I32]: https://github.com/TD22057/insteon-mqtt/issues/32
+[I34]: https://github.com/TD22057/insteon-mqtt/issues/34
