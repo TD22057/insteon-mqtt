@@ -136,7 +136,7 @@ class FanLinc(Dimmer):
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
         msg_handler = handler.StandardCmd(msg, self.handle_speed_ack,
-                                          on_done)
+                                          on_done, num_retry=3)
 
         # Send the message to the PLM modem for protocol.
         self.protocol.send(msg, msg_handler)
