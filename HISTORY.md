@@ -9,6 +9,10 @@
 - Fixed bug where the KeypadLinc was using the wrong handler for input MQTT
   scene simulation commands ([Issue #34][I34]).
 
+- Fixed bug where the FanLinc would not report speed changes at all
+  ([Issue #37][I37]).
+
+
 ## [0.6.1]
 
 ### Fixes
@@ -116,3 +120,4 @@
 [I29]: https://github.com/TD22057/insteon-mqtt/issues/29
 [I32]: https://github.com/TD22057/insteon-mqtt/issues/32
 [I34]: https://github.com/TD22057/insteon-mqtt/issues/34
+[I37]: https://github.com/TD22057/insteon-mqtt/issues/37

@@ -161,7 +161,7 @@ class FanLinc(Dimmer):
         """
         LOG.info("MQTT received level change %s = %s", device.label, level)
 
-        data = self.template_data(level)
+        data = self.fan_template_data(level)
         self.msg_fan_state.publish(self.mqtt, data)
         self.msg_fan_speed_state.publish(self.mqtt, data)
 
