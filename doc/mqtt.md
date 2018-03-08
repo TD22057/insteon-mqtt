@@ -11,7 +11,7 @@ be needed that often.  Management commands have a fixed MQTT topic
 (set in configuration file input cmd_topic) and fixed JSON payload
 format.
 
-State chanages can be inputs to the devices in the network (e.g. turn
+State changes can be inputs to the devices in the network (e.g. turn
 a light off, set a dimmer to 50%) or outputs from the system as
 notifications (e.g. motion sensor triggered, light is now at 50%).
 State change command and notification topics and payloads are totally
@@ -22,7 +22,7 @@ are input and output from the system.
 ## Addressing
 
 The Insteon six digit hex code address of a device is it's identifier.
-An optinoal name (set in the config file) can also be used.  MQTT
+An optional name (set in the config file) can also be used.  MQTT
 topics are case sensitive so all Insteon hex addresses must be entered
 in lower case format (e.g. "a1.b2.c3", not "A1.B2.B3").  The modem can
 be identified by it's address or the string "modem".
@@ -71,7 +71,7 @@ documentation below, if a key/value pair is enclosed in square
 brackets [], then it's optional.  If a value can be one of many like
 true or false, then the possible values are separated by a slash /.
 
-The MQTT topic to publish managemeng commands to is (aa.bb.cc is the
+The MQTT topic to publish management commands to is (aa.bb.cc is the
 device address or nice name from the config.yaml file):
 
    ```
@@ -305,7 +305,7 @@ State change commands can be sent by using the command line tool
 "insteon-mqtt" or by publishing a MQTT message to the specific command
 topic for a device as set in the configuration file.  Devices will
 publish state changes using the state topic set in the configuration
-file and using the format as defined bv the payload templates.
+file and using the format as defined by the payload templates.
 
 The templates are defined using the Jinja2 package.  Each define (and
 command) defines a set of variables that are available for you to use
@@ -575,11 +575,11 @@ A sample remote control topic and payload configuration is:
 
 Battery powered sensors (which include door sensors, hidden door
 sensors, and window sensors) do not accept any input commands.
-Interally, they will send state changes on the Insteon groups 1 for
+Internally, they will send state changes on the Insteon groups 1 for
 motion and 3 for low battery.  Each of these messages only has two
 states, on or off.
 
-The battery powered sensor sends motion events on the "state' configuraiton
+The battery powered sensor sends motion events on the "state' configuration
 topic which defines the following variables defined which can be used
 in the templates:
 
