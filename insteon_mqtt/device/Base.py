@@ -197,12 +197,9 @@ class Base:
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
-        """Refresh the current device state, engine version, and database if
-        needed.
+        """Refresh the current device state and database if needed.
 
-        If the device engine version is not known, this sends a
-        get_engine request to the device. This will also
-        send a ping to the device.  The reply has the current
+        This sends a ping to the device.  The reply has the current
         device state (on/off, level, etc) and the current db delta
         value which is checked against the current db value.  If the
         current db is out of date, it will trigger a download of the
@@ -212,16 +209,10 @@ class Base:
         status whenever possible (like dimmer levels).
 
         Args:
-          force:    If true, will force a refresh of the engine version
-                    even if already known and will also force a refresh
-                    of the device database even if the delta value
-                    matches
+          force:    If true, will force a refresh of the device 
+                    database even if the delta value matches
           on_done:  Optional callback run when the commands are finished.
         """
-
-        if self.db.engine is None:
-            self.get_engine()
-
         LOG.info("Device %s cmd: status refresh", self.label)
 
         # This sends a refresh ping which will respond w/ the current
