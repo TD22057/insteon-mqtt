@@ -209,7 +209,7 @@ class Base:
         status whenever possible (like dimmer levels).
 
         Args:
-          force:    If true, will force a refresh of the device 
+          force:    If true, will force a refresh of the device
                     database even if the delta value matches
           on_done:  Optional callback run when the commands are finished.
         """

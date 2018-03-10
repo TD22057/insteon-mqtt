@@ -11,6 +11,7 @@ from ..Address import Address
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .DeviceEntry import DeviceEntry
+from .DeviceEntryI1 import DeviceEntryI1
 from .. import log
 from .. import message as Msg
 from .. import util
@@ -55,19 +56,24 @@ class Device:
         # Create the basic database object.
         obj = Device(Address(data['address']), path)
 
+        # Prep for entry type
+        entryClass = DeviceEntry
+
         # Extract the various files from the JSON data.
         obj.delta = data['delta']
         if 'engine' in data:
             obj.engine = data['engine']
+            if obj.engine == 0:
+                entryClass = DeviceEntryI1
 
         for d in data['used']:
-            obj.add_entry(DeviceEntry.from_json(d), save=False)
+            obj.add_entry(entryClass.from_json(d), save=False)
 
         for d in data['unused']:
-            obj.add_entry(DeviceEntry.from_json(d), save=False)
+            obj.add_entry(entryClass.from_json(d), save=False)
 
         if "last" in data:
-            obj.last = DeviceEntry.from_json(data["last"])
+            obj.last = entryClass.from_json(data["last"])
 
         # When loading db's <= ver 0.6, no last field was saved to create
         # one at the correct location.
