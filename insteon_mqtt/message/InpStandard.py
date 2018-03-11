@@ -77,7 +77,7 @@ class InpStandard(Base):
             self.group = self.cmd2
         # This is the time by which the final hop would arrive, used to
         # detect duplicates.
-        self.expire_time = time.time() + ((self.flags.hops_left * 87)/1000)
+        self.expire_time = time.time() + ((self.flags.hops_left * 87) / 1000)
 
     #-----------------------------------------------------------------------
     def __str__(self):
@@ -90,7 +90,7 @@ class InpStandard(Base):
                 (self.from_addr, self.flags, self.group, self.cmd1, self.cmd2)
 
     #-----------------------------------------------------------------------
-    def is_duplicate(self,msg):
+    def is_duplicate(self, msg):
         """Checks if a message is the same as this one
 
         Ignores differences in the hops_left and max_hops field, but if a
@@ -102,11 +102,11 @@ class InpStandard(Base):
           True if the message is a duplicate false otherwise
         """
         if isinstance(msg, InpStandard):
-            if (self.from_addr  == msg.from_addr and
-                self.flags.type == msg.flags.type and
-                self.group      == msg.group and
-                self.cmd1       == msg.cmd1 and
-                self.cmd2       == msg.cmd2):
+            if (self.from_addr == msg.from_addr and
+                    self.flags.type == msg.flags.type and
+                    self.group == msg.group and
+                    self.cmd1 == msg.cmd1 and
+                    self.cmd2 == msg.cmd2):
                 return True
         return False
 
@@ -182,7 +182,7 @@ class InpExtended(Base):
             self.group = self.cmd2
         # This is the time by which the final hop would arrive, used to
         # detect duplicates.
-        self.expire_time = time.time() + ((self.flags.hops_left * 183)/1000)
+        self.expire_time = time.time() + ((self.flags.hops_left * 183) / 1000)
 
     #-----------------------------------------------------------------------
     def __str__(self):
@@ -201,7 +201,7 @@ class InpExtended(Base):
         return o.getvalue()
 
     #-----------------------------------------------------------------------
-    def is_duplicate(self,msg):
+    def is_duplicate(self, msg):
         """Checks if a message is the same as this one
 
         Ignores differences in the hops_left and max_hops field, but if a
@@ -213,12 +213,12 @@ class InpExtended(Base):
           True if the message is a duplicate false otherwise
         """
         if isinstance(msg, InpExtended):
-            if (self.from_addr  == msg.from_addr and
-                self.flags.type == msg.flags.type and
-                self.group      == msg.group and
-                self.cmd1       == msg.cmd1 and
-                self.cmd2       == msg.cmd2 and
-                self.data       == msg.data):
+            if (self.from_addr == msg.from_addr and
+                    self.flags.type == msg.flags.type and
+                    self.group == msg.group and
+                    self.cmd1 == msg.cmd1 and
+                    self.cmd2 == msg.cmd2 and
+                    self.data == msg.data):
                 return True
         return False
 

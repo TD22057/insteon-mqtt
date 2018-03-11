@@ -304,7 +304,7 @@ class Protocol:
         index = 0
         for check_msg in self._inp_msg_log:
             if check_msg.expire_time < current_time:
-                keys_to_delete.insert(0,index)
+                keys_to_delete.insert(0, index)
             index += 1
         for key in keys_to_delete:
             del self._inp_msg_log[key]
