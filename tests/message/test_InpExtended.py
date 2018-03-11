@@ -94,5 +94,30 @@ class Test_InpExtended:
 
         str(obj)
 
+    #-----------------------------------------------------------------------
+    def test_is_duplicate(self):
+        b = bytes([0x02, 0x51,  # code
+                   0x3e, 0xe2, 0xc4,  # from addr
+                   0x23, 0x9b, 0x65,  # to addr
+                   0x7f,  # flags 3 max_hops and 3 hops_left
+                   0x11, 0x01,  # cmd1, cmd2
+                   # extended bytes
+                   0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+                   0x0a, 0x0b, 0x0c, 0x0d, 0x0e])
+        obj = Msg.InpExtended.from_bytes(b)
+
+        b2 = bytes([0x02, 0x51,  # code
+                   0x3e, 0xe2, 0xc4,  # from addr
+                   0x23, 0x9b, 0x65,  # to addr
+                   0x75,  # flags 1 max_hops and 1 hops_left
+                   0x11, 0x01,  # cmd1, cmd2
+                   # extended bytes
+                   0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+                   0x0a, 0x0b, 0x0c, 0x0d, 0x0e])
+        obj2 = Msg.InpExtended.from_bytes(b2)
+
+        assert obj.is_duplicate(obj2) is True
+
+        str(obj)
 
 #===========================================================================
