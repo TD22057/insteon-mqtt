@@ -68,6 +68,31 @@ class DeviceEntry:
         return DeviceEntry(link_addr, group, mem_loc, db_flags, link_data)
 
     #-----------------------------------------------------------------------
+    @staticmethod
+    def from_i1_bytes(data):
+        """Read a DeviceEntry from an i1 device byte array.
+
+        This is used to read an entry from the DeviceScanManagerI1 handler for
+        i1 devices.  The manager caches all of the bytes until it has an
+        entire record and then passes it here.
+
+        Args:
+          data:      (bytes) The 8 byte record, preceeded by the 2 byte
+                     location.
+
+        Returns:
+          DeviceEntry: Returns the created DeviceEntry object.
+        """
+
+        mem_loc = (data[0] << 8) + data[1]
+        db_flags = Msg.DbFlags.from_bytes(data, 2)
+        group = data[3]
+        link_addr = Address.from_bytes(data, 4)
+        link_data = data[7:10]
+
+        return DeviceEntry(link_addr, group, mem_loc, db_flags, link_data)
+
+    #-----------------------------------------------------------------------
     def __init__(self, addr, group, mem_loc, db_flags, data):
         """Constructor
 
@@ -179,6 +204,23 @@ class DeviceEntry:
 
         data = o.getvalue()
         assert len(data) == 14
+        return data
+
+    #-----------------------------------------------------------------------
+    def to_i1_bytes(self):
+        """Convert the entry to an i1 type 8 byte byte array.
+
+        Returns:
+          (bytes) Returns the 8 byte data array.
+        """
+        o = io.BytesIO()
+        o.write(self.db_flags.to_bytes())
+        o.write(bytes([self.group]))
+        o.write(self.addr.to_bytes())
+        o.write(self.data)
+
+        data = o.getvalue()
+        assert len(data) == 8
         return data
 
     #-----------------------------------------------------------------------

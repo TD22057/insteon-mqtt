@@ -7,7 +7,7 @@ from .. import log
 from .. import message as Msg
 from .. import util
 from .. import handler
-from .DeviceEntryI1 import DeviceEntryI1
+from .DeviceEntry import DeviceEntry
 
 LOG = log.get_logger()
 
@@ -138,8 +138,8 @@ class DeviceScanManagerI1:
             # we have a full record, pass to db
 
             # Convert the message to a database device entry.
-            entry = DeviceEntryI1.from_bytes(bytes([self.msb, self.lsb] +
-                                                   self.record))
+            entry = DeviceEntry.from_i1_bytes(bytes([self.msb, self.lsb] +
+                                                    self.record))
             LOG.ui("Entry: %s", entry)
             self.db.add_entry(entry)
 

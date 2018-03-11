@@ -14,9 +14,9 @@ class Test_DeviceEntryI1:
         ctrl = Msg.DbFlags(in_use=True, is_controller=True, is_last_rec=False)
         mem_loc = (0x0F << 8) + 0xFF
         data = bytes([0xFE, 0x1F, 0x00])
-        entry = IM.db.DeviceEntryI1.from_bytes(bytes([0x0F, 0xFF, 0xE2, 0x01,
-                                                      0x20, 0xC4, 0xBA, 0xFE,
-                                                      0x1F, 0x00]))
+        entry = IM.db.DeviceEntry.from_i1_bytes(bytes([0x0F, 0xFF, 0xE2, 0x01,
+                                                       0x20, 0xC4, 0xBA, 0xFE,
+                                                       0x1F, 0x00]))
 
         assert entry.addr == addr
         assert entry.group == 0x01
