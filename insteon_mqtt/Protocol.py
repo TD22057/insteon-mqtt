@@ -3,6 +3,7 @@
 # Insteon Protocol class.  Parses PLM data and writes messages.
 #
 #===========================================================================
+import time
 from . import log
 from . import message as Msg
 #from . import util
@@ -90,10 +91,10 @@ class Protocol:
         # write handler.
         self._read_handlers = []
 
-        # FUTURE: add message deduplication.
-        #    - Store last message and time tag
-        #    - add __eq__ check to messages (or to store bytes?)
-        #    - if no handler, arrival time near time tag, and same msg, ignore
+        # Message deduplication.
+        # This is a list of prior incomming messages that are checked against
+        # to determine if a subsequent message is a duplicate
+        self._inp_msg_log = []
 
     #-----------------------------------------------------------------------
     def add_handler(self, handler):
@@ -259,8 +260,54 @@ class Protocol:
             self._buf = self._buf[msg_size:]
             LOG.info("Read %#04x: %s", msg_type, msg)
 
-            # And try to process the message using the handlers.
-            self._process_msg(msg)
+            if self._is_duplicate(msg):
+                LOG.info("Ignored duplicate message %s ", msg)
+            else:
+                # And try to process the message using the handlers.
+                self._process_msg(msg)
+
+    #-----------------------------------------------------------------------
+    def _is_duplicate(self, msg):
+        """Check whether incomming message is a duplicate.
+
+        Duplicate messages arise because there may be an excess number
+        of hops used in the transmitted message.  There are also times where
+        the duplicate of the exact same message with the same number of hops
+        arives twice.  It is unclear what causes this, but it could result
+        from the transition of a wired signal to wireless and back.
+
+        Args:
+          msg:   Insteon message object to process.
+
+        Returns:
+          True if this is a duplicate message, false otherwise
+        """
+        self._clean_inp_msg_log()
+        if isinstance(msg, (Msg.InpStandard, Msg.InpExtended)):
+            for check_msg in self._inp_msg_log:
+                if check_msg.is_duplicate(msg):
+                    return True
+
+            self._inp_msg_log.append(msg)
+            return False
+        else:
+            return False
+
+    #-----------------------------------------------------------------------
+    def _clean_inp_msg_log(self):
+        """Removes old messages from the input message log.
+
+        Removes messages which have expired from the input message log.
+        """
+        current_time = time.time()
+        keys_to_delete = []
+        index = 0
+        for check_msg in self._inp_msg_log:
+            if check_msg.expire_time < current_time:
+                keys_to_delete.insert(0,index)
+            index += 1
+        for key in keys_to_delete:
+            del self._inp_msg_log[key]
 
     #-----------------------------------------------------------------------
     def _process_msg(self, msg):
