@@ -12,6 +12,7 @@ class Test_Broadcast:
         proto = MockProto()
         calls = []
         modem = IM.Modem(proto)
+        modem.save_path = ""
 
         addr = IM.Address('0a.12.34')
         handler = IM.handler.Broadcast(modem)
@@ -31,7 +32,7 @@ class Test_Broadcast:
         modem.add(device)
         r = handler.msg_received(proto, msg)
 
-        assert r == Msg.FINISHED
+        assert r == Msg.CONTINUE
         assert len(calls) == 1
 
         # cleanup should be ignored since prev was processed.
@@ -39,14 +40,14 @@ class Test_Broadcast:
         msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
         r = handler.msg_received(proto, msg)
 
-        assert r == Msg.FINISHED
+        assert r == Msg.CONTINUE
         assert len(calls) == 1
 
         # If broadcast wasn't found, cleanup should be handled.
         handler._handled = False
         r = handler.msg_received(proto, msg)
 
-        assert r == Msg.FINISHED
+        assert r == Msg.CONTINUE
         assert len(calls) == 2
 
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)

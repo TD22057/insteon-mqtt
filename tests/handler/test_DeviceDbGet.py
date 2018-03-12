@@ -12,8 +12,12 @@ class Test_DeviceDbGet:
         proto = None
         calls = []
 
+        def callback(success, msg, value):
+            calls.append(msg)
+
         addr = IM.Address('0a.12.34')
-        handler = IM.handler.DeviceDbGet(addr, calls.append)
+        db = Mockdb(addr)
+        handler = IM.handler.DeviceDbGet(db, callback)
 
         # Normal nak
         std_ack = Msg.OutStandard.direct(addr, 0x2f, 0x00)
@@ -49,23 +53,26 @@ class Test_DeviceDbGet:
         proto = None
         calls = []
 
+        def callback(success, msg, value):
+            calls.append(msg)
+
         addr = IM.Address('0a.12.34')
-        handler = IM.handler.DeviceDbGet(addr, calls.append)
+        db = Mockdb(addr)
+        handler = IM.handler.DeviceDbGet(db, callback)
 
         flags = Msg.Flags(Msg.Flags.Type.DIRECT, True)
-        data = bytes([0x01, 0, 0, 0, 0, 0, 0, 0x01, 0, 0, 0, 0, 0, 0])
+        data = bytes([0x01, 0, 0, 0, 0, 0xFF, 0, 0x01, 0, 0, 0, 0, 0, 0])
         msg = Msg.InpExtended(addr, addr, flags, 0x2f, 0x00, data)
 
         r = handler.msg_received(proto, msg)
         assert r == Msg.CONTINUE
-        assert len(calls) == 1
-        assert calls[0] == msg
+        assert len(calls) == 0
 
         msg.data = bytes(14)
         r = handler.msg_received(proto, msg)
         assert r == Msg.FINISHED
-        assert len(calls) == 2
-        assert calls[1] is None
+        assert len(calls) == 1
+        assert calls[0] == "Database received"
 
         # no match
         msg.cmd1 = 0x00
@@ -74,3 +81,6 @@ class Test_DeviceDbGet:
 
 
 #===========================================================================
+class Mockdb:
+    def __init__(self, addr):
+        self.addr = addr
