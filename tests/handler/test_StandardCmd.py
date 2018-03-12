@@ -122,6 +122,38 @@ class Test_StandardCmd:
         assert len(calls) == 1
         assert calls[0] == msg
 
+    #-----------------------------------------------------------------------
+    def test_engine_version(self):
+        # Tests response to get engine version
+        proto = MockProto()
+        modem = MockModem()
+        calls = []
+        addr = IM.Address('0a.12.34')
+        device = IM.device.Base(proto, modem, addr)
+
+        def callback(success, msg, data):
+            calls.append(msg)
+
+        # i1 test
+        out = Msg.OutStandard.direct(addr, 0x0D, 0x00)
+        handler = IM.handler.StandardCmd(out, device.handle_engine, callback)
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
+        msg = Msg.InpStandard(addr, addr, flags, 0x0D, 0x00)
+        r = handler.msg_received(proto, msg)
+        assert r == Msg.FINISHED
+        assert calls[0] == "Operation complete"
+        assert device.db.engine == 0
+        
+        #i2
+        msg = Msg.InpStandard(addr, addr, flags, 0x0D, 0x01)
+        r = handler.msg_received(proto, msg)
+        assert device.db.engine == 1
+        
+        #i2cs
+        msg = Msg.InpStandard(addr, addr, flags, 0x0D, 0x02)
+        r = handler.msg_received(proto, msg)
+        assert device.db.engine == 2
+
 
 #===========================================================================
 
@@ -129,3 +161,7 @@ class Test_StandardCmd:
 class MockProto:
     def add_handler(self, *args):
         pass
+
+class MockModem:
+    def __init__(self):
+        self.save_path = ''
