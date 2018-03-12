@@ -479,7 +479,7 @@ class Device:
             if entry.db_flags.is_controller and entry.group in self.groups:
                 responders = self.groups[entry.group]
                 for i in range(len(responders)):
-                    if responders[i].addr == entry.addr:
+                    if responders[i].mem_loc == entry.mem_loc:
                         del responders[i]
                         break
 
