@@ -72,21 +72,22 @@ class Test_Device:
         assert len(obj.groups) == 2
 
         grp = obj.find_group(0x02)
+        print(grp[0].addr)
         assert len(grp) == 2
         assert grp[0].addr == addr
         assert grp[1].addr == addr2
 
-        e = obj.find(addr, 0x02, 'CTRL')
+        e = obj.find(addr, 0x02, True)
         assert e.addr == addr
         assert e.group == 0x02
         assert e.db_flags.is_controller is True
 
-        e = obj.find(addr2, 0x02, 'RESP')
+        e = obj.find(addr2, 0x02, False)
         assert e.addr == addr2
         assert e.group == 0x02
-        assert e.db_flags.is_responder is True
+        assert e.db_flags.is_controller is False
 
-        e = obj.find(addr, 0x05, 'RESP')
+        e = obj.find(addr, 0x05, False)
         assert e is None
 
         str(obj)
