@@ -182,6 +182,26 @@ class DeviceEntry:
         return data
 
     #-----------------------------------------------------------------------
+    def to_i1_bytes(self):
+        """Convert the entry to an i1 type 8 byte byte array.
+
+        Returns:
+          (bytes) Returns a 10 byte array consisting of the first two bytes
+                  being the memory address and the following 8 bytes being the
+                  link data.
+        """
+        o = io.BytesIO()
+        o.write(self.mem_bytes())
+        o.write(self.db_flags.to_bytes())
+        o.write(bytes([self.group]))
+        o.write(self.addr.to_bytes())
+        o.write(self.data)
+
+        data = o.getvalue()
+        assert len(data) == 10
+        return data
+
+    #-----------------------------------------------------------------------
     def __eq__(self, rhs):
         """Check for equality.
 

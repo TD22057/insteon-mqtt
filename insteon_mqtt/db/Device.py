@@ -14,6 +14,7 @@ from .DeviceEntry import DeviceEntry
 from .. import log
 from .. import message as Msg
 from .. import util
+from .DeviceModifyManagerI1 import DeviceModifyManagerI1
 
 LOG = log.get_logger()
 
@@ -526,14 +527,21 @@ class Device:
         # Update it w/ the new information.
         entry.update_from(addr, group, is_controller, data)
 
-        # Build the extended db modification message.  This says to update
-        # the record at the entry memory location.
-        ext_data = entry.to_bytes()
-        msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-        msg_handler = handler.DeviceDbModify(self, entry, on_done)
+        if self.device.db.engine == 0:
+            i1_entry = entry.to_i1_bytes()
+            modify_manager = DeviceModifyManagerI1(protocol, self.device.db,
+                                                   i1_entry, on_done=on_done,
+                                                   num_retry=3)
+            modify_manager.start_modify()
+        else:
+            # Build the extended db modification message.  This says to update
+            # the record at the entry memory location.
+            ext_data = entry.to_bytes()
+            msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
+            msg_handler = handler.DeviceDbModify(self, entry, on_done)
 
-        # Send the message and handler.
-        device.send(msg, msg_handler)
+            # Send the message and handler.
+            device.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def _add_using_new(self, device, addr, group, is_controller, data,
@@ -571,12 +579,19 @@ class Device:
                                is_last_rec=False)
         entry = DeviceEntry(addr, group, self.last.mem_loc, db_flags, data)
 
-        # Add the call to update the data record.
-        ext_data = entry.to_bytes()
-        msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-        msg_handler = handler.DeviceDbModify(self, entry)
-        seq.add_msg(msg, msg_handler)
+        if self.device.db.engine == 0:
+            i1_entry = entry.to_i1_bytes()
+            modify_manager = DeviceModifyManagerI1(protocol, self.device.db,
+                                                   i1_entry, on_done=on_done,
+                                                   num_retry=3)
+            modify_manager.start_modify()
+        else:
+            # Add the call to update the data record.
+            ext_data = entry.to_bytes()
+            msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
+            msg_handler = handler.DeviceDbModify(self, entry)
+            seq.add_msg(msg, msg_handler)
 
-        seq.run()
+            seq.run()
 
     #-----------------------------------------------------------------------
