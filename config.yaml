@@ -351,7 +351,7 @@ mqtt:
   # In Home Assistant use MQTT binary sensor with a configuration like:
   #   binary_sensor:
   #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/leak'
+  #       state_topic: 'insteon/aa.bb.cc/wet'
   #       device_class: 'moisture'
   leak:
     # Output wet/dry change topic and payload.  This message is sent
