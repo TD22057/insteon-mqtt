@@ -651,7 +651,7 @@ A sample leak sensor topic and payload configuration is:
 
    ```
    leak:
-     wet_dry_topic: 'insteon/{{address}}/leak'
+     wet_dry_topic: 'insteon/{{address}}/wet'
      wet_dry_payload: '{{state.upper()}}'
    ```
 
