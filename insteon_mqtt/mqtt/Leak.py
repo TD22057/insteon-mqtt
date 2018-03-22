@@ -24,7 +24,7 @@ class Leak(BatterySensor):
         super().__init__(mqtt, device)
 
         self.msg_wet = MsgTemplate(
-            topic='insteon/{{address}}/leak',
+            topic='insteon/{{address}}/wet',
             payload='{{state.upper()}}',
             )
 
