@@ -635,9 +635,10 @@ A sample motion sensor topic and payload configuration is:
 
 ## Leak Sensors
 
-Leak sensors do not accept any input commands.  The low battery
-messages are inherited from the battery sensor inputs.  The leak
-sensor adds another possible state change for wet/dry events.
+Leak sensors do not accept any input commands. The leak
+sensor has state change for wet/dry events and also for heartbeat every 24
+hours. The leak sensors does not report low battery condition like other
+battery operated devices.
 
 The wet/dry change defines the following variables for templates:
 
@@ -651,8 +652,10 @@ A sample leak sensor topic and payload configuration is:
 
    ```
    leak:
-     wet_dry_topic: 'insteon/{{address}}/leak'
+     wet_dry_topic: 'insteon/{{address}}/wet'
      wet_dry_payload: '{{state.upper()}}'
+     heartbeat_topic: 'insteon/{{address}}/heartbeat'
+     heartbeat_payload: '{{state}}'
    ```
 
 ---
