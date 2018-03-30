@@ -91,10 +91,12 @@ class Protocol:
         # write handler.
         self._read_handlers = []
 
-        # Message deduplication.
-        # This is a list of prior incomming messages that are checked against
-        # to determine if a subsequent message is a duplicate
-        self._inp_msg_log = []
+        # This is a list of prior read messages that are checked against to
+        # determine if a subsequent message is a duplicate and can be
+        # ignored.  Message are removed when their expired time is exceeded.
+        # Only InpStandard and InpExtended messsages are de-duplicated at
+        # this time.
+        self._read_history = []
 
     #-----------------------------------------------------------------------
     def add_handler(self, handler):
@@ -261,7 +263,7 @@ class Protocol:
             LOG.info("Read %#04x: %s", msg_type, msg)
 
             if self._is_duplicate(msg):
-                LOG.info("Ignored duplicate message %s ", msg)
+                LOG.info("Ignored duplicate %s", msg)
             else:
                 # And try to process the message using the handlers.
                 self._process_msg(msg)
@@ -282,32 +284,37 @@ class Protocol:
         Returns:
           True if this is a duplicate message, false otherwise
         """
-        self._clean_inp_msg_log()
-        if isinstance(msg, (Msg.InpStandard, Msg.InpExtended)):
-            for check_msg in self._inp_msg_log:
-                if check_msg.is_duplicate(msg):
-                    return True
-
-            self._inp_msg_log.append(msg)
+        if not isinstance(msg, (Msg.InpStandard, Msg.InpExtended)):
             return False
+
+        # Remove any expired messages first.
+        self._remove_expired_read()
+
+        # See if we have a duplicate message.
+        if msg in self._read_history:
+            return True
         else:
+            self._read_history.append(msg)
             return False
 
     #-----------------------------------------------------------------------
-    def _clean_inp_msg_log(self):
-        """Removes old messages from the input message log.
+    def _remove_expired_read(self):
+        """Removes old messages from the input message history.
 
-        Removes messages which have expired from the input message log.
+        Removes messages which have expired from the input message history.
         """
-        current_time = time.time()
-        keys_to_delete = []
-        index = 0
-        for check_msg in self._inp_msg_log:
-            if check_msg.expire_time < current_time:
-                keys_to_delete.insert(0, index)
-            index += 1
-        for key in keys_to_delete:
-            del self._inp_msg_log[key]
+        current = time.time()
+        expired_idx = []
+
+        # Find all the messages where the current time is after the message
+        # expiration time.
+        for i, msg in enumerate(self._read_history):
+            if current > msg.expire_time:
+                expired_idx.append(i)
+
+        # Remove them in reverse order so that the list indices remain valid.
+        for i in reversed(expired_idx):
+            del self._read_history[i]
 
     #-----------------------------------------------------------------------
     def _process_msg(self, msg):

@@ -8,6 +8,8 @@
 - Added get_engine() command to find the Insteon device engine revision
   (thanks @krkeegan).
 
+- Added automatic message de-duplication (thanks @krkeegan)
+
 
 ### Fixes
 - Fixed a bug where the MQTT client might close in an area that triggered an

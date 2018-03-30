@@ -89,6 +89,22 @@ class Flags:
         return bytes([self.byte])
 
     #-----------------------------------------------------------------------
+    def __eq__(self, rhs):
+        """Checks if a flags object is the same as this one.
+
+        This ignores differences in the hops_left and max_hops field.
+
+        Args:
+          rhs:    (Flags) The object to compare to this one
+
+        Returns:
+          (bool) True if the objects are the same.
+        """
+        return (isinstance(rhs, Flags) and
+                self.type == rhs.type and
+                self.is_ext == rhs.is_ext)
+
+    #-----------------------------------------------------------------------
     def __str__(self):
         return "%s%s" % (self.type, '' if not self.is_ext else ' ext')
 

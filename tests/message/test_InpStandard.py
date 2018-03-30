@@ -92,8 +92,37 @@ class Test_InpStandard:
                    0x11, 0x01])  # cmd1, cmd2
         obj2 = Msg.InpStandard.from_bytes(b2)
 
-        assert obj.is_duplicate(obj2) is True
+        assert obj == obj2
 
-        str(obj)
+        # wrong from address
+        b3 = bytes([0x02, 0x50,  # code
+                    0x01, 0xe2, 0xc4,  # from addr
+                    0x23, 0x9b, 0x65,  # to addr
+                    0x65,  # flags 1 max_hops and 1 hops_left
+                    0x11, 0x01])  # cmd1, cmd2
+        obj3 = Msg.InpStandard.from_bytes(b3)
+
+        assert obj != obj3
+
+        # wrong cmd 1
+        b4 = bytes([0x02, 0x50,  # code
+                    0x3e, 0xe2, 0xc4,  # from addr
+                    0x23, 0x9b, 0x65,  # to addr
+                    0x65,  # flags 1 max_hops and 1 hops_left
+                    0x12, 0x01])  # cmd1, cmd2
+        obj4 = Msg.InpStandard.from_bytes(b4)
+
+        assert obj != obj4
+
+        # wrong cmd 2
+        b5 = bytes([0x02, 0x50,  # code
+                    0x3e, 0xe2, 0xc4,  # from addr
+                    0x23, 0x9b, 0x65,  # to addr
+                    0x65,  # flags 1 max_hops and 1 hops_left
+                    0x11, 0x02])  # cmd1, cmd2
+        obj5 = Msg.InpStandard.from_bytes(b5)
+
+        assert obj != obj5
+
 
 #===========================================================================

@@ -29,29 +29,29 @@ class Test_Protocol:
         assert dupe == False
 
         # test dupe with different hops
-        flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False, hops_left=2, 
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False, hops_left=2,
                           max_hops=2)
         addr = IM.Address('0a.12.33')
         msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
         dupe = proto._is_duplicate(msg)
         assert dupe == True
-        assert len(proto._inp_msg_log) == 1
-        
+        assert len(proto._read_history) == 1
+
         # not correct message type
         msg = Msg.InpUserReset()
         dupe = proto._is_duplicate(msg)
         assert dupe == False
-        
+
         # test deleting an expired message
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
         addr = IM.Address('0a.12.44')
         msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
-        proto._inp_msg_log.append(msg)
+        proto._read_history.append(msg)
         msg.expire_time = 1
-        assert len(proto._inp_msg_log) == 2
-        proto._clean_inp_msg_log()
-        assert len(proto._inp_msg_log) == 1
-        assert proto._inp_msg_log[0].is_duplicate(msg_keep) == True
+        assert len(proto._read_history) == 2
+        proto._remove_expired_read()
+        assert len(proto._read_history) == 1
+        assert proto._read_history[0] == msg_keep
 
     #-----------------------------------------------------------------------
 

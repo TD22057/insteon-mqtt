@@ -58,6 +58,7 @@ what they are and how to interpret messages from them.
   powered devices when a message is seen from them (i.e. trip a motion
   sensor or push a remote button to get it to download the database).
 - Trigger modem virtual scenes
+- Automatic inbound message de-duplication.
 
 
 # Detailed Documentation

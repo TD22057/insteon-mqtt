@@ -75,9 +75,12 @@ class InpStandard(Base):
         elif (self.flags.type == Flags.Type.ALL_LINK_CLEANUP or
               self.flags.type == Flags.Type.CLEANUP_ACK):
             self.group = self.cmd2
+
         # This is the time by which the final hop would arrive, used to
-        # detect duplicates.
-        self.expire_time = time.time() + ((self.flags.hops_left * 87) / 1000)
+        # detect duplicates.  87 msec is empirical and was found to be an OK
+        # value to use with standard length messages in other Insteon
+        # software (misterhouse?)
+        self.expire_time = time.time() + self.flags.hops_left * 0.087
 
     #-----------------------------------------------------------------------
     def __str__(self):
@@ -90,25 +93,26 @@ class InpStandard(Base):
                 (self.from_addr, self.flags, self.group, self.cmd1, self.cmd2)
 
     #-----------------------------------------------------------------------
-    def is_duplicate(self, msg):
-        """Checks if a message is the same as this one
+    def __eq__(self, rhs):
+        """Checks for message for equality.
 
-        Ignores differences in the hops_left and max_hops field, but if a
-        message is otherwise the same, it is a duplicate.
+        This ignores differences in the hops_left and max_hops field, but if
+        a message is otherwise the same, it is a equal.
 
         Args:
-          msg:    (Message) The message to compare to this one
+          rhs:    (Message) The message to compare to this one.
+
         Returns:
-          True if the message is a duplicate false otherwise
+          (bool) True if the message is a duplicate false otherwise.
         """
-        if isinstance(msg, InpStandard):
-            if (self.from_addr == msg.from_addr and
-                    self.flags.type == msg.flags.type and
-                    self.group == msg.group and
-                    self.cmd1 == msg.cmd1 and
-                    self.cmd2 == msg.cmd2):
-                return True
-        return False
+        if not isinstance(rhs, InpStandard):
+            return False
+
+        return (self.from_addr == rhs.from_addr and
+                self.flags == rhs.flags and
+                self.group == rhs.group and
+                self.cmd1 == rhs.cmd1 and
+                self.cmd2 == rhs.cmd2)
 
     #-----------------------------------------------------------------------
 
@@ -180,9 +184,12 @@ class InpExtended(Base):
         elif (self.flags.type == Flags.Type.ALL_LINK_CLEANUP or
               self.flags.type == Flags.Type.CLEANUP_ACK):
             self.group = self.cmd2
+
         # This is the time by which the final hop would arrive, used to
-        # detect duplicates.
-        self.expire_time = time.time() + ((self.flags.hops_left * 183) / 1000)
+        # detect duplicates.  183 msec is empirical and was found to be an OK
+        # value to use with extended length messages in other Insteon
+        # software (misterhouse?)
+        self.expire_time = time.time() + self.flags.hops_left * 0.183
 
     #-----------------------------------------------------------------------
     def __str__(self):
@@ -201,26 +208,27 @@ class InpExtended(Base):
         return o.getvalue()
 
     #-----------------------------------------------------------------------
-    def is_duplicate(self, msg):
-        """Checks if a message is the same as this one
+    def __eq__(self, rhs):
+        """Checks for message for equality.
 
-        Ignores differences in the hops_left and max_hops field, but if a
-        message is otherwise the same, it is a duplicate.
+        This ignores differences in the hops_left and max_hops field, but if
+        a message is otherwise the same, it is a equal.
 
         Args:
-          msg:    (Message) The message to compare to this one
+          rhs:    (Message) The message to compare to this one.
+
         Returns:
-          True if the message is a duplicate false otherwise
+          (bool) True if the message is a duplicate false otherwise.
         """
-        if isinstance(msg, InpExtended):
-            if (self.from_addr == msg.from_addr and
-                    self.flags.type == msg.flags.type and
-                    self.group == msg.group and
-                    self.cmd1 == msg.cmd1 and
-                    self.cmd2 == msg.cmd2 and
-                    self.data == msg.data):
-                return True
-        return False
+        if not isinstance(rhs, InpExtended):
+            return False
+
+        return (self.from_addr == rhs.from_addr and
+                self.flags == rhs.flags and
+                self.group == rhs.group and
+                self.cmd1 == rhs.cmd1 and
+                self.cmd2 == rhs.cmd2 and
+                self.data == rhs.data)
 
     #-----------------------------------------------------------------------
 
