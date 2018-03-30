@@ -71,11 +71,6 @@ class Flags:
                       type == Flags.Type.CLEANUP_NAK
         self.is_broadcast = type == Flags.Type.ALL_LINK_BROADCAST
 
-        self.byte = self.type.value << 5 | \
-                    self.is_ext << 4 | \
-                    self.hops_left << 2 | \
-                    self.max_hops
-
     #-----------------------------------------------------------------------
     def to_bytes(self):
         """Convert to bytes.
@@ -86,7 +81,11 @@ class Flags:
         Returns:
            (bytes) Returns a 1 byte array containing the bit flags.
         """
-        return bytes([self.byte])
+        value = self.type.value << 5 | \
+                self.is_ext << 4 | \
+                self.hops_left << 2 | \
+                self.max_hops
+        return bytes([value])
 
     #-----------------------------------------------------------------------
     def __eq__(self, rhs):
