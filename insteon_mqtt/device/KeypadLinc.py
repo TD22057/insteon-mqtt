@@ -202,7 +202,7 @@ class KeypadLinc(Dimmer):
         # the command is ACK'ed.
         callback = on_done if is_on else None
         msg_handler = handler.StandardCmd(msg, self.handle_scene, callback)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
         # Scene triggering will not turn the device off (no idea why), so we
         # have to send an explicit off command to do that.  If this is None,
@@ -250,7 +250,7 @@ class KeypadLinc(Dimmer):
         msg_handler = handler.StandardCmd(msg, callback, on_done)
 
         # Send the message to the PLM modem for protocol.
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def handle_led_ack(self, msg, on_done, group, is_on, led_bits):

@@ -120,6 +120,15 @@ class Base:
         return self.__class__.__name__
 
     #-----------------------------------------------------------------------
+    def send(self, msg, msg_handler):
+        """TODO: doc
+        """
+        if isinstance(msg, Msg.OutStandard):  # handles OutExtended as well
+            msg.flags.set_hops(self.history.avg_hops())
+
+        self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
     def db_path(self):
         """Return the all link database path.
 
@@ -179,7 +188,7 @@ class Base:
         msg = Msg.OutExtended.direct(self.addr, 0x09, group,
                                      bytes([0x00] * 14))
         msg_handler = handler.StandardCmd(msg, self.handle_linking, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
         # NOTE: this command is to enter linking mode - we get ACK back that
         # it did, but unlike the modem, we don't get a message telling us
@@ -227,7 +236,7 @@ class Base:
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
                                             on_done, num_retry=3)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def get_flags(self, on_done=None):
@@ -241,7 +250,7 @@ class Base:
         # download command to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x1f, 0x00)
         msg_handler = handler.StandardCmd(msg, self.handle_flags, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def get_engine(self, on_done=None):
@@ -256,7 +265,7 @@ class Base:
         # Send the get_engine_version request.
         msg = Msg.OutStandard.direct(self.addr, 0x0D, 0x00)
         msg_handler = handler.StandardCmd(msg, self.handle_engine, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def db_add_ctrl_of(self, local_group, remote_addr, remote_group,
@@ -581,7 +590,7 @@ class Base:
             db_group = remote_group
 
         # Create a new database entry for the device and send it.
-        seq.add(self.db.add_on_device, self.protocol, remote_addr, db_group,
+        seq.add(self.db.add_on_device, self, remote_addr, db_group,
                 is_controller, local_data)
 
         # For two way commands, insert a callback so that when the modem
@@ -632,7 +641,7 @@ class Base:
         if refresh:
             seq.add(self.refresh)
 
-        seq.add(self.db.delete_on_device, self.protocol, entry)
+        seq.add(self.db.delete_on_device, self, entry)
 
         # For two way commands, insert a callback so that when the modem
         # command finishes, it will send the next command to the device.

@@ -118,7 +118,7 @@ class DeviceRefresh(Base):
                 db_msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00,
                                                 bytes(14))
                 msg_handler = DeviceDbGet(self.device.db, on_done, num_retry=3)
-                protocol.send(db_msg, msg_handler)
+                self.device.send(db_msg, msg_handler)
 
             # Either way - this transaction is complete.
             return Msg.FINISHED

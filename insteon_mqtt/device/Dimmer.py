@@ -163,7 +163,7 @@ class Dimmer(Base):
         msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
 
         # Send the message to the PLM modem for protocol.
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def off(self, group=0x01, instant=False, on_done=None):
@@ -189,7 +189,7 @@ class Dimmer(Base):
         msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
 
         # Send the message to the PLM modem for protocol.
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def set(self, level, group=0x01, instant=False, on_done=None):
@@ -238,7 +238,7 @@ class Dimmer(Base):
         # the command is ACK'ed.
         callback = on_done if is_on else None
         msg_handler = handler.StandardCmd(msg, self.handle_scene, callback)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
         # Scene triggering will not turn the device off (no idea why), so we
         # have to send an explicit off command to do that.  If this is None,
@@ -267,7 +267,7 @@ class Dimmer(Base):
 
         callback = functools.partial(self.handle_increment, delta=+8)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def increment_down(self, on_done=None):
@@ -285,7 +285,7 @@ class Dimmer(Base):
 
         callback = functools.partial(self.handle_increment, delta=-8)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def set_backlight(self, level, on_done=None):
@@ -313,7 +313,7 @@ class Dimmer(Base):
                                           on_done)
 
         # Send the message to the PLM modem for protocol.
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):

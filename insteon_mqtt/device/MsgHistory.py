@@ -4,6 +4,9 @@
 #
 #===========================================================================
 import math
+from .. import log
+
+LOG = log.get_logger()
 
 
 class MsgHistory:
@@ -38,6 +41,8 @@ class MsgHistory:
         num_hops = msg.flags.max_hops - msg.flags.hops_left
         self._hops.append(num_hops)
         self._hopSum += num_hops
+        LOG.debug("Received %s hops, total %d for %d entries", num_hops,
+                  self._hopSum, len(self._hops))
 
         # If we've gone over the window size, remove the oldest value.
         if len(self._hops) > self.WINDOW_LEN:
@@ -45,7 +50,7 @@ class MsgHistory:
             self._hopSum -= old_num
 
     #-----------------------------------------------------------------------
-    def hops(self):
+    def avg_hops(self):
         """Compute the number of optimal number hops for an outbound message.
 
         Returns:
@@ -54,9 +59,14 @@ class MsgHistory:
         if not self._hops:
             return 3
 
-        # Compute the average # of hops and round up.
-        average = int(math.ceil(self._hopSum / float(len(self._hops))))
+        # Compute the average # of hops in the buffer.
+        avg_hops = float(self._hopSum) / len(self._hops)
 
-        return max(average, 3)
+        # Round up and use at least 1 hop
+        num_hops = max(1, int(math.ceil(avg_hops)))
+        LOG.debug( "Average hops %03.1f, using %d", avg_hops, min(num_hops, 3))
+
+        # Maximum hop count is 3.
+        return min(num_hops, 3)
 
     #-----------------------------------------------------------------------

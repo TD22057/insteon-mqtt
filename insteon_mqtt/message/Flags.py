@@ -65,11 +65,19 @@ class Flags:
 
         self.type = self.Type(type)
         self.is_ext = is_ext
-        self.hops_left = hops_left
+        self.hops_left = min(max_hops, hops_left)
         self.max_hops = max_hops
         self.is_nak = type == Flags.Type.DIRECT_NAK or \
                       type == Flags.Type.CLEANUP_NAK
         self.is_broadcast = type == Flags.Type.ALL_LINK_BROADCAST
+
+    #-----------------------------------------------------------------------
+    def set_hops(self, max_hops):
+        """TODO: doc
+        """
+        assert max_hops >= 0 and max_hops <= 3
+        self.hops_left = max_hops
+        self.max_hops = max_hops
 
     #-----------------------------------------------------------------------
     def to_bytes(self):

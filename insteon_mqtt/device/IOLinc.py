@@ -273,7 +273,7 @@ class IOLinc(Base):
         # download command to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x20, bits)
         msg_handler = handler.StandardCmd(msg, self.handle_flags)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
@@ -302,7 +302,7 @@ class IOLinc(Base):
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
                                             on_done, num_retry=3)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def is_on(self):
@@ -328,7 +328,7 @@ class IOLinc(Base):
         msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
 
         # Send the message to the PLM modem.
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def off(self, group=0x01, instant=False, on_done=None):
@@ -350,7 +350,7 @@ class IOLinc(Base):
         msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
 
         # Send the message to the PLM modem.
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def set(self, level, group=0x01, instant=False, on_done=None):
