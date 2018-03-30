@@ -6,6 +6,7 @@
 import time
 from . import log
 from . import message as Msg
+from .Signal import Signal
 #from . import util
 
 LOG = log.get_logger()
@@ -68,6 +69,9 @@ class Protocol:
         link.signal_read.connect(self._data_read)
         link.signal_wrote.connect(self._msg_written)
 
+        # Message received signal.  Every read message is passed to this.
+        self.signal_received = Signal()  # (Message)
+
         # Inbound message buffer.
         self._buf = bytearray()
 
@@ -86,9 +90,9 @@ class Protocol:
         # handler.Base message handler of the last written message.
         self._write_handler = None
 
-        # Set of possible message handlers to use.  These are handlers
-        # that handle any message besides the replies expected by the
-        # write handler.
+        # Set of possible message handlers to use.  These are handlers that
+        # handle any message that isn't handled by an explicit write handler.
+        # # write handler.
         self._read_handlers = []
 
         # This is a list of prior read messages that are checked against to
@@ -328,6 +332,9 @@ class Protocol:
         Args:
           msg:   Insteon message object to process.
         """
+        # Send the general message received notification.
+        self.signal_received.emit(msg)
+
         # If we have a write handler, then most likely the inbound
         # message is a reply to the write so see if it can handle the
         # message.  If the status is FINISHED, then the handler has

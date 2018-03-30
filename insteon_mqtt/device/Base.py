@@ -5,6 +5,7 @@
 #===========================================================================
 import json
 import os.path
+from .MsgHistory import MsgHistory
 from ..Address import Address
 from ..CommandSeq import CommandSeq
 from .. import db
@@ -75,6 +76,10 @@ class Base:
         self.modem = modem
         self.addr = Address(address)
         self.name = name
+
+        # Moving window history of messages that are received from the
+        # device.  Used for optimal hop computations.
+        self.history = MsgHistory()
 
         # Make some nice labels to make logging easier.
         self.label = str(self.addr)
@@ -415,6 +420,27 @@ class Base:
         except:
             LOG.exception("Invalid command inputs to device %s'.  Input cmd "
                           "%s with args: %s", self.label, cmd, str(kwargs))
+
+    #-----------------------------------------------------------------------
+    def handle_received(self, msg):
+        """Receives incomming message notifications from protocol
+
+        This is called for every standard and extended message that is read
+        from the modem from this device.  This is only used to track the hop
+        distance from the modem to each device and isn't used for general
+        message handling.
+
+        It extracts the number of hops that occurred and uses that to create
+        a moving average of the distance to the device so that outbound
+        messages can set the maximum hop value for the most efficient
+        transfers.
+
+        Args:
+          msg:    (Msg.InpStandard, Msg.InpExtended) The message that arrived.
+        """
+        self.history.add(msg)
+
+
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
