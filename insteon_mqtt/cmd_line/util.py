@@ -40,8 +40,8 @@ def send(config, topic, payload, quiet=False):
     client = mqtt.Client(userdata=session)
 
     # Add user/password if the config file has them set.
-    if config["mqtt"].get("user", None):
-        user = config["mqtt"]["user"]
+    if config["mqtt"].get("username", None):
+        user = config["mqtt"]["username"]
         password = config["mqtt"].get("password", None)
         client.username_pw_set(user, password)
 
