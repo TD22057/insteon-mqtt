@@ -19,6 +19,10 @@ class Test_Device:
         obj.set_delta(None)
         assert obj.is_current(1) is False
 
+        assert obj.engine is None
+        obj.set_engine(1)
+        assert obj.engine == 1
+
         addr = IM.Address(0x10, 0xab, 0x1c)
         flags = Msg.Flags(Msg.Flags.Type.DIRECT, True)
         db_flags = Msg.DbFlags(in_use=True, is_controller=True,

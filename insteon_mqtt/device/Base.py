@@ -99,6 +99,7 @@ class Base:
             'linking' : self.linking,
             'pair' : self.pair,
             'get_flags' : self.get_flags,
+            'get_engine' : self.get_engine
             }
 
         # Device database delta.  The delta tells us if the database
@@ -207,7 +208,10 @@ class Base:
         This will send out an updated signal for the current device
         status whenever possible (like dimmer levels).
 
-        TODO: doc force
+        Args:
+          force:    If true, will force a refresh of the device 
+                    database even if the delta value matches
+          on_done:  Optional callback run when the commands are finished.
         """
         LOG.info("Device %s cmd: status refresh", self.label)
 
@@ -232,6 +236,21 @@ class Base:
         # download command to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x1f, 0x00)
         msg_handler = handler.StandardCmd(msg, self.handle_flags, on_done)
+        self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def get_engine(self, on_done=None):
+        """ Request the engine version of the device
+
+        The engine version can be i1, i2, or i2cs.  The engine version defines
+        what type of messages can be used with a device and the type of all
+        link database used by a device.
+        """
+        LOG.info("Device %s cmd: get engine version", self.label)
+
+        # Send the get_engine_version request.
+        msg = Msg.OutStandard.direct(self.addr, 0x0D, 0x00)
+        msg_handler = handler.StandardCmd(msg, self.handle_engine, on_done)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -418,6 +437,26 @@ class Base:
         """
         LOG.ui("Device %s operating flags: %s", self.addr,
                "{:08b}".format(msg.cmd2))
+        on_done(True, "Operation complete", msg.cmd2)
+
+    #-----------------------------------------------------------------------
+    def handle_engine(self, msg, on_done):
+        """Handle replies to the get engine command.
+
+        The engine command reply will contain the device engine
+        version in cmd2 and this updates the device with that value.
+
+        Args:
+          msg:  (message.InpStandard) The engine message reply.  The engine
+                version state is in the msg.cmd2 field.
+        """
+        self.db.set_engine(msg.cmd2)
+        version = "i1"
+        if msg.cmd2 == 1:
+            version = "i2"
+        elif msg.cmd2 == 2:
+            version = "i2cs"
+        LOG.ui("Device %s engine version: %s", self.addr, version)
         on_done(True, "Operation complete", msg.cmd2)
 
     #-----------------------------------------------------------------------
