@@ -12,6 +12,9 @@
 - Fixed bug where the FanLinc would not report speed changes at all
   ([Issue #37][I37]).
 
+- Fixed issues with the leak sensor heartbeat reporting and topic documentation
+  (thanks @djfjeff).
+
 
 ## [0.6.1]
 
