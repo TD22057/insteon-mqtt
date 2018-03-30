@@ -451,11 +451,9 @@ class Base:
                 version state is in the msg.cmd2 field.
         """
         self.db.set_engine(msg.cmd2)
-        version = "i1"
-        if msg.cmd2 == 1:
-            version = "i2"
-        elif msg.cmd2 == 2:
-            version = "i2cs"
+
+        labels = {0 : "i1", 1 : "i2", 2 : "i2c"}
+        version = labels.get(msg.cmd2, "Unknown")
         LOG.ui("Device %s engine version: %s", self.addr, version)
         on_done(True, "Operation complete", msg.cmd2)
 

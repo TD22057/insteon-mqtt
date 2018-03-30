@@ -9,7 +9,7 @@ import insteon_mqtt.message as Msg
 class Test_OutResetPlm:
     #-----------------------------------------------------------------------
     def test_out(self):
-        obj = Msg.OutResetPlm()
+        obj = Msg.OutResetModem()
         assert obj.fixed_msg_size == 3
 
         b = obj.to_bytes()
@@ -21,7 +21,7 @@ class Test_OutResetPlm:
     #-----------------------------------------------------------------------
     def test_in(self):
         b = bytes([0x02, 0x67, 0x06])
-        obj = Msg.OutResetPlm.from_bytes(b)
+        obj = Msg.OutResetModem.from_bytes(b)
 
         assert obj.is_ack is True
 

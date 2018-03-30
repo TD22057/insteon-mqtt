@@ -55,7 +55,7 @@ can be ignored.
 
 Copy the configuration file to the install location.  Edit it to add
 your insteon devices and configure your MQTT settings.  Also update
-the storage diretory to point at '/opt/insteon-mqtt/data'.  You may
+the storage directory to point at '/opt/insteon-mqtt/data'.  You may
 also want to update the log file locations as well.
 
    ```
@@ -76,7 +76,7 @@ back to your regular user.
    ```
 
 Edit the init/insteon-mqtt.service file with the installation path and
-copy it to the sytem directory.  If your system is using something
+copy it to the systemd directory.  If your system is using something
 besides systemd, you'll need to use a different file (and commands)
 that what is provided.
 
@@ -87,7 +87,7 @@ that what is provided.
    sudo cp init/insteon-mqtt.service /etc/systemd/system/
    ```
 
-Reload the service databse and try and start the service.  Use the
+Reload the service database and try and start the service.  Use the
 status command to check the results.
 
    ```

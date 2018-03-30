@@ -1,19 +1,19 @@
 #===========================================================================
 #
-# Tests for: insteont_mqtt/message/OutAllLink.py
+# Tests for: insteont_mqtt/message/OutModemScene.py
 #
 #===========================================================================
 import insteon_mqtt.message as Msg
 
 
-class Test_OutAllLink:
+class Test_OutModemScene:
     #-----------------------------------------------------------------------
     def test_basic(self):
         b = bytes([0x02, 0x61,  # code
                    0x01,  # group
                    0x11, 0x20,  # cmd1, cmd2
                    0x06])  # ack
-        obj = Msg.OutAllLink.from_bytes(b)
+        obj = Msg.OutModemScene.from_bytes(b)
 
         assert obj.group == 0x01
         assert obj.cmd1 == 0x11
