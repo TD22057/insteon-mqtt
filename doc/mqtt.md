@@ -226,7 +226,7 @@ Supported: KeypadLinc
 
 This command turns the LED on a KeypadLinc button on or off.  This also
 toggles the internal state of the button.  So if a button LED is turned off,
-the next click of the button will send out an ON command (and vice versa).
+the next click of the button will send out an ON command (and vice verse).
 Button is an integer in the range [1,8].  In the 6 button version, buttons
 1,2 and 7,8 are not commandable and can only be toggled by sending on/off
 commands.
@@ -242,7 +242,7 @@ Supported: devices
 This command gets and sets various Insteon device flags.  The set of
 supported flags depends on the device type.  The command line tool accepts an
 arbitrary list of "key=value" strings which get sent to the device for
-validation.  For example, to change the backlight level of a switch:
+validation.  For example, to change the back light level of a switch:
 
    ```
    insteon-mqtt config.yaml set-flags aa.bb.cc backlight=0x11
@@ -688,7 +688,7 @@ A sample remote control topic and payload configuration is:
 
 A smoke bridge device does not accept any input commands.  Internally,
 they send updates for a number of groups depending on the type of
-alert and a single clear group to say everything is ok.  The system
+alert and a single clear group to say everything is OK.  The system
 will translate those into one of four output MQTT messages (smoke
 detected, CO warning, low battery, and a general error).  When the
 clear message is received internally, an off state is sent to each of
