@@ -65,7 +65,7 @@ class Flags:
 
         self.type = self.Type(type)
         self.is_ext = is_ext
-        self.hops_left = min(max_hops, hops_left)
+        self.hops_left = hops_left
         self.max_hops = max_hops
         self.is_nak = type == Flags.Type.DIRECT_NAK or \
                       type == Flags.Type.CLEANUP_NAK
