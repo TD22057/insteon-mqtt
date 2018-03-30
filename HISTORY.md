@@ -2,6 +2,13 @@
 
 ## [0.6.2]
 
+### Additions
+- Added leak sensor heartbeat reporting support (thanks @djfjeff).
+
+- Added get_engine() command to find the Insteon device engine revision
+  (thanks @krkeegan).
+
+
 ### Fixes
 - Fixed a bug where the MQTT client might close in an area that triggered an
   exception instead of a reconnect ([Issue #32][I32]).
@@ -12,8 +19,7 @@
 - Fixed bug where the FanLinc would not report speed changes at all
   ([Issue #37][I37]).
 
-- Fixed issues with the leak sensor heartbeat reporting and topic documentation
-  (thanks @djfjeff).
+- Fixed issues with the leak sensor topic documentation (thanks @djfjeff).
 
 
 ## [0.6.1]

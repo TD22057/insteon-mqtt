@@ -57,8 +57,7 @@ class Device:
 
         # Extract the various files from the JSON data.
         obj.delta = data['delta']
-        if 'engine' in data:
-            obj.engine = data['engine']
+        obj.engine = data.get('engine', None)
 
         for d in data['used']:
             obj.add_entry(DeviceEntry.from_json(d), save=False)
@@ -100,7 +99,9 @@ class Device:
         self.delta = None
 
         # Engine version.  0 is i1, 1 is i2, 2 is i2cs.  It is obtained from
-        # a get_engine request (cmd=0x0D)
+        # a get_engine request (cmd=0x0D).  Most of the code assumes
+        # relatively new devices (engine 2) but we'll leave it set as None
+        # here to show that we haven't checked the engine version yet.
         self.engine = None
 
         # Map of memory address (int) to DeviceEntry objects that are active
