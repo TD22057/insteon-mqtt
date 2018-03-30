@@ -4,6 +4,7 @@
 #
 #===========================================================================
 import io
+import time
 from ..Address import Address
 from .Base import Base
 from .Flags import Flags
@@ -75,6 +76,12 @@ class InpStandard(Base):
               self.flags.type == Flags.Type.CLEANUP_ACK):
             self.group = self.cmd2
 
+        # This is the time by which the final hop would arrive, used to
+        # detect duplicates.  87 msec is empirical and was found to be an OK
+        # value to use with standard length messages in other Insteon
+        # software (misterhouse?)
+        self.expire_time = time.time() + self.flags.hops_left * 0.087
+
     #-----------------------------------------------------------------------
     def __str__(self):
         if self.group is None:
@@ -84,6 +91,28 @@ class InpStandard(Base):
         else:
             return "Std: %s %s grp: %02x cmd: %02x %02x" % \
                 (self.from_addr, self.flags, self.group, self.cmd1, self.cmd2)
+
+    #-----------------------------------------------------------------------
+    def __eq__(self, rhs):
+        """Checks for message for equality.
+
+        This ignores differences in the hops_left and max_hops field, but if
+        a message is otherwise the same, it is a equal.
+
+        Args:
+          rhs:    (Message) The message to compare to this one.
+
+        Returns:
+          (bool) True if the message is a duplicate false otherwise.
+        """
+        if not isinstance(rhs, InpStandard):
+            return False
+
+        return (self.from_addr == rhs.from_addr and
+                self.flags == rhs.flags and
+                self.group == rhs.group and
+                self.cmd1 == rhs.cmd1 and
+                self.cmd2 == rhs.cmd2)
 
     #-----------------------------------------------------------------------
 
@@ -156,6 +185,12 @@ class InpExtended(Base):
               self.flags.type == Flags.Type.CLEANUP_ACK):
             self.group = self.cmd2
 
+        # This is the time by which the final hop would arrive, used to
+        # detect duplicates.  183 msec is empirical and was found to be an OK
+        # value to use with extended length messages in other Insteon
+        # software (misterhouse?)
+        self.expire_time = time.time() + self.flags.hops_left * 0.183
+
     #-----------------------------------------------------------------------
     def __str__(self):
         o = io.StringIO()
@@ -171,6 +206,29 @@ class InpExtended(Base):
         for i in self.data:
             o.write("%02x " % i)
         return o.getvalue()
+
+    #-----------------------------------------------------------------------
+    def __eq__(self, rhs):
+        """Checks for message for equality.
+
+        This ignores differences in the hops_left and max_hops field, but if
+        a message is otherwise the same, it is a equal.
+
+        Args:
+          rhs:    (Message) The message to compare to this one.
+
+        Returns:
+          (bool) True if the message is a duplicate false otherwise.
+        """
+        if not isinstance(rhs, InpExtended):
+            return False
+
+        return (self.from_addr == rhs.from_addr and
+                self.flags == rhs.flags and
+                self.group == rhs.group and
+                self.cmd1 == rhs.cmd1 and
+                self.cmd2 == rhs.cmd2 and
+                self.data == rhs.data)
 
     #-----------------------------------------------------------------------
 

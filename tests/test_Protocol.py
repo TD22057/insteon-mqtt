@@ -17,6 +17,44 @@ class Test_Protocol:
 
     #-----------------------------------------------------------------------
 
+    def test_duplicate(self):
+        link = MockSerial()
+        proto = IM.Protocol(link)
+
+        # test standard input
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
+        addr = IM.Address('0a.12.33')
+        msg_keep = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
+        dupe = proto._is_duplicate(msg_keep)
+        assert dupe == False
+
+        # test dupe with different hops
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False, hops_left=2,
+                          max_hops=2)
+        addr = IM.Address('0a.12.33')
+        msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
+        dupe = proto._is_duplicate(msg)
+        assert dupe == True
+        assert len(proto._read_history) == 1
+
+        # not correct message type
+        msg = Msg.InpUserReset()
+        dupe = proto._is_duplicate(msg)
+        assert dupe == False
+
+        # test deleting an expired message
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
+        addr = IM.Address('0a.12.44')
+        msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
+        proto._read_history.append(msg)
+        msg.expire_time = 1
+        assert len(proto._read_history) == 2
+        proto._remove_expired_read()
+        assert len(proto._read_history) == 1
+        assert proto._read_history[0] == msg_keep
+
+    #-----------------------------------------------------------------------
+
 #===========================================================================
 
 

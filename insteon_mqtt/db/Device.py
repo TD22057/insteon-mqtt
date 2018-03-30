@@ -57,6 +57,7 @@ class Device:
 
         # Extract the various files from the JSON data.
         obj.delta = data['delta']
+        obj.engine = data.get('engine', None)
 
         for d in data['used']:
             obj.add_entry(DeviceEntry.from_json(d), save=False)
@@ -96,6 +97,12 @@ class Device:
         # call to the device so we can check it against the version we have
         # stored.
         self.delta = None
+
+        # Engine version.  0 is i1, 1 is i2, 2 is i2cs.  It is obtained from
+        # a get_engine request (cmd=0x0D).  Most of the code assumes
+        # relatively new devices (engine 2) but we'll leave it set as None
+        # here to show that we haven't checked the engine version yet.
+        self.engine = None
 
         # Map of memory address (int) to DeviceEntry objects that are active
         # and in use.
@@ -151,6 +158,20 @@ class Device:
         """
         self.delta = delta
         if delta is not None:
+            self.save()
+
+    #-----------------------------------------------------------------------
+    def set_engine(self, engine):
+        """Set the device engine version.
+
+        This records the engine version of the device. 0 is i1, 1 is i2 and
+        2 is i2cs
+
+        Args:
+          engine:  (int) The engine version.  None to clear the engine.
+        """
+        self.engine = engine
+        if engine is not None:
             self.save()
 
     #-----------------------------------------------------------------------
@@ -408,6 +429,7 @@ class Device:
         return {
             'address' : self.addr.to_json(),
             'delta' : self.delta,
+            'engine' : self.engine,
             'used' : used,
             'unused' : unused,
             'last' : self.last.to_json(),
@@ -479,7 +501,7 @@ class Device:
             if entry.db_flags.is_controller and entry.group in self.groups:
                 responders = self.groups[entry.group]
                 for i in range(len(responders)):
-                    if responders[i].addr == entry.addr:
+                    if responders[i].mem_loc == entry.mem_loc:
                         del responders[i]
                         break
 

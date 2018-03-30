@@ -22,8 +22,8 @@ class ModemLinkStart(Base):
         """Constructor
 
         Args:
-           on_done:    Callback to run when we get an ACK or NAK of the
-                       link message.
+          on_done:   The finished callback.  Calling signature:
+                         on_done( bool success, str message, data )
         """
         # pylint: disable=useless-super-delegation
         super().__init__(on_done)

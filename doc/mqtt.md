@@ -11,7 +11,7 @@ be needed that often.  Management commands have a fixed MQTT topic
 (set in configuration file input cmd_topic) and fixed JSON payload
 format.
 
-State chanages can be inputs to the devices in the network (e.g. turn
+State changes can be inputs to the devices in the network (e.g. turn
 a light off, set a dimmer to 50%) or outputs from the system as
 notifications (e.g. motion sensor triggered, light is now at 50%).
 State change command and notification topics and payloads are totally
@@ -22,7 +22,7 @@ are input and output from the system.
 ## Addressing
 
 The Insteon six digit hex code address of a device is it's identifier.
-An optinoal name (set in the config file) can also be used.  MQTT
+An optional name (set in the config file) can also be used.  MQTT
 topics are case sensitive so all Insteon hex addresses must be entered
 in lower case format (e.g. "a1.b2.c3", not "A1.B2.B3").  The modem can
 be identified by it's address or the string "modem".
@@ -71,7 +71,7 @@ documentation below, if a key/value pair is enclosed in square
 brackets [], then it's optional.  If a value can be one of many like
 true or false, then the possible values are separated by a slash /.
 
-The MQTT topic to publish managemeng commands to is (aa.bb.cc is the
+The MQTT topic to publish management commands to is (aa.bb.cc is the
 device address or nice name from the config.yaml file):
 
    ```
@@ -226,7 +226,7 @@ Supported: KeypadLinc
 
 This command turns the LED on a KeypadLinc button on or off.  This also
 toggles the internal state of the button.  So if a button LED is turned off,
-the next click of the button will send out an ON command (and vice versa).
+the next click of the button will send out an ON command (and vice verse).
 Button is an integer in the range [1,8].  In the 6 button version, buttons
 1,2 and 7,8 are not commandable and can only be toggled by sending on/off
 commands.
@@ -242,7 +242,7 @@ Supported: devices
 This command gets and sets various Insteon device flags.  The set of
 supported flags depends on the device type.  The command line tool accepts an
 arbitrary list of "key=value" strings which get sent to the device for
-validation.  For example, to change the backlight level of a switch:
+validation.  For example, to change the back light level of a switch:
 
    ```
    insteon-mqtt config.yaml set-flags aa.bb.cc backlight=0x11
@@ -305,7 +305,7 @@ State change commands can be sent by using the command line tool
 "insteon-mqtt" or by publishing a MQTT message to the specific command
 topic for a device as set in the configuration file.  Devices will
 publish state changes using the state topic set in the configuration
-file and using the format as defined bv the payload templates.
+file and using the format as defined by the payload templates.
 
 The templates are defined using the Jinja2 package.  Each define (and
 command) defines a set of variables that are available for you to use
@@ -575,11 +575,11 @@ A sample remote control topic and payload configuration is:
 
 Battery powered sensors (which include door sensors, hidden door
 sensors, and window sensors) do not accept any input commands.
-Interally, they will send state changes on the Insteon groups 1 for
+Internally, they will send state changes on the Insteon groups 1 for
 motion and 3 for low battery.  Each of these messages only has two
 states, on or off.
 
-The battery powered sensor sends motion events on the "state' configuraiton
+The battery powered sensor sends motion events on the "state' configuration
 topic which defines the following variables defined which can be used
 in the templates:
 
@@ -635,9 +635,10 @@ A sample motion sensor topic and payload configuration is:
 
 ## Leak Sensors
 
-Leak sensors do not accept any input commands.  The low battery
-messages are inherited from the battery sensor inputs.  The leak
-sensor adds another possible state change for wet/dry events.
+Leak sensors do not accept any input commands. The leak
+sensor has state change for wet/dry events and also for heartbeat every 24
+hours. The leak sensors does not report low battery condition like other
+battery operated devices.
 
 The wet/dry change defines the following variables for templates:
 
@@ -651,8 +652,10 @@ A sample leak sensor topic and payload configuration is:
 
    ```
    leak:
-     wet_dry_topic: 'insteon/{{address}}/leak'
+     wet_dry_topic: 'insteon/{{address}}/wet'
      wet_dry_payload: '{{state.upper()}}'
+     heartbeat_topic: 'insteon/{{address}}/heartbeat'
+     heartbeat_payload: '{{state}}'
    ```
 
 ---
@@ -685,7 +688,7 @@ A sample remote control topic and payload configuration is:
 
 A smoke bridge device does not accept any input commands.  Internally,
 they send updates for a number of groups depending on the type of
-alert and a single clear group to say everything is ok.  The system
+alert and a single clear group to say everything is OK.  The system
 will translate those into one of four output MQTT messages (smoke
 detected, CO warning, low battery, and a general error).  When the
 clear message is received internally, an off state is sent to each of

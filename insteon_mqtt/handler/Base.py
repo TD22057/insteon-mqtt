@@ -16,12 +16,13 @@ class Base:
     This class defines the handler API and implements some basic features
     that all the handlers use like a time out and finished callback.
 
-    Time Outs: The Protocol class will call is_expired() at a reasonable
+    Time outs: The Protocol class will call is_expired() at a reasonable
     interval to see if the time out has been reached.  Handlers can use this
     to expire (normal behavior), send addition messages, or whatever custom
     time out behavior they want.  The Protocol will update_expire_time()
     whenever message traffic is received by this handler so that a series of
-    messages won't cause the time out to trigger.
+    messages won't cause the time out to trigger.  If num_retry is set, then
+    a message will be retried that many times after a time out.
 
     Callbacks: most handlers have a "when finished" callback which is run
     when the message sequence is finished.  For convenience, this on_done

@@ -32,7 +32,13 @@ devices = {
 
 #===========================================================================
 def load(path):
-    """TODO: doc
+    """Load the configuration file.
+
+    Args:
+      path:  The file to load
+
+    Returns:
+      (dict) Returns the configuration dictionary.
     """
     with open(path, "r") as f:
         return yaml.load(f, Loader)
@@ -40,7 +46,12 @@ def load(path):
 
 #===========================================================================
 def apply(config, mqtt, modem):
-    """TODO: doc
+    """Apply the configuration to the main MQTT and modem objects.
+
+    Args:
+      config:  The configuration dictionary.
+      mqtt:    (mqtt.Mqtt) The main MQTT handler.
+      modem:   (Modem) The PLM modem object.
     """
     # We must load the MQTT config first - loading the insteon config
     # triggers device creation and we need the various MQTT config's set
@@ -77,8 +88,8 @@ def find(name):
 
 
 # YAML multi-file loading helper.  Original code is from here:
-# https://davidchall.github.io/yaml-includes.html (with no license so
-# I'm assuming it's in the public domain).
+# https://davidchall.github.io/yaml-includes.html (with no license so I'm
+# assuming it's in the public domain).
 class Loader(yaml.Loader):
     def __init__(self, file):
         """Constructor

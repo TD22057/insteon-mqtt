@@ -5,7 +5,10 @@
 #===========================================================================
 # flake8: noqa
 
-__doc__ = """TODO: doc
+__doc__ = """Command line parsing and execution.
+
+This package parses the command line arguments and can start the main server
+or send a variety of commands to a running server process.
 """
 
 #===========================================================================

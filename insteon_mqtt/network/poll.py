@@ -140,7 +140,10 @@ class Manager:
 
         This wlil call Link.close() to shut the links down.
         """
-        links = self.links.values()
+        # We can't iterate over the links dict because call close will remove
+        # items from that dict when the callbacks happen.  So copy the value
+        # and iterate over that.
+        links = list(self.links.values())
         for l in links:
             l.close()
 
@@ -220,9 +223,12 @@ class Manager:
             elif flag & self.EVENT_ERROR:
                 link.close()
 
-        # Poll the links in case they need to do brute force
-        # processing of any kind.
-        for link in self.links.values():
+        # Poll the links in case they need to do brute force processing of
+        # any kind.  There are some cases where the MQTT client poll can
+        # trigger a close - I'm not sure exactly why but it's shown up in
+        # user reports.  So copy the links before iterating since closing the
+        # link mods the dict which isn't allowed.
+        for link in list(self.links.values()):
             link.poll(t)
 
     #-----------------------------------------------------------------------
@@ -262,7 +268,6 @@ class Manager:
           link:          (Link) The link changing state.
           needs_write:   (bool) True if the link has data to write.  False
                          if the link no longer has data to write.
-
         """
         if needs_write:
             self.poll.modify(link.fileno(), self.READ_WRITE)

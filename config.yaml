@@ -344,15 +344,20 @@ mqtt:
   # Leak sensors
   #------------------------------------------------------------------------
 
-  # Leak sensors will use the state and low battery configuration
-  # inputs from battery_sensor and add in the leak topic which is
-  # configured here.
+  # Leak sensors will report the dry/wet status and a heartbeat every 24
+  # hours. The leak sensors does not support low battery signal like other
+  # battery operated devices.
   #
-  # In Home Assistant use MQTT binary sensor with a configuration like:
+  # In Home Assistant use a combination of MQTT binary sensor and template
+  # sensor with a configuration like:
   #   binary_sensor:
   #     - platform: mqtt
   #       state_topic: 'insteon/aa.bb.cc/wet'
   #       device_class: 'moisture'
+  #
+  #   sensors:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/heartbeat'
   leak:
     # Output wet/dry change topic and payload.  This message is sent
     # whenever the device changes state to wet or dry.
@@ -366,6 +371,14 @@ mqtt:
     #   state = 'wet', 'dry'
     wet_dry_topic: 'insteon/{{address}}/wet'
     wet_dry_payload: '{{is_wet_str.upper()}}'
+
+    # Output heartbeat topic and payload.  This message is sent
+    # every 24 hours. Available variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   heartbeat_str = date and time of the last heartbeat
+    heartbeat_topic: 'insteon/{{address}}/heartbeat'
+    heartbeat_payload: '{{heartbeat_str}}'
 
   #------------------------------------------------------------------------
   # Smoke Bridge

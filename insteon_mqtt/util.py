@@ -50,7 +50,7 @@ def make_callback(callback):
 
 #===========================================================================
 def ctrl_str(is_controller):
-    """ TODO: doc
+    """Convert a controller boolean flag to a string description.
     """
     if is_controller:
         return "CTRL"
@@ -60,14 +60,29 @@ def ctrl_str(is_controller):
 
 #===========================================================================
 def bit_get(value, bit):
-    """TODO: doc
+    """Get a bit from an integer.
+
+    Args:
+      value:  (int) The value to get the bit from.
+      bit:    (int) The bit (0..n) to return.
+
+    Returns:
+      Returns the value (0 or 1) of the requested bit.
     """
     return (value >> bit) & 1
 
 
 #===========================================================================
 def bit_set(value, bit, is_one):
-    """TODO: doc
+    """Set a bit in an integer.
+
+    Args:
+      value:  (int) The value to set the bit into.
+      bit:    (int) The bit (0..n) to return.
+      is_one: (bool) True to set the bit to 1, False to set it to 0.
+
+    Returns:
+      Returns the new value with the bit set to the input.
     """
     if is_one:
         return value | (1 << bit)

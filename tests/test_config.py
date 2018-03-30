@@ -10,7 +10,7 @@ import pytest
 class Test_config:
     #-----------------------------------------------------------------------
     def test_basic(self):
-        cls = IM.config.find("dimmer")
+        (cls, args)= IM.config.find("dimmer")
         assert cls == IM.device.Dimmer
 
         cls = IM.config.find("mini_remote8")

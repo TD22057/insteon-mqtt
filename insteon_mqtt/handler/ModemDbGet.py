@@ -27,7 +27,8 @@ class ModemDbGet(Base):
 
         Args
           modem_db:  (db.Modem) The database to update.
-          on_done:   Callback to run when the download finishes.
+          on_done:   The finished callback.  Calling signature:
+                         on_done( bool success, str message, data )
         """
         super().__init__()
 
@@ -50,7 +51,6 @@ class ModemDbGet(Base):
           Msg.UNKNOWN if we can't handle this message.
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
-
         """
         # Import here - at file scope this makes a circular import which is
         # ok in Python>=3.5 but not 3.4.

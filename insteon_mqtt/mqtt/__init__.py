@@ -23,6 +23,7 @@ from .Dimmer import Dimmer
 from .FanLinc import FanLinc
 from .IOLinc import IOLinc
 from .KeypadLinc import KeypadLinc
+from .Leak import Leak
 from .Modem import Modem
 from .Motion import Motion
 from .Mqtt import Mqtt

@@ -30,11 +30,15 @@ class StandardCmd(Base):
         """Constructor
 
         Args
-          msg:      (OutStandard) The output message that was sent.  The
-                    reply must match the address and msg.cmd1 field to be
-                    processed by this handler.
-          callback: Callback function to pass InpStandard messages that match
-                    the output to.  Signature: callback(message, on_done).
+          msg:       (OutStandard) The output message that was sent.  The
+                     reply must match the address and msg.cmd1 field to be
+                     processed by this handler.
+          callback:  Callback function to pass InpStandard messages that match
+                     the output to.  Signature: callback(message, on_done).
+          num_retry: (int) The number of times to retry the message if the
+                     handler times out without returning Msg.FINISHED.
+                     This count does include the initial sending so a
+                     retry of 3 will send once and then retry 2 more times.
         """
         super().__init__(on_done, num_retry)
 
