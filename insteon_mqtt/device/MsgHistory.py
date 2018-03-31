@@ -65,7 +65,7 @@ class MsgHistory:
         # Round up and use at least 1 hop
         num_hops = max(1, int(math.ceil(avg_hops)))
         num_hops = min(3, num_hops)
-        LOG.debug( "Average hops %03.1f, using %d", avg_hops, num_hops)
+        LOG.debug("Average hops %03.1f, using %d", avg_hops, num_hops)
         return num_hops
 
     #-----------------------------------------------------------------------
