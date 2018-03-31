@@ -449,8 +449,6 @@ class Base:
         """
         self.history.add(msg)
 
-
-
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
         """Handle replies to the refresh command.
