@@ -7,3 +7,7 @@ coverage:
 
 coverage with line numbers:
    pytest --cov=insteon_mqtt --cov-report term-missing
+
+coverage with html report output
+   pytest --cov=insteon_mqtt --cov-report html
+
