@@ -54,10 +54,10 @@ run with the --cov flag.  The html option will create an `htmlcov` directory
 that contains html files that graphically show which lines need to have tests
 added.
 
-   '''
+   ```
    # Show lines that need coverage
    pytest --cov=insteon_mqtt --cov-report term-missing
 
    # Create html files that show missing lines
    pytest --cov=insteon_mqtt --cov-report html
-   '''
+   ```
