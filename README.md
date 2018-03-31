@@ -15,7 +15,7 @@ Version: 0.6.2  ([History](HISTORY.md))
 # Quickstart
 
 Blah, blah, blah, too much reading, how do I use it?  [Read the quick
-start guide](doc/quick_start.md)
+start guide](docs/quick_start.md)
 
 
 # Overview
@@ -64,12 +64,12 @@ what they are and how to interpret messages from them.
 # Detailed Documentation
 
 - Each device supports and publishes a different set of MQTT commands.
-  Consult the [device documentation page](doc/mqtt.md) for details
+  Consult the [device documentation page](docs/mqtt.md) for details
   on each those commands.
 
-- [Full system install and automatically starting the server](doc/auto_start.md) on startup.
+- [Full system install and automatically starting the server](docs/auto_start.md) on startup.
 
-- [Development Guide](doc/development.md)
+- [Development Guide](docs/CONTRIBUTING.md)
 
 
 # Future Work
