@@ -27,16 +27,17 @@ topics are case sensitive so all Insteon hex addresses must be entered
 in lower case format (e.g. "a1.b2.c3", not "A1.B2.B3").  The modem can
 be identified by it's address or the string "modem".
 
-   - [Switches](#switches)
+   - [Battery Sensors](#battery-sensors)
    - [Dimmers](#dimmers)
    - [FanLinc](#fanlinc)
-   - [KeypadLinc](#keypadlinc)
    - [IOLinc](#iolinc)
-   - [Battery Sensors](#battery-sensors)
-   - [Motion Sensors](#motion-sensors)
+   - [KeypadLinc](#keypadlinc)
    - [Leak Sensors](#leak-sensors)
+   - [Motion Sensors](#motion-sensors)
+   - [Outlets](#outlets)
    - [Remotes](#remote-controls)
    - [Smoke Bridge](#smoke-bridge)
+   - [Switches](#switches)
 
 
 ## Required links (scenes)
@@ -728,3 +729,66 @@ A sample smoke bridge topic and payload configuration is:
      error_topic: 'insteon/{{address}}/error'
      error_payload: '{{on_str.upper()}}'
    ```
+
+---
+
+## Outlets
+
+On/off outlets will publish their on/off state on the state topic whenever
+the device state changes.  Outlets have only two states: on and off and use
+group 1 for the top outlet and group 2 for the bottom outlet.
+
+Output state change messages have the following variables defined
+which can be used in the templates:
+
+   - 'on' is 1 if the device is on and 0 if the device is off.
+   - 'on_str' is "on" if the device is on and "off" if the device is off.
+   - 'button' is 1 or 2 for the button number.
+
+Input state change messages have the following variables defined which
+can be used in the templates:
+
+   - 'value' is the message payload (string)
+   - 'json' is the message payload converted to JSON format if the
+     conversion succeeds.  Values inside the JSON payload can be
+     accessed using the form 'json.ATTR'.  See the Jinja2 docs for
+     more details.
+
+The input state change payload template must convert the input message
+into the format.  The optional instant key defaults to 0 (normal
+ramping behavior) but can be set to 1 to perform an instant state
+change.
+
+   ```
+   { "cmd" : "on"/"off", "group" : group, ["instant" : 0/1] }
+   ```
+
+The input command can be either a direct on/off command which will just
+change the load connected to the switch (using the on_off inputs) or a scene
+on/off command which simulates pressing the button on the switch (using the
+scene inputs).
+
+Here is a sample configuration that accepts and publishes messages
+using upper case ON an OFF payloads.
+
+   ```
+   outlet:
+      # Output state change:
+      state_topic: 'insteon/{{address}}/state/{{button}}'
+      state_payload: '{{on_str}}'
+
+      # Direct change only changes the load:
+      on_off_topic: 'insteon/{{address}}/set/{{button}}'
+      on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+      # Scene change simulates clicking the switch:
+      scene_topic: 'insteon/{{address}}/scene/{{button}}'
+      scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+   ```
+
+When the ouetl changes state a message like `ON` or `OFF` is
+published to the topic `insteon/a1.b1.c1/state/1`.  To command the
+switch to turn on, send a message to `insteon/a1.b1.c1/set/1` with the
+payload `ON`.
+
+---

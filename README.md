@@ -42,8 +42,9 @@ what they are and how to interpret messages from them.
 - Report state changes for any device in an Insteon scene when the
   scene is triggered.
 - Currently supported Insteon devices
-  - On/off switches (lamp modules, appliance modules, outlets, etc.)
+  - On/off switches (lamp modules, appliance modules, etc.)
   - Dimmer switches (lamp modules, dimmer switches, etc.)
+  - On/off outlets
   - FanLinc dimmer and fan controller
   - KeypadLinc on/off and dimmer and scene controller
   - IOLinc relay and sensor module

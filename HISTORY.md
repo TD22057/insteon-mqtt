@@ -7,6 +7,8 @@
   changing the KeypadLinc inputs in the MQTT portion of the config.yaml file.
   See the file in the repository for the new input fields. ([Issue #33][I33]).
 
+### Additions
+- Added on/off outlet support ([Issue #48][I48]).
 
 ## [0.6.2]
 
@@ -143,4 +145,5 @@
 [I33]: https://github.com/TD22057/insteon-mqtt/issues/33
 [I34]: https://github.com/TD22057/insteon-mqtt/issues/34
 [I37]: https://github.com/TD22057/insteon-mqtt/issues/37
+[I48]: https://github.com/TD22057/insteon-mqtt/issues/48
 [I59]: https://github.com/TD22057/insteon-mqtt/issues/59

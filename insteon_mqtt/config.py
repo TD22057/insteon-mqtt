@@ -26,6 +26,7 @@ devices = {
     'mini_remote4' : (device.Remote, {'num_button' : 4}),
     'mini_remote8' : (device.Remote, {'num_button' : 8}),
     'motion' : (device.Motion, {}),
+    'outlet' : (device.Outlet, {}),
     'smoke_bridge' : (device.SmokeBridge, {}),
     'switch' : (device.Switch, {}),
     }
