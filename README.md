@@ -11,6 +11,12 @@ features and devices.
 
 Version: 0.6.2  ([History](HISTORY.md))
 
+### Breaking changes from last version:
+
+- KeypadLinc now supports both dimmer and on/off device types.  This required
+  changing the KeypadLinc inputs in the MQTT portion of the config.yaml file.
+  See the file in the repository for the new input fields. ([Issue #33][I33]).
+
 
 # Quickstart
 

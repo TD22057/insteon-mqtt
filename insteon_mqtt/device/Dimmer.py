@@ -137,7 +137,7 @@ class Dimmer(Base):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def on(self, group=0x01, level=0xFF, instant=False, on_done=None):
+    def on(self, group=0x01, level=0xff, instant=False, on_done=None):
         """Turn the device on.
 
         This will send the command to the device to update it's state.
@@ -486,7 +486,7 @@ class Dimmer(Base):
             s = "Dimmer %s state updated to %s" % (self.addr, self._level)
             on_done(True, s, msg.cmd2)
 
-        elif msg.flags.Dimmer == Msg.Flags.Type.DIRECT_NAK:
+        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("Dimmer %s NAK error: %s", self.addr, msg)
             on_done(False, "Dimmer %s state update failed", None)
 
@@ -522,11 +522,11 @@ class Dimmer(Base):
 
         # Increment up (32 steps)
         elif cmd == 0x15:
-            self._set_level(max(0xff, self._level + 8))
+            self._set_level(min(0xff, self._level + 8))
 
         # Increment down
         elif cmd == 0x16:
-            self._set_level(min(0x00, self._level - 8))
+            self._set_level(max(0x00, self._level - 8))
 
         # Starting manual increment (cmd2 0x00=up, 0x01=down)
         elif cmd == 0x17:

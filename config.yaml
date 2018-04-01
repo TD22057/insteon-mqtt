@@ -88,9 +88,12 @@ insteon:
     #fan_linc:
     #  - 9a.a1.b3
 
-    # KeypadLinc (dimmer+scene controller).
+    # KeypadLinc dimmers (dimmer+scene controller).
     keypad_linc:
       - 46.7b.bc: 'kp1'
+
+    # KeypadLinc switches (on/off+scene controller).
+    keypad_linc_sw:
       - 3c.42.9b: 'kp2'
 
     # Leak sensors.
@@ -515,12 +518,12 @@ mqtt:
   # Keypad Linc
   #------------------------------------------------------------------------
 
-  # A KeypadLinc is a dimmer switch (Insteon group 1) plus a series of scene
-  # control buttons which operate on other groups.  The dimmer MQTT messages
-  # use the dimmer settings above.  The settings here are just for the other
-  # buttons.  The dimmer settings above allow control of the load.  The other
-  # buttons are controlled like switches - but the only affect is turning on
-  # and off the LED on the button since they have no directly attached load.
+  # A KeypadLinc is an on/off or dimmer switch (Insteon group 1) plus a
+  # series of scene control buttons which operate on other groups.  The group
+  # 1 behavior will depend on whether the device is an on/off or dimmer.  The
+  # 4 or 6 other buttons are controlled like switches - but the only affect
+  # is turning on and off the LED on the button since they have no directly
+  # attached load.
   #
   # 6 button and 8 button keypads have use the following button numbers:
   #    1 on           1       2
@@ -528,26 +531,45 @@ mqtt:
   #  5       6        5       6
   #    1 off          7       8
   #
-  # In Home Assistant, use the dimmer example above for the dimmer
-  # module and use MQTT switches to represent the other buttons:
+  # In Home Assistant, use MQTT switches to represent the on/off switches and
+  # the MQTT json component for a dimmer.
   #   switch:
   #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/state/1'
-  #       command_topic: 'insteon/aa.bb.cc/set/1'
+  #       state_topic: 'insteon/aa.bb.cc/state/2'
+  #       command_topic: 'insteon/aa.bb.cc/set/2'
+  #   light:
+  #     - platform: mqtt_json
+  #       state_topic: "insteon/aa.bb.cc/state/1"
+  #       command_topic: "insteon/aa.bb.cc/set/1"
+  #       brightness: true
   keypad_linc:
-    # Output state change topic and template.  This message is sent
-    # whenever a button is pressed.  Available variables for templating are:
+    # On/off switch state change topic and template.  This message is sent
+    # whenever one of the on/off buttons is pressed.  It will not be sent for
+    # button 1 if it's a dimmer.  Available variables for templating are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
-    #   button = 2-7  (8 button keypads) or 3-6 (6 button keypads)
+    #   button = 1-8
     #   on = 0/1
     #   on_str = 'off', 'on'
     btn_state_topic: 'insteon/{{address}}/state/{{button}}'
     btn_state_payload: '{{on_str.upper()}}'
 
-    # Input on/off command.  Similar functionality to the cmd_topic
-    # but only for turning the button LED on and off.  The output of
-    # passing the payload through the template must match the following:
+    # Dimmer output state change topic and payload for button 1.  This
+    # message is sent whenever the device dimmer state changes for any
+    # reason.  Available variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   on = 0/1
+    #   on_str = 'off', 'on'
+    #   level_255 = 0-255
+    #   level_100 = 0-100
+    dimmer_state_topic: 'insteon/{{address}}/state/1'
+    dimmer_state_payload: >
+       { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
+
+    # Input on/off command.  For button 1, this will set the load.  For other
+    # buttons, it just set the button LED.  The output of passing the payload
+    # through the template must match the following:
     #   { "cmd" : 'on'/'off', "button": button }
     # Available variables for templating are:
     #   value = the input payload
@@ -555,6 +577,31 @@ mqtt:
     #          a variable from a json payload.
     btn_on_off_topic: 'insteon/{{address}}/set/{{button}}'
     btn_on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+    # Input dimming on/off command for button 1.  Similar functionality to
+    # the cmd_topic but only for turning the group 1 on and off and setting
+    # the level.  The output of passing the payload through the template must
+    # match the following:
+    #   { "cmd" : "on"/"off", "level" : LEVEL, ["instant" : 0/1] }
+    # where:
+    #   LEVEL = 0->255 dimmer level
+    # Available variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
+    dimmer_level_topic: 'insteon/{{address}}/level/1'
+    # NOTE: HASS JSON switch doesn't send brightness in some cases
+    # when actuated so handle that here in the template code.  The
+    # other HASS MQTT options also have this problem.
+    dimmer_level_payload: >
+       { "cmd" : "{{json.state.lower()}}",
+         "level" : {% if json.brightness is defined %}
+                      {{json.brightness}}
+                   {% else %}
+                      255
+                   {% endif %} }
 
     # Scene on/off command.  This triggers the scene broadcast on the switch
     # in the same way clicking the button would.  The inputs are the same as

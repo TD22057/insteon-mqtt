@@ -1,5 +1,13 @@
 # Revision Change History
 
+## [0.6.3]
+
+### Breaking Changes
+- KeypadLinc now supports both dimmer and on/off device types.  This required
+  changing the KeypadLinc inputs in the MQTT portion of the config.yaml file.
+  See the file in the repository for the new input fields. ([Issue #33][I33]).
+
+
 ## [0.6.2]
 
 ### Additions
@@ -132,6 +140,7 @@
 [I28]: https://github.com/TD22057/insteon-mqtt/issues/28
 [I29]: https://github.com/TD22057/insteon-mqtt/issues/29
 [I32]: https://github.com/TD22057/insteon-mqtt/issues/32
+[I33]: https://github.com/TD22057/insteon-mqtt/issues/33
 [I34]: https://github.com/TD22057/insteon-mqtt/issues/34
 [I37]: https://github.com/TD22057/insteon-mqtt/issues/37
 [I59]: https://github.com/TD22057/insteon-mqtt/issues/59

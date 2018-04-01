@@ -433,7 +433,7 @@ using a JSON format that contains the level using the tag
    switch:
       # Output state change:
       state_topic: 'insteon/{{address}}/state'
-      state_payload: '{ "state" : "{{on_str}}", "brightness" : {{level}} }'
+      state_payload: '{ "state" : "{{on_str}}", "brightness" : {{level_255}} }'
 
       # Input state change for the load:
       on_off_topic: 'insteon/{{address}}/set'
@@ -528,12 +528,14 @@ matching the Home Assistant MQTT fan configuration.
 
 ## KeypadLinc
 
-The KeypadLinc is a wall mounted dimmer control and scene controller.
-Basically it combines a dimmer switch and remote control.  The dimmer portion
-of the KeypadLinc uses the dimmer settings (see above).  The other buttons
-are treated as switches (see the switch documentation above) but have no load
-connected to them.  KeypadLincs are usually configured as 6 button or 8
-button devices with the following button number layouts:
+The KeypadLinc is a wall mounted on/off or dimmer control and scene
+controller.  Basically it combines a on/off or dimmer switch and remote
+control.  Dimmers and on/off devices are listed under separate entries in the
+input confi file which controls the behavior of the group 1 switch.  The
+other buttons are treated as on/off switches (see the switch documentation
+above) but have no load connected to them.  KeypadLincs are usually
+configured as 6 button or 8 button devices with the following button number
+layouts:
 
 ```
    6 button         8 button
@@ -554,14 +556,24 @@ A sample remote control topic and payload configuration is:
 
    ```
    keypad_linc:
-      # Output state change:
+      # Output on/off state change:
       btn_state_topic: 'insteon/{{address}}/state/{{button}}'
       btn_state_payload: '{{on_str.upper()}}'
 
-      # Input state change.  For any button besides 1, this just
+      # Output dimmer state changes.
+      dimmer_state_topic: 'insteon/{{address}}/state/1'
+      state_payload: '{ "state" : "{{on_str}}", "brightness" : {{level_255}} }'
+
+      # Input on/off state change.  For any button besides 1, this just
       # updates the LED state.
       btn_on_off_topic: 'insteon/{{address}}/set/{{button}}'
       btn_on_off_payload: '{ "cmd" : "{{json.state}}" }'
+
+      # Input dimmer control
+      level_topic: 'insteon/{{address}}/level/1'
+      level_payload: >
+         { "cmd" : "{{json.state}}",
+           "level" : {{json.brightness}} }
 
       # Scene input - simulates clicking the button.
       btn_scene_topic: 'insteon/{{address}}/scene/{{button}}'
