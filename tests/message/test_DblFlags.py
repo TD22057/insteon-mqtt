@@ -45,3 +45,11 @@ class Test_DbFlags:
             self.check(obj, in_use[i], is_ctrl[i], not is_high[i], b[i])
 
     #-----------------------------------------------------------------------
+    def test_copy(self):
+        obj = Msg.DbFlags(1, 2, 3)
+        obj2 = obj.copy()
+        assert obj.in_use == obj2.in_use
+        assert obj.is_controller == obj2.is_controller
+        assert obj.is_last_rec == obj2.is_last_rec
+
+    #-----------------------------------------------------------------------

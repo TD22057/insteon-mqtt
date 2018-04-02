@@ -54,6 +54,8 @@ class Test_OutStandard:
         str(obj)
 
     #-----------------------------------------------------------------------
-
+    def test_size(self):
+        b = bytes([])
+        assert Msg.OutStandard.msg_size(b) == Msg.OutStandard.fixed_msg_size
 
 #===========================================================================

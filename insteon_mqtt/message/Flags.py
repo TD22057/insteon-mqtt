@@ -73,7 +73,11 @@ class Flags:
 
     #-----------------------------------------------------------------------
     def set_hops(self, max_hops):
-        """TODO: doc
+        """Set the maximum number of hops for the message.
+
+        Args:
+          max_hops:  (int) Maximum number of hops to allow.  Must be in the
+                     range [0,3].  Sets hops_left and max_hops to this value.
         """
         assert max_hops >= 0 and max_hops <= 3
         self.hops_left = max_hops
