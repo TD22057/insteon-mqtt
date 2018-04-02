@@ -1,0 +1,30 @@
+logging:
+  level: 10
+
+insteon:
+  port: '/dev/insteon'
+  address: 44.85.11
+  storage: 'data'
+  startup_refresh: False
+  devices:
+    switch:
+      - 37.2d.35: 'lamp1'
+    mini_remote8:
+      - 3f.07.d4: 'remote1'
+
+mqtt:
+  broker: 127.0.0.1
+  port: 1883
+  keep_alive: 30
+  cmd_topic: 'insteon/command'
+  modem:
+    scene_topic: 'insteon/modem/scene'
+    scene_payload: '{{value}}'
+
+  switch:
+    state_topic: 'insteon/{{address}}/state'
+    state_payload: '{{on_str.upper()}}'
+    on_off_topic: 'insteon/{{address}}/set'
+    on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+    scene_topic: 'insteon/{{address}}/scene'
+    scene_payload: '{ "cmd" : "{{value.lower()}}" }'

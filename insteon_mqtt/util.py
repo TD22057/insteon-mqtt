@@ -92,7 +92,19 @@ def bit_set(value, bit, is_one):
 
 #===========================================================================
 def resolve_data3(defaults, inputs):
-    """TODO: doc
+    """Merge default 3 byte list with an input list.
+
+    Creates a byte array of length 3.  If the inputs list element i is not
+    -1, it's used.  Otherwise defaults[i] is used.
+
+    Inputs:
+      defaults:   (list) List of 3 byte values to use for the defaults.
+      inputs:     (list) List of 3 byte values of inputs.  Use -1
+                  at an element to use the default.  Enter None to use all
+                  defaults.
+
+    Returns:
+      (bytes) Returns a 3 byte array.
     """
     values = []
 
@@ -107,8 +119,24 @@ def resolve_data3(defaults, inputs):
 
 #===========================================================================
 def input_choice(inputs, field, choices):
-    """TODO: doc
+    """User input enum utility.
+
+    Extracts inputs[field] and compares it against the valid list of choices.
+    Throws a ValueError if the input is not in choices.  Strings are
+    converted to lower case before matching.
+
+    Inputs:
+      inputs:   (dict) Dict of input keyword arguments.  The input field is
+                removed from this dict.
+      field:    (str) The field to get from inputs.
+      choices:  [] The valid list of values for field.  For strings, should
+                be all lower case.
+
+    Returns:
+      Returns the selected input value.  If field doesn't exist in inputs,
+      None is returned.  String values are converted to lower case.
     """
+    # Extract the field and convert to lower case.
     value = inputs.pop(field, None)
     if value is None:
         return None
@@ -116,6 +144,7 @@ def input_choice(inputs, field, choices):
     if isinstance(value, str):
         value = value.lower()
 
+    # Check the value against the valid options for the field.
     if value not in choices:
         msg = "Invalid %s input.  Valid inputs are on of %s" % \
               (value, str(choices))
@@ -126,20 +155,34 @@ def input_choice(inputs, field, choices):
 
 #===========================================================================
 def input_bool(inputs, field):
-    """TODO: doc
+    """User input bool utility.
+
+    Extracts inputs[field] and compares it against the valid inputs for a
+    boolean: 0, 1, "true", or "false".  Throws a ValueError if the input is
+    not a valid boolean
+
+    Inputs:
+      inputs:   (dict) Dict of input keyword arguments.  The input field is
+                removed from this dict.
+      field:    (str) The field to get from inputs.
+
+    Returns:
+      Returns the field boolean value.  If field doesn't exist in inputs,
+      None is returned.
     """
     value = inputs.pop(field, None)
     if value is None:
         return None
 
-    lv = value.lower()
-    if lv == "true":
-        value = True
-    elif lv == "false":
-        value = False
+    if isinstance(value, str):
+        lv = value.lower()
+        if lv == "true":
+            value = True
+        elif lv == "false":
+            value = False
 
     try:
-        # Use int() because bool("asdf") also returns true.  This insures
+        # Use int() because bool("asdf") also returns true.  This ensures
         # only true/false or 1/0 is allowed.
         return bool(int(value))
     except ValueError:
@@ -149,14 +192,27 @@ def input_bool(inputs, field):
 
 #===========================================================================
 def input_byte(inputs, field):
-    """TODO: doc
+    """User input byte utility.
+
+    Extracts inputs[field] and compares it against the valid inputs for a
+    byte: integer of string containing 0xXX.  Throws a ValueError if the
+    input is not an integer or in the range [0, 255].
+
+    Inputs:
+      inputs:   (dict) Dict of input keyword arguments.  The input field is
+                removed from this dict.
+      field:    (str) The field to get from inputs.
+
+    Returns:
+      Returns the field integer value.  If field doesn't exist in inputs,
+      None is returned.
     """
     value = inputs.pop(field, None)
     if value is None:
         return None
 
     try:
-        if '0x' in value:
+        if isinstance(value, str) and '0x' in value:
             v = int(value, 16)
         else:
             v = int(value)

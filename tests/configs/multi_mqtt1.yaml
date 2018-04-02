@@ -1,0 +1,7 @@
+broker: 127.0.0.1
+port: 1883
+keep_alive: 30
+cmd_topic: 'insteon/command'
+modem:
+  scene_topic: 'insteon/modem/scene'
+  scene_payload: '{{value}}'
