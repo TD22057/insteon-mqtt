@@ -396,7 +396,8 @@ class Outlet(Base):
 
         is_on = response.get(msg.cmd2, None)
         if is_on is None:
-            LOG.error("Outlet %s unknown refresh response %s", self.label, msg.cmd2)
+            LOG.error("Outlet %s unknown refresh response %s", self.label,
+                      msg.cmd2)
             return
 
         LOG.ui(" %s refresh top=%s bottom=%s", self.label, is_on[0], is_on[1])
@@ -507,7 +508,7 @@ class Outlet(Base):
         is_on = bool(is_on)
 
         LOG.info("Setting device %s grp: %s on %s", self.label, group, is_on)
-        self._is_on[group-1] = is_on
+        self._is_on[group - 1] = is_on
 
         # Notify others that the outlet state has changed.
         self.signal_active.emit(self, group, is_on)
