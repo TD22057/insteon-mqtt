@@ -15,7 +15,7 @@ def linking(args, config):
         }
 
     reply = util.send(config, topic, payload, args.quiet)
-    return reply["result"]
+    return reply["status"]
 
 
 #===========================================================================
