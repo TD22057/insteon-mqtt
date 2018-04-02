@@ -78,17 +78,15 @@ def find(name):
       Returns a tuple of the device class to use for the input and
       any extra keyword args to pass to the device class constructor.
     """
-    name = name.lower()
-    dev = devices.get(name, None)
+    dev = devices.get(name.lower(), None)
     if not dev:
         raise Exception("Unknown device name '%s'.  Valid names are "
                         "%s." % (name, devices.keys()))
 
     return dev
 
+
 #===========================================================================
-
-
 # YAML multi-file loading helper.  Original code is from here:
 # https://davidchall.github.io/yaml-includes.html (with no license so I'm
 # assuming it's in the public domain).
