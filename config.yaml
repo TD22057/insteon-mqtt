@@ -251,6 +251,8 @@ mqtt:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
+    # NOTE: this isn't used by the HA example above - it's only useful when
+    # treating the dimmer as an on/off switch and sending ON/OFF payloads
     on_off_topic: 'insteon/{{address}}/set'
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
@@ -536,16 +538,25 @@ mqtt:
   #    1 off          7       8
   #
   # In Home Assistant, use MQTT switches to represent the on/off switches and
-  # the MQTT json component for a dimmer.
-  #   switch:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/state/2'
-  #       command_topic: 'insteon/aa.bb.cc/set/2'
+  # the MQTT json component for a dimmer.  The non-group 1 buttons are switches.
+  #   # dimmers:
   #   light:
   #     - platform: mqtt_json
   #       state_topic: "insteon/aa.bb.cc/state/1"
   #       command_topic: "insteon/aa.bb.cc/set/1"
   #       brightness: true
+  #
+  #   # switches:
+  #   switch:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/state/1'
+  #       command_topic: 'insteon/aa.bb.cc/set/1'
+  #
+  #   # other buttons:
+  #   switch:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/state/2'
+  #       command_topic: 'insteon/aa.bb.cc/set/2'
   keypad_linc:
     # On/off switch state change topic and template.  This message is sent
     # whenever one of the on/off buttons is pressed.  It will not be sent for
@@ -584,8 +595,9 @@ mqtt:
 
     # Input dimming on/off command for button 1.  Similar functionality to
     # the cmd_topic but only for turning the group 1 on and off and setting
-    # the level.  The output of passing the payload through the template must
-    # match the following:
+    # the level.  This topic can be the same as the btn_on_off_topic in which
+    # case either command format is valid. The output of passing the payload
+    # through the template must match the following:
     #   { "cmd" : "on"/"off", "level" : LEVEL, ["instant" : 0/1] }
     # where:
     #   LEVEL = 0->255 dimmer level
@@ -595,7 +607,7 @@ mqtt:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
-    dimmer_level_topic: 'insteon/{{address}}/level/1'
+    dimmer_level_topic: 'insteon/{{address}}/set/1'
     # NOTE: HASS JSON switch doesn't send brightness in some cases
     # when actuated so handle that here in the template code.  The
     # other HASS MQTT options also have this problem.

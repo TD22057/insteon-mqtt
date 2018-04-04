@@ -90,9 +90,34 @@ class KeypadLinc:
           link:   The MQTT network client to use.
           qos:    The quality of service to use.
         """
+        # For dimmers, the button 1 set can be either an on/off or a dimming
+        # command.  And the dimmer topic might have the same topic as the
+        # on/off command.
+        start_group = 1
+        if self.device.is_dimmer:
+            start_group = 2
+
+            # Create the topic names for button 1.
+            data = self.template_data(button=1)
+            topic_switch = self.msg_btn_on_off.render_topic(data)
+            topic_dimmer = self.msg_dimmer_level.render_topic(data)
+
+            # It's possible for these to be the same.  The btn1 handler will
+            # try both payloads to accept either on/off or dimmer commands.
+            if topic_switch == topic_dimmer:
+                link.subscribe(topic_switch, qos, self.handle_btn1)
+
+            # If they are different, we can pass directly to the right
+            # handler for switch commands and dimmer commands.
+            else:
+                handler = functools.partial(self.handle_set, group=1)
+                link.subscribe(topic_switch, qos, handler)
+
+                link.subscribe(topic_dimmer, qos, self.handle_set_level)
+
         # We need to subscribe to each button topic so we know which one is
         # which.
-        for group in range(1, 9):
+        for group in range(start_group, 9):
             handler = functools.partial(self.handle_set, group=group)
             data = self.template_data(button=group)
 
@@ -102,12 +127,6 @@ class KeypadLinc:
             handler = functools.partial(self.handle_scene, group=group)
             topic = self.msg_btn_scene.render_topic(data)
             link.subscribe(topic, qos, handler)
-
-        # Add the input dimmer topic if needed.
-        if self.device.is_dimmer:
-            data = self.template_data(button=1)
-            topic = self.msg_dimmer_level.render_topic(data)
-            link.subscribe(topic, qos, self.handle_set_level)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
@@ -203,6 +222,32 @@ class KeypadLinc:
             return
 
         self.device.set(level=level, instant=instant)
+
+    #-----------------------------------------------------------------------
+    def handle_btn1(self, client, data, message):
+        """Handle button 1 when the on/off topic == dimmer topic
+        """
+        LOG.info("KeypadLinc message %s %s", message.topic, message.payload)
+
+        # Try the input as a dimmer command first.
+        try:
+            if self.msg_dimmer_level.to_json(message.payload, silent=True):
+                self.handle_set_level(client, data, message)
+                return
+        except:
+            pass
+
+        # Try the input as an on/off command.
+        try:
+            if self.msg_btn_on_off.to_json(message.payload, silent=True):
+                self.handle_set(client, data, message, 1)
+                return
+        except:
+            pass
+
+        # If we make it here, it's an error.  To log the error, call the
+        # regular dimmer handler.
+        self.handle_set_level(client, data, message)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, client, data, message, group):
