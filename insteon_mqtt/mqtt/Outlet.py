@@ -154,7 +154,7 @@ class Outlet:
             return
 
         # Tell the device to update it's state.
-        self.device.set(group, is_on, instant=instant)
+        self.device.set(level=is_on, group=group, instant=instant)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, client, data, message, group):

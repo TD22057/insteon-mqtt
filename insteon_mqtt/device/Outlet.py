@@ -91,17 +91,19 @@ class Outlet(Base):
         # be up to date or bad things will happen.
         seq.add(self.refresh)
 
-        # Add the device as a responder to the modem on group 1.  This is
-        # probably already there - and maybe needs to be there before we can
-        # even issue any commands but this check insures that the link is
-        # present on the device and the modem.
-        seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
-                refresh=False)
+        # Add the device as a responder to the modem for group 1 and 2.  This
+        # is probably already there - and maybe needs to be there before we
+        # can even issue any commands but this check insures that the link is
+        # present on the device and the modem.  Group 2 is required to
+        # control the outlet
+        for group in [1, 2]:
+            seq.add(self.db_add_resp_of, group, self.modem.addr, 0x01,
+                    refresh=False)
 
         # Now add the device as the controller of the modem for group 1 and
         # 2.  This lets the modem receive updates about the button presses
         # and state changes.
-        for group in range(1, 3):
+        for group in [1, 2]:
             seq.add(self.db_add_ctrl_of, group, self.modem.addr, group,
                     refresh=False)
 
