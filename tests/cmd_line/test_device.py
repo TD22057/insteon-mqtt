@@ -4,7 +4,6 @@
 #
 #===========================================================================
 import insteon_mqtt as IM
-import pytest
 
 
 class Data:
@@ -23,7 +22,7 @@ class Test_device:
     #-----------------------------------------------------------------------
     def test_linking(self, mocker):
         mocker.patch('insteon_mqtt.cmd_line.util.send')
-        IM.cmd_line.util.send.return_value = { "status" : 10 }
+        IM.cmd_line.util.send.return_value = {"status" : 10}
 
         args = Data(topic="cmd_topic", force=False, quiet=True, group=5,
                     address="aa.bb.cc")
@@ -42,7 +41,7 @@ class Test_device:
     #-----------------------------------------------------------------------
     def test_set_button_led(self, mocker):
         mocker.patch('insteon_mqtt.cmd_line.util.send')
-        IM.cmd_line.util.send.return_value = { "status" : 10 }
+        IM.cmd_line.util.send.return_value = {"status" : 10}
 
         args = Data(topic="cmd_topic", force=False, quiet=True, group=5,
                     address="aa.bb.cc", is_on=True)

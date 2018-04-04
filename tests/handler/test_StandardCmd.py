@@ -87,9 +87,7 @@ class Test_StandardCmd:
         r = handler.msg_received(proto, out)
         assert r == Msg.UNKNOWN
 
-
         # Now pass in the input message.
-
         # expected input meesage
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
         msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
@@ -149,12 +147,12 @@ class Test_StandardCmd:
         assert r == Msg.FINISHED
         assert calls[0] == "Operation complete"
         assert device.db.engine == 0
-        
+
         #i2
         msg = Msg.InpStandard(addr, addr, flags, 0x0D, 0x01)
         r = handler.msg_received(proto, msg)
         assert device.db.engine == 1
-        
+
         #i2cs
         msg = Msg.InpStandard(addr, addr, flags, 0x0D, 0x02)
         r = handler.msg_received(proto, msg)
@@ -167,6 +165,7 @@ class Test_StandardCmd:
 class MockProto:
     def add_handler(self, *args):
         pass
+
 
 class MockModem:
     def __init__(self):

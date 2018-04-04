@@ -99,7 +99,7 @@ class Test_util:
         assert v == 'value1'
 
         v = IM.util.input_choice(inputs, 'invalid', [])
-        assert v == None
+        assert v is None
 
         with pytest.raises(ValueError):
             v = IM.util.input_choice(inputs, 'key2', ['foo', 'bar'])
@@ -123,7 +123,7 @@ class Test_util:
         assert v is False
 
         v = IM.util.input_bool(inputs, 'invalid')
-        assert v == None
+        assert v is None
 
         with pytest.raises(ValueError):
             v = IM.util.input_bool(inputs, 'key5')

@@ -4,7 +4,6 @@
 #
 #===========================================================================
 import insteon_mqtt as IM
-import pytest
 
 
 class Data:
@@ -14,10 +13,6 @@ class Data:
 
 class Test_modem:
     def check_call(self, func, args, config, topic, cmd):
-        payload = {
-            "cmd" : cmd,
-            "force" : args.force
-            }
         call = func.call_args[0]
         assert call[0] == config
         assert call[1] == topic
@@ -28,7 +23,7 @@ class Test_modem:
     #-----------------------------------------------------------------------
     def test_refresh_all(self, mocker):
         mocker.patch('insteon_mqtt.cmd_line.util.send')
-        IM.cmd_line.util.send.return_value = { "status" : 10 }
+        IM.cmd_line.util.send.return_value = {"status" : 10}
 
         args = Data(topic="cmd_topic", force=False, quiet=True)
         config = Data(a=1, b=2)

@@ -70,5 +70,4 @@ class Test_DbFlags:
         assert obj.hops_left == 1
         assert obj.max_hops == 1
 
-
     #-----------------------------------------------------------------------

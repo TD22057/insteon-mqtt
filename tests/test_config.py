@@ -11,7 +11,7 @@ import pytest
 class Test_config:
     #-----------------------------------------------------------------------
     def test_basic(self):
-        (cls, args)= IM.config.find("dimmer")
+        (cls, args) = IM.config.find("dimmer")
         assert cls == IM.device.Dimmer
 
         (cls, args) = IM.config.find("mini_remote8")
@@ -58,7 +58,7 @@ class Test_config:
         file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             'configs', 'multi_error.yaml')
         with pytest.raises(Exception):
-            cfg = IM.config.load(file)
+            IM.config.load(file)
 
 
 #===========================================================================

@@ -4,7 +4,6 @@
 #
 #===========================================================================
 import insteon_mqtt as IM
-import pytest
 
 
 class Test_util:
@@ -23,7 +22,7 @@ class Test_util:
             }
         client = None
         IM.cmd_line.util.callback(client, session, message)
-        assert session["done"] == False
+        assert session["done"] is False
         assert session["status"] == 0
         assert session["end_time"] > 0
 
@@ -32,7 +31,6 @@ class Test_util:
 
     #-----------------------------------------------------------------------
     def test_callback_end(self, capsys):
-        text = "message text"
         reply = IM.mqtt.Reply(IM.mqtt.Reply.Type.END, None)
         json = reply.to_json()
 
@@ -46,7 +44,7 @@ class Test_util:
             }
         client = None
         IM.cmd_line.util.callback(client, session, message)
-        assert session["done"] == True
+        assert session["done"] is True
         assert session["status"] == 0
         assert session["end_time"] > 0
 
@@ -66,7 +64,7 @@ class Test_util:
             }
         client = None
         IM.cmd_line.util.callback(client, session, message)
-        assert session["done"] == False
+        assert session["done"] is False
         assert session["status"] == -1
         assert session["end_time"] > 0
 
@@ -75,6 +73,7 @@ class Test_util:
         assert text in out
 
     #-----------------------------------------------------------------------
+
 
 #===========================================================================
 class MockMessage:
