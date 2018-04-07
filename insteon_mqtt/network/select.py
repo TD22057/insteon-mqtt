@@ -204,7 +204,7 @@ class Manager:
         # Check errors first to close the links.
         for fd in errors:
             link = self.links[fd]
-            link.cloes()
+            link.close()
 
         # Link has data to read.  It may have been closed by the error
         # check so allow for that here.
@@ -217,6 +217,14 @@ class Manager:
             link = self.links.get(fd, None)
             if link:
                 link.write_to_link()
+
+        # Poll the links in case they need to do brute force processing of
+        # any kind.  There are some cases where the MQTT client poll can
+        # trigger a close - I'm not sure exactly why but it's shown up in
+        # user reports.  So copy the links before iterating since closing the
+        # link mods the dict which isn't allowed.
+        for link in list(self.links.values()):
+            link.poll(t)
 
     #-----------------------------------------------------------------------
     def link_closing(self, link):
