@@ -576,10 +576,17 @@ class Device:
 
         # Start by writing the last record - that way if it fails, we don't
         # try and update w/ the new data record.
-        ext_data = last.to_bytes()
-        msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-        msg_handler = handler.DeviceDbModify(self, last)
-        seq.add_msg(msg, msg_handler)
+        if self.engine == 0:
+            i1_entry = last.to_i1_bytes()
+            modify_manager = DeviceModifyManagerI1(device, self,
+                                                   i1_entry, on_done=on_done,
+                                                   num_retry=3)
+            seq.add(modify_manager.start_modify)
+        else:
+            ext_data = last.to_bytes()
+            msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
+            msg_handler = handler.DeviceDbModify(self, last)
+            seq.add_msg(msg, msg_handler)
 
         # Create the new entry at the current last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=is_controller,
@@ -591,7 +598,7 @@ class Device:
             modify_manager = DeviceModifyManagerI1(device, self,
                                                    i1_entry, on_done=on_done,
                                                    num_retry=3)
-            modify_manager.start_modify()
+            seq.add(modify_manager.start_modify)
         else:
             # Add the call to update the data record.
             ext_data = entry.to_bytes()
@@ -599,6 +606,6 @@ class Device:
             msg_handler = handler.DeviceDbModify(self, entry)
             seq.add_msg(msg, msg_handler)
 
-            seq.run()
+        seq.run()
 
     #-----------------------------------------------------------------------
