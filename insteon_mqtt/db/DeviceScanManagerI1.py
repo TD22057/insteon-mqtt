@@ -38,11 +38,11 @@ class DeviceScanManagerI1:
        has been received, at which point it will pass the record onto the db
        handler.
     """
-    def __init__(self, protocol, device_db, on_done=None, num_retry=3):
+    def __init__(self, device, device_db, on_done=None, num_retry=3):
         """Constructor
 
         Args
-          protocol:  (Protocol) The Insteon Protocol object
+          device:  (Device) The Insteon Device object
           device_db: (db.Device) The device database being retrieved.
           force:     (bool) If True, force a db download.  If False, only
                      download the db if it's out of date.
@@ -54,7 +54,7 @@ class DeviceScanManagerI1:
                      retry of 3 will send once and then retry 2 more times.
         """
         self.db = device_db
-        self.protocol = protocol
+        self.device = device
         self.record = []
         self.msb = None
         self.lsb = 0xF8
@@ -80,7 +80,7 @@ class DeviceScanManagerI1:
         msg_handler = handler.StandardCmd(db_msg, self.handle_set_msb,
                                           on_done=on_done,
                                           num_retry=self._num_retry)
-        self.protocol.send(db_msg, msg_handler)
+        self.device.send(db_msg, msg_handler)
 
     #-------------------------------------------------------------------
     def handle_set_msb(self, msg, on_done):
@@ -105,7 +105,7 @@ class DeviceScanManagerI1:
                                               self.handle_get_lsb,
                                               on_done=on_done,
                                               num_retry=self._num_retry)
-            self.protocol.send(db_msg, msg_handler)
+            self.device.send(db_msg, msg_handler)
         else:
             LOG.warning("%s device ACK Set MSB had wrong value: %02x",
                         msg.from_addr, msg.cmd2)
@@ -171,4 +171,4 @@ class DeviceScanManagerI1:
                                               self.handle_get_lsb,
                                               on_done=on_done,
                                               num_retry=self._num_retry)
-            self.protocol.send(db_msg, msg_handler)
+            self.device.send(db_msg, msg_handler)

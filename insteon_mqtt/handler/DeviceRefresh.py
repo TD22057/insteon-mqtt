@@ -118,7 +118,7 @@ class DeviceRefresh(Base):
                 # count here because battery powered devices don't always
                 # respond right away.
                 if self.device.db.engine == 0:
-                    scan_manager = db.DeviceScanManagerI1(protocol,
+                    scan_manager = db.DeviceScanManagerI1(self.device,
                                                           self.device.db,
                                                           on_done=on_done,
                                                           num_retry=3)
