@@ -54,7 +54,7 @@ class MsgHistory:
         """Compute the number of optimal number hops for an outbound message.
 
         Returns:
-          (int) Returns the number of hops to use in the range [1,3].
+          (int) Returns the number of hops to use in the range [0,3].
         """
         if not self._hops:
             return 3
@@ -63,7 +63,7 @@ class MsgHistory:
         avg_hops = float(self._hopSum) / len(self._hops)
 
         # Round up and use at least 1 hop
-        num_hops = max(1, int(math.ceil(avg_hops)))
+        num_hops = max(0, int(math.ceil(avg_hops)))
         num_hops = min(3, num_hops)
         LOG.debug("Average hops %03.1f, using %d", avg_hops, num_hops)
         return num_hops
