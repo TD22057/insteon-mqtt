@@ -324,15 +324,22 @@ class Device:
         new_entry = entry.copy()
         new_entry.db_flags.in_use = False
 
-        # Build the extended db modification message.  This says to modify
-        # the entry in place w/ the new db flags which say this record is no
-        # longer in use.
-        ext_data = new_entry.to_bytes()
-        msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-        msg_handler = handler.DeviceDbModify(self, new_entry, on_done)
+        if self.engine == 0:
+            i1_entry = new_entry.to_i1_bytes()
+            modify_manager = DeviceModifyManagerI1(device, self,
+                                                   i1_entry, on_done=on_done,
+                                                   num_retry=3)
+            modify_manager.start_modify()
+        else:
+            # Build the extended db modification message.  This says to modify
+            # the entry in place w/ the new db flags which say this record is no
+            # longer in use.
+            ext_data = new_entry.to_bytes()
+            msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
+            msg_handler = handler.DeviceDbModify(self, new_entry, on_done)
 
-        # Send the message.
-        device.send(msg, msg_handler)
+            # Send the message.
+            device.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def find_group(self, group):
