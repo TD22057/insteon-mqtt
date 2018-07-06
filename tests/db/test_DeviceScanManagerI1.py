@@ -11,21 +11,21 @@ class Test_Device:
     #-----------------------------------------------------------------------
     def test_start_scan(self):
         # tests start_scan and _set_msb
-        protocol = MockProto()
+        device = MockDevice()
         device_db = IM.db.Device(IM.Address(0x01, 0x02, 0x03))
-        manager = IM.db.DeviceScanManagerI1(protocol, device_db)
+        manager = IM.db.DeviceScanManagerI1(device, device_db)
         
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x28, 0x0F)
         
         manager.start_scan()
-        assert protocol.msgs[0].to_bytes() == db_msg.to_bytes()
+        assert device.msgs[0].to_bytes() == db_msg.to_bytes()
 
     #-----------------------------------------------------------------------
     def test_handle_set_msb(self):
         # tests handle_set_msb
-        protocol = MockProto()
+        device = MockDevice()
         device_db = IM.db.Device(IM.Address(0x01, 0x02, 0x03))
-        manager = IM.db.DeviceScanManagerI1(protocol, device_db)
+        manager = IM.db.DeviceScanManagerI1(device, device_db)
         on_done = None
         manager.msb = 0x0F
         
@@ -34,21 +34,21 @@ class Test_Device:
         msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x28, 0x0E)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x28, 0x0F)
         manager.handle_set_msb(msg, on_done)
-        assert protocol.msgs[0].to_bytes() == db_msg.to_bytes()
+        assert device.msgs[0].to_bytes() == db_msg.to_bytes()
         
         # Test receive correct msb
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
         msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x28, 0x0F)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xF8)
         manager.handle_set_msb(msg, on_done)
-        assert protocol.msgs[1].to_bytes() == db_msg.to_bytes()
+        assert device.msgs[1].to_bytes() == db_msg.to_bytes()
 
     #-----------------------------------------------------------------------
     def test_handle_get_lsb(self):
         # tests handle_get_lsb
-        protocol = MockProto()
+        device = MockDevice()
         device_db = IM.db.Device(IM.Address(0x01, 0x02, 0x03))
-        manager = IM.db.DeviceScanManagerI1(protocol, device_db)
+        manager = IM.db.DeviceScanManagerI1(device, device_db)
         on_done = None
         manager.msb = 0x0F
         calls = []
@@ -61,7 +61,7 @@ class Test_Device:
         msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0xE2)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xF9)
         manager.handle_get_lsb(msg, on_done)
-        assert protocol.msgs[0].to_bytes() == db_msg.to_bytes()
+        assert device.msgs[0].to_bytes() == db_msg.to_bytes()
         assert len(manager.record) == 1
         
         # Group
@@ -69,7 +69,7 @@ class Test_Device:
         msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x01)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xFA)
         manager.handle_get_lsb(msg, on_done)
-        assert protocol.msgs[1].to_bytes() == db_msg.to_bytes()
+        assert device.msgs[1].to_bytes() == db_msg.to_bytes()
         assert len(manager.record) == 2
         
         # Address High
@@ -77,7 +77,7 @@ class Test_Device:
         msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x3A)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xFB)
         manager.handle_get_lsb(msg, on_done)
-        assert protocol.msgs[2].to_bytes() == db_msg.to_bytes()
+        assert device.msgs[2].to_bytes() == db_msg.to_bytes()
         assert len(manager.record) == 3
         
         # Address Mid
@@ -85,7 +85,7 @@ class Test_Device:
         msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x29)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xFC)
         manager.handle_get_lsb(msg, on_done)
-        assert protocol.msgs[3].to_bytes() == db_msg.to_bytes()
+        assert device.msgs[3].to_bytes() == db_msg.to_bytes()
         assert len(manager.record) == 4
         
         # Address Low
@@ -93,7 +93,7 @@ class Test_Device:
         msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x84)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xFD)
         manager.handle_get_lsb(msg, on_done)
-        assert protocol.msgs[4].to_bytes() == db_msg.to_bytes()
+        assert device.msgs[4].to_bytes() == db_msg.to_bytes()
         assert len(manager.record) == 5
         
         # Address D1
@@ -101,7 +101,7 @@ class Test_Device:
         msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x01)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xFE)
         manager.handle_get_lsb(msg, on_done)
-        assert protocol.msgs[5].to_bytes() == db_msg.to_bytes()
+        assert device.msgs[5].to_bytes() == db_msg.to_bytes()
         assert len(manager.record) == 6
         
         # Address D2
@@ -109,7 +109,7 @@ class Test_Device:
         msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x0E)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xFF)
         manager.handle_get_lsb(msg, on_done)
-        assert protocol.msgs[6].to_bytes() == db_msg.to_bytes()
+        assert device.msgs[6].to_bytes() == db_msg.to_bytes()
         assert len(manager.record) == 7
         
         # Address D3
@@ -117,7 +117,7 @@ class Test_Device:
         msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x43)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xF0)
         manager.handle_get_lsb(msg, on_done)
-        assert protocol.msgs[7].to_bytes() == db_msg.to_bytes()
+        assert device.msgs[7].to_bytes() == db_msg.to_bytes()
         assert len(manager.record) == 0
         
         db_flags = Msg.DbFlags(in_use=True, is_controller=True,
@@ -145,7 +145,7 @@ class Test_Device:
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
         msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x08)
         manager.handle_get_lsb(msg, on_done)
-        assert protocol.msgs[8].cmd2 == 0x0E
+        assert device.msgs[8].cmd2 == 0x0E
         
         # test on_done callback on last record
         flags = Msg.DbFlags(True, True, True)
@@ -161,7 +161,7 @@ class Test_Device:
 #===========================================================================
 
 
-class MockProto:
+class MockDevice:
     def __init__(self):
         self.msgs = []
 
