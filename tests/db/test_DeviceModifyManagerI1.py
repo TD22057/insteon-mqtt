@@ -11,10 +11,10 @@ class Test_Device:
     #-----------------------------------------------------------------------
     def test_start_modify(self):
         # tests start_modify and _set_msb
-        device = MockDevice()
+        protocol = MockProto()
         modem = MockModem()
         addr = IM.Address(0x01, 0x02, 0x03)
-        device = IM.device.Base(device, modem, addr)
+        device = IM.device.Base(protocol, modem, addr)
 
         # Create the new entry at the current last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=True,
@@ -29,15 +29,15 @@ class Test_Device:
         db_msg = Msg.OutStandard.direct(device.addr, 0x28, 0x0F)
 
         manager.start_modify()
-        assert device.msgs[0].to_bytes() == db_msg.to_bytes()
+        assert protocol.msgs[0].to_bytes() == db_msg.to_bytes()
 
     #-----------------------------------------------------------------------
     def test_handle_set_msb(self):
         # tests handle_set_msb and get_next_lsb
-        device = MockDevice()
+        protocol = MockProto()
         modem = MockModem()
         addr = IM.Address(0x01, 0x02, 0x03)
-        device = IM.device.Base(device, modem, addr)
+        device = IM.device.Base(protocol, modem, addr)
 
         # Create the new entry at the current last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=True,
@@ -54,22 +54,22 @@ class Test_Device:
         msg = Msg.InpStandard(device.addr, device.addr, flags, 0x28, 0x0E)
         db_msg = Msg.OutStandard.direct(device.addr, 0x28, 0x0F)
         manager.handle_set_msb(msg, None)
-        assert device.msgs[0].to_bytes() == db_msg.to_bytes()
+        assert protocol.msgs[0].to_bytes() == db_msg.to_bytes()
 
         # Test receive correct msb
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
         msg = Msg.InpStandard(device.addr, device.addr, flags, 0x28, 0x0F)
         db_msg = Msg.OutStandard.direct(device.addr, 0x2B, 0xF8)
         manager.handle_set_msb(msg, None)
-        assert device.msgs[1].to_bytes() == db_msg.to_bytes()
+        assert protocol.msgs[1].to_bytes() == db_msg.to_bytes()
 
     #-----------------------------------------------------------------------
     def test_handle_lsb_response(self):
         # tests handle_lsb_response and write_lsb_byte
-        device = MockDevice()
+        protocol = MockProto()
         modem = MockModem()
         addr = IM.Address(0x01, 0x02, 0x03)
-        device = IM.device.Base(device, modem, addr)
+        device = IM.device.Base(protocol, modem, addr)
 
         # Create the new entry at the current last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=True,
@@ -86,22 +86,22 @@ class Test_Device:
         msg = Msg.InpStandard(device.addr, device.addr, flags, 0x2B, 0xA2)
         db_msg = Msg.OutStandard.direct(device.addr, 0x29, 0xE2)
         manager.handle_lsb_response(msg, None)
-        assert device.msgs[0].to_bytes() == db_msg.to_bytes()
+        assert protocol.msgs[0].to_bytes() == db_msg.to_bytes()
 
         # Test receive correct lsb, should cause request for next lsb
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
         msg = Msg.InpStandard(device.addr, device.addr, flags, 0x29, 0xE2)
         db_msg = Msg.OutStandard.direct(device.addr, 0x2B, 0xF9)
         manager.handle_lsb_response(msg, None)
-        assert device.msgs[1].to_bytes() == db_msg.to_bytes()
+        assert protocol.msgs[1].to_bytes() == db_msg.to_bytes()
 
     #-----------------------------------------------------------------------
     def test_finish_write(self):
         # tests the finished entry in advance_lsb
-        device = MockDevice()
+        protocol = MockProto()
         modem = MockModem()
         addr = IM.Address(0x01, 0x02, 0x03)
-        device = IM.device.Base(device, modem, addr)
+        device = IM.device.Base(protocol, modem, addr)
         calls = []
         def callback(success, msg, data):
             calls.append(msg)
@@ -133,7 +133,7 @@ class Test_Device:
 #===========================================================================
 
 
-class MockDevice:
+class MockProto:
     def __init__(self):
         self.msgs = []
 
