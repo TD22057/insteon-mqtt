@@ -527,9 +527,9 @@ class Device:
         # Update it w/ the new information.
         entry.update_from(addr, group, is_controller, data)
 
-        if self.device.db.engine == 0:
+        if self.engine == 0:
             i1_entry = entry.to_i1_bytes()
-            modify_manager = DeviceModifyManagerI1(self.device, self.device.db,
+            modify_manager = DeviceModifyManagerI1(device, self,
                                                    i1_entry, on_done=on_done,
                                                    num_retry=3)
             modify_manager.start_modify()
@@ -579,9 +579,9 @@ class Device:
                                is_last_rec=False)
         entry = DeviceEntry(addr, group, self.last.mem_loc, db_flags, data)
 
-        if self.device.db.engine == 0:
+        if self.engine == 0:
             i1_entry = entry.to_i1_bytes()
-            modify_manager = DeviceModifyManagerI1(self.device, self.device.db,
+            modify_manager = DeviceModifyManagerI1(device, self,
                                                    i1_entry, on_done=on_done,
                                                    num_retry=3)
             modify_manager.start_modify()
