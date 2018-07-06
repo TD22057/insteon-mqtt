@@ -529,7 +529,7 @@ class Device:
 
         if self.device.db.engine == 0:
             i1_entry = entry.to_i1_bytes()
-            modify_manager = DeviceModifyManagerI1(protocol, self.device.db,
+            modify_manager = DeviceModifyManagerI1(self.device, self.device.db,
                                                    i1_entry, on_done=on_done,
                                                    num_retry=3)
             modify_manager.start_modify()
@@ -581,7 +581,7 @@ class Device:
 
         if self.device.db.engine == 0:
             i1_entry = entry.to_i1_bytes()
-            modify_manager = DeviceModifyManagerI1(protocol, self.device.db,
+            modify_manager = DeviceModifyManagerI1(self.device, self.device.db,
                                                    i1_entry, on_done=on_done,
                                                    num_retry=3)
             modify_manager.start_modify()
