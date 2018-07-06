@@ -1,6 +1,7 @@
 pytest>=3.2
 pytest-assume>=1.2
 pytest-cov>=2.4
+pytest-mock>=1.7
 flake8>=3.4
 pylint>=1.7
 bump2version>=0.5.6

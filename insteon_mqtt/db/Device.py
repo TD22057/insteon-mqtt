@@ -219,7 +219,7 @@ class Device:
         return len(self.entries)
 
     #-----------------------------------------------------------------------
-    def add_on_device(self, protocol, addr, group, is_controller, data,
+    def add_on_device(self, device, addr, group, is_controller, data,
                       on_done=None):
         """Add an entry and push the entry to the Insteon device.
 
@@ -237,7 +237,7 @@ class Device:
            on_done( success, message, DeviceEntry )
 
         Args:
-          protocol:      (Protocol) The Insteon protocol object to use for
+          device:        (device.Base) The Insteon device object to use for
                          sending messages.
           addr:          (Address) The address of the device in the database.
           group:         (int) The group the entry is for.
@@ -279,7 +279,7 @@ class Device:
         # those memory addresses and just update them w/ the correct
         # information and mark them as used.
         if add_unused:
-            self._add_using_unused(protocol, addr, group, is_controller, data,
+            self._add_using_unused(device, addr, group, is_controller, data,
                                    on_done, entry)
 
         # If there no unused entries, we need to append one.  Write a new
@@ -289,11 +289,11 @@ class Device:
         # last entry anymore.  This order is important since if either
         # operation fails, the db is still in a valid order.
         else:
-            self._add_using_new(protocol, addr, group, is_controller, data,
+            self._add_using_new(device, addr, group, is_controller, data,
                                 on_done)
 
     #-----------------------------------------------------------------------
-    def delete_on_device(self, protocol, entry, on_done=None):
+    def delete_on_device(self, device, entry, on_done=None):
         """Delete an entry on the Insteon device.
 
         This sends the deletes the input record from the Insteon device.  If
@@ -310,7 +310,7 @@ class Device:
            on_done( success, message, DeviceEntry )
 
         Args:
-          protocol:      (Protocol) The Insteon protocol object to use for
+          device:        (device.Base) The Insteon device object to use for
                          sending messages.
           entry:         (DeviceEntry) The entry to remove.
           on_done:       Optional callback which will be called when the
@@ -331,7 +331,7 @@ class Device:
         msg_handler = handler.DeviceDbModify(self, new_entry, on_done)
 
         # Send the message.
-        protocol.send(msg, msg_handler)
+        device.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def find_group(self, group):
@@ -510,7 +510,7 @@ class Device:
             self.save()
 
     #-----------------------------------------------------------------------
-    def _add_using_unused(self, protocol, addr, group, is_controller, data,
+    def _add_using_unused(self, device, addr, group, is_controller, data,
                           on_done, entry=None):
         """Add an entry using an existing, unused entry.
 
@@ -533,10 +533,10 @@ class Device:
         msg_handler = handler.DeviceDbModify(self, entry, on_done)
 
         # Send the message and handler.
-        protocol.send(msg, msg_handler)
+        device.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def _add_using_new(self, protocol, addr, group, is_controller, data,
+    def _add_using_new(self, device, addr, group, is_controller, data,
                        on_done):
         """Add a anew entry at the end of the database.
 
@@ -552,7 +552,7 @@ class Device:
         LOG.info("Device %s appending new record at mem %#06x", self.addr,
                  self.last.mem_loc)
 
-        seq = CommandSeq(protocol, "Device database update complete", on_done)
+        seq = CommandSeq(device, "Device database update complete", on_done)
 
         # Shift the current last record down 8 bytes.  Make a copy - we'll
         # only update our member var if the write works.

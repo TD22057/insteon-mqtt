@@ -9,13 +9,19 @@ My initial intent with this package is better integrate Insteon into
 Home Assistant and make it easier and more understandable to add new
 features and devices.
 
-Version: 0.6.1  ([History](HISTORY.md))
+Version: 0.6.2  ([History](HISTORY.md))
+
+### Breaking changes from last version:
+
+- KeypadLinc now supports both dimmer and on/off device types.  This required
+  changing the KeypadLinc inputs in the MQTT portion of the config.yaml file.
+  See the file in the repository for the new input fields. ([Issue #33][I33]).
 
 
 # Quickstart
 
 Blah, blah, blah, too much reading, how do I use it?  [Read the quick
-start guide](doc/quick_start.md)
+start guide](docs/quick_start.md)
 
 
 # Overview
@@ -36,10 +42,11 @@ what they are and how to interpret messages from them.
 - Report state changes for any device in an Insteon scene when the
   scene is triggered.
 - Currently supported Insteon devices
-  - On/off switches (lamp modules, appliance modules, outlets, etc.)
+  - On/off switches (lamp modules, appliance modules, etc.)
   - Dimmer switches (lamp modules, dimmer switches, etc.)
+  - On/off outlets
   - FanLinc dimmer and fan controller
-  - KeypadLinc dimmer and scene controller
+  - KeypadLinc on/off and dimmer and scene controller
   - IOLinc relay and sensor module
   - Mini-remotes (4 and 8 button battery powered scene controllers)
   - Battery powered sensors (door, hidden door, window, etc.)
@@ -58,17 +65,18 @@ what they are and how to interpret messages from them.
   powered devices when a message is seen from them (i.e. trip a motion
   sensor or push a remote button to get it to download the database).
 - Trigger modem virtual scenes
+- Automatic inbound message de-duplication.
 
 
 # Detailed Documentation
 
 - Each device supports and publishes a different set of MQTT commands.
-  Consult the [device documentation page](doc/mqtt.md) for details
+  Consult the [device documentation page](docs/mqtt.md) for details
   on each those commands.
 
-- [Full system install and automatically starting the server](doc/auto_start.md) on startup.
+- [Full system install and automatically starting the server](docs/auto_start.md) on startup.
 
-- [Development Guide](doc/development.md)
+- [Development Guide](docs/CONTRIBUTING.md)
 
 
 # Future Work

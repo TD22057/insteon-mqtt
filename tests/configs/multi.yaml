@@ -1,0 +1,6 @@
+logging:
+  level: 10
+
+insteon: !include multi_insteon.yaml
+
+mqtt: !include [multi_mqtt1.yaml, multi_mqtt2.yaml]

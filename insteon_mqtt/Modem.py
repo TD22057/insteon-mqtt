@@ -78,6 +78,10 @@ class Modem:
         # Handle user triggered factory reset of the modem.
         self.protocol.add_handler(handler.ModemReset(self))
 
+        # Log messages as they received so we can track the message hop count
+        # to each device.
+        self.protocol.signal_received.connect(self.handle_received)
+
     #-----------------------------------------------------------------------
     def type(self):
         """Return a nice class name for the device.
@@ -459,6 +463,26 @@ class Modem:
         msg = Msg.OutModemScene(group, cmd1, 0x00)
         msg_handler = handler.ModemScene(self, msg, on_done)
         self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def handle_received(self, msg):
+        """Receives incomming message notifications from protocol
+
+        This is called for every message that is read from the modem.  For
+        standard and extended messages, it will find the device the message
+        is from and notify them it was received.  This is only used to track
+        the hop distance from the modem to each device and isn't used for
+        general message handling.
+
+        Args:
+          msg:    (Msg.Base) The message that arrived.
+        """
+        if not isinstance(msg, (Msg.InpStandard, Msg.InpExtended)):
+            return
+
+        device = self.find(msg.from_addr)
+        if device:
+            device.handle_received(msg)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, group, cmd):

@@ -61,5 +61,8 @@ class Test_Broadcast:
 
 
 class MockProto:
+    def __init__(self):
+        self.signal_received = IM.Signal()
+
     def add_handler(self, *args):
         pass

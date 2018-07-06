@@ -57,7 +57,7 @@ class Leak:
 
         self.msg_wet.load_config(data, 'wet_dry_topic', 'wet_dry_payload', qos)
         self.msg_heartbeat.load_config(data, 'heartbeat_topic',
-                                     'heartbeat_payload', qos)
+                                       'heartbeat_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -117,7 +117,8 @@ class Leak:
           device:   (device.Base) The Insteon device that changed.
           is_heartbeat:   (bool) True for heartbeat, False for not.
         """
-        LOG.info("MQTT received a heartbeat %s = %s", device.label, is_heartbeat)
+        LOG.info("MQTT received heartbeat %s = %s", device.label,
+                 is_heartbeat)
 
         data = {
             "address" : self.device.addr.hex,

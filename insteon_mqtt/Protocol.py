@@ -3,8 +3,10 @@
 # Insteon Protocol class.  Parses PLM data and writes messages.
 #
 #===========================================================================
+import time
 from . import log
 from . import message as Msg
+from .Signal import Signal
 #from . import util
 
 LOG = log.get_logger()
@@ -67,6 +69,9 @@ class Protocol:
         link.signal_read.connect(self._data_read)
         link.signal_wrote.connect(self._msg_written)
 
+        # Message received signal.  Every read message is passed to this.
+        self.signal_received = Signal()  # (Message)
+
         # Inbound message buffer.
         self._buf = bytearray()
 
@@ -85,15 +90,17 @@ class Protocol:
         # handler.Base message handler of the last written message.
         self._write_handler = None
 
-        # Set of possible message handlers to use.  These are handlers
-        # that handle any message besides the replies expected by the
-        # write handler.
+        # Set of possible message handlers to use.  These are handlers that
+        # handle any message that isn't handled by an explicit write handler.
+        # # write handler.
         self._read_handlers = []
 
-        # FUTURE: add message deduplication.
-        #    - Store last message and time tag
-        #    - add __eq__ check to messages (or to store bytes?)
-        #    - if no handler, arrival time near time tag, and same msg, ignore
+        # This is a list of prior read messages that are checked against to
+        # determine if a subsequent message is a duplicate and can be
+        # ignored.  Message are removed when their expired time is exceeded.
+        # Only InpStandard and InpExtended messsages are de-duplicated at
+        # this time.
+        self._read_history = []
 
     #-----------------------------------------------------------------------
     def add_handler(self, handler):
@@ -259,8 +266,59 @@ class Protocol:
             self._buf = self._buf[msg_size:]
             LOG.info("Read %#04x: %s", msg_type, msg)
 
-            # And try to process the message using the handlers.
-            self._process_msg(msg)
+            if self._is_duplicate(msg):
+                LOG.info("Ignored duplicate %s", msg)
+            else:
+                # And try to process the message using the handlers.
+                self._process_msg(msg)
+
+    #-----------------------------------------------------------------------
+    def _is_duplicate(self, msg):
+        """Check whether incomming message is a duplicate.
+
+        Duplicate messages arise because there may be an excess number
+        of hops used in the transmitted message.  There are also times where
+        the duplicate of the exact same message with the same number of hops
+        arives twice.  It is unclear what causes this, but it could result
+        from the transition of a wired signal to wireless and back.
+
+        Args:
+          msg:   Insteon message object to process.
+
+        Returns:
+          True if this is a duplicate message, false otherwise
+        """
+        if not isinstance(msg, (Msg.InpStandard, Msg.InpExtended)):
+            return False
+
+        # Remove any expired messages first.
+        self._remove_expired_read()
+
+        # See if we have a duplicate message.
+        if msg in self._read_history:
+            return True
+        else:
+            self._read_history.append(msg)
+            return False
+
+    #-----------------------------------------------------------------------
+    def _remove_expired_read(self):
+        """Removes old messages from the input message history.
+
+        Removes messages which have expired from the input message history.
+        """
+        current = time.time()
+        expired_idx = []
+
+        # Find all the messages where the current time is after the message
+        # expiration time.
+        for i, msg in enumerate(self._read_history):
+            if current > msg.expire_time:
+                expired_idx.append(i)
+
+        # Remove them in reverse order so that the list indices remain valid.
+        for i in reversed(expired_idx):
+            del self._read_history[i]
 
     #-----------------------------------------------------------------------
     def _process_msg(self, msg):
@@ -274,6 +332,9 @@ class Protocol:
         Args:
           msg:   Insteon message object to process.
         """
+        # Send the general message received notification.
+        self.signal_received.emit(msg)
+
         # If we have a write handler, then most likely the inbound
         # message is a reply to the write so see if it can handle the
         # message.  If the status is FINISHED, then the handler has

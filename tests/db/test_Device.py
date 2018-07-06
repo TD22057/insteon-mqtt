@@ -76,7 +76,6 @@ class Test_Device:
         assert len(obj.groups) == 2
 
         grp = obj.find_group(0x02)
-        print(grp[0].addr)
         assert len(grp) == 2
         assert grp[0].addr == addr
         assert grp[1].addr == addr2

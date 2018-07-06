@@ -139,7 +139,7 @@ class FanLinc(Dimmer):
                                           on_done, num_retry=3)
 
         # Send the message to the PLM modem for protocol.
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def fan_off(self, on_done=None):
@@ -165,7 +165,7 @@ class FanLinc(Dimmer):
                                           on_done)
 
         # Send the message to the PLM modem for protocol.
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def fan_set(self, speed, on_done=None):

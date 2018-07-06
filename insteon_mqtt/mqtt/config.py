@@ -21,6 +21,7 @@ from .KeypadLinc import KeypadLinc
 from .Leak import Leak
 from .Modem import Modem as MqttModem
 from .Motion import Motion
+from .Outlet import Outlet
 from .Remote import Remote
 from .SmokeBridge import SmokeBridge
 from .Switch import Switch
@@ -35,6 +36,7 @@ devices = {
     device.KeypadLinc : KeypadLinc,
     device.Leak : Leak,
     device.Motion : Motion,
+    device.Outlet : Outlet,
     device.Remote : Remote,
     device.SmokeBridge : SmokeBridge,
     device.Switch : Switch,

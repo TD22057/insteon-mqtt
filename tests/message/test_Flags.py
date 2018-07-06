@@ -45,3 +45,29 @@ class Test_DbFlags:
                        type[i] == 5 or type[i] == 7, type[i] == 6, b[i])
 
     #-----------------------------------------------------------------------
+    def test_eq(self):
+        msg1 = Msg.Flags(Msg.Flags.Type.BROADCAST, False)
+
+        msg2 = Msg.Flags(Msg.Flags.Type.BROADCAST, False, 2, 3)
+        assert msg1 == msg2
+
+        msg3 = Msg.Flags(Msg.Flags.Type.BROADCAST, False, 3, 2)
+        assert msg1 == msg3
+
+        msg4 = Msg.Flags(Msg.Flags.Type.BROADCAST, True)
+        assert msg1 != msg4
+
+        msg5 = Msg.Flags(Msg.Flags.Type.DIRECT, False)
+        assert msg1 != msg5
+
+    #-----------------------------------------------------------------------
+    def test_hops(self):
+        obj = Msg.Flags(Msg.Flags.Type.DIRECT, False, 2, 3)
+        assert obj.hops_left == 2
+        assert obj.max_hops == 3
+
+        obj.set_hops(1)
+        assert obj.hops_left == 1
+        assert obj.max_hops == 1
+
+    #-----------------------------------------------------------------------

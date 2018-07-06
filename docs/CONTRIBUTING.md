@@ -41,4 +41,23 @@ Unit tests should be added in the tests directory and run before
 submitting any code.  The goal should be 100% code coverage (I'm
 still working on this one myself).
 
-Tests can be executing by running `pytest` from the top directory.
+Tests can be executing by running `pytest` from the top directory.  To run a
+single test, pass the file name to pytest on the command line.
+
+   ```
+   pytest
+   pytest tests/tests_Address.py
+   ```
+
+Coverage testing shows which lines needs to have test cases added and can be
+run with the --cov flag.  The html option will create an `htmlcov` directory
+that contains html files that graphically show which lines need to have tests
+added.
+
+   ```
+   # Show lines that need coverage
+   pytest --cov=insteon_mqtt --cov-report term-missing
+
+   # Create html files that show missing lines
+   pytest --cov=insteon_mqtt --cov-report html
+   ```

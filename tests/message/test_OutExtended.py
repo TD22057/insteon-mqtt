@@ -13,7 +13,7 @@ class Test_OutExtended:
         flag = Msg.Flags(0b100, True)
         b = bytes([0x02, 0x62,  # code
                    0x3e, 0xe2, 0xc4,  # addr
-                   flag.byte,  # flags
+                   flag.to_bytes()[0],  # flags
                    0x11, 0x01,  # cmd1, cmd2
                    # extended data
                    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
