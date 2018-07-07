@@ -120,13 +120,28 @@ class Base:
         return self.__class__.__name__
 
     #-----------------------------------------------------------------------
-    def send(self, msg, msg_handler):
-        """TODO: doc
+    def send(self, msg, msg_handler, high_priority=False):
+        """Send a message to the device.
+
+        This will use the history of messages received from the device to set
+        the number of hops to use in the message.
+
+        Args:
+          msg:            Output message to write.  This should be an
+                          instance of a message in the message directory that
+                          that starts with 'Out'.
+          msg_handler:    Message handler instance to use when replies to the
+                          message are received.  Any message received after we
+                          write out the msg are passed to this handler until
+                          the handler returns the message.FINISHED flags.
+          high_priority:  (bool)False to add the message at the end of the
+                          queue.  True to insert this message at the start of
+                          the queue.
         """
         if isinstance(msg, Msg.OutStandard):  # handles OutExtended as well
             msg.flags.set_hops(self.history.avg_hops())
 
-        self.protocol.send(msg, msg_handler)
+        self.protocol.send(msg, msg_handler, high_priority)
 
     #-----------------------------------------------------------------------
     def db_path(self):
