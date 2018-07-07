@@ -207,9 +207,7 @@ class Serial(Link):
         # Get the next data packet to write from the write queue and see if
         # enough time has elapsed to write the message.
         data, after_time = self._write_buf[0]
-        LOG.debug("Checking write time %f <? %f", t, after_time) #TODO
         if t < after_time:
-            # TODO: comment this out
             LOG.debug("Waiting to write %f < %f", t, after_time)
             return
 
