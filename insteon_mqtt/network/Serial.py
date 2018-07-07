@@ -59,8 +59,11 @@ class Serial(Link):
         self._baudrate = baudrate
         self._parity = parity
         self._reconnect_dt = reconnect_dt
-        self._write_buf = []
         self._fd = None
+
+        # List of packets to write.  Each is a tuple of (bytes, time) where
+        # the time is the time after which to do the write.
+        self._write_buf = []
 
         # Create the serial client but don't open it yet.  We'll wait
         # for a connection call to do that.
@@ -103,15 +106,23 @@ class Serial(Link):
         return self._fd
 
     #-----------------------------------------------------------------------
-    def write(self, data):
+    def write(self, data, after_time=None):
         """Schedule data for writing to the serial device.
 
-        This pushes the data into a queue for writing to the serial
-        device.  Only after the network event loop flags the device
-        for writing will it actually be written.
+        This pushes the data into a queue for writing to the serial device.
+        Only after the network event loop flags the device for writing will
+        it actually be written.
 
+        Args:
+          after_time: (float) Time in seconds past epoch after which to write
+                      the packet.  If None, the message will be sent whenever
+                      it can.
         """
-        self._write_buf.append(data)
+        # Default after time is 0 which will always write.
+        after_time = after_time if after_time is not None else 0
+
+        # Save the input data to the write queue.
+        self._write_buf.append((data, after_time))
         self.signal_needs_write.emit(self, True)
 
         # if we have exceed the max queue size, pop the oldest packet
@@ -176,14 +187,16 @@ class Serial(Link):
             LOG.exception("Serial read error from %s", self.client.port)
 
     #-----------------------------------------------------------------------
-    def write_to_link(self):
+    def write_to_link(self, t):
         """Write data from the link.
 
-        This will be called by the manager when the file descriptor
-        can be written to.  It will only be called after the link as
-        emitted the signal_needs_write(True).  Once all the data has
-        been written, the link should call
-        self.signal_needs_write.emit(False).
+        This will be called by the manager when the file descriptor can be
+        written to.  It will only be called after the link as emitted the
+        signal_needs_write(True).  Once all the data has been written, the
+        link should call self.signal_needs_write.emit(False).
+
+        Args:
+           t:    (float) The current time (time.time).
         """
         # If there is no more data to write, remove us from the write
         # watching.
@@ -191,8 +204,15 @@ class Serial(Link):
             self.signal_needs_write.emit(self, False)
             return
 
-        # Get the next data packet to write from the write queue.
-        data = self._write_buf[0]
+        # Get the next data packet to write from the write queue and see if
+        # enough time has elapsed to write the message.
+        data, after_time = self._write_buf[0]
+        LOG.debug("Checking write time %f <? %f", t, after_time) #TODO
+        if t < after_time:
+            # TODO: comment this out
+            LOG.debug("Waiting to write %f < %f", t, after_time)
+            return
+
         try:
             # Write as much of that data as possible.
             num = os.write(self._fd, data)
