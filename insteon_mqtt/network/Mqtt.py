@@ -230,14 +230,16 @@ class Mqtt(Link):
         return -1
 
     #-----------------------------------------------------------------------
-    def write_to_link(self):
+    def write_to_link(self, t):
         """Write data from the link.
 
-        This will be called by the manager when the file descriptor
-        can be written to.  It will only be called after the link as
-        emitted the signal_needs_write(True).  Once all the data has
-        been written, the link should call
-        self.signal_needs_write.emit(False).
+        This will be called by the manager when the file descriptor can be
+        written to.  It will only be called after the link as emitted the
+        signal_needs_write(True).  Once all the data has been written, the
+        link should call self.signal_needs_write.emit(False).
+
+        Args:
+           t:    (float) The current time (time.time).
         """
         LOG.debug("MQTT writing")
 
