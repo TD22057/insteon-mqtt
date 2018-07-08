@@ -180,6 +180,7 @@ class Manager:
                 if err.errno != errno.EINTR:
                     raise
             else:
+                # No error was thrown so break out of the while loop.
                 break
 
         # Handle any links that need to be connected.
@@ -213,7 +214,7 @@ class Manager:
 
             # Link has data to write.
             if flag & self.EVENT_WRITE:
-                link.write_to_link()
+                link.write_to_link(t)
 
             # File/socket is shutting down - close the link.
             if flag & self.EVENT_CLOSE:

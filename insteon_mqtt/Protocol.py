@@ -102,6 +102,9 @@ class Protocol:
         # this time.
         self._read_history = []
 
+        # TODO: doc
+        self._next_write_time = 0
+
     #-----------------------------------------------------------------------
     def add_handler(self, handler):
         """Add a universal message handler.
@@ -288,11 +291,18 @@ class Protocol:
         Returns:
           True if this is a duplicate message, false otherwise
         """
-        if not isinstance(msg, (Msg.InpStandard, Msg.InpExtended)):
+        if not isinstance(msg, Msg.InpStandard):  # Also matches InpExtended
             return False
 
+        current = time.time()
+
         # Remove any expired messages first.
-        self._remove_expired_read()
+        self._remove_expired_read(current)
+
+        # Update the next allowed write time based on the number of hops that
+        # are remaining on the inbound message.
+        self._next_write_time = msg.expire_time
+        LOG.debug("Setting next write time: %f", self._next_write_time)
 
         # See if we have a duplicate message.
         if msg in self._read_history:
@@ -302,18 +312,20 @@ class Protocol:
             return False
 
     #-----------------------------------------------------------------------
-    def _remove_expired_read(self):
+    def _remove_expired_read(self, t):
         """Removes old messages from the input message history.
 
         Removes messages which have expired from the input message history.
+
+        Args:
+          t:    (float) The current time.
         """
-        current = time.time()
         expired_idx = []
 
         # Find all the messages where the current time is after the message
         # expiration time.
         for i, msg in enumerate(self._read_history):
-            if current > msg.expire_time:
+            if t > msg.expire_time:
                 expired_idx.append(i)
 
         # Remove them in reverse order so that the list indices remain valid.
@@ -400,34 +412,33 @@ class Protocol:
         This is called by the network link when the message packet has
         been written to the modem.
         """
-        # Currently we don't need to do anything.
-        pass
+        assert self._write_queue
+
+        # Remove the message from the queue since it has been written.
+        msg, handler = self._write_queue.pop(0)
+
+        # Save the handler to have priority processing for any inbound
+        # messages.
+        self._write_handler = handler
+
+        # Tell the handler that we've sent the message to update the current
+        # time out time.
+        handler.sending_message(msg)
 
     #-----------------------------------------------------------------------
     def _send_next_msg(self):
         """Send the next message in the write queue.
 
-        This pops off the first message in the queue and sets it into
-        the write_data field for later processing of replies.
+        This grabs the first message in the queue and sets it into the
+        write_data field for later processing of replies.
         """
         # Get the next output message and handler from the write
         # queue.
-        msg, handler = self._write_queue.pop(0)
-        bytes = msg.to_bytes()
+        msg, handler = self._write_queue[0]
 
+        # Write the message to the PLM modem.  The message will only be sent
+        # when the current time is after the next write time.
         LOG.info("Write to modem: %s", msg)
-        from . import util
-        LOG.debug("Write to modem: %s", util.to_hex(bytes))
-
-        # Write the message to the PLM modem.
-        self.link.write(bytes)
-
-        # Tell the msg data that we've sent the message to update the
-        # current time out time.
-        handler.sending_message(msg)
-
-        # Save the handler to have priority processing any inbound
-        # messages.
-        self._write_handler = handler
+        self.link.write(msg.to_bytes(), self._next_write_time)
 
     #-----------------------------------------------------------------------

@@ -10,6 +10,19 @@
 ### Additions
 - Added on/off outlet support ([Issue #48][I48]).
 
+- Added support for older I1 devices (thanks @krkeegan).  This should allow
+  refresh command and database manipulation for 5+ year old devices.
+  ([Issue #17][I17]).
+
+- Added support for automatic maximum hop computations in messages.  This
+  should reduce delays and load on the insteon network  (thanks @krkeegan).
+  ([Issue #43][I43]).
+
+- Added support for waiting to write messages until the maximum number of
+  hops have elapsed.  This should reduce subtle bugs where the Insteon
+  network could get overloaded by sending messages to quickly.
+  (thanks @krkeegan). (Issue #45][I45]).
+
 ## [0.6.2]
 
 ### Additions
@@ -134,6 +147,7 @@
 [I12]: https://github.com/TD22057/insteon-mqtt/issues/12
 [I13]: https://github.com/TD22057/insteon-mqtt/issues/13
 [I16]: https://github.com/TD22057/insteon-mqtt/issues/16
+[I17]: https://github.com/TD22057/insteon-mqtt/issues/17
 [I18]: https://github.com/TD22057/insteon-mqtt/issues/18
 [I20]: https://github.com/TD22057/insteon-mqtt/issues/20
 [I21]: https://github.com/TD22057/insteon-mqtt/issues/21
@@ -145,5 +159,7 @@
 [I33]: https://github.com/TD22057/insteon-mqtt/issues/33
 [I34]: https://github.com/TD22057/insteon-mqtt/issues/34
 [I37]: https://github.com/TD22057/insteon-mqtt/issues/37
+[I43]: https://github.com/TD22057/insteon-mqtt/issues/43
+[I45]: https://github.com/TD22057/insteon-mqtt/issues/45
 [I48]: https://github.com/TD22057/insteon-mqtt/issues/48
 [I59]: https://github.com/TD22057/insteon-mqtt/issues/59

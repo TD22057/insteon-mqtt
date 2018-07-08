@@ -592,7 +592,7 @@ def go( level=0xFF ):
 # 02 50 3f 07 d4 00 00 02 cb 11 00
 # 02 50 3f 07 d4 00 00 02 cf 11 00
 # 02 50 3f 07 d4 00 00 02 cf 13 00
-# 02 50 3f 07 d4 00 00 02 cf 13 00 
+# 02 50 3f 07 d4 00 00 02 cf 13 00
 
 # double click button:
 # 02 50 3f 07 d4 00 00 02 cf 12 00
@@ -600,3 +600,39 @@ def go( level=0xFF ):
 # then again:
 # 02 50 3f 07 d4 00 00 02 cf 14 00
 
+
+#=======================================================
+# test get extended for remotelinc
+get_ext = bytes( [
+    0x02, 0x62,  # header
+    0x3f, 0x07, 0xd4,
+    0x1f, # flags - ext message.
+    0x2e, 0x00,  # extended get flags
+    # 14 byte extended
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0xd2
+    ] )
+
+# 02 62 3f 07 d4 1f 2e 00 00 00 00 00 00 00 00 00 00 00 00 00 00 d2 06
+# 02 50
+# 3f 07 d4
+# 44 85 11
+# 2f 2e 00
+# 02 51
+# 3f 07 d4
+# 44 85 11
+# 1b 2e 00
+# 00
+# 01  D2 data response
+# 04  D3 awake time in seconds
+# 00  D4 heartbeat interval
+# 00  D5 number of heartbeat messages
+# 00  D6 button trigger command
+# 00  D7
+# 03  D8
+# b2  D9  (178/50 = 3.56)
+# a6  D10  (166/50 = 3.32)
+# 8f  D11  (143/150 = 2.86)
+# 00  D12
+# 00  D13
+# d2  D14  checksum
