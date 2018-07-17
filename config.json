@@ -1,7 +1,7 @@
 {
     "name": "Insteon MQTT",
     "description": "Test",
-    "version": "0.0.1",
+    "version": "0.6.2",
     "startup": "services",
     "boot": "auto",
     "auto_uart": true,
