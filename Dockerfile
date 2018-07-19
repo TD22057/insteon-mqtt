@@ -6,6 +6,7 @@ RUN apk --no-cache add python3-dev
 
 COPY . /opt/insteon-mqtt
 
-RUN pip3 install /opt/insteon-mqtt
+RUN pip3 install /opt/insteon-mqtt && \
+    chmod +x /opt/insteon-mqtt/entrypoint.sh
 
 CMD ["/opt/insteon-mqtt/entrypoint.sh"]
