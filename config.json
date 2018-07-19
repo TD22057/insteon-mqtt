@@ -6,7 +6,7 @@
     "startup": "services",
     "boot": "auto",
     "auto_uart": true,
-    "map": ["config"],
+    "map": ["config:rw"],
     "options": {},
     "schema": {},
     "image": "lnr0626/{arch}-insteon-mqtt"
