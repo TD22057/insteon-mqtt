@@ -8,4 +8,4 @@ COPY . /opt/insteon-mqtt
 
 RUN pip3 install /opt/insteon-mqtt
 
-CMD ["entrypoint.sh"]
+CMD ["/opt/insteon-mqtt/entrypoint.sh"]
