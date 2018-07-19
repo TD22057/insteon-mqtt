@@ -1,11 +1,13 @@
 {
     "name": "Insteon MQTT",
-    "description": "Test",
+    "description": "Python Insteon PLM <-> MQTT bridge",
+    "slug": "insteon-mqtt",
     "version": "0.6.2",
     "startup": "services",
     "boot": "auto",
     "auto_uart": true,
     "map": ["config"],
-    "devices": ["/dev/insteon"],
+    "options": {},
+    "schema": {},
     "image": "lnr0626/{arch}-insteon-mqtt"
 }
