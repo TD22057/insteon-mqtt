@@ -48,7 +48,7 @@ This package assumes that you:
 7) Download an Insteon device database for every device.  This may
    take awhile and battery operated devices (motion sensors, remotes,
    etc) will fail because they aren't awake. Publish the following command
-   to `insteon/{modem address}/modem`
+   to `insteon/command/modem`
 
    ```
    { "cmd": "refresh_all", "force": false }
@@ -59,7 +59,7 @@ This package assumes that you:
    device) and then quickly send a command to the Insteon hex address
    of that device to download the database (hopefully this will be
    automatic in the future). Publish the following command to 
-   `insteon/aa.bb.cc`
+   `insteon/command/aa.bb.cc`
 
    ```
    { "cmd": "refresh", "force": false }
@@ -76,7 +76,7 @@ This package assumes that you:
    the device to the PLM modem may not exist and the functionality of the
    device with the Insteon-MQTT system may not work until pair() is called.
    
-   Publish the following command to `insteon/aa.bb.cc`
+   Publish the following command to `insteon/command/aa.bb.cc`
    ```
    { "cmd": "pair" }
    ```
