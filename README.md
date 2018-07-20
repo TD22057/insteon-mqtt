@@ -23,6 +23,8 @@ Version: 0.6.2  ([History](HISTORY.md))
 Blah, blah, blah, too much reading, how do I use it?  [Read the quick
 start guide](docs/quick_start.md)
 
+Using hassio? [Read the hass.io quick start guide](docs/hassio_quick_start.md)
+
 
 # Overview
 
