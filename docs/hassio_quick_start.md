@@ -1,5 +1,7 @@
 # Insteon-MQTT Bridge Quick Start for Hass.io users
 
+## First time installation
+
 This package assumes that you:
 
 - Have a hass.io installation up and running with either SSH access or a 
@@ -83,3 +85,8 @@ This package assumes that you:
    one time.  The refresh command only needs to be sent again if you
    make changes to the Insteon links (scenes) manually without using
    the server.
+
+## Updating
+
+To update, replace your `/addons/insteon-mqtt/config.json` with the most
+recent `hassio/config.json
