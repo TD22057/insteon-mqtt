@@ -92,19 +92,17 @@ def bit_set(value, bit, is_one):
 
 #===========================================================================
 def resolve_data3(defaults, inputs):
-    """Merge default 3 byte list with an input list.
+    """Turn a user input into a list of 3 bytes for link data.
 
-    Creates a byte array of length 3.  If the inputs list element i is not
-    -1, it's used.  Otherwise defaults[i] is used.
+    The user input can be None (use defaults).  Or a list of 3 values.
+    If a value is -1, then the default for that value is used.
 
-    Inputs:
-      defaults:   (list) List of 3 byte values to use for the defaults.
-      inputs:     (list) List of 3 byte values of inputs.  Use -1
-                  at an element to use the default.  Enter None to use all
-                  defaults.
+    Args:
+      defaults:  (bytes[3]) Default values to use.
+      inputs:    User input.
 
     Returns:
-      (bytes) Returns a 3 byte array.
+      (bytes[3]) Returns a 3 byte list to use as the insteon link data.
     """
     values = []
 
@@ -119,22 +117,20 @@ def resolve_data3(defaults, inputs):
 
 #===========================================================================
 def input_choice(inputs, field, choices):
-    """User input enum utility.
+    """Check a user input against a list of valid choices.
 
-    Extracts inputs[field] and compares it against the valid list of choices.
-    Throws a ValueError if the input is not in choices.  Strings are
-    converted to lower case before matching.
+    Errors:
+      If inputs[field] is not in the choices list, an exception is thrown.
 
-    Inputs:
-      inputs:   (dict) Dict of input keyword arguments.  The input field is
-                removed from this dict.
-      field:    (str) The field to get from inputs.
-      choices:  [] The valid list of values for field.  For strings, should
-                be all lower case.
+    Args:
+      inputs:   (dict) Key/value pairs of user input fields.
+      field:    (str) The field to check.
+      choices:  (list) Valid choices for the field.
 
     Returns:
-      Returns the selected input value.  If field doesn't exist in inputs,
-      None is returned.  String values are converted to lower case.
+      Returns the field from the input dict.  For strings, the valiue is
+      always converted to lower case.  If the field doesn't exist in inputs,
+      None is returned.
     """
     # Extract the field and convert to lower case.
     value = inputs.pop(field, None)
@@ -155,20 +151,20 @@ def input_choice(inputs, field, choices):
 
 #===========================================================================
 def input_bool(inputs, field):
-    """User input bool utility.
+    """Convert an input field to a boolean.
 
-    Extracts inputs[field] and compares it against the valid inputs for a
-    boolean: 0, 1, "true", or "false".  Throws a ValueError if the input is
-    not a valid boolean
+    Valid boolean inputs are 'true', 'false', 1, 0, True, or False.
 
-    Inputs:
-      inputs:   (dict) Dict of input keyword arguments.  The input field is
-                removed from this dict.
-      field:    (str) The field to get from inputs.
+    Errors:
+      If the input is not a valid bool, an exception is thrown.
+
+    Args:
+      inputs:   (dict) Key/value pairs of user inputs.
+      field:    (str) The field to get.
 
     Returns:
-      Returns the field boolean value.  If field doesn't exist in inputs,
-      None is returned.
+      Returns None if field is not in inputs.  Otherwise the input field
+      is converted to a boolean and returned.
     """
     value = inputs.pop(field, None)
     if value is None:
@@ -192,20 +188,21 @@ def input_bool(inputs, field):
 
 #===========================================================================
 def input_byte(inputs, field):
-    """User input byte utility.
+    """Convert an input field to a byte.
 
-    Extracts inputs[field] and compares it against the valid inputs for a
-    byte: integer of string containing 0xXX.  Throws a ValueError if the
-    input is not an integer or in the range [0, 255].
+    Valid byte inputs are integers or strings leading with '0x' (base
+    16 hex value).
 
-    Inputs:
-      inputs:   (dict) Dict of input keyword arguments.  The input field is
-                removed from this dict.
-      field:    (str) The field to get from inputs.
+    Errors:
+      If the input is not a valid byte, an exception is thrown.
+
+    Args:
+      inputs:   (dict) Key/value pairs of user inputs.
+      field:    (str) The field to get.
 
     Returns:
-      Returns the field integer value.  If field doesn't exist in inputs,
-      None is returned.
+      Returns None if field is not in inputs.  Otherwise the input field
+      is converted to a byte and returned.
     """
     value = inputs.pop(field, None)
     if value is None:
