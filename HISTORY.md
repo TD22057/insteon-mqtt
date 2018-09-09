@@ -8,6 +8,9 @@
   See the file in the repository for the new input fields. ([Issue #33][I33]).
 
 ### Additions
+- HassIO and docker support and is now available.  See the main doc page for
+  a link to the docs (thanks @lnr0626) ([Issue #63][I63], #76[I76]).
+
 - Added on/off outlet support ([Issue #48][I48]).
 
 - Added support for older I1 devices (thanks @krkeegan).  This should allow
@@ -163,3 +166,5 @@
 [I45]: https://github.com/TD22057/insteon-mqtt/issues/45
 [I48]: https://github.com/TD22057/insteon-mqtt/issues/48
 [I59]: https://github.com/TD22057/insteon-mqtt/issues/59
+[I64]: https://github.com/TD22057/insteon-mqtt/issues/64
+[I76]: https://github.com/TD22057/insteon-mqtt/issues/76
