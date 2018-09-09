@@ -176,7 +176,7 @@ class Serial(Link):
         """
         try:
             # Read from the file descriptor.
-            data = os.read(self._fd, self.read_buf_size)
+            data = self.client.read(self.read_buf_size)
             if data:
                 #LOG.debug("Read %s bytes from serial %s: %s", len(data),
                 #               self.client.port, data)
@@ -213,8 +213,7 @@ class Serial(Link):
 
         try:
             # Write as much of that data as possible.
-            num = os.write(self._fd, data)
-
+            num = self.client.write(data)
             LOG.debug("Wrote %s bytes to serial %s", num, self.client.port)
 
             if num == len(data):
