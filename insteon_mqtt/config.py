@@ -20,11 +20,13 @@ devices = {
     'battery_sensor' : (device.BatterySensor, {}),
     'fan_linc' : (device.FanLinc, {}),
     'io_linc' : (device.IOLinc, {}),
-    'keypad_linc' : (device.KeypadLinc, {}),
+    'keypad_linc' : (device.KeypadLinc, {'dimmer' : True}),
+    'keypad_linc_sw' : (device.KeypadLinc, {'dimmer' : False}),
     'leak' : (device.Leak, {}),
-    'mini_remote4' : (device.Remote, {'num_button': 4}),
-    'mini_remote8' : (device.Remote, {'num_button': 8}),
+    'mini_remote4' : (device.Remote, {'num_button' : 4}),
+    'mini_remote8' : (device.Remote, {'num_button' : 8}),
     'motion' : (device.Motion, {}),
+    'outlet' : (device.Outlet, {}),
     'smoke_bridge' : (device.SmokeBridge, {}),
     'switch' : (device.Switch, {}),
     }
@@ -76,17 +78,15 @@ def find(name):
       Returns a tuple of the device class to use for the input and
       any extra keyword args to pass to the device class constructor.
     """
-    name = name.lower()
-    dev = devices.get(name, None)
+    dev = devices.get(name.lower(), None)
     if not dev:
         raise Exception("Unknown device name '%s'.  Valid names are "
                         "%s." % (name, devices.keys()))
 
     return dev
 
+
 #===========================================================================
-
-
 # YAML multi-file loading helper.  Original code is from here:
 # https://davidchall.github.io/yaml-includes.html (with no license so I'm
 # assuming it's in the public domain).

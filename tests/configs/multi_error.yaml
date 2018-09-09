@@ -1,0 +1,4 @@
+logging:
+  level: 10
+
+insteon: !include {foo:bar}

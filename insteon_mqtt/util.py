@@ -132,6 +132,7 @@ def input_choice(inputs, field, choices):
       always converted to lower case.  If the field doesn't exist in inputs,
       None is returned.
     """
+    # Extract the field and convert to lower case.
     value = inputs.pop(field, None)
     if value is None:
         return None
@@ -139,6 +140,7 @@ def input_choice(inputs, field, choices):
     if isinstance(value, str):
         value = value.lower()
 
+    # Check the value against the valid options for the field.
     if value not in choices:
         msg = "Invalid %s input.  Valid inputs are on of %s" % \
               (value, str(choices))
@@ -168,14 +170,15 @@ def input_bool(inputs, field):
     if value is None:
         return None
 
-    lv = value.lower()
-    if lv == "true":
-        value = True
-    elif lv == "false":
-        value = False
+    if isinstance(value, str):
+        lv = value.lower()
+        if lv == "true":
+            value = True
+        elif lv == "false":
+            value = False
 
     try:
-        # Use int() because bool("asdf") also returns true.  This insures
+        # Use int() because bool("asdf") also returns true.  This ensures
         # only true/false or 1/0 is allowed.
         return bool(int(value))
     except ValueError:
@@ -206,7 +209,7 @@ def input_byte(inputs, field):
         return None
 
     try:
-        if '0x' in value:
+        if isinstance(value, str) and '0x' in value:
             v = int(value, 16)
         else:
             v = int(value)

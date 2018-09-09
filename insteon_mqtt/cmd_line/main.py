@@ -153,7 +153,7 @@ def parse_args(args):
                     help="Don't print any command results to the screen.")
     sp.add_argument("address", help="Device address or name.")
     sp.add_argument("group", type=int, help="Group (button) number of the "
-                    "scene to trigger (use 0x01 for single buttons.")
+                    "scene to trigger (use 1 for single buttons.")
     sp.add_argument("is_on", type=int, default=1, choices=[0, 1],
                     help="1 to turn the scene on, 0 to turn it off.")
     sp.set_defaults(func=device.scene)

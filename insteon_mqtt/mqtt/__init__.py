@@ -28,6 +28,7 @@ from .Modem import Modem
 from .Motion import Motion
 from .Mqtt import Mqtt
 from .MsgTemplate import MsgTemplate
+from .Outlet import Outlet
 from .Remote import Remote
 from .Reply import Reply
 from .SmokeBridge import SmokeBridge

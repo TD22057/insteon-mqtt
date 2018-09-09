@@ -10,7 +10,7 @@ import insteon_mqtt.message as Msg
 class Test_Protocol:
     def test_reads(self):
         link = MockSerial()
-        proto = IM.Protocol(link)
+        IM.Protocol(link)
 
         link.signal_read.emit(link, bytes([0x01, 0x03, 0x04]))
         link.signal_read.emit(link, bytes([0x02, 0x03, 0x04]))
@@ -26,7 +26,7 @@ class Test_Protocol:
         addr = IM.Address('0a.12.33')
         msg_keep = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
         dupe = proto._is_duplicate(msg_keep)
-        assert dupe == False
+        assert dupe is False
 
         # test dupe with different hops
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False, hops_left=2,
@@ -34,13 +34,13 @@ class Test_Protocol:
         addr = IM.Address('0a.12.33')
         msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
         dupe = proto._is_duplicate(msg)
-        assert dupe == True
+        assert dupe is True
         assert len(proto._read_history) == 1
 
         # not correct message type
         msg = Msg.InpUserReset()
         dupe = proto._is_duplicate(msg)
-        assert dupe == False
+        assert dupe is False
 
         # test deleting an expired message
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)

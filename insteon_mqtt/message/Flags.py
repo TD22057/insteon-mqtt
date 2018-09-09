@@ -71,10 +71,17 @@ class Flags:
                       type == Flags.Type.CLEANUP_NAK
         self.is_broadcast = type == Flags.Type.ALL_LINK_BROADCAST
 
-        self.byte = self.type.value << 5 | \
-                    self.is_ext << 4 | \
-                    self.hops_left << 2 | \
-                    self.max_hops
+    #-----------------------------------------------------------------------
+    def set_hops(self, max_hops):
+        """Set the maximum number of hops for the message.
+
+        Args:
+          max_hops:  (int) Maximum number of hops to allow.  Must be in the
+                     range [0,3].  Sets hops_left and max_hops to this value.
+        """
+        assert max_hops >= 0 and max_hops <= 3
+        self.hops_left = max_hops
+        self.max_hops = max_hops
 
     #-----------------------------------------------------------------------
     def to_bytes(self):
@@ -86,7 +93,11 @@ class Flags:
         Returns:
            (bytes) Returns a 1 byte array containing the bit flags.
         """
-        return bytes([self.byte])
+        value = self.type.value << 5 | \
+                self.is_ext << 4 | \
+                self.hops_left << 2 | \
+                self.max_hops
+        return bytes([value])
 
     #-----------------------------------------------------------------------
     def __eq__(self, rhs):

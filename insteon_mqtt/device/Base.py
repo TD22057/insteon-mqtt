@@ -5,6 +5,7 @@
 #===========================================================================
 import json
 import os.path
+from .MsgHistory import MsgHistory
 from ..Address import Address
 from ..CommandSeq import CommandSeq
 from .. import db
@@ -76,6 +77,10 @@ class Base:
         self.addr = Address(address)
         self.name = name
 
+        # Moving window history of messages that are received from the
+        # device.  Used for optimal hop computations.
+        self.history = MsgHistory()
+
         # Make some nice labels to make logging easier.
         self.label = str(self.addr)
         if self.name:
@@ -113,6 +118,30 @@ class Base:
         """Return a nice class name for the device.
         """
         return self.__class__.__name__
+
+    #-----------------------------------------------------------------------
+    def send(self, msg, msg_handler, high_priority=False):
+        """Send a message to the device.
+
+        This will use the history of messages received from the device to set
+        the number of hops to use in the message.
+
+        Args:
+          msg:            Output message to write.  This should be an
+                          instance of a message in the message directory that
+                          that starts with 'Out'.
+          msg_handler:    Message handler instance to use when replies to the
+                          message are received.  Any message received after we
+                          write out the msg are passed to this handler until
+                          the handler returns the message.FINISHED flags.
+          high_priority:  (bool)False to add the message at the end of the
+                          queue.  True to insert this message at the start of
+                          the queue.
+        """
+        if isinstance(msg, Msg.OutStandard):  # handles OutExtended as well
+            msg.flags.set_hops(self.history.avg_hops())
+
+        self.protocol.send(msg, msg_handler, high_priority)
 
     #-----------------------------------------------------------------------
     def db_path(self):
@@ -174,7 +203,7 @@ class Base:
         msg = Msg.OutExtended.direct(self.addr, 0x09, group,
                                      bytes([0x00] * 14))
         msg_handler = handler.StandardCmd(msg, self.handle_linking, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
         # NOTE: this command is to enter linking mode - we get ACK back that
         # it did, but unlike the modem, we don't get a message telling us
@@ -222,7 +251,7 @@ class Base:
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
                                             on_done, num_retry=3)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def get_flags(self, on_done=None):
@@ -236,7 +265,7 @@ class Base:
         # download command to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x1f, 0x00)
         msg_handler = handler.StandardCmd(msg, self.handle_flags, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def get_engine(self, on_done=None):
@@ -251,7 +280,7 @@ class Base:
         # Send the get_engine_version request.
         msg = Msg.OutStandard.direct(self.addr, 0x0D, 0x00)
         msg_handler = handler.StandardCmd(msg, self.handle_engine, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def db_add_ctrl_of(self, local_group, remote_addr, remote_group,
@@ -417,6 +446,25 @@ class Base:
                           "%s with args: %s", self.label, cmd, str(kwargs))
 
     #-----------------------------------------------------------------------
+    def handle_received(self, msg):
+        """Receives incomming message notifications from protocol
+
+        This is called for every standard and extended message that is read
+        from the modem from this device.  This is only used to track the hop
+        distance from the modem to each device and isn't used for general
+        message handling.
+
+        It extracts the number of hops that occurred and uses that to create
+        a moving average of the distance to the device so that outbound
+        messages can set the maximum hop value for the most efficient
+        transfers.
+
+        Args:
+          msg:    (Msg.InpStandard, Msg.InpExtended) The message that arrived.
+        """
+        self.history.add(msg)
+
+    #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
         """Handle replies to the refresh command.
 
@@ -555,7 +603,7 @@ class Base:
             db_group = remote_group
 
         # Create a new database entry for the device and send it.
-        seq.add(self.db.add_on_device, self.protocol, remote_addr, db_group,
+        seq.add(self.db.add_on_device, self, remote_addr, db_group,
                 is_controller, local_data)
 
         # For two way commands, insert a callback so that when the modem
@@ -606,7 +654,7 @@ class Base:
         if refresh:
             seq.add(self.refresh)
 
-        seq.add(self.db.delete_on_device, self.protocol, entry)
+        seq.add(self.db.delete_on_device, self, entry)
 
         # For two way commands, insert a callback so that when the modem
         # command finishes, it will send the next command to the device.

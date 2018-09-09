@@ -14,6 +14,7 @@ from .DeviceEntry import DeviceEntry
 from .. import log
 from .. import message as Msg
 from .. import util
+from .DeviceModifyManagerI1 import DeviceModifyManagerI1
 
 LOG = log.get_logger()
 
@@ -219,7 +220,7 @@ class Device:
         return len(self.entries)
 
     #-----------------------------------------------------------------------
-    def add_on_device(self, protocol, addr, group, is_controller, data,
+    def add_on_device(self, device, addr, group, is_controller, data,
                       on_done=None):
         """Add an entry and push the entry to the Insteon device.
 
@@ -237,7 +238,7 @@ class Device:
            on_done( success, message, DeviceEntry )
 
         Args:
-          protocol:      (Protocol) The Insteon protocol object to use for
+          device:        (device.Base) The Insteon device object to use for
                          sending messages.
           addr:          (Address) The address of the device in the database.
           group:         (int) The group the entry is for.
@@ -279,7 +280,7 @@ class Device:
         # those memory addresses and just update them w/ the correct
         # information and mark them as used.
         if add_unused:
-            self._add_using_unused(protocol, addr, group, is_controller, data,
+            self._add_using_unused(device, addr, group, is_controller, data,
                                    on_done, entry)
 
         # If there no unused entries, we need to append one.  Write a new
@@ -289,11 +290,11 @@ class Device:
         # last entry anymore.  This order is important since if either
         # operation fails, the db is still in a valid order.
         else:
-            self._add_using_new(protocol, addr, group, is_controller, data,
+            self._add_using_new(device, addr, group, is_controller, data,
                                 on_done)
 
     #-----------------------------------------------------------------------
-    def delete_on_device(self, protocol, entry, on_done=None):
+    def delete_on_device(self, device, entry, on_done=None):
         """Delete an entry on the Insteon device.
 
         This sends the deletes the input record from the Insteon device.  If
@@ -310,7 +311,7 @@ class Device:
            on_done( success, message, DeviceEntry )
 
         Args:
-          protocol:      (Protocol) The Insteon protocol object to use for
+          device:        (device.Base) The Insteon device object to use for
                          sending messages.
           entry:         (DeviceEntry) The entry to remove.
           on_done:       Optional callback which will be called when the
@@ -323,15 +324,22 @@ class Device:
         new_entry = entry.copy()
         new_entry.db_flags.in_use = False
 
-        # Build the extended db modification message.  This says to modify
-        # the entry in place w/ the new db flags which say this record is no
-        # longer in use.
-        ext_data = new_entry.to_bytes()
-        msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-        msg_handler = handler.DeviceDbModify(self, new_entry, on_done)
+        if self.engine == 0:
+            i1_entry = new_entry.to_i1_bytes()
+            modify_manager = DeviceModifyManagerI1(device, self,
+                                                   i1_entry, on_done=on_done,
+                                                   num_retry=3)
+            modify_manager.start_modify()
+        else:
+            # Build the extended db modification message.  This says to modify
+            # the entry in place w/ the new db flags which say this record is no
+            # longer in use.
+            ext_data = new_entry.to_bytes()
+            msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
+            msg_handler = handler.DeviceDbModify(self, new_entry, on_done)
 
-        # Send the message.
-        protocol.send(msg, msg_handler)
+            # Send the message.
+            device.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def find_group(self, group):
@@ -510,7 +518,7 @@ class Device:
             self.save()
 
     #-----------------------------------------------------------------------
-    def _add_using_unused(self, protocol, addr, group, is_controller, data,
+    def _add_using_unused(self, device, addr, group, is_controller, data,
                           on_done, entry=None):
         """Add an entry using an existing, unused entry.
 
@@ -526,17 +534,24 @@ class Device:
         # Update it w/ the new information.
         entry.update_from(addr, group, is_controller, data)
 
-        # Build the extended db modification message.  This says to update
-        # the record at the entry memory location.
-        ext_data = entry.to_bytes()
-        msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-        msg_handler = handler.DeviceDbModify(self, entry, on_done)
+        if self.engine == 0:
+            i1_entry = entry.to_i1_bytes()
+            modify_manager = DeviceModifyManagerI1(device, self,
+                                                   i1_entry, on_done=on_done,
+                                                   num_retry=3)
+            modify_manager.start_modify()
+        else:
+            # Build the extended db modification message.  This says to update
+            # the record at the entry memory location.
+            ext_data = entry.to_bytes()
+            msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
+            msg_handler = handler.DeviceDbModify(self, entry, on_done)
 
-        # Send the message and handler.
-        protocol.send(msg, msg_handler)
+            # Send the message and handler.
+            device.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def _add_using_new(self, protocol, addr, group, is_controller, data,
+    def _add_using_new(self, device, addr, group, is_controller, data,
                        on_done):
         """Add a anew entry at the end of the database.
 
@@ -552,7 +567,7 @@ class Device:
         LOG.info("Device %s appending new record at mem %#06x", self.addr,
                  self.last.mem_loc)
 
-        seq = CommandSeq(protocol, "Device database update complete", on_done)
+        seq = CommandSeq(device, "Device database update complete", on_done)
 
         # Shift the current last record down 8 bytes.  Make a copy - we'll
         # only update our member var if the write works.
@@ -561,21 +576,35 @@ class Device:
 
         # Start by writing the last record - that way if it fails, we don't
         # try and update w/ the new data record.
-        ext_data = last.to_bytes()
-        msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-        msg_handler = handler.DeviceDbModify(self, last)
-        seq.add_msg(msg, msg_handler)
+        if self.engine == 0:
+            i1_entry = last.to_i1_bytes()
+            modify_manager = DeviceModifyManagerI1(device, self,
+                                                   i1_entry, on_done=on_done,
+                                                   num_retry=3)
+            seq.add(modify_manager.start_modify)
+        else:
+            ext_data = last.to_bytes()
+            msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
+            msg_handler = handler.DeviceDbModify(self, last)
+            seq.add_msg(msg, msg_handler)
 
         # Create the new entry at the current last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=is_controller,
                                is_last_rec=False)
         entry = DeviceEntry(addr, group, self.last.mem_loc, db_flags, data)
 
-        # Add the call to update the data record.
-        ext_data = entry.to_bytes()
-        msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-        msg_handler = handler.DeviceDbModify(self, entry)
-        seq.add_msg(msg, msg_handler)
+        if self.engine == 0:
+            i1_entry = entry.to_i1_bytes()
+            modify_manager = DeviceModifyManagerI1(device, self,
+                                                   i1_entry, on_done=on_done,
+                                                   num_retry=3)
+            seq.add(modify_manager.start_modify)
+        else:
+            # Add the call to update the data record.
+            ext_data = entry.to_bytes()
+            msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
+            msg_handler = handler.DeviceDbModify(self, entry)
+            seq.add_msg(msg, msg_handler)
 
         seq.run()
 

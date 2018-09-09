@@ -26,7 +26,7 @@ class StandardCmd(Base):
     to the callback set in the constructor which is usually a method on the
     device to handle the result (or the ACK that the command went through).
     """
-    def __init__(self, msg, callback, on_done=None, num_retry=0):
+    def __init__(self, msg, callback, on_done=None, num_retry=3):
         """Constructor
 
         Args

@@ -31,7 +31,8 @@ class CommandSeq:
         """Constructor
 
         Args:
-          protocol: The Protocol object to use.
+          protocol: The Protocol object to use.  This can also be a
+                    device.Base object.
           msg:      (str) String message to pass to on_done if the
                     sequence works.
           on_done:  The callback to run when complete.  This will be run

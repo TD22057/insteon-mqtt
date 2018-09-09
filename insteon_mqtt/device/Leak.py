@@ -93,11 +93,11 @@ class Leak(Base):
                 refresh=False)
 
         # This link handle the wet event
-        seq.add(self.db_add_resp_of, 0x02, self.modem.addr, 0x02,
+        seq.add(self.db_add_ctrl_of, 0x02, self.modem.addr, 0x02,
                 refresh=False)
 
         # This link handle the heartbeat event
-        seq.add(self.db_add_resp_of, 0x04, self.modem.addr, 0x04,
+        seq.add(self.db_add_ctrl_of, 0x04, self.modem.addr, 0x04,
                 refresh=False)
 
         # Finally start the sequence running.  This will return so the

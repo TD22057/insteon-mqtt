@@ -137,7 +137,7 @@ class Dimmer(Base):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def on(self, group=0x01, level=0xFF, instant=False, on_done=None):
+    def on(self, group=0x01, level=0xff, instant=False, on_done=None):
         """Turn the device on.
 
         This will send the command to the device to update it's state.
@@ -163,7 +163,7 @@ class Dimmer(Base):
         msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
 
         # Send the message to the PLM modem for protocol.
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def off(self, group=0x01, instant=False, on_done=None):
@@ -189,7 +189,7 @@ class Dimmer(Base):
         msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
 
         # Send the message to the PLM modem for protocol.
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def set(self, level, group=0x01, instant=False, on_done=None):
@@ -238,7 +238,7 @@ class Dimmer(Base):
         # the command is ACK'ed.
         callback = on_done if is_on else None
         msg_handler = handler.StandardCmd(msg, self.handle_scene, callback)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
         # Scene triggering will not turn the device off (no idea why), so we
         # have to send an explicit off command to do that.  If this is None,
@@ -267,7 +267,7 @@ class Dimmer(Base):
 
         callback = functools.partial(self.handle_increment, delta=+8)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def increment_down(self, on_done=None):
@@ -285,7 +285,7 @@ class Dimmer(Base):
 
         callback = functools.partial(self.handle_increment, delta=-8)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def set_backlight(self, level, on_done=None):
@@ -313,7 +313,7 @@ class Dimmer(Base):
                                           on_done)
 
         # Send the message to the PLM modem for protocol.
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):
@@ -486,7 +486,7 @@ class Dimmer(Base):
             s = "Dimmer %s state updated to %s" % (self.addr, self._level)
             on_done(True, s, msg.cmd2)
 
-        elif msg.flags.Dimmer == Msg.Flags.Type.DIRECT_NAK:
+        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("Dimmer %s NAK error: %s", self.addr, msg)
             on_done(False, "Dimmer %s state update failed", None)
 
@@ -522,11 +522,11 @@ class Dimmer(Base):
 
         # Increment up (32 steps)
         elif cmd == 0x15:
-            self._set_level(max(0xff, self._level + 8))
+            self._set_level(min(0xff, self._level + 8))
 
         # Increment down
         elif cmd == 0x16:
-            self._set_level(min(0x00, self._level - 8))
+            self._set_level(max(0x00, self._level - 8))
 
         # Starting manual increment (cmd2 0x00=up, 0x01=down)
         elif cmd == 0x17:

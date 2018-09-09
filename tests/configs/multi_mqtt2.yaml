@@ -1,0 +1,7 @@
+switch:
+  state_topic: 'insteon/{{address}}/state'
+  state_payload: '{{on_str.upper()}}'
+  on_off_topic: 'insteon/{{address}}/set'
+  on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+  scene_topic: 'insteon/{{address}}/scene'
+  scene_payload: '{ "cmd" : "{{value.lower()}}" }'

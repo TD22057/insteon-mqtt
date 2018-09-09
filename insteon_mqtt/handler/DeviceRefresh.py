@@ -5,8 +5,10 @@
 #===========================================================================
 from .. import log
 from .. import message as Msg
+from .. import db
 from .Base import Base
 from .DeviceDbGet import DeviceDbGet
+
 
 LOG = log.get_logger()
 
@@ -115,10 +117,18 @@ class DeviceRefresh(Base):
                 # and the handler will update the database.  We need a retry
                 # count here because battery powered devices don't always
                 # respond right away.
-                db_msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00,
-                                                bytes(14))
-                msg_handler = DeviceDbGet(self.device.db, on_done, num_retry=3)
-                protocol.send(db_msg, msg_handler)
+                if self.device.db.engine == 0:
+                    scan_manager = db.DeviceScanManagerI1(self.device,
+                                                          self.device.db,
+                                                          on_done=on_done,
+                                                          num_retry=3)
+                    scan_manager.start_scan()
+                else:
+                    db_msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00,
+                                                    bytes(14))
+                    msg_handler = DeviceDbGet(self.device.db, on_done,
+                                              num_retry=3)
+                    self.device.send(db_msg, msg_handler)
 
             # Either way - this transaction is complete.
             return Msg.FINISHED

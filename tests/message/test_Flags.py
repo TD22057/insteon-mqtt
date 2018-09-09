@@ -60,5 +60,14 @@ class Test_DbFlags:
         msg5 = Msg.Flags(Msg.Flags.Type.DIRECT, False)
         assert msg1 != msg5
 
+    #-----------------------------------------------------------------------
+    def test_hops(self):
+        obj = Msg.Flags(Msg.Flags.Type.DIRECT, False, 2, 3)
+        assert obj.hops_left == 2
+        assert obj.max_hops == 3
+
+        obj.set_hops(1)
+        assert obj.hops_left == 1
+        assert obj.max_hops == 1
 
     #-----------------------------------------------------------------------
