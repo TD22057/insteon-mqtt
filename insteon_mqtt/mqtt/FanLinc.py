@@ -140,7 +140,7 @@ class FanLinc(Dimmer):
         if level is not None:
             level_int, level_str = FanLinc.level_map[level]
 
-            data["on"] = 1 if level_int else 0,
+            data["on"] = 1 if level_int else 0
             data["on_str"] = "on" if level_int else "off"
             data["level"] = level_int
             data["level_str"] = level_str

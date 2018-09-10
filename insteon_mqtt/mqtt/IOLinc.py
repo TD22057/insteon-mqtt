@@ -100,7 +100,7 @@ class IOLinc:
             }
 
         if is_active is not None:
-            data["on"] = 1 if is_active else 0,
+            data["on"] = 1 if is_active else 0
             data["on_str"] = "on" if is_active else "off"
 
         return data

@@ -3,7 +3,6 @@
 # Network link to a Serial device class
 #
 #===========================================================================
-import os
 import serial
 from .. import log
 from ..Signal import Signal
@@ -208,7 +207,7 @@ class Serial(Link):
         # enough time has elapsed to write the message.
         data, after_time = self._write_buf[0]
         if t < after_time:
-            LOG.debug("Waiting to write %f < %f", t, after_time)
+            #LOG.debug("Waiting to write %f < %f", t, after_time)
             return
 
         try:
