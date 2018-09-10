@@ -83,7 +83,6 @@ class DeviceEntry:
         Returns:
           DeviceEntry: Returns the created DeviceEntry object.
         """
-
         mem_loc = (data[0] << 8) + data[1]
         db_flags = Msg.DbFlags.from_bytes(data, 2)
         group = data[3]
@@ -254,11 +253,12 @@ class DeviceEntry:
     def __str__(self):
         # Special tag for the last entry (memory wise) in the database.
         last = " (LAST)" if self.db_flags.is_last_rec else ""
+        unused = " (UNUSED)" if not self.db_flags.in_use else ""
 
-        return "%04x: %s grp: %3s type: %s data: %#04x %#04x %#04x%s" % \
+        return "%04x: %s grp: %3s type: %s data: %#04x %#04x %#04x%s%s" % \
             (self.mem_loc, self.addr.hex, self.group,
              util.ctrl_str(self.db_flags.is_controller),
-             self.data[0], self.data[1], self.data[2], last)
+             self.data[0], self.data[1], self.data[2], unused, last)
 
     #-----------------------------------------------------------------------
     def __repr__(self):
