@@ -5,7 +5,7 @@
 #===========================================================================
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
-
+import time
 
 class Test_Protocol:
     def test_reads(self):
@@ -49,7 +49,7 @@ class Test_Protocol:
         proto._read_history.append(msg)
         msg.expire_time = 1
         assert len(proto._read_history) == 2
-        proto._remove_expired_read()
+        proto._remove_expired_read(time.time())
         assert len(proto._read_history) == 1
         assert proto._read_history[0] == msg_keep
 
