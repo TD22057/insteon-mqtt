@@ -101,7 +101,9 @@ If everything looks OK, enable the service to start at the next boot.
    ```
    sudo systemctl enable insteon-mqtt
    ```
-You can still Tail the process after the service is enabled with this journalctl command.
+You can view the system logs for the process after the service is 
+enabled with this journalctl command (or by manually looking at the 
+log file).
 
    ```
    sudo journalctl -u insteon-mqtt.service -f
