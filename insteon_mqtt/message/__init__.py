@@ -23,10 +23,12 @@ be inputs because the PLM modem will repeat messages back as ACK/NAK
 results.
 """
 
+from .Base import Base
+from .Timed import Timed
+
 # Bit level message flags
 from .DbFlags import DbFlags
 from .Flags import Flags
-from .Base import Base
 
 # Messages from PLM modem to the host (codes >= 0x60)
 from .InpAllLinkComplete import InpAllLinkComplete

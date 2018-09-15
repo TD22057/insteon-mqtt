@@ -63,6 +63,7 @@ class Protocol:
 
         # Forward poll() calls from the network link to ourselves.
         # That way we can test for write message time outs periodically.
+        self._linkPoll = self.link.poll
         self.link.poll = self._poll
 
         # Connect the link read/write signals to our callback methods.
@@ -102,7 +103,18 @@ class Protocol:
         # this time.
         self._read_history = []
 
-        # TODO: doc
+        # List of Msg.Timed objects which store a message and a time at which
+        # to send the message.  It will be sorted by send time.  These are
+        # messages that should be sent after a certain time has passed.  The
+        # _poll() call will this and push them onto the message queue when
+        # the current time is after the message time.
+        self._timed_messages = []
+
+        # Next time that a message can be written.  When a message is read,
+        # we wait until it's expiration time (which is set by the hop count)
+        # until we send another message.  Sending messages before a message
+        # could expire w/ Insteon is a good way to cancel previous command so
+        # we try and avoid that.
         self._next_write_time = 0
 
     #-----------------------------------------------------------------------
@@ -143,7 +155,7 @@ class Protocol:
         self.link.load_config(config)
 
     #-----------------------------------------------------------------------
-    def send(self, msg, msg_handler, high_priority=False):
+    def send(self, msg, msg_handler, high_priority=False, after=None):
         """Write a message to the PLM modem.
 
         If there are no other messages in the queue, the message gets
@@ -167,15 +179,30 @@ class Protocol:
                           the handler returns the message.FINISHED flags.
           high_priority:  (bool)False to add the message at the end of the
                           queue.  True to insert this message at the start of
-                          the queue.
+                          the queue.  This is ignored in timed messages.
+          after:          (float) Unix clock time tag to send the message
+                          after. If None, the message is sent as soon as
+                          possible.  Exact time is not guaranteed - the
+                          message will be send no earlier than this.
         """
-        if not high_priority:
+        # If the time is input, append the inputs to the timer list and sort
+        # the list by the times field.
+        if after is not None:
+            timed = Msg.Timed(msg, msg_handler, high_priority, after)
+            self._timed_messages.append(timed)
+            self._timed_messages.sort(key=lambda i: i.time)
+            return
+
+        # Normal message queue.
+        elif not high_priority:
             self._write_queue.append((msg, msg_handler))
+
+        # High priority messages insert at the front of the queue.
         else:
             self._write_queue.insert(0, (msg, msg_handler))
 
-        # If there is an existing msg that we're processing replies
-        # for then delay sending this until we're done.
+        # If there are no existing messages that we're processing replies
+        # for, send the message immediately.
         if not self._write_handler:
             self._send_next_msg()
 
@@ -190,12 +217,19 @@ class Protocol:
         Args:
            t:   (float) Current Unix clock time tag.
         """
-        if not self._write_handler:
-            return
+        # Call the link poll function in case it needs to do something.
+        self._linkPoll(t)
+
+        # See if any timed messages should sent.
+        while self._timed_messages and self._timed_messages[0].is_active(t):
+            timed = self._timed_messages.pop(0)
+            LOG.info("Moving timer based message to queue: %s", timed.msg)
+            timed.send(self)
 
         # Ask the write handler if it's past the time out in which
         # case we'll mark this message as finished and move on.
-        if self._write_handler.is_expired(self, t):
+        if self._write_handler and \
+           self._write_handler.is_expired(self, t):
             self._write_finished()
 
     #-----------------------------------------------------------------------

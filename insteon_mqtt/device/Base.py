@@ -120,7 +120,7 @@ class Base:
         return self.__class__.__name__
 
     #-----------------------------------------------------------------------
-    def send(self, msg, msg_handler, high_priority=False):
+    def send(self, msg, msg_handler, high_priority=False, after=None):
         """Send a message to the device.
 
         This will use the history of messages received from the device to set
@@ -137,11 +137,15 @@ class Base:
           high_priority:  (bool)False to add the message at the end of the
                           queue.  True to insert this message at the start of
                           the queue.
+          after:          (float) Unix clock time tag to send the message
+                          after. If None, the message is sent as soon as
+                          possible.  Exact time is not guaranteed - the
+                          message will be send no earlier than this.
         """
         if isinstance(msg, Msg.OutStandard):  # handles OutExtended as well
             msg.flags.set_hops(self.history.avg_hops())
 
-        self.protocol.send(msg, msg_handler, high_priority)
+        self.protocol.send(msg, msg_handler, high_priority, after)
 
     #-----------------------------------------------------------------------
     def db_path(self):
