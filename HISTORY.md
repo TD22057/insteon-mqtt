@@ -2,6 +2,12 @@
 
 ## [0.6.3]
 
+### Additions
+- Added on_level flag support for dimmers and KeyPadLinc's to set the light
+  level when the on button is pressed ([Issue #70][I70]).
+
+## [0.6.3]
+
 ### Breaking Changes
 - KeypadLinc now supports both dimmer and on/off device types.  This required
   changing the KeypadLinc inputs in the MQTT portion of the config.yaml file.
@@ -167,4 +173,5 @@
 [I48]: https://github.com/TD22057/insteon-mqtt/issues/48
 [I59]: https://github.com/TD22057/insteon-mqtt/issues/59
 [I63]: https://github.com/TD22057/insteon-mqtt/issues/63
+[I70]: https://github.com/TD22057/insteon-mqtt/issues/70
 [I76]: https://github.com/TD22057/insteon-mqtt/issues/76

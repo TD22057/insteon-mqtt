@@ -412,15 +412,23 @@ class KeypadLinc(Base):
 
         # Check the input flags to make sure only ones we can understand were
         # passed in.
-        flags = set(["backlight"])
+        flags = set(["backlight", "on_level"])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown KeypadLinc flags input: %s.\n Valid "
                             "flags are: %s" % unknown, flags)
 
-        # FUTURE: to support other flags, use a CommandSeq
-        backlight = util.input_byte(kwargs, "backlight")
-        self.set_backlight(backlight, on_done)
+        seq = CommandSeq(self.protocol, "KeypadLinc set_flags complete", on_done)
+
+        if "backlink" in kwargs:
+            backlight = util.input_byte(kwargs, "backlight")
+            seq.add(self.set_backlight, backlight)
+
+        if "on_level" in kwargs:
+            on_level = util.input_byte(kwargs, "on_level")
+            seq.add(self.set_on_level, on_level)
+
+        seq.run()
 
     #-----------------------------------------------------------------------
     def handle_backlight(self, msg, on_done):
@@ -430,6 +438,15 @@ class KeypadLinc(Base):
             on_done(True, "Backlight level updated", None)
         else:
             on_done(False, "Backlight level failed", None)
+
+    #-----------------------------------------------------------------------
+    def handle_on_level(self, msg, on_done):
+        """TODO: doc
+        """
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+            on_done(True, "Button on level updated", None)
+        else:
+            on_done(False, "Button on level failed", None)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
