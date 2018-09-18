@@ -153,7 +153,9 @@ class Modem:
         Args:
            force:   (bool) Ignored - this insures a consistent API with the
                     device refresh command.
-        TODO: doc
+           on_done: Finished callback.  This is called when the command has
+                    completed.  Signature is:
+                       on_done(success, msg, data)
         """
         LOG.info("Modem sending get first db record command")
 
@@ -400,7 +402,36 @@ class Modem:
     #-----------------------------------------------------------------------
     def db_del_ctrl_of(self, addr, group, two_way=True, refresh=True,
                        on_done=None):
-        """TODO: doc
+        """Delete the modem as a controller of a device.
+
+        This updates the modem's all link database to remove a record
+        where the modem is controlling another device.  If two_way is
+        True, the corresponding responder link on the device is also
+        remove.
+
+        The optional callback has the signature:
+            on_done(bool success, str message, entry)
+
+        - success is True if both commands worked or False if any failed.
+        - message is a string with a summary of what happened.  This is used
+          for user interface responses to sending this command.
+        - entry is either the db.ModemEntry or db.DeviceEntry that was
+          removed.
+
+        If the requested record doesn't exist, it's considered an
+        error and on_done is called with success=False.
+
+        Args:
+          addr:     (Address) The remote device address.
+          group:    (int) The group to add link for.
+          two_way:  (bool) If True, after creating the controller link on the
+                    modem, a responder link is deleted on the remote device
+                    to clean up the pair of entries.
+          refresh:  (bool) If True, call refresh before changing the db.
+                    This is ignored on the modem since it doesn't use memory
+                    addresses and can't be corrupted.
+          on_done:  Optional callback run when both commands are finished.
+
         """
         # Call with is_controller=True
         self._db_delete(addr, group, True, two_way, refresh, on_done)
@@ -408,14 +439,44 @@ class Modem:
     #-----------------------------------------------------------------------
     def db_del_resp_of(self, addr, group, two_way=True, refresh=True,
                        on_done=None):
-        """TODO: doc
+        """Delete the modem as a responder of a device.
+
+        This updates the modem's all link database to remove a record
+        where the modem is responding to another device.  If two_way
+        is True, the corresponding controller link on the device is
+        also remove.
+
+        The optional callback has the signature:
+            on_done(bool success, str message, entry)
+
+        - success is True if both commands worked or False if any failed.
+        - message is a string with a summary of what happened.  This is used
+          for user interface responses to sending this command.
+        - entry is either the db.ModemEntry or db.DeviceEntry that was
+          removed.
+
+        If the requested record doesn't exist, it's considered an
+        error and on_done is called with success=False.
+
+        Args:
+          addr:     (Address) The remote device address.
+          group:    (int) The group to add link for.
+          two_way:  (bool) If True, after creating the controller link on the
+                    modem, a controller link is deleted on the remote device
+                    to clean up the pair of entries.
+          refresh:  (bool) If True, call refresh before changing the db.
+                    This is ignored on the modem since it doesn't use memory
+                    addresses and can't be corrupted.
+          on_done:  Optional callback run when both commands are finished.
         """
         # Call with is_controller=False
         self._db_delete(addr, group, False, two_way, refresh, on_done)
 
     #-----------------------------------------------------------------------
     def factory_reset(self):
-        """TODO: doc
+        """Factory reset the modem.
+
+        This will erase all the entries on the modem.
         """
         LOG.warning("Modem being reset.  All data will be lost")
         msg = Msg.OutResetModem()
@@ -424,7 +485,14 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def linking(self, group=0x01, on_done=None):
-        """TODO: doc
+        """Enable linking mode on the modem.
+
+        This is the same as pressing the set button on the modem.
+
+        Args:
+          group:    (int) The group number to to set in the modem when
+                    the link is created.
+          on_done:  Optional callback run when both commands are finished.
         """
         # Tell the modem to enter all link mode for the group.  The
         # handler will handle timeouts (to send the cancel message) if
@@ -435,7 +503,20 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):
-        """TODO: doc
+        """Create a 3 byte link data array for the modem.
+
+        If data is not input, the default data for a controller record
+        will be [group, 0x00, 0x00].  The default data for a responder
+        record will be [group, 0x00, 0x00].
+
+        Args:
+           is_controller:  (bool) True if the link will be for the modem
+                           as a controller.
+           group:          (int) The group on the modem the link is for.
+           data:           ([D1,D2,D3]) The data bytes to set on the modem.
+
+        Returns:
+           Returns a list of 3 bytes to use as the data record.
         """
         # Normally, the modem (ctrl) -> device (resp) link is created using
         # the linking() command - then the handler.ModemLinkComplete will
@@ -454,7 +535,18 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def scene(self, is_on, group, num_retry=3, on_done=None):
-        """TODO: doc
+        """Trigger a virtual modem scene.
+
+        This will send out a scene command from the modem.  When the
+        scene message is ACK'ed, Modem.handle_scene will be called.
+
+        Args:
+           is_on:      (bool) True to send an on (0x11) command for the scene.
+                       False to send an off (0x13) command for the scene.
+           group:      (int) The modem group (scene) number to send.
+           num_retry:  (int) The number of retries to use if the message
+                       fails.
+           on_done:    Optional callback run when both commands are finished.
         """
         assert 0x01 <= group <= 0xff
         LOG.info("Modem scene %s on=%s", group, "on" if is_on else "off")
@@ -490,10 +582,11 @@ class Modem:
 
         This callback is run when we get a reply back from triggering a scene
         on the device.  If the command was ACK'ed, we know it worked.  The
-        device will then send out standard broadcast messages which will
-        trigger other updates for the scene devices.
+        device will then update the states on the devices in the scene.
 
-        TODO: doc
+        Args:
+          group:   (int) The group (scene) being ACK'ed.
+          cmd:     (int) The group command (0x11 for on, 0x13 for off).
         """
         responders = self.db.find_group(group)
         LOG.debug("Found %s responders in group %s", len(responders), group)
@@ -681,7 +774,35 @@ class Modem:
     #-----------------------------------------------------------------------
     def _db_delete(self, addr, group, is_controller, two_way, refresh,
                    on_done):
-        """TODO: doc
+        """Delete a link entry on the modem.
+
+        This updates the modem's all link database to remove a record.
+        If two_way is True, the corresponding link on the remote
+        device is also remove.
+
+        The optional callback has the signature:
+            on_done(bool success, str message, entry)
+
+        - success is True if both commands worked or False if any failed.
+        - message is a string with a summary of what happened.  This is used
+          for user interface responses to sending this command.
+        - entry is either the db.ModemEntry or db.DeviceEntry that was
+          removed.
+
+        If the requested record doesn't exist, it's considered an
+        error and on_done is called with success=False.
+
+        Args:
+          addr:           (Address) The remote device address.
+          group:          (int) The group to add link for.
+          is_controller:  (bool) True if the modem link is a controller.
+          two_way:        (bool) If True, after creating the controller link
+                          on the modem, a controller link is deleted on the
+                          remote device to clean up the pair of entries.
+          refresh:        (bool) If True, call refresh before changing the db.
+                          This is ignored on the modem since it doesn't use
+                          memory addresses and can't be corrupted.
+          on_done:        Optional callback run when both commands are finished.
         """
         LOG.debug("db delete: %s grp=%s ctrl=%s 2w=%s", addr, group,
                   util.ctrl_str(is_controller), two_way)
