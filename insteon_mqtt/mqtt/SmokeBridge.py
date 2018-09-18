@@ -11,14 +11,22 @@ LOG = log.get_logger()
 
 
 class SmokeBridge:
-    """TODO: doc
+    """MQTT Smoke bridge object.
+
+    This class links an Insteon smoke bridge object to MQTT.  Any
+    change in the Instoen device will trigger an MQTT message.
     """
     def __init__(self, mqtt, device):
-        """TODO: doc
+        """Constructor
+
+        Args:
+          mqtt:    (Mqtt) the main MQTT interface object.
+          device:  The insteon smoke bridge device object.
         """
         self.mqtt = mqtt
         self.device = device
 
+        # Set up the default templates for the MQTT messages and payloads.
         self.msg_smoke = MsgTemplate(
             topic='insteon/{{address}}/smoke',
             payload='{{on_str.upper()}}',
@@ -36,6 +44,7 @@ class SmokeBridge:
             payload='{{on_str.upper()}}',
             )
 
+        # Receive notifications from the Insteon device when it changes.
         device.signal_state_change.connect(self.handle_change)
 
     #-----------------------------------------------------------------------
@@ -51,6 +60,7 @@ class SmokeBridge:
         if not data:
             return
 
+        # Update the MQTT topics and payloads from the config file.
         self.msg_smoke.load_config(data, 'smoke_topic', 'smoke_payload', qos)
         self.msg_co.load_config(data, 'co_topic', 'co_payload', qos)
         self.msg_battery.load_config(data, 'battery_topic', 'battery_payload',
@@ -65,6 +75,8 @@ class SmokeBridge:
           link:   The MQTT network client to use.
           qos:    The quality of service to use.
         """
+        # The smoke bridge doesn't receive commands so there are no
+        # input topics to subscribe to.
         pass
 
     #-----------------------------------------------------------------------
@@ -91,6 +103,7 @@ class SmokeBridge:
         LOG.info("MQTT received active change %s = %s", device.label,
                  condition)
 
+        # Set up the variables that can be used in the templates.
         data = {
             "address" : device.addr.hex,
             "name" : device.name if device.name else device.addr.hex,
@@ -107,6 +120,7 @@ class SmokeBridge:
             data["on"] = 0
             data["on_str"] = "off"
 
+        # Call the right topic depending on the condition field.
         if clear or condition == Type.SMOKE:
             self.msg_smoke.publish(self.mqtt, data)
 
