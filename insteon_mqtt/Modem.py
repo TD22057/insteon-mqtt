@@ -298,17 +298,20 @@ class Modem:
         depending on the database sizes.  So it usually should only be
         called if no other activity is expected on the network.
         """
+        # Set the error stop to false so a failed refresh doesn't stop the
+        # sequence from trying to refresh other devices.
+        seq = CommandSeq(self.protocol, "Refresh all complete", on_done,
+                         error_stop=False)
+
         # Reload the modem database.
-        self.refresh()
+        seq.add(self.refresh, force)
 
         # Reload all the device databases.
         for i, device in enumerate(self.devices.values()):
-            # Only set the callback if this is the last element.
-            callback = None
-            if i == len(self.devices) - 1:
-                callback = on_done
+            seq.add(device.refresh, force)
 
-            device.refresh(force, on_done=callback)
+        # Start the command sequence.
+        seq.run()
 
     #-----------------------------------------------------------------------
     def db_add_ctrl_of(self, local_group, remote_addr, remote_group,
