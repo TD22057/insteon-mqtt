@@ -65,8 +65,8 @@ class OutResetModem(Base):
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        ack = "" if self.is_ack is None else "ack: %s" % str(self.is_ack)
-        return "OutResetModem %s" % ack
+        ack = "" if self.is_ack is None else " ack: %s" % str(self.is_ack)
+        return "OutResetModem%s" % ack
 
     #-----------------------------------------------------------------------
 
