@@ -3,6 +3,8 @@
 # Insteon Protocol class.  Parses PLM data and writes messages.
 #
 #===========================================================================
+import collections
+import enum
 import time
 from . import log
 from . import message as Msg
@@ -10,6 +12,18 @@ from .Signal import Signal
 #from . import util
 
 LOG = log.get_logger()
+
+
+class WriteStatus(enum.Enum):
+    """TODO: doc
+    """
+    READY_TO_WRITE = 0
+    PENDING_WRITE = 1
+    WAIT_FOR_REPLY = 2
+
+
+# TODO: doc
+OutputMsg = collections.namedtuple('OutputMsg', ['msg', 'handler'])
 
 
 class Protocol:
@@ -76,20 +90,15 @@ class Protocol:
         # Inbound message buffer.
         self._buf = bytearray()
 
-        # List of messages to send.  These contain a tuple of (msg,
-        # handler) Messages from oldest to newest.  The handlers are
-        # used to process responses.  We have to wait until the
-        # handler says that it's done receiving replies until we can
-        # send the next message.  If we write to the modem before
-        # that, it basically cancels the previous action.  When a
-        # message is written, it's handler object gets set into
-        # _write_handler until that handler says that's received all
-        # the expected replies (or times out).  At that point we'll
-        # write the next message in the queue.
+        # List of messages to send.  These contain an OutputMsg object which
+        # has the message and handler from oldest to newest.  The handlers
+        # are used to process responses.  We have to wait until the handler
+        # says that it's done receiving replies until we can send the next
+        # message.  If we write to the modem before that, it basically
+        # cancels the previous action.  The _write_status flag indicates what
+        # state the [0] message is in during the write process.
         self._write_queue = []
-
-        # handler.Base message handler of the last written message.
-        self._write_handler = None
+        self._write_status = WriteStatus.READY_TO_WRITE
 
         # Set of possible message handlers to use.  These are handlers that
         # handle any message that isn't handled by an explicit write handler.
@@ -194,16 +203,17 @@ class Protocol:
             return
 
         # Normal message queue.
-        elif not high_priority:
-            self._write_queue.append((msg, msg_handler))
+        output = OutputMsg(msg, msg_handler)
+        if not high_priority:
+            self._write_queue.append(output)
 
         # High priority messages insert at the front of the queue.
         else:
-            self._write_queue.insert(0, (msg, msg_handler))
+            self._write_queue.insert(0, output)
 
-        # If there are no existing messages that we're processing replies
-        # for, send the message immediately.
-        if not self._write_handler:
+        # If there are no existing messages that we're waiting to send or
+        # processing replies for, send the message immediately.
+        if self._write_status == WriteStatus.READY_TO_WRITE:
             self._send_next_msg()
 
     #-----------------------------------------------------------------------
@@ -226,10 +236,11 @@ class Protocol:
             LOG.info("Moving timer based message to queue: %s", timed.msg)
             timed.send(self)
 
-        # Ask the write handler if it's past the time out in which
-        # case we'll mark this message as finished and move on.
-        if self._write_handler and \
-           self._write_handler.is_expired(self, t):
+        # If we're waiting for a reply, ask the write handler if it's past
+        # the time out in which case we'll mark this message as finished and
+        # move on.
+        if (self._write_status == WriteStatus.WAIT_FOR_REPLY and
+               self._write_queue[0].handler.is_expired(self, t)):
             self._write_finished()
 
     #-----------------------------------------------------------------------
@@ -387,9 +398,10 @@ class Protocol:
         # seen all the messages it expects. If it's CONTINUE, it
         # processed the message but expects more.  If it's UNKNOWN,
         # the handler ignored that message.
-        if self._write_handler:
-            LOG.debug("Passing msg to write handler")
-            status = self._write_handler.msg_received(self, msg)
+        if self._write_queue:
+            handler = self._write_queue[0].handler
+            LOG.debug("Passing msg to write handler: %s", handler)
+            status = handler.msg_received(self, msg)
 
             # Handler is finished.  Send the next outgoing message
             # if one is waiting.
@@ -402,8 +414,10 @@ class Protocol:
             # don't look in the read handlers and update the write
             # handlers time out into the future.
             elif status == Msg.CONTINUE:
-                self._write_handler.update_expire_time()
+                handler.update_expire_time()
                 return
+
+            assert status == Msg.UNKNOWN
 
         # No write handler or the message didn't match what the
         # handler expects to see.  Try the regular read handler to see
@@ -433,9 +447,11 @@ class Protocol:
         read.  The write handler is cleared and the next message in the
         queue is written.  It can also be called if the handler times out.
         """
-        assert self._write_handler
+        assert self._write_queue
 
-        self._write_handler = None
+        self._write_queue.pop(0)
+        self._write_status = WriteStatus.READY_TO_WRITE
+
         if self._write_queue:
             self._send_next_msg()
 
@@ -447,17 +463,16 @@ class Protocol:
         been written to the modem.
         """
         assert self._write_queue
+        assert self._write_status == WriteStatus.PENDING_WRITE
 
-        # Remove the message from the queue since it has been written.
-        msg, handler = self._write_queue.pop(0)
-
-        # Save the handler to have priority processing for any inbound
-        # messages.
-        self._write_handler = handler
+        # Set the status to show that the [0] message in the queue was
+        # written out.
+        self._write_status = WriteStatus.WAIT_FOR_REPLY
 
         # Tell the handler that we've sent the message to update the current
         # time out time.
-        handler.sending_message(msg)
+        out = self._write_queue[0]
+        out.handler.sending_message(out.msg)
 
     #-----------------------------------------------------------------------
     def _send_next_msg(self):
@@ -466,13 +481,17 @@ class Protocol:
         This grabs the first message in the queue and sets it into the
         write_data field for later processing of replies.
         """
-        # Get the next output message and handler from the write
-        # queue.
-        msg, handler = self._write_queue[0]
+        # Get the next output message and handler from the write queue.
+        out = self._write_queue[0]
+        msg_bytes = out.msg.to_bytes()
+
+        LOG.info("Write message to modem: %s", out.msg)
+        LOG.debug("Write bytes to modem: %s", msg_bytes)
 
         # Write the message to the PLM modem.  The message will only be sent
-        # when the current time is after the next write time.
-        LOG.info("Write to modem: %s", msg)
-        self.link.write(msg.to_bytes(), self._next_write_time)
+        # when the current time is after the next write time as tracked by
+        # the link.
+        self.link.write(msg_bytes, self._next_write_time)
+        self._write_status = WriteStatus.PENDING_WRITE
 
     #-----------------------------------------------------------------------

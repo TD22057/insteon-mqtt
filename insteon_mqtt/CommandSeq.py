@@ -37,8 +37,8 @@ class CommandSeq:
                        sequence works.
           on_done:     The callback to run when complete.  This will be run
                        when there is an error or when all the commands finish.
-          error_stop:  (bool) True to stop the sequence if a command fails.  False to
-                       continue on with the sequence.
+          error_stop:  (bool) True to stop the sequence if a command fails.
+                       False to continue on with the sequence.
         """
         self.protocol = protocol
 
