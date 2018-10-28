@@ -21,9 +21,8 @@ class KeypadLinc(Base):
 
     TODO: docs
 
-    Each button (up to 8) has an LED light.  Light status can be
-    retrieved by sending 0x19 0x01 which returns cmd1=db delta and
-    cmd2=LED bit flags.
+    Each button (up to 8) has an LED light.  Light status can be retrieved by
+    sending 0x19 0x01 which returns cmd1=db delta and cmd2=LED bit flags.
     """
 
     #-----------------------------------------------------------------------
@@ -85,13 +84,12 @@ class KeypadLinc(Base):
     def pair(self, on_done=None):
         """Pair the device with the modem.
 
-        This only needs to be called one time.  It will set the device
-        as a controller and the modem as a responder so the modem will
-        see group broadcasts and report them to us.
+        This only needs to be called one time.  It will set the device as a
+        controller and the modem as a responder so the modem will see group
+        broadcasts and report them to us.
 
-        The device must already be a responder to the modem (push set
-        on the modem, then set on the device) so we can update it's
-        database.
+        The device must already be a responder to the modem (push set on the
+        modem, then set on the device) so we can update it's database.
         """
         LOG.info("KeypadLinc %s pairing", self.addr)
 
@@ -162,9 +160,9 @@ class KeypadLinc(Base):
     def on(self, group=1, level=0xff, instant=False, on_done=None):
         """Turn the device on.
 
-        This will send the command to the device to update it's state.
-        When we get an ACK of the result, we'll change our internal
-        state and emit the state changed signals.
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
 
         Args:
           group:    (int) The group number to set.  1 is the load.  Must be
@@ -192,8 +190,8 @@ class KeypadLinc(Base):
             cmd1 = 0x11 if not instant else 0x21
             msg = Msg.OutStandard.direct(self.addr, cmd1, level)
 
-            # Use the standard command handler which will notify us when
-            # the command is ACK'ed.
+            # Use the standard command handler which will notify us when the
+            # command is ACK'ed.
             msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
 
             # Send the message to the PLM modem for protocol.
@@ -203,9 +201,9 @@ class KeypadLinc(Base):
     def off(self, group=1, instant=False, on_done=None):
         """Turn the device off.
 
-        This will send the command to the device to update it's state.
-        When we get an ACK of the result, we'll change our internal
-        state and emit the state changed signals.
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
 
         Args:
           group:    (int) The group number to set.  1 is the load.  Must be
@@ -226,8 +224,8 @@ class KeypadLinc(Base):
             cmd1 = 0x13 if not instant else 0x21
             msg = Msg.OutStandard.direct(self.addr, cmd1, 0x00)
 
-            # Use the standard command handler which will notify us when
-            # the command is ACK'ed.
+            # Use the standard command handler which will notify us when the
+            # command is ACK'ed.
             msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
 
             # Send the message to the PLM modem for protocol.
@@ -237,9 +235,9 @@ class KeypadLinc(Base):
     def set(self, level, group=1, instant=False, on_done=None):
         """Set the device on or off.
 
-        This will send the command to the device to update it's state.
-        When we get an ACK of the result, we'll change our internal
-        state and emit the state changed signals.
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
 
         Args:
           level:    (int/bool) If non zero, turn the device on.  Should be
@@ -261,9 +259,9 @@ class KeypadLinc(Base):
 
         Levels increment in units of 8 (32 divisions from off to on).
 
-        This will send the command to the device to update it's state.
-        When we get an ACK of the result, we'll change our internal
-        state and emit the state changed signals.
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
         """
         if not self.is_dimmer:
             LOG.error("KeypadLinc %s switch doesn't support increment up "
@@ -283,9 +281,9 @@ class KeypadLinc(Base):
 
         Levels increment in units of 8 (32 divisions from off to on).
 
-        This will send the command to the device to update it's state.
-        When we get an ACK of the result, we'll change our internal
-        state and emit the state changed signals.
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
         """
         if not self.is_dimmer:
             LOG.error("KeypadLinc %s switch doesn't support increment down "
@@ -320,8 +318,8 @@ class KeypadLinc(Base):
             ] + [0x00] * 8)
         msg = Msg.OutExtended.direct(self.addr, 0x30, 0x00, data)
 
-        # Use the standard command handler which will notify us when
-        # the command is ACK'ed.
+        # Use the standard command handler which will notify us when the
+        # command is ACK'ed.
         callback = on_done if is_on else None
         msg_handler = handler.StandardCmd(msg, self.handle_scene, callback)
         self.send(msg, msg_handler)
@@ -365,8 +363,8 @@ class KeypadLinc(Base):
 
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
 
-        # Use the standard command handler which will notify us when
-        # the command is ACK'ed.
+        # Use the standard command handler which will notify us when the
+        # command is ACK'ed.
         callback = functools.partial(self.handle_led_ack, group=group,
                                      is_on=is_on, led_bits=led_bits)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
@@ -394,8 +392,8 @@ class KeypadLinc(Base):
 
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
 
-        # Use the standard command handler which will notify us when
-        # the command is ACK'ed.
+        # Use the standard command handler which will notify us when the
+        # command is ACK'ed.
         msg_handler = handler.StandardCmd(msg, self.handle_backlight,
                                           on_done)
 
@@ -418,7 +416,8 @@ class KeypadLinc(Base):
             raise Exception("Unknown KeypadLinc flags input: %s.\n Valid "
                             "flags are: %s" % unknown, flags)
 
-        seq = CommandSeq(self.protocol, "KeypadLinc set_flags complete", on_done)
+        seq = CommandSeq(self.protocol, "KeypadLinc set_flags complete",
+                         on_done)
 
         if "backlink" in kwargs:
             backlight = util.input_byte(kwargs, "backlight")
@@ -459,20 +458,20 @@ class KeypadLinc(Base):
           msg:  (message.InpStandard) The refresh message reply.  The current
                 device state is in the msg.cmd2 field.
         """
-        # NOTE: This is called by the handler.DeviceRefresh class when
-        # the refresh message send by Base.refresh is ACK'ed.
+        # NOTE: This is called by the handler.DeviceRefresh class when the
+        # refresh message send by Base.refresh is ACK'ed.
         LOG.ui("KeypadLinc %s refresh at level %s", self.addr, msg.cmd2)
 
-        # Current group 1 level is stored in cmd2 so update our level
-        # to match.
+        # Current group 1 level is stored in cmd2 so update our level to
+        # match.
         self._set_level(1, msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_led_ack(self, msg, on_done, group, is_on, led_bits):
         """TODO: doc
         """
-        # If this it the ACK we're expecting, update the internal
-        # state and emit our signals.
+        # If this it the ACK we're expecting, update the internal state and
+        # emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("KeypadLinc LED %s group %s ACK: %s", self.addr, group,
                       msg)
@@ -520,20 +519,19 @@ class KeypadLinc(Base):
         """Handle broadcast messages from this device.
 
         The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update
-        the device state and look up the group in the all link
-        database.  For each device that is in the group (as a
-        reponsder), we'll call handle_group_cmd() on that device to
-        trigger it.  This way all the devices in the group are updated
-        to the correct values when we see the broadcast message.
+        triggered.  The message has the group ID in it.  We'll update the
+        device state and look up the group in the all link database.  For
+        each device that is in the group (as a reponsder), we'll call
+        handle_group_cmd() on that device to trigger it.  This way all the
+        devices in the group are updated to the correct values when we see
+        the broadcast message.
 
         Args:
           msg:   (InptStandard) Broadcast message from the device.
         """
-        # Non-group 1 messages are for the scene buttons on
-        # keypadlinc.  Treat those the same as the remote control
-        # does.  They don't have levels to find/set but have similar
-        # messages to the dimmer load.
+        # Non-group 1 messages are for the scene buttons on keypadlinc.
+        # Treat those the same as the remote control does.  They don't have
+        # levels to find/set but have similar messages to the dimmer load.
         cmd = msg.cmd1
 
         # ACK of the broadcast - ignore this.  Unless we sent a simulated off
@@ -603,8 +601,8 @@ class KeypadLinc(Base):
           msg:  (message.InpStandard) The reply message from the device.
                 The on/off level will be in the cmd2 field.
         """
-        # If this it the ACK we're expecting, update the internal
-        # state and emit our signals.
+        # If this it the ACK we're expecting, update the internal state and
+        # emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
             self._set_level(1, msg.cmd2)
@@ -627,8 +625,8 @@ class KeypadLinc(Base):
         Args:
           msg:  (message.InpStandard) The reply message from the device.
         """
-        # If this it the ACK we're expecting, update the internal
-        # state and emit our signals.
+        # If this it the ACK we're expecting, update the internal state and
+        # emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
             on_done(True, "Scene triggered", None)
@@ -641,9 +639,8 @@ class KeypadLinc(Base):
     def handle_increment(self, msg, on_done, delta):
         """TODO: doc
         """
-
-        # If this it the ACK we're expecting, update the internal
-        # state and emit our signals.
+        # If this it the ACK we're expecting, update the internal state and
+        # emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
             # Add the delta and bound at [0, 255]
@@ -662,9 +659,9 @@ class KeypadLinc(Base):
     def handle_group_cmd(self, addr, group, cmd):
         """Respond to a group command for this device.
 
-        This is called when this device is a responder to a scene.
-        The device should look up the responder entry for the group in
-        it's all link database and update it's state accordingly.
+        This is called when this device is a responder to a scene.  The
+        device should look up the responder entry for the group in it's all
+        link database and update it's state accordingly.
 
         Args:
           addr:  (Address) The device that sent the message.  This is the
@@ -672,8 +669,8 @@ class KeypadLinc(Base):
           msg:   (message.InpStandard) The broadcast message that was sent.
                  Use msg.group to find the scene group that was broadcast.
         """
-        # Make sure we're really a responder to this message.  This
-        # shouldn't ever occur.
+        # Make sure we're really a responder to this message.  This shouldn't
+        # ever occur.
         entry = self.db.find(addr, group, is_controller=False)
         if not entry:
             LOG.error("KeypadLinc %s has no group %s entry from %s", self.addr,

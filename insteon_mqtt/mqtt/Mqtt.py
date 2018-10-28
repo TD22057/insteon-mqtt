@@ -17,30 +17,29 @@ LOG = log.get_logger()
 class Mqtt:
     """Main MQTT interface class.
 
-    This class translates MQTT messages to Insteon commands and
-    Insteon commands into MQTT messages.  Low level MQTT is handled by
-    the network.Mqtt class which communicates data to this class via
-    Signals.  The main Insteon interface is the Modem which is used to
-    find devices to send them commands.  The Modem is also used to
-    notify us of new Insteon devices and this class connects their
-    state change signals to ourselves so we can send messages out when
-    the device state changes.
+    This class translates MQTT messages to Insteon commands and Insteon
+    commands into MQTT messages.  Low level MQTT is handled by the
+    network.Mqtt class which communicates data to this class via Signals.
+    The main Insteon interface is the Modem which is used to find devices to
+    send them commands.  The Modem is also used to notify us of new Insteon
+    devices and this class connects their state change signals to ourselves
+    so we can send messages out when the device state changes.
 
-    This class subscribes to the Insteon command and set topics
-    defined in the configuration input.  It will publish state changes
-    on the Insteon state topic when the devices change state.
+    This class subscribes to the Insteon command and set topics defined in
+    the configuration input.  It will publish state changes on the Insteon
+    state topic when the devices change state.
 
-    The exact format of the output topics and payloads is controlled
-    by the configuration file and the individual devices.  The input
-    command topics and payloads are passed through a jinja template to
-    convert them to a format that a device understands.  For message
-    details, see the individual devices.
+    The exact format of the output topics and payloads is controlled by the
+    configuration file and the individual devices.  The input command topics
+    and payloads are passed through a jinja template to convert them to a
+    format that a device understands.  For message details, see the
+    individual devices.
 
     This class also handles "system commands".  These are not Insteon
-    specific states or updates but are commands that the Insteon-Mqtt
-    system implements for various things.  The payload for these
-    messages is always a json data object that will get passed to the
-    Insteon device for handling
+    specific states or updates but are commands that the Insteon-Mqtt system
+    implements for various things.  The payload for these messages is always
+    a json data object that will get passed to the Insteon device for
+    handling
     """
     def __init__(self, mqtt_link, modem):
         """Constructor
@@ -50,14 +49,13 @@ class Mqtt:
                       communicating with the MQTT broker.
           modem:      (mqtt.Modem) The MQTT PLM modem objec.t
         """
-        # Connect a callback for handling when a new device is created
-        # in the modem.  We'll use it to create a corresponding MQTT
-        # device.
+        # Connect a callback for handling when a new device is created in the
+        # modem.  We'll use it to create a corresponding MQTT device.
         self.modem = modem
         self.modem.signal_new_device.connect(self.handle_new_device)
 
-        # Callback for when we're connected to the broker so we can
-        # subscribe to teh various topics we need to monitor.
+        # Callback for when we're connected to the broker so we can subscribe
+        # to the various topics we need to monitor.
         self.link = mqtt_link
         self.link.signal_connected.connect(self.handle_connected)
 
@@ -78,8 +76,8 @@ class Mqtt:
     def load_config(self, data):
         """Load a configuration dictionary.
 
-        This should be the mqtt key in the configuration data.  Key
-        inputs are:
+        This should be the mqtt key in the configuration data.  Key inputs
+        are:
 
         The input configuration dictionary can contain:
         - broker:    (str) The broker host to connect to.
@@ -95,8 +93,8 @@ class Mqtt:
         Args:
           data:   (dict) Configuration data to load.
         """
-        # Pass connection data to the MQTT link.  This will configure
-        # the connection to the broker.
+        # Pass connection data to the MQTT link.  This will configure the
+        # connection to the broker.
         self.link.load_config(data)
 
         # Create a template for prcessing messages on the command topic.
@@ -141,8 +139,8 @@ class Mqtt:
     def handle_connected(self, link, connected):
         """MQTT (dis)connection callback.
 
-        This is called when the low levle MQTT client connects to the
-        broker.  After the connection, we'll subscribe to our topics.
+        This is called when the low levle MQTT client connects to the broker.
+        After the connection, we'll subscribe to our topics.
 
         Args:
           link:      (network.Mqtt) The MQTT network link.
@@ -156,8 +154,8 @@ class Mqtt:
         """New Insteon device callback.
 
         This is called when the Insteon modem creates a new device (from the
-        config file).  We'll connect the device signals to our callbacks so we
-        can send out MQTT messages when the device changes.
+        config file).  We'll connect the device signals to our callbacks so
+        we can send out MQTT messages when the device changes.
 
         Args:
           modem:   (Modem) The Insteon modem device.
@@ -185,23 +183,22 @@ class Mqtt:
     def handle_cmd(self, client, userdata, message):
         """MQTT command message callback.
 
-        This is called when an MQTT message is received.  Check it's topic and
-        pass it off to the correct handler.  The command is a json dictionary
-        that contains these keys:
+        This is called when an MQTT message is received.  Check it's topic
+        and pass it off to the correct handler.  The command is a json
+        dictionary that contains these keys:
 
         - session: Optional string to identify this command session.  Server
           will publish user interface messages to the session topic for
           communication back to the remote client.
-        
+
         - cmd: The command dictionary.  This gets passed to the MQTT device
           that corresponds to the Instoen device for decoding.
-        
 
         Args:
           client:   The Paho.Client the message was read from.
           userdata: Optional data passed to the MQTT link.  Not used.
-          message:  Paho.mqtt message object.  Has attributes topic and pyaload.
-
+          message:  Paho.mqtt message object.  Has attributes topic and
+                    payload.
         """
         LOG.info("MQTT message %s %s", message.topic, message.payload)
 
@@ -214,11 +211,12 @@ class Mqtt:
             return
 
         # For commands, we want the ability to send messages back to show
-        # what's happening with the command.  We can't just print them because
-        # this is s server.  So if the sender puts a 'session' key in the
-        # data, we'll publish these user interface messages to that topic so
-        # the remote client can get status upates.  Obviously the remote
-        # client and this code have to match what they expect the topic to be.
+        # what's happening with the command.  We can't just print them
+        # because this is a server.  So if the sender puts a 'session' key in
+        # the data, we'll publish these user interface messages to that topic
+        # so the remote client can get status upates.  Obviously the remote
+        # client and this code have to match what they expect the session
+        # topic to be.
         end_reply = lambda *x: None
         if "session" in data:
             # Turn the session into a topic.
@@ -228,7 +226,8 @@ class Mqtt:
             # Push the handle_reply callback to the logging object.  This way
             # any call to LOG.UI() will send out a message.  This allows the
             # server code to use the regular logging API to send out UI
-            # messages to the remote client with out changing any of the code.
+            # messages to the remote client with out changing any of the
+            # code.
             reply_cb = functools.partial(self.handle_reply, topic=reply_topic)
             LOG.set_ui_callback(reply_cb)
 
@@ -321,8 +320,8 @@ class Mqtt:
     def _subscribe(self):
         """Subscribe to the command and set topics.
 
-        This will subscribe to the command topic and tell all the MQTT devices
-        to subscribe to their command topics.
+        This will subscribe to the command topic and tell all the MQTT
+        devices to subscribe to their command topics.
         """
         if self._cmd_topic:
             self.link.subscribe(self._cmd_topic + "/+", self.qos,
