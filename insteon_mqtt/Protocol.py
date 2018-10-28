@@ -15,56 +15,58 @@ LOG = log.get_logger()
 
 
 class WriteStatus(enum.Enum):
-    """TODO: doc
-    """
+    """Current status of the output write queue."""
+    # Messages can be sent to the serial link for writing.
     READY_TO_WRITE = 0
+    # Message has been queued in the serial link but hasn't been written yet.
     PENDING_WRITE = 1
+    # Message has been written and we're processing replies.  When the
+    # message handler says it's done, this will be cleared back to READY so
+    # more messages can be written.
     WAIT_FOR_REPLY = 2
 
 
-# TODO: doc
+# Output message and handler stored together.
 OutputMsg = collections.namedtuple('OutputMsg', ['msg', 'handler'])
 
 
 class Protocol:
     """Insteon PLM protocol processing class.
 
-    This class processes the byte stream that is being read from and
-    written to the Insteon PLM modem.  It connects to a network/Serial
-    link class which handles the actual reading and writing.
+    This class processes the byte stream that is being read from and written
+    to the Insteon PLM modem.  It connects to a network/Serial link class
+    which handles the actual reading and writing.
 
-    For input, this class connects to the network.Serial class signals
-    for data being read.  When data is read, it's added to a bytearray
-    and then we search for 0x02 bytes which are the start of an
-    Insteon message.  After that, we look at the message type code
-    byte and search for a message handler to handle the class.  There
-    can be a set of read handlers that are always active for handling
-    messages.
+    For input, this class connects to the network.Serial class signals for
+    data being read.  When data is read, it's added to a bytearray and then
+    we search for 0x02 bytes which are the start of an Insteon message.
+    After that, we look at the message type code byte and search for a
+    message handler to handle the class.  There can be a set of read handlers
+    that are always active for handling messages.
 
     If a message was written out, it also registers a handler with the
-    message to write.  That write handler is checked first whenever a
-    message comes back in until all the expected replies come in.
-    Then the write handler is removed and the next message in the
-    write queue is sent.
+    message to write.  That write handler is checked first whenever a message
+    comes back in until all the expected replies come in.  Then the write
+    handler is removed and the next message in the write queue is sent.
 
     The types of messages we expected are:
 
-    1) Replies from commands we send to the modem.  For a standard
-       message (8 bytes), we'll get a echo reply w/ ACK/NAK (9 bytes).
-       If this fails, we'll get a 2 byte NAK.  After the ACK, we'll
-       probably also get further messages in.  If we don't wait for
-       these and continue writing messages, the modem won't send them
-       (but will ACK them).  So once we send a message, we need to
-       know what the expected reply is going to be and wait for that.
+    1) Replies from commands we send to the modem.  For a standard message (8
+       bytes), we'll get a echo reply w/ ACK/NAK (9 bytes).  If this fails,
+       we'll get a 2 byte NAK.  After the ACK, we'll probably also get
+       further messages in.  If we don't wait for these and continue writing
+       messages, the modem won't send them (but will ACK them).  So once we
+       send a message, we need to know what the expected reply is going to be
+       and wait for that.
 
-    2) Inbound messages from modem when a device triggers and sends a
-       message to the modem.  This will be an 11 byte standard message
-       that's a broadcast or broadcast cleanup type message.
+    2) Inbound messages from modem when a device triggers and sends a message
+       to the modem.  This will be an 11 byte standard message that's a
+       broadcast or broadcast cleanup type message.
 
-    3) Device database reading.  Reading remote db's from a device
-       involves sending one command, getting an ACK, then reading a
-       series of messages (1 per db entry) until we get a final
-       message which ends the sequence.
+    3) Device database reading.  Reading remote db's from a device involves
+       sending one command, getting an ACK, then reading a series of messages
+       (1 per db entry) until we get a final message which ends the sequence.
+
     """
     def __init__(self, link):
         """Constructor
@@ -75,8 +77,8 @@ class Protocol:
         """
         self.link = link
 
-        # Forward poll() calls from the network link to ourselves.
-        # That way we can test for write message time outs periodically.
+        # Forward poll() calls from the network link to ourselves.  That way
+        # we can test for write message time outs periodically.
         self._linkPoll = self.link.poll
         self.link.poll = self._poll
 
@@ -96,7 +98,14 @@ class Protocol:
         # says that it's done receiving replies until we can send the next
         # message.  If we write to the modem before that, it basically
         # cancels the previous action.  The _write_status flag indicates what
-        # state the [0] message is in during the write process.
+        # state the [0] message is in during the write process.  Status of
+        # READY_TO_WRITE indicates we can write to the serial link.  When we
+        # send a message to the serial link, status will change to
+        # PENDING_WRITE.  When the serial link actually sends out the
+        # message, status is changed to WAIT_FOR_REPLY.  When the message
+        # handler says that it's done processing replies, status is changed
+        # back to READY_TO_WRITE and we can write, the [0] object is removed,
+        # can we'll write any other messages in the queue.
         self._write_queue = []
         self._write_status = WriteStatus.READY_TO_WRITE
 
@@ -131,13 +140,14 @@ class Protocol:
         """Add a universal message handler.
 
         These handlers can handle any message that shows up.  This is
-        normally used for broadcast messages that originate on the
-        network without us writing us commands.
+        normally used for broadcast messages that originate on the network
+        without us writing us commands.
 
         See the classes in the handler sub-package for examples.
 
         Args:
            handler:   (handler) Message handler class to add.
+
         """
         self._read_handlers.append(handler)
 
@@ -155,8 +165,8 @@ class Protocol:
     def load_config(self, config):
         """Load a configuration dictionary.
 
-        This gets passed to the network link (usually network.Serial
-        object) to load any configuration for the modem connection.
+        This gets passed to the network link (usually network.Serial object)
+        to load any configuration for the modem connection.
 
         Args:
           config:   (dict) Configuration data to load.
@@ -167,16 +177,15 @@ class Protocol:
     def send(self, msg, msg_handler, high_priority=False, after=None):
         """Write a message to the PLM modem.
 
-        If there are no other messages in the queue, the message gets
-        written immediately.  Otherwise the message is added to the
-        write queue and will be written after other messages are
-        finished.
+        If there are no other messages in the queue, the message gets written
+        immediately.  Otherwise the message is added to the write queue and
+        will be written after other messages are finished.
 
-        The handler is responsible for reading replies.  Each handler
-        returns message.UNKNOWN if it can't process the message,
-        message.CONTINUE if the message was handled and more replies
-        are expected, or message.FINISHED if the message was handled
-        and no more replies are expected.
+        The handler is responsible for reading replies.  Each handler returns
+        message.UNKNOWN if it can't process the message, message.CONTINUE if
+        the message was handled and more replies are expected, or
+        message.FINISHED if the message was handled and no more replies are
+        expected.
 
         Arg:
           msg:            Output message to write.  This should be an
@@ -221,8 +230,8 @@ class Protocol:
         """Periodic polling function.
 
         The network stack calls this periodically.  If we have message
-        handler, we'll use this to check for a time out if the correct
-        set of replies hasn't been received yet.
+        handler, we'll use this to check for a time out if the correct set of
+        replies hasn't been received yet.
 
         Args:
            t:   (float) Current Unix clock time tag.
@@ -247,9 +256,9 @@ class Protocol:
     def _data_read(self, link, data):
         """PLM modem data read callback.
 
-        This is called by the network loop when data is read from the
-        modem.  We'll add it to our read buffer and try to find any
-        insteon messages that are in it.
+        This is called by the network loop when data is read from the modem.
+        We'll add it to our read buffer and try to find any insteon messages
+        that are in it.
 
         Args:
           link:    network.Link The serial connection that read the data.
@@ -258,27 +267,26 @@ class Protocol:
         # Append the read data to the inbound message buffer.
         self._buf.extend(data)
 
-        # Keep processing until there are no more messages to handle.
-        # There must be at least 2 bytes so we can read the message
-        # type code.
+        # Keep processing until there are no more messages to handle.  There
+        # must be at least 2 bytes so we can read the message type code.
         while len(self._buf) > 1:
             #LOG.debug("Searching message (len %d): %s... ",
             #               len(self._buf), util.to_hex(self._buf,20))
 
-            # Find a message start token.  Note that this token could
-            # also appear in the middle of a message so we can't be
-            # totally sure it's a message until we try to parse it.
-            # If there is no starting token - we're probably reading
-            # at the start in the middle of a message so just clear it
-            # and wait until we get a start token.
+            # Find a message start token.  Note that this token could also
+            # appear in the middle of a message so we can't be totally sure
+            # it's a message until we try to parse it.  If there is no
+            # starting token - we're probably reading at the start in the
+            # middle of a message so just clear it and wait until we get a
+            # start token.
             start = self._buf.find(0x02)
             if start == -1:
                 LOG.debug("No 0x02 starting byte found - clearing")
                 self._buf = bytearray()
                 break
 
-            # Move the buffer to the start token.  Make sure we still
-            # have at lesat 2 bytes or wait for more to arrive.
+            # Move the buffer to the start token.  Make sure we still have at
+            # lesat 2 bytes or wait for more to arrive.
             if start != 0:
                 LOG.debug("0x02 found at byte %d - shifting", start)
                 self._buf = self._buf[start:]
@@ -294,8 +302,8 @@ class Protocol:
                 self._buf = self._buf[2:]
                 continue
 
-            # See if we have enough bytes to read the message.  If
-            # not, wait until more data is read.
+            # See if we have enough bytes to read the message.  If not, wait
+            # until more data is read.
             msg_size = msg_class.msg_size(self._buf)
             if len(self._buf) < msg_size:
                 break
@@ -324,9 +332,9 @@ class Protocol:
     def _is_duplicate(self, msg):
         """Check whether incomming message is a duplicate.
 
-        Duplicate messages arise because there may be an excess number
-        of hops used in the transmitted message.  There are also times where
-        the duplicate of the exact same message with the same number of hops
+        Duplicate messages arise because there may be an excess number of
+        hops used in the transmitted message.  There are also times where the
+        duplicate of the exact same message with the same number of hops
         arives twice.  It is unclear what causes this, but it could result
         from the transition of a wired signal to wireless and back.
 
@@ -381,10 +389,9 @@ class Protocol:
     def _process_msg(self, msg):
         """Process a read message by passing it to the handlers.
 
-        If we wrote out a message, we'll try and use the message
-        handler for that message first.  If not or if that handler
-        doesn't understand the message, we'll pass it to the read
-        handlers for processing.
+        If we wrote out a message, we'll try and use the message handler for
+        that message first.  If not or if that handler doesn't understand the
+        message, we'll pass it to the read handlers for processing.
 
         Args:
           msg:   Insteon message object to process.
@@ -392,49 +399,46 @@ class Protocol:
         # Send the general message received notification.
         self.signal_received.emit(msg)
 
-        # If we have a write handler, then most likely the inbound
-        # message is a reply to the write so see if it can handle the
-        # message.  If the status is FINISHED, then the handler has
-        # seen all the messages it expects. If it's CONTINUE, it
-        # processed the message but expects more.  If it's UNKNOWN,
-        # the handler ignored that message.
+        # If we have a write handler, then most likely the inbound message is
+        # a reply to the write so see if it can handle the message.  If the
+        # status is FINISHED, then the handler has seen all the messages it
+        # expects. If it's CONTINUE, it processed the message but expects
+        # more.  If it's UNKNOWN, the handler ignored that message.
         if self._write_queue:
             handler = self._write_queue[0].handler
             LOG.debug("Passing msg to write handler: %s", handler)
             status = handler.msg_received(self, msg)
 
-            # Handler is finished.  Send the next outgoing message
-            # if one is waiting.
+            # Handler is finished.  Send the next outgoing message if one is
+            # waiting.
             if status == Msg.FINISHED:
                 LOG.debug("Write handler finished")
                 self._write_finished()
                 return
 
-            # If this message was understood by the write handler,
-            # don't look in the read handlers and update the write
-            # handlers time out into the future.
+            # If this message was understood by the write handler, don't look
+            # in the read handlers and update the write handlers time out
+            # into the future.
             elif status == Msg.CONTINUE:
                 handler.update_expire_time()
                 return
 
             assert status == Msg.UNKNOWN
 
-        # No write handler or the message didn't match what the
-        # handler expects to see.  Try the regular read handler to see
-        # if they understand the message.
+        # No write handler or the message didn't match what the handler
+        # expects to see.  Try the regular read handler to see if they
+        # understand the message.
         for handler in self._read_handlers:
             status = handler.msg_received(self, msg)
 
-            # If the message was understood by this handler return.
-            # This limits us to one handler per message but that's
-            # probably ok.
+            # If the message was understood by this handler return.  This
+            # limits us to one handler per message but that's probably ok.
             if status != Msg.UNKNOWN:
                 return
 
-        # No handler was found for the message.  Shift pass the ID
-        # code and look for more messages.  This might be better
-        # by having a lookup by msg ID->msg size and use that to
-        # skip the whole message.
+        # No handler was found for the message.  Shift pass the ID code and
+        # look for more messages.  This might be better by having a lookup by
+        # msg ID->msg size and use that to skip the whole message.
         LOG.warning("No read handler found for message type %#04x: %s",
                     msg.msg_code, msg)
 
@@ -443,9 +447,9 @@ class Protocol:
         """Message written finished.
 
         This is called when the write message handler returns
-        message.FINISHED which means all the expected replies have been
-        read.  The write handler is cleared and the next message in the
-        queue is written.  It can also be called if the handler times out.
+        message.FINISHED which means all the expected replies have been read.
+        The write handler is cleared and the next message in the queue is
+        written.  It can also be called if the handler times out.
         """
         assert self._write_queue
 
@@ -459,8 +463,8 @@ class Protocol:
     def _msg_written(self, link, data):
         """Message written callback.
 
-        This is called by the network link when the message packet has
-        been written to the modem.
+        This is called by the network link when the message packet has been
+        written to the modem.
         """
         assert self._write_queue
         assert self._write_status == WriteStatus.PENDING_WRITE
