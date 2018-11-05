@@ -1,17 +1,25 @@
 # Revision Change History
 
+## [0.6.4]
+
+### Additions
+- Added on_level flag support for dimmers and KeyPadLinc's to set the light
+  level when the on button is pressed ([Issue #70][I70]).
+
+### Fixes
+- Multiple output messages queued to the Insteon devices causes some messages
+  to be lost ([Issue #86][I86]).
+
 ## [0.6.3]
 
 ### Additions
 - Added on_level flag support for dimmers and KeyPadLinc's to set the light
   level when the on button is pressed ([Issue #70][I70]).
 
-## [0.6.3]
-
 ### Breaking Changes
 - KeypadLinc now supports both dimmer and on/off device types.  This required
   changing the KeypadLinc inputs in the MQTT portion of the config.yaml file.
-  See the file in the repository for the new input fields. ([Issue #33][I33]).
+  See the file in the repository for the new input fields ([Issue #33][I33]).
 
 ### Additions
 - HassIO and docker support and is now available.  See the main doc page for
@@ -175,3 +183,4 @@
 [I63]: https://github.com/TD22057/insteon-mqtt/issues/63
 [I70]: https://github.com/TD22057/insteon-mqtt/issues/70
 [I76]: https://github.com/TD22057/insteon-mqtt/issues/76
+[I86]: https://github.com/TD22057/insteon-mqtt/issues/86
