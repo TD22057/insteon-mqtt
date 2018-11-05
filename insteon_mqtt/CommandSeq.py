@@ -27,21 +27,24 @@ class CommandSeq:
     this library needs, it works ok.
     """
     #-----------------------------------------------------------------------
-    def __init__(self, protocol, msg=None, on_done=None):
+    def __init__(self, protocol, msg=None, on_done=None, error_stop=True):
         """Constructor
 
         Args:
-          protocol: The Protocol object to use.  This can also be a
-                    device.Base object.
-          msg:      (str) String message to pass to on_done if the
-                    sequence works.
-          on_done:  The callback to run when complete.  This will be run
-                    when there is an error or when all the commands finish.
+          protocol:    The Protocol object to use.  This can also be a
+                       device.Base object.
+          msg:         (str) String message to pass to on_done if the
+                       sequence works.
+          on_done:     The callback to run when complete.  This will be run
+                       when there is an error or when all the commands finish.
+          error_stop:  (bool) True to stop the sequence if a command fails.
+                       False to continue on with the sequence.
         """
         self.protocol = protocol
 
         self._on_done = util.make_callback(on_done)
         self.msg = msg
+        self.error_stop = error_stop
         self.total = 0
 
         # List of Entry objects (see class below) to call for each step in
@@ -115,7 +118,7 @@ class CommandSeq:
           data:     Callback data.
         """
         # Last function failed with an error.
-        if not success:
+        if not success and self.error_stop:
             self._on_done(success, msg, data)
 
         # No more calls - success.

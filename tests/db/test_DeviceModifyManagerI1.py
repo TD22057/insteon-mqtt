@@ -137,7 +137,7 @@ class MockProto:
     def __init__(self):
         self.msgs = []
 
-    def send(self, msg, handler):
+    def send(self, msg, handler, high_priority=False, after=None):
         self.msgs.append(msg)
 
 class MockModem():

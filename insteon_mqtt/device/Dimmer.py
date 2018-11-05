@@ -316,6 +316,31 @@ class Dimmer(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
+    def set_on_level(self, level, on_done=None):
+        """TODO: doc
+
+        NOTE: default factory backlight == 0x1f
+        """
+        LOG.info("Dimmer %s setting on level to %s", self.label, level)
+
+        # Extended message data - see Insteon dev guide p156.
+        data = bytes([
+            0x01,   # D1 must be group 0x01
+            0x06,   # D2 set on level when button is pressed
+            level,  # D3 brightness level
+            ] + [0x00] * 11)
+
+        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
+
+        # Use the standard command handler which will notify us when
+        # the command is ACK'ed.
+        msg_handler = handler.StandardCmd(msg, self.handle_on_level,
+                                          on_done)
+
+        # Send the message to the PLM modem for protocol.
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):
         """TODO: doc
         valid kwargs:
@@ -325,15 +350,23 @@ class Dimmer(Base):
 
         # Check the input flags to make sure only ones we can understand were
         # passed in.
-        flags = set(["backlight"])
+        flags = set(["backlight", "on_level"])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown Dimmer flags input: %s.\n Valid flags "
                             "are: %s" % unknown, flags)
 
-        # FUTURE: to support other flags, use a CommandSeq
-        backlight = util.input_byte(kwargs, "backlight")
-        self.set_backlight(backlight, on_done)
+        seq = CommandSeq(self.protocol, "Dimmer set_flags complete", on_done)
+
+        if "backlink" in kwargs:
+            backlight = util.input_byte(kwargs, "backlight")
+            seq.add(self.set_backlight, backlight)
+
+        if "on_level" in kwargs:
+            on_level = util.input_byte(kwargs, "on_level")
+            seq.add(self.set_on_level, on_level)
+
+        seq.run()
 
     #-----------------------------------------------------------------------
     def handle_backlight(self, msg, on_done):
@@ -343,6 +376,15 @@ class Dimmer(Base):
             on_done(True, "Backlight level updated", None)
         else:
             on_done(False, "Backlight level failed", None)
+
+    #-----------------------------------------------------------------------
+    def handle_on_level(self, msg, on_done):
+        """TODO: doc
+        """
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+            on_done(True, "Button on level updated", None)
+        else:
+            on_done(False, "Button on level failed", None)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):

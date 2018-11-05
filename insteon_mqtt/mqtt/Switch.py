@@ -10,10 +10,25 @@ LOG = log.get_logger()
 
 
 class Switch:
-    """TODO: doc
+    """MQTT on/off switch object.
+
+    This class links an Insteon on/off switch object to MQTT.  Any
+    change in the Instoen device will trigger an MQTT message and
+    changes can be triggered via MQTT message.
+
+    Some classes that can act like a switch can inherit from this
+    class to use the same MQTT templates (see Dimmer).
     """
     def __init__(self, mqtt, device, handle_active=True):
-        """TODO: doc
+        """Constructor
+
+        Args:
+          mqtt:    (Mqtt) the main MQTT interface object.
+          device:  The insteon switch device object.
+          handle_active:  (bool) If True, connect the signal_active sigma
+                          from the device to this class.  If False, the
+                          connection is handled elsewhere.  This is
+                          commonly used by derived classes.
         """
         self.mqtt = mqtt
         self.device = device
@@ -36,6 +51,7 @@ class Switch:
             payload='{ "cmd" : "{{value.lower()}}" }',
             )
 
+        # Receive notifications from the Insteon device when it changes.
         if handle_active:
             device.signal_active.connect(self.handle_active)
 
@@ -57,6 +73,7 @@ class Switch:
         if not config:
             return
 
+        # Update the MQTT topics and payloads from the config file.
         self.msg_state.load_config(config, 'state_topic', 'state_payload', qos)
         self.msg_on_off.load_config(config, 'on_off_topic', 'on_off_payload',
                                     qos)
@@ -94,6 +111,7 @@ class Switch:
     def template_data(self, is_active=None):
         """TODO: doc
         """
+        # Set up the variables that can be used in the templates.
         data = {
             "address" : self.device.addr.hex,
             "name" : self.device.name if self.device.name
@@ -101,7 +119,7 @@ class Switch:
             }
 
         if is_active is not None:
-            data["on"] = 1 if is_active else 0,
+            data["on"] = 1 if is_active else 0
             data["on_str"] = "on" if is_active else "off"
 
         return data

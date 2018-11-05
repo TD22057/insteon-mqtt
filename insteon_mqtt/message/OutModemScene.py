@@ -74,8 +74,8 @@ class OutModemScene(Base):
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        ack = "" if self.is_ack is None else "ack: %s" % self.is_ack
-        return "Modem Scene: grp: %s cmd: %#04x %#04x %s" % \
+        ack = "" if self.is_ack is None else " ack: %s" % self.is_ack
+        return "Modem Scene: grp: %s cmd: %#04x %#04x%s" % \
             (self.group, self.cmd1, self.cmd2, ack)
 
     #-----------------------------------------------------------------------

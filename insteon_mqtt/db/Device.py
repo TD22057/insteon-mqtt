@@ -331,9 +331,9 @@ class Device:
                                                    num_retry=3)
             modify_manager.start_modify()
         else:
-            # Build the extended db modification message.  This says to modify
-            # the entry in place w/ the new db flags which say this record is no
-            # longer in use.
+            # Build the extended db modification message.  This says to
+            # modify the entry in place w/ the new db flags which say this
+            # record is no longer in use.
             ext_data = new_entry.to_bytes()
             msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
             msg_handler = handler.DeviceDbModify(self, new_entry, on_done)
@@ -483,8 +483,10 @@ class Device:
         if entry.db_flags.in_use:
             # NOTE: this relies on no-one keeping a handle to this entry
             # outside of this class.  This also handles duplicate messages
-            # since they will have the same memory location key.
+            # since they will have the same memory location key.  Pop this
+            # address off unused to insure both dicts stay in sync.
             self.entries[entry.mem_loc] = entry
+            self.unused.pop(entry.mem_loc, None)
 
             # If we're the controller for this entry, add it to the list of
             # entries for that group.
@@ -501,8 +503,10 @@ class Device:
         else:
             # NOTE: this relies on no one keeping a handle to this entry
             # outside of this class.  This also handles duplicate messages
-            # since they will have the same memory location key.
+            # since they will have the same memory location key.  Pop this
+            # address off entries to insure both dicts stay in sync.
             self.unused[entry.mem_loc] = entry
+            self.entries.pop(entry.mem_loc, None)
 
             # If the entry is a controller and it's in the group dict, erase
             # it from the group map.

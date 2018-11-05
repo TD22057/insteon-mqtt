@@ -115,7 +115,7 @@ class Dimmer(Switch):
             }
 
         if level is not None:
-            data["on"] = 1 if level else 0,
+            data["on"] = 1 if level else 0
             data["on_str"] = "on" if level else "off"
             data["level_255"] = level
             data["level_100"] = int(100.0 * level / 255.0)

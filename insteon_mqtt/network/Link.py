@@ -97,7 +97,7 @@ class Link:
                                   self.__class__)
 
     #-----------------------------------------------------------------------
-    def write_to_link(self):
+    def write_to_link(self, t):
         """Write data from the link.
 
         This will be called by the manager when the file descriptor
@@ -105,6 +105,9 @@ class Link:
         emitted the signal_needs_write(True).  Once all the data has
         been written, the link should call
         self.signal_needs_write.emit(False).
+
+        Args:
+           t:    (float) The current time (time.time).
         """
         raise NotImplementedError("%s.write_to_link() not implemented" %
                                   self.__class__)

@@ -77,8 +77,8 @@ class OutModemLinking(Base):
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        ack = "" if self.is_ack is None else "ack: %s" % self.is_ack
-        return "Modem linking: grp: %s %s %s" % (self.group, self.cmd, ack)
+        ack = "" if self.is_ack is None else " ack: %s" % self.is_ack
+        return "Modem linking: grp: %s %s%s" % (self.group, self.cmd, ack)
 
     #-----------------------------------------------------------------------
 

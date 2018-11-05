@@ -64,7 +64,7 @@ class Test_ModemDbGet:
 
 
 class MockProtocol:
-    def send(self, msg, handler):
+    def send(self, msg, handler, high_priority=False, after=None):
         self.sent = msg
         self.handler = handler
 

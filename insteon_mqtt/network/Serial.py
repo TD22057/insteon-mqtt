@@ -3,7 +3,6 @@
 # Network link to a Serial device class
 #
 #===========================================================================
-import os
 import serial
 from .. import log
 from ..Signal import Signal
@@ -176,7 +175,7 @@ class Serial(Link):
         """
         try:
             # Read from the file descriptor.
-            data = os.read(self._fd, self.read_buf_size)
+            data = self.client.read(self.read_buf_size)
             if data:
                 #LOG.debug("Read %s bytes from serial %s: %s", len(data),
                 #               self.client.port, data)
@@ -208,13 +207,12 @@ class Serial(Link):
         # enough time has elapsed to write the message.
         data, after_time = self._write_buf[0]
         if t < after_time:
-            LOG.debug("Waiting to write %f < %f", t, after_time)
+            #LOG.debug("Waiting to write %f < %f", t, after_time)
             return
 
         try:
             # Write as much of that data as possible.
-            num = os.write(self._fd, data)
-
+            num = self.client.write(data)
             LOG.debug("Wrote %s bytes to serial %s", num, self.client.port)
 
             if num == len(data):

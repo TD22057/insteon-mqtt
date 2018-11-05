@@ -160,7 +160,7 @@ class MsgTemplate:
         if not silent:
             LOG.debug("Input template render: '%s'", value)
         if value is None:
-            return
+            return None
 
         try:
             return json.loads(value)

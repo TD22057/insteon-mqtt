@@ -64,8 +64,8 @@ class OutAllLinkGetFirst(Base):
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        ack = "" if self.is_ack is None else "ack: %s" % self.is_ack
-        return "All link get first: %s" % ack
+        ack = "" if self.is_ack is None else " ack: %s" % self.is_ack
+        return "All link get first%s" % ack
 
     #-----------------------------------------------------------------------
 
