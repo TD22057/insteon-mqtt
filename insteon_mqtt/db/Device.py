@@ -479,7 +479,7 @@ class Device:
         return delta
 
     #-----------------------------------------------------------------------
-    def update_from_diff(self, device, diff, on_done=None):
+    def apply_diff(self, device, diff, on_done=None):
         """TODO: doc
         """
         assert self.addr == diff.addr
