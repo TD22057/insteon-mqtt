@@ -33,7 +33,7 @@ def send(config, topic, payload, quiet=False):
     session = {
         "result" : None,
         "done" : False,
-        "status" : 0,
+        "status" : 0,  # 0 == success
         "quiet" : quiet,
         }
 
