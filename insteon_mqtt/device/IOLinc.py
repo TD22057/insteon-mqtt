@@ -144,11 +144,14 @@ class IOLinc(Base):
         """
         super().__init__(protocol, modem, address, name)
 
-        self._is_on = False
+        # Current device states for the sensor and relay.
+        self._sensor_on = False
+        self._relay_on = False
 
-        # Support on/off style signals for the sensor
-        # API: func(Device, bool is_on)
-        self.signal_on_off = Signal()
+        # Support on/off style signals.
+        # API: func(Device, bool is_oin)
+        self.signal_sensor_on_off = Signal()  # (Device, bool)
+        self.signal_relay_on_off = Signal()  # (Device, bool)
 
         # Group number of the virtual modem scene linked to this device.  We
         # need this so we can trigger the device and have it respond using
@@ -336,29 +339,27 @@ class IOLinc(Base):
         LOG.info("Device %s cmd: status refresh", self.label)
 
         # NOTE: IOLinc cmd1=0x00 will report the relay state.  cmd2=0x01
-        # reports the sensor state which is what we want.
-        seq = CommandSeq(self.protocol, "Device refreshed", on_done)
+        # reports the sensor state.
+        seq = CommandSeq(self.protocol, "IOLinc refresh", on_done)
 
         # This sends a refresh ping which will respond w/ the current
-        # database delta field.  The handler checks that against the current
-        # value.  If it's different, it will send a database download command
-        # to the device to update the database.
-        msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
-        msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
-                                            on_done, num_retry=3)
+        # database delta field and the relay state.  The msg handler checks
+        # that against the current value.  If it's different, it will send a
+        # database download command to the device to update the database.
+        msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
+        msg_handler = handler.DeviceRefresh(self, self.handle_relay_refresh,
+                                            force, num_retry=3)
         seq.add_msg(msg, msg_handler)
 
-        # If model number is not known, or force true, run get_model
-        self.addRefreshData(seq, force)
+        # Now refresh the sensor state.
+        msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
+        msg_handler = handler.StandardCmd(msg, self.handle_sensor_refresh,
+                                          num_retry=3)
 
-        # Run all the commands.
+        # Finally start the sequence running.  This will return so the
+        # network event loop can process everything and the on_done callbacks
+        # will chain everything together.
         seq.run()
-
-    #-----------------------------------------------------------------------
-    def is_on(self):
-        """Return if the device is on or not.
-        """
-        return self._is_on
 
     #-----------------------------------------------------------------------
     def on(self, group=0x01, level=None, instant=False, on_done=None):
@@ -528,12 +529,12 @@ class IOLinc(Base):
         # On command.  0x11: on
         elif msg.cmd1 == 0x11:
             LOG.info("IOLinc %s broadcast ON grp: %s", self.addr, msg.group)
-            self._set_is_on(True)
+            self._set_sensor_on(True)
 
         # Off command. 0x13: off
         elif msg.cmd1 == 0x13:
             LOG.info("IOLinc %s broadcast OFF grp: %s", self.addr, msg.group)
-            self._set_is_on(False)
+            self._set_sensor_on(False)
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
@@ -595,23 +596,38 @@ class IOLinc(Base):
         on_done(True, "Operation complete", msg.cmd2)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
-        """Callback for handling refresh() responses.
+    def handle_sensor_refresh(self, msg):
+        """Handle replies to the sensor refresh command.
 
-        This is called when we get a response to the refresh() command.  The
-        refresh command reply will contain the current device state in cmd2
-        and this updates the device with that value.  It is called by
-        handler.DeviceRefresh when we can an ACK for the refresh command.
+        This is called when we get a response to the refresh() command for
+        the sensor state.  It is called by handler.DeviceRefresh when we can
+        an ACK for the refresh command.
+
+        Args:
+          msg:  (message.InpStandard) The refresh message reply.  The current
+                sensor state is in the msg.cmd2 field.
+        """
+        LOG.ui("IOLinc %s sensor refresh on=%s", self.label, msg.cmd2 > 0x00)
+
+        # Current on/off is stored in cmd2 so update our level to match.
+        self._set_sensor_on(msg.cmd2 > 0x00)
+
+    #-----------------------------------------------------------------------
+    def handle_relay_refresh(self, msg):
+        """Handle replies to the relay refresh command.
+
+        This is called when we get a response to the refresh() command for
+        the relay state.  It is called by handler.DeviceRefresh when we can
+        an ACK for the refresh command.
 
         Args:
           msg (message.InpStandard):  The refresh message reply.  The current
-              device state is in the msg.cmd2 field.
+              relay state is in the msg.cmd2 field.
         """
-        LOG.ui("IOLinc %s refresh on=%s", self.label, msg.cmd2 > 0x00)
+        LOG.ui("IOLinc %s relay refresh on=%s", self.label, msg.cmd2 > 0x00)
 
-        # Current on/off level is stored in cmd2 so update our level to
-        # match.
-        self._set_is_on(msg.cmd2 > 0x00)
+        # Current on/off is stored in cmd2 so update our level to match.
+        self._set_relay_on(msg.cmd2 > 0x00)
 
     #-----------------------------------------------------------------------
     def handle_ack(self, msg, on_done):
@@ -696,19 +712,35 @@ class IOLinc(Base):
         LOG.debug("IOLinc %s cmd %#04x", self.addr, msg.cmd1)
 
     #-----------------------------------------------------------------------
-    def _set_is_on(self, is_on):
-        """Update the device on/off state.
+    def _set_sensor_on(self, is_on):
+        """Update the device sensor on/off state.
 
-        This will change the internal state and emit the state changed
-        signals.  It is called by whenever we're informed that the device has
+        This will change the internal sensor state and emit the state changed
+        signals.  It is called by whenever we're informed that the sensor has
+        changed state.
+
+        Args:
+          is_on (bool):  True if the sensor is on, False if it isn't.
+        """
+        LOG.info("Setting device %s sensor on %s", self.label, is_on)
+        self._sensor_on = bool(is_on)
+
+        self.signal_sensor_on_off.emit(self, self._sensor_on)
+
+    #-----------------------------------------------------------------------
+    def _set_replay_on(self, is_on):
+        """Update the device relay on/off state.
+
+        This will change the internal relay state and emit the state changed
+        signals.  It is called by whenever we're informed that the relay has
         changed state.
 
         Args:
           is_on (bool):  True if the relay is on, False if it isn't.
         """
-        LOG.info("Setting device %s on %s", self.label, is_on)
-        self._is_on = bool(is_on)
+        LOG.info("Setting device %s relay on %s", self.label, is_on)
+        self._relay_on = bool(is_on)
 
-        self.signal_on_off.emit(self, self._is_on)
+        self.signal_relay_on_off.emit(self, self._relay_on)
 
     #-----------------------------------------------------------------------
