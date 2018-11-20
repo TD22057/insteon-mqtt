@@ -12,6 +12,7 @@ devices.  The PLM modem and devices have different formats so they are
 stored in different classes.
 """
 
+from .DbDiff import DbDiff
 from .Device import Device
 from .DeviceEntry import DeviceEntry
 from .DeviceModifyManagerI1 import DeviceModifyManagerI1
