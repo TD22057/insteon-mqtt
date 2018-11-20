@@ -1,5 +1,12 @@
 # Revision Change History
 
+## [0.6.5]
+
+### Fixes
+- Added better messages when the pair command fails because the modem db
+  is out of date ([Issue #69][I69]).
+
+
 ## [0.6.4]
 
 ### Additions
@@ -181,6 +188,7 @@
 [I48]: https://github.com/TD22057/insteon-mqtt/issues/48
 [I59]: https://github.com/TD22057/insteon-mqtt/issues/59
 [I63]: https://github.com/TD22057/insteon-mqtt/issues/63
+[I69]: https://github.com/TD22057/insteon-mqtt/issues/69
 [I70]: https://github.com/TD22057/insteon-mqtt/issues/70
 [I76]: https://github.com/TD22057/insteon-mqtt/issues/76
 [I86]: https://github.com/TD22057/insteon-mqtt/issues/86
