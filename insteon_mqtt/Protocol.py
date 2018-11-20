@@ -249,7 +249,7 @@ class Protocol:
         # the time out in which case we'll mark this message as finished and
         # move on.
         if (self._write_status == WriteStatus.WAIT_FOR_REPLY and
-               self._write_queue[0].handler.is_expired(self, t)):
+                self._write_queue[0].handler.is_expired(self, t)):
             self._write_finished()
 
     #-----------------------------------------------------------------------
