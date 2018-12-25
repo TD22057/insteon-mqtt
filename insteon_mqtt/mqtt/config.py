@@ -25,6 +25,7 @@ from .Outlet import Outlet
 from .Remote import Remote
 from .SmokeBridge import SmokeBridge
 from .Switch import Switch
+from .Thermostat import Thermostat
 
 # Map Insteon device classes to MQTT classes.
 devices = {
@@ -40,6 +41,7 @@ devices = {
     device.Remote : Remote,
     device.SmokeBridge : SmokeBridge,
     device.Switch : Switch,
+    device.Thermostat : Thermostat,
     }
 
 

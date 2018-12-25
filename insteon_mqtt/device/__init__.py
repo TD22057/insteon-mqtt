@@ -39,3 +39,4 @@ from .Outlet import Outlet
 from .Remote import Remote
 from .SmokeBridge import SmokeBridge
 from .Switch import Switch
+from .Thermostat import Thermostat

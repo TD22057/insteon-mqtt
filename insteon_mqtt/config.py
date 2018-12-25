@@ -29,6 +29,7 @@ devices = {
     'outlet' : (device.Outlet, {}),
     'smoke_bridge' : (device.SmokeBridge, {}),
     'switch' : (device.Switch, {}),
+    'thermostat' : (device.Thermostat, {}),
     }
 
 

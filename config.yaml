@@ -433,6 +433,56 @@ mqtt:
     error_payload: '{{on_str.upper()}}'
 
   #------------------------------------------------------------------------
+  # Thermostat
+  #------------------------------------------------------------------------
+
+  # The thermostat has a lot of available states and commands
+  # 
+  #
+  # In Home Assistant use MQTT climate sensor with a configuration like:
+  # climate:
+  #   - platform: mqtt
+  #     name: Study
+  #     mode_state_topic: "insteon/aa.bb.cc/mode_state"
+  #     modes: ["OFF", "AUTO", "HEAT", "COOL", "PROGRAM"]
+  #     current_temperature_topic: "insteon/aa.bb.cc/ambient_temp"
+  #     fan_mode_state_topic: "insteon/aa.bb.cc/fan_state"
+  #     fan_modes: ["AUTO", "ON"]
+  #
+  # The current Home Assistant mqtt hvac component is not great.  It lacks
+  # a lot of functionality offered by the thermostat.  At some point I will
+  # submit a PR to Home Assistant to try and fix this.
+  # Major issues: 
+  #   - no concept of separate heat and cool set points
+  #   - no humidity state
+  #   - no status state
+  
+  thermostat:
+    # Output state change topic and payload.  Available
+    # variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   temp_c = temperature in celsius
+    #   temp_f = temperature in farenheit
+    #   mode = 'OFF', 'AUTO', 'HEAT', 'COOL', 'PROGRAM'
+    #   humid = humidity percentage
+    #   status = "OFF", "HEATING", "COOLING"
+    ambient_temp_topic: 'insteon/{{address}}/ambient_temp'
+    ambient_temp_payload: ''{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}''
+    fan_state_topic: 'insteon/{{address}}/fan_state'
+    fan_state_payload: '{{mode}}'
+    mode_state_topic: 'insteon/{{address}}/mode_state'
+    mode_state_payload: '{{mode}}'
+    cool_sp_state_topic: 'insteon/{{address}}/cool_sp_state'
+    cool_sp_state_payload: ''{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}''
+    heat_sp_state_topic: 'insteon/{{address}}/heat_sp_state'
+    heat_sp_state_payload: ''{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}''
+    humid_state_topic: 'insteon/{{address}}/humid_state'
+    humid_state_payload: ''{{humid}}''
+    status_state_topic: 'insteon/{{address}}/status_state'
+    status_state_payload: ''{{status}}''
+
+  #------------------------------------------------------------------------
   # Mini remotes
   #------------------------------------------------------------------------
 
