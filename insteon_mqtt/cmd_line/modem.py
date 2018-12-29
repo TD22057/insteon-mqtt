@@ -19,3 +19,14 @@ def refresh_all(args, config):
 
 
 #===========================================================================
+def get_devices(args, config):
+    topic = "%s/modem" % (args.topic)
+    payload = {
+        "cmd" : "get_devices",
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================

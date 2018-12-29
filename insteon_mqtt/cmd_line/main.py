@@ -44,6 +44,14 @@ def parse_args(args):
     sp.set_defaults(func=modem.refresh_all)
 
     #---------------------------------------
+    # modem.get_devices command
+    sp = sub.add_parser("get-devices", help="Return a list of all the devices "
+                        "that the modem knows about.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=modem.get_devices)
+
+    #---------------------------------------
     # device.linking command
     sp = sub.add_parser("linking", help="Turn on device or modem linking.  "
                         "This is the same as holding the modem set button "

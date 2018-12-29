@@ -23,6 +23,8 @@ class BatterySensor(Base):
     broadcast group 03 = low battery (0x11) / good battery (0x13)
     broadcast group 04 = heartbeat (0x11)
     """
+    type_name = "battery_sensor"
+
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
 

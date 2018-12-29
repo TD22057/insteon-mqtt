@@ -17,6 +17,7 @@ LOG = log.get_logger()
 class FanLinc(Dimmer):
     """TODO: doc
     """
+    type_name = "fan_linc"
 
     class Speed(enum.IntEnum):
         OFF = 0x00

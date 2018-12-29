@@ -117,7 +117,19 @@ class Base:
     def type(self):
         """Return a nice class name for the device.
         """
-        return self.__class__.__name__
+        if hasattr(self, "type_name"):
+            return getattr(self, "type_name")
+
+        return self.__class__.__name__.lower()
+
+    #-----------------------------------------------------------------------
+    def info_entry(self):
+        """Return a JSON dictionary containing information about the device.
+        """
+        return {str(self.addr) : {
+            "type" : self.type(),
+            "label" : self.name,
+            }}
 
     #-----------------------------------------------------------------------
     def send(self, msg, msg_handler, high_priority=False, after=None):

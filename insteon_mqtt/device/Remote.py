@@ -69,6 +69,7 @@ class Remote(Base):
         """
         super().__init__(protocol, modem, address, name)
         self.num = num_button
+        self.type_name = "mini_remote_%d" % self.num
 
         self.signal_pressed = Signal()  # (Device, int group, bool on)
 

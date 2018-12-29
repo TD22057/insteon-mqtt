@@ -116,6 +116,8 @@ class IOLinc(Base):
     state to show the door open or closed.
 
     """
+    type_name = "io_linc"
+
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
 

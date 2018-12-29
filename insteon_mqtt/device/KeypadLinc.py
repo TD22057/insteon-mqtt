@@ -43,6 +43,7 @@ class KeypadLinc(Base):
 
         # Switch or dimmer type.
         self.is_dimmer = dimmer
+        self.type_name = "keypad_linc" if dimmer else "keypad_linc_sw"
 
         # Group on/off signal.
         self.signal_active = Signal()  # (Device, int group, int level)

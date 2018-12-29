@@ -53,7 +53,6 @@ class Dimmer(Base):
        up:       No arguments.  Increment the current dimmer level up.
        down:     No arguments.  Increment the current dimmer level down.
     """
-
     on_codes = [0x11, 0x12, 0x21, 0x23]  # on, fast on, instant on, manual on
     off_codes = [0x13, 0x14, 0x22]  # off, fast off, instant off
 
