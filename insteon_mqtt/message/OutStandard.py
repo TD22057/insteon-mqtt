@@ -169,7 +169,7 @@ class OutExtended(OutStandard):
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
     @classmethod
-    def direct(cls, to_addr, cmd1, cmd2, data):
+    def direct(cls, to_addr, cmd1, cmd2, data, crc_type="D14"):
         """Construct a direct, extended message
 
         Args:
@@ -177,34 +177,17 @@ class OutExtended(OutStandard):
           cmd1:     (int) The command 1 field to set.
           cmd2:     (int) The command 2 field to set.
           data:     (byte) The extended data array of 14 bytes.
+          crc_type:   (str) None, "D14", or "CRC". See explanation in __init__
 
         Returns:
           Returns the created OutStandard message.
         """
         flags = Flags(Flags.Type.DIRECT, is_ext=True)
-        return OutExtended(to_addr, flags, cmd1, cmd2, data)
+        return OutExtended(to_addr, flags, cmd1, cmd2, data, crc_type=crc_type)
 
     #-----------------------------------------------------------------------
-    def __init__(self, to_addr, flags, cmd1, cmd2, data, is_ack=None):
+    def __init__(self, to_addr, flags, cmd1, cmd2, data, is_ack=None, crc_type="D14"):
         """General constructor
-
-        Args:
-          to_addr:  (Address) The adddress to send the commadn to.
-          flags:    (Flags) Message flags to use.
-          cmd1:     (int) The command 1 field to set.
-          cmd2:     (int) The command 2 field to set.
-          data:     (byte) The extended data array of 14 bytes.
-          is_ack:   (bool) True for ACK, False for NAK.  None for output
-                    commands to the modem.
-        """
-        assert len(data) == 14
-
-        super().__init__(to_addr, flags, cmd1, cmd2, is_ack)
-        self.data = data
-
-    #-----------------------------------------------------------------------
-    def to_bytes(self, crc_type="D14"):
-        """Convert the message to a byte array.
 
         Some extended messages require a check sum or CRC value to be
         computed and set into the last (D14) byte.  The Insteon
@@ -216,12 +199,29 @@ class OutExtended(OutStandard):
         - "CRC": 2 byte CRC (D13, D14) used by thermostat commands.
 
         Args:
+          to_addr:  (Address) The adddress to send the commadn to.
+          flags:    (Flags) Message flags to use.
+          cmd1:     (int) The command 1 field to set.
+          cmd2:     (int) The command 2 field to set.
+          data:     (byte) The extended data array of 14 bytes.
+          is_ack:   (bool) True for ACK, False for NAK.  None for output
+                    commands to the modem.
           crc_type:   (str) None, "D14", or "CRC".
+        """
+        assert len(data) == 14
+        assert crc_type in [None, "D14", "CRC"]
+
+        super().__init__(to_addr, flags, cmd1, cmd2, is_ack)
+        self.data = data
+        self.crc_type = crc_type
+
+    #-----------------------------------------------------------------------
+    def to_bytes(self):
+        """Convert the message to a byte array.
 
         Returns:
            (bytes) Returns the message as bytes.
         """
-        assert crc_type in [None, "D14", "CRC"]
 
         # NOTE: both of these checksum/CRC algorithms were built from
         # the insteon-terminal messages.py file at:
@@ -230,12 +230,12 @@ class OutExtended(OutStandard):
         # Even though the Insteon docs say that the last byte is
         # unused, db modification commands (cmd1=0x2f) require
         # that a checksum be computed and put in the last byte.
-        if crc_type == "D14":
+        if self.crc_type == "D14":
             ck_byte = (~(self.cmd1 + self.cmd2 + sum(self.data)) + 1) & 0xff
             ext_data = self.data[0:13] + bytes([ck_byte])
 
         # Thermostats require a crc check
-        elif crc_type == "CRC":
+        elif self.crc_type == "CRC":
             crc = 0
             for i in itertools.chain([self.cmd1, self.cmd2], self.data[0:12]):
                 for j in range(8):  # pylint: disable=unused-variable
