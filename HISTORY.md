@@ -6,6 +6,9 @@
 - Added better messages when the pair command fails because the modem db
   is out of date ([Issue #69][I69]).
 
+- Updated docs and example config file because of breaking HomeAssistant
+  MQTT light change for dimmers ([Issue #88][I88]).
+
 
 ## [0.6.4]
 
@@ -192,3 +195,4 @@
 [I70]: https://github.com/TD22057/insteon-mqtt/issues/70
 [I76]: https://github.com/TD22057/insteon-mqtt/issues/76
 [I86]: https://github.com/TD22057/insteon-mqtt/issues/86
+[I88]: https://github.com/TD22057/insteon-mqtt/issues/88
