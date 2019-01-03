@@ -28,11 +28,11 @@ class ThermostatCmd(Base):
     # Irritatingly, this mapping is different for direct status messages.
     # Insteon loves to be irritating like that
     class Mode(enum.IntEnum):
-        OFF = 0x00
-        HEAT = 0x01
-        COOL = 0x02
-        AUTO = 0x03
-        PROGRAM = 0x04
+        off = 0x00
+        heat = 0x01
+        cool = 0x02
+        auto = 0x03
+        program = 0x04
 
     def __init__(self, device):
         """Constructor

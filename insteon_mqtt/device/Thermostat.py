@@ -48,17 +48,32 @@ class Thermostat(Base):
 
     # Mapping of fan states
     class Fan(enum.IntEnum):
-        AUTO = 0x00
-        ON = 0x01
+        auto = 0x00
+        on = 0x01
 
-    # Irritatingly, this mapping is different for broadcast messages.
+    # Irritatingly, this mapping is not consistent anywhere.
     # Insteon loves to be irritating like that.
     class Mode(enum.IntEnum):
-        OFF = 0x00
-        AUTO = 0x01
-        HEAT = 0x02
-        COOL = 0x03
-        PROGRAM = 0x04
+        off = 0x00
+        auto = 0x01
+        heat = 0x02
+        cool = 0x03
+        program = 0x04
+
+    class ModeCommands(enum.IntEnum):
+        off = 0x09
+        heat = 0x04
+        cool = 0x05
+        auto = 0x06
+        program = 0x0a
+
+    class FanCommands(enum.IntEnum):
+        on = 0x07
+        auto = 0x08
+
+    class HoldCommands(enum.IntEnum):
+        off = 0x00
+        temp = 0x01
 
     # A few constants to make thing easier to read
     FARENHEIT = 0
@@ -77,8 +92,6 @@ class Thermostat(Base):
         """
         # Set default values to attributes, may be overwritten by saved
         # values
-        self.units = Thermostat.FARENHEIT
-
         super().__init__(protocol, modem, address, name)
 
         self.cmd_map.update({
@@ -92,9 +105,34 @@ class Thermostat(Base):
         self.signal_heat_sp_change = Signal()  # emit(device, Int heat_sp in c)
         self.signal_ambient_humid_change = Signal()  # emit(device, Int humid)
         self.signal_status_change = Signal() #emit(device, Str status)
+        self.signal_hold_change = Signal() #emit(device, bool)
+        self.signal_energy_change = Signal() #emit(device, bool)
 
         # Add handler for processing direct Messages
         protocol.add_handler(handler.ThermostatCmd(self))
+
+    @property
+    def units(self):
+        """Returns the units from the saved metadata
+        """
+        meta = self.db.get_meta('thermostat')
+        ret = Thermostat.FARENHEIT
+        if isinstance(meta, dict) and 'units' in meta:
+            ret = meta['units']
+        return ret
+
+    @units.setter
+    def units(self, val):
+        """Saves units to metadata
+        
+        Args:
+          val:    Either FARENHEIT or CELSIUS
+        """
+        meta = {'units': val}
+        if val in [Thermostat.FARENHEIT, Thermostat.CELSIUS]:
+            self.db.set_meta('thermostat', meta)
+        else:
+            LOG.error("Bad value %s, for units on Thermostat %s.", val, self.addr)
 
     #-----------------------------------------------------------------------
     def pair(self, on_done=None):
@@ -165,10 +203,10 @@ class Thermostat(Base):
     #-----------------------------------------------------------------------
     def handle_status(self, msg, on_done=None):
         """Handle the response to the get_status message.
-        
+
         Gets the mode state, current temp, heating/cooling state, fan mode,
         cool setpoint, heat setpoint, and ambient humidity.  Will then emit
-        all necessary signal_* events to cause mqtt messages to be sent                            
+        all necessary signal_* events to cause mqtt messages to be sent
 
         Args:
           msg:   (InptStandard) Broadcast message from the device.
@@ -178,25 +216,8 @@ class Thermostat(Base):
         # D11 - Status Flag
         # Processed first, because we need to know Units to calculate
         # some of this.
-        # I have not figured out what all of these bits are
-        # This also seems like a messy way to handle this, is there a better
-        # way?  Would enum.flag be better? We don't every use this code
-        # again.
         status_flag = int.from_bytes(msg.data[10:11], byteorder='big')
-        print("Status Flag", msg.data[10:11], status_flag, format(status_flag, '0>8b'))
-        Cooling = status_flag & 0b0000001
-        Heating = status_flag & 0b0000010
-        Energy =  status_flag & 0b0000100
-        self.units =   status_flag & 0b0001000
-        Hold =    status_flag & 0b0010000
-
-        # Signal status change
-        status = "OFF"
-        if Cooling:
-            status = "COOLING"
-        elif Heating:
-            status = "HEATING"
-        self.signal_status_change.emit(self, status)
+        self.process_status_flag(status_flag)
 
         # D2 - Day
         # D3 - Hour
@@ -238,7 +259,51 @@ class Thermostat(Base):
             heat_sp = (heat_sp - 32) * 5/9
         self.signal_heat_sp_change.emit(self, heat_sp)
 
-        on_done(True, "Status recevied", None)
+        if on_done is not None:
+            on_done(True, "Status recevied", None)
+
+    #-----------------------------------------------------------------------
+    def process_status_flag(self, flag):
+        """Process the status flag from the get_status message.
+
+        Deciphers the status flag and then emits all the signals for the
+        relevant changes.  Sadly, the layout of the status flag is not
+        consistent across the thermostat spec, so this cannot be reused by
+        other functions
+
+        Args:
+          flag:   The status flag
+        """
+        # I have not figured out what the last three bits are.  Program lock
+        # is likely one of them.  As is 12/24 hour, perhaps button beep,
+        # button lock, or backlight?
+        # This also seems like a messy way to handle this, is there a better
+        # way?
+        cooling = flag & 1
+        heating = flag >> 1 & 1
+        energy = flag >> 2 & 1
+        self.units = flag >> 3 & 1
+        hold = flag >> 4 & 1
+
+        # Signal status change
+        status = "off"
+        if cooling:
+            status = "cooling"
+        elif heating:
+            status = "heating"
+        self.signal_status_change.emit(self, status)
+
+        # Signal Hold
+        if hold:
+            self.signal_hold_change.emit(self, True)
+        else:
+            self.signal_hold_change.emit(self, False)
+
+        # Signal Energy
+        if energy:
+            self.signal_energy_change.emit(self, True)
+        else:
+            self.signal_energy_change.emit(self, False)
 
     #-----------------------------------------------------------------------
     def set_fan_mode_state(self, mode):
@@ -269,12 +334,12 @@ class Thermostat(Base):
         """
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00,
                                      bytes([0x00] *2 + [0x01] + [0x00] * 11), crc_type="CRC")
-        msg_handler = handler.ExtendedCmdResponse(msg, self.handle_humidity_status,
+        msg_handler = handler.ExtendedCmdResponse(msg, self.handle_humidity_setpoints,
                                                   on_done, num_retry=3)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def handle_humidity_status(self, msg, on_done=None):
+    def handle_humidity_setpoints(self, msg, on_done=None):
         """Handle the humidity status request, contains a lot of duplicate
         data which is already present in a get_status() request.
 
@@ -311,20 +376,25 @@ class Thermostat(Base):
         """
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00,
                                      bytes([0x00] + [0x08] + [0x00] * 12))
-        msg_handler = handler.StandardCmd(msg, self.handle_enable_broadcast,
+        msg_handler = handler.StandardCmd(msg, self.handle_generic_ack,
                                           on_done, num_retry=3)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def handle_enable_broadcast(self, msg, on_done=None):
-        """Handles the enable broadcast response.  Nothing to do.
+    def handle_generic_ack(self, msg, on_done=None):
+        """Handles generic ack responses where there is nothing to do.
+
+        Generally the reason there is nothing to do is that the thermostat
+        will send a subsequent direct message through which we can update
+        the necessary state
 
         Args:
+          msg:   (InptStandard) Direct ACK message from the device.
           on_done:  Optional callback run when the commands are finished.
         """
-        LOG.info("Thermostat %s broadcast enabled", self.addr)
-        on_done(True, "Thermostat broadcast enabled", None)
-
+        LOG.debug("Thermostat %s generic ack recevied", self.addr)
+        if on_done is not None:
+            on_done(True, "Thermostat generic ack recevied", None)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -346,7 +416,7 @@ class Thermostat(Base):
 
             try:
                 condition = Thermostat.Groups(msg.group)
-            except TypeError:
+            except ValueError:
                 LOG.exception("Unknown thermostat group %s.", msg.group)
                 return
 
@@ -369,3 +439,179 @@ class Thermostat(Base):
         super().handle_broadcast(msg)
 
     #-----------------------------------------------------------------------
+    def mode_command(self, mode_member):
+        """Command the Thermostat to change modes.
+
+        Validity of the command is handled by the MQTT topic handler.
+
+        Args:
+          mode_member:   (Thermostat.ModeCommands)
+        """
+        # Send the command to the thermostat
+        msg = Msg.OutExtended.direct(self.addr, 0x6b, mode_member.value,
+                                     bytes([0x00] * 14))
+        msg_handler = handler.StandardCmd(msg, self.handle_mode_command,
+                                          None, num_retry=3)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def handle_mode_command(self, msg, on_done=None):
+        """Receives the ack from the mode command message.
+
+        Not truly necessary.  If the mode changes, the thermostat will send
+        a direct 'broadcast' command with the new mode.  However, if the mode
+        on the device isn't changing, no message is sent, which could be
+        confusing in certain circumstances
+
+        Args:
+          msg:   (InptStandard) Direct ACK message from the device.
+          on_done:  Optional callback run when the commands are finished.
+        """
+        if msg.cmd1 == 0x6b:
+            self.signal_mode_change.emit(self,
+                                         Thermostat.ModeCommands(msg.cmd2))
+            if on_done is not None:
+                on_done(True, "Thermostat recevied mode command", None)
+        else:
+            LOG.debug("Thermostat %s received a bad ack %s", self.addr,
+                      msg.cmd1)
+            if on_done is not None:
+                on_done(False, "Wrong direct ack received", None)
+
+    #-----------------------------------------------------------------------
+    def fan_command(self, fan_member):
+        """Command the Thermostat to change fan modes.
+
+        Validity of the command is handled by the MQTT topic handler.
+
+        Args:
+          fan_member:   (Thermostat.FanCommands)
+        """
+        # Send the command to the thermostat
+        msg = Msg.OutExtended.direct(self.addr, 0x6b, fan_member.value,
+                                     bytes([0x00] * 14))
+        msg_handler = handler.StandardCmd(msg, self.handle_fan_command,
+                                          None, num_retry=3)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def handle_fan_command(self, msg, on_done=None):
+        """Receives the ack from the fan mode command message.
+
+        Not truly necessary.  If the fan mode changes, the thermostat will send
+        a direct 'broadcast' command with the new fan mode.  However, if the
+        fan mode on the device isn't changing, no message is sent, which could
+        be confusing in certain circumstances
+
+        Args:
+          msg:   (InptStandard) Direct ACK message from the device.
+          on_done:  Optional callback run when the commands are finished.
+        """
+        if msg.cmd1 == 0x6b:
+            self.signal_fan_mode_change.emit(self,
+                                             Thermostat.FanCommands(msg.cmd2))
+            if on_done is not None:
+                on_done(True, "Thermostat recevied fan mode command", None)
+        else:
+            LOG.debug("Thermostat %s received a bad ack %s", self.addr,
+                      msg.cmd1)
+            if on_done is not None:
+                on_done(False, "Wrong direct ack received", None)
+
+    #-----------------------------------------------------------------------
+    def heat_sp_command(self, temp_c):
+        """Command the Thermostat to change the heat setpoint.
+
+        Validity of the command is handled by the MQTT topic handler.
+
+        Args:
+          temp_c:   temperature in celsius
+        """
+        # Convert to proper units
+        temp = temp_c
+        if self.units == Thermostat.FARENHEIT:
+            temp = (temp_c * 9/5) + 32
+        # Limit temp range
+        temp = 0 if temp < 0 else temp
+        temp = 127 if temp > 127 else temp
+        # Send the command to the thermostat in units on thermo * 2
+        msg = Msg.OutExtended.direct(self.addr, 0x6d, int(temp*2),
+                                     bytes([0x00] * 14))
+        msg_handler = handler.StandardCmd(msg, self.handle_heat_sp_command,
+                                          None, num_retry=3)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def handle_heat_sp_command(self, msg, on_done=None):
+        """Receives the ack from the heat setpoint command message.
+
+        Not truly necessary.  If the setpoint changes, the thermostat will
+        send a direct 'broadcast' command with the new setpoint.  However,
+        if the setpoint on the device isn't changing, no message is sent, which
+        could be confusing in certain circumstances
+
+        Args:
+          msg:   (InptStandard) Direct ACK message from the device.
+          on_done:  Optional callback run when the commands are finished.
+        """
+        if msg.cmd1 == 0x6d:
+            heat_sp = (msg.cmd2/2)
+            if self.units == Thermostat.FARENHEIT:
+                heat_sp = (heat_sp - 32) * 5/9
+            self.signal_heat_sp_change.emit(self, heat_sp)
+            if on_done is not None:
+                on_done(True, "Thermostat recevied heat setpoint command", None)
+        else:
+            LOG.debug("Thermostat %s received a bad ack %s", self.addr,
+                      msg.cmd1)
+            if on_done is not None:        
+                on_done(False, "Wrong direct ack received", None)
+
+    #-----------------------------------------------------------------------
+    def cool_sp_command(self, temp_c):
+        """Command the Thermostat to change the cool setpoint.
+
+        Validity of the command is handled by the MQTT topic handler.
+
+        Args:
+          temp_c:   temperature in celsius
+        """
+        # Convert to proper units
+        temp = temp_c
+        if self.units == Thermostat.FARENHEIT:
+            temp = (temp_c * 9/5) + 32
+        # Limit temp range
+        temp = 0 if temp < 0 else temp
+        temp = 127 if temp > 127 else temp
+        # Send the command to the thermostat in units on thermo * 2
+        msg = Msg.OutExtended.direct(self.addr, 0x6c, int(temp*2),
+                                     bytes([0x00] * 14))
+        msg_handler = handler.StandardCmd(msg, self.handle_cool_sp_command,
+                                          None, num_retry=3)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def handle_cool_sp_command(self, msg, on_done=None):
+        """Receives the ack from the cool setpoint command message.
+
+        Not truly necessary.  If the setpoint changes, the thermostat will
+        send a direct 'broadcast' command with the new setpoint.  However,
+        if the setpoint on the device isn't changing, no message is sent, which
+        could be confusing in certain circumstances
+
+        Args:
+          msg:   (InptStandard) Direct ACK message from the device.
+          on_done:  Optional callback run when the commands are finished.
+        """
+        if msg.cmd1 == 0x6c:
+            cool_sp = (msg.cmd2/2)
+            if self.units == Thermostat.FARENHEIT:
+                cool_sp = (cool_sp - 32) * 5/9
+            self.signal_cool_sp_change.emit(self, cool_sp)
+            if on_done is not None:
+                on_done(True, "Thermostat recevied cool setpoint command", None)
+        else:
+            LOG.debug("Thermostat %s received a bad ack %s", self.addr,
+                      msg.cmd1)
+            if on_done is not None:
+                on_done(False, "Wrong direct ack received", None)
