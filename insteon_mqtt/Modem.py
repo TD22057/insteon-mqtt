@@ -304,7 +304,7 @@ class Modem:
         seq.add(self.refresh, force)
 
         # Reload all the device databases.
-        for i, device in enumerate(self.devices.values()):
+        for device in self.devices.values():
             seq.add(device.refresh, force)
 
         # Start the command sequence.
@@ -713,7 +713,7 @@ class Modem:
         Args:
           data:   Configuration dictionary for scenes.
         """
-        # TODO: support scene loading
+        # FUTURE: support scene loading
         # Read scenes from the configuration file.  See if the scene has
         # changed vs what we have in the device databases.  If it has, we
         # need to update the device databases.

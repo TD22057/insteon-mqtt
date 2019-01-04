@@ -401,6 +401,36 @@ class KeypadLinc(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
+    def set_on_level(self, level, on_done=None):
+        """TODO: doc
+
+        NOTE: default factory backlight == 0x1f
+        """
+        if not self.is_dimmer:
+            LOG.error("KeypadLinc %s switch doesn't support setting on level",
+                      self.addr)
+            return
+
+        LOG.info("KeypadLinc %s setting on level to %s", self.label, level)
+
+        # Extended message data - see Insteon dev guide p156.
+        data = bytes([
+            0x01,   # D1 must be group 0x01
+            0x06,   # D2 set on level when button is pressed
+            level,  # D3 brightness level
+            ] + [0x00] * 11)
+
+        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
+
+        # Use the standard command handler which will notify us when
+        # the command is ACK'ed.
+        msg_handler = handler.StandardCmd(msg, self.handle_on_level,
+                                          on_done)
+
+        # Send the message to the PLM modem for protocol.
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):
         """TODO: doc
         valid kwargs:

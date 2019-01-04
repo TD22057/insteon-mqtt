@@ -58,7 +58,9 @@ insteon:
   devices:
     # On/off switch devices (outlets, wall switches, appliance modules, etc).
     switch:
-      - 37.2d.35: 'lamp1'
+      - 3a.29.84: 'xmas tree'
+      - 26.48.ff: 'xmas stairs'
+      - 37.2d.20: 'xmas deck'
 
     # Dimming devices (outlets, wall switches, lamp modules, etc).
     dimmer:
@@ -90,7 +92,7 @@ insteon:
 
     # KeypadLinc dimmers (dimmer+scene controller).
     keypad_linc:
-      - 46.7b.bc: 'kp1'
+      - 46.7b.bc: 'porch'
 
     # KeypadLinc switches (on/off+scene controller).
     keypad_linc_sw:
@@ -221,7 +223,8 @@ mqtt:
   # this gets HA to send the brightness value as the payload for all
   # control of the light.
   #   light:
-  #     - platform: mqtt_json
+  #     - platform: mqtt
+  #       schema: json
   #       name: "insteon 1"
   #       state_topic: "insteon/48.b0.ad/state"
   #       command_topic: "insteon/48.b0.ad/level"
@@ -636,7 +639,8 @@ mqtt:
   # the MQTT json component for a dimmer.  The non-group 1 buttons are switches.
   #   # dimmers:
   #   light:
-  #     - platform: mqtt_json
+  #     - platform: mqtt
+  #       schema: json
   #       state_topic: "insteon/aa.bb.cc/state/1"
   #       command_topic: "insteon/aa.bb.cc/set/1"
   #       brightness: true
