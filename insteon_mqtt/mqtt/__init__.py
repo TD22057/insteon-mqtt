@@ -33,3 +33,4 @@ from .Remote import Remote
 from .Reply import Reply
 from .SmokeBridge import SmokeBridge
 from .Switch import Switch
+from .Thermostat import Thermostat

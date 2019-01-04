@@ -59,6 +59,7 @@ class Device:
         # Extract the various files from the JSON data.
         obj.delta = data['delta']
         obj.engine = data.get('engine', None)
+        obj._meta = data.get('meta', {})
 
         for d in data['used']:
             obj.add_entry(DeviceEntry.from_json(d), save=False)
@@ -104,6 +105,10 @@ class Device:
         # relatively new devices (engine 2) but we'll leave it set as None
         # here to show that we haven't checked the engine version yet.
         self.engine = None
+
+        # Metadata storage.  Used for saving device data to persistent 
+        # storage for access across reboots
+        self._meta = {}
 
         # Map of memory address (int) to DeviceEntry objects that are active
         # and in use.
@@ -174,6 +179,32 @@ class Device:
         self.engine = engine
         if engine is not None:
             self.save()
+
+    #-----------------------------------------------------------------------
+    def set_meta(self, key, value):
+        """Set the metadata key to value.
+
+        Used for saving device parameters to persistent storage between
+        reboots.
+
+        Args:
+          key:    A valid python dictionary key to store the value
+          value:  A data type capable of being represented in json
+        """
+        self._meta[key] = value
+        self.save()
+
+    #-----------------------------------------------------------------------
+    def get_meta(self, key):
+        """Get the metadata key value.
+
+        Used for getting device parameters from persistent storage between
+        reboots.
+
+        Args:
+          key:    A valid python dictionary key to retreive the value from
+        """
+        return self._meta.get(key, None)
 
     #-----------------------------------------------------------------------
     def clear(self):
@@ -441,6 +472,7 @@ class Device:
             'used' : used,
             'unused' : unused,
             'last' : self.last.to_json(),
+            'meta' : self._meta
             }
 
     #-----------------------------------------------------------------------
