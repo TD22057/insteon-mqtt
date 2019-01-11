@@ -88,8 +88,10 @@ class ExtendedCmdResponse(Base):
                 return Msg.CONTINUE
 
             elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-                LOG.error("%s device NAK error: %s", msg.from_addr, msg)
-                self.on_done(False, "Device command NAK", None)
+                LOG.error("%s device NAK error: %s, Message: %s",
+                          msg.from_addr, msg.nak_str(), msg)
+                self.on_done(False, "Device command NAK. " + msg.nak_str(),
+                             None)
                 return Msg.FINISHED
 
             else:

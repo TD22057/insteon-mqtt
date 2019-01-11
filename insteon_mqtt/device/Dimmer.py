@@ -486,8 +486,10 @@ class Dimmer(Base):
                     msg.cmd2)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Dimmer %s NAK error: %s", self.addr, msg)
-            on_done(False, "Dimmer state update failed", None)
+            LOG.error("Dimmer %s NAK error: %s, Message: %s", self.addr,
+                      msg.nak_str(), msg)
+            on_done(False, "Dimmer state update failed. " + msg.nak_str(),
+                    None)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, msg, on_done):
@@ -508,8 +510,10 @@ class Dimmer(Base):
             on_done(True, "Scene triggered", None)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Dimmer %s NAK error: %s", self.addr, msg)
-            on_done(False, "Scene trigger failed failed", None)
+            LOG.error("Dimmer %s NAK error: %s, Message: %s", self.addr,
+                      msg.nak_str(), msg)
+            on_done(False, "Scene trigger failed failed. " + msg.nak_str(),
+                    None)
 
     #-----------------------------------------------------------------------
     def handle_increment(self, msg, on_done, delta):
@@ -528,9 +532,11 @@ class Dimmer(Base):
             s = "Dimmer %s state updated to %s" % (self.addr, self._level)
             on_done(True, s, msg.cmd2)
 
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Dimmer %s NAK error: %s", self.addr, msg)
-            on_done(False, "Dimmer %s state update failed", None)
+        elif msg.flags.Dimmer == Msg.Flags.Type.DIRECT_NAK:
+            LOG.error("Dimmer %s NAK error: %s, Message: %s", self.addr,
+                      msg.nak_str(), msg)
+            on_done(False, "Dimmer %s state update failed. " + msg.nak_str(),
+                    None)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, group, cmd):
