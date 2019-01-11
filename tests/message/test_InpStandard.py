@@ -3,6 +3,7 @@
 # Tests for: insteont_mqtt/message/InpStandard.py
 #
 #===========================================================================
+import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
 
 
@@ -125,6 +126,29 @@ class Test_InpStandard:
         assert obj != obj5
 
         assert obj != [1, 2, 3]
+
+    #-----------------------------------------------------------------------
+    def test_nak_str(self):
+        from_addr = IM.Address(0x01, 0x02, 0x03)
+        to_addr = IM.Address(0x03, 0x05, 0x07)
+
+        # ID not in DB error
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_NAK, False)
+        obj = Msg.InpStandard(from_addr, to_addr, flags, 0x00, 0xFF)
+        nak_str = obj.nak_str()
+        assert len(nak_str) > 0
+
+        # unknow error type
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_NAK, False)
+        obj = Msg.InpStandard(from_addr, to_addr, flags, 0x00, 0x10)
+        nak_str = obj.nak_str()
+        assert len(nak_str) == 0
+
+        # not a nak
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
+        obj = Msg.InpStandard(from_addr, to_addr, flags, 0x00, 0xFF)
+        nak_str = obj.nak_str()
+        assert len(nak_str) == 0
 
 
 #===========================================================================
