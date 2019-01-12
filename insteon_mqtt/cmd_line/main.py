@@ -56,6 +56,15 @@ def parse_args(args):
     sp.set_defaults(func=device.linking)
 
     #---------------------------------------
+    # device.join command
+    sp = sub.add_parser("join", help="Join the device to the modem. "
+                        "Allows the modem to talk to the device.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.add_argument("address", help="Device address or name.")
+    sp.set_defaults(func=device.join)
+
+    #---------------------------------------
     # device.refresh command
     sp = sub.add_parser("refresh", help="Refresh device/modem state and "
                         "all link database.")

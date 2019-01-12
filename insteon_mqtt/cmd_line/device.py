@@ -19,6 +19,17 @@ def linking(args, config):
 
 
 #===========================================================================
+def join(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "join",
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
 def set_button_led(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
