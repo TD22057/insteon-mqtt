@@ -614,8 +614,9 @@ class Device:
         # try and update w/ the new data record.
         if self.engine == 0:
             i1_entry = last.to_i1_bytes()
+            # on_done is passed by the sequence manager inside seq.add()
             modify_manager = DeviceModifyManagerI1(device, self,
-                                                   i1_entry, on_done=on_done,
+                                                   i1_entry, on_done=None,
                                                    num_retry=3)
             seq.add(modify_manager.start_modify)
         else:
@@ -631,8 +632,9 @@ class Device:
 
         if self.engine == 0:
             i1_entry = entry.to_i1_bytes()
+            # on_done is passed by the sequence manager inside seq.add()
             modify_manager = DeviceModifyManagerI1(device, self,
-                                                   i1_entry, on_done=on_done,
+                                                   i1_entry, on_done=None,
                                                    num_retry=3)
             seq.add(modify_manager.start_modify)
         else:
