@@ -72,9 +72,16 @@ class DeviceModifyManagerI1:
         self._num_retry = num_retry
 
     #-------------------------------------------------------------------
-    def start_modify(self):
+    def start_modify(self, on_done=None):
         """Start a managed manipulation of a i1 device database
+
+        Args:
+          on_done: Finished callback to be called when the modify entire
+                   operation is done.  If not NONE it will replace the
+                   the on_done specified in the __init__()
         """
+        if on_done is not None:
+            self.on_done = util.make_callback(on_done)
         # Set the starting MSB
         self._set_msb(self.msb)
 
