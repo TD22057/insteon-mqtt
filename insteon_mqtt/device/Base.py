@@ -105,7 +105,8 @@ class Base:
             'join': self.join,
             'pair' : self.pair,
             'get_flags' : self.get_flags,
-            'get_engine' : self.get_engine
+            'get_engine' : self.get_engine,
+            'get_model' : self.get_model
             }
 
         # Device database delta.  The delta tells us if the database
@@ -299,10 +300,15 @@ class Base:
 
         Args:
           force:    If true, will force a refresh of the device
-                    database even if the delta value matches
+                    database even if the delta value matches as well as
+                    a requery of the device model information even if it
+                    is already known.
           on_done:  Optional callback run when the commands are finished.
         """
         LOG.info("Device %s cmd: status refresh", self.label)
+
+        # Use a sequence
+        seq = CommandSeq(self.protocol, "Device refreshed", on_done)
 
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the
@@ -310,8 +316,18 @@ class Base:
         # download command to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
-                                            on_done, num_retry=3)
-        self.send(msg, msg_handler)
+                                            None, num_retry=3)
+        seq.add_msg(msg, msg_handler)
+
+        # If model number is not known, or force true, run get_model
+        if (self.db.dev_cat is None or 
+            self.db.sub_cat is None or
+            self.db.firmware is None or
+            force):
+            seq.add(self.get_model)
+        
+        # Alright run it all
+        seq.run()
 
     #-----------------------------------------------------------------------
     def get_flags(self, on_done=None):
@@ -340,6 +356,19 @@ class Base:
         # Send the get_engine_version request.
         msg = Msg.OutStandard.direct(self.addr, 0x0D, 0x00)
         msg_handler = handler.StandardCmd(msg, self.handle_engine, on_done)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def get_model(self, on_done=None):
+        """ Request the model information (dev_cat, sub_cat, and firmware)
+        from the device
+        """
+        LOG.info("Device %s cmd: get engine version", self.label)
+
+        # Send the get_engine_version request.
+        msg = Msg.OutStandard.direct(self.addr, 0x10, 0x00)
+        msg_handler = handler.BroadcastCmdResponse(msg, self.handle_model,
+                                                   on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -574,6 +603,28 @@ class Base:
         version = labels.get(msg.cmd2, "Unknown, using I2CS")
         LOG.ui("Device %s engine version: %s", self.addr, version)
         on_done(True, "Operation complete", msg.cmd2)
+
+    #-----------------------------------------------------------------------
+    def handle_model(self, msg, on_done):
+        """Handle the broadcast reply to the get model command.
+
+        The to address of the broadcast reply contains the dev_cat, sub_cat,
+        and firmware
+
+        Args:
+          msg:  (message.InpStandard) The id request broadcast response.
+        """
+        if msg.cmd1 == 0x01:
+            self.db.set_dev_cat(msg.to_addr.ids[0])
+            self.db.set_sub_cat(msg.to_addr.ids[1])
+            self.db.set_firmware(msg.to_addr.ids[2])
+            LOG.ui("Device %s received model information, dev_cat: %#x, " +
+                   "sub_cat: %#x, firmware: %#x ", self.addr, self.db.dev_cat,
+                   self.db.sub_cat, self.db.firmware)
+            on_done(True, "Operation complete", None)
+        else:
+            LOG.debug("Device %s get_model response with wrong cmd %s",
+                      self.addr, msg.cmd1)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
