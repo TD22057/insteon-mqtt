@@ -9,6 +9,18 @@
 - Updated docs and example config file because of breaking HomeAssistant
   MQTT light change for dimmers ([Issue #88][I88]).
 
+### Additions
+- New command 'get_model' added to the command line tool to retrieve and save
+  the Insteon device cat, sub_cat, and firmware revision (thanks @krkeegan).
+  ([Issue #55][I55]).
+
+- New command 'join' added to the command line tool to perform a two-way
+  pairing and refresh to link a device to the modem.  This combines the
+  previous linknig and pair command into a single command (thanks @krkeegan).
+  ([Issue #97][I97]).
+
+- New improved NAK error response codes makes it easier to understand errors
+  when the devices can't communicate (thanks @krkeegan).  ([Issue #95][I95]).
 
 ## [0.6.4]
 
@@ -189,6 +201,7 @@
 [I43]: https://github.com/TD22057/insteon-mqtt/issues/43
 [I45]: https://github.com/TD22057/insteon-mqtt/issues/45
 [I48]: https://github.com/TD22057/insteon-mqtt/issues/48
+[I55]: https://github.com/TD22057/insteon-mqtt/issues/55
 [I59]: https://github.com/TD22057/insteon-mqtt/issues/59
 [I63]: https://github.com/TD22057/insteon-mqtt/issues/63
 [I69]: https://github.com/TD22057/insteon-mqtt/issues/69
@@ -196,3 +209,5 @@
 [I76]: https://github.com/TD22057/insteon-mqtt/issues/76
 [I86]: https://github.com/TD22057/insteon-mqtt/issues/86
 [I88]: https://github.com/TD22057/insteon-mqtt/issues/88
+[I95]: https://github.com/TD22057/insteon-mqtt/issues/95
+[I97]: https://github.com/TD22057/insteon-mqtt/issues/97
