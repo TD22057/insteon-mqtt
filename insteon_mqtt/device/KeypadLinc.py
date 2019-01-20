@@ -519,8 +519,10 @@ class KeypadLinc(Base):
             on_done(True, msg, is_on)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("KeypadLinc LED %s NAK error: %s", self.addr, msg)
-            on_done(False, "KeypadLinc %s LED update failed", None)
+            LOG.error("KeypadLinc LED %s NAK error: %s, Message: %s",
+                      self.addr, msg.nak_str(), msg)
+            on_done(False, "KeypadLinc %s LED update failed. " + msg.nak_str(),
+                    None)
 
     #-----------------------------------------------------------------------
     def handle_led_refresh(self, msg):

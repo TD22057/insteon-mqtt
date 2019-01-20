@@ -19,6 +19,17 @@ def linking(args, config):
 
 
 #===========================================================================
+def join(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "join",
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
 def set_button_led(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
@@ -71,6 +82,16 @@ def get_engine(args, config):
     reply = util.send(config, topic, payload, False)
     return reply["status"]
 
+
+#===========================================================================
+def get_model(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "get_model",
+        }
+
+    reply = util.send(config, topic, payload, False)
+    return reply["status"]
 
 #===========================================================================
 def print_db(args, config):

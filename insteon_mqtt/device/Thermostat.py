@@ -392,8 +392,13 @@ class Thermostat(Base):
           msg:   (InptStandard) Direct ACK message from the device.
           on_done:  Optional callback run when the commands are finished.
         """
-        LOG.debug("Thermostat %s generic ack recevied", self.addr)
-        if on_done is not None:
+        if msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+            LOG.error("%s NAK: %s, Message: %s", self.db.addr,
+                      msg.nak_str(), msg)
+            on_done(False, "Thermostat command NAK. " +
+                    msg.nak_str(), None)
+        else:
+            LOG.debug("Thermostat %s generic ack recevied", self.addr)
             on_done(True, "Thermostat generic ack recevied", None)
 
     #-----------------------------------------------------------------------
@@ -467,7 +472,12 @@ class Thermostat(Base):
           msg:   (InptStandard) Direct ACK message from the device.
           on_done:  Optional callback run when the commands are finished.
         """
-        if msg.cmd1 == 0x6b:
+        if msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+            LOG.error("%s mode command NAK: %s, Message: %s", self.db.addr,
+                      msg.nak_str(), msg)
+            on_done(False, "Thermostat mode command NAK. " +
+                    msg.nak_str(), None)
+        elif msg.cmd1 == 0x6b:
             self.signal_mode_change.emit(self,
                                          Thermostat.ModeCommands(msg.cmd2))
             if on_done is not None:
@@ -507,7 +517,12 @@ class Thermostat(Base):
           msg:   (InptStandard) Direct ACK message from the device.
           on_done:  Optional callback run when the commands are finished.
         """
-        if msg.cmd1 == 0x6b:
+        if msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+            LOG.error("%s fan command NAK: %s, Message: %s", self.db.addr,
+                      msg.nak_str(), msg)
+            on_done(False, "Thermostat fan command NAK. " +
+                    msg.nak_str(), None)
+        elif msg.cmd1 == 0x6b:
             self.signal_fan_mode_change.emit(self,
                                              Thermostat.FanCommands(msg.cmd2))
             if on_done is not None:

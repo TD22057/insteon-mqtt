@@ -83,6 +83,36 @@ class InpStandard(Base):
         self.expire_time = time.time() + self.flags.hops_left * 0.087
 
     #-----------------------------------------------------------------------
+    def nak_str(self):
+        """Get NAK Explanation String
+
+        Cmd2 of an I2CS NAK response may contain an explanation for the nak,
+        according to Insteon these are:
+
+            0xFF = Sender’s device ID not in responder’s database
+            0xFE = Load sense detects no load
+            0xFD = Checksum is incorrect
+            0xFC = Pre NAK in case database search takes too long
+            0xFB = illegal value in command
+
+        Returns:
+          (str) Returns a string NAK explanation if one exists otherwise an
+                empty string
+        """
+        ret = ""
+        naks = {
+            0xFF: "Senders ID not in responders db. Try linking again.",
+            0xFE: "Load sense detects no load",
+            0xFD: "Checksum is incorrect",
+            0xFC: "Pre NAK in case database search takes too long",
+            0xFB: "Illegal value in command"
+        }
+        if (self.flags.type == Flags.Type.DIRECT_NAK and
+                self.cmd2 in naks.keys()):
+            ret = naks[self.cmd2]
+        return ret
+
+    #-----------------------------------------------------------------------
     def __str__(self):
         if self.group is None:
             return "Std: %s->%s %s cmd: %02x %02x" % \
