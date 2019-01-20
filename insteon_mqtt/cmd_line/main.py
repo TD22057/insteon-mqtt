@@ -97,6 +97,12 @@ def parse_args(args):
     sp.set_defaults(func=device.get_engine)
 
     #---------------------------------------
+    # device.get_model command
+    sp = sub.add_parser("get-model", help="Get device model information.")
+    sp.add_argument("address", help="Device address or name.")
+    sp.set_defaults(func=device.get_model)
+
+    #---------------------------------------
     # device.on command
     sp = sub.add_parser("on", help="Turn a device on.")
     sp.add_argument("-l", "--level", metavar="level", type=int, default=255,

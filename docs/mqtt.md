@@ -184,8 +184,10 @@ Supported: modem, devices
 If this is sent to the modem, it will trigger an all link database
 download.  If it's sent to a device, the device state (on/off, dimmer
 level, etc) will be updated and the database will be downloaded if
-it's out of date.  Setting the force flag to true will download the
-database even if it's not out of date.  The command payload is:
+it's out of date.  The model information of the device will also be 
+queried if it is not known. Setting the force flag to true will download
+the database even if it's not out of date and will recheck the model
+information even if known.  The command payload is:
 
 
    ```
@@ -204,6 +206,19 @@ is:
    ```
    { "cmd" : "refresh_all", ["force" : true/false] }
    ```
+
+
+### Get device model information
+
+Supported: device
+
+Will send a command to the device to get the device category, sub-category,
+and firmware version.  This information may be used to determine what 
+features are available on the device:
+
+  ```
+  { "cmd" : "get_model" }
+  ```
 
 
 ### Add the device as a controller of another device.
