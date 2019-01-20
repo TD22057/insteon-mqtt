@@ -517,8 +517,9 @@ class IOLinc(Base):
             on_done(True, "IOLinc command complete", None)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("IOLinc %s NAK error: %s", self.addr, msg)
-            on_done(False, "IOLinc command failed", None)
+            LOG.error("IOLinc %s NAK error: %s, Message: %s", self.addr,
+                      msg.nak_str(), msg)
+            on_done(False, "IOLinc command failed. " + msg.nak_str(), None)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, msg, on_done):
@@ -539,8 +540,10 @@ class IOLinc(Base):
             on_done(True, "Scene triggered", None)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("IOLinc %s NAK error: %s", self.addr, msg)
-            on_done(False, "Scene trigger failed failed", None)
+            LOG.error("IOLinc %s NAK error: %s, Message: %s", self.addr,
+                      msg.nak_str(), msg)
+            on_done(False, "Scene trigger failed failed. " + msg.nak_str(),
+                    None)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, group, cmd):
