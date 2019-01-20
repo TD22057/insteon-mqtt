@@ -131,9 +131,11 @@ class Modem:
                      len(self.db))
             LOG.debug(str(self.db))
 
-        # Read the device definitions and scenes.
+        # Read the device definitions
         self._load_devices(data.get('devices', []))
-        #FUTURE: self.scenes = self._load_scenes(data.get('scenes', []))
+
+        # Read the scenes definitions and load db_configs
+        self._load_scenes(data.get('scenes', []))
 
         # Send refresh messages to each device to check if the database is up
         # to date.
@@ -702,23 +704,101 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def _load_scenes(self, data):
-        """Load virtual modem scenes from a configuration dict.
+        """Load scenes from a configuration dict.
 
-        Load scenes from the configuration file.  Virtual scenes are defined
+        Load scenes from the configuration file.  This includes both virtual
+        modem scenes and interdevice scenes. Virtual modem scenes are defined
         in software - they are links where the modem is the controller and
-        devices are the responders.  These are scenes we can trigger by a
-        command to the modem which will broadcast a message to update all the
-        edeives.
+        devices are the responders.  The modem can have up to 253 virtual modem
+        scenes which we can trigger by software to broadcast a message to
+        update all of the defined devices.
 
         Args:
           data:   Configuration dictionary for scenes.
         """
-        # TODO: support scene loading
-        # Read scenes from the configuration file.  See if the scene has
-        # changed vs what we have in the device databases.  If it has, we
-        # need to update the device databases.
-        scenes = {}
-        return scenes
+        for scene in data:
+            controllers = []
+            responders = []
+
+            # Gather controllers list
+            for item in scene['controllers']:
+                controllers.append(self._parse_scene_device(item))
+
+            # Gather responders list
+            for item in scene['responders']:
+                responders.append(self._parse_scene_device(item))
+
+            # Generate Controller Entries
+            for controller in controllers:
+                # Generate Link Data Fields, See DeviceEntry for documentation
+                # of purposes and values
+                data = bytes([controller.get('data_1', 0x03),
+                              controller.get('data_2', 0x00),
+                              controller.get('data_3', controller['group'])])
+                for responder in responders:
+                    controller['device'].db_config.add_from_config(
+                        responder['device'].addr,
+                        controller['group'],
+                        True,
+                        data
+                    )
+
+            # Generate Responder Entries
+            for responder in responders:
+                # Generate Link Data Fields, See DeviceEntry for documentation
+                # of purposes and values
+                # data_# values override everything
+                data = bytes([responder.get('data_1',
+                                            responder.get('level', 0xFF)),
+                              responder.get('data_2',
+                                            responder.get('ramp', 0x1F)),
+                              responder.get('data_3',
+                                            responder.get('group', 0x00))
+                             ])
+                for controller in controllers:
+                    responder['device'].db_config.add_from_config(
+                        controller['device'].addr,
+                        controller['group'],
+                        False,
+                        data
+                    )
+
+
+    #-----------------------------------------------------------------------
+    def _parse_scene_device(self, data):
+        """Parse a device from the scene config format
+
+        Devices can be defined in the scene config using a number of
+        different formats.  This function parses all of the formats into
+        single style.
+
+        Args:
+          data:   Configuration dictionary for scenes.
+
+        Returns:
+          {
+          device : (Device) the device object
+          device_str : (str) the string passed in the config
+          group : (int) the group number of the device
+          level : (int) optionally the light level
+          ramp : (int) optionally the ramp rate
+          }
+        """
+        # Start with the default assumption that only a device is specified
+        # with no other details
+        ret = {'group' : 0x01, 'device_str' : data}
+        if isinstance(ret['device_str'], dict):
+            # The key is the device string
+            ret['device_str'] = next(iter(data))
+            if isinstance(data[ret['device_str']], int):
+                # The value is the group
+                ret['group'] = data[ret['device_str']]
+            else:
+                # This is a dict just update the return
+                ret.update(ret['device_str'])
+        # Try and find this device
+        ret['device'] = self.find(ret['device_str'])
+        return ret
 
     #-----------------------------------------------------------------------
     def _db_update(self, local_group, is_controller, remote_addr, remote_group,

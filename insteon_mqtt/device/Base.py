@@ -90,6 +90,9 @@ class Base:
         self.db = db.Device(self.addr)
         self.load_db()
 
+        # Prepare the config db
+        self.db_config = db.Device(self.addr)
+
         # Remove (mqtt) commands mapped to methods calls.  These are
         # handled in run_command().  Derived classes can add more
         # commands to the dict to expand the list.  Commands should
