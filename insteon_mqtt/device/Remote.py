@@ -54,6 +54,7 @@ class Remote(Base):
 
     on_codes = [0x11, 0x12, 0x21, 0x23]  # on, fast on, instant on, manual on
     off_codes = [0x13, 0x14, 0x22]  # off, fast off, instant off
+    man_change = [0,2,1]
 
     def __init__(self, protocol, modem, address, name, num_button):
         """Constructor
@@ -133,6 +134,8 @@ class Remote(Base):
           msg:   (InptStandard) Broadcast message from the device.
         """
         is_on = None
+        faston = False
+        manual_increment = None
         cmd = msg.cmd1
 
         # ACK of the broadcast - ignore this.
@@ -142,29 +145,35 @@ class Remote(Base):
 
         # On command.  0x11: on, 0x12: on fast
         elif cmd in Remote.on_codes:
-            LOG.info("Remote %s broadcast ON grp: %s", self.addr, msg.group)
+            LOG.info("remote %s broadcast %s grp: %s", self.addr, 'FASTON' if cmd == 0x12 else 'ON', msg.group)
+            if cmd == 0x12:
+                faston = True
             is_on = True
 
         # Off command. 0x13: off, 0x14: off fast
         elif cmd in Remote.off_codes:
-            LOG.info("Remote %s broadcast OFF grp: %s", self.addr, msg.group)
+            LOG.info("Switch %s broadcast %s grp: %s", self.addr, 'FASTOFF' if cmd == 0x12 else 'OFF', msg.group)
+            if cmd == 0x14:
+                faston = True
             is_on = False
 
-        # Starting manual increment (cmd2 0x00=up, 0x01=down)
+        # Starting manual increment (cmd2 0x00=down, 0x01=up)
         elif cmd == 0x17:
             # This is kind of arbitrary - but if the button is held
             # down we'll emit an on signal if it's dimming up and an
             # off signal if it's dimming down.
-            is_on = msg.cmd2 == 0x00  # on = up, off = down
+            manual_increment = Remote.man_change[msg.cmd2] #start manual change (send 0 for down, 2 for up)
+            is_on = msg.cmd2 == 0x01  # on = up, off = down
 
         # Stopping manual increment (cmd2 = unused)
         elif cmd == 0x18:
-            # Nothing to do - the remote has no state to query about.
-            pass
+            # Assume ON if we are dimming up/down.
+            manual_increment = Remote.man_change[2] #stop manual change (send 1 for stop)
+            is_on = True
 
         # Notify others that the button was pressed.
         if is_on is not None:
-            self.signal_pressed.emit(self, msg.group, is_on)
+            self.signal_pressed.emit(self, msg.group, is_on, faston, manual_increment)
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to

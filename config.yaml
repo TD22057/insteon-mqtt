@@ -192,8 +192,13 @@ mqtt:
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off', 'on'
+    #   fast_on = 0/1
     state_topic: 'insteon/{{address}}/state'
     state_payload: '{{on_str.upper()}}'
+    
+    #faston/off state topic, message is sent whenever a fast_on event occurs
+    faston_state_topic: 'insteon/{{address}}/fastonstate'
+    faston_state_payload: '{{on_str.upper()}}'
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
@@ -237,9 +242,14 @@ mqtt:
     #   on_str = 'off', 'on'
     #   level_255 = 0-255
     #   level_100 = 0-100
+    #   fast_on = 0/1
     state_topic: 'insteon/{{address}}/state'
     state_payload: >
        { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
+    
+    #faston/off state topic, message is sent whenever a fast_on event occurs
+    faston_state_topic: 'insteon/{{address}}/fastonstate'
+    faston_state_payload: '{{on_str.upper()}}'
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
@@ -446,8 +456,20 @@ mqtt:
     #   button = 1...n  (button number 1-4 or 1-8)
     #   on = 0/1
     #   on_str = 'off', 'on'
+    #   fast_on = 0/1
+    #   manual = None/0/1/2 (manual dimming, up/stop/down)
     state_topic: 'insteon/{{address}}/state/{{button}}'
     state_payload: '{{on_str.upper()}}'
+
+    #faston/off state topic, message is sent whenever a fast_on event occurs
+    faston_state_topic: 'insteon/{{address}}/fastonstate/{{button}}'
+    faston_state_payload: '{{on_str.upper()}}'
+    
+    #manual up/down/stop state topic
+    # Available variables for templating are:
+    #   manual = 0/1/2 (up/stop/down)
+    manual_state_topic: 'insteon/{{address}}/manualstate/{{button}}'
+    manual_state_payload: '{{manual}}'
 
   #------------------------------------------------------------------------
   # Fan Linc
@@ -566,8 +588,13 @@ mqtt:
     #   button = 1-8
     #   on = 0/1
     #   on_str = 'off', 'on'
+    #   fast_on = 0/1
     btn_state_topic: 'insteon/{{address}}/state/{{button}}'
     btn_state_payload: '{{on_str.upper()}}'
+    
+    #faston/off state topic
+    faston_state_topic: 'insteon/{{address}}/fastonstate/{{button}}'
+    faston_state_payload: '{{on_str.upper()}}'
 
     # Dimmer output state change topic and payload for button 1.  This
     # message is sent whenever the device dimmer state changes for any
@@ -578,9 +605,19 @@ mqtt:
     #   on_str = 'off', 'on'
     #   level_255 = 0-255
     #   level_100 = 0-100
+    #   fast_on = 0/1
     dimmer_state_topic: 'insteon/{{address}}/state/1'
     dimmer_state_payload: >
        { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
+       
+    dimmer_faston_state_topic: 'insteon/{{address}}/fastonstate/{{button}}'
+    dimmer_faston_state_payload: '{{on_str.upper()}}'
+    
+    # Manual up/down/stop state topic
+    # Available variables for templating are:
+    #   manual = 0/1/2 (up/stop/down)
+    manual_state_topic: 'insteon/{{address}}/manualstate/{{button}}'
+    manual_state_payload: '{{manual}}'
 
     # Input on/off command.  For button 1, this will set the load.  For other
     # buttons, it just set the button LED.  The output of passing the payload

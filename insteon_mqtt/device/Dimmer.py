@@ -416,6 +416,10 @@ class Dimmer(Base):
         elif cmd == 0x11:
             LOG.info("Dimmer %s broadcast ON grp: %s", self.addr, msg.group)
             self._set_level(0xff)
+            
+        elif cmd == 0x12:
+            LOG.info("Dimmer %s broadcast FASTON grp: %s", self.addr, msg.group)
+            self._set_level(0xff, True)
 
         # Off command.
         elif cmd == 0x13:
@@ -426,6 +430,15 @@ class Dimmer(Base):
             # state until that occurs.
             if not self.broadcast_done:
                 self._set_level(0x00)
+                
+        elif cmd == 0x14:
+            LOG.info("Dimmer %s broadcast FASTOFF grp: %s", self.addr, msg.group)
+
+            # If broadcast_done is active, this is a generated broadcast and
+            # we need to manually turn the device off so don't update it's
+            # state until that occurs.
+            if not self.broadcast_done:
+                self._set_level(0x00, True)
 
         # Starting manual increment (cmd2 0x00=up, 0x01=down)
         elif cmd == 0x17:
@@ -556,11 +569,11 @@ class Dimmer(Base):
 
         # 0x11: on, 0x12: on fast
         if cmd in Dimmer.on_codes:
-            self._set_level(entry.data[0])
+            self._set_level(entry.data[0], bool(cmd == 0x12))
 
         # 0x13: off, 0x14: off fast
         elif cmd in Dimmer.off_codes:
-            self._set_level(0x00)
+            self._set_level(0x00, bool(cmd == 0x14))
 
         # Increment up (32 steps)
         elif cmd == 0x15:
@@ -583,7 +596,7 @@ class Dimmer(Base):
             LOG.warning("Dimmer %s unknown group cmd %#04x", self.addr, cmd)
 
     #-----------------------------------------------------------------------
-    def _set_level(self, level):
+    def _set_level(self, level, faston=False):
         """Set the device level state.
 
         This will change the internal state and emit the state changed
@@ -591,10 +604,11 @@ class Dimmer(Base):
 
         Args:
           level:   (int) 0x00 for off, 0xff for 100%.
+          faston:   (bool) True if device was toggled with faston/off
         """
-        LOG.info("Setting device %s on=%s", self.label, level)
+        LOG.info("Setting device %s on=%s %s", self.label, level, 'FASTON' if (faston and level>0) else 'FASTOFF' if (faston and level == 0) else '')
         self._level = level
 
-        self.signal_level_changed.emit(self, level)
+        self.signal_level_changed.emit(self, level, faston)
 
     #-----------------------------------------------------------------------

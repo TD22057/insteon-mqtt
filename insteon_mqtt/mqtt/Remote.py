@@ -22,6 +22,16 @@ class Remote:
             topic='insteon/{{address}}/state/{{button}}',
             payload='{{on_str.lower()}}',
             )
+            
+        self.msg_faston_state = MsgTemplate(
+            topic='insteon/{{address}}/fastonstate/{{button}}',
+            payload='{{on_str.lower()}}',
+            )
+            
+        self.msg_manual_state = MsgTemplate(
+            topic='insteon/{{address}}/manualstate/{{button}}',
+            payload='{{manual}}',
+            )
 
         device.signal_pressed.connect(self.handle_pressed)
 
@@ -39,6 +49,8 @@ class Remote:
             return
 
         self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
+        self.msg_faston_state.load_config(data, 'faston_state_topic', 'faston_state_payload', qos)
+        self.msg_manual_state.load_config(data, 'manual_state_topic', 'manual_state_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -60,7 +72,7 @@ class Remote:
         pass
 
     #-----------------------------------------------------------------------
-    def handle_pressed(self, device, button, is_active):
+    def handle_pressed(self, device, button, is_active, faston=False, manual_increment=None):
         """Device active button pressed callback.
 
         This is triggered via signal when the Insteon device button is
@@ -70,9 +82,11 @@ class Remote:
         Args:
           device:   (device.Base) The Insteon device that changed.
           button:   (int) The button number 1...n that was pressed.
+          faston:   (bool) True if device was toggled with faston/off
+          manual_increment: (int) 0=down, 1=stop, 2=up
         """
-        LOG.info("MQTT received button press %s = btn %s", device.label,
-                 button)
+        LOG.info("MQTT received button press %s = btn %s %s, man: %s", device.label,
+                 button, 'FASTON' if (faston and is_active) else 'FASTOFF' if (faston and not is_active) else '', manual_increment)
 
         data = {
             "address" : device.addr.hex,
@@ -80,8 +94,15 @@ class Remote:
             "button" : button,
             "on" : 1 if is_active else 0,
             "on_str" : "on" if is_active else "off",
+            "fast_on" : 1 if faston else 0,
+            'manual' : manual_increment,
             }
 
-        self.msg_state.publish(self.mqtt, data)
+        if manual_increment is not None:
+            self.msg_manual_state.publish(self.mqtt, data)
+        else:
+            if faston:
+                self.msg_faston_state.publish(self.mqtt, data)
+            self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

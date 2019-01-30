@@ -24,6 +24,17 @@ class KeypadLinc:
             topic='insteon/{{address}}/state/{{button}}',
             payload='{{on_str.lower()}}',
             )
+            
+        # Output faston state change reporting template.
+        self.msg_faston_state = MsgTemplate(
+            topic='insteon/{{address}}/fastonstate/{{button}}',
+            payload='{{on_str.lower()}}',
+            )
+            
+        self.msg_btn_manual_state = MsgTemplate(
+            topic='insteon/{{address}}/manualstate/{{button}}',
+            payload='{{manual}}',
+            )
 
         # Input on/off command template.
         self.msg_btn_on_off = MsgTemplate(
@@ -39,10 +50,17 @@ class KeypadLinc:
 
         self.msg_dimmer_state = None
         self.msg_dimmer_level = None
+        self.msg_faston_dimmer_state = None
         if self.device.is_dimmer:
             # Output dimmer state change reporting template.
             self.msg_dimmer_state = MsgTemplate(
                 topic='insteon/{{address}}/state/1',
+                payload='{ "state" : "{{on_str.upper()}}", '
+                        '"brightness" : {{level_255}} }',
+                )
+                
+            self.msg_faston_dimmer_state = MsgTemplate(
+                topic='insteon/{{address}}/fastonstate/1',
                 payload='{ "state" : "{{on_str.upper()}}", '
                         '"brightness" : {{level_255}} }',
                 )
@@ -71,6 +89,10 @@ class KeypadLinc:
 
         self.msg_btn_state.load_config(data, 'btn_state_topic',
                                        'btn_state_payload', qos)
+        self.msg_faston_state.load_config(data, 'faston_state_topic',
+                                       'faston_state_payload', qos)
+        self.msg_btn_manual_state.load_config(data, 'manual_state_topic',
+                                       'manual_state_payload', qos)
         self.msg_btn_on_off.load_config(data, 'btn_on_off_topic',
                                         'btn_on_off_payload', qos)
         self.msg_btn_scene.load_config(data, 'btn_scene_topic',
@@ -79,6 +101,8 @@ class KeypadLinc:
         if self.device.is_dimmer:
             self.msg_dimmer_state.load_config(data, 'dimmer_state_topic',
                                               'dimmer_state_payload', qos)
+            self.msg_faston_dimmer_state.load_config(data, 'dimmer_faston_state_topic',
+                                              'dimmer_faston_state_payload', qos)
             self.msg_dimmer_level.load_config(data, 'dimmer_level_topic',
                                               'dimmer_level_payload', qos)
 
@@ -151,7 +175,7 @@ class KeypadLinc:
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
-    def template_data(self, level=None, button=None):
+    def template_data(self, level=None, button=None, faston=False, manual_increment=None):
         """TODO: doc
         """
         data = {
@@ -166,6 +190,9 @@ class KeypadLinc:
             data["on_str"] = "on" if level else "off"
             data["level_255"] = level
             data["level_100"] = int(100.0 * level / 255.0)
+            data['fast_on'] = 1 if faston else 0
+        if manual_increment is not None:
+            data['manual'] = manual_increment #if level is None
 
         return data
 
@@ -278,7 +305,7 @@ class KeypadLinc:
         self.device.scene(is_on, group)
 
     #-----------------------------------------------------------------------
-    def handle_active(self, device, group, level):
+    def handle_active(self, device, group, level, faston=False, manual_increment=None):
         """Device active button pressed callback.
 
         This is triggered via signal when the Insteon device button is
@@ -289,15 +316,24 @@ class KeypadLinc:
           device:   (device.Base) The Insteon device that changed.
           group:    (int) The button number 1...n that was pressed.
           level:    (int) The current device level 0...0xff.
+          faston:   (bool) True if device was toggled with faston/off
         """
-        LOG.info("MQTT received button press %s = btn %s at %s", device.label,
-                 group, level)
+        LOG.info("MQTT received button press %s = btn %s at %s %s, man: %s", device.label,
+                 group, level, 'FASTON' if (faston and level>0) else 'FASTOFF' if (faston and level == 0) else '',
+                 manual_increment)
 
-        data = self.template_data(level, group)
+        data = self.template_data(level=level, button=group, faston=faston, manual_increment=manual_increment)
 
         if group == 1 and self.device.is_dimmer:
+            if faston:
+                self.msg_faston_dimmer_state.publish(self.mqtt, data)
             self.msg_dimmer_state.publish(self.mqtt, data)
         else:
-            self.msg_btn_state.publish(self.mqtt, data)
+            if manual_increment is not None:
+                self.msg_btn_manual_state.publish(self.mqtt, data)
+            else:
+                if faston:
+                    self.msg_faston_state.publish(self.mqtt, data)
+                self.msg_btn_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

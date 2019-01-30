@@ -38,6 +38,12 @@ class Switch:
             topic='insteon/{{address}}/state',
             payload='{{on_str.lower()}}',
             )
+            
+        # Output faston state change reporting template.
+        self.msg_faston_state = MsgTemplate(
+            topic='insteon/{{address}}/fastonstate',
+            payload='{{on_str.lower()}}',
+            )
 
         # Input on/off command template.
         self.msg_on_off = MsgTemplate(
@@ -75,6 +81,7 @@ class Switch:
 
         # Update the MQTT topics and payloads from the config file.
         self.msg_state.load_config(config, 'state_topic', 'state_payload', qos)
+        self.msg_faston_state.load_config(config, 'faston_state_topic', 'faston_state_payload', qos)
         self.msg_on_off.load_config(config, 'on_off_topic', 'on_off_payload',
                                     qos)
         self.msg_scene_on_off.load_config(config, 'scene_on_off_topic',
@@ -108,7 +115,7 @@ class Switch:
         link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
-    def template_data(self, is_active=None):
+    def template_data(self, is_active=None, faston=False):
         """TODO: doc
         """
         # Set up the variables that can be used in the templates.
@@ -121,11 +128,12 @@ class Switch:
         if is_active is not None:
             data["on"] = 1 if is_active else 0
             data["on_str"] = "on" if is_active else "off"
+            data['fast_on'] = 1 if faston else 0
 
         return data
 
     #-----------------------------------------------------------------------
-    def handle_active(self, device, is_active):
+    def handle_active(self, device, is_active, faston=False):
         """Device active on/off callback.
 
         This is triggered via signal when the Insteon device goes
@@ -136,12 +144,14 @@ class Switch:
           device:   (device.Base) The Insteon device that changed.
           is_active (bool) True for on, False for off.
         """
-        LOG.info("MQTT received active change %s = %s", device.label,
-                 is_active)
+        LOG.info("MQTT received active change %s = %s %s", device.label,
+                 is_active, 'FASTON' if (faston and is_active) else 'FASTOFF' if (faston and not is_active) else '')
 
-        data = self.template_data(is_active)
+        data = self.template_data(is_active, faston)
+        if faston:
+            self.msg_faston_state.publish(self.mqtt, data)
         self.msg_state.publish(self.mqtt, data)
-
+        
     #-----------------------------------------------------------------------
     def handle_set(self, client, data, message):
         """TODO: doc

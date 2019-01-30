@@ -326,18 +326,18 @@ class Switch(Base):
 
         # On command.  0x11: on, 0x12: on fast
         elif msg.cmd1 in Switch.on_codes:
-            LOG.info("Switch %s broadcast ON grp: %s", self.addr, msg.group)
-            self._set_is_on(True)
+            LOG.info("Switch %s broadcast %s grp: %s", self.addr, 'FASTON' if msg.cmd1 == 0x12 else 'ON', msg.group)
+            self._set_is_on(True, bool(msg.cmd1 == 0x12))
 
         # Off command. 0x13: off, 0x14: off fast
         elif msg.cmd1 in Switch.off_codes:
-            LOG.info("Switch %s broadcast OFF grp: %s", self.addr, msg.group)
+            LOG.info("Switch %s broadcast %s grp: %s", self.addr, 'FASTOFF' if msg.cmd1 == 0x14 else 'OFF', msg.group)
 
             # If broadcast_done is active, this is a generated broadcast and
             # we need to manually turn the device off so don't update it's
             # state until that occurs.
             if not self.broadcast_done:
-                self._set_is_on(False)
+                self._set_is_on(False, bool(msg.cmd1 == 0x14))
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
@@ -432,18 +432,18 @@ class Switch(Base):
             return
 
         # 0x11: on, 0x12: on fast
-        if cmd in Switch.on_codes:
-            self._set_is_on(True)
+        if cmd in Switch.on_codes:   
+            self._set_is_on(True, bool(cmd == 0x12))
 
         # 0x13: off, 0x14: off fast
         elif cmd in Switch.off_codes:
-            self._set_is_on(False)
+            self._set_is_on(False, bool(cmd == 0x14))
 
         else:
             LOG.warning("Switch %s unknown group cmd %#04x", self.addr, cmd)
 
     #-----------------------------------------------------------------------
-    def _set_is_on(self, is_on):
+    def _set_is_on(self, is_on, faston=False):
         """Set the device on/off state.
 
         This will change the internal state and emit the state changed
@@ -451,11 +451,12 @@ class Switch(Base):
 
         Args:
           is_on:   (bool) True if motion is active, False if it isn't.
+          faston:   (bool) True if device was toggled with faston/off
         """
         LOG.info("Setting device %s on %s", self.label, is_on)
         self._is_on = bool(is_on)
 
         # Notify others that the switch state has changed.
-        self.signal_active.emit(self, self._is_on)
+        self.signal_active.emit(self, self._is_on, faston)
 
     #-----------------------------------------------------------------------

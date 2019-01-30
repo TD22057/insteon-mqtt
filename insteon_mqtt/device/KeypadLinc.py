@@ -24,6 +24,7 @@ class KeypadLinc(Base):
     Each button (up to 8) has an LED light.  Light status can be retrieved by
     sending 0x19 0x01 which returns cmd1=db delta and cmd2=LED bit flags.
     """
+    man_change = [0,2,1]
 
     #-----------------------------------------------------------------------
     def __init__(self, protocol, modem, address, name, dimmer=True):
@@ -548,32 +549,34 @@ class KeypadLinc(Base):
         # On command.  0x11: on, 0x12: on fast.  How do we tell the level for
         # a dimmer?  It's not in the message anywhere.
         elif cmd in Dimmer.on_codes:
-            LOG.info("KeypadLinc %s broadcast ON grp: %s", self.addr,
-                     msg.group)
+            LOG.info("KeypadLinc %s broadcast %s grp: %s", self.addr, 'FASTON' if cmd == 0x12 else 'ON', msg.group)
             # Notify others that the button was pressed.
-            self._set_level(msg.group, 0xff)
+            self._set_level(msg.group, 0xff, bool(cmd == 0x12))
 
         # Off command. 0x13: off, 0x14: off fast
         elif cmd in Dimmer.off_codes:
-            LOG.info("KeypadLinc %s broadcast OFF grp: %s", self.addr,
-                     msg.group)
+            LOG.info("KeypadLinc %s broadcast %s grp: %s", self.addr, 'FASTOFF' if cmd == 0x14 else 'OFF', msg.group)
 
             # If broadcast_done is active, this is a generated broadcast and
             # we need to manually turn the device off so don't update it's
             # state until that occurs.
             if not self.broadcast_done:
                 # Notify others that the button was pressed.
-                self._set_level(msg.group, 0)
+                self._set_level(msg.group, 0, bool(cmd == 0x14))
 
-        # Starting manual increment (cmd2 0x00=up, 0x01=down)
+        # Starting manual increment (cmd2 0x00=down, 0x01=up)
         elif cmd == 0x17:
             LOG.info("KeypadLinc %s starting manual change grp: %s %s",
-                     self.addr, msg.group, "UP" if msg.cmd2 == 0x00 else "DN")
+                     self.addr, msg.group, "UP" if msg.cmd2 == 0x01 else "DN")
+            manual_increment = KeypadLinc.man_change[msg.cmd2] #start manual change (send 0 for down, 2 for up)
+            self._set_level(msg.group, None, False, manual_increment)
 
         # Stopping manual increment (cmd2 = unused)
         elif cmd == 0x18:
             LOG.info("KeypadLinc %s stopping manual change grp %s", self.addr,
                      msg.group)
+            manual_increment = KeypadLinc.man_change[2] #stop manual change (send 1 for stop)
+            self._set_level(msg.group, None, False, manual_increment)
 
             # Ping the device to get the button states - we don't know what
             # the keypadlinc things the state is - could be on or off.  Doing
@@ -684,11 +687,11 @@ class KeypadLinc(Base):
             if group == 1 and self.is_dimmer:
                 level = entry.data[0]
 
-            self._set_level(group, level)
+            self._set_level(group, level, bool(cmd == 0x12))
 
         # 0x13: off, 0x14: off fast
         elif cmd in Dimmer.off_codes:
-            self._set_level(group, 0x00)
+            self._set_level(group, 0x00, bool(cmd == 0x14))
 
         # Increment up (32 steps)
         elif cmd == 0x15:
@@ -700,12 +703,14 @@ class KeypadLinc(Base):
             assert group == 0x01
             self._set_level(group, max(0x00, self._level - 8))
 
-        # Starting manual increment (cmd2 0x00=up, 0x01=down)
+        # Starting manual increment (cmd2 0x00=down, 0x01=up)
         elif cmd == 0x17:
+            #self._set_level(group, None, False, KeypadLinc.man_change[msg.cmd2]) #problem here is that we don't have msg, just cmd (1).
             pass
 
         # Stopping manual increment (cmd2 = unused)
         elif cmd == 0x18:
+            #self._set_level(group, None, False, KeypadLinc.man_change[2])
             # Ping the light to get the new level
             self.refresh()
 
@@ -713,7 +718,7 @@ class KeypadLinc(Base):
             LOG.warning("KeypadLinc %s unknown cmd %#04x", self.addr, cmd)
 
     #-----------------------------------------------------------------------
-    def _set_level(self, group, level):
+    def _set_level(self, group, level, faston=False, manual_increment=None):
         """Set the device group 1 level state.
 
         This will change the internal state and emit the state changed
@@ -722,14 +727,19 @@ class KeypadLinc(Base):
         Args:
           group:   (int) group to modify
           level:   (int) 0x00 for off, 0xff for 100%.
+          faston:  (bool) True if device toggled faston/off
+          manual_increment (int): 0=down, 2=up, 1=stop
         """
-        LOG.info("Setting device %s grp=%s on=%s", self.label, group, level)
+        LOG.info("Setting device %s grp=%s on=%s %s, man: %s", self.label, group, level,
+            'FASTON' if (faston and level>0) else 'FASTOFF' if (faston and level == 0) else '',
+            manual_increment )
+            
         if group == 0x01:
             self._level = level
 
         self._led_bits = util.bit_set(self._led_bits, group - 1,
                                       1 if level else 0)
 
-        self.signal_active.emit(self, group, level)
+        self.signal_active.emit(self, group, level, faston, manual_increment)
 
     #-----------------------------------------------------------------------
