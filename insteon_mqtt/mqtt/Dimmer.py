@@ -37,6 +37,12 @@ class Dimmer(Switch):
             topic='insteon/{{address}}/fastonstate',
             payload='{{on_str.lower()}}',
             )
+            
+        # Output manual increment state change reporting template.
+        self.msg_manual_state = MsgTemplate(
+            topic='insteon/{{address}}/manualstate',
+            payload='{{manual}}',
+            )
 
         # Input level command template.
         self.msg_level = MsgTemplate(
@@ -73,7 +79,7 @@ class Dimmer(Switch):
         if not config:
             return
 
-        # The Switch base class will load the msg_state and msg_faston_state template for us.
+        # The Switch base class will load the msg_state, msg_faston_state and msg_manual_state template for us.
         self.msg_level.load_config(config, 'level_topic', 'level_payload', qos)
         self.msg_scene_on_off.load_config(config, 'scene_on_off_topic',
                                           'scene_on_off_payload', qos)
@@ -111,7 +117,7 @@ class Dimmer(Switch):
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
-    def template_data(self, level=None, faston=False):
+    def template_data(self, level=None, faston=False, manual_increment=None):
         """TODO: doc
         """
         data = {
@@ -126,11 +132,13 @@ class Dimmer(Switch):
             data["level_255"] = level
             data["level_100"] = int(100.0 * level / 255.0)
             data['fast_on'] = 1 if faston else 0
+        if manual_increment is not None:
+            data['manual'] = manual_increment
 
         return data
 
     #-----------------------------------------------------------------------
-    def handle_level_changed(self, device, level, faston=False):
+    def handle_level_changed(self, device, level, faston=False, manual_increment=None):
         """Device active on/off callback.
 
         This is triggered via signal when the Insteon device goes
@@ -140,14 +148,20 @@ class Dimmer(Switch):
         Args:
           device:   (device.Base) The Insteon device that changed.
           level     (int) True for on, False for off.
-          faston:   (bool) True if device was toggled with faston/off
+          faston:  (bool) True if device toggled faston/off
+          manual_increment: (int) 0=down, 2=up, 1=stop
         """
-        LOG.info("MQTT received level change %s = %s %s", device.label, level, 'FASTON' if (faston and level>0) else 'FASTOFF' if (faston and level == 0) else '')
+        LOG.info("MQTT received level change %s = %s %s, manual: %s", device.label, level,
+                'FASTON' if (faston and level>0) else 'FASTOFF' if (faston and level == 0) else '',
+                manual_increment)
 
-        data = self.template_data(level, faston)
-        if faston:
-            self.msg_faston_state.publish(self.mqtt, data)
-        self.msg_state.publish(self.mqtt, data)
+        data = self.template_data(level, faston, manual_increment)
+        if manual_increment is not None:
+            self.msg_manual_state.publish(self.mqtt, data)
+        else:
+            if faston:
+                self.msg_faston_state.publish(self.mqtt, data)
+            self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
     def handle_set_level(self, client, data, message):

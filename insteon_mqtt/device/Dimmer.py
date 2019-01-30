@@ -55,6 +55,7 @@ class Dimmer(Base):
     """
     on_codes = [0x11, 0x12, 0x21, 0x23]  # on, fast on, instant on, manual on
     off_codes = [0x13, 0x14, 0x22]  # off, fast off, instant off
+    man_change = [0,2,1]
 
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
@@ -439,14 +440,18 @@ class Dimmer(Base):
             if not self.broadcast_done:
                 self._set_level(0x00, True)
 
-        # Starting manual increment (cmd2 0x00=up, 0x01=down)
+        # Starting manual increment (cmd2 0x00=down, 0x01=up)
         elif cmd == 0x17:
             LOG.info("Dimmer %s starting manual change %s", self.addr,
-                     "UP" if msg.cmd2 == 0x00 else "DN")
+                     "UP" if msg.cmd2 == 0x01 else "DN")
+            manual_increment = Dimmer.man_change[msg.cmd2] #start manual change (send 0 for down, 2 for up)
+            self._set_level(None, False, manual_increment)
 
         # Stopping manual increment (cmd2 = unused)
         elif cmd == 0x18:
             LOG.info("Dimmer %s stopping manual change", self.addr)
+            manual_increment = Dimmer.man_change[2] #stop manual change (send 1 for stop)
+            self._set_level(None, False, manual_increment)
 
             # Ping the light to get the new level
             self.refresh()
@@ -601,7 +606,7 @@ class Dimmer(Base):
             LOG.warning("Dimmer %s unknown group cmd %#04x", self.addr, cmd)
 
     #-----------------------------------------------------------------------
-    def _set_level(self, level, faston=False):
+    def _set_level(self, level, faston=False, manual_increment=None):
         """Set the device level state.
 
         This will change the internal state and emit the state changed
@@ -614,6 +619,6 @@ class Dimmer(Base):
         LOG.info("Setting device %s on=%s %s", self.label, level, 'FASTON' if (faston and level>0) else 'FASTOFF' if (faston and level == 0) else '')
         self._level = level
 
-        self.signal_level_changed.emit(self, level, faston)
+        self.signal_level_changed.emit(self, level, faston, manual_increment)
 
     #-----------------------------------------------------------------------

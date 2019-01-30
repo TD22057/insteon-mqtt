@@ -201,6 +201,12 @@ mqtt:
     #faston/off state topic, message is sent whenever a fast_on event occurs
     faston_state_topic: 'insteon/{{address}}/fastonstate'
     faston_state_payload: '{{on_str.upper()}}'
+    
+    # manual increment state topic
+    # variables for templating are:
+    #   manual = 0/1/2 (down/stop/up)
+    manual_state_topic: 'insteon/{{name}}/manualstate'
+    manual_state_payload: '{{manual}}'
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
@@ -253,6 +259,12 @@ mqtt:
     #faston/off state topic, message is sent whenever a fast_on event occurs
     faston_state_topic: 'insteon/{{address}}/fastonstate'
     faston_state_payload: '{{on_str.upper()}}'
+    
+    # manual increment state topic
+    # variables for templating are:
+    #   manual = 0/1/2 (down/stop/up)
+    manual_state_topic: 'insteon/{{name}}/manualstate'
+    manual_state_payload: '{{manual}}'
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
@@ -563,10 +575,10 @@ mqtt:
     faston_state_topic: 'insteon/{{address}}/fastonstate/{{button}}'
     faston_state_payload: '{{on_str.upper()}}'
     
-    #manual up/down/stop state topic
-    # Available variables for templating are:
-    #   manual = 0/1/2 (up/stop/down)
-    manual_state_topic: 'insteon/{{address}}/manualstate/{{button}}'
+    # manual increment state topic
+    # variables for templating are:
+    #   manual = 0/1/2 (down/stop/up)
+    manual_state_topic: 'insteon/{{name}}/manualstate/{{button}}'
     manual_state_payload: '{{manual}}'
 
   #------------------------------------------------------------------------
@@ -712,10 +724,10 @@ mqtt:
     dimmer_faston_state_topic: 'insteon/{{address}}/fastonstate/{{button}}'
     dimmer_faston_state_payload: '{{on_str.upper()}}'
     
-    # Manual up/down/stop state topic
-    # Available variables for templating are:
-    #   manual = 0/1/2 (up/stop/down)
-    manual_state_topic: 'insteon/{{address}}/manualstate/{{button}}'
+    # manual increment state topic
+    # variables for templating are:
+    #   manual = 0/1/2 (down/stop/up)
+    manual_state_topic: 'insteon/{{name}}/manualstate/{{button}}'
     manual_state_payload: '{{manual}}'
 
     # Input on/off command.  For button 1, this will set the load.  For other

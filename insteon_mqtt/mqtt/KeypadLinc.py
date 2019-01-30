@@ -192,7 +192,7 @@ class KeypadLinc:
             data["level_100"] = int(100.0 * level / 255.0)
             data['fast_on'] = 1 if faston else 0
         if manual_increment is not None:
-            data['manual'] = manual_increment #if level is None
+            data['manual'] = manual_increment
 
         return data
 
@@ -317,6 +317,7 @@ class KeypadLinc:
           group:    (int) The button number 1...n that was pressed.
           level:    (int) The current device level 0...0xff.
           faston:   (bool) True if device was toggled with faston/off
+          manual_increment: (int) 0=down, 1=stop, 2=up
         """
         LOG.info("MQTT received button press %s = btn %s at %s %s, man: %s", device.label,
                  group, level, 'FASTON' if (faston and level>0) else 'FASTOFF' if (faston and level == 0) else '',
@@ -324,16 +325,15 @@ class KeypadLinc:
 
         data = self.template_data(level=level, button=group, faston=faston, manual_increment=manual_increment)
 
-        if group == 1 and self.device.is_dimmer:
+        if manual_increment is not None:
+            self.msg_btn_manual_state.publish(self.mqtt, data)
+        elif group == 1 and self.device.is_dimmer:
             if faston:
                 self.msg_faston_dimmer_state.publish(self.mqtt, data)
             self.msg_dimmer_state.publish(self.mqtt, data)
         else:
-            if manual_increment is not None:
-                self.msg_btn_manual_state.publish(self.mqtt, data)
-            else:
-                if faston:
-                    self.msg_faston_state.publish(self.mqtt, data)
-                self.msg_btn_state.publish(self.mqtt, data)
+            if faston:
+                self.msg_faston_state.publish(self.mqtt, data)
+            self.msg_btn_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

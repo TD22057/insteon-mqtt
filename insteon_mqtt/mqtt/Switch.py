@@ -44,6 +44,12 @@ class Switch:
             topic='insteon/{{address}}/fastonstate',
             payload='{{on_str.lower()}}',
             )
+            
+        # Output manual increment state change reporting template.
+        self.msg_manual_state = MsgTemplate(
+            topic='insteon/{{address}}/manualstate',
+            payload='{{manual}}',
+            )
 
         # Input on/off command template.
         self.msg_on_off = MsgTemplate(
@@ -82,6 +88,7 @@ class Switch:
         # Update the MQTT topics and payloads from the config file.
         self.msg_state.load_config(config, 'state_topic', 'state_payload', qos)
         self.msg_faston_state.load_config(config, 'faston_state_topic', 'faston_state_payload', qos)
+        self.msg_manual_state.load_config(config, 'manual_state_topic', 'manual_state_payload', qos)
         self.msg_on_off.load_config(config, 'on_off_topic', 'on_off_payload',
                                     qos)
         self.msg_scene_on_off.load_config(config, 'scene_on_off_topic',
@@ -115,7 +122,7 @@ class Switch:
         link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
-    def template_data(self, is_active=None, faston=False):
+    def template_data(self, is_active=None, faston=False, manual_increment=None):
         """TODO: doc
         """
         # Set up the variables that can be used in the templates.
@@ -129,11 +136,13 @@ class Switch:
             data["on"] = 1 if is_active else 0
             data["on_str"] = "on" if is_active else "off"
             data['fast_on'] = 1 if faston else 0
+        if manual_increment is not None:
+            data['manual'] = manual_increment
 
         return data
 
     #-----------------------------------------------------------------------
-    def handle_active(self, device, is_active, faston=False):
+    def handle_active(self, device, is_active, faston=False, manual_increment=None):
         """Device active on/off callback.
 
         This is triggered via signal when the Insteon device goes
@@ -143,14 +152,21 @@ class Switch:
         Args:
           device:   (device.Base) The Insteon device that changed.
           is_active (bool) True for on, False for off.
+          faston:  (bool) True if device toggled faston/off
+          manual_increment: (int) 0=down, 2=up, 1=stop
         """
-        LOG.info("MQTT received active change %s = %s %s", device.label,
-                 is_active, 'FASTON' if (faston and is_active) else 'FASTOFF' if (faston and not is_active) else '')
+        LOG.info("MQTT received active change %s = %s %s, manual: %s", device.label,
+                 is_active, 'FASTON' if (faston and is_active) else 'FASTOFF' if (faston and not is_active) else '',
+                 manual_increment)
 
-        data = self.template_data(is_active, faston)
-        if faston:
-            self.msg_faston_state.publish(self.mqtt, data)
-        self.msg_state.publish(self.mqtt, data)
+        data = self.template_data(is_active, faston, manual_increment)
+        
+        if manual_increment is not None:
+            self.msg_manual_state.publish(self.mqtt, data)
+        else:
+            if faston:
+                self.msg_faston_state.publish(self.mqtt, data)
+            self.msg_state.publish(self.mqtt, data)
         
     #-----------------------------------------------------------------------
     def handle_set(self, client, data, message):

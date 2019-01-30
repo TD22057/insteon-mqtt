@@ -82,8 +82,8 @@ class Remote:
         Args:
           device:   (device.Base) The Insteon device that changed.
           button:   (int) The button number 1...n that was pressed.
-          faston:   (bool) True if device was toggled with faston/off
-          manual_increment: (int) 0=down, 1=stop, 2=up
+          faston:  (bool) True if device toggled faston/off
+          manual_increment: (int) 0=down, 2=up, 1=stop
         """
         LOG.info("MQTT received button press %s = btn %s %s, man: %s", device.label,
                  button, 'FASTON' if (faston and is_active) else 'FASTOFF' if (faston and not is_active) else '', manual_increment)

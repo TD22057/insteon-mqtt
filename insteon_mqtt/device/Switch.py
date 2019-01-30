@@ -52,6 +52,7 @@ class Switch(Base):
     """
     on_codes = [0x11, 0x12, 0x21, 0x23]  # on, fast on, instant on, manual on
     off_codes = [0x13, 0x14, 0x22]  # off, fast off, instant off
+    man_change = [0,2,1]
 
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
@@ -338,6 +339,22 @@ class Switch(Base):
             # state until that occurs.
             if not self.broadcast_done:
                 self._set_is_on(False, bool(msg.cmd1 == 0x14))
+                
+        # Starting manual increment (cmd2 0x00=down, 0x01=up)
+        elif msg.cmd1== 0x17:
+            LOG.info("Switch %s starting manual change %s", self.addr,
+                     "UP" if msg.cmd2 == 0x01 else "DN")
+            manual_increment = Switch.man_change[msg.cmd2] #start manual change (send 0 for down, 2 for up)
+            self._set_is_on(bool(msg.cmd2 == 0x01), False, manual_increment)
+
+        # Stopping manual increment (cmd2 = unused)
+        elif msg.cmd1 == 0x18:
+            LOG.info("Switch %s stopping manual change", self.addr)
+            manual_increment = Switch.man_change[2] #stop manual change (send 1 for stop)
+            self._set_is_on(bool(msg.cmd2 == 0x01), False, manual_increment)
+
+            # Ping the light to get the new level
+            self.refresh()
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
@@ -447,7 +464,7 @@ class Switch(Base):
             LOG.warning("Switch %s unknown group cmd %#04x", self.addr, cmd)
 
     #-----------------------------------------------------------------------
-    def _set_is_on(self, is_on, faston=False):
+    def _set_is_on(self, is_on, faston=False, manual_increment=None):
         """Set the device on/off state.
 
         This will change the internal state and emit the state changed
@@ -461,6 +478,6 @@ class Switch(Base):
         self._is_on = bool(is_on)
 
         # Notify others that the switch state has changed.
-        self.signal_active.emit(self, self._is_on, faston)
+        self.signal_active.emit(self, self._is_on, faston, manual_increment)
 
     #-----------------------------------------------------------------------

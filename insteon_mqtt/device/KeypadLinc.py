@@ -738,12 +738,10 @@ class KeypadLinc(Base):
 
         # Starting manual increment (cmd2 0x00=down, 0x01=up)
         elif cmd == 0x17:
-            #self._set_level(group, None, False, KeypadLinc.man_change[msg.cmd2]) #problem here is that we don't have msg, just cmd (1).
             pass
 
         # Stopping manual increment (cmd2 = unused)
         elif cmd == 0x18:
-            #self._set_level(group, None, False, KeypadLinc.man_change[2])
             # Ping the light to get the new level
             self.refresh()
 
@@ -761,7 +759,7 @@ class KeypadLinc(Base):
           group:   (int) group to modify
           level:   (int) 0x00 for off, 0xff for 100%.
           faston:  (bool) True if device toggled faston/off
-          manual_increment (int): 0=down, 2=up, 1=stop
+          manual_increment: (int) 0=down, 2=up, 1=stop
         """
         LOG.info("Setting device %s grp=%s on=%s %s, man: %s", self.label, group, level,
             'FASTON' if (faston and level>0) else 'FASTOFF' if (faston and level == 0) else '',
