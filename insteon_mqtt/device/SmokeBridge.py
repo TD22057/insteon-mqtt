@@ -40,6 +40,7 @@ class SmokeBridge(Base):
             - smoke_bridge:
               address: 44.a3.79
     """
+    type_name = "smoke_bridge"
 
     # broadcast group ID alert description
     class Type(enum.IntEnum):

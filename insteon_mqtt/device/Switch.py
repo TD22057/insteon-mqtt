@@ -384,8 +384,10 @@ class Switch(Base):
                     self._is_on)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Switch %s NAK error: %s", self.addr, msg)
-            on_done(False, "Switch state update failed", None)
+            LOG.error("Switch %s NAK error: %s, Message: %s", self.addr,
+                      msg.nak_str(), msg)
+            on_done(False, "Switch state update failed. " + msg.nak_str(),
+                    None)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, msg, on_done):
@@ -406,8 +408,10 @@ class Switch(Base):
             on_done(True, "Scene triggered", None)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Switch %s NAK error: %s", self.addr, msg)
-            on_done(False, "Scene trigger failed failed", None)
+            LOG.error("Switch %s NAK error: %s, Message: %s", self.addr,
+                      msg.nak_str(), msg)
+            on_done(False, "Scene trigger failed failed. " + msg.nak_str(),
+                    None)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, group, cmd):

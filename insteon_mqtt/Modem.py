@@ -60,6 +60,7 @@ class Modem:
             'db_add_resp_of' : self.db_add_resp_of,
             'db_del_ctrl_of' : self.db_del_ctrl_of,
             'db_del_resp_of' : self.db_del_resp_of,
+            'get_devices' : self.get_devices,
             'print_db' : self.print_db,
             'refresh' : self.refresh,
             'refresh_all' : self.refresh_all,
@@ -304,11 +305,42 @@ class Modem:
         seq.add(self.refresh, force)
 
         # Reload all the device databases.
-        for i, device in enumerate(self.devices.values()):
+        for device in self.devices.values():
             seq.add(device.refresh, force)
 
         # Start the command sequence.
         seq.run()
+
+    #-----------------------------------------------------------------------
+    def get_devices(self, on_done=None):
+        """"Print all the devices the modem knows about to the log UI.
+        """
+        LOG.ui(json.dumps(self.info_entry()))
+
+        seen = set()
+        for e in self.db.entries:
+            if e.addr in seen:
+                continue
+
+            device = self.devices.get(e.addr.id, None)
+            if device:
+                entry = device.info_entry()
+            else:
+                entry = {str(e.addr) : {"type" : "unknown"}}
+
+            LOG.ui(json.dumps(entry))
+            seen.add(e.addr)
+
+        on_done(True, "Complete", None)
+
+    #-----------------------------------------------------------------------
+    def info_entry(self):
+        """Return a JSON dictionary containing information about the device.
+        """
+        return {str(self.addr) : {
+            "type" : "modem",
+            "label" : self.name,
+            }}
 
     #-----------------------------------------------------------------------
     def db_add_ctrl_of(self, local_group, remote_addr, remote_group,
@@ -713,7 +745,7 @@ class Modem:
         Args:
           data:   Configuration dictionary for scenes.
         """
-        # TODO: support scene loading
+        # FUTURE: support scene loading
         # Read scenes from the configuration file.  See if the scene has
         # changed vs what we have in the device databases.  If it has, we
         # need to update the device databases.

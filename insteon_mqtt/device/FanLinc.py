@@ -17,6 +17,7 @@ LOG = log.get_logger()
 class FanLinc(Dimmer):
     """TODO: doc
     """
+    type_name = "fan_linc"
 
     class Speed(enum.IntEnum):
         OFF = 0x00
@@ -254,9 +255,11 @@ class FanLinc(Dimmer):
                 on_done(True, s, msg.cmd2)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("FanLinc fan %s NAK error: %s", self.addr, msg)
+            LOG.error("FanLinc fan %s NAK error: %s, Message: %s", self.addr,
+                      msg.nak_str(), msg)
             if on_done:
-                on_done(False, "Fan %s state update failed", None)
+                on_done(False, "Fan %s state update failed. " + msg.nak_str(),
+                        None)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, group, cmd):
