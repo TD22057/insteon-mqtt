@@ -49,10 +49,10 @@ class MsgTemplate:
 
         # Keep the original string around for better log and error messages.
         self.topic_str = topic
-        self.topic = jinja2.Template(topic)
+        self.topic = None if topic is None else jinja2.Template(topic)
 
         self.payload_str = payload
-        self.payload = jinja2.Template(payload)
+        self.payload = None if payload is None else jinja2.Template(payload)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, topic, payload, qos=None):
@@ -182,6 +182,9 @@ class MsgTemplate:
         Returns:
           Returns the rendered value or None if if fails.
         """
+        if template is None:
+            return None
+
         try:
             return template.render(data)
         except:

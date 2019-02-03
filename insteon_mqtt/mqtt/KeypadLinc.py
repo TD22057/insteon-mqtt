@@ -24,20 +24,20 @@ class KeypadLinc:
         # Output on/off state change reporting template.
         self.msg_btn_state = MsgTemplate(
             topic='insteon/{{address}}/state/{{button}}',
-            payload='{{on_str.lower()}}',
-            )
+            payload='{{on_str.lower()}}')
+
+        # Fast on/off is handled by msg_state by default.
+        self.msg_fast_state = MsgTemplate(None, None)
 
         # Input on/off command template.
         self.msg_btn_on_off = MsgTemplate(
             topic='insteon/{{address}}/set/{{button}}',
-            payload='{ "cmd" : "{{value.lower()}}" }',
-            )
+            payload='{ "cmd" : "{{value.lower()}}" }')
 
         # Input scene on/off command template.
         self.msg_btn_scene = MsgTemplate(
             topic='insteon/{{address}}/scene/{{button}}',
-            payload='{ "cmd" : "{{value.lower()}}" }',
-            )
+            payload='{ "cmd" : "{{value.lower()}}" }')
 
         self.msg_dimmer_state = None
         self.msg_dimmer_level = None
@@ -46,15 +46,13 @@ class KeypadLinc:
             self.msg_dimmer_state = MsgTemplate(
                 topic='insteon/{{address}}/state/1',
                 payload='{ "state" : "{{on_str.upper()}}", '
-                        '"brightness" : {{level_255}} }',
-                )
+                        '"brightness" : {{level_255}} }')
 
             # Input dimmer level command template.
             self.msg_dimmer_level = MsgTemplate(
                 topic='insteon/{{address}}/level',
                 payload='{ "cmd" : "{{json.state.lower()}}", '
-                        '"level" : {{json.brightness}} }',
-                )
+                        '"level" : {{json.brightness}} }')
 
         device.signal_active.connect(self.handle_active)
 
@@ -73,6 +71,8 @@ class KeypadLinc:
 
         self.msg_btn_state.load_config(data, 'btn_state_topic',
                                        'btn_state_payload', qos)
+        self.msg_fast_state.load_config(config, 'fast_state_topic',
+                                        'fast_state_payload', qos)
         self.msg_btn_on_off.load_config(data, 'btn_on_off_topic',
                                         'btn_on_off_payload', qos)
         self.msg_btn_scene.load_config(data, 'btn_scene_topic',
@@ -277,6 +277,9 @@ class KeypadLinc:
                  device.label, group, level, type)
 
         data = self.template_data(level, group, type)
+
+        if type is on_off.Type.FAST:
+            self.msg_fast_state.publish(self.mqtt, data)
 
         if group == 1 and self.device.is_dimmer:
             self.msg_dimmer_state.publish(self.mqtt, data)

@@ -64,20 +64,20 @@ class Switch:
         # Output state change reporting template.
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state',
-            payload='{{on_str.lower()}}',
-            )
+            payload='{{on_str.lower()}}')
+
+        # Fast on/off is handled by msg_state by default.
+        self.msg_fast_state = MsgTemplate(None, None)
 
         # Input on/off command template.
         self.msg_on_off = MsgTemplate(
             topic='insteon/{{address}}/set',
-            payload='{ "cmd" : "{{value.lower()}}" }',
-            )
+            payload='{ "cmd" : "{{value.lower()}}" }')
 
         # Input scene on/off command template.
         self.msg_scene_on_off = MsgTemplate(
             topic='insteon/{{address}}/scene',
-            payload='{ "cmd" : "{{value.lower()}}" }',
-            )
+            payload='{ "cmd" : "{{value.lower()}}" }')
 
         # Receive notifications from the Insteon device when it changes.
         if handle_active:
@@ -103,6 +103,8 @@ class Switch:
 
         # Update the MQTT topics and payloads from the config file.
         self.msg_state.load_config(config, 'state_topic', 'state_payload', qos)
+        self.msg_fast_state.load_config(config, 'fast_state_topic',
+                                        'fast_state_payload', qos)
         self.msg_on_off.load_config(config, 'on_off_topic', 'on_off_payload',
                                     qos)
         self.msg_scene_on_off.load_config(config, 'scene_on_off_topic',
@@ -171,6 +173,10 @@ class Switch:
                  is_on, type)
 
         data = self.template_data(is_on, type)
+
+        if type is on_off.Type.FAST:
+            self.msg_fast_state.publish(self.mqtt, data)
+
         self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

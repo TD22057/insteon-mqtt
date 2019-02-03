@@ -24,20 +24,20 @@ class Outlet:
         # Output state change reporting template.
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state/{{button}}',
-            payload='{{on_str.lower()}}',
-            )
+            payload='{{on_str.lower()}}')
+
+        # Fast on/off is handled by msg_state by default.
+        self.msg_fast_state = MsgTemplate(None, None)
 
         # Input on/off command template.
         self.msg_on_off = MsgTemplate(
             topic='insteon/{{address}}/set/{{button}}',
-            payload='{ "cmd" : "{{value.lower()}}" }',
-            )
+            payload='{ "cmd" : "{{value.lower()}}" }')
 
         # Input scene on/off command template.
         self.msg_scene = MsgTemplate(
             topic='insteon/{{address}}/scene/{{button}}',
-            payload='{ "cmd" : "{{value.lower()}}" }',
-            )
+            payload='{ "cmd" : "{{value.lower()}}" }')
 
         device.signal_active.connect(self.handle_active)
 
@@ -55,6 +55,8 @@ class Outlet:
             return
 
         self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
+        self.msg_fast_state.load_config(config, 'fast_state_topic',
+                                        'fast_state_payload', qos)
         self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
                                     qos)
         self.msg_scene.load_config(data, 'scene_on_off_topic',
@@ -130,6 +132,9 @@ class Outlet:
         LOG.info("MQTT received active change %s = %s", device.label, is_on)
 
         data = self.template_data(is_on, group, type)
+        if type is on_off.Type.FAST:
+            self.msg_fast_state.publish(self.mqtt, data)
+
         self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

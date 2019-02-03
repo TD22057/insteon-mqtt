@@ -200,6 +200,12 @@ mqtt:
     state_topic: 'insteon/{{address}}/state'
     state_payload: '{{on_str.upper()}}'
 
+    # Topic for reporting fast on/off commands.  This will be sent right
+    # before the state_topic is sent if fast on/off was commanded.  Payload
+    # options are the same as state_topic.
+    #fast_state_topic: 'insteon/{{address}}/fast_state'
+    #fast_state_payload: '{{on_str.upper()}}'
+
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
     # passing the payload through the template must match the following:
@@ -250,6 +256,12 @@ mqtt:
     state_topic: 'insteon/{{address}}/state'
     state_payload: >
        { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
+
+    # Topic for reporting fast on/off commands.  This will be sent right
+    # before the state_topic is sent if fast on/off was commanded.  Payload
+    # options are the same as state_topic.
+    #fast_state_topic: 'insteon/{{address}}/fast_state'
+    #fast_state_payload: '{{on_str.upper()}}'
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
@@ -696,6 +708,12 @@ mqtt:
     dimmer_state_payload: >
        { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
 
+    # Topic for reporting fast on/off commands.  This will be sent right
+    # before the state_topic is sent if fast on/off was commanded.  Payload
+    # options are the same as dimmer_state_topic.
+    #fast_state_topic: 'insteon/{{address}}/fast_state'
+    #fast_state_payload: '{{on_str.upper()}}'
+
     # Input on/off command.  For button 1, this will set the load.  For other
     # buttons, it just set the button LED.  The output of passing the payload
     # through the template must match the following:
@@ -824,6 +842,12 @@ mqtt:
     #   instant = 0/1
     state_topic: 'insteon/{{address}}/state/{{button}}'
     state_payload: '{{on_str.upper()}}'
+
+    # Topic for reporting fast on/off commands.  This will be sent right
+    # before the state_topic is sent if fast on/off was commanded.  Payload
+    # options are the same as state_topic.
+    #fast_state_topic: 'insteon/{{address}}/fast_state'
+    #fast_state_payload: '{{on_str.upper()}}'
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
