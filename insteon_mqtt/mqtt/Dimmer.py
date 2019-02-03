@@ -32,9 +32,6 @@ class Dimmer(Switch):
             payload='{ "state" : "{{on_str.upper()}}", '
                     '"brightness" : {{level_255}} }')
 
-        # Fast on/off is handled by msg_state by default.
-        self.msg_fast_state = MsgTemplate(None, None)
-
         # Input level command template.
         self.msg_level = MsgTemplate(
             topic='insteon/{{address}}/level',
@@ -141,9 +138,6 @@ class Dimmer(Switch):
         LOG.info("MQTT received level change %s = %s", device.label, level)
 
         data = self.template_data(level, mode)
-        if mode is on_off.Mode.FAST:
-            self.msg_fast_state.publish(self.mqtt, data)
-
         self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

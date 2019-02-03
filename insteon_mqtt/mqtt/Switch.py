@@ -66,9 +66,6 @@ class Switch:
             topic='insteon/{{address}}/state',
             payload='{{on_str.lower()}}')
 
-        # Fast on/off is handled by msg_state by default.
-        self.msg_fast_state = MsgTemplate(None, None)
-
         # Input on/off command template.
         self.msg_on_off = MsgTemplate(
             topic='insteon/{{address}}/set',
@@ -103,8 +100,6 @@ class Switch:
 
         # Update the MQTT topics and payloads from the config file.
         self.msg_state.load_config(config, 'state_topic', 'state_payload', qos)
-        self.msg_fast_state.load_config(config, 'fast_state_topic',
-                                        'fast_state_payload', qos)
         self.msg_on_off.load_config(config, 'on_off_topic', 'on_off_payload',
                                     qos)
         self.msg_scene_on_off.load_config(config, 'scene_on_off_topic',
@@ -173,9 +168,6 @@ class Switch:
                  is_on, mode)
 
         data = self.template_data(is_on, mode)
-
-        if mode is on_off.Mode.FAST:
-            self.msg_fast_state.publish(self.mqtt, data)
 
         self.msg_state.publish(self.mqtt, data)
 

@@ -26,9 +26,6 @@ class KeypadLinc:
             topic='insteon/{{address}}/state/{{button}}',
             payload='{{on_str.lower()}}')
 
-        # Fast on/off is handled by msg_state by default.
-        self.msg_fast_state = MsgTemplate(None, None)
-
         # Input on/off command template.
         self.msg_btn_on_off = MsgTemplate(
             topic='insteon/{{address}}/set/{{button}}',
@@ -71,8 +68,6 @@ class KeypadLinc:
 
         self.msg_btn_state.load_config(data, 'btn_state_topic',
                                        'btn_state_payload', qos)
-        self.msg_fast_state.load_config(config, 'fast_state_topic',
-                                        'fast_state_payload', qos)
         self.msg_btn_on_off.load_config(data, 'btn_on_off_topic',
                                         'btn_on_off_payload', qos)
         self.msg_btn_scene.load_config(data, 'btn_scene_topic',
@@ -277,9 +272,6 @@ class KeypadLinc:
                  device.label, group, level, mode)
 
         data = self.template_data(level, group, mode)
-
-        if mode is on_off.Mode.FAST:
-            self.msg_fast_state.publish(self.mqtt, data)
 
         if group == 1 and self.device.is_dimmer:
             self.msg_dimmer_state.publish(self.mqtt, data)

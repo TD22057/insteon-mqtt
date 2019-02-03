@@ -23,9 +23,6 @@ class Remote:
             topic='insteon/{{address}}/state/{{button}}',
             payload='{{on_str.lower()}}')
 
-        # Fast on/off is handled by msg_state by default.
-        self.msg_fast_state = MsgTemplate(None, None)
-
         device.signal_pressed.connect(self.handle_pressed)
 
     #-----------------------------------------------------------------------
@@ -42,8 +39,6 @@ class Remote:
             return
 
         self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
-        self.msg_fast_state.load_config(config, 'fast_state_topic',
-                                        'fast_state_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -98,9 +93,6 @@ class Remote:
                  device.label, button, is_on, mode)
 
         data = self.template_data(button, is_on, mode)
-        if mode is on_off.Mode.FAST:
-            self.msg_fast_state.publish(self.mqtt, data)
-
         self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
