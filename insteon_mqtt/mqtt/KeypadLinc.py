@@ -5,7 +5,9 @@
 #===========================================================================
 import functools
 from .. import log
+from .. import on_off
 from .MsgTemplate import MsgTemplate
+from .Switch import Switch
 
 LOG = log.get_logger()
 
@@ -151,7 +153,8 @@ class KeypadLinc:
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
-    def template_data(self, level=None, button=None):
+    def template_data(self, level=None, button=None,
+                      type=on_off.Type.NORMAL):
         """TODO: doc
         """
         data = {
@@ -166,6 +169,9 @@ class KeypadLinc:
             data["on_str"] = "on" if level else "off"
             data["level_255"] = level
             data["level_100"] = int(100.0 * level / 255.0)
+            data["mode"] = str(type)
+            data["fast"] = 1 if type == on_off.Type.FAST else 0
+            data["instant"] = 1 if type == on_off.Type.INSTANT else 0
 
         return data
 
@@ -184,16 +190,11 @@ class KeypadLinc:
 
         LOG.info("KeypadLinc btn %s input command: %s", group, data)
         try:
-            cmd = data.get('cmd')
-            if cmd == 'on':
-                self.device.on(group=group)
-            elif cmd == 'off':
-                self.device.off(group=group)
-            else:
-                raise Exception("Invalid button cmd input '%s'" % cmd)
+            is_on, type = Switch.parse_json(data)
+            level = 0xff if is_on else 0x00
+            self.device.set(level, group, type)
         except:
             LOG.exception("Invalid button command: %s", data)
-            return
 
     #-----------------------------------------------------------------------
     def handle_set_level(self, client, data, message):
@@ -208,20 +209,11 @@ class KeypadLinc:
 
         LOG.info("KeypadLinc input command: %s", data)
         try:
-            cmd = data.get('cmd')
-            if cmd == 'on':
-                level = int(data.get('level'))
-            elif cmd == 'off':
-                level = 0
-            else:
-                raise Exception("Invalid dimmer cmd input '%s'" % cmd)
-
-            instant = bool(data.get('instant', False))
+            is_on, type = Switch.parse_json(data)
+            level = 0 if not is_on else int(data.get('level'))
+            self.device.set(level, type=type)
         except:
             LOG.exception("Invalid dimmer command: %s", data)
-            return
-
-        self.device.set(level=level, instant=instant)
 
     #-----------------------------------------------------------------------
     def handle_btn1(self, client, data, message):
@@ -263,22 +255,13 @@ class KeypadLinc:
 
         LOG.info("KeypadLinc input command: %s", data)
         try:
-            cmd = data.get('cmd')
-            if cmd == 'on':
-                is_on = True
-            elif cmd == 'off':
-                is_on = False
-            else:
-                raise Exception("Invalid KeypadLinc cmd input '%s'" % cmd)
+            is_on, _type = Switch.parse_json(data)
+            self.device.scene(is_on, group)
         except:
             LOG.exception("Invalid KeypadLinc command: %s", data)
-            return
-
-        # Tell the device to trigger the scene command.
-        self.device.scene(is_on, group)
 
     #-----------------------------------------------------------------------
-    def handle_active(self, device, group, level):
+    def handle_active(self, device, group, level, type=on_off.Type.NORMAL):
         """Device active button pressed callback.
 
         This is triggered via signal when the Insteon device button is
@@ -290,10 +273,10 @@ class KeypadLinc:
           group:    (int) The button number 1...n that was pressed.
           level:    (int) The current device level 0...0xff.
         """
-        LOG.info("MQTT received button press %s = btn %s at %s", device.label,
-                 group, level)
+        LOG.info("MQTT received button press %s = btn %s at %s %s",
+                 device.label, group, level, type)
 
-        data = self.template_data(level, group)
+        data = self.template_data(level, group, type)
 
         if group == 1 and self.device.is_dimmer:
             self.msg_dimmer_state.publish(self.mqtt, data)

@@ -21,6 +21,7 @@ from . import log
 from . import message
 from . import mqtt
 from . import network
+from . import on_off
 from . import util
 
 from .Address import Address

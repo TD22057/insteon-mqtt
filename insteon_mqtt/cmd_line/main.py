@@ -115,26 +115,32 @@ def parse_args(args):
     sp = sub.add_parser("on", help="Turn a device on.")
     sp.add_argument("-l", "--level", metavar="level", type=int, default=255,
                     help="Level to use for dimmers (0-255)")
-    sp.add_argument("-i", "--instant", action="store_true",
-                    help="Instant (rather than ramping) on.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to turn on for multi-button "
                     "devices.")
+    gp = sp.add_mutually_exclusive_group()
+    gp.add_argument("-i", "--instant", dest="mode", action="store_const",
+                    const="instant", help="Instant (rather than ramping) on.")
+    gp.add_argument("-f", "--fast", dest="mode", action="store_const",
+                    const="fast", help="Send an Insteon fast on command.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.on)
 
     #---------------------------------------
     # device.set command
     sp = sub.add_parser("set", help="Turn a device to specific level.")
-    sp.add_argument("-i", "--instant", action="store_true",
-                    help="Instant (rather than ramping) on.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to set for multi-button "
                     "devices.")
+    gp = sp.add_mutually_exclusive_group()
+    gp.add_argument("-i", "--instant", dest="mode", action="store_const",
+                    const="instant", help="Instant (rather than ramping) on.")
+    gp.add_argument("-f", "--fast", dest="mode", action="store_const",
+                    const="fast", help="Send an Insteon fast on command.")
     sp.add_argument("address", help="Device address or name.")
     sp.add_argument("level", type=int, default=255,
                     help="Level to use for dimmers (0-255)")
@@ -145,11 +151,14 @@ def parse_args(args):
     sp = sub.add_parser("off", help="Turn a device off.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("-i", "--instant", action="store_true",
-                    help="Instant (rather than ramping) on.")
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to turn off for multi-button "
                     "devices.")
+    gp = sp.add_mutually_exclusive_group()
+    gp.add_argument("-i", "--instant", dest="mode", action="store_const",
+                    const="instant", help="Instant (rather than ramping) on.")
+    gp.add_argument("-f", "--fast", dest="mode", action="store_const",
+                    const="fast", help="Send an Insteon fast on command.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.off)
 
