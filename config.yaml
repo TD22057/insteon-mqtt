@@ -200,12 +200,6 @@ mqtt:
     state_topic: 'insteon/{{address}}/state'
     state_payload: '{{on_str.upper()}}'
 
-    # Topic for reporting fast on/off commands.  This will be sent right
-    # before the state_topic is sent if fast on/off was commanded.  Payload
-    # options are the same as state_topic.
-    #fast_state_topic: 'insteon/{{address}}/fast_state'
-    #fast_state_payload: '{{on_str.upper()}}'
-
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
     # passing the payload through the template must match the following:
