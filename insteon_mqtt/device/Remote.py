@@ -5,6 +5,7 @@
 #===========================================================================
 from ..CommandSeq import CommandSeq
 from .. import log
+from .. import on_off
 from ..Signal import Signal
 from .Base import Base
 
@@ -71,7 +72,8 @@ class Remote(Base):
         self.num = num_button
         self.type_name = "mini_remote_%d" % self.num
 
-        self.signal_pressed = Signal()  # (Device, int group, bool on)
+        # (Device, int group, bool on, on_off.Type type)
+        self.signal_pressed = Signal()
 
     #-----------------------------------------------------------------------
     def pair(self, on_done=None):
@@ -133,7 +135,7 @@ class Remote(Base):
         Args:
           msg:   (InptStandard) Broadcast message from the device.
         """
-        is_on = None
+        is_on, type = None, on_off.Type.NORMAL
         cmd = msg.cmd1
 
         # ACK of the broadcast - ignore this.
@@ -141,15 +143,11 @@ class Remote(Base):
             LOG.info("Remote %s broadcast ACK grp: %s", self.addr, msg.group)
             return
 
-        # On command.  0x11: on, 0x12: on fast
-        elif cmd in Remote.on_codes:
-            LOG.info("Remote %s broadcast ON grp: %s", self.addr, msg.group)
-            is_on = True
-
-        # Off command. 0x13: off, 0x14: off fast
-        elif cmd in Remote.off_codes:
-            LOG.info("Remote %s broadcast OFF grp: %s", self.addr, msg.group)
-            is_on = False
+        # On/off command codes.
+        elif on_off.Type.is_valid(msg.cmd1):
+            is_on, type = on_off.Type.decode(msg.cmd1)
+            LOG.info("Remote %s broadcast grp: %s on: %s mode: %s", self.addr,
+                     msg.group, is_on, type)
 
         # Starting manual increment (cmd2 0x00=up, 0x01=down)
         elif cmd == 0x17:
@@ -165,7 +163,7 @@ class Remote(Base):
 
         # Notify others that the button was pressed.
         if is_on is not None:
-            self.signal_pressed.emit(self, msg.group, is_on)
+            self.signal_pressed.emit(self, msg.group, is_on, type)
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to

@@ -4,6 +4,7 @@
 #
 #===========================================================================
 from .. import log
+from .. import on_off
 from .MsgTemplate import MsgTemplate
 
 LOG = log.get_logger()
@@ -20,8 +21,10 @@ class Remote:
 
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state/{{button}}',
-            payload='{{on_str.lower()}}',
-            )
+            payload='{{on_str.lower()}}')
+
+        # Fast on/off is handled by msg_state by default.
+        self.msg_fast_state = MsgTemplate(None, None)
 
         device.signal_pressed.connect(self.handle_pressed)
 
@@ -39,6 +42,8 @@ class Remote:
             return
 
         self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
+        self.msg_fast_state.load_config(config, 'fast_state_topic',
+                                        'fast_state_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -60,7 +65,25 @@ class Remote:
         pass
 
     #-----------------------------------------------------------------------
-    def handle_pressed(self, device, button, is_active):
+    def template_data(self, button, is_on, type=on_off.Type.NORMAL):
+        """TODO: doc
+        """
+        # Set up the variables that can be used in the templates.
+        data = {
+            "address" : self.device.addr.hex,
+            "name" : self.device.name if self.device.name
+                     else self.device.addr.hex,
+            "button" : button,
+            "on" : 1 if is_on else 0,
+            "on_str" : "on" if is_on else "off",
+            "mode" : str(type),
+            "fast" : 1 if type == on_off.Type.FAST else 0,
+            "instant" : 1 if type == on_off.Type.INSTANT else 0,
+            }
+        return data
+
+    #-----------------------------------------------------------------------
+    def handle_pressed(self, device, button, is_on, type=on_off.Type.NORMAL):
         """Device active button pressed callback.
 
         This is triggered via signal when the Insteon device button is
@@ -71,16 +94,12 @@ class Remote:
           device:   (device.Base) The Insteon device that changed.
           button:   (int) The button number 1...n that was pressed.
         """
-        LOG.info("MQTT received button press %s = btn %s", device.label,
-                 button)
+        LOG.info("MQTT received button press %s = btn %s on %s %s",
+                 device.label, button, is_on, type)
 
-        data = {
-            "address" : device.addr.hex,
-            "name" : device.name if device.name else device.addr.hex,
-            "button" : button,
-            "on" : 1 if is_active else 0,
-            "on_str" : "on" if is_active else "off",
-            }
+        data = self.template_data(button, is_on, type)
+        if type is on_off.Type.FAST:
+            self.msg_fast_state.publish(self.mqtt, data)
 
         self.msg_state.publish(self.mqtt, data)
 

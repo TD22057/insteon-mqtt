@@ -565,8 +565,17 @@ mqtt:
     #   button = 1...n  (button number 1-4 or 1-8)
     #   on = 0/1
     #   on_str = 'off'/'on'
+    #   mode = 'normal'/'fast'/'instant'
+    #   fast = 0/1
+    #   instant = 0/1
     state_topic: 'insteon/{{address}}/state/{{button}}'
     state_payload: '{{on_str.upper()}}'
+
+    # Topic for reporting fast on/off commands.  This will be sent right
+    # before the state_topic is sent if fast on/off was commanded.  Payload
+    # options are the same as state_topic.
+    #fast_state_topic: 'insteon/{{address}}/fast_state/{{button}}'
+    #fast_state_payload: '{{on_str.upper()}}'
 
   #------------------------------------------------------------------------
   # Fan Linc
@@ -711,7 +720,7 @@ mqtt:
     # Topic for reporting fast on/off commands.  This will be sent right
     # before the state_topic is sent if fast on/off was commanded.  Payload
     # options are the same as dimmer_state_topic.
-    #fast_state_topic: 'insteon/{{address}}/fast_state'
+    #fast_state_topic: 'insteon/{{address}}/fast_state/{{button}}'
     #fast_state_payload: '{{on_str.upper()}}'
 
     # Input on/off command.  For button 1, this will set the load.  For other
@@ -846,7 +855,7 @@ mqtt:
     # Topic for reporting fast on/off commands.  This will be sent right
     # before the state_topic is sent if fast on/off was commanded.  Payload
     # options are the same as state_topic.
-    #fast_state_topic: 'insteon/{{address}}/fast_state'
+    #fast_state_topic: 'insteon/{{address}}/fast_state/{{button}}'
     #fast_state_payload: '{{on_str.upper()}}'
 
     # Input on/off command.  Similar functionality to the cmd_topic
