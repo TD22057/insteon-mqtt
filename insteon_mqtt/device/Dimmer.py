@@ -72,7 +72,7 @@ class Dimmer(Base):
         self._level = 0x00
 
         # Support dimmer style signals and motion on/off style signals.
-        # API:  func(Device, int level, Switch.Type type)
+        # API:  func(Device, int level, on_off.Type type)
         self.signal_level_changed = Signal()
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the
