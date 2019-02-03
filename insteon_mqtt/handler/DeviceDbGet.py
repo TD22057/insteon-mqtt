@@ -86,8 +86,8 @@ class DeviceDbGet(Base):
                 return Msg.CONTINUE
 
             elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-                LOG.error("%s device NAK error: %s, Message: %s", msg.from_addr,
-                          msg.nak_str(), msg)
+                LOG.error("%s device NAK error: %s, Message: %s",
+                          msg.from_addr, msg.nak_str(), msg)
                 self.on_done(False, "Database command NAK. " + msg.nak_str(),
                              None)
                 return Msg.FINISHED

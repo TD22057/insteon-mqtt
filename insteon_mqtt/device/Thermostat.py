@@ -98,15 +98,15 @@ class Thermostat(Base):
             'get_status' : self.get_status
             })
 
-        self.signal_ambient_temp_change = Signal()  # emit(device, Int temp_c)
-        self.signal_fan_mode_change = Signal()  # emit(device, Fan fan mode)
+        self.signal_ambient_temp_change = Signal()  # emit(device, int temp_c)
+        self.signal_fan_mode_change = Signal()  # emit(device, Fan fan_mode)
         self.signal_mode_change = Signal()  # emit(device, Mode mode)
-        self.signal_cool_sp_change = Signal()  # emit(device, Int cool_sp in c)
-        self.signal_heat_sp_change = Signal()  # emit(device, Int heat_sp in c)
-        self.signal_ambient_humid_change = Signal()  # emit(device, Int humid)
-        self.signal_status_change = Signal() #emit(device, Str status)
-        self.signal_hold_change = Signal() #emit(device, bool)
-        self.signal_energy_change = Signal() #emit(device, bool)
+        self.signal_cool_sp_change = Signal()  # emit(device, int cool_sp in c)
+        self.signal_heat_sp_change = Signal()  # emit(device, int heat_sp in c)
+        self.signal_ambient_humid_change = Signal()  # emit(device, int humid)
+        self.signal_status_change = Signal()  # emit(device, str status)
+        self.signal_hold_change = Signal()  # emit(device, bool)
+        self.signal_energy_change = Signal()  # emit(device, bool)
 
         # Add handler for processing direct Messages
         protocol.add_handler(handler.ThermostatCmd(self))
@@ -124,7 +124,7 @@ class Thermostat(Base):
     @units.setter
     def units(self, val):
         """Saves units to metadata
-        
+
         Args:
           val:    Either FARENHEIT or CELSIUS
         """
@@ -132,7 +132,8 @@ class Thermostat(Base):
         if val in [Thermostat.FARENHEIT, Thermostat.CELSIUS]:
             self.db.set_meta('thermostat', meta)
         else:
-            LOG.error("Bad value %s, for units on Thermostat %s.", val, self.addr)
+            LOG.error("Bad value %s, for units on Thermostat %s.", val,
+                      self.addr)
 
     #-----------------------------------------------------------------------
     def pair(self, on_done=None):
@@ -241,7 +242,7 @@ class Thermostat(Base):
         # D7 - Cool Set Point in the Units specified on the device
         cool_sp = int.from_bytes(msg.data[6:7], byteorder='big')
         if self.units == Thermostat.FARENHEIT:
-            cool_sp = (cool_sp - 32) * 5/9
+            cool_sp = (cool_sp - 32) * 5 / 9
         self.signal_cool_sp_change.emit(self, cool_sp)
 
         # D8 - Humidity
@@ -256,7 +257,7 @@ class Thermostat(Base):
         # D12 - Heat Set Point in the Units specified on the device
         heat_sp = int.from_bytes(msg.data[11:12], byteorder='big')
         if self.units == Thermostat.FARENHEIT:
-            heat_sp = (heat_sp - 32) * 5/9
+            heat_sp = (heat_sp - 32) * 5 / 9
         self.signal_heat_sp_change.emit(self, heat_sp)
 
         if on_done is not None:
@@ -332,10 +333,11 @@ class Thermostat(Base):
         Args:
           on_done:  Optional callback run when the commands are finished.
         """
-        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00,
-                                     bytes([0x00] *2 + [0x01] + [0x00] * 11), crc_type="CRC")
-        msg_handler = handler.ExtendedCmdResponse(msg, self.handle_humidity_setpoints,
-                                                  on_done, num_retry=3)
+        msg = Msg.OutExtended.direct(
+            self.addr, 0x2e, 0x00, bytes([0x00] * 2 + [0x01] + [0x00] * 11),
+            crc_type="CRC")
+        msg_handler = handler.ExtendedCmdResponse(
+            msg, self.handle_humidity_setpoints, on_done, num_retry=3)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -545,12 +547,12 @@ class Thermostat(Base):
         # Convert to proper units
         temp = temp_c
         if self.units == Thermostat.FARENHEIT:
-            temp = (temp_c * 9/5) + 32
+            temp = (temp_c * 9.0 / 5.0) + 32
         # Limit temp range
         temp = 0 if temp < 0 else temp
         temp = 127 if temp > 127 else temp
         # Send the command to the thermostat in units on thermo * 2
-        msg = Msg.OutExtended.direct(self.addr, 0x6d, int(temp*2),
+        msg = Msg.OutExtended.direct(self.addr, 0x6d, int(temp * 2),
                                      bytes([0x00] * 14))
         msg_handler = handler.StandardCmd(msg, self.handle_heat_sp_command,
                                           None, num_retry=3)
@@ -570,16 +572,17 @@ class Thermostat(Base):
           on_done:  Optional callback run when the commands are finished.
         """
         if msg.cmd1 == 0x6d:
-            heat_sp = (msg.cmd2/2)
+            heat_sp = msg.cmd2 / 2
             if self.units == Thermostat.FARENHEIT:
-                heat_sp = (heat_sp - 32) * 5/9
+                heat_sp = (heat_sp - 32) * 5 / 9
             self.signal_heat_sp_change.emit(self, heat_sp)
             if on_done is not None:
-                on_done(True, "Thermostat recevied heat setpoint command", None)
+                on_done(True, "Thermostat recevied heat setpoint command",
+                        None)
         else:
             LOG.debug("Thermostat %s received a bad ack %s", self.addr,
                       msg.cmd1)
-            if on_done is not None:        
+            if on_done is not None:
                 on_done(False, "Wrong direct ack received", None)
 
     #-----------------------------------------------------------------------
@@ -594,12 +597,14 @@ class Thermostat(Base):
         # Convert to proper units
         temp = temp_c
         if self.units == Thermostat.FARENHEIT:
-            temp = (temp_c * 9/5) + 32
+            temp = (temp_c * 9 / 5) + 32
+
         # Limit temp range
         temp = 0 if temp < 0 else temp
         temp = 127 if temp > 127 else temp
+
         # Send the command to the thermostat in units on thermo * 2
-        msg = Msg.OutExtended.direct(self.addr, 0x6c, int(temp*2),
+        msg = Msg.OutExtended.direct(self.addr, 0x6c, int(temp * 2),
                                      bytes([0x00] * 14))
         msg_handler = handler.StandardCmd(msg, self.handle_cool_sp_command,
                                           None, num_retry=3)
@@ -619,12 +624,13 @@ class Thermostat(Base):
           on_done:  Optional callback run when the commands are finished.
         """
         if msg.cmd1 == 0x6c:
-            cool_sp = (msg.cmd2/2)
+            cool_sp = msg.cmd2 / 2
             if self.units == Thermostat.FARENHEIT:
-                cool_sp = (cool_sp - 32) * 5/9
+                cool_sp = (cool_sp - 32) * 5 / 9
             self.signal_cool_sp_change.emit(self, cool_sp)
             if on_done is not None:
-                on_done(True, "Thermostat recevied cool setpoint command", None)
+                on_done(True, "Thermostat recevied cool setpoint command",
+                        None)
         else:
             LOG.debug("Thermostat %s received a bad ack %s", self.addr,
                       msg.cmd1)

@@ -77,7 +77,7 @@ class BroadcastCmdResponse(Base):
                 return Msg.UNKNOWN
 
             if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-                LOG.info("%s device ACK response, waiting for broadcast " +
+                LOG.info("%s device ACK response, waiting for broadcast "
                          "payload", msg.from_addr)
                 return Msg.CONTINUE
 

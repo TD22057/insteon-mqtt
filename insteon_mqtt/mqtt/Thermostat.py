@@ -4,7 +4,6 @@
 #
 #===========================================================================
 from .. import log
-from .. import device as IDev
 from .MsgTemplate import MsgTemplate
 
 LOG = log.get_logger()
@@ -84,12 +83,14 @@ class Thermostat:
             )
 
         # Receive notifications from the Insteon device when it changes.
-        device.signal_ambient_temp_change.connect(self.handle_ambient_temp_change)
+        device.signal_ambient_temp_change.connect(
+            self.handle_ambient_temp_change)
         device.signal_fan_mode_change.connect(self.handle_fan_mode_change)
         device.signal_mode_change.connect(self.handle_mode_change)
         device.signal_cool_sp_change.connect(self.handle_cool_sp_change)
         device.signal_heat_sp_change.connect(self.handle_heat_sp_change)
-        device.signal_ambient_humid_change.connect(self.handle_ambient_humid_change)
+        device.signal_ambient_humid_change.connect(
+            self.handle_ambient_humid_change)
         device.signal_status_change.connect(self.handle_status_change)
         device.signal_hold_change.connect(self.handle_hold_change)
         device.signal_energy_change.connect(self.handle_energy_change)
@@ -480,7 +481,7 @@ class Thermostat:
 
         LOG.info("Thermostat heat setpoint command: %s", data)
         if 'temp_f' in data:
-            temp_c = (data['temp_f'] -32) * 5/9
+            temp_c = (data['temp_f'] - 32) * 5 / 9
             self.device.heat_sp_command(temp_c)
         elif 'temp_c' in data:
             self.device.heat_sp_command(data['temp_c'])
@@ -507,7 +508,7 @@ class Thermostat:
 
         LOG.info("Thermostat cool setpoint command: %s", data)
         if 'temp_f' in data:
-            temp_c = (data['temp_f'] -32) * 5/9
+            temp_c = (data['temp_f'] - 32) * 5 / 9
             self.device.cool_sp_command(temp_c)
         elif 'temp_c' in data:
             self.device.cool_sp_command(data['temp_c'])

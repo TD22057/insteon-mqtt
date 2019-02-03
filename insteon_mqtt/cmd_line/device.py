@@ -93,6 +93,7 @@ def get_model(args, config):
     reply = util.send(config, topic, payload, False)
     return reply["status"]
 
+
 #===========================================================================
 def print_db(args, config):
     topic = "%s/%s" % (args.topic, args.address)

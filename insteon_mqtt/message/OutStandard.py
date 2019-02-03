@@ -186,7 +186,8 @@ class OutExtended(OutStandard):
         return OutExtended(to_addr, flags, cmd1, cmd2, data, crc_type=crc_type)
 
     #-----------------------------------------------------------------------
-    def __init__(self, to_addr, flags, cmd1, cmd2, data, is_ack=None, crc_type="D14"):
+    def __init__(self, to_addr, flags, cmd1, cmd2, data, is_ack=None,
+                 crc_type="D14"):
         """General constructor
 
         Some extended messages require a check sum or CRC value to be
@@ -206,7 +207,7 @@ class OutExtended(OutStandard):
           data:     (byte) The extended data array of 14 bytes.
           is_ack:   (bool) True for ACK, False for NAK.  None for output
                     commands to the modem.
-          crc_type:   (str) None, "D14", or "CRC".
+          crc_type: (str) None, "D14", or "CRC".
         """
         assert len(data) == 14
         assert crc_type in [None, "D14", "CRC"]

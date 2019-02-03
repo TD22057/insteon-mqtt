@@ -332,12 +332,10 @@ class Base:
         seq.add_msg(msg, msg_handler)
 
         # If model number is not known, or force true, run get_model
-        if (self.db.dev_cat is None or 
-            self.db.sub_cat is None or
-            self.db.firmware is None or
-            force):
+        if self.db.dev_cat is None or self.db.sub_cat is None or \
+           self.db.firmware is None or force:
             seq.add(self.get_model)
-        
+
         # Alright run it all
         seq.run()
 

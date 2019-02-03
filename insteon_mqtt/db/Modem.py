@@ -52,6 +52,7 @@ class Modem:
         for d in data['entries']:
             obj.add_entry(ModemEntry.from_json(d), save=False)
 
+        # pylint: disable=protected-access
         obj._meta = data.get('meta', {})
 
         return obj
@@ -68,7 +69,7 @@ class Modem:
         # Note: unlike devices, the PLM has no delta value so there doesn't
         # seem to be any way to tell if the db value is current or not.
 
-        # Metadata storage.  Used for saving device data to persistent 
+        # Metadata storage.  Used for saving device data to persistent
         # storage for access across reboots
         self._meta = {}
 

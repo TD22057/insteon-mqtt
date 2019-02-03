@@ -62,6 +62,7 @@ class Device:
         obj.dev_cat = data.get('dev_cat', None)
         obj.sub_cat = data.get('sub_cat', None)
         obj.firmware = data.get('firmware', None)
+        # pylint: disable=protected-access
         obj._meta = data.get('meta', {})
 
         for d in data['used']:
