@@ -52,10 +52,6 @@ class Remote(Base):
                  see if the database is current.  Reloads the modem database
                  if needed.  This will emit the current state as a signal.
     """
-
-    on_codes = [0x11, 0x12, 0x21, 0x23]  # on, fast on, instant on, manual on
-    off_codes = [0x13, 0x14, 0x22]  # off, fast off, instant off
-
     def __init__(self, protocol, modem, address, name, num_button):
         """Constructor
 
@@ -72,7 +68,7 @@ class Remote(Base):
         self.num = num_button
         self.type_name = "mini_remote_%d" % self.num
 
-        # (Device, int group, bool on, on_off.Type type)
+        # (Device, int group, bool on, on_off.Mode mode)
         self.signal_pressed = Signal()
 
     #-----------------------------------------------------------------------
@@ -135,7 +131,7 @@ class Remote(Base):
         Args:
           msg:   (InptStandard) Broadcast message from the device.
         """
-        is_on, type = None, on_off.Type.NORMAL
+        is_on, mode = None, on_off.Mode.NORMAL
         cmd = msg.cmd1
 
         # ACK of the broadcast - ignore this.
@@ -144,10 +140,10 @@ class Remote(Base):
             return
 
         # On/off command codes.
-        elif on_off.Type.is_valid(msg.cmd1):
-            is_on, type = on_off.Type.decode(msg.cmd1)
+        elif on_off.Mode.is_valid(msg.cmd1):
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
             LOG.info("Remote %s broadcast grp: %s on: %s mode: %s", self.addr,
-                     msg.group, is_on, type)
+                     msg.group, is_on, mode)
 
         # Starting manual increment (cmd2 0x00=up, 0x01=down)
         elif cmd == 0x17:
@@ -163,7 +159,7 @@ class Remote(Base):
 
         # Notify others that the button was pressed.
         if is_on is not None:
-            self.signal_pressed.emit(self, msg.group, is_on, type)
+            self.signal_pressed.emit(self, msg.group, is_on, mode)
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to

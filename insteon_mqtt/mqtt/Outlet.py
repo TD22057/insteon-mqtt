@@ -98,7 +98,7 @@ class Outlet:
             link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
-    def template_data(self, is_on=None, button=None, type=on_off.Type.NORMAL):
+    def template_data(self, is_on=None, button=None, mode=on_off.Mode.NORMAL):
         """TODO: doc
         """
         data = {
@@ -111,14 +111,14 @@ class Outlet:
         if is_on is not None:
             data["on"] = 1 if is_on else 0
             data["on_str"] = "on" if is_on else "off"
-            data["mode"] = str(type)
-            data["fast"] = 1 if type == on_off.Type.FAST else 0
-            data["instant"] = 1 if type == on_off.Type.INSTANT else 0
+            data["mode"] = str(mode)
+            data["fast"] = 1 if mode == on_off.Mode.FAST else 0
+            data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
 
         return data
 
     #-----------------------------------------------------------------------
-    def handle_active(self, device, group, is_on, type=on_off.Type.NORMAL):
+    def handle_active(self, device, group, is_on, mode=on_off.Mode.NORMAL):
         """Device active on/off callback.
 
         This is triggered via signal when the Insteon device goes
@@ -131,8 +131,8 @@ class Outlet:
         """
         LOG.info("MQTT received active change %s = %s", device.label, is_on)
 
-        data = self.template_data(is_on, group, type)
-        if type is on_off.Type.FAST:
+        data = self.template_data(is_on, group, mode)
+        if mode is on_off.Mode.FAST:
             self.msg_fast_state.publish(self.mqtt, data)
 
         self.msg_state.publish(self.mqtt, data)
@@ -150,8 +150,8 @@ class Outlet:
 
         try:
             # Tell the device to update it's state.
-            is_on, type = Switch.parse_json(data)
-            self.device.set(level=is_on, group=group, type=type)
+            is_on, mode = Switch.parse_json(data)
+            self.device.set(level=is_on, group=group, mode=mode)
         except:
             LOG.exception("Invalid switch command: %s", data)
 
@@ -168,7 +168,7 @@ class Outlet:
 
         try:
             # Tell the device to trigger the scene command.
-            is_on, _type = Switch.parse_json(data)
+            is_on, _mode = Switch.parse_json(data)
             self.device.scene(is_on, group)
         except:
             LOG.exception("Invalid switch command: %s", data)

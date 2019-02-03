@@ -88,7 +88,6 @@ future enhancements:
 
 - Finish commenting all of the code.
 - Full suite of unit tests.
-- PIP packaging and installation.
 - YAML input configuration validation.
 - Heal network (remove records for missing devices, fix missing links).
 - Modem and device scene management.  Define all the links (scenes) in

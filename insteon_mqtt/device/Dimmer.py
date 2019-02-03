@@ -72,7 +72,7 @@ class Dimmer(Base):
         self._level = 0x00
 
         # Support dimmer style signals and motion on/off style signals.
-        # API:  func(Device, int level, on_off.Type type)
+        # API:  func(Device, int level, on_off.Mode mode)
         self.signal_level_changed = Signal()
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the
@@ -134,7 +134,7 @@ class Dimmer(Base):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def on(self, group=0x01, level=0xff, type=on_off.Type.NORMAL,
+    def on(self, group=0x01, level=0xff, mode=on_off.Mode.NORMAL,
            on_done=None):
         """Turn the device on.
 
@@ -151,10 +151,10 @@ class Dimmer(Base):
         LOG.info("Dimmer %s cmd: on %s", self.addr, level)
         assert level >= 0 and level <= 0xff
         assert group == 0x01
-        assert isinstance(type, on_off.Type)
+        assert isinstance(mode, on_off.Mode)
 
         # Send the requested on code value.
-        cmd1 = on_off.Type.encode(True, type)
+        cmd1 = on_off.Mode.encode(True, mode)
         msg = Msg.OutStandard.direct(self.addr, cmd1, level)
 
         # Use the standard command handler which will notify us when the
@@ -165,7 +165,7 @@ class Dimmer(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def off(self, group=0x01, type=on_off.Type.NORMAL, on_done=None):
+    def off(self, group=0x01, mode=on_off.Mode.NORMAL, on_done=None):
         """Turn the device off.
 
         This will send the command to the device to update it's state.
@@ -178,10 +178,10 @@ class Dimmer(Base):
         """
         LOG.info("Dimmer %s cmd: off", self.addr)
         assert group == 0x01
-        assert isinstance(type, on_off.Type)
+        assert isinstance(mode, on_off.Mode)
 
         # Send an off or instant off command.
-        cmd1 = on_off.Type.encode(False, type)
+        cmd1 = on_off.Mode.encode(False, mode)
         msg = Msg.OutStandard.direct(self.addr, cmd1, 0x00)
 
         # Use the standard command handler which will notify us when
@@ -192,7 +192,7 @@ class Dimmer(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set(self, level, group=0x01, type=on_off.Type.NORMAL, on_done=None):
+    def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, on_done=None):
         """Set the device on or off.
 
         This will send the command to the device to update it's state.
@@ -211,9 +211,9 @@ class Dimmer(Base):
             if level is True:
                 level = 0xff
 
-            self.on(group, level, type, on_done)
+            self.on(group, level, mode, on_done)
         else:
-            self.off(group, type, on_done)
+            self.off(group, mode, on_done)
 
     #-----------------------------------------------------------------------
     def scene(self, is_on, group=0x01, on_done=None):
@@ -414,19 +414,19 @@ class Dimmer(Base):
 
         # On/off commands.  How do we tell the level?  It's not in the
         # message anywhere.
-        elif on_off.Type.is_valid(msg.cmd1):
-            is_on, type = on_off.Type.decode(msg.cmd1)
+        elif on_off.Mode.is_valid(msg.cmd1):
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
             LOG.info("Dimmer %s broadcast grp: %s on: %s mode: %s", self.addr,
-                     msg.group, is_on, type)
+                     msg.group, is_on, mode)
 
             if is_on:
-                self._set_level(0xff, type)
+                self._set_level(0xff, mode)
 
             # If broadcast_done is active, this is a generated broadcast and
             # we need to manually turn the device off so don't update it's
             # state until that occurs.
             elif not self.broadcast_done:
-                self._set_level(0x00, type)
+                self._set_level(0x00, mode)
 
         # Starting manual increment (cmd2 0x00=up, 0x01=down)
         elif cmd == 0x17:
@@ -482,8 +482,8 @@ class Dimmer(Base):
         # state and emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
-            _is_on, type = on_off.Type.decode(msg.cmd1)
-            self._set_level(msg.cmd2, type)
+            _is_on, mode = on_off.Mode.decode(msg.cmd1)
+            self._set_level(msg.cmd2, mode)
             on_done(True, "Dimmer state updated to %s" % self._level,
                     msg.cmd2)
 
@@ -563,10 +563,10 @@ class Dimmer(Base):
             return
 
         # Handle on/off codes
-        if on_off.Type.is_valid(cmd):
-            is_on, type = on_off.Type.decode(cmd)
+        if on_off.Mode.is_valid(cmd):
+            is_on, mode = on_off.Mode.decode(cmd)
             level = entry.data[0] if is_on else 0x00
-            self._set_level(level, type)
+            self._set_level(level, mode)
 
         # Increment up (32 steps)
         elif cmd == 0x15:
@@ -589,7 +589,7 @@ class Dimmer(Base):
             LOG.warning("Dimmer %s unknown group cmd %#04x", self.addr, cmd)
 
     #-----------------------------------------------------------------------
-    def _set_level(self, level, type=on_off.Type.NORMAL):
+    def _set_level(self, level, mode=on_off.Mode.NORMAL):
         """Set the device level state.
 
         This will change the internal state and emit the state changed
@@ -598,9 +598,9 @@ class Dimmer(Base):
         Args:
           level:   (int) 0x00 for off, 0xff for 100%.
         """
-        LOG.info("Setting device %s on=%s %s", self.label, level, type)
+        LOG.info("Setting device %s on=%s %s", self.label, level, mode)
         self._level = level
 
-        self.signal_level_changed.emit(self, level, type)
+        self.signal_level_changed.emit(self, level, mode)
 
     #-----------------------------------------------------------------------

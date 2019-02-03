@@ -154,7 +154,7 @@ class KeypadLinc:
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
     def template_data(self, level=None, button=None,
-                      type=on_off.Type.NORMAL):
+                      mode=on_off.Mode.NORMAL):
         """TODO: doc
         """
         data = {
@@ -169,9 +169,9 @@ class KeypadLinc:
             data["on_str"] = "on" if level else "off"
             data["level_255"] = level
             data["level_100"] = int(100.0 * level / 255.0)
-            data["mode"] = str(type)
-            data["fast"] = 1 if type == on_off.Type.FAST else 0
-            data["instant"] = 1 if type == on_off.Type.INSTANT else 0
+            data["mode"] = str(mode)
+            data["fast"] = 1 if mode == on_off.Mode.FAST else 0
+            data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
 
         return data
 
@@ -190,9 +190,9 @@ class KeypadLinc:
 
         LOG.info("KeypadLinc btn %s input command: %s", group, data)
         try:
-            is_on, type = Switch.parse_json(data)
+            is_on, mode = Switch.parse_json(data)
             level = 0xff if is_on else 0x00
-            self.device.set(level, group, type)
+            self.device.set(level, group, mode)
         except:
             LOG.exception("Invalid button command: %s", data)
 
@@ -209,9 +209,9 @@ class KeypadLinc:
 
         LOG.info("KeypadLinc input command: %s", data)
         try:
-            is_on, type = Switch.parse_json(data)
+            is_on, mode = Switch.parse_json(data)
             level = 0 if not is_on else int(data.get('level'))
-            self.device.set(level, type=type)
+            self.device.set(level, mode=mode)
         except:
             LOG.exception("Invalid dimmer command: %s", data)
 
@@ -255,13 +255,13 @@ class KeypadLinc:
 
         LOG.info("KeypadLinc input command: %s", data)
         try:
-            is_on, _type = Switch.parse_json(data)
+            is_on, _mode = Switch.parse_json(data)
             self.device.scene(is_on, group)
         except:
             LOG.exception("Invalid KeypadLinc command: %s", data)
 
     #-----------------------------------------------------------------------
-    def handle_active(self, device, group, level, type=on_off.Type.NORMAL):
+    def handle_active(self, device, group, level, mode=on_off.Mode.NORMAL):
         """Device active button pressed callback.
 
         This is triggered via signal when the Insteon device button is
@@ -274,11 +274,11 @@ class KeypadLinc:
           level:    (int) The current device level 0...0xff.
         """
         LOG.info("MQTT received button press %s = btn %s at %s %s",
-                 device.label, group, level, type)
+                 device.label, group, level, mode)
 
-        data = self.template_data(level, group, type)
+        data = self.template_data(level, group, mode)
 
-        if type is on_off.Type.FAST:
+        if mode is on_off.Mode.FAST:
             self.msg_fast_state.publish(self.mqtt, data)
 
         if group == 1 and self.device.is_dimmer:

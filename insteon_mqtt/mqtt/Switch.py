@@ -36,15 +36,15 @@ class Switch:
         # If mode is present, use that to specify normal/fast/instant.
         # Otherwise look for individual keywords.
         if 'mode' in data:
-            type = on_off.Type(data.get('mode', 'normal'))
+            mode = on_off.Mode(data.get('mode', 'normal'))
         else:
-            type = on_off.Type.NORMAL
+            mode = on_off.Mode.NORMAL
             if data.get('fast', False):
-                type = on_off.Type.FAST
+                mode = on_off.Mode.FAST
             elif data.get('instant', False):
-                type = on_off.Type.INSTANT
+                mode = on_off.Mode.INSTANT
 
-        return is_on, type
+        return is_on, mode
 
     #-----------------------------------------------------------------------
     def __init__(self, mqtt, device, handle_active=True):
@@ -138,7 +138,7 @@ class Switch:
         link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
-    def template_data(self, is_on=None, type=on_off.Type.NORMAL):
+    def template_data(self, is_on=None, mode=on_off.Mode.NORMAL):
         """TODO: doc
         """
         # Set up the variables that can be used in the templates.
@@ -151,14 +151,14 @@ class Switch:
         if is_on is not None:
             data["on"] = 1 if is_on else 0
             data["on_str"] = "on" if is_on else "off"
-            data["mode"] = str(type)
-            data["fast"] = 1 if type == on_off.Type.FAST else 0
-            data["instant"] = 1 if type == on_off.Type.INSTANT else 0
+            data["mode"] = str(mode)
+            data["fast"] = 1 if mode == on_off.Mode.FAST else 0
+            data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
 
         return data
 
     #-----------------------------------------------------------------------
-    def handle_active(self, device, is_on, type=on_off.Type.NORMAL):
+    def handle_active(self, device, is_on, mode=on_off.Mode.NORMAL):
         """Device active on/off callback.
 
         This is triggered via signal when the Insteon device goes
@@ -170,11 +170,11 @@ class Switch:
           is_active (bool) True for on, False for off.
         """
         LOG.info("MQTT received active change %s = %s %s", device.label,
-                 is_on, type)
+                 is_on, mode)
 
-        data = self.template_data(is_on, type)
+        data = self.template_data(is_on, mode)
 
-        if type is on_off.Type.FAST:
+        if mode is on_off.Mode.FAST:
             self.msg_fast_state.publish(self.mqtt, data)
 
         self.msg_state.publish(self.mqtt, data)
@@ -191,8 +191,8 @@ class Switch:
 
         try:
             # Tell the device to update it's state.
-            is_on, type = Switch.parse_json(data)
-            self.device.set(level=is_on, type=type)
+            is_on, mode = Switch.parse_json(data)
+            self.device.set(level=is_on, mode=mode)
         except:
             LOG.exception("Invalid switch command: %s", data)
             return
@@ -208,7 +208,7 @@ class Switch:
         LOG.info("Switch input command: %s", data)
 
         try:
-            is_on, _type = Switch.parse_json(data)
+            is_on, _mode = Switch.parse_json(data)
             group = int(data.get('group', 0x01))
 
             # Tell the device to trigger the scene command.

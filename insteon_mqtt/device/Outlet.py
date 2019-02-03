@@ -43,7 +43,7 @@ class Outlet(Base):
         self._is_on = [False, False]  # top outlet, bottom outlet
 
         # Support on/off style signals.
-        # API: func(Device, int group, bool is_on, on_off.Type type)
+        # API: func(Device, int group, bool is_on, on_off.Mode mode)
         self.signal_active = Signal()
 
         # Remove (mqtt) commands mapped to methods calls.  Add to the
@@ -142,7 +142,7 @@ class Outlet(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def on(self, group=0x01, level=None, type=on_off.Type.NORMAL,
+    def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL,
            on_done=None):
         """Turn the device on.
 
@@ -158,10 +158,10 @@ class Outlet(Base):
         LOG.info("Outlet %s grp: %s cmd: on", group, self.addr)
         assert 1 <= group <= 2
         assert level >= 0 and level <= 0xff
-        assert isinstance(type, on_off.Type)
+        assert isinstance(mode, on_off.Mode)
 
         # Send the requested on code value.
-        cmd1 = on_off.Type.encode(True, type)
+        cmd1 = on_off.Mode.encode(True, mode)
 
         # Top outlet uses a standard message
         if group == 1:
@@ -183,7 +183,7 @@ class Outlet(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def off(self, group=0x01, type=on_off.Type.NORMAL, on_done=None):
+    def off(self, group=0x01, mode=on_off.Mode.NORMAL, on_done=None):
         """Turn the device off.
 
         This will send the command to the device to update it's state.
@@ -196,10 +196,10 @@ class Outlet(Base):
         """
         LOG.info("Outlet %s cmd: off", self.addr)
         assert 1 <= group <= 2
-        assert isinstance(type, on_off.Type)
+        assert isinstance(mode, on_off.Mode)
 
         # Send the correct off code.
-        cmd1 = on_off.Type.encode(False, type)
+        cmd1 = on_off.Mode.encode(False, mode)
 
         # Top outlet uses a standard message
         if group == 1:
@@ -221,7 +221,7 @@ class Outlet(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set(self, level, group=0x01, type=on_off.Type.NORMAL, on_done=None):
+    def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, on_done=None):
         """Set the device on or off.
 
         This will send the command to the device to update it's state.
@@ -233,9 +233,9 @@ class Outlet(Base):
         TODO
         """
         if level:
-            self.on(group, level, type, on_done)
+            self.on(group, level, mode, on_done)
         else:
-            self.off(group, type, on_done)
+            self.off(group, mode, on_done)
 
     #-----------------------------------------------------------------------
     def scene(self, is_on, group=0x01, on_done=None):
@@ -357,19 +357,19 @@ class Outlet(Base):
             return
 
         # On/off command codes.
-        elif on_off.Type.is_valid(msg.cmd1):
-            is_on, type = on_off.Type.decode(msg.cmd1)
+        elif on_off.Mode.is_valid(msg.cmd1):
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
             LOG.info("Outlet %s broadcast grp: %s on: %s mode: %s", self.addr,
-                     msg.group, is_on, type)
+                     msg.group, is_on, mode)
 
             if is_on:
-                self._set_is_on(msg.group, True, type)
+                self._set_is_on(msg.group, True, mode)
 
             # If broadcast_done is active, this is a generated broadcast and
             # we need to manually turn the device off so don't update it's
             # state until that occurs.
             elif not self.broadcast_done:
-                self._set_is_on(msg.group, False, type)
+                self._set_is_on(msg.group, False, mode)
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
@@ -435,8 +435,8 @@ class Outlet(Base):
         # state and emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("Outlet %s grp: %s ACK: %s", self.addr, group, msg)
-            is_on, type = on_off.Type.decode(msg.cmd1)
-            self._set_is_on(group, is_on, type)
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
+            self._set_is_on(group, is_on, mode)
             on_done(True, "Outlet state updated to on=%s" % self._is_on,
                     self._is_on)
 
@@ -488,14 +488,14 @@ class Outlet(Base):
                       group, addr)
             return
 
-        if on_off.Type.is_valid(cmd):
-            is_on, type = on_off.Type.decode(cmd)
-            self._set_is_on(group, is_on, type)
+        if on_off.Mode.is_valid(cmd):
+            is_on, mode = on_off.Mode.decode(cmd)
+            self._set_is_on(group, is_on, mode)
         else:
             LOG.warning("Outlet %s unknown group cmd %#04x", self.addr, cmd)
 
     #-----------------------------------------------------------------------
-    def _set_is_on(self, group, is_on, type=on_off.Type.NORMAL):
+    def _set_is_on(self, group, is_on, mode=on_off.Mode.NORMAL):
         """Set the device on/off state.
 
         This will change the internal state and emit the state changed
@@ -507,10 +507,10 @@ class Outlet(Base):
         is_on = bool(is_on)
 
         LOG.info("Setting device %s grp: %s on %s %s", self.label, group,
-                 is_on, type)
+                 is_on, mode)
         self._is_on[group - 1] = is_on
 
         # Notify others that the outlet state has changed.
-        self.signal_active.emit(self, group, is_on, type)
+        self.signal_active.emit(self, group, is_on, mode)
 
     #-----------------------------------------------------------------------

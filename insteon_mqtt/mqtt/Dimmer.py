@@ -106,7 +106,7 @@ class Dimmer(Switch):
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
-    def template_data(self, level=None, type=on_off.Type.NORMAL):
+    def template_data(self, level=None, mode=on_off.Mode.NORMAL):
         """TODO: doc
         """
         data = {
@@ -120,14 +120,14 @@ class Dimmer(Switch):
             data["on_str"] = "on" if level else "off"
             data["level_255"] = level
             data["level_100"] = int(100.0 * level / 255.0)
-            data["mode"] = str(type)
-            data["fast"] = 1 if type == on_off.Type.FAST else 0
-            data["instant"] = 1 if type == on_off.Type.INSTANT else 0
+            data["mode"] = str(mode)
+            data["fast"] = 1 if mode == on_off.Mode.FAST else 0
+            data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
 
         return data
 
     #-----------------------------------------------------------------------
-    def handle_level_changed(self, device, level, type=on_off.Type.NORMAL):
+    def handle_level_changed(self, device, level, mode=on_off.Mode.NORMAL):
         """Device active on/off callback.
 
         This is triggered via signal when the Insteon device goes
@@ -140,8 +140,8 @@ class Dimmer(Switch):
         """
         LOG.info("MQTT received level change %s = %s", device.label, level)
 
-        data = self.template_data(level, type)
-        if type is on_off.Type.FAST:
+        data = self.template_data(level, mode)
+        if mode is on_off.Mode.FAST:
             self.msg_fast_state.publish(self.mqtt, data)
 
         self.msg_state.publish(self.mqtt, data)
@@ -158,9 +158,9 @@ class Dimmer(Switch):
 
         LOG.info("Dimmer input command: %s", data)
         try:
-            is_on, type = Switch.parse_json(data)
+            is_on, mode = Switch.parse_json(data)
             level = 0 if not is_on else int(data.get('level'))
-            self.device.set(level=level, type=type)
+            self.device.set(level=level, mode=mode)
         except:
             LOG.exception("Invalid dimmer command: %s", data)
 
@@ -175,7 +175,7 @@ class Dimmer(Switch):
         LOG.info("Dimmer input command: %s", data)
 
         try:
-            is_on, _type = Switch.parse_json(data)
+            is_on, _mode = Switch.parse_json(data)
             group = int(data.get('group', 0x01))
 
             # Tell the device to trigger the scene command.

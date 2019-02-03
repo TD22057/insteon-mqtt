@@ -44,7 +44,8 @@ class Base:
             if isinstance(config, dict):
                 assert len(config) == 1
                 addr, name = next(iter(config.items()))
-                name = name.lower()
+                if name:
+                    name = name.lower()
 
             # Otherwise it's just the address
             else:
@@ -332,12 +333,12 @@ class Base:
         seq.add_msg(msg, msg_handler)
 
         # If model number is not known, or force true, run get_model
-        if (self.db.dev_cat is None or 
+        if (self.db.dev_cat is None or
             self.db.sub_cat is None or
             self.db.firmware is None or
             force):
             seq.add(self.get_model)
-        
+
         # Alright run it all
         seq.run()
 

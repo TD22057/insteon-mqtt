@@ -65,7 +65,7 @@ class Remote:
         pass
 
     #-----------------------------------------------------------------------
-    def template_data(self, button, is_on, type=on_off.Type.NORMAL):
+    def template_data(self, button, is_on, mode=on_off.Mode.NORMAL):
         """TODO: doc
         """
         # Set up the variables that can be used in the templates.
@@ -76,14 +76,14 @@ class Remote:
             "button" : button,
             "on" : 1 if is_on else 0,
             "on_str" : "on" if is_on else "off",
-            "mode" : str(type),
-            "fast" : 1 if type == on_off.Type.FAST else 0,
-            "instant" : 1 if type == on_off.Type.INSTANT else 0,
+            "mode" : str(mode),
+            "fast" : 1 if mode == on_off.Mode.FAST else 0,
+            "instant" : 1 if mode == on_off.Mode.INSTANT else 0,
             }
         return data
 
     #-----------------------------------------------------------------------
-    def handle_pressed(self, device, button, is_on, type=on_off.Type.NORMAL):
+    def handle_pressed(self, device, button, is_on, mode=on_off.Mode.NORMAL):
         """Device active button pressed callback.
 
         This is triggered via signal when the Insteon device button is
@@ -95,10 +95,10 @@ class Remote:
           button:   (int) The button number 1...n that was pressed.
         """
         LOG.info("MQTT received button press %s = btn %s on %s %s",
-                 device.label, button, is_on, type)
+                 device.label, button, is_on, mode)
 
-        data = self.template_data(button, is_on, type)
-        if type is on_off.Type.FAST:
+        data = self.template_data(button, is_on, mode)
+        if mode is on_off.Mode.FAST:
             self.msg_fast_state.publish(self.mqtt, data)
 
         self.msg_state.publish(self.mqtt, data)

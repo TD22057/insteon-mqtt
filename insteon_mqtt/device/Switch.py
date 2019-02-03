@@ -68,7 +68,7 @@ class Switch(Base):
         self._is_on = False
 
         # Support on/off style signals.
-        # API: func(Device, bool is_on, on_off.Type type)
+        # API: func(Device, bool is_on, on_off.Mode mode)
         self.signal_active = Signal()
 
         # Remove (mqtt) commands mapped to methods calls.  Add to the
@@ -134,7 +134,7 @@ class Switch(Base):
         return self._is_on
 
     #-----------------------------------------------------------------------
-    def on(self, group=0x01, level=None, type=on_off.Type.NORMAL,
+    def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL,
            on_done=None):
         """Turn the device on.
 
@@ -148,12 +148,12 @@ class Switch(Base):
           instant:  (bool) False for a normal ramping change, True for an
                     instant change.
         """
-        LOG.info("Switch %s cmd: on %s", self.addr, type)
+        LOG.info("Switch %s cmd: on %s", self.addr, mode)
         assert group == 0x01
-        assert isinstance(type, on_off.Type)
+        assert isinstance(mode, on_off.Mode)
 
         # Send the requested on code value.
-        cmd1 = on_off.Type.encode(True, type)
+        cmd1 = on_off.Mode.encode(True, mode)
         msg = Msg.OutStandard.direct(self.addr, cmd1, 0xff)
 
         # Use the standard command handler which will notify us when
@@ -164,7 +164,7 @@ class Switch(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def off(self, group=0x01, type=on_off.Type.NORMAL, on_done=None):
+    def off(self, group=0x01, mode=on_off.Mode.NORMAL, on_done=None):
         """Turn the device off.
 
         This will send the command to the device to update it's state.
@@ -175,12 +175,12 @@ class Switch(Base):
           instant:  (bool) False for a normal ramping change, True for an
                     instant change.
         """
-        LOG.info("Switch %s cmd: off %s", self.addr, type)
+        LOG.info("Switch %s cmd: off %s", self.addr, mode)
         assert group == 0x01
-        assert isinstance(type, on_off.Type)
+        assert isinstance(mode, on_off.Mode)
 
         # Send an off or instant off command.
-        cmd1 = on_off.Type.encode(False, type)
+        cmd1 = on_off.Mode.encode(False, mode)
         msg = Msg.OutStandard.direct(self.addr, cmd1, 0x00)
 
         # Use the standard command handler which will notify us when
@@ -191,7 +191,7 @@ class Switch(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set(self, level, group=0x01, type=on_off.Type.NORMAL, on_done=None):
+    def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, on_done=None):
         """Set the device on or off.
 
         This will send the command to the device to update it's state.
@@ -205,9 +205,9 @@ class Switch(Base):
                     instant change.
         """
         if level:
-            self.on(group, type, on_done)
+            self.on(group, mode, on_done)
         else:
-            self.off(group, type, on_done)
+            self.off(group, mode, on_done)
 
     #-----------------------------------------------------------------------
     def scene(self, is_on, group=0x01, on_done=None):
@@ -329,19 +329,19 @@ class Switch(Base):
             return
 
         # On/off command codes.
-        elif on_off.Type.is_valid(msg.cmd1):
-            is_on, type = on_off.Type.decode(msg.cmd1)
+        elif on_off.Mode.is_valid(msg.cmd1):
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
             LOG.info("Switch %s broadcast grp: %s on: %s mode: %s", self.addr,
-                     msg.group, is_on, type)
+                     msg.group, is_on, mode)
 
             if is_on:
-                self._set_is_on(True, type)
+                self._set_is_on(True, mode)
 
             # If broadcast_done is active, this is a generated broadcast and
             # we need to manually turn the device off so don't update it's
             # state until that occurs.
             elif not self.broadcast_done:
-                self._set_is_on(False, type)
+                self._set_is_on(False, mode)
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
@@ -382,8 +382,8 @@ class Switch(Base):
         # state and emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("Switch %s ACK: %s", self.addr, msg)
-            is_on, type = on_off.Type.decode(msg.cmd1)
-            self._set_is_on(is_on, type)
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
+            self._set_is_on(is_on, mode)
             on_done(True, "Switch state updated to on=%s" % self._is_on,
                     self._is_on)
 
@@ -439,14 +439,14 @@ class Switch(Base):
                       group, addr)
             return
 
-        if on_off.Type.is_valid(cmd):
-            is_on, type = on_off.Type.decode(cmd)
-            self._set_is_on(is_on, type)
+        if on_off.Mode.is_valid(cmd):
+            is_on, mode = on_off.Mode.decode(cmd)
+            self._set_is_on(is_on, mode)
         else:
             LOG.warning("Switch %s unknown group cmd %#04x", self.addr, cmd)
 
     #-----------------------------------------------------------------------
-    def _set_is_on(self, is_on, type=on_off.Type.NORMAL):
+    def _set_is_on(self, is_on, mode=on_off.Mode.NORMAL):
         """Set the device on/off state.
 
         This will change the internal state and emit the state changed
@@ -455,10 +455,10 @@ class Switch(Base):
         Args:
           is_on:   (bool) True if motion is active, False if it isn't.
         """
-        LOG.info("Setting device %s on %s %s", self.label, is_on, type)
+        LOG.info("Setting device %s on %s %s", self.label, is_on, mode)
         self._is_on = bool(is_on)
 
         # Notify others that the switch state has changed.
-        self.signal_active.emit(self, self._is_on, type)
+        self.signal_active.emit(self, self._is_on, mode)
 
     #-----------------------------------------------------------------------
