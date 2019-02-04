@@ -71,6 +71,10 @@ class Switch(Base):
         # API: func(Device, bool is_on, on_off.Mode mode)
         self.signal_active = Signal()
 
+        # Manual mode start up, down, off
+        # API: func(Device, on_off.Manual mode)
+        self.signal_manual = Signal()
+
         # Remove (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
         self.cmd_map.update({
@@ -343,6 +347,20 @@ class Switch(Base):
             elif not self.broadcast_done:
                 self._set_is_on(False, mode)
 
+        # manual mode (holding buttons down)
+        # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
+        elif on_off.Manual.is_valid(msg.cmd1):
+            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
+            LOG.info("Switch %s manual change %s", self.addr, manual)
+
+            self.signal_manual.emit(self, manual)
+
+            # Switches change state when the switch is held.
+            if manual == on_off.Manual.UP:
+                self._set_is_on(True, on_off.Mode.MANUAL)
+            elif manual == on_off.Manual.DOWN:
+                self._set_is_on(False, on_off.Mode.MANUAL)
+
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
         # update their states since they will have seen the group
@@ -418,7 +436,7 @@ class Switch(Base):
                     None)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, group, cmd):
+    def handle_group_cmd(self, addr, msg):
         """Respond to a group command for this device.
 
         This is called when this device is a responder to a scene.
@@ -428,22 +446,26 @@ class Switch(Base):
         Args:
           addr:  (Address) The device that sent the message.  This is the
                  controller in the scene.
-          group: (int) The group being triggered.
-          cmd:   (int) The command byte being sent.
+          msg:   (InptStandard) Broadcast message from the device.  Use
+                 msg.group to find the group and msg.cmd1 for the command.
         """
         # Make sure we're really a responder to this message.  This
         # shouldn't ever occur.
-        entry = self.db.find(addr, group, is_controller=False)
+        entry = self.db.find(addr, msg.group, is_controller=False)
         if not entry:
             LOG.error("Switch %s has no group %s entry from %s", self.addr,
-                      group, addr)
+                      msg.group, addr)
             return
 
-        if on_off.Mode.is_valid(cmd):
-            is_on, mode = on_off.Mode.decode(cmd)
+        # Unlike dimmer, I don't think that an on/off switch can participate
+        # in a manual mode group on/off command so that handling isn't here.
+        if on_off.Mode.is_valid(msg.cmd1):
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
             self._set_is_on(is_on, mode)
+
         else:
-            LOG.warning("Switch %s unknown group cmd %#04x", self.addr, cmd)
+            LOG.warning("Switch %s unknown group cmd %#04x", self.addr,
+                        msg.cmd1)
 
     #-----------------------------------------------------------------------
     def _set_is_on(self, is_on, mode=on_off.Mode.NORMAL):

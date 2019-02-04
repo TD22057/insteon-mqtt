@@ -604,7 +604,7 @@ class Modem:
             device.handle_received(msg)
 
     #-----------------------------------------------------------------------
-    def handle_scene(self, group, cmd):
+    def handle_scene(self, msg):
         """Callback for scene simulation commanded messages.
 
         This callback is run when we get a reply back from triggering a scene
@@ -612,9 +612,11 @@ class Modem:
         device will then update the states on the devices in the scene.
 
         Args:
-          group:   (int) The group (scene) being ACK'ed.
-          cmd:     (int) The group command (0x11 for on, 0x13 for off).
+          msg:   (InptStandard) Broadcast message from the device.  Use
+                 msg.group to find the group and msg.cmd1 for the command.
         """
+        group = msg.group
+
         responders = self.db.find_group(group)
         LOG.debug("Found %s responders in group %s", len(responders), group)
         LOG.debug("Group %s -> %s", group, [i.addr.hex for i in responders])
@@ -626,7 +628,7 @@ class Modem:
             if device:
                 LOG.info("%s broadcast to %s for group %s", self.label,
                          device.addr, group)
-                device.handle_group_cmd(self.addr, group, cmd)
+                device.handle_group_cmd(self.addr, msg)
             else:
                 LOG.warning("%s broadcast - device %s not found", self.label,
                             elem.addr)
@@ -674,7 +676,7 @@ class Modem:
                           "cmd %s with args: %s", self.addr, cmd, str(kwargs))
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, group, cmd):
+    def handle_group_cmd(self, addr, msg):
         """Handle a group command addressed to the modem.
 
         This is called when a broadcast message is sent from a device that is

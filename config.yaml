@@ -200,6 +200,15 @@ mqtt:
     state_topic: 'insteon/{{address}}/state'
     state_payload: '{{on_str.upper()}}'
 
+    # Manual mode (holding down a button) is triggered once when the button
+    # is held and once when it's released.  address and name are the same as
+    # above.  Other variables for templating are:
+    #   mode = 'up'/'off'/'down'
+    #   value = 1/0/-1
+    #   openhab_value = 2/1/0
+    #manual_state_topic: 'insteon/{{address}}/manual_state'
+    #manual_state_payload: '{{mode.upper()}}'
+
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
     # passing the payload through the template must match the following:
@@ -250,6 +259,15 @@ mqtt:
     state_topic: 'insteon/{{address}}/state'
     state_payload: >
        { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
+
+    # Manual mode (holding down a button) is triggered once when the button
+    # is held and once when it's released.  address and name are the same as
+    # above.  Other variables for templating are:
+    #   mode = 'up'/'off'/'down'
+    #   value = 1/0/-1
+    #   openhab_value = 2/1/0
+    #manual_state_topic: 'insteon/{{address}}/manual_state'
+    #manual_state_payload: '{{mode.upper()}}'
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
@@ -468,7 +486,6 @@ mqtt:
   #   - no concept of separate heat and cool set points
   #   - no humidity state
   #   - no status state
-
   thermostat:
     # Output state change topic and payload.  Available variables for
     # templating in all cases are:
@@ -558,6 +575,15 @@ mqtt:
     #   instant = 0/1
     state_topic: 'insteon/{{address}}/state/{{button}}'
     state_payload: '{{on_str.upper()}}'
+
+    # Manual mode (holding down a button) is triggered once when the button
+    # is held and once when it's released.  address, name, and button are the
+    # same as above.  Other variables for templating are:
+    #   mode = 'up'/'off'/'down'
+    #   value = 1/0/-1
+    #   openhab_value = 2/1/0
+    #manual_state_topic: 'insteon/{{address}}/manual_state/{{button}}'
+    #manual_state_payload: '{{mode.upper()}}'
 
   #------------------------------------------------------------------------
   # Fan Linc
@@ -698,6 +724,15 @@ mqtt:
     dimmer_state_topic: 'insteon/{{address}}/state/1'
     dimmer_state_payload: >
        { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
+
+    # Manual mode (holding down a button) is triggered once when the button
+    # is held and once when it's released.  address, name, and button are the
+    # same as above.  Other variables for templating are:
+    #   mode = 'up'/'off'/'down'
+    #   value = 1/0/-1
+    #   openhab_value = 2/1/0
+    #manual_state_topic: 'insteon/{{address}}/manual_state/{{button}}'
+    #manual_state_payload: '{{mode.upper()}}'
 
     # Input on/off command.  For button 1, this will set the load.  For other
     # buttons, it just set the button LED.  The output of passing the payload

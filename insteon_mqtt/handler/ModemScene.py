@@ -61,7 +61,7 @@ class ModemScene(Base):
         elif isinstance(msg, Msg.InpAllLinkStatus):
             if msg.is_ack:
                 LOG.debug("Modem scene %s command ACK", self.msg.group)
-                self.modem.handle_scene(self.msg.group, self.msg.cmd1)
+                self.modem.handle_scene(self.msg)
                 self.on_done(True, "Scene command complete", None)
             else:
                 self.on_done(False, "Scene command failed", None)

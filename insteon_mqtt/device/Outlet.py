@@ -467,7 +467,7 @@ class Outlet(Base):
             on_done(False, "Scene trigger failed failed", None)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, group, cmd):
+    def handle_group_cmd(self, addr, msg):
         """Respond to a group command for this device.
 
         This is called when this device is a responder to a scene.
@@ -477,22 +477,23 @@ class Outlet(Base):
         Args:
           addr:  (Address) The device that sent the message.  This is the
                  controller in the scene.
-          group: (int) The group being triggered.
-          cmd:   (int) The command byte being sent.
+          msg:   (InptStandard) Broadcast message from the device.  Use
+                 msg.group to find the group and msg.cmd1 for the command.
         """
         # Make sure we're really a responder to this message.  This
         # shouldn't ever occur.
-        entry = self.db.find(addr, group, is_controller=False)
+        entry = self.db.find(addr, msg.group, is_controller=False)
         if not entry:
             LOG.error("Outlet %s has no group %s entry from %s", self.addr,
-                      group, addr)
+                      msg.group, addr)
             return
 
-        if on_off.Mode.is_valid(cmd):
-            is_on, mode = on_off.Mode.decode(cmd)
-            self._set_is_on(group, is_on, mode)
+        if on_off.Mode.is_valid(msg.cmd1):
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
+            self._set_is_on(msg.group, is_on, mode)
         else:
-            LOG.warning("Outlet %s unknown group cmd %#04x", self.addr, cmd)
+            LOG.warning("Outlet %s unknown group cmd %#04x", self.addr,
+                        msg.cmd1)
 
     #-----------------------------------------------------------------------
     def _set_is_on(self, group, is_on, mode=on_off.Mode.NORMAL):

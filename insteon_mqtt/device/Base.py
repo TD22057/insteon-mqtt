@@ -667,13 +667,13 @@ class Base:
             if device:
                 LOG.info("%s broadcast to %s for group %s", self.label,
                          device.addr, group)
-                device.handle_group_cmd(self.addr, group, msg.cmd1)
+                device.handle_group_cmd(self.addr, msg)
             else:
                 LOG.warning("%s broadcast - device %s not found", self.label,
                             elem.addr)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, group, cmd):
+    def handle_group_cmd(self, addr, msg):
         """Respond to a group command for this device.
 
         This is called when this device is a responder to a scene.
@@ -683,8 +683,8 @@ class Base:
         Args:
           addr:  (Address) The device that sent the message.  This is the
                  controller in the scene.
-          group: (int) The group being triggered.
-          cmd:   (int) The command byte being sent.
+          msg:   (InptStandard) Broadcast message from the device.  Use
+                 msg.group to find the group and msg.cmd1 for the command.
         """
         # Default implementation - derived classes should specialize this.
         LOG.info("Device %s ignoring group cmd - not implemented", self.label)

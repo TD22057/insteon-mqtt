@@ -49,6 +49,10 @@ class KeypadLinc(Base):
         # API: func(Device, int group, int level, on_off.Mode mode)
         self.signal_active = Signal()
 
+        # Manual mode start up, down, off
+        # API: func(Device, int group, on_off.Manual mode)
+        self.signal_manual = Signal()
+
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
         self.cmd_map.update({
@@ -598,22 +602,21 @@ class KeypadLinc(Base):
                 # Notify others that the button was pressed.
                 self._set_level(msg.group, 0x00, mode)
 
-        # Starting manual increment (cmd2 0x00=up, 0x01=down)
-        elif cmd == 0x17:
-            LOG.info("KeypadLinc %s starting manual change grp: %s %s",
-                     self.addr, msg.group, "UP" if msg.cmd2 == 0x00 else "DN")
+        # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
+        elif on_off.Manual.is_valid(msg.cmd1):
+            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
+            LOG.info("KeypadLinc %s manual change %s", self.addr, manual)
 
-        # Stopping manual increment (cmd2 = unused)
-        elif cmd == 0x18:
-            LOG.info("KeypadLinc %s stopping manual change grp %s", self.addr,
-                     msg.group)
+            self.signal_manual.emit(self, msg.group, manual)
 
             # Ping the device to get the button states - we don't know what
             # the keypadlinc things the state is - could be on or off.  Doing
             # a dim down for a long time puts all the other devices "off" but
             # the keypadlinc can still think that it's on.  So we have to do
-            # a refresh to find out.
-            self.refresh()
+            # a refresh to find out.  The non-group 1 buttons don't change
+            # state when held so we don't need to refresh for those.
+            if msg.group == 1 and manual == on_off.Manual.STOP:
+                self.refresh()
 
         # Call the base class handler.  This will find all the devices we're
         # the controller of for this group and call their handle_group_cmd()
@@ -690,7 +693,7 @@ class KeypadLinc(Base):
             on_done(False, "KeypadLinc %s state update failed", None)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, group, cmd):
+    def handle_group_cmd(self, addr, msg):
         """Respond to a group command for this device.
 
         This is called when this device is a responder to a scene.  The
@@ -703,6 +706,9 @@ class KeypadLinc(Base):
           msg:   (message.InpStandard) The broadcast message that was sent.
                  Use msg.group to find the scene group that was broadcast.
         """
+        group = msg.group
+        cmd1 = msg.cmd1
+
         # Make sure we're really a responder to this message.  This shouldn't
         # ever occur.
         entry = self.db.find(addr, group, is_controller=False)
@@ -712,8 +718,8 @@ class KeypadLinc(Base):
             return
 
         # Handle on/off codes
-        if on_off.Mode.is_valid(cmd):
-            is_on, mode = on_off.Mode.decode(cmd)
+        if on_off.Mode.is_valid(cmd1):
+            is_on, mode = on_off.Mode.decode(cmd1)
             level = 0xff if is_on else 0x00
             if self.is_dimmer and is_on and group == 1:
                 level = entry.data[0]
@@ -721,26 +727,26 @@ class KeypadLinc(Base):
             self._set_level(group, level, mode)
 
         # Increment up (32 steps)
-        elif cmd == 0x15:
+        elif cmd1 == 0x15:
             assert group == 0x01
             self._set_level(group, min(0xff, self._level + 8))
 
         # Increment down
-        elif cmd == 0x16:
+        elif cmd1 == 0x16:
             assert group == 0x01
             self._set_level(group, max(0x00, self._level - 8))
 
-        # Starting manual increment (cmd2 0x00=up, 0x01=down)
-        elif cmd == 0x17:
-            pass
+        # Starting/stopping manual increment (cmd2 0x00=up, 0x01=down)
+        elif on_off.Manual.is_valid(msg.cmd1):
+            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
+            self.signal_manual.emit(self, group, manual)
 
-        # Stopping manual increment (cmd2 = unused)
-        elif cmd == 0x18:
             # Ping the light to get the new level
-            self.refresh()
+            if manual == on_off.Manual.STOP:
+                self.refresh()
 
         else:
-            LOG.warning("KeypadLinc %s unknown cmd %#04x", self.addr, cmd)
+            LOG.warning("KeypadLinc %s unknown cmd %#04x", self.addr, cmd1)
 
     #-----------------------------------------------------------------------
     def _set_level(self, group, level, mode=on_off.Mode.NORMAL):
