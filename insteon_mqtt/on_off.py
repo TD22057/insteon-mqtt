@@ -66,7 +66,6 @@ class Mode(enum.Enum):
                             % (cmd, str(_cmdMap.keys())))
         return result
 
-
 #===========================================================================
 
 # Map command code to [is_on, Mode enum]
@@ -76,7 +75,8 @@ _cmdMap = {0x11 : [True, Mode.NORMAL],
            0x23 : [True, Mode.MANUAL],
            0x13 : [False, Mode.NORMAL],
            0x14 : [False, Mode.FAST],
-           # Per Insteon dev guide, there is no instant off.
+           # Per Insteon dev guide, there is no instant off - it's instant on
+           # with level set to 0.
            0x22 : [False, Mode.MANUAL]}
 
 # Map enum mode to command code for on and off.
