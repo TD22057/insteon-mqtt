@@ -132,9 +132,9 @@ class Dimmer(Switch):
         """TODO: doc
         """
         data = self.template_data()
-        data["mode"] = str(manual)
-        data["value"] = manual.int_value()
-        data["openhab_value"] = manual.openhab_value()
+        data["manual_str"] = str(manual)
+        data["manual"] = manual.int_value()
+        data["manual_openhab"] = manual.openhab_value()
         return data
 
     #-----------------------------------------------------------------------

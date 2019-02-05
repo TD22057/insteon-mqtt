@@ -572,7 +572,6 @@ class KeypadLinc(Base):
         # Non-group 1 messages are for the scene buttons on keypadlinc.
         # Treat those the same as the remote control does.  They don't have
         # levels to find/set but have similar messages to the dimmer load.
-        cmd = msg.cmd1
 
         # ACK of the broadcast - ignore this.  Unless we sent a simulated off
         # scene in which case run the broadcast done handler.  This is a
@@ -609,14 +608,23 @@ class KeypadLinc(Base):
 
             self.signal_manual.emit(self, msg.group, manual)
 
-            # Ping the device to get the button states - we don't know what
-            # the keypadlinc things the state is - could be on or off.  Doing
-            # a dim down for a long time puts all the other devices "off" but
-            # the keypadlinc can still think that it's on.  So we have to do
-            # a refresh to find out.  The non-group 1 buttons don't change
-            # state when held so we don't need to refresh for those.
-            if msg.group == 1 and manual == on_off.Manual.STOP:
-                self.refresh()
+            # Non-group 1 buttons don't change state in manual mode. (found
+            # through experiments)
+            if msg.group == 1:
+                # Switches change state when the switch is held.
+                if not is_dimmer:
+                    if manual == on_off.Manual.UP:
+                        self._set_level(0xff, on_off.Mode.MANUAL)
+                    elif manual == on_off.Manual.DOWN:
+                        self._set_is_on(0x00, on_off.Mode.MANUAL)
+
+                # Ping the device to get the dimmer states - we don't know
+                # what the keypadlinc things the state is - could be on or
+                # off.  Doing a dim down for a long time puts all the other
+                # devices "off" but the keypadlinc can still think that it's
+                # on.  So we have to do a refresh to find out.
+                elif manual == on_off.Manual.STOP:
+                    self.refresh()
 
         # Call the base class handler.  This will find all the devices we're
         # the controller of for this group and call their handle_group_cmd()
