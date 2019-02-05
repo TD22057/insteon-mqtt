@@ -32,6 +32,9 @@ class Dimmer(Switch):
             payload='{ "state" : "{{on_str.upper()}}", '
                     '"brightness" : {{level_255}} }')
 
+        # Output manual state change is off by default.
+        self.msg_manual_state = MsgTemplate(None, None)
+
         # Input level command template.
         self.msg_level = MsgTemplate(
             topic='insteon/{{address}}/level',
@@ -44,6 +47,7 @@ class Dimmer(Switch):
             payload='{ "cmd" : "{{value.lower()}}" }')
 
         device.signal_level_changed.connect(self.handle_level_changed)
+        device.signal_manual.connect(self.handle_manual)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -124,6 +128,16 @@ class Dimmer(Switch):
         return data
 
     #-----------------------------------------------------------------------
+    def manual_template_data(self, manual):
+        """TODO: doc
+        """
+        data = self.template_data()
+        data["manual_str"] = str(manual)
+        data["manual"] = manual.int_value()
+        data["manual_openhab"] = manual.openhab_value()
+        return data
+
+    #-----------------------------------------------------------------------
     def handle_level_changed(self, device, level, mode=on_off.Mode.NORMAL):
         """Device active on/off callback.
 
@@ -139,6 +153,23 @@ class Dimmer(Switch):
 
         data = self.template_data(level, mode)
         self.msg_state.publish(self.mqtt, data)
+
+    #-----------------------------------------------------------------------
+    def handle_manual(self, device, manual):
+        """Device manual mode callback.
+
+        This is triggered via signal when the Insteon device goes
+        active or inactive.  It will publish an MQTT message with the
+        new state.
+
+        Args:
+          device:   (device.Base) The Insteon device that changed.
+          manual:   (on_off.Manual) The manual mode.
+        """
+        LOG.info("MQTT received manual change %s = %s", device.label, manual)
+
+        data = self.manual_template_data(manual)
+        self.msg_manual_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
     def handle_set_level(self, client, data, message):

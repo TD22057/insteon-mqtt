@@ -66,6 +66,9 @@ class Switch:
             topic='insteon/{{address}}/state',
             payload='{{on_str.lower()}}')
 
+        # Output manual state change is off by default.
+        self.msg_manual_state = MsgTemplate(None, None)
+
         # Input on/off command template.
         self.msg_on_off = MsgTemplate(
             topic='insteon/{{address}}/set',
@@ -79,6 +82,7 @@ class Switch:
         # Receive notifications from the Insteon device when it changes.
         if handle_active:
             device.signal_active.connect(self.handle_active)
+            device.signal_manual.connect(self.handle_manual)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -100,6 +104,8 @@ class Switch:
 
         # Update the MQTT topics and payloads from the config file.
         self.msg_state.load_config(config, 'state_topic', 'state_payload', qos)
+        self.msg_manual_state.load_config(config, 'manual_state_topic',
+                                          'manual_state_payload', qos)
         self.msg_on_off.load_config(config, 'on_off_topic', 'on_off_payload',
                                     qos)
         self.msg_scene_on_off.load_config(config, 'scene_on_off_topic',
@@ -153,6 +159,16 @@ class Switch:
         return data
 
     #-----------------------------------------------------------------------
+    def manual_template_data(self, manual):
+        """TODO: doc
+        """
+        data = self.template_data()
+        data["manual_str"] = str(manual)
+        data["manual"] = manual.int_value()
+        data["manual_openhab"] = manual.openhab_value()
+        return data
+
+    #-----------------------------------------------------------------------
     def handle_active(self, device, is_on, mode=on_off.Mode.NORMAL):
         """Device active on/off callback.
 
@@ -170,6 +186,23 @@ class Switch:
         data = self.template_data(is_on, mode)
 
         self.msg_state.publish(self.mqtt, data)
+
+    #-----------------------------------------------------------------------
+    def handle_manual(self, device, manual):
+        """Device manual mode callback.
+
+        This is triggered via signal when the Insteon device goes
+        active or inactive.  It will publish an MQTT message with the
+        new state.
+
+        Args:
+          device:   (device.Base) The Insteon device that changed.
+          manual:   (on_off.Manual) The manual mode.
+        """
+        LOG.info("MQTT received manual change %s = %s", device.label, manual)
+
+        data = self.manual_template_data(manual)
+        self.msg_manual_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
     def handle_on_off(self, client, data, message):

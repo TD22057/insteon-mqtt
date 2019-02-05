@@ -260,7 +260,7 @@ class FanLinc(Dimmer):
                         None)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, group, cmd):
+    def handle_group_cmd(self, addr, msg):
         """Respond to a group command for this device.
 
         This is called when this device is a responder to a scene.
@@ -270,32 +270,33 @@ class FanLinc(Dimmer):
         Args:
           addr:  (Address) The device that sent the message.  This is the
                  controller in the scene.
-          group: (int) The group being triggered.
-          cmd:   (int) The command byte being sent.
+          msg:   (InptStandard) Broadcast message from the device.  Use
+                 msg.group to find the group and msg.cmd1 for the command.
         """
         # Group 1 is for the dimmer - pass that to the base class:
-        if group == 1:
-            super().handle_group_cmd(addr, group, cmd)
+        if msg.group == 1:
+            super().handle_group_cmd(addr, msg)
             return
 
         # Make sure we're really a responder to this message.  This
         # shouldn't ever occur.
-        entry = self.db.find(addr, group, is_controller=False)
+        entry = self.db.find(addr, msg.group, is_controller=False)
         if not entry:
             LOG.error("FanLinc %s has no group %s entry from %s", self.addr,
-                      group, addr)
+                      msg.group, addr)
             return
 
         # 0x11: on
-        if cmd == 0x11:
+        if msg.cmd1 == 0x11:
             self._set_fan_speed(entry.data[0])
 
         # 0x13: off
-        elif cmd == 0x13:
+        elif msg.cmd1 == 0x13:
             self._set_fan_speed(0x00)
 
         else:
-            LOG.warning("FanLink %s unknown group cmd %#04x", self.addr, cmd)
+            LOG.warning("FanLink %s unknown group cmd %#04x", self.addr,
+                        msg.cmd1)
 
     #-----------------------------------------------------------------------
     def _set_fan_speed(self, speed_level):

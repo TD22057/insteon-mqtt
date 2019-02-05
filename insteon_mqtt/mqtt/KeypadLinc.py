@@ -26,6 +26,9 @@ class KeypadLinc:
             topic='insteon/{{address}}/state/{{button}}',
             payload='{{on_str.lower()}}')
 
+        # Output manual state change is off by default.
+        self.msg_manual_state = MsgTemplate(None, None)
+
         # Input on/off command template.
         self.msg_btn_on_off = MsgTemplate(
             topic='insteon/{{address}}/set/{{button}}',
@@ -52,6 +55,7 @@ class KeypadLinc:
                         '"level" : {{json.brightness}} }')
 
         device.signal_active.connect(self.handle_active)
+        device.signal_manual.connect(self.handle_manual)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -68,6 +72,8 @@ class KeypadLinc:
 
         self.msg_btn_state.load_config(data, 'btn_state_topic',
                                        'btn_state_payload', qos)
+        self.msg_manual_state.load_config(data, 'manual_state_topic',
+                                          'manual_state_payload', qos)
         self.msg_btn_on_off.load_config(data, 'btn_on_off_topic',
                                         'btn_on_off_payload', qos)
         self.msg_btn_scene.load_config(data, 'btn_scene_topic',
@@ -148,7 +154,7 @@ class KeypadLinc:
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
-    def template_data(self, level=None, button=None,
+    def template_data(self, button=None, level=None,
                       mode=on_off.Mode.NORMAL):
         """TODO: doc
         """
@@ -169,6 +175,57 @@ class KeypadLinc:
             data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
 
         return data
+
+    #-----------------------------------------------------------------------
+    def manual_template_data(self, button, manual):
+        """TODO: doc
+        """
+        data = self.template_data(button)
+        data["manual_str"] = str(manual)
+        data["manual"] = manual.int_value()
+        data["manual_openhab"] = manual.openhab_value()
+        return data
+
+    #-----------------------------------------------------------------------
+    def handle_active(self, device, group, level, mode=on_off.Mode.NORMAL):
+        """Device active button pressed callback.
+
+        This is triggered via signal when the Insteon device button is
+        pressed.  It will publish an MQTT message with the button
+        number.
+
+        Args:
+          device:   (device.Base) The Insteon device that changed.
+          group:    (int) The button number 1...n that was pressed.
+          level:    (int) The current device level 0...0xff.
+        """
+        LOG.info("MQTT received button press %s = btn %s at %s %s",
+                 device.label, group, level, mode)
+
+        data = self.template_data(group, level, mode)
+
+        if group == 1 and self.device.is_dimmer:
+            self.msg_dimmer_state.publish(self.mqtt, data)
+        else:
+            self.msg_btn_state.publish(self.mqtt, data)
+
+    #-----------------------------------------------------------------------
+    def handle_manual(self, device, group, manual):
+        """Device manual mode callback.
+
+        This is triggered via signal when the Insteon device goes
+        active or inactive.  It will publish an MQTT message with the
+        new state.
+
+        Args:
+          device:   (device.Base) The Insteon device that changed.
+          manual:   (on_off.Manual) The manual mode.
+        """
+        LOG.info("MQTT received manual button press %s = btn %s %s",
+                 device.label, group, manual)
+
+        data = self.manual_template_data(group, manual)
+        self.msg_manual_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
     def handle_set(self, client, data, message, group):
@@ -254,28 +311,5 @@ class KeypadLinc:
             self.device.scene(is_on, group)
         except:
             LOG.exception("Invalid KeypadLinc command: %s", data)
-
-    #-----------------------------------------------------------------------
-    def handle_active(self, device, group, level, mode=on_off.Mode.NORMAL):
-        """Device active button pressed callback.
-
-        This is triggered via signal when the Insteon device button is
-        pressed.  It will publish an MQTT message with the button
-        number.
-
-        Args:
-          device:   (device.Base) The Insteon device that changed.
-          group:    (int) The button number 1...n that was pressed.
-          level:    (int) The current device level 0...0xff.
-        """
-        LOG.info("MQTT received button press %s = btn %s at %s %s",
-                 device.label, group, level, mode)
-
-        data = self.template_data(level, group, mode)
-
-        if group == 1 and self.device.is_dimmer:
-            self.msg_dimmer_state.publish(self.mqtt, data)
-        else:
-            self.msg_btn_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

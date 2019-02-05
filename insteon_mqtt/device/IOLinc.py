@@ -548,7 +548,7 @@ class IOLinc(Base):
                     None)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, group, cmd):
+    def handle_group_cmd(self, addr, msg):
         """Respond to a group command for this device.
 
         This is called when this device is a responder to a scene.
@@ -558,21 +558,21 @@ class IOLinc(Base):
         Args:
           addr:  (Address) The device that sent the message.  This is the
                  controller in the scene.
-          group: (int) The group being triggered.
-          cmd:   (int) The command byte being sent.
+          msg:   (InptStandard) Broadcast message from the device.  Use
+                 msg.group to find the group and msg.cmd1 for the command.
         """
         # Make sure we're really a responder to this message.  This
         # shouldn't ever occur.
-        entry = self.db.find(addr, group, is_controller=False)
+        entry = self.db.find(addr, msg.group, is_controller=False)
         if not entry:
             LOG.error("IOLinc %s has no group %s entry from %s", self.addr,
-                      group, addr)
+                      msg.group, addr)
             return
 
         # Nothing to do - there is no "state" to update since the state we
         # care about is the sensor state and this command tells us that the
         # relay state was tripped.
-        LOG.debug("IOLinc %s cmd %#04x", self.addr, cmd)
+        LOG.debug("IOLinc %s cmd %#04x", self.addr, msg.cmd1)
 
     #-----------------------------------------------------------------------
     def _set_is_on(self, is_on):

@@ -75,6 +75,10 @@ class Dimmer(Base):
         # API:  func(Device, int level, on_off.Mode mode)
         self.signal_level_changed = Signal()
 
+        # Manual mode start up, down, off
+        # API: func(Device, on_off.Manual mode)
+        self.signal_manual = Signal()
+
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
         self.cmd_map.update({
@@ -402,10 +406,8 @@ class Dimmer(Base):
         Args:
           msg:   (InptStandard) Broadcast message from the device.
         """
-        cmd = msg.cmd1
-
         # ACK of the broadcast - ignore this.
-        if cmd == 0x06:
+        if msg.cmd1 == 0x06:
             LOG.info("Dimmer %s broadcast ACK grp: %s", self.addr, msg.group)
             if self.broadcast_done:
                 self.broadcast_done()
@@ -428,17 +430,16 @@ class Dimmer(Base):
             elif not self.broadcast_done:
                 self._set_level(0x00, mode)
 
-        # Starting manual increment (cmd2 0x00=up, 0x01=down)
-        elif cmd == 0x17:
-            LOG.info("Dimmer %s starting manual change %s", self.addr,
-                     "UP" if msg.cmd2 == 0x00 else "DN")
+        # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
+        elif on_off.Manual.is_valid(msg.cmd1):
+            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
+            LOG.info("Dimmer %s manual change %s", self.addr, manual)
 
-        # Stopping manual increment (cmd2 = unused)
-        elif cmd == 0x18:
-            LOG.info("Dimmer %s stopping manual change", self.addr)
+            self.signal_manual.emit(self, manual)
 
             # Ping the light to get the new level
-            self.refresh()
+            if manual == on_off.Manual.STOP:
+                self.refresh()
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
@@ -541,7 +542,7 @@ class Dimmer(Base):
                     None)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, group, cmd):
+    def handle_group_cmd(self, addr, msg):
         """Respond to a group command for this device.
 
         This is called when this device is a responder to a scene.  The
@@ -551,42 +552,43 @@ class Dimmer(Base):
         Args:
           addr:  (Address) The device that sent the message.  This is the
                  controller in the scene.
-          group: (int) The group being triggered.
-          cmd:   (int) The command byte being sent.
+          msg:   (InptStandard) Broadcast message from the device.  Use
+                 msg.group to find the group and msg.cmd1 for the command.
         """
         # Make sure we're really a responder to this message.  This
         # shouldn't ever occur.
-        entry = self.db.find(addr, group, is_controller=False)
+        entry = self.db.find(addr, msg.group, is_controller=False)
         if not entry:
             LOG.error("Dimmer %s has no group %s entry from %s", self.addr,
-                      group, addr)
+                      msg.group, addr)
             return
 
         # Handle on/off codes
-        if on_off.Mode.is_valid(cmd):
-            is_on, mode = on_off.Mode.decode(cmd)
+        if on_off.Mode.is_valid(msg.cmd1):
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
             level = entry.data[0] if is_on else 0x00
             self._set_level(level, mode)
 
         # Increment up (32 steps)
-        elif cmd == 0x15:
+        elif msg.cmd1 == 0x15:
             self._set_level(min(0xff, self._level + 8))
 
         # Increment down
-        elif cmd == 0x16:
+        elif msg.cmd1 == 0x16:
             self._set_level(max(0x00, self._level - 8))
 
-        # Starting manual increment (cmd2 0x00=up, 0x01=down)
-        elif cmd == 0x17:
-            pass
+        # Starting/stopping manual increment (cmd2 0x00=up, 0x01=down)
+        elif on_off.Manual.is_valid(msg.cmd1):
+            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
+            self.signal_manual.emit(self, manual)
 
-        # Stopping manual increment (cmd2 = unused)
-        elif cmd == 0x18:
             # Ping the light to get the new level
-            self.refresh()
+            if manual == on_off.Manual.STOP:
+                self.refresh()
 
         else:
-            LOG.warning("Dimmer %s unknown group cmd %#04x", self.addr, cmd)
+            LOG.warning("Dimmer %s unknown group cmd %#04x", self.addr,
+                        msg.cmd1)
 
     #-----------------------------------------------------------------------
     def _set_level(self, level, mode=on_off.Mode.NORMAL):
