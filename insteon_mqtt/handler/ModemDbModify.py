@@ -28,15 +28,14 @@ class ModemDbModify(Base):
         """Constructor
 
         Args:
-          modem_db:        (db.Modem) The modem database being changed.
-          entry:           (db.ModemEntry) The new record or record being
-                           erased.  This is the entry that the db will have
-                           if the command works.
-          existing_entry:  (db.ModemEntry) The existing database entry
-                           being modified or None for a new or deleted record.
-          on_done:         Finished callback.  This is called once for each
-                           call added to the handler.  Signature is:
-                              on_done(success, msg, entry)
+          modem_db (db.Modem):  The modem database being changed.
+          entry (db.ModemEntry):  The new record or record being erased.
+                This is the entry that the db will have if the command works.
+          existing_entry (db.ModemEntry):  The existing database entry being
+                         modified or None for a new or deleted record.
+          on_done:  Finished callback.  This is called once for each call
+                    added to the handler.  Signature is:
+                    on_done(success, msg, entry)
         """
         super().__init__(on_done)
 
@@ -57,10 +56,9 @@ class ModemDbModify(Base):
         transaction completes successfully.
 
         Args:
-          msg:    The next message to send.
-          entry:  (db.ModemEntry) The new record or record being
-                  erased.  This is the entry that the db will have
-                  if the command works.
+          msg:  The next message to send.
+          entry  (db.ModemEntry):  The new record or record being erased.
+                 This is the entry that the db will have if the command works.
         """
         self.next.append((msg, entry))
 
@@ -72,8 +70,8 @@ class ModemDbModify(Base):
         next message is written out.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
-          msg:       Insteon message object that was read.
+          protocol (Protocol):  The Insteon Protocol object
+          msg:  Insteon message object that was read.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.

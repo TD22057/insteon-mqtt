@@ -14,10 +14,9 @@ LOG = log.get_logger()
 class ThermostatCmd(Base):
     """Thermostat direct message handler.
 
-    The thermostats send direct messages concerning changes in their
-    temp, humid, mode, and status.  This catches those messages,
-    confirms they are sent from a thermostat and processes them
-    accordingly.
+    The thermostats send direct messages concerning changes in their temp,
+    humid, mode, and status.  This catches those messages, confirms they are
+    sent from a thermostat and processes them accordingly.
 
     This hander is added to the protocol handlers whenever a thermostat is
     loaded.
@@ -38,7 +37,7 @@ class ThermostatCmd(Base):
         """Constructor
 
         Args
-          device:   (Device) The Insteon thermostat object.
+          device (Device):  The Insteon thermostat object.
         """
         super().__init__()
         self.device = device
@@ -47,11 +46,9 @@ class ThermostatCmd(Base):
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
-        Try and process the message.
-
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
-          msg:       Insteon message object that was read.
+          protocol (Protocol):  The Insteon Protocol object
+          msg:  Insteon message object that was read.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.

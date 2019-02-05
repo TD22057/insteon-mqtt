@@ -22,7 +22,7 @@ class ModemReset(Base):
         """Constructor
 
         Args
-          modem:    (Modem) The Insteon modem object.
+          modem (Modem):  The Insteon modem object.
         """
         super().__init__()
 
@@ -35,8 +35,8 @@ class ModemReset(Base):
         If we get an ACK of the user reset, we'll clear the modem database.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
-          msg:       Insteon message object that was read.
+          protocol  (Protocol):  The Insteon Protocol object
+          msg:  Insteon message object that was read.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.

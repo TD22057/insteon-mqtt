@@ -36,13 +36,13 @@ class Base:
         """Constructor
 
         Args:
-          on_done:   The finished callback.  Base.on_done will always be
-                     callable even if the input is None.
-          num_retry: (int) The number of times to retry the message if the
-                     handler times out without returning Msg.FINISHED.
-                     This count does include the initial sending so a
-                     retry of 3 will send once and then retry 2 more times.
-          time_out:  (int) Time out in seconds.
+          on_done:  The finished callback.  Base.on_done will always be
+                    callable even if the input is None.
+          num_retry (int):  The number of times to retry the message if the
+                    handler times out without returning Msg.FINISHED.
+                    This count does include the initial sending so a
+                    retry of 3 will send once and then retry 2 more times.
+          time_out (int):  Time out in seconds.
         """
         self.on_done = util.make_callback(on_done)
 
@@ -63,7 +63,7 @@ class Base:
         Protocol calls this to notify us the message is being sent.
 
         Args:
-           msg:   (message.Base) The message being sent.
+           msg (message.Base):  The message being sent.
         """
         # Save the message for a later retry if requested.
         self._num_sent += 1
@@ -94,12 +94,12 @@ class Base:
         can also be used for any polling type behavior.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object.  Used to allow
-                     handler to send more messages if it needs to.
-          t:         (float) Current time tag as a Unix clock time.
+          protocol (Protocol):  The Insteon Protocol object.  Used to allow
+                   handler to send more messages if it needs to.
+          t (float):  Current time tag as a Unix clock time.
 
         Returns:
-          Returns True if the message has timed out or False otherwise.
+          bool:  Returns True if the message has timed out or False otherwise.
         """
         # Not enough time has elapsed to time out.
         if t < self._expire_time:
@@ -139,8 +139,8 @@ class Base:
         finished, or pass the message on to other handlers.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object.
-          msg:       Insteon message object that was read.
+          protocol (Protocol):  The Insteon Protocol object
+          msg:  Insteon message object that was read.
 
         Returns:
           message.UNKNOWN if we can't handle this message.
@@ -158,7 +158,7 @@ class Base:
         there are no more retries available.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object.
+          protocol (Protocol):  The Insteon Protocol object.
         """
         self.on_done(False, "Command timed out", None)
 

@@ -23,14 +23,14 @@ class BroadcastCmdResponse(Base):
         """Constructor
 
         Args
-          msg:       (OutStandard) The output message that was sent.
-          callback:  Callback function to pass the broadcast messages with
-                     that match the desired parameters to.  Signature:
-                     callback(message, on_done).
-          num_retry: (int) The number of times to retry the message if the
-                     handler times out without returning Msg.FINISHED.
-                     This count does include the initial sending so a
-                     retry of 3 will send once and then retry 2 more times.
+          msg (OutStandard):  The output message that was sent.
+          callback: Callback function to pass the broadcast messages with
+                    that match the desired parameters to.  Signature:
+                    callback(message, on_done).
+          num_retry (int):  The number of times to retry the message if the
+                    handler times out without returning Msg.FINISHED.
+                    This count does include the initial sending so a
+                    retry of 3 will send once and then retry 2 more times.
         """
         super().__init__(on_done, num_retry)
 
@@ -46,8 +46,8 @@ class BroadcastCmdResponse(Base):
         reply message.  If we get a reply, pass it to the callback.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
-          msg:       Insteon message object that was read.
+          protocol (Protocol):  The Insteon Protocol object
+          msg:  Insteon message object that was read.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.
