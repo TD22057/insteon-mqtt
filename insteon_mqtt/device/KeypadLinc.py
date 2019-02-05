@@ -616,7 +616,7 @@ class KeypadLinc(Base):
                     if manual == on_off.Manual.UP:
                         self._set_level(0xff, on_off.Mode.MANUAL)
                     elif manual == on_off.Manual.DOWN:
-                        self._set_is_on(0x00, on_off.Mode.MANUAL)
+                        self._set_level(0x00, on_off.Mode.MANUAL)
 
                 # Ping the device to get the dimmer states - we don't know
                 # what the keypadlinc things the state is - could be on or
