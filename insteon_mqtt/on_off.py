@@ -93,7 +93,11 @@ _offCode[Mode.INSTANT] = _onCode[Mode.INSTANT]
 
 #===========================================================================
 class Manual(enum.Enum):
-    """TODO
+    """On/Off manual mode enumeration.
+
+    There are the various manual mode commands that Insteon devices send when
+    a button is held down.  UP or DOWN is sent when pressed, OFF is sent when
+    the button is released.
     """
     UP = "up"
     DOWN = "down"
@@ -154,6 +158,9 @@ class Manual(enum.Enum):
         raise Exception("Invalid manual command %s, %s." % (cmd1, cmd2))
 
     def int_value(self):
+        """Return an integer value of the command code.
+        UP = +1, STOP = 0, DOWN = -1
+        """
         if self is Manual.UP:
             return +1
         elif self is Manual.DOWN:
@@ -162,7 +169,8 @@ class Manual(enum.Enum):
             return 0
 
     def openhab_value(self):
-        """TODO
+        """Return an integer value of the command code for OpenHab.
+        OpenHab uses UP = 2, STOP = 1, DOWN = 0.
         """
         if self is Manual.UP:
             return 2
