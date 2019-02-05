@@ -8,10 +8,10 @@ from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg
+from .. import on_off
 from ..Signal import Signal
 from .. import util
 from .Base import Base
-from .Dimmer import Dimmer
 
 LOG = log.get_logger()
 
@@ -46,7 +46,8 @@ class KeypadLinc(Base):
         self.type_name = "keypad_linc" if dimmer else "keypad_linc_sw"
 
         # Group on/off signal.
-        self.signal_active = Signal()  # (Device, int group, int level)
+        # API: func(Device, int group, int level, on_off.Mode mode)
+        self.signal_active = Signal()
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
@@ -158,7 +159,7 @@ class KeypadLinc(Base):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def on(self, group=1, level=0xff, instant=False, on_done=None):
+    def on(self, group=1, level=0xff, mode=on_off.Mode.NORMAL, on_done=None):
         """Turn the device on.
 
         This will send the command to the device to update it's state.  When
@@ -176,6 +177,7 @@ class KeypadLinc(Base):
         LOG.info("KeypadLinc %s cmd: on %s", self.addr, level)
         assert 1 <= group <= 8
         assert level >= 0 and level <= 0xff
+        assert isinstance(mode, on_off.Mode)
 
         # Non-load buttons are turned on/off via the LED command.
         if group != 1:
@@ -187,8 +189,8 @@ class KeypadLinc(Base):
             if not self.is_dimmer:
                 level = 0xff
 
-            # Send an on or instant on command.
-            cmd1 = 0x11 if not instant else 0x21
+            # Send the correct on code.
+            cmd1 = on_off.Mode.encode(True, mode)
             msg = Msg.OutStandard.direct(self.addr, cmd1, level)
 
             # Use the standard command handler which will notify us when the
@@ -199,7 +201,7 @@ class KeypadLinc(Base):
             self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def off(self, group=1, instant=False, on_done=None):
+    def off(self, group=1, mode=on_off.Mode.NORMAL, on_done=None):
         """Turn the device off.
 
         This will send the command to the device to update it's state.  When
@@ -214,6 +216,7 @@ class KeypadLinc(Base):
         """
         LOG.info("KeypadLinc %s cmd: off", self.addr)
         assert 1 <= group <= 8
+        assert isinstance(mode, on_off.Mode)
 
         # Non-load buttons are turned on/off via the LED command.
         if group != 1:
@@ -222,7 +225,7 @@ class KeypadLinc(Base):
         # Group 1 uses a direct command to set the level.
         else:
             # Send an off or instant off command.
-            cmd1 = 0x13 if not instant else 0x21
+            cmd1 = on_off.Mode.encode(True, mode)
             msg = Msg.OutStandard.direct(self.addr, cmd1, 0x00)
 
             # Use the standard command handler which will notify us when the
@@ -233,7 +236,7 @@ class KeypadLinc(Base):
             self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set(self, level, group=1, instant=False, on_done=None):
+    def set(self, level, group=1, mode=on_off.Mode.NORMAL, on_done=None):
         """Set the device on or off.
 
         This will send the command to the device to update it's state.  When
@@ -250,9 +253,9 @@ class KeypadLinc(Base):
                     instant change.
         """
         if level:
-            self.on(group, level, instant, on_done)
+            self.on(group, level, mode, on_done)
         else:
-            self.off(group, instant, on_done)
+            self.off(group, mode, on_done)
 
     #-----------------------------------------------------------------------
     def increment_up(self, on_done=None):
@@ -578,25 +581,22 @@ class KeypadLinc(Base):
             self.broadcast_done = None
             return
 
-        # On command.  0x11: on, 0x12: on fast.  How do we tell the level for
-        # a dimmer?  It's not in the message anywhere.
-        elif cmd in Dimmer.on_codes:
-            LOG.info("KeypadLinc %s broadcast ON grp: %s", self.addr,
-                     msg.group)
-            # Notify others that the button was pressed.
-            self._set_level(msg.group, 0xff)
+        # On/off commands.  How do we tell the level?  It's not in the
+        # message anywhere.
+        elif on_off.Mode.is_valid(msg.cmd1):
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
+            LOG.info("KeypadLinc %s broadcast grp: %s on: %s mode: %s",
+                     self.addr, msg.group, is_on, mode)
 
-        # Off command. 0x13: off, 0x14: off fast
-        elif cmd in Dimmer.off_codes:
-            LOG.info("KeypadLinc %s broadcast OFF grp: %s", self.addr,
-                     msg.group)
+            if is_on:
+                self._set_level(msg.group, 0xff, mode)
 
             # If broadcast_done is active, this is a generated broadcast and
             # we need to manually turn the device off so don't update it's
             # state until that occurs.
-            if not self.broadcast_done:
+            elif not self.broadcast_done:
                 # Notify others that the button was pressed.
-                self._set_level(msg.group, 0)
+                self._set_level(msg.group, 0x00, mode)
 
         # Starting manual increment (cmd2 0x00=up, 0x01=down)
         elif cmd == 0x17:
@@ -638,7 +638,8 @@ class KeypadLinc(Base):
         # emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
-            self._set_level(1, msg.cmd2)
+            _is_on, mode = on_off.Mode.decode(msg.cmd1)
+            self._set_level(1, msg.cmd2, mode)
             on_done(True, "KeypadLinc state updated to %s" % self._level,
                     msg.cmd2)
 
@@ -710,18 +711,14 @@ class KeypadLinc(Base):
                       group, addr)
             return
 
-        # 0x11: on, 0x12: on fast.  Dimmer codes is a superset of Switch
-        # codes so we can just use that for all on codes.
-        if cmd in Dimmer.on_codes:
-            level = 0xff
-            if group == 1 and self.is_dimmer:
+        # Handle on/off codes
+        if on_off.Mode.is_valid(cmd):
+            is_on, mode = on_off.Mode.decode(cmd)
+            level = 0xff if is_on else 0x00
+            if self.is_dimmer and is_on and group == 1:
                 level = entry.data[0]
 
-            self._set_level(group, level)
-
-        # 0x13: off, 0x14: off fast
-        elif cmd in Dimmer.off_codes:
-            self._set_level(group, 0x00)
+            self._set_level(group, level, mode)
 
         # Increment up (32 steps)
         elif cmd == 0x15:
@@ -746,7 +743,7 @@ class KeypadLinc(Base):
             LOG.warning("KeypadLinc %s unknown cmd %#04x", self.addr, cmd)
 
     #-----------------------------------------------------------------------
-    def _set_level(self, group, level):
+    def _set_level(self, group, level, mode=on_off.Mode.NORMAL):
         """Set the device group 1 level state.
 
         This will change the internal state and emit the state changed
@@ -756,13 +753,14 @@ class KeypadLinc(Base):
           group:   (int) group to modify
           level:   (int) 0x00 for off, 0xff for 100%.
         """
-        LOG.info("Setting device %s grp=%s on=%s", self.label, group, level)
+        LOG.info("Setting device %s grp=%s on=%s %s", self.label, group,
+                 level, mode)
         if group == 0x01:
             self._level = level
 
         self._led_bits = util.bit_set(self._led_bits, group - 1,
                                       1 if level else 0)
 
-        self.signal_active.emit(self, group, level)
+        self.signal_active.emit(self, group, level, mode)
 
     #-----------------------------------------------------------------------

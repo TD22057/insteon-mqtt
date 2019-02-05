@@ -180,8 +180,6 @@ class FanLinc(Dimmer):
           level:    (int/bool) If non zero, turn the device on.  Should be
                     in the range 0x00 to 0xff.  If True, the level will be
                     0xff.
-          instant:  (bool) False for a normal ramping change, True for an
-                    instant change.
         """
         assert isinstance(speed, FanLinc.Speed)
 

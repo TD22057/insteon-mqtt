@@ -44,7 +44,8 @@ class Base:
             if isinstance(config, dict):
                 assert len(config) == 1
                 addr, name = next(iter(config.items()))
-                name = name.lower()
+                if name:
+                    name = name.lower()
 
             # Otherwise it's just the address
             else:

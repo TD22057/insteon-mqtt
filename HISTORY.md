@@ -10,6 +10,12 @@
   MQTT light change for dimmers ([Issue #88][I88]).
 
 ### Additions
+- Support for fast on and off commands and reporting has been added.  The
+  on/off mode (normal, fast, instant) is now a command input as well as an
+  output flag in the state templates.  This allows double-clicking of
+  switches to be used in automation triggers (thanks @NickWaterton).
+  ([Issue #66][I66]).
+
 - New command 'get_model' added to the command line tool to retrieve and save
   the Insteon device cat, sub_cat, and firmware revision (thanks @krkeegan).
   ([Issue #55][I55]).
@@ -204,6 +210,7 @@
 [I55]: https://github.com/TD22057/insteon-mqtt/issues/55
 [I59]: https://github.com/TD22057/insteon-mqtt/issues/59
 [I63]: https://github.com/TD22057/insteon-mqtt/issues/63
+[I66]: https://github.com/TD22057/insteon-mqtt/issues/66
 [I69]: https://github.com/TD22057/insteon-mqtt/issues/69
 [I70]: https://github.com/TD22057/insteon-mqtt/issues/70
 [I76]: https://github.com/TD22057/insteon-mqtt/issues/76

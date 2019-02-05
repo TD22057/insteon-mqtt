@@ -4,6 +4,7 @@
 #
 #===========================================================================
 from .. import log
+from .. import on_off
 from .MsgTemplate import MsgTemplate
 
 LOG = log.get_logger()
@@ -20,8 +21,7 @@ class Remote:
 
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state/{{button}}',
-            payload='{{on_str.lower()}}',
-            )
+            payload='{{on_str.lower()}}')
 
         device.signal_pressed.connect(self.handle_pressed)
 
@@ -60,7 +60,25 @@ class Remote:
         pass
 
     #-----------------------------------------------------------------------
-    def handle_pressed(self, device, button, is_active):
+    def template_data(self, button, is_on, mode=on_off.Mode.NORMAL):
+        """TODO: doc
+        """
+        # Set up the variables that can be used in the templates.
+        data = {
+            "address" : self.device.addr.hex,
+            "name" : self.device.name if self.device.name
+                     else self.device.addr.hex,
+            "button" : button,
+            "on" : 1 if is_on else 0,
+            "on_str" : "on" if is_on else "off",
+            "mode" : str(mode),
+            "fast" : 1 if mode == on_off.Mode.FAST else 0,
+            "instant" : 1 if mode == on_off.Mode.INSTANT else 0,
+            }
+        return data
+
+    #-----------------------------------------------------------------------
+    def handle_pressed(self, device, button, is_on, mode=on_off.Mode.NORMAL):
         """Device active button pressed callback.
 
         This is triggered via signal when the Insteon device button is
@@ -71,17 +89,10 @@ class Remote:
           device:   (device.Base) The Insteon device that changed.
           button:   (int) The button number 1...n that was pressed.
         """
-        LOG.info("MQTT received button press %s = btn %s", device.label,
-                 button)
+        LOG.info("MQTT received button press %s = btn %s on %s %s",
+                 device.label, button, is_on, mode)
 
-        data = {
-            "address" : device.addr.hex,
-            "name" : device.name if device.name else device.addr.hex,
-            "button" : button,
-            "on" : 1 if is_active else 0,
-            "on_str" : "on" if is_active else "off",
-            }
-
+        data = self.template_data(button, is_on, mode)
         self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

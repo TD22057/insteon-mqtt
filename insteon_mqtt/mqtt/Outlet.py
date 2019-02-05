@@ -5,7 +5,9 @@
 #===========================================================================
 import functools
 from .. import log
+from .. import on_off
 from .MsgTemplate import MsgTemplate
+from .Switch import Switch
 
 LOG = log.get_logger()
 
@@ -22,20 +24,17 @@ class Outlet:
         # Output state change reporting template.
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state/{{button}}',
-            payload='{{on_str.lower()}}',
-            )
+            payload='{{on_str.lower()}}')
 
         # Input on/off command template.
         self.msg_on_off = MsgTemplate(
             topic='insteon/{{address}}/set/{{button}}',
-            payload='{ "cmd" : "{{value.lower()}}" }',
-            )
+            payload='{ "cmd" : "{{value.lower()}}" }')
 
         # Input scene on/off command template.
         self.msg_scene = MsgTemplate(
             topic='insteon/{{address}}/scene/{{button}}',
-            payload='{ "cmd" : "{{value.lower()}}" }',
-            )
+            payload='{ "cmd" : "{{value.lower()}}" }')
 
         device.signal_active.connect(self.handle_active)
 
@@ -94,7 +93,7 @@ class Outlet:
             link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
-    def template_data(self, is_active=None, button=None):
+    def template_data(self, is_on=None, button=None, mode=on_off.Mode.NORMAL):
         """TODO: doc
         """
         data = {
@@ -104,14 +103,17 @@ class Outlet:
             "button" : button,
             }
 
-        if is_active is not None:
-            data["on"] = 1 if is_active else 0
-            data["on_str"] = "on" if is_active else "off"
+        if is_on is not None:
+            data["on"] = 1 if is_on else 0
+            data["on_str"] = "on" if is_on else "off"
+            data["mode"] = str(mode)
+            data["fast"] = 1 if mode == on_off.Mode.FAST else 0
+            data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
 
         return data
 
     #-----------------------------------------------------------------------
-    def handle_active(self, device, group, is_active):
+    def handle_active(self, device, group, is_on, mode=on_off.Mode.NORMAL):
         """Device active on/off callback.
 
         This is triggered via signal when the Insteon device goes
@@ -122,10 +124,9 @@ class Outlet:
           device:   (device.Base) The Insteon device that changed.
           is_active (bool) True for on, False for off.
         """
-        LOG.info("MQTT received active change %s = %s", device.label,
-                 is_active)
+        LOG.info("MQTT received active change %s = %s", device.label, is_on)
 
-        data = self.template_data(is_active, group)
+        data = self.template_data(is_on, group, mode)
         self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
@@ -140,21 +141,11 @@ class Outlet:
         LOG.info("Switch input command: %s", data)
 
         try:
-            cmd = data.get('cmd')
-            if cmd == 'on':
-                is_on = True
-            elif cmd == 'off':
-                is_on = False
-            else:
-                raise Exception("Invalid switch cmd input '%s'" % cmd)
-
-            instant = bool(data.get('instant', False))
+            # Tell the device to update it's state.
+            is_on, mode = Switch.parse_json(data)
+            self.device.set(level=is_on, group=group, mode=mode)
         except:
             LOG.exception("Invalid switch command: %s", data)
-            return
-
-        # Tell the device to update it's state.
-        self.device.set(level=is_on, group=group, instant=instant)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, client, data, message, group):
@@ -168,18 +159,11 @@ class Outlet:
         LOG.info("Outlet input command: %s", data)
 
         try:
-            cmd = data.get('cmd')
-            if cmd == 'on':
-                is_on = True
-            elif cmd == 'off':
-                is_on = False
-            else:
-                raise Exception("Invalid outlet cmd input '%s'" % cmd)
+            # Tell the device to trigger the scene command.
+            is_on, _mode = Switch.parse_json(data)
+            self.device.scene(is_on, group)
         except:
             LOG.exception("Invalid switch command: %s", data)
             return
-
-        # Tell the device to trigger the scene command.
-        self.device.scene(is_on, group)
 
     #-----------------------------------------------------------------------

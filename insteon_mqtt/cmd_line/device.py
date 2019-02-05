@@ -111,9 +111,10 @@ def on(args, config):
     payload = {
         "cmd" : "on",
         "level" : args.level,
-        "instant" : args.instant,
         "group" : args.group,
         }
+    if args.mode:
+        payload["mode"] = args.mode
 
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]
@@ -124,9 +125,10 @@ def off(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
         "cmd" : "off",
-        "instant" : args.instant,
         "group" : args.group,
         }
+    if args.mode:
+        payload["mode"] = args.mode
 
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]
@@ -138,9 +140,10 @@ def set(args, config):
     payload = {
         "cmd" : "set",
         "level" : args.level,
-        "instant" : args.instant,
         "group" : args.group,
         }
+    if args.mode:
+        payload["mode"] = args.mode
 
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]

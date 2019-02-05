@@ -4,6 +4,7 @@
 #
 #===========================================================================
 from .. import log
+from .. import on_off
 from .MsgTemplate import MsgTemplate
 from .Switch import Switch
 
@@ -29,21 +30,18 @@ class Dimmer(Switch):
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state',
             payload='{ "state" : "{{on_str.upper()}}", '
-                    '"brightness" : {{level_255}} }',
-            )
+                    '"brightness" : {{level_255}} }')
 
         # Input level command template.
         self.msg_level = MsgTemplate(
             topic='insteon/{{address}}/level',
             payload='{ "cmd" : "{{json.state.lower()}}", '
-                    '"level" : {{json.brightness}} }',
-            )
+                    '"level" : {{json.brightness}} }')
 
         # Input scene on/off command template.
         self.msg_scene_on_off = MsgTemplate(
             topic='insteon/{{address}}/scene',
-            payload='{ "cmd" : "{{value.lower()}}" }',
-            )
+            payload='{ "cmd" : "{{value.lower()}}" }')
 
         device.signal_level_changed.connect(self.handle_level_changed)
 
@@ -105,7 +103,7 @@ class Dimmer(Switch):
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
-    def template_data(self, level=None):
+    def template_data(self, level=None, mode=on_off.Mode.NORMAL):
         """TODO: doc
         """
         data = {
@@ -119,11 +117,14 @@ class Dimmer(Switch):
             data["on_str"] = "on" if level else "off"
             data["level_255"] = level
             data["level_100"] = int(100.0 * level / 255.0)
+            data["mode"] = str(mode)
+            data["fast"] = 1 if mode == on_off.Mode.FAST else 0
+            data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
 
         return data
 
     #-----------------------------------------------------------------------
-    def handle_level_changed(self, device, level):
+    def handle_level_changed(self, device, level, mode=on_off.Mode.NORMAL):
         """Device active on/off callback.
 
         This is triggered via signal when the Insteon device goes
@@ -136,7 +137,7 @@ class Dimmer(Switch):
         """
         LOG.info("MQTT received level change %s = %s", device.label, level)
 
-        data = self.template_data(level)
+        data = self.template_data(level, mode)
         self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
@@ -151,20 +152,11 @@ class Dimmer(Switch):
 
         LOG.info("Dimmer input command: %s", data)
         try:
-            cmd = data.get('cmd')
-            if cmd == 'on':
-                level = int(data.get('level'))
-            elif cmd == 'off':
-                level = 0
-            else:
-                raise Exception("Invalid dimmer cmd input '%s'" % cmd)
-
-            instant = bool(data.get('instant', False))
+            is_on, mode = Switch.parse_json(data)
+            level = 0 if not is_on else int(data.get('level'))
+            self.device.set(level=level, mode=mode)
         except:
             LOG.exception("Invalid dimmer command: %s", data)
-            return
-
-        self.device.set(level=level, instant=instant)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, client, data, message):
@@ -177,20 +169,13 @@ class Dimmer(Switch):
         LOG.info("Dimmer input command: %s", data)
 
         try:
-            cmd = data.get('cmd')
-            if cmd == 'on':
-                is_on = True
-            elif cmd == 'off':
-                is_on = False
-            else:
-                raise Exception("Invalid dimmer cmd input '%s'" % cmd)
-
+            is_on, _mode = Switch.parse_json(data)
             group = int(data.get('group', 0x01))
+
+            # Tell the device to trigger the scene command.
+            self.device.scene(is_on, group)
+
         except:
             LOG.exception("Invalid dimmer command: %s", data)
-            return
-
-        # Tell the device to trigger the scene command.
-        self.device.scene(is_on, group)
 
     #-----------------------------------------------------------------------
