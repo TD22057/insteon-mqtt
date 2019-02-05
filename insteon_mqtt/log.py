@@ -19,6 +19,12 @@ def get_logger(name="insteon_mqtt"):
     """Get a logger object to use.
 
     This will return a logging object to use for messages.
+
+    Args:
+      name (str):  The name of the logging objectd.
+
+    Returns:
+      The requested logging object.
     """
     # Force the logging system to use our custom logger class, then restore
     # whatever was set when we're done.
@@ -35,10 +41,10 @@ def initialize(level=None, screen=None, file=None, config=None):
     """Initialize the logging settings.
 
     Args:
-      level:   (int) The logging level to set.
-      screen:  (bool) True to turn on logging to the screen.  False to turn it
+      level (int):  The logging level to set.
+      screen (bool):  True to turn on logging to the screen.  False to turn it
                off.  If None, the default of True is used.
-      file:    (str) File to log to or None to skip.
+      file (str): File to log to or None to skip.
       config:  Config object to read logging information from.  This read from
                the yaml file and the 'logging' key is extracted to configure
                the inputs.
@@ -96,7 +102,7 @@ class Logger(logging.getLoggerClass()):
         """Constructor
 
         Args:
-          name:   (str) The logging objecst name.
+          name (str):   The logging objecst name.
         """
         super().__init__(name)
         self._ui_handler = None
@@ -108,9 +114,9 @@ class Logger(logging.getLoggerClass()):
         API is the same as standard logging messages.
 
         Args:
-           msg:    (str) The message to log.
-           args:   Optional arguments.
-           kwargs: Optional keyword arguments.
+           msg (str):   The message to log.
+           args:        Optional arguments.
+           kwargs:      Optional keyword arguments.
         """
         if self.isEnabledFor(UI_LEVEL):
             self._log(UI_LEVEL, msg, args, **kwargs)

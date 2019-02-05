@@ -33,7 +33,7 @@ class Modem:
         load_config() before the modem can be used.
 
         Args:
-          protocol:  (Protocol) Insteon message handling protocol object.
+          protocol (Protocol):  Insteon message handling protocol object.
         """
         self.protocol = protocol
 
@@ -107,7 +107,7 @@ class Modem:
                     address of the device.
 
         Args:
-          data:   (dict) Configuration data to load.
+          data (dict):  Configuration data to load.
         """
         LOG.info("Loading configuration data")
 
@@ -152,11 +152,10 @@ class Modem:
         the replies and update the modem database.
 
         Args:
-           force:   (bool) Ignored - this insures a consistent API with the
-                    device refresh command.
-           on_done: Finished callback.  This is called when the command has
-                    completed.  Signature is:
-                       on_done(success, msg, data)
+          force (bool):  Ignored - this insures a consistent API with the
+                device refresh command.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Modem sending get first db record command")
 
@@ -208,6 +207,10 @@ class Modem:
     #-----------------------------------------------------------------------
     def print_db(self, on_done):
         """Print the device database to the log UI.
+
+        Args:
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.ui("%s modem database", self.addr)
         LOG.ui("%s", self.db)
@@ -221,7 +224,7 @@ class Modem:
         find the input device by address.
 
         Args:
-          device    The device object to add.
+          device:  The device object to add.
         """
         self.devices[device.addr.id] = device
         if device.name:
@@ -235,8 +238,8 @@ class Modem:
         input device from our local look up.
 
         Args:
-          device    The device object to add.  If the device doesn't exist,
-                    nothing is done.
+          device: The device object to add.  If the device doesn't exist,
+                  nothing is done.
         """
         self.devices.pop(device.addr.id, None)
         if device.name:
@@ -250,10 +253,10 @@ class Modem:
         modem to find the devices because disovery isn't the most reliable.
 
         Args:
-          addr:   (Address) The Insteon address object to find.  This can
-                  also be a string or integer (see the Address constructor for
-                  other options.  This can also be the modem address in which
-                  case this object is returned.
+          addr (Address): The Insteon address object to find.  This can
+               also be a string or integer (see the Address constructor for
+               other options.  This can also be the modem address in which
+               case this object is returned.
 
         Returns:
           Returns the device object or None if it doesn't exist.
@@ -295,6 +298,13 @@ class Modem:
         take a long time - up to 5 seconds per device some times depending on
         the database sizes.  So it usually should only be called if no other
         activity is expected on the network.
+
+        Args:
+          force (bool):  Force flag passed to devices.  If True, devices
+                will refresh their Insteon db's even if they think the db
+                is up to date.
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
         """
         # Set the error stop to false so a failed refresh doesn't stop the
         # sequence from trying to refresh other devices.
@@ -314,6 +324,10 @@ class Modem:
     #-----------------------------------------------------------------------
     def get_devices(self, on_done=None):
         """"Print all the devices the modem knows about to the log UI.
+
+        Args:
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
         """
         LOG.ui(json.dumps(self.info_entry()))
 
@@ -370,16 +384,23 @@ class Modem:
           updated.
 
         Args:
-          addr:     (Address) The remote device address.
-          group:    (int) The group to add link for.
-          data:     (bytes[3]) 3 byte data entry.
-          two_way:  (bool) If True, after creating the controller link on the
-                    modem, a responder link is created on the remote device
-                    to form the required pair of entries.
-          refresh:  (bool) If True, call refresh before changing the db.
-                    This is ignored on the modem since it doesn't use memory
-                    addresses and can't be corrupted.
-          on_done:  Optional callback run when both commands are finished.
+          local_group (int):  The modem group to use as the scene number.
+          remote_addr (Address):  The address of the device to control.
+          remote_group (int):  The group on the remote address to control.
+          two_way (bool):  If True, after creating the controller link on the
+                  modem, a responder link is created on the remote device
+                  to form the required pair of entries.
+          refresh (bool):  If True, call refresh before changing the db.
+                  This is ignored on the modem since it doesn't use memory
+                  addresses and can't be corrupted.
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+          local_data (bytes[3]):  The local 3 byte data array to set on the
+                     modem db entry.  If this is None, it will be assigned
+                     automatically.
+          remote_data (bytes[3]):  The remote 3 byte data array to set on the
+                      remote device.  If this is None, it will be assigned
+                      automatically.
         """
         is_controller = True
         self._db_update(local_group, is_controller, remote_addr, remote_group,
@@ -414,16 +435,23 @@ class Modem:
           updated.
 
         Args:
-          addr:     (Address) The remote device address.
-          group:    (int) The group to add link for.
-          data:     (bytes[3]) 3 byte data entry.
-          two_way:  (bool) If True, after creating the responder link on the
-                    modem, a controller link is created on the remote device
-                    to form the required pair of entries.
-          refresh:  (bool) If True, call refresh before changing the db.
-                    This is ignored on the modem since it doesn't use memory
-                    addresses and can't be corrupted.
-          on_done:  Optional callback run when both commands are finished.
+          local_group (int):  The modem group to use as the scene number.
+          remote_addr (Address):  The address of the device to respond to.
+          remote_group (int):  The group on the remote address to respond to.
+          two_way (bool):  If True, after creating the responder link on the
+                  modem, a controller link is created on the remote device
+                  to form the required pair of entries.
+          refresh (bool):  If True, call refresh before changing the db.
+                  This is ignored on the modem since it doesn't use memory
+                  addresses and can't be corrupted.
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+          local_data (bytes[3]):  The local 3 byte data array to set on the
+                     modem db entry.  If this is None, it will be assigned
+                     automatically.
+          remote_data (bytes[3]):  The remote 3 byte data array to set on the
+                      remote device.  If this is None, it will be assigned
+                      automatically.
         """
         is_controller = False
         self._db_update(local_group, is_controller, remote_addr, remote_group,
@@ -451,15 +479,16 @@ class Modem:
         on_done is called with success=False.
 
         Args:
-          addr:     (Address) The remote device address.
-          group:    (int) The group to add link for.
-          two_way:  (bool) If True, after creating the controller link on the
-                    modem, a responder link is deleted on the remote device
-                    to clean up the pair of entries.
-          refresh:  (bool) If True, call refresh before changing the db.
-                    This is ignored on the modem since it doesn't use memory
-                    addresses and can't be corrupted.
-          on_done:  Optional callback run when both commands are finished.
+          addr (Address):  The remote device address to delete on the modem.
+          group (int):  The group on the modem to delete the link for.
+          two_way (bool):  If True, after deleting the controller link on the
+                  modem, the responder link is deleted on the remote device
+                  to clean up the pair of entries.
+          refresh (bool):  If True, call refresh before changing the db.
+                  This is ignored on the modem since it doesn't use memory
+                  addresses and can't be corrupted.
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
         """
         # Call with is_controller=True
         self._db_delete(addr, group, True, two_way, refresh, on_done)
@@ -486,15 +515,16 @@ class Modem:
         on_done is called with success=False.
 
         Args:
-          addr:     (Address) The remote device address.
-          group:    (int) The group to add link for.
-          two_way:  (bool) If True, after creating the controller link on the
-                    modem, a controller link is deleted on the remote device
-                    to clean up the pair of entries.
-          refresh:  (bool) If True, call refresh before changing the db.
-                    This is ignored on the modem since it doesn't use memory
-                    addresses and can't be corrupted.
-          on_done:  Optional callback run when both commands are finished.
+          addr (Address):  The remote device address to delete on the modem.
+          group (int):  The group on the modem to delete the link for.
+          two_way (bool):  If True, after deleting the responder link on the
+                  modem, the controller link is deleted on the remote device
+                  to clean up the pair of entries.
+          refresh (bool):  If True, call refresh before changing the db.
+                  This is ignored on the modem since it doesn't use memory
+                  addresses and can't be corrupted.
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
         """
         # Call with is_controller=False
         self._db_delete(addr, group, False, two_way, refresh, on_done)
@@ -517,9 +547,10 @@ class Modem:
         This is the same as pressing the set button on the modem.
 
         Args:
-          group:    (int) The group number to to set in the modem when
-                    the link is created.
-          on_done:  Optional callback run when both commands are finished.
+          group (int):  The group number to to set in the modem when the link
+                is created.
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
         """
         # Tell the modem to enter all link mode for the group.  The
         # handler will handle timeouts (to send the cancel message) if
@@ -537,13 +568,13 @@ class Modem:
         be [group, 0x00, 0x00].
 
         Args:
-           is_controller:  (bool) True if the link will be for the modem
-                           as a controller.
-           group:          (int) The group on the modem the link is for.
-           data:           ([D1,D2,D3]) The data bytes to set on the modem.
+           is_controller (bool):  True if the link will be for the modem
+                         as a controller.
+           group (int): The group on the modem the link is for.
+           data ([D1,D2,D3]):   The data bytes to set on the modem.
 
         Returns:
-           Returns a list of 3 bytes to use as the data record.
+           bytes[3]:  Returns a list of 3 bytes to use as the data record.
         """
         # Normally, the modem (ctrl) -> device (resp) link is created using
         # the linking() command - then the handler.ModemLinkComplete will
@@ -568,12 +599,12 @@ class Modem:
         message is ACK'ed, Modem.handle_scene will be called.
 
         Args:
-           is_on:      (bool) True to send an on (0x11) command for the scene.
-                       False to send an off (0x13) command for the scene.
-           group:      (int) The modem group (scene) number to send.
-           num_retry:  (int) The number of retries to use if the message
-                       fails.
-           on_done:    Optional callback run when both commands are finished.
+          is_on (bool): True to send an on (0x11) command for the scene.
+                False to send an off (0x13) command for the scene.
+          group (int):  The modem group (scene) number to send.
+          num_retry (int):  The number of retries to use if the message fails.
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
         """
         assert 0x01 <= group <= 0xff
         LOG.info("Modem scene %s on=%s", group, "on" if is_on else "off")
@@ -594,7 +625,7 @@ class Modem:
         general message handling.
 
         Args:
-          msg:    (Msg.Base) The message that arrived.
+          msg (Msg.Base):  The message that arrived.
         """
         if not isinstance(msg, (Msg.InpStandard, Msg.InpExtended)):
             return
@@ -612,8 +643,8 @@ class Modem:
         device will then update the states on the devices in the scene.
 
         Args:
-          msg:   (InptStandard) Broadcast message from the device.  Use
-                 msg.group to find the group and msg.cmd1 for the command.
+          msg (InpStandard):  Broadcast message from the device.  Use
+              msg.group to find the group and msg.cmd1 for the command.
         """
         group = msg.group
 
@@ -653,6 +684,9 @@ class Modem:
 
           set_btn: Optional time_out argument (in seconds).  Simulates pressing
                    the modem set button to put the modem in linking mode.
+
+        Args:
+          kwargs:  Command dictionary containing the arguments.
         """
         cmd = kwargs.pop('cmd', None)
         if not cmd:
@@ -686,8 +720,8 @@ class Modem:
         are in it's scene.
 
         Args:
-           addr:   (Address) The address the message is from.
-           msg:    (message.InpStandard) Broadcast group message.
+           addr (Address):  The address the message is from.
+           msg (message.InpStandard):   Broadcast group message.
         """
         # The modem has nothing to do for these messages.
         pass
@@ -809,30 +843,7 @@ class Modem:
         two_way is True, the corresponding link on the remote device is also
         remove.
 
-        The optional callback has the signature:
-            on_done(bool success, str message, entry)
-
-        - success is True if both commands worked or False if any failed.
-        - message is a string with a summary of what happened.  This is used
-          for user interface responses to sending this command.
-        - entry is either the db.ModemEntry or db.DeviceEntry that was
-          removed.
-
-        If the requested record doesn't exist, it's considered an error and
-        on_done is called with success=False.
-
-        Args:
-          addr:           (Address) The remote device address.
-          group:          (int) The group to add link for.
-          is_controller:  (bool) True if the modem link is a controller.
-          two_way:        (bool) If True, after creating the controller link
-                          on the modem, a controller link is deleted on the
-                          remote device to clean up the pair of entries.
-          refresh:        (bool) If True, call refresh before changing the db.
-                          This is ignored on the modem since it doesn't use
-                          memory addresses and can't be corrupted.
-          on_done:        Optional callback run when both commands are
-                          finished.
+        See db_del_ctrl_of() or db_del_resp_of() for docs.
         """
         LOG.debug("db delete: %s grp=%s ctrl=%s 2w=%s", addr, group,
                   util.ctrl_str(is_controller), two_way)
