@@ -16,6 +16,10 @@
   switches to be used in automation triggers (thanks @NickWaterton).
   ([Issue #66][I66]).
 
+- Added support for manual mode state reporting (holding buttons down).
+  Supported by dimmer, keypadlinc, remote, and switch (thanks
+  @NickWaterton). ([Issue #104][I104]).
+
 - New command 'get_model' added to the command line tool to retrieve and save
   the Insteon device cat, sub_cat, and firmware revision (thanks @krkeegan).
   ([Issue #55][I55]).
@@ -218,3 +222,4 @@
 [I88]: https://github.com/TD22057/insteon-mqtt/issues/88
 [I95]: https://github.com/TD22057/insteon-mqtt/issues/95
 [I97]: https://github.com/TD22057/insteon-mqtt/issues/97
+[I104]: https://github.com/TD22057/insteon-mqtt/issues/104

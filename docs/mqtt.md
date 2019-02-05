@@ -419,6 +419,15 @@ which can be used in the templates:
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
 
+Manual state output is invoked when a button on the device is held down.
+Manual mode flags are UP or DOWN (when the on or off button is pressed and
+held), and STOP (when the button is released.  Manual template variables are
+name, address, and:
+
+   - 'manual_str' = 'up'/'off'/'down'
+   - 'manual' = 1/0/-1
+   - 'manual_openhab' = 2/1/0
+
 Input state change messages have the following variables defined which
 can be used in the templates:
 
@@ -446,17 +455,20 @@ using upper case ON an OFF payloads.
 
    ```
    switch:
-      # Output state change:
-      state_topic: 'insteon/{{address}}/state'
-      state_payload: '{{on_str}}'
+     # Output state change:
+     state_topic: 'insteon/{{address}}/state'
+     state_payload: '{{on_str}}'
 
-      # Direct change only changes the load:
-      on_off_topic: 'insteon/{{address}}/set'
-      on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+     manual_state_topic: 'insteon/{{address}}/manual_state'
+     manual_state_payload: '{{manual_str.upper()}}'
 
-      # Scene change simulates clicking the switch:
-      scene_topic: 'insteon/{{address}}/scene'
-      scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+     # Direct change only changes the load:
+     on_off_topic: 'insteon/{{address}}/set'
+     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+     # Scene change simulates clicking the switch:
+     scene_topic: 'insteon/{{address}}/scene'
+     scene_payload: '{ "cmd" : "{{value.lower()}}" }'
    ```
 
 When the switch changes state a message like `ON` or `OFF` is
@@ -484,6 +496,15 @@ which can be used in the templates:
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
 
+Manual state output is invoked when a button on the device is held down.
+Manual mode flags are UP or DOWN (when the on or off button is pressed and
+held), and STOP (when the button is released.  Manual template variables are
+name, address, and:
+
+   - 'manual_str' = 'up'/'off'/'down'
+   - 'manual' = 1/0/-1
+   - 'manual_openhab' = 2/1/0
+
 Input state change messages have the following variables defined which
 can be used in the templates:
 
@@ -510,24 +531,27 @@ using a JSON format that contains the level using the tag
 "brightness".
 
    ```
-   switch:
-      # Output state change:
-      state_topic: 'insteon/{{address}}/state'
-      state_payload: '{ "state" : "{{on_str}}", "brightness" : {{level_255}} }'
+   dimmer:
+     # Output state change:
+     state_topic: 'insteon/{{address}}/state'
+     state_payload: '{ "state" : "{{on_str}}", "brightness" : {{level_255}} }'
 
-      # Input state change for the load:
-      on_off_topic: 'insteon/{{address}}/set'
-      on_off_payload: '{ "cmd" : "{{json.state}}" }'
+     manual_state_topic: 'insteon/{{address}}/manual_state'
+     manual_state_payload: '{{manual_str.upper()}}'
 
-      # Scene change simulates clicking the switch:
-      scene_topic: 'insteon/{{address}}/scene'
-      scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+     # Input state change for the load:
+     on_off_topic: 'insteon/{{address}}/set'
+     on_off_payload: '{ "cmd" : "{{json.state}}" }'
 
-      # Dimming control:
-      level_topic: 'insteon/{{address}}/level'
-      level_payload: >
-         { "cmd" : "{{json.state}}",
-           "level" : {{json.brightness}} }
+     # Scene change simulates clicking the switch:
+     scene_topic: 'insteon/{{address}}/scene'
+     scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+     # Dimming control:
+     level_topic: 'insteon/{{address}}/level'
+     level_payload: >
+        { "cmd" : "{{json.state}}",
+          "level" : {{json.brightness}} }
 
    ```
 
@@ -585,22 +609,22 @@ matching the Home Assistant MQTT fan configuration.
 
    ```
    fan_linc:
-      # Output state change:
-      fan_state_topic: 'insteon/{{address}}/fan/state'
-      fan_state_payload: '{{on_str}}'
+     # Output state change:
+     fan_state_topic: 'insteon/{{address}}/fan/state'
+     fan_state_payload: '{{on_str}}'
 
-      # Input on/off change (payload should be 'ON' or 'OFF')
-      fan_on_off_topic: 'insteon/{{address}}/fan/set'
-      fan_on_off_payload: '{ "cmd" : "{{value.lower}}" }'
+     # Input on/off change (payload should be 'ON' or 'OFF')
+     fan_on_off_topic: 'insteon/{{address}}/fan/set'
+     fan_on_off_payload: '{ "cmd" : "{{value.lower}}" }'
 
-      # Output speed state change.
-      fan_speed_topic: 'insteon/{{address}}/fan/speed/state'
-      fan_speed_payload: '{{level_str}}'
+     # Output speed state change.
+     fan_speed_topic: 'insteon/{{address}}/fan/speed/state'
+     fan_speed_payload: '{{level_str}}'
 
-      # Input fan speed change (payload should be 'off', 'low', 'medium',
-      # or 'high'.
-      fan_speed_set_topic: 'insteon/{{address}}/fan/speed/set'
-      fan_speed_set_payload: '{ "cmd" : "{{value.lower}}" }'
+     # Input fan speed change (payload should be 'off', 'low', 'medium',
+     # or 'high'.
+     fan_speed_set_topic: 'insteon/{{address}}/fan/speed/set'
+     fan_speed_set_payload: '{ "cmd" : "{{value.lower}}" }'
    ```
 
 
@@ -635,32 +659,44 @@ The button change defines the following variables for templates:
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
 
+Manual state output is invoked when a button on the device is held down.
+Manual mode flags are UP or DOWN (when the on or off button is pressed and
+held), and STOP (when the button is released.  Manual template variables are
+name, address, and:
+
+   - 'manual_str' = 'up'/'off'/'down'
+   - 'manual' = 1/0/-1
+   - 'manual_openhab' = 2/1/0
+
 A sample remote control topic and payload configuration is:
 
    ```
    keypad_linc:
-      # Output on/off state change:
-      btn_state_topic: 'insteon/{{address}}/state/{{button}}'
-      btn_state_payload: '{{on_str.upper()}}'
+     # Output on/off state change:
+     btn_state_topic: 'insteon/{{address}}/state/{{button}}'
+     btn_state_payload: '{{on_str.upper()}}'
 
-      # Output dimmer state changes.
-      dimmer_state_topic: 'insteon/{{address}}/state/1'
-      state_payload: '{ "state" : "{{on_str}}", "brightness" : {{level_255}} }'
+     # Output dimmer state changes.
+     dimmer_state_topic: 'insteon/{{address}}/state/1'
+     state_payload: '{ "state" : "{{on_str}}", "brightness" : {{level_255}} }'
 
-      # Input on/off state change.  For any button besides 1, this just
-      # updates the LED state.
-      btn_on_off_topic: 'insteon/{{address}}/set/{{button}}'
-      btn_on_off_payload: '{ "cmd" : "{{json.state}}" }'
+     manual_state_topic: 'insteon/{{address}}/manual_state/{{button}}'
+     manual_state_payload: '{{manual_str.upper()}}'
 
-      # Input dimmer control
-      level_topic: 'insteon/{{address}}/level/1'
-      level_payload: >
-         { "cmd" : "{{json.state}}",
-           "level" : {{json.brightness}} }
+     # Input on/off state change.  For any button besides 1, this just
+     # updates the LED state.
+     btn_on_off_topic: 'insteon/{{address}}/set/{{button}}'
+     btn_on_off_payload: '{ "cmd" : "{{json.state}}" }'
 
-      # Scene input - simulates clicking the button.
-      btn_scene_topic: 'insteon/{{address}}/scene/{{button}}'
-      btn_scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+     # Input dimmer control
+     level_topic: 'insteon/{{address}}/level/1'
+     level_payload: >
+        { "cmd" : "{{json.state}}",
+          "level" : {{json.brightness}} }
+
+     # Scene input - simulates clicking the button.
+     btn_scene_topic: 'insteon/{{address}}/scene/{{button}}'
+     btn_scene_payload: '{ "cmd" : "{{value.lower()}}" }'
    ```
 
 ---
@@ -772,12 +808,24 @@ The button change defines the following variables for templates:
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
 
+Manual state output is invoked when a button on the device is held down.
+Manual mode flags are UP or DOWN (when the on or off button is pressed and
+held), and STOP (when the button is released.  Manual template variables are
+name, address, and:
+
+   - 'manual_str' = 'up'/'off'/'down'
+   - 'manual' = 1/0/-1
+   - 'manual_openhab' = 2/1/0
+
 A sample remote control topic and payload configuration is:
 
    ```
    remote:
      state_topic: 'insteon/{{address}}/state/{{button}}'
      state_payload: '{{on_str.upper()}}'
+
+     manual_state_topic: 'insteon/{{address}}/manual_state/{{button}}'
+     manual_state_payload: '{{manual_str.upper()}}'
    ```
 
 ---
