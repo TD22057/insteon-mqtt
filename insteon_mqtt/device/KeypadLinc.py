@@ -576,7 +576,7 @@ class KeypadLinc(Base):
         # ACK of the broadcast - ignore this.  Unless we sent a simulated off
         # scene in which case run the broadcast done handler.  This is a
         # weird special case - see scene() for details.
-        if cmd == 0x06:
+        if msg.cmd1 == 0x06:
             LOG.info("KeypadLinc %s broadcast ACK grp: %s", self.addr,
                      msg.group)
             if self.broadcast_done:
@@ -612,7 +612,7 @@ class KeypadLinc(Base):
             # through experiments)
             if msg.group == 1:
                 # Switches change state when the switch is held.
-                if not is_dimmer:
+                if not self.is_dimmer:
                     if manual == on_off.Manual.UP:
                         self._set_level(0xff, on_off.Mode.MANUAL)
                     elif manual == on_off.Manual.DOWN:
