@@ -32,6 +32,9 @@
 - New improved NAK error response codes makes it easier to understand errors
   when the devices can't communicate (thanks @krkeegan).  ([Issue #95][I95]).
 
+- Added a new command line input (get-devices) to get a list of the curren
+  Insteon devices in JSON format.  ([Issue #84][I84]).
+
 ## [0.6.4]
 
 ### Additions
@@ -218,6 +221,7 @@
 [I69]: https://github.com/TD22057/insteon-mqtt/issues/69
 [I70]: https://github.com/TD22057/insteon-mqtt/issues/70
 [I76]: https://github.com/TD22057/insteon-mqtt/issues/76
+[I84]: https://github.com/TD22057/insteon-mqtt/issues/84
 [I86]: https://github.com/TD22057/insteon-mqtt/issues/86
 [I88]: https://github.com/TD22057/insteon-mqtt/issues/88
 [I95]: https://github.com/TD22057/insteon-mqtt/issues/95
