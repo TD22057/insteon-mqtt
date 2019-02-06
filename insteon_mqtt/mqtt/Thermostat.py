@@ -10,17 +10,18 @@ LOG = log.get_logger()
 
 
 class Thermostat:
-    """MQTT Thermostat object.
+    """MQTT interface to an Insteon thermostat switch.
 
-    This class links an Insteon Thermostat object to MQTT.  Any
-    change in the Insteon device will trigger an MQTT message.
+    This class connects to a device.Thermostat and converts it's output
+    state changes to MQTT messages.  It also subscribes to topics to allow
+    input MQTT messages to change the state of the Insteon device.
     """
     def __init__(self, mqtt, device):
         """Constructor
 
         Args:
-          mqtt:    (Mqtt) the main MQTT interface object.
-          device:  The insteon thermostat device object.
+          mqtt (mqtt.Mqtt):  The MQTT main interface.
+          device (device.Thermostat):  The Insteon object to link to.
         """
         self.mqtt = mqtt
         self.device = device
@@ -29,80 +30,67 @@ class Thermostat:
         # Templates for states
         self.ambient_temp = MsgTemplate(
             topic='insteon/{{address}}/ambient_temp',
-            payload='{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}',
-            )
+            payload='{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}')
         self.fan_state = MsgTemplate(
             topic='insteon/{{address}}/fan_state',
-            payload='{{fan_mode}}',
-            )
+            payload='{{fan_mode}}')
         self.mode_state = MsgTemplate(
             topic='insteon/{{address}}/mode_state',
-            payload='{{mode}}',
-            )
+            payload='{{mode}}')
         self.cool_sp_state = MsgTemplate(
             topic='insteon/{{address}}/cool_sp_state',
-            payload='{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}',
-            )
+            payload='{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}')
         self.heat_sp_state = MsgTemplate(
             topic='insteon/{{address}}/heat_sp_state',
-            payload='{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}',
-            )
+            payload='{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}')
         self.humid_state = MsgTemplate(
             topic='insteon/{{address}}/humid_state',
-            payload='{{humid}}',
-            )
+            payload='{{humid}}')
         self.status_state = MsgTemplate(
             topic='insteon/{{address}}/status_state',
-            payload='{{status}}',
-            )
+            payload='{{status}}')
         self.hold_state = MsgTemplate(
             topic='insteon/{{address}}/hold_state',
-            payload='{{hold_str}}',
-            )
+            payload='{{hold_str}}')
         self.energy_state = MsgTemplate(
             topic='insteon/{{address}}/energy_state',
-            payload='{{energy_str}}',
-            )
+            payload='{{energy_str}}')
 
         # Templates for Commands
         self.mode_command = MsgTemplate(
             topic='insteon/{{address}}/mode_command',
-            payload='{ "cmd" : "{{value.lower()}}" }',
-            )
+            payload='{ "cmd" : "{{value.lower()}}" }')
         self.fan_command = MsgTemplate(
             topic='insteon/{{address}}/fan_command',
-            payload='{ "cmd" : "{{value.lower()}}" }',
-            )
+            payload='{ "cmd" : "{{value.lower()}}" }')
         self.heat_sp_command = MsgTemplate(
             topic='insteon/{{address}}/heat_sp_command',
-            payload='{ "temp_f" : {{value}} }',
-            )
+            payload='{ "temp_f" : {{value}} }')
         self.cool_sp_command = MsgTemplate(
             topic='insteon/{{address}}/cool_sp_command',
-            payload='{ "temp_f" : {{value}} }',
-            )
+            payload='{ "temp_f" : {{value}} }')
 
         # Receive notifications from the Insteon device when it changes.
         device.signal_ambient_temp_change.connect(
-            self.handle_ambient_temp_change)
-        device.signal_fan_mode_change.connect(self.handle_fan_mode_change)
-        device.signal_mode_change.connect(self.handle_mode_change)
-        device.signal_cool_sp_change.connect(self.handle_cool_sp_change)
-        device.signal_heat_sp_change.connect(self.handle_heat_sp_change)
+            self._insteon_ambient_temp_change)
+        device.signal_fan_mode_change.connect(self._insteon_fan_mode_change)
+        device.signal_mode_change.connect(self._insteon_mode_change)
+        device.signal_cool_sp_change.connect(self._insteon_cool_sp_change)
+        device.signal_heat_sp_change.connect(self._insteon_heat_sp_change)
         device.signal_ambient_humid_change.connect(
-            self.handle_ambient_humid_change)
-        device.signal_status_change.connect(self.handle_status_change)
-        device.signal_hold_change.connect(self.handle_hold_change)
-        device.signal_energy_change.connect(self.handle_energy_change)
+            self._insteon_ambient_humid_change)
+        device.signal_status_change.connect(self._insteon_status_change)
+        device.signal_hold_change.connect(self._insteon_hold_change)
+        device.signal_energy_change.connect(self._insteon_energy_change)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
 
         Args:
-          config:   The configuration dictionary to load from.  The object
-                    config is stored in config['thermostat'].
-          qos:      The default quality of service level to use.
+          config (dict:  The configuration dictionary to load from.  The object
+                 config is stored in config['thermostat'].
+          qos (int):  The default quality of service level to use.
         """
         data = config.get("thermostat", None)
         if not data:
@@ -140,28 +128,31 @@ class Thermostat:
     def subscribe(self, link, qos):
         """Subscribe to any MQTT topics the object needs.
 
+        Subscriptions are used when the object has things that can be
+        commanded to change.
+
         Args:
-          link:   The MQTT network client to use.
-          qos:    The quality of service to use.
+          link (network.Mqtt):  The MQTT network client to use.
+          qos (int):  The quality of service to use.
         """
         topic = self.mode_command.render_topic(self.template_data())
-        link.subscribe(topic, qos, self.handle_mode_command)
+        link.subscribe(topic, qos, self._input_mode)
 
         topic = self.fan_command.render_topic(self.template_data())
-        link.subscribe(topic, qos, self.handle_fan_command)
+        link.subscribe(topic, qos, self._input_fan)
 
         topic = self.heat_sp_command.render_topic(self.template_data())
-        link.subscribe(topic, qos, self.handle_heat_sp_command)
+        link.subscribe(topic, qos, self._input_heat_set_point)
 
         topic = self.cool_sp_command.render_topic(self.template_data())
-        link.subscribe(topic, qos, self.handle_cool_sp_command)
+        link.subscribe(topic, qos, self._input_cool_set_point)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
         """Unsubscribe to any MQTT topics the object was subscribed to.
 
         Args:
-          link:   The MQTT network client to use.
+          link (network.Mqtt):  The MQTT network client to use.
         """
         topic = self.mode_command.render_topic(self.template_data())
         self.mqtt.unsubscribe(topic)
@@ -177,10 +168,10 @@ class Thermostat:
 
     #-----------------------------------------------------------------------
     def template_data(self):
-        """Provides the data common to all templates
+        """Create the Jinja templating data variables for on/off messages.
 
         Returns:
-          (str) A json string of the data.
+          dict:  Returns a dict with the variables available for templating.
         """
         data = {
             "address" : self.device.addr.hex,
@@ -191,14 +182,14 @@ class Thermostat:
         return data
 
     #-----------------------------------------------------------------------
-    def handle_ambient_temp_change(self, device, temp_c):
+    def _insteon_ambient_temp_change(self, device, temp_c):
         """Posts to mqtt changes in ambient temperature
 
         This is triggered via signal when the ambient temp changes.
 
         Args:
-          device:    (device.Base) The Insteon device that changed.
-          temp_c:    the temp in Celsius.
+          device (device.Thermostat):  The Insteon device that changed.
+          temp_c (float):  The temp in Celsius.
         """
         LOG.info("MQTT received temp change %s = %s C", device.label,
                  temp_c)
@@ -210,29 +201,26 @@ class Thermostat:
             }
         data.update(self.template_data())
 
-        # Publish topic
         self.ambient_temp.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
-    def handle_fan_mode_change(self, device, fan_mode):
+    def _insteon_fan_mode_change(self, device, fan_mode):
         """Posts to mqtt changes in fan mode
 
         This is triggered via signal when the fan mode change.
 
         Args:
-          device:    (device.Base) The Insteon device that changed.
-          fan_mode:  Thermostat.Fan state.
+          device (device.Thermostat):  The Insteon device that changed.
+          fan_mode (Thermostat.Fan): The fan state.
         """
         LOG.info("MQTT received fan mode change %s = %s C", device.label,
                  fan_mode)
 
-        is_fan_on = 0
-        if fan_mode.name == "on":
-            is_fan_on = 1
+        is_fan_on = 1 if fan_mode == fan_mode.ON else 0
 
         # Set up the variables that can be used in the templates.
         data = {
-            "fan_mode": fan_mode.name.upper(),
+            "fan_mode": fan_mode.name.lower(),
             "is_fan_on": is_fan_on
             }
         data.update(self.template_data())
@@ -241,7 +229,7 @@ class Thermostat:
         self.fan_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
-    def handle_mode_change(self, device, mode):
+    def _insteon_mode_change(self, device, mode):
         """Posts to mqtt changes in the hvac mode
 
         This is triggered via signal when the mode changes.
@@ -263,7 +251,7 @@ class Thermostat:
         self.mode_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
-    def handle_cool_sp_change(self, device, temp_c):
+    def _insteon_cool_sp_change(self, device, temp_c):
         """Posts to mqtt when the cool setpoint changes
 
         This is triggered via signal when the cool setpoint changes.
@@ -286,7 +274,7 @@ class Thermostat:
         self.cool_sp_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
-    def handle_heat_sp_change(self, device, temp_c):
+    def _insteon_heat_sp_change(self, device, temp_c):
         """Posts to mqtt changes in the heat setpoint
 
         This is triggered via signal when the heat setpoint changes.
@@ -309,7 +297,7 @@ class Thermostat:
         self.heat_sp_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
-    def handle_ambient_humid_change(self, device, humid):
+    def _insteon_ambient_humid_change(self, device, humid):
         """Posts to mqtt changes in the ambient humidity
 
         This is triggered via signal when the ambient humidity changes.
@@ -331,7 +319,7 @@ class Thermostat:
         self.humid_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
-    def handle_status_change(self, device, status):
+    def _insteon_status_change(self, device, status):
         """Posts to mqtt changes in the hvac status
 
         This is triggered via signal when the hvac status changes.
@@ -362,7 +350,7 @@ class Thermostat:
         self.status_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
-    def handle_hold_change(self, device, hold):
+    def _insteon_hold_change(self, device, hold):
         """Posts to mqtt changes in the hold status
 
         This is triggered via signal when the hold status changes.
@@ -390,7 +378,7 @@ class Thermostat:
         self.hold_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
-    def handle_energy_change(self, device, energy):
+    def _insteon_energy_change(self, device, energy):
         """Posts to mqtt changes in the energy status
 
         This is triggered via signal when the energy status changes.
@@ -418,7 +406,7 @@ class Thermostat:
         self.energy_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
-    def handle_mode_command(self, client, data, message):
+    def _input_mode(self, client, data, message):
         """Command a change in the thermostat mode
 
         Options are [off, auto, heat, cool, program]
@@ -440,7 +428,7 @@ class Thermostat:
         self.device.mode_command(mode_member)
 
     #-----------------------------------------------------------------------
-    def handle_fan_command(self, client, data, message):
+    def _input_fan(self, client, data, message):
         """Command a change in the thermostat fan mode
 
         Options are [on, auto]
@@ -462,7 +450,7 @@ class Thermostat:
         self.device.fan_command(mode_member)
 
     #-----------------------------------------------------------------------
-    def handle_heat_sp_command(self, client, data, message):
+    def _input_heat_set_point(self, client, data, message):
         """Command a change in the thermostat heat setpoint
 
         Value should be in the form of:
@@ -489,7 +477,7 @@ class Thermostat:
             LOG.error("Unknown thermostat heat setpoint %s.", data)
 
     #-----------------------------------------------------------------------
-    def handle_cool_sp_command(self, client, data, message):
+    def _input_cool_set_point(self, client, data, message):
         """Command a change in the thermostat cool setpoint
 
         Value should be in the form of:

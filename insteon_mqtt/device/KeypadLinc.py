@@ -47,7 +47,7 @@ class KeypadLinc(Base):
 
         # Group on/off signal.
         # API: func(Device, int group, int level, on_off.Mode mode)
-        self.signal_active = Signal()
+        self.signal_level_changed = Signal()
 
         # Manual mode start up, down, off
         # API: func(Device, int group, on_off.Manual mode)
@@ -775,6 +775,6 @@ class KeypadLinc(Base):
         self._led_bits = util.bit_set(self._led_bits, group - 1,
                                       1 if level else 0)
 
-        self.signal_active.emit(self, group, level, mode)
+        self.signal_level_changed.emit(self, group, level, mode)
 
     #-----------------------------------------------------------------------

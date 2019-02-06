@@ -38,7 +38,7 @@ class BatterySensor(Base):
         """
         super().__init__(protocol, modem, address, name)
 
-        self.signal_active = Signal()  # (Device, bool)
+        self.signal_on_off = Signal()  # (Device, bool)
         self.signal_low_battery = Signal()  # (Device, bool)
         self.signal_heartbeat = Signal()  # (Device, bool)
 
@@ -202,6 +202,6 @@ class BatterySensor(Base):
         """
         LOG.info("Setting device %s on:%s", self.label, is_on)
         self._is_on = is_on
-        self.signal_active.emit(self, self._is_on)
+        self.signal_on_off.emit(self, self._is_on)
 
     #-----------------------------------------------------------------------

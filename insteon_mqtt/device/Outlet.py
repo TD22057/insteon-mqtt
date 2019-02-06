@@ -23,7 +23,7 @@ class Outlet(Base):
     an independent switch and is controlled via group 1 (top) and group2
     (bottom) inputs.
 
-    The Signal Outlet.signal_active will be emitted whenever
+    The Signal Outlet.signal_on_off will be emitted whenever
     the device level is changed with the calling sequence (device,
     group, on) where on is True for on and False for off.
     """
@@ -44,7 +44,7 @@ class Outlet(Base):
 
         # Support on/off style signals.
         # API: func(Device, int group, bool is_on, on_off.Mode mode)
-        self.signal_active = Signal()
+        self.signal_on_off = Signal()
 
         # Remove (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
@@ -512,6 +512,6 @@ class Outlet(Base):
         self._is_on[group - 1] = is_on
 
         # Notify others that the outlet state has changed.
-        self.signal_active.emit(self, group, is_on, mode)
+        self.signal_on_off.emit(self, group, is_on, mode)
 
     #-----------------------------------------------------------------------

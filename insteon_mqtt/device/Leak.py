@@ -28,8 +28,8 @@ class Leak(Base):
     state is - we can really only respond to the sensor when it sends
     out a message.
 
-    The Signal Leak.signal_active(True) will be emitted whenever the
-    device senses water and signal_active(False) when no water is detected.
+    The Signal Leak.signal_wet(True) will be emitted whenever the
+    device senses water and signal_wet(False) when no water is detected.
 
     TODO: download the database automatically when leak/heartbeat is seen.
     """
@@ -46,7 +46,7 @@ class Leak(Base):
         """
         super().__init__(protocol, modem, address, name)
 
-        self.signal_active = Signal()  # (Device, bool)
+        self.signal_wet = Signal()  # (Device, bool)
         self.signal_heartbeat = Signal()  # (Device, bool)
 
         # Maps Insteon groups to message type for this sensor.
@@ -59,7 +59,7 @@ class Leak(Base):
             0x04 : self.handle_heartbeat,
             }
 
-        self._is_on = False
+        self._is_wet = False
 
     #-----------------------------------------------------------------------
     def pair(self, on_done=None):
@@ -106,10 +106,10 @@ class Leak(Base):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def is_on(self):
+    def is_wet(self):
         """Return if sensor has been tripped.
         """
-        return self._is_on
+        return self._is_wet
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -165,14 +165,14 @@ class Leak(Base):
         """TODO: doc
         """
         # off = dry, on == wet
-        self._set_is_on(False)
+        self._set_is_wet(False)
 
     #-----------------------------------------------------------------------
     def handle_wet(self, msg):
         """TODO: doc
         """
         # off = dry, on == wet
-        self._set_is_on(True)
+        self._set_is_wet(True)
 
     #-----------------------------------------------------------------------
     def handle_heartbeat(self, msg):
@@ -180,8 +180,8 @@ class Leak(Base):
         """
         # Update the wet/dry state using the heartbeat if needed.
         is_wet = msg.cmd1 == 0x13
-        if self._is_on != is_wet:
-            self._set_is_on(is_wet)
+        if self._is_wet != is_wet:
+            self._set_is_wet(is_wet)
 
         # Send True for any heart beat message
         self.signal_heartbeat.emit(self, True)
@@ -203,20 +203,20 @@ class Leak(Base):
 
         # Current on/off level is stored in cmd2 so update our state
         # to match.
-        self._set_is_on(msg.cmd2 != 0x00)
+        self._set_is_wet(msg.cmd2 != 0x00)
 
     #-----------------------------------------------------------------------
-    def _set_is_on(self, is_on):
+    def _set_is_wet(self, is_wet):
         """Set the device on/off state.
 
         This will change the internal state and emit the state changed
         signal.
 
         Args:
-          is_on:   (bool) True if Leak is detected, False if it isn't.
+          is_wet:   (bool) True if Leak is detected, False if it isn't.
         """
-        LOG.info("Setting device %s on:%s", self.label, is_on)
-        self._is_on = is_on
-        self.signal_active.emit(self, self._is_on)
+        LOG.info("Setting device %s on:%s", self.label, is_wet)
+        self._is_wet = is_wet
+        self.signal_wet.emit(self, self._is_wet)
 
     #-----------------------------------------------------------------------

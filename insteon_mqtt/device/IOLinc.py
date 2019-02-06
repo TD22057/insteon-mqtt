@@ -134,7 +134,7 @@ class IOLinc(Base):
         self._is_on = False
 
         # Support on/off style signals.
-        self.signal_active = Signal()  # (Device, bool)
+        self.signal_on_off = Signal()  # (Device, bool)
 
         # Group number of the virtual modem scene linked to this device.
         self.modem_scene = None
@@ -588,6 +588,6 @@ class IOLinc(Base):
         self._is_on = bool(is_on)
 
         # Notify others that the switch state has changed.
-        self.signal_active.emit(self, self._is_on)
+        self.signal_on_off.emit(self, self._is_on)
 
     #-----------------------------------------------------------------------

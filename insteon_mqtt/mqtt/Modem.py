@@ -13,7 +13,11 @@ class Modem:
     """TODO: doc
     """
     def __init__(self, mqtt, modem):
-        """TODO: doc
+        """Constructor
+
+        Args:
+          mqtt (mqtt.Mqtt):  The MQTT main interface.
+          modem (Modem):  The Insteon modem object to link to.
         """
         self.mqtt = mqtt
         self.device = modem
@@ -29,9 +33,9 @@ class Modem:
         """Load values from a configuration data object.
 
         Args:
-          config:   The configuration dictionary to load from.  The object
-                    config is stored in config['switch'].
-          qos:      The default quality of service level to use.
+          config (dict:  The configuration dictionary to load from.  The object
+                 config is stored in config['modem'].
+          qos (int):  The default quality of service level to use.
         """
         data = config.get("modem", None)
         if not data:
@@ -43,9 +47,12 @@ class Modem:
     def subscribe(self, link, qos):
         """Subscribe to any MQTT topics the object needs.
 
+        Subscriptions are used when the object has things that can be
+        commanded to change.
+
         Args:
-          link:   The MQTT network client to use.
-          qos:    The quality of service to use.
+          link (network.Mqtt):  The MQTT network client to use.
+          qos (int):  The quality of service to use.
         """
         topic = self.msg_scene.render_topic(self.template_data())
         link.subscribe(topic, qos, self.handle_scene)
@@ -55,7 +62,7 @@ class Modem:
         """Unsubscribe to any MQTT topics the object was subscribed to.
 
         Args:
-          link:   The MQTT network client to use.
+          link (network.Mqtt):  The MQTT network client to use.
         """
         topic = self.msg_scene.render_topic(self.template_data())
         link.unsubscribe(topic)

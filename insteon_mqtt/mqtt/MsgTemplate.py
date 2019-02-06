@@ -25,10 +25,10 @@ class MsgTemplate:
         from the ends.
 
         Arg:
-          topic:  (str) The input topic.
+          topic (str):  The input topic.
 
         Returns:
-         (str) Returns the cleaned topic.
+          str: Returns the cleaned topic.
         """
         topic = topic.strip()
         if topic.endswith("/"):
@@ -41,9 +41,9 @@ class MsgTemplate:
         """Constructor
 
         Args:
-          topic:     (str) The topic template to use.
-          payload:   (str) The payload template to use.
-          qos:       (int) Quality of service to use when publishing.
+          topic (str):  The topic template to use.
+          payload (str):  The payload template to use.
+          qos (int):  Quality of service to use when publishing.
         """
         self.qos = qos
 
@@ -62,11 +62,13 @@ class MsgTemplate:
         the constructor is used.
 
         Args:
-          config:    The configuration dictionary to load from.
-          topic:     The name of the topic field in the config dict.
-          payload:   The name of the payload field in the config dict.
-          qos:       (int) Quality of service to use when publishing.
-                     If None, use the constructor value.
+          config (dict):  The configuration dictionary to load from.
+          topic (str):  The name of the topic field in the config dict.
+                This may None to make a null-op template.
+          payload (str):  The name of the payload field in the config dict.
+                  This may None to make a null-op template.
+          qos (int):  Quality of service to use when publishing.  If None, use
+                      the constructor value.
         """
         if qos is not None:
             self.qos = qos
@@ -86,12 +88,13 @@ class MsgTemplate:
         """Render the topic template.
 
         Args:
-          data:   Data dictionary with template variables to pass to the
-                  jinja template.
-          silent: (bool) True to silence error logs.
+          data (dict):  Data dictionary with template variables to pass to the
+               jinja template.
+          silent (bool) True to silence error logs.
 
         Returns:
-          (str) Returns the rendered topic.
+          str:  Returns the rendered topic.  This may be None if the constructor
+          or config topic data was None.
         """
         return self._render(self.topic_str, self.topic, data, silent)
 
@@ -100,12 +103,13 @@ class MsgTemplate:
         """Render the payload template.
 
         Args:
-          data:   Data dictionary with template variables to pass to the
-                  jinja template.
-          silent: (bool) True to silence error logs.
+          data (dict):  Data dictionary with template variables to pass to the
+               jinja template.
+          silent (bool) True to silence error logs.
 
         Returns:
-          (str) Returns the rendered payload.
+          str:  Returns the rendered payload.  This may be None if the
+          constructor or config topic data was None.
         """
         return self._render(self.payload_str, self.payload, data, silent)
 
@@ -116,9 +120,9 @@ class MsgTemplate:
         If either the topic or payload fails to render, nothing is done.
 
         Args:
-          mqtt:   (Mqtt) The MQTT client to publish to.
-          data:   Data dictionary with template variables to pass to the
-                  jinja templates.
+          mqtt (Mqtt):  The MQTT client to publish to.
+          data (dict):  Data dictionary with template variables to pass to the
+               jinja templates.
         """
         topic = self.render_topic(data)
         payload = self.render_payload(data)
@@ -135,11 +139,11 @@ class MsgTemplate:
         parsed json result is returned.
 
         Args:
-          payload:  (str) The input MQTT payload
-          silent:   (bool) True to silence error logs.
+          payload (str):  The input MQTT payload
+          silent (bool):  True to silence error logs.
 
         Returns:
-          (dict) Returns the parsed JSON dictionary or None if parsing fails.
+          dict:  Returns the parsed JSON dictionary or None if parsing fails.
         """
         # Convert the MQTT message into a string.  This is needed for saner
         # comparisons and because JSON is UTF-8.
@@ -174,13 +178,13 @@ class MsgTemplate:
         """Render a template and return None if it Fails.
 
         Args:
-          raw       Raw template string - used in logging errors.
-          template  The template object to use.
-          data      The data to pass to the template.
-          silent:   (bool) True to silence error logs.
+          raw (str):  Raw template string - used in logging errors.
+          template:  The Jinja template object to use.
+          data (dict):  The data dictionary to pass to the template.
+          silent (bool):  True to silence error logs.
 
         Returns:
-          Returns the rendered value or None if if fails.
+          str:  Returns the rendered value or None if if fails.
         """
         if template is None:
             return None

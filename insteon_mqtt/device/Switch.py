@@ -23,7 +23,7 @@ class Switch(Base):
     This includes any device that turns on and off like an appliance
     module or non-dimming lamp module.
 
-    The Signal Switch.signal_active will be emitted whenever
+    The Signal Switch.signal_on_off will be emitted whenever
     the device level is changed with the calling sequence (device,
     on) where on is True for on and False for off.
 
@@ -69,7 +69,7 @@ class Switch(Base):
 
         # Support on/off style signals.
         # API: func(Device, bool is_on, on_off.Mode mode)
-        self.signal_active = Signal()
+        self.signal_on_off = Signal()
 
         # Manual mode start up, down, off
         # API: func(Device, on_off.Manual mode)
@@ -481,6 +481,6 @@ class Switch(Base):
         self._is_on = bool(is_on)
 
         # Notify others that the switch state has changed.
-        self.signal_active.emit(self, self._is_on, mode)
+        self.signal_on_off.emit(self, self._is_on, mode)
 
     #-----------------------------------------------------------------------

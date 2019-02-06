@@ -11,17 +11,19 @@ LOG = log.get_logger()
 
 
 class SmokeBridge:
-    """MQTT Smoke bridge object.
+    """MQTT interface to an Insteon smoke bridge.
 
-    This class links an Insteon smoke bridge object to MQTT.  Any
-    change in the Instoen device will trigger an MQTT message.
+    This class connects to a device.SmokeBridge object and converts it's
+    output state changes to MQTT messages.
+
+    A smoke bridge will report it's various sensor (CO, smoke, etc) states.
     """
     def __init__(self, mqtt, device):
         """Constructor
 
         Args:
-          mqtt:    (Mqtt) the main MQTT interface object.
-          device:  The insteon smoke bridge device object.
+          mqtt (mqtt.Mqtt):  The MQTT main interface.
+          device (device.SmokeBridge):  The Insteon object to link to.
         """
         self.mqtt = mqtt
         self.device = device
@@ -29,32 +31,28 @@ class SmokeBridge:
         # Set up the default templates for the MQTT messages and payloads.
         self.msg_smoke = MsgTemplate(
             topic='insteon/{{address}}/smoke',
-            payload='{{on_str.upper()}}',
-            )
+            payload='{{on_str.upper()}}')
         self.msg_co = MsgTemplate(
             topic='insteon/{{address}}/co',
-            payload='{{on_str.upper()}}',
-            )
+            payload='{{on_str.upper()}}')
         self.msg_battery = MsgTemplate(
             topic='insteon/{{address}}/battery',
-            payload='{{on_str.upper()}}',
-            )
+            payload='{{on_str.upper()}}')
         self.msg_error = MsgTemplate(
             topic='insteon/{{address}}/error',
-            payload='{{on_str.upper()}}',
-            )
+            payload='{{on_str.upper()}}')
 
         # Receive notifications from the Insteon device when it changes.
-        device.signal_state_change.connect(self.handle_change)
+        device.signal_state_change.connect(self._insteon_change)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
 
         Args:
-          config:   The configuration dictionary to load from.  The object
-                    config is stored in config['smoke_bridge'].
-          qos:      The default quality of service level to use.
+          config (dict:  The configuration dictionary to load from.  The object
+                 config is stored in config['smoke_bridge'].
+          qos (int):  The default quality of service level to use.
         """
         data = config.get("smoke_bridge", None)
         if not data:
@@ -71,12 +69,15 @@ class SmokeBridge:
     def subscribe(self, link, qos):
         """Subscribe to any MQTT topics the object needs.
 
+        Subscriptions are used when the object has things that can be
+        commanded to change.
+
         Args:
-          link:   The MQTT network client to use.
-          qos:    The quality of service to use.
+          link (network.Mqtt):  The MQTT network client to use.
+          qos (int):  The quality of service to use.
         """
-        # The smoke bridge doesn't receive commands so there are no
-        # input topics to subscribe to.
+        # There are no input controls for this object so we don't need to
+        # subscribe to anything.
         pass
 
     #-----------------------------------------------------------------------
@@ -84,53 +85,68 @@ class SmokeBridge:
         """Unsubscribe to any MQTT topics the object was subscribed to.
 
         Args:
-          link:   The MQTT network client to use.
+          link (network.Mqtt):  The MQTT network client to use.
         """
         pass
 
     #-----------------------------------------------------------------------
-    def handle_change(self, device, condition):
-        """Device active condition callback.
-
-        This is triggered via signal when the Insteon device goes
-        active or inactive.  It will publish an MQTT message with the
-        new state.
+    # pylint: disable=arguments-differ
+    def template_data(self, condition):
+        """Create the Jinja templating data variables for the messages.
 
         Args:
-          device:    (device.Base) The Insteon device that changed.
-          condition: SmokeBridge.Type condition code.
+          condition (SmokeBridge.Type):  The condition code.
+
+        Returns:
+          dict:  Returns a dict with the variables available for templating.
+        """
+        data = {
+            "address" : self.device.addr.hex,
+            "name" : self.device.name if self.device.name
+                     else self.device.addr.hex,
+            "on" : 1,
+            "on_str" : "on",
+            }
+
+        # Clear condition resets status to off.
+        if condition == IDev.SmokeBridge.Type.CLEAR:
+            data["on"] = 0
+            data["on_str"] = "off"
+
+        return data
+
+    #-----------------------------------------------------------------------
+    def _insteon_change(self, device, condition):
+        """Device active condition callback.
+
+        This is triggered via signal when the Insteon device emits a state
+        change.  It will publish an MQTT message with the new state.
+
+        Args:
+          device (device.SmokeBridge):   The Insteon device that changed.
+          condition (SmokeBridge.Type):  The condition code.
         """
         LOG.info("MQTT received active change %s = %s", device.label,
                  condition)
 
         # Set up the variables that can be used in the templates.
-        data = {
-            "address" : device.addr.hex,
-            "name" : device.name if device.name else device.addr.hex,
-            "on" : 1,
-            "on_str" : "on",
-            }
+        data = self.template_data(condition)
 
+        # Clear resets all conditions to off so make all the calls.
         Type = IDev.SmokeBridge.Type
-
-        # Clear condition resets the status to off and calls all the
-        # conditions.
-        clear = condition == Type.CLEAR
-        if clear:
-            data["on"] = 0
-            data["on_str"] = "off"
+        call_all = condition == Type.CLEAR
 
         # Call the right topic depending on the condition field.
-        if clear or condition == Type.SMOKE:
+        if call_all or condition == Type.SMOKE:
             self.msg_smoke.publish(self.mqtt, data)
 
-        if clear or condition == Type.CO:
+        if call_all or condition == Type.CO:
             self.msg_co.publish(self.mqtt, data)
 
-        if clear or condition == Type.LOW_BATTERY:
+        if call_all or condition == Type.LOW_BATTERY:
             self.msg_battery.publish(self.mqtt, data)
 
-        if clear or condition == Type.ERROR:
+        if call_all or condition == Type.ERROR:
             self.msg_error.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
