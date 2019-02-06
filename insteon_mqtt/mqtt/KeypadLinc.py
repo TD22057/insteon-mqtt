@@ -170,15 +170,18 @@ class KeypadLinc:
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
-    def template_data(self, button=None, level=None, mode=on_off.Mode.NORMAL):
+    def template_data(self, button=None, level=None, mode=on_off.Mode.NORMAL,
+                      manual=None):
         """Create the Jinja templating data variables for on/off messages.
 
         Args:
           button (int):  The button (group) ID (1-8) of the Insteon button
                  that was triggered.
-          level (int):  The dimmer level.  If None, on/off and levels
+          level (int):  The dimmer level.  If None, on/off, levels, and mode
                 attributes are not added to the data.
           mode (on_off.Mode):  The on/off mode state.
+          manual (on_off.Manual):  The manual mode state.  If None, manual
+                 attributes are not added to the data.
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -199,24 +202,11 @@ class KeypadLinc:
             data["fast"] = 1 if mode == on_off.Mode.FAST else 0
             data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
 
-        return data
+        if manual is not None:
+            data["manual_str"] = str(manual)
+            data["manual"] = manual.int_value()
+            data["manual_openhab"] = manual.openhab_value()
 
-    #-----------------------------------------------------------------------
-    def manual_template_data(self, button, manual):
-        """Create the Jinja templating data variables for manual messages.
-
-        Args:
-          button (int):  The button (group) ID (1-8) of the Insteon button
-                 that was triggered.
-          manual (on_off.Manual):  The manual mode state.
-
-        Returns:
-          dict:  Returns a dict with the variables available for templating.
-        """
-        data = self.template_data(button)
-        data["manual_str"] = str(manual)
-        data["manual"] = manual.int_value()
-        data["manual_openhab"] = manual.openhab_value()
         return data
 
     #-----------------------------------------------------------------------
@@ -248,7 +238,7 @@ class KeypadLinc:
         """Device manual mode changed callback.
 
         This is triggered via signal when the Insteon device starts or stops
-nn        manual mode (holding a button down).  It will publish an MQTT message
+        manual mode (holding a button down).  It will publish an MQTT message
         with the new state.
 
         Args:
@@ -259,7 +249,7 @@ nn        manual mode (holding a button down).  It will publish an MQTT message
         LOG.info("MQTT received manual button press %s = btn %s %s",
                  device.label, group, manual)
 
-        data = self.manual_template_data(group, manual)
+        data = self.template_data(group, manual=manual)
         self.msg_manual_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
@@ -278,18 +268,17 @@ nn        manual mode (holding a button down).  It will publish an MQTT message
         LOG.info("KeypadLinc btn %s message %s %s", group, message.topic,
                  message.payload)
 
+        data = self.msg_btn_on_off.to_json(message.payload)
+        if not data:
+            return
+
+        LOG.info("KeypadLinc btn %s input command: %s", group, data)
         try:
-            data = self.msg_btn_on_off.to_json(message.payload)
-            if not data:
-                return
-
-            LOG.info("KeypadLinc btn %s input command: %s", group, data)
-
             is_on, mode = Switch.parse_json(data)
             level = 0xff if is_on else 0x00
             self.device.set(level, group, mode)
         except:
-            LOG.exception("Invalid button command: %s", data)
+            LOG.exception("Invalid KeypadLinc on/off command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_set_level(self, client, data, message):
@@ -307,18 +296,17 @@ nn        manual mode (holding a button down).  It will publish an MQTT message
         LOG.info("KeypadLinc message %s %s", message.topic, message.payload)
         assert self.msg_dimmer_level is not None
 
+        data = self.msg_dimmer_level.to_json(message.payload)
+        if not data:
+            return
+
+        LOG.info("KeypadLinc input command: %s", data)
         try:
-            data = self.msg_dimmer_level.to_json(message.payload)
-            if not data:
-                return
-
-            LOG.info("KeypadLinc input command: %s", data)
-
             is_on, mode = Switch.parse_json(data)
             level = 0 if not is_on else int(data.get('level'))
             self.device.set(level, mode=mode)
         except:
-            LOG.exception("Invalid dimmer command: %s", data)
+            LOG.exception("Invalid KeypadLinc level command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_btn1(self, client, data, message):
@@ -371,14 +359,13 @@ nn        manual mode (holding a button down).  It will publish an MQTT message
         LOG.debug("KeypadLinc scene %s message %s %s", group, message.topic,
                   message.payload)
 
+        # Parse the input MQTT message.
+        data = self.msg_btn_scene.to_json(message.payload)
+        if not data:
+            return
+
+        LOG.info("KeypadLinc input command: %s", data)
         try:
-            # Parse the input MQTT message.
-            data = self.msg_btn_scene.to_json(message.payload)
-            if not data:
-                return
-
-            LOG.info("KeypadLinc input command: %s", data)
-
             is_on, _mode = Switch.parse_json(data)
             self.device.scene(is_on, group)
         except:

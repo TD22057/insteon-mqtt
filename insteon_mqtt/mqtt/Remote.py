@@ -80,7 +80,8 @@ class Remote:
         pass
 
     #-----------------------------------------------------------------------
-    def template_data(self, button, is_on=None, mode=on_off.Mode.NORMAL):
+    def template_data(self, button, is_on=None, mode=on_off.Mode.NORMAL,
+                      manual=None):
         """Create the Jinja templating data variables for on/off messages.
 
         Args:
@@ -89,6 +90,8 @@ class Remote:
           is_on (bool):  True for on, False for off.  If None, on/off and
                 mode attributes are not added to the data.
           mode (on_off.Mode):  The on/off mode state.
+          manual (on_off.Manual):  The manual mode state.  If None, manual
+                 attributes are not added to the data.
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -108,25 +111,11 @@ class Remote:
             data["fast"] = 1 if mode == on_off.Mode.FAST else 0
             data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
 
-        return data
+        if manual is not None:
+            data["manual_str"] = str(manual)
+            data["manual"] = manual.int_value()
+            data["manual_openhab"] = manual.openhab_value()
 
-    #-----------------------------------------------------------------------
-    def manual_template_data(self, button, manual):
-        """Create the Jinja templating data variables for manual messages.
-
-        Args:
-          button (int):  The button (group) ID (1-8) of the Insteon button
-                 that was triggered.
-          manual (on_off.Manual):  The manual mode state.
-
-        Returns:
-          dict:  Returns a dict with the variables available for templating.
-        """
-        # Use the basic template to get name and address.
-        data = self.template_data(button)
-        data["manual_str"] = str(manual)
-        data["manual"] = manual.int_value()
-        data["manual_openhab"] = manual.openhab_value()
         return data
 
     #-----------------------------------------------------------------------
@@ -164,7 +153,7 @@ class Remote:
         LOG.info("MQTT received manual button press %s = btn %s %s",
                  device.label, group, manual)
 
-        data = self.manual_template_data(group, manual)
+        data = self.template_data(group, manual=manual)
         self.msg_manual_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

@@ -150,17 +150,16 @@ class IOLinc:
         """
         LOG.debug("IOLinc message %s %s", message.topic, message.payload)
 
-        try:
-            # Parse the input MQTT message.
-            data = self.msg_on_off.to_json(message.payload)
-            LOG.info("IOLinc input command: %s", data)
+        # Parse the input MQTT message.
+        data = self.msg_on_off.to_json(message.payload)
+        LOG.info("IOLinc input command: %s", data)
 
+        try:
             # Tell the device to update it's state.
             is_on, _mode = Switch.parse_json(data, have_mode=False)
             self.device.set(is_on)
         except:
-            LOG.exception("Invalid switch command: %s", data)
-            return
+            LOG.exception("Invalid IOLinc on/off command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_scene(self, client, data, message):
@@ -177,16 +176,15 @@ class IOLinc:
         """
         LOG.debug("IOLinc message %s %s", message.topic, message.payload)
 
-        try:
-            # Parse the input MQTT message.
-            data = self.msg_scene_on_off.to_json(message.payload)
-            LOG.info("IOLinc input command: %s", data)
+        # Parse the input MQTT message.
+        data = self.msg_scene_on_off.to_json(message.payload)
+        LOG.info("IOLinc input command: %s", data)
 
+        try:
             # Tell the device to trigger the scene command.
             is_on, _mode = Switch.parse_json(data, have_mode=False)
             self.device.scene(is_on)
         except:
-            LOG.exception("Invalid switch command: %s", data)
-            return
+            LOG.exception("Invalid IOLinc scene command: %s", data)
 
     #-----------------------------------------------------------------------

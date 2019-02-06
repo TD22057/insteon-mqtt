@@ -111,6 +111,7 @@ class Leak:
             data["heartbeat_str"] = time.time() if is_heartbeat else ""
 
         return data
+
     #-----------------------------------------------------------------------
     def _insteon_is_wet(self, device, is_wet):
         """Device wet/dry on/off callback.

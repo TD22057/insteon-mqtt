@@ -175,16 +175,16 @@ class Outlet:
         LOG.debug("Outlet btn %s message %s %s", group, message.topic,
                   message.payload)
 
-        try:
-            # Parse the input MQTT message.
-            data = self.msg_on_off.to_json(message.payload)
-            LOG.info("Outlet input command: %s", data)
+        # Parse the input MQTT message.
+        data = self.msg_on_off.to_json(message.payload)
+        LOG.info("Outlet input command: %s", data)
 
+        try:
             # Tell the device to update it's state.
             is_on, mode = Switch.parse_json(data)
             self.device.set(level=is_on, group=group, mode=mode)
         except:
-            LOG.exception("Invalid switch command: %s", data)
+            LOG.exception("Invalid Outlet on/off command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_scene(self, client, data, message, group):
@@ -202,16 +202,15 @@ class Outlet:
         LOG.debug("Outlet btn %s message %s %s", group, message.topic,
                   message.payload)
 
-        try:
-            # Parse the input MQTT message.
-            data = self.msg_scene.to_json(message.payload)
-            LOG.info("Outlet input command: %s", data)
+        # Parse the input MQTT message.
+        data = self.msg_scene.to_json(message.payload)
+        LOG.info("Outlet input command: %s", data)
 
+        try:
             # Tell the device to trigger the scene command.
             is_on, _mode = Switch.parse_json(data)
             self.device.scene(is_on, group)
         except:
-            LOG.exception("Invalid switch command: %s", data)
-            return
+            LOG.exception("Invalid Outlet scene command: %s", data)
 
     #-----------------------------------------------------------------------

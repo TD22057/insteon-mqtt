@@ -93,8 +93,8 @@ class MsgTemplate:
           silent (bool) True to silence error logs.
 
         Returns:
-          str:  Returns the rendered topic.  This may be None if the constructor
-          or config topic data was None.
+          str:  Returns the rendered topic.  This may be None if the
+          constructor or config topic data was None.
         """
         return self._render(self.topic_str, self.topic, data, silent)
 

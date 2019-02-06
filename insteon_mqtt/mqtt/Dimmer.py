@@ -104,13 +104,15 @@ class Dimmer(Switch):
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
-    def template_data(self, level=None, mode=on_off.Mode.NORMAL):
+    def template_data(self, level=None, mode=on_off.Mode.NORMAL, manual=None):
         """Create the Jinja templating data variables for on/off messages.
 
         Args:
           level (int):  The dimmer level.  If None, on/off and levels
                 attributes are not added to the data.
           mode (on_off.Mode):  The on/off mode state.
+          manual (on_off.Manual):  The manual mode state.  If None, manual
+                 attributes are not added to the data.
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -130,23 +132,11 @@ class Dimmer(Switch):
             data["fast"] = 1 if mode == on_off.Mode.FAST else 0
             data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
 
-        return data
+        if manual is not None:
+            data["manual_str"] = str(manual)
+            data["manual"] = manual.int_value()
+            data["manual_openhab"] = manual.openhab_value()
 
-    #-----------------------------------------------------------------------
-    def manual_template_data(self, manual):
-        """Create the Jinja templating data variables for manual messages.
-
-        Args:
-          manual (on_off.Manual):  The manual mode state.
-
-        Returns:
-          dict:  Returns a dict with the variables available for templating.
-        """
-        # Use the basic template to get name and address.
-        data = self.template_data()
-        data["manual_str"] = str(manual)
-        data["manual"] = manual.int_value()
-        data["manual_openhab"] = manual.openhab_value()
         return data
 
     #-----------------------------------------------------------------------
@@ -182,7 +172,7 @@ class Dimmer(Switch):
         LOG.info("MQTT received manual change %s mode: %s", device.label,
                  manual)
 
-        data = self.manual_template_data(manual)
+        data = self.template_data(manual=manual)
         self.msg_manual_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
@@ -200,10 +190,10 @@ class Dimmer(Switch):
         """
         LOG.info("Dimmer message %s %s", message.topic, message.payload)
 
-        try:
-            data = self.msg_level.to_json(message.payload)
-            LOG.info("Dimmer input command: %s", data)
+        data = self.msg_level.to_json(message.payload)
+        LOG.info("Dimmer input command: %s", data)
 
+        try:
             is_on, mode = Switch.parse_json(data)
             level = 0 if not is_on else int(data.get('level'))
 
@@ -227,11 +217,11 @@ class Dimmer(Switch):
         """
         LOG.debug("Dimmer message %s %s", message.topic, message.payload)
 
-        try:
-            # Parse the input MQTT message.
-            data = self.msg_scene_on_off.to_json(message.payload)
-            LOG.info("Dimmer input command: %s", data)
+        # Parse the input MQTT message.
+        data = self.msg_scene_on_off.to_json(message.payload)
+        LOG.info("Dimmer input command: %s", data)
 
+        try:
             is_on, _mode = Switch.parse_json(data)
             group = int(data.get('group', 0x01))
 

@@ -198,11 +198,11 @@ class FanLinc(Dimmer):
         LOG.info("FanLink fan on/off message %s %s", message.topic,
                  message.payload)
 
-        try:
-            data = self.msg_fan_on_off.to_json(message.payload)
-            if not data:
-                return
+        data = self.msg_fan_on_off.to_json(message.payload)
+        if not data:
+            return
 
+        try:
             LOG.info("FanLink fan on/off input command: %s", data)
 
             cmd = data.get('cmd', None)
@@ -212,6 +212,6 @@ class FanLinc(Dimmer):
 
             self.device.fan_set(fan_speed)
         except:
-            LOG.error("Invalid fan set cmd '%s'", cmd)
+            LOG.error("Invalid fan set speed command: %s", data)
 
     #-----------------------------------------------------------------------

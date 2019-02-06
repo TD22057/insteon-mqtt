@@ -175,13 +175,16 @@ class Switch:
         link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
-    def template_data(self, is_on=None, mode=on_off.Mode.NORMAL):
+    def template_data(self, is_on=None, mode=on_off.Mode.NORMAL,
+                      manual=None):
         """Create the Jinja templating data variables for on/off messages.
 
         Args:
           is_on (bool):  The on/off state of the switch.  If None, on/off and
                 mode attributes are not added to the data.
           mode (on_off.Mode):  The on/off mode state.
+          manual (on_off.Manual):  The manual mode state.  If None, manual
+                attributes are not added to the data.
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -200,23 +203,11 @@ class Switch:
             data["fast"] = 1 if mode == on_off.Mode.FAST else 0
             data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
 
-        return data
+        if manual is not None:
+            data["manual_str"] = str(manual)
+            data["manual"] = manual.int_value()
+            data["manual_openhab"] = manual.openhab_value()
 
-    #-----------------------------------------------------------------------
-    def manual_template_data(self, manual):
-        """Create the Jinja templating data variables for manual messages.
-
-        Args:
-          manual (on_off.Manual):  The manual mode state.
-
-        Returns:
-          dict:  Returns a dict with the variables available for templating.
-        """
-        # Use the basic template to get name and address.
-        data = self.template_data()
-        data["manual_str"] = str(manual)
-        data["manual"] = manual.int_value()
-        data["manual_openhab"] = manual.openhab_value()
         return data
 
     #-----------------------------------------------------------------------
@@ -251,7 +242,7 @@ class Switch:
         """
         LOG.info("MQTT received manual change %s %s", device.label, manual)
 
-        data = self.manual_template_data(manual)
+        data = self.template_data(manual=manual)
         self.msg_manual_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
@@ -269,17 +260,16 @@ class Switch:
         """
         LOG.debug("Switch message %s %s", message.topic, message.payload)
 
-        try:
-            # Parse the input MQTT message.
-            data = self.msg_on_off.to_json(message.payload)
-            LOG.info("Switch input command: %s", data)
+        # Parse the input MQTT message.
+        data = self.msg_on_off.to_json(message.payload)
+        LOG.info("Switch input command: %s", data)
 
+        try:
             # Tell the device to update it's state.
             is_on, mode = Switch.parse_json(data)
             self.device.set(level=is_on, mode=mode)
         except:
-            LOG.exception("Invalid switch command: %s", data)
-            return
+            LOG.exception("Invalid switch on/off command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_scene(self, client, data, message):
@@ -296,18 +286,17 @@ class Switch:
         """
         LOG.debug("Switch message %s %s", message.topic, message.payload)
 
-        try:
-            # Parse the input MQTT message.
-            data = self.msg_scene_on_off.to_json(message.payload)
-            LOG.info("Switch input command: %s", data)
+        # Parse the input MQTT message.
+        data = self.msg_scene_on_off.to_json(message.payload)
+        LOG.info("Switch input command: %s", data)
 
+        try:
             is_on, _mode = Switch.parse_json(data)
             group = int(data.get('group', 0x01))
 
             # Tell the device to trigger the scene command.
             self.device.scene(is_on, group)
         except:
-            LOG.exception("Invalid switch command: %s", data)
-            return
+            LOG.exception("Invalid switch scene command: %s", data)
 
     #-----------------------------------------------------------------------

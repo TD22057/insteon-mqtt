@@ -142,10 +142,10 @@ class Thermostat:
         link.subscribe(topic, qos, self._input_fan)
 
         topic = self.heat_sp_command.render_topic(self.template_data())
-        link.subscribe(topic, qos, self._input_heat_set_point)
+        link.subscribe(topic, qos, self._input_heat_setpoint)
 
         topic = self.cool_sp_command.render_topic(self.template_data())
-        link.subscribe(topic, qos, self._input_cool_set_point)
+        link.subscribe(topic, qos, self._input_cool_setpoint)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
@@ -195,11 +195,9 @@ class Thermostat:
                  temp_c)
 
         # Set up the variables that can be used in the templates.
-        data = {
-            "temp_c": temp_c,
-            "temp_f": round((temp_c * 9) / 5 + 32, 1)
-            }
-        data.update(self.template_data())
+        data = self.template_data()
+        data["temp_c"] = temp_c
+        data["temp_f"] = round((temp_c * 9) / 5 + 32, 1)
 
         self.ambient_temp.publish(self.mqtt, data)
 
@@ -216,16 +214,11 @@ class Thermostat:
         LOG.info("MQTT received fan mode change %s = %s C", device.label,
                  fan_mode)
 
-        is_fan_on = 1 if fan_mode == fan_mode.ON else 0
-
         # Set up the variables that can be used in the templates.
-        data = {
-            "fan_mode": fan_mode.name.lower(),
-            "is_fan_on": is_fan_on
-            }
-        data.update(self.template_data())
+        data = self.template_data()
+        data["fan_mode"] = fan_mode.name.lower()
+        data["is_fan_on"] = 1 if fan_mode == fan_mode.ON else 0
 
-        # Publish topic
         self.fan_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
@@ -235,19 +228,15 @@ class Thermostat:
         This is triggered via signal when the mode changes.
 
         Args:
-          device:    (device.Base) The Insteon device that changed.
-          mode:      Thermostat.Mode state.
+          device (device.Thermostat):  The Insteon device that changed.
+          mode (Thermostat.Mode) The mode state.
         """
-        LOG.info("MQTT received mode change %s = %s C", device.label,
-                 mode)
+        LOG.info("MQTT received mode change %s = %s C", device.label, mode)
 
         # Set up the variables that can be used in the templates.
-        data = {
-            "mode": mode.name.upper(),
-            }
-        data.update(self.template_data())
+        data = self.template_data()
+        data["mode"] = mode.name.lower()
 
-        # Publish topic
         self.mode_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
@@ -257,20 +246,17 @@ class Thermostat:
         This is triggered via signal when the cool setpoint changes.
 
         Args:
-          device:    (device.Base) The Insteon device that changed.
-          temp_c:    the temp in Celsius.
+          device (device.Thermostat):  The Insteon device that changed.
+          temp_c (flaot): The temp in Celsius.
         """
         LOG.info("MQTT received cool setpoint change %s = %s", device.label,
                  temp_c)
 
         # Set up the variables that can be used in the templates.
-        data = {
-            "temp_c": round(temp_c, 1),
-            "temp_f": round((temp_c * 9) / 5 + 32, 1)
-            }
-        data.update(self.template_data())
+        data = self.template_data()
+        data["temp_c"] = round(temp_c, 1)
+        data["temp_f"] = round((temp_c * 9) / 5 + 32, 1)
 
-        # Publish topic
         self.cool_sp_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
@@ -280,42 +266,36 @@ class Thermostat:
         This is triggered via signal when the heat setpoint changes.
 
         Args:
-          device:    (device.Base) The Insteon device that changed.
-          temp_c:    the temp in Celsius.
+          device (device.Thermostat):  The Insteon device that changed.
+          temp_c (float): The temp in Celsius.
         """
         LOG.info("MQTT received heat setpoint change %s = %s", device.label,
                  temp_c)
 
         # Set up the variables that can be used in the templates.
-        data = {
-            "temp_c": round(temp_c, 1),
-            "temp_f": round((temp_c * 9) / 5 + 32, 1)
-            }
-        data.update(self.template_data())
+        data = self.template_data()
+        data["temp_c"] = round(temp_c, 1)
+        data["temp_f"] = round((temp_c * 9) / 5 + 32, 1)
 
-        # Publish topic
         self.heat_sp_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
-    def _insteon_ambient_humid_change(self, device, humid):
+    def _insteon_ambient_humid_change(self, device, humidity):
         """Posts to mqtt changes in the ambient humidity
 
         This is triggered via signal when the ambient humidity changes.
 
         Args:
-          device:    (device.Base) The Insteon device that changed.
-          humid:     (int) the humidity percentage.
+          device (device.Thermostat):  The Insteon device that changed.
+          humidity (int): The humidity percentage.
         """
         LOG.info("MQTT received humidity change %s = %s", device.label,
-                 humid)
+                 humidity)
 
         # Set up the variables that can be used in the templates.
-        data = {
-            "humid": humid
-            }
-        data.update(self.template_data())
+        data = self.template_data()
+        data["humid"] = humidity
 
-        # Publish topic
         self.humid_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
@@ -325,28 +305,17 @@ class Thermostat:
         This is triggered via signal when the hvac status changes.
 
         Args:
-          device:    (device.Base) The Insteon device that changed.
-          status:    (str)  OFF, HEATING, COOLING
+          device (device.Thermostat):  The Insteon device that changed.
+          status (Thermostat.Stuats): The current operation status.
         """
-        status = status.upper()
         LOG.info("MQTT received status change %s = %s", device.label,
-                 status)
+                 status.value)
 
-        is_heating = is_cooling = 0
-        if status == "HEATING":
-            is_heating = 1
-        elif status == "COOLING":
-            is_cooling = 1
+        data = self.template_data()
+        data["status"] = status.name.lower()
+        data["is_heating"] = 1 if status == status.HEATING else 0
+        data["is_cooling"] = 1 if status == status.COOLING else 0
 
-        # Set up the variables that can be used in the templates.
-        data = {
-            "status": status,
-            "is_heating": is_heating,
-            "is_cooling": is_cooling
-            }
-        data.update(self.template_data())
-
-        # Publish topic
         self.status_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
@@ -356,25 +325,16 @@ class Thermostat:
         This is triggered via signal when the hold status changes.
 
         Args:
-          device:    (device.Base) The Insteon device that changed.
-          hold:      (bool)  Hold Status
+          device (device.Thermostat):  The Insteon device that changed.
+          hold (bool):  The hold Status
         """
-        LOG.info("MQTT received hold change %s = %s", device.label,
-                 hold)
+        LOG.info("MQTT received hold change %s = %s", device.label, hold)
 
         # Set up the variables that can be used in the templates.
-        hold_str = "OFF"
-        is_hold = 0
-        if hold:
-            hold_str = "TEMP"
-            is_hold = 1
-        data = {
-            "hold_str": hold_str,
-            "is_hold": is_hold
-            }
-        data.update(self.template_data())
+        data = self.template_data()
+        data["hold_str"] = "temp" if hold else "off"
+        data["is_hold"] = 1 if hold else 0
 
-        # Publish topic
         self.hold_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
@@ -384,33 +344,31 @@ class Thermostat:
         This is triggered via signal when the energy status changes.
 
         Args:
-          device:    (device.Base) The Insteon device that changed.
-          energy:    (bool)  Energy Status
+          device (device.Thermostat):  The Insteon device that changed.
+          energy (bool): Energy Status
         """
-        LOG.info("MQTT received energy change %s = %s", device.label,
-                 energy)
+        LOG.info("MQTT received energy change %s = %s", device.label, energy)
 
-        # Set up the variables that can be used in the templates.
-        energy_str = "OFF"
-        is_energy = 0
-        if energy:
-            energy_str = "ON"
-            is_energy = 1
-        data = {
-            "energy_str": energy_str,
-            "is_energy": is_energy
-            }
-        data.update(self.template_data())
+        data = self.template_data()
+        data["energy_str"] = "on" if energy else "off"
+        data["energy"] = 1 if energy else 0
 
-        # Publish topic
         self.energy_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
     def _input_mode(self, client, data, message):
-        """Command a change in the thermostat mode
+        """Handle an input mode change MQTT message.
+
+        This is called when we receive a message on the mode change MQTT
+        topic subscription.  Parse the message and pass the command to the
+        Insteon device.
 
         Options are [off, auto, heat, cool, program]
 
+        Args:
+          client (paho.Client):  The paho mqtt client (self.link).
+          data:  Optional user data (unused).
+          message:  MQTT message - has attrs: topic, payload, qos, retain.
         """
         LOG.info("Thermostat message %s %s", message.topic, message.payload)
 
@@ -420,19 +378,31 @@ class Thermostat:
 
         LOG.info("Thermostat mode command: %s", data)
         try:
-            mode_member = self.device.ModeCommands[data['cmd']]
-        except KeyError:
-            LOG.exception("Unknown thermostat mode %s.", data['cmd'])
-            return
+            mode = data['cmd'].upper()
+            for value in self.device.ModeCommands:
+                if value.name == mode:
+                    self.device.mode_command(mode_member)
+                    break
+            else:
+                raise Exception("Unknown mode command: '%s'" % mode)
 
-        self.device.mode_command(mode_member)
+        except:
+            LOG.exception("Invalid thermostat mode command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_fan(self, client, data, message):
-        """Command a change in the thermostat fan mode
+        """Handle an input mode change MQTT message.
+
+        This is called when we receive a message on the mode change MQTT
+        topic subscription.  Parse the message and pass the command to the
+        Insteon device.
 
         Options are [on, auto]
 
+        Args:
+          client (paho.Client):  The paho mqtt client (self.link).
+          data:  Optional user data (unused).
+          message:  MQTT message - has attrs: topic, payload, qos, retain.
         """
         LOG.info("Thermostat message %s %s", message.topic, message.payload)
 
@@ -443,23 +413,27 @@ class Thermostat:
         LOG.info("Thermostat fan mode command: %s", data)
         try:
             mode_member = self.device.FanCommands[data['cmd']]
-        except KeyError:
-            LOG.exception("Unknown thermostat fan mode %s.", data['cmd'])
-            return
-
-        self.device.fan_command(mode_member)
+            self.device.fan_command(mode_member)
+        except:
+            LOG.exception("Unknown thermostat fan mode command: %s", data)
 
     #-----------------------------------------------------------------------
-    def _input_heat_set_point(self, client, data, message):
-        """Command a change in the thermostat heat setpoint
+    def _input_heat_setpoint(self, client, data, message):
+        """Handle an input mode change MQTT message.
+
+        This is called when we receive a message on the mode change MQTT
+        topic subscription.  Parse the message and pass the command to the
+        Insteon device.
 
         Value should be in the form of:
-        { temp_f: float,
-          temp_c: float}
+          { temp_f: float } or { temp_c: float}
+        If temp_c is present, it will be used, regardless of if temp_f is also
+        present.
 
-        If temp_f is present, it will be used, regardless of if temp_c is also
-        present
-
+        Args:
+          client (paho.Client):  The paho mqtt client (self.link).
+          data:  Optional user data (unused).
+          message:  MQTT message - has attrs: topic, payload, qos, retain.
         """
         LOG.info("Thermostat message %s %s", message.topic, message.payload)
 
@@ -468,25 +442,32 @@ class Thermostat:
             return
 
         LOG.info("Thermostat heat setpoint command: %s", data)
-        if 'temp_f' in data:
-            temp_c = (data['temp_f'] - 32) * 5 / 9
+        try:
+            temp_c = data.get('temp_c', None)
+            if temp_c is None:
+                temp_c = (data['temp_f'] - 32) * 5 / 9
+
             self.device.heat_sp_command(temp_c)
-        elif 'temp_c' in data:
-            self.device.heat_sp_command(data['temp_c'])
-        else:
-            LOG.error("Unknown thermostat heat setpoint %s.", data)
+        except:
+            LOG.exception("Invalid thermostat heat setpoint command: %s", data)
 
     #-----------------------------------------------------------------------
-    def _input_cool_set_point(self, client, data, message):
-        """Command a change in the thermostat cool setpoint
+    def _input_cool_setpoint(self, client, data, message):
+        """Handle an input cooling setpoint change MQTT message.
+
+        This is called when we receive a message on the cooling setpoint
+        change MQTT topic subscription.  Parse the message and pass the
+        command to the Insteon device.
 
         Value should be in the form of:
-        { temp_f: float,
-          temp_c: float}
+          { temp_f: float } or { temp_c: float}
+        If temp_c is present, it will be used, regardless of if temp_f is also
+        present.
 
-        If temp_f is present, it will be used, regardless of if temp_c is also
-        present
-
+        Args:
+          client (paho.Client):  The paho mqtt client (self.link).
+          data:  Optional user data (unused).
+          message:  MQTT message - has attrs: topic, payload, qos, retain.
         """
         LOG.info("Thermostat message %s %s", message.topic, message.payload)
 
@@ -495,10 +476,11 @@ class Thermostat:
             return
 
         LOG.info("Thermostat cool setpoint command: %s", data)
-        if 'temp_f' in data:
-            temp_c = (data['temp_f'] - 32) * 5 / 9
+        try:
+            temp_c = data.get('temp_c', None)
+            if temp_c is None:
+                temp_c = (data['temp_f'] - 32) * 5 / 9
+
             self.device.cool_sp_command(temp_c)
-        elif 'temp_c' in data:
-            self.device.cool_sp_command(data['temp_c'])
-        else:
-            LOG.error("Unknown thermostat cool setpoint %s.", data)
+        except:
+            LOG.exception("Invalid thermostat cool setpoint command: %s", data)
