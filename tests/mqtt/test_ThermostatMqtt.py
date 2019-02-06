@@ -21,14 +21,14 @@ class Test_ThermostatMqtt:
         assert mqtt.last_payload == '{"temp_f" : 71.6, "temp_c" : 22}'
 
         # Fan mode
-        device.signal_fan_mode_change.emit(device, device.Fan.auto)
+        device.signal_fan_mode_change.emit(device, device.Fan.AUTO)
         assert mqtt.last_topic == 'insteon/01.02.03/fan_state'
-        assert mqtt.last_payload == 'AUTO'
+        assert mqtt.last_payload == 'auto'
 
         # Mode change
-        device.signal_mode_change.emit(device, device.ModeCommands.auto)
+        device.signal_mode_change.emit(device, device.ModeCommands.AUTO)
         assert mqtt.last_topic == 'insteon/01.02.03/mode_state'
-        assert mqtt.last_payload == 'AUTO'
+        assert mqtt.last_payload == 'auto'
 
         # Cool setpoint
         device.signal_cool_sp_change.emit(device, 22)
@@ -51,13 +51,13 @@ class Test_ThermostatMqtt:
                     payload='{"status": "{{status}}", "is_heating": {{is_heating}}, "is_cooling": {{is_cooling}}}',
                     )
         # Test cooling
-        device.signal_status_change.emit(device, 'cooling')
+        device.signal_status_change.emit(device, device.Status.COOLING)
         assert mqtt.last_topic == 'insteon/01.02.03/status_state'
-        assert mqtt.last_payload == '{"status": "COOLING", "is_heating": 0, "is_cooling": 1}'
+        assert mqtt.last_payload == '{"status": "cooling", "is_heating": 0, "is_cooling": 1}'
         # Test heating
-        device.signal_status_change.emit(device, 'heating')
+        device.signal_status_change.emit(device, device.Status.HEATING)
         assert mqtt.last_topic == 'insteon/01.02.03/status_state'
-        assert mqtt.last_payload == '{"status": "HEATING", "is_heating": 1, "is_cooling": 0}'
+        assert mqtt.last_payload == '{"status": "heating", "is_heating": 1, "is_cooling": 0}'
 
         # hold modify default payload to see all values
         thermo.hold_state = MsgTemplate(
@@ -67,11 +67,11 @@ class Test_ThermostatMqtt:
         # Test no hold
         device.signal_hold_change.emit(device, False)
         assert mqtt.last_topic == 'insteon/01.02.03/hold_state'
-        assert mqtt.last_payload == '{"hold": "OFF", "is_hold": 0}'
+        assert mqtt.last_payload == '{"hold": "off", "is_hold": 0}'
         # Test hold
         device.signal_hold_change.emit(device, True)
         assert mqtt.last_topic == 'insteon/01.02.03/hold_state'
-        assert mqtt.last_payload == '{"hold": "TEMP", "is_hold": 1}'
+        assert mqtt.last_payload == '{"hold": "temp", "is_hold": 1}'
 
         # energy modify default payload to see all values
         thermo.energy_state = MsgTemplate(
@@ -81,11 +81,11 @@ class Test_ThermostatMqtt:
         # Test no energy
         device.signal_energy_change.emit(device, False)
         assert mqtt.last_topic == 'insteon/01.02.03/energy_state'
-        assert mqtt.last_payload == '{"energy": "OFF", "is_energy": 0}'
+        assert mqtt.last_payload == '{"energy": "off", "is_energy": 0}'
         # Test energy
         device.signal_energy_change.emit(device, True)
         assert mqtt.last_topic == 'insteon/01.02.03/energy_state'
-        assert mqtt.last_payload == '{"energy": "ON", "is_energy": 1}'
+        assert mqtt.last_payload == '{"energy": "on", "is_energy": 1}'
 
         # Test commands
         # test mode
@@ -93,16 +93,16 @@ class Test_ThermostatMqtt:
             topic='insteon/01.02.03/mode_command',
             payload='auto',
             )
-        thermo.handle_mode_command(None, None, message)
-        assert device.mode == device.ModeCommands.auto
+        thermo._input_mode(None, None, message)
+        assert device.mode == device.ModeCommands.AUTO
 
         # test fan
         message = MockMessage(
             topic='insteon/01.02.03/fan_command',
             payload='on',
             )
-        thermo.handle_fan_command(None, None, message)
-        assert device.fan == device.FanCommands.on
+        thermo._input_fan(None, None, message)
+        assert device.fan == device.FanCommands.ON
 
         # test heat sp
         # sent in F
@@ -110,7 +110,7 @@ class Test_ThermostatMqtt:
             topic='insteon/01.02.03/heat_sp_command',
             payload='80',
             )
-        thermo.handle_heat_sp_command(None, None, message)
+        thermo._input_heat_setpoint(None, None, message)
         assert round(device.heat_sp, 1) == 26.7
 
         # temp sent in C
@@ -122,7 +122,7 @@ class Test_ThermostatMqtt:
             topic='insteon/01.02.03/heat_sp_command',
             payload='26.6666',
             )
-        thermo.handle_heat_sp_command(None, None, message)
+        thermo._input_heat_setpoint(None, None, message)
         assert round(device.heat_sp, 1) == 26.7
 
         # temp sent in both should default to F
@@ -134,8 +134,8 @@ class Test_ThermostatMqtt:
             topic='insteon/01.02.03/heat_sp_command',
             payload='{"temp_f": 80, "temp_c": 30}',
             )
-        thermo.handle_heat_sp_command(None, None, message)
-        assert round(device.heat_sp, 1) == 26.7
+        thermo._input_heat_setpoint(None, None, message)
+        assert round(device.heat_sp, 1) == 30
 
         # test cool sp
         # sent in F
@@ -143,7 +143,7 @@ class Test_ThermostatMqtt:
             topic='insteon/01.02.03/cool_sp_command',
             payload='80',
             )
-        thermo.handle_cool_sp_command(None, None, message)
+        thermo._input_cool_setpoint(None, None, message)
         assert round(device.cool_sp, 1) == 26.7
 
         # temp sent in C
@@ -155,7 +155,7 @@ class Test_ThermostatMqtt:
             topic='insteon/01.02.03/cool_sp_command',
             payload='26.6666',
             )
-        thermo.handle_cool_sp_command(None, None, message)
+        thermo._input_cool_setpoint(None, None, message)
         assert round(device.cool_sp, 1) == 26.7
 
         # temp sent in both should default to F
@@ -167,8 +167,8 @@ class Test_ThermostatMqtt:
             topic='insteon/01.02.03/cool_sp_command',
             payload='{"temp_f": 80, "temp_c": 30}',
             )
-        thermo.handle_cool_sp_command(None, None, message)
-        assert round(device.cool_sp, 1) == 26.7
+        thermo._input_cool_setpoint(None, None, message)
+        assert round(device.cool_sp, 1) == 30
 
 class MockMqtt:
     def __init__(self):
@@ -186,19 +186,24 @@ class MockDevice:
     CELSIUS = 1
 
     class ModeCommands(enum.IntEnum):
-        off = 0x09
-        heat = 0x04
-        cool = 0x05
-        auto = 0x06
-        program = 0x0a
+        OFF = 0x09
+        HEAT = 0x04
+        COOL = 0x05
+        AUTO = 0x06
+        PROGRAM = 0x0a
 
     class Fan(enum.IntEnum):
-        auto = 0x00
-        on = 0x01
+        AUTO = 0x00
+        ON = 0x01
 
     class FanCommands(enum.IntEnum):
-        on = 0x07
-        auto = 0x08
+        ON = 0x07
+        AUTO = 0x08
+
+    class Status(enum.Enum):
+        OFF = "OFF"
+        HEATING = "HEATING"
+        COOLING = "COOLING"
 
     def __init__(self):
         self.addr = IM.Address(0x01, 0x02, 0x03)

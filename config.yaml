@@ -110,6 +110,10 @@ insteon:
     #outlet:
     #  - aa.bb.cc: 'outlet'
 
+    # Thermostatus
+    thermostat:
+    #  - aa.bb.cc: 'downstairs'
+
   #------------------------------------------------------------------------
   # FUTURE: Insteon scene definitions.
   #scenes:
@@ -502,34 +506,34 @@ mqtt:
     cool_sp_state_payload: '{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}'
     heat_sp_state_topic: 'insteon/{{address}}/heat_sp_state'
     heat_sp_state_payload: '{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}'
-    #   fan_mode = "ON", "AUTO"
+    #   fan_mode = "on", "off"
     #   is_fan_on = 0/1
     fan_state_topic: 'insteon/{{address}}/fan_state'
-    fan_state_payload: '{{fan_mode}}'
-    #   mode = 'OFF', 'AUTO', 'HEAT', 'COOL', 'PROGRAM'
+    fan_state_payload: '{{fan_mode.upper()}}'
+    #   mode = 'off', 'auto', 'heat', 'cool', 'program'
     mode_state_topic: 'insteon/{{address}}/mode_state'
-    mode_state_payload: '{{mode}}'
+    mode_state_payload: '{{mode.upper()}}'
     #   humid = humidity percentage
     humid_state_topic: 'insteon/{{address}}/humid_state'
     humid_state_payload: '{{humid}}'
-    #   status = "OFF", "HEATING", "COOLING"
+    #   status = "off", "heating", "cooling"
     #   is_heating = 0/1
     #   is_cooling = 0/1
     status_state_topic: 'insteon/{{address}}/status_state'
-    status_state_payload: '{{status}}'
+    status_state_payload: '{{status.upper()}}'
     # Caution, there is no push update for the hold or energy state.  ie, if
     # you press hold on the physical device, you will not get any notice of
     # this unless you run get_status().  There is also no way to programatically
     # change the hold state or energy state
-    #   hold_str = 'OFF', 'TEMP'
+    #   hold_str = 'off', 'temp'
     #   is_hold = 0/1
     hold_state_topic: 'insteon/{{address}}/hold_state'
-    hold_state_payload: '{{hold_str}}'
+    hold_state_payload: '{{hold_str.upper()}}'
     # See caution in hold state above
-    #   energy_str = 'OFF', 'ON'
+    #   energy_str = 'off', 'on'
     #   is_energy = 0/1
     energy_state_topic: 'insteon/{{address}}/energ_state'
-    energy_state_payload: '{{energy_str}}'
+    energy_state_payload: '{{energy_str.upper()}}'
 
     # Command Topics
     # Available variables for templating all of these commands are:
@@ -550,7 +554,7 @@ mqtt:
     fan_command_topic: 'insteon/{{address}}/fan_command'
     fan_command_payload: '{ "cmd" : "{{value.lower()}}" }'
     # Temp setpoint commands. The payloads should be in the form of {temp_c:
-    # float, temp_f: float} Only one unit needs to be present.  If temp_f is
+    # float, temp_f: float} Only one unit needs to be present.  If temp_c is
     # present it will be used regardless
     heat_sp_command_topic: 'insteon/{{address}}/heat_sp_command'
     heat_sp_payload: '{ "temp_f" : {{value}} }'

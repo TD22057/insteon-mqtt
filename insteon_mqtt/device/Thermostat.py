@@ -48,32 +48,37 @@ class Thermostat(Base):
 
     # Mapping of fan states
     class Fan(enum.IntEnum):
-        auto = 0x00
-        on = 0x01
+        AUTO = 0x00
+        ON = 0x01
 
     # Irritatingly, this mapping is not consistent anywhere.
     # Insteon loves to be irritating like that.
     class Mode(enum.IntEnum):
-        off = 0x00
-        auto = 0x01
-        heat = 0x02
-        cool = 0x03
-        program = 0x04
+        OFF = 0x00
+        AUTO = 0x01
+        HEAT = 0x02
+        COOL = 0x03
+        PROGRAM = 0x04
 
     class ModeCommands(enum.IntEnum):
-        off = 0x09
-        heat = 0x04
-        cool = 0x05
-        auto = 0x06
-        program = 0x0a
+        OFF = 0x09
+        HEAT = 0x04
+        COOL = 0x05
+        AUTO = 0x06
+        PROGRAM = 0x0a
+
+    class Status(enum.Enum):
+        OFF = "OFF"
+        HEATING = "HEATING"
+        COOLING = "COOLING"
 
     class FanCommands(enum.IntEnum):
-        on = 0x07
-        auto = 0x08
+        ON = 0x07
+        AUTO = 0x08
 
     class HoldCommands(enum.IntEnum):
-        off = 0x00
-        temp = 0x01
+        OFF = 0x00
+        TEMP = 0x01
 
     # A few constants to make thing easier to read
     FARENHEIT = 0
@@ -104,7 +109,7 @@ class Thermostat(Base):
         self.signal_cool_sp_change = Signal()  # emit(device, int cool_sp in c)
         self.signal_heat_sp_change = Signal()  # emit(device, int heat_sp in c)
         self.signal_ambient_humid_change = Signal()  # emit(device, int humid)
-        self.signal_status_change = Signal()  # emit(device, str status)
+        self.signal_status_change = Signal()  # emit(device, Status status)
         self.signal_hold_change = Signal()  # emit(device, bool)
         self.signal_energy_change = Signal()  # emit(device, bool)
 
@@ -287,11 +292,11 @@ class Thermostat(Base):
         hold = flag >> 4 & 1
 
         # Signal status change
-        status = "off"
+        status = Thermostat.Status.OFF
         if cooling:
-            status = "cooling"
+            status = Thermostat.Status.COOLING
         elif heating:
-            status = "heating"
+            status = Thermostat.Status.HEATING
         self.signal_status_change.emit(self, status)
 
         # Signal Hold
@@ -434,15 +439,17 @@ class Thermostat(Base):
             if condition in [Thermostat.Groups.HEATING,
                              Thermostat.Groups.COOLING]:
                 if msg.cmd1 == 0x13:
-                    self.signal_status_change.emit(self, "OFF")
-                    return
+                    status = Thermostat.Status.OFF
+                elif condition is Thermostat.Groups.HEATING:
+                    status = Thermostat.Status.HEATING
                 else:
-                    self.signal_status_change.emit(self, condition.name)
-                    return
+                    status = Thermostat.Status.COOLING
+
+                self.signal_status_change.emit(self, status)
+                return  # TODO: should these be here?
 
         # As long as there is no errors (which return above), call
-        # handle_broadcast for any device that we're the controller
-        # of.
+        # handle_broadcast for any device that we're the controller of.
         super().handle_broadcast(msg)
 
     #-----------------------------------------------------------------------

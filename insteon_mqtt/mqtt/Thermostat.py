@@ -351,7 +351,7 @@ class Thermostat:
 
         data = self.template_data()
         data["energy_str"] = "on" if energy else "off"
-        data["energy"] = 1 if energy else 0
+        data["is_energy"] = 1 if energy else 0
 
         self.energy_state.publish(self.mqtt, data)
 
@@ -378,14 +378,10 @@ class Thermostat:
 
         LOG.info("Thermostat mode command: %s", data)
         try:
-            mode = data['cmd'].upper()
-            for value in self.device.ModeCommands:
-                if value.name == mode:
-                    self.device.mode_command(mode_member)
-                    break
-            else:
-                raise Exception("Unknown mode command: '%s'" % mode)
-
+            # Convert the input string to the enum value.
+            mode_str = data['cmd'].upper()
+            mode = self.device.ModeCommands[mode_str]
+            self.device.mode_command(mode)
         except:
             LOG.exception("Invalid thermostat mode command: %s", data)
 
@@ -412,8 +408,10 @@ class Thermostat:
 
         LOG.info("Thermostat fan mode command: %s", data)
         try:
-            mode_member = self.device.FanCommands[data['cmd']]
-            self.device.fan_command(mode_member)
+            # Convert the input string to the enum value.
+            mode_str = data['cmd'].upper()
+            mode = self.device.FanCommands[mode_str]
+            self.device.fan_command(mode)
         except:
             LOG.exception("Unknown thermostat fan mode command: %s", data)
 
