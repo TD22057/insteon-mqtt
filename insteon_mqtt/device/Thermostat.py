@@ -215,7 +215,7 @@ class Thermostat(Base):
         all necessary signal_* events to cause mqtt messages to be sent
 
         Args:
-          msg:   (InptStandard) Broadcast message from the device.
+          msg:   (InpStandard) Broadcast message from the device.
         """
         # The response contains the following data payload
 
@@ -353,7 +353,7 @@ class Thermostat(Base):
         Not currently enabled
 
         Args:
-          msg:   (InptStandard) Broadcast message from the device.
+          msg:   (InpStandard) Broadcast message from the device.
         """
         # The response looks like
         # D4 - High Humid Set Point
@@ -396,7 +396,7 @@ class Thermostat(Base):
         the necessary state
 
         Args:
-          msg:   (InptStandard) Direct ACK message from the device.
+          msg:   (InpStandard) Direct ACK message from the device.
           on_done:  Optional callback run when the commands are finished.
         """
         if msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
@@ -419,7 +419,7 @@ class Thermostat(Base):
         Currently we don't do anything with the humidifying messages.
 
         Args:
-          msg:   (InptStandard) Broadcast message from the device.
+          msg:   (InpStandard) Broadcast message from the device.
         """
         # 0x11 is ON 0x13 is OFF.
         if msg.cmd1 in [0x11, 0x13]:
@@ -478,7 +478,7 @@ class Thermostat(Base):
         confusing in certain circumstances
 
         Args:
-          msg:   (InptStandard) Direct ACK message from the device.
+          msg:   (InpStandard) Direct ACK message from the device.
           on_done:  Optional callback run when the commands are finished.
         """
         if msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
@@ -523,7 +523,7 @@ class Thermostat(Base):
         be confusing in certain circumstances
 
         Args:
-          msg:   (InptStandard) Direct ACK message from the device.
+          msg:   (InpStandard) Direct ACK message from the device.
           on_done:  Optional callback run when the commands are finished.
         """
         if msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
@@ -575,7 +575,7 @@ class Thermostat(Base):
         could be confusing in certain circumstances
 
         Args:
-          msg:   (InptStandard) Direct ACK message from the device.
+          msg:   (InpStandard) Direct ACK message from the device.
           on_done:  Optional callback run when the commands are finished.
         """
         if msg.cmd1 == 0x6d:
@@ -627,7 +627,7 @@ class Thermostat(Base):
         could be confusing in certain circumstances
 
         Args:
-          msg:   (InptStandard) Direct ACK message from the device.
+          msg:   (InpStandard) Direct ACK message from the device.
           on_done:  Optional callback run when the commands are finished.
         """
         if msg.cmd1 == 0x6c:

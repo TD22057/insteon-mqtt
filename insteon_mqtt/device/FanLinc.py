@@ -201,7 +201,7 @@ class FanLinc(Dimmer):
         to the correct values when we see the broadcast message.
 
         Args:
-          msg:   (InptStandard) Broadcast message from the device.
+          msg:   (InpStandard) Broadcast message from the device.
         """
         # NOTE: the fan linc shouldn't be able to initialize a
         # broadcast message.  That's for actuators (switches, motion
@@ -270,7 +270,7 @@ class FanLinc(Dimmer):
         Args:
           addr:  (Address) The device that sent the message.  This is the
                  controller in the scene.
-          msg:   (InptStandard) Broadcast message from the device.  Use
+          msg:   (InpStandard) Broadcast message from the device.  Use
                  msg.group to find the group and msg.cmd1 for the command.
         """
         # Group 1 is for the dimmer - pass that to the base class:

@@ -322,7 +322,7 @@ class Switch(Base):
         to the correct values when we see the broadcast message.
 
         Args:
-          msg:   (InptStandard) Broadcast message from the device.
+          msg:   (InpStandard) Broadcast message from the device.
         """
         # ACK of the broadcast - ignore this.
         if msg.cmd1 == 0x06:
@@ -446,7 +446,7 @@ class Switch(Base):
         Args:
           addr:  (Address) The device that sent the message.  This is the
                  controller in the scene.
-          msg:   (InptStandard) Broadcast message from the device.  Use
+          msg:   (InpStandard) Broadcast message from the device.  Use
                  msg.group to find the group and msg.cmd1 for the command.
         """
         # Make sure we're really a responder to this message.  This

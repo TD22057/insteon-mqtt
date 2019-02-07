@@ -567,7 +567,7 @@ class KeypadLinc(Base):
         the broadcast message.
 
         Args:
-          msg:   (InptStandard) Broadcast message from the device.
+          msg:   (InpStandard) Broadcast message from the device.
         """
         # Non-group 1 messages are for the scene buttons on keypadlinc.
         # Treat those the same as the remote control does.  They don't have
