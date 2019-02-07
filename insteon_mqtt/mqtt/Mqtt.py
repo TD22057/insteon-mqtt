@@ -45,9 +45,9 @@ class Mqtt:
         """Constructor
 
         Args:
-          mqtt_link:  (network.Mqtt) The network MQTT link to use for
-                      communicating with the MQTT broker.
-          modem:      (mqtt.Modem) The MQTT PLM modem objec.t
+          mqtt_link (network.Mqtt):  The network MQTT link to use for
+                    communicating with the MQTT broker.
+          modem (mqtt.Modem):  The MQTT PLM modem object.
         """
         # Connect a callback for handling when a new device is created in the
         # modem.  We'll use it to create a corresponding MQTT device.
@@ -91,7 +91,7 @@ class Mqtt:
                        system commands.
 
         Args:
-          data:   (dict) Configuration data to load.
+          data (dict):  Configuration data to load.
         """
         # Pass connection data to the MQTT link.  This will configure the
         # connection to the broker.
@@ -116,12 +116,12 @@ class Mqtt:
         """Publish a message out.
 
         Args:
-          topic:   (str) The MQTT topic to publish with.
-          payload: (str) The MQTT payload to send.
-          qos:     (int) None to use the class QOS. Otherwise the QOS level
-                   to use.
-          retain:  (bool) None to use the class retain flag.  Otherwise
-                   the retain flag to use.
+          topic (str):  The MQTT topic to publish with.
+          payload (str):  The MQTT payload to send.
+          qos (int):  None to use the class QOS. Otherwise the QOS level
+              to use.
+          retain (bool):  None to use the class retain flag.  Otherwise
+                 the retain flag to use.
         """
         qos = self.qos if qos is None else qos
         retain = self.retain if retain is None else retain
@@ -143,8 +143,8 @@ class Mqtt:
         After the connection, we'll subscribe to our topics.
 
         Args:
-          link:      (network.Mqtt) The MQTT network link.
-          connected: (bool) True if connected, False if disconnected.
+          link (network.Mqtt):  The MQTT network link.
+          connected (bool):  True if connected, False if disconnected.
         """
         if connected:
             self._subscribe()
@@ -158,8 +158,8 @@ class Mqtt:
         we can send out MQTT messages when the device changes.
 
         Args:
-          modem:   (Modem) The Insteon modem device.
-          device:  (device.Base) The Insteon device that was added.
+          modem (Modem):  The Insteon modem device.
+          device (device.Base):  The Insteon device that was added.
         """
         # Find the MQTT class type that matches the new insteon device.
         mqtt_cls = config.find(device)
@@ -195,10 +195,9 @@ class Mqtt:
           that corresponds to the Instoen device for decoding.
 
         Args:
-          client:   The Paho.Client the message was read from.
-          userdata: Optional data passed to the MQTT link.  Not used.
-          message:  Paho.mqtt message object.  Has attributes topic and
-                    payload.
+          client (paho.Client):  The paho mqtt client (self.link).
+          data:  Optional user data (unused).
+          message:  MQTT message - has attrs: topic, payload, qos, retain.
         """
         LOG.info("MQTT message %s %s", message.topic, message.payload)
 
@@ -296,8 +295,8 @@ class Mqtt:
         ourselves as a callback on the logging system in that case.
 
         Args:
-          record:   Logging record.  None if the command is finished.
-          topic:    The session topic to publish the log message to.
+          record:  Logging record.  None if the command is finished.
+          topic (str):  The session topic to publish the log message to.
         """
         # Command is finished.  Cleanup and send an END reply.
         if record is None:

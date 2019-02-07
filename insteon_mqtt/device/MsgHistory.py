@@ -36,7 +36,7 @@ class MsgHistory:
         """Add a received message to the history.
 
         Args:
-           msg:    (Msg.Base) The received message.
+           msg (Msg.Base):  The received message.
         """
         num_hops = msg.flags.max_hops - msg.flags.hops_left
         self._hops.append(num_hops)
@@ -54,7 +54,7 @@ class MsgHistory:
         """Compute the number of optimal number hops for an outbound message.
 
         Returns:
-          (int) Returns the number of hops to use in the range [0,3].
+          int:  Returns the number of hops to use in the range [0,3].
         """
         if not self._hops:
             return 3

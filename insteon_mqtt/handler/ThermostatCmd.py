@@ -3,7 +3,6 @@
 # Thermostat direct message handler.
 #
 #===========================================================================
-import enum
 from .. import log
 from .. import message as Msg
 from .Base import Base
