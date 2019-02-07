@@ -446,7 +446,6 @@ class Thermostat(Base):
                     status = Thermostat.Status.COOLING
 
                 self.signal_status_change.emit(self, status)
-                return  # TODO: should these be here?
 
         # As long as there is no errors (which return above), call
         # handle_broadcast for any device that we're the controller of.

@@ -24,6 +24,16 @@ class ThermostatCmd(Base):
     NOTE: This handler is designed to always be active - it never returns
     FINISHED.
     """
+
+    # This mapping is different from the mapping used in response to a
+    # get_status message.
+    class Mode(enum.IntEnum):
+        off = 0x00
+        heat = 0x01
+        cool = 0x02
+        auto = 0x03
+        program = 0x04
+
     def __init__(self, device):
         """Constructor
 
@@ -89,7 +99,7 @@ class ThermostatCmd(Base):
             mode_nibble = int(msg.cmd2) & 0b00001111
             self.device.set_fan_mode_state(fan_nibble)
             try:
-                hvac_mode = self.device.Mode(mode_nibble)
+                hvac_mode = ThermostatCmd.Mode(mode_nibble)
             except ValueError:
                 LOG.exception("Unknown mode broadcast state %s.", mode_nibble)
             else:
