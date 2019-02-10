@@ -23,6 +23,19 @@ class BatterySensor(Base):
       group 01 = on (0x11) / off (0x13)
       group 03 = low battery (0x11) / good battery (0x13)
       group 04 = heartbeat (0x11)
+
+    State changes are communicated by emitting signals.  Other classes can
+    connect to these signals to perform an action when a change is made to
+    the device (like sending MQTT messages).  Supported signals are:
+
+    - signal_on_off( Device, bool is_on ): Sent when the sensor is tripped
+      (is_on=True) or resets (is_on=False).
+
+    - signal_low_battery( Device, bool is_low ): Sent to indicate the current
+      battery state.
+
+    - signal_heartbeat( Device, True ): Sent when the device has broadcast a
+      heartbeat signal.
     """
     type_name = "battery_sensor"
 
@@ -70,7 +83,6 @@ class BatterySensor(Base):
         Args:
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
-
         """
         LOG.info("BatterySensor %s pairing", self.addr)
 
@@ -131,31 +143,28 @@ class BatterySensor(Base):
         if msg.cmd1 == 0x06:
             LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
                      msg.group)
-            # Use this opportunity to get the device db since we know the
-            # sensor is awake.
-            if len(self.db) == 0:
-                LOG.info("BatterySensor %s awake - requesting database",
-                         self.addr)
-                self.refresh(force=True)
-            return
 
         # On (0x11) and off (0x13) commands.
         elif msg.cmd1 == 0x11 or msg.cmd1 == 0x13:
             LOG.info("BatterySensor %s broadcast cmd %s grp: %s", self.addr,
                      msg.cmd1, msg.group)
 
+            # Find the callback for this group and run that.
             handler = self.group_map.get(msg.group, None)
             if handler:
                 handler(msg)
             else:
                 LOG.error("BatterySensor no handler for group %s", msg.group)
 
-        # Broadcast to the devices we're linked to. Call
-        # handle_broadcast for any device that we're the controller of.
-        super().handle_broadcast(msg)
+            # This will find all the devices we're the controller of for this
+            # group and call their handle_group_cmd() methods to update their
+            # states since they will have seen the group broadcast and updated
+            # (without sending anything out).
+            super().handle_broadcast(msg)
 
-        # Use this opportunity to get the device db since we know the
-        # sensor is awake.
+        # If we haven't downloaded the device db yet, use this opportunity to
+        # get the device db since we know the sensor is awake.  This doesn't
+        # always seem to work, but it works often enough to be useful to try.
         if len(self.db) == 0:
             LOG.info("BatterySensor %s awake - requesting database", self.addr)
             self.refresh(force=True)

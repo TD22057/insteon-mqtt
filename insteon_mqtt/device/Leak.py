@@ -14,24 +14,18 @@ LOG = log.get_logger()
 class Leak(Base):
     """Insteon battery powered water leak sensor.
 
-    A leak sensor is basically an on/off sensor except that it's
-    batter powered and only awake when water is detected or the set
-    button is pressed.  It will broadcast an on command for group 1
-    when dry and on command for group 2 when wet. It will also broadcast
-    a heartbeat signal every 24 hours on group 4.
+    A leak sensor is basically an on/off sensor except that it's batter
+    powered and only awake when water is detected or the set button is
+    pressed.  It will broadcast an on command for group 1 when dry and on
+    command for group 2 when wet. It will also broadcast a heartbeat signal
+    every 24 hours on group 4.
 
-    The issue with a battery powered sensor is that we can't download
-    the link database without the sensor being on.  You can trigger
-    the sensor manually and then quickly send an MQTT command with the
-    payload 'getdb' to download the database.  We also can't test to
-    see if the local database is current or what the current motion
-    state is - we can really only respond to the sensor when it sends
-    out a message.
-
-    The Signal Leak.signal_wet(True) will be emitted whenever the
-    device senses water and signal_wet(False) when no water is detected.
-
-    TODO: download the database automatically when leak/heartbeat is seen.
+    The issue with a battery powered sensor is that we can't download the
+    link database without the sensor being on.  You can trigger the sensor
+    manually and then quickly send an MQTT command with the payload 'getdb'
+    to download the database.  We also can't test to see if the local
+    database is current or what the current motion state is - we can really
+    only respond to the sensor when it sends out a message.
     """
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
@@ -116,16 +110,15 @@ class Leak(Base):
         """Handle broadcast messages from this device.
 
         The broadcast message from a device is sent when the device is
-        triggered and when the leak return to dry.  The message has the
-        group ID in it.  We'll update the device state and look up the
-        group in the all link database.  For each device that is in
-        the group (as a reponsder), we'll call handle_group_cmd() on
-        that device to trigger it.  This way all the devices in the
-        group are updated to the correct values when we see the
-        broadcast message.
+        triggered.  The message has the group ID in it.  We'll update the
+        device state and look up the group in the all link database.  For
+        each device that is in the group (as a reponsder), we'll call
+        handle_group_cmd() on that device to trigger it.  This way all the
+        devices in the group are updated to the correct values when we see
+        the broadcast message.
 
         Args:
-          msg:   (InpStandard) Broadcast message from the device.
+          msg (InpStandard):  Broadcast message from the device.
         """
         # ACK of the broadcast - ignore this.
         if msg.cmd1 == 0x06:

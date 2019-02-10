@@ -135,12 +135,12 @@ class SmokeBridge(Base):
         """Handle broadcast messages from this device.
 
         The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update
-        the device state and look up the group in the all link
-        database.  For each device that is in the group (as a
-        reponsder), we'll call handle_group_cmd() on that device to
-        trigger it.  This way all the devices in the group are updated
-        to the correct values when we see the broadcast message.
+        triggered.  The message has the group ID in it.  We'll update the
+        device state and look up the group in the all link database.  For
+        each device that is in the group (as a reponsder), we'll call
+        handle_group_cmd() on that device to trigger it.  This way all the
+        devices in the group are updated to the correct values when we see
+        the broadcast message.
 
         Smoke bridge will emit the SmokeBridge.signal_state_change
         signal with the alert condition string whenever the bridge
@@ -153,12 +153,11 @@ class SmokeBridge(Base):
         if msg.cmd1 == 0x06:
             LOG.info("Smoke bridge %s broadcast ACK grp: %s", self.addr,
                      msg.group)
-            return
 
-        # 0x11 ON command for the smoke bridge means the error is
-        # active.  NOTE: there is no off command - that seems to be
-        # handled by the bridge sending the CLEAR condition group.
-        if msg.cmd1 == 0x11:
+        # 0x11 ON command for the smoke bridge means the error is active.
+        # NOTE: there is no off command - that seems to be handled by the
+        # bridge sending the CLEAR condition group.
+        elif msg.cmd1 == 0x11:
             LOG.info("Smoke bridge %s broadcast ON grp: %s", self.addr,
                      msg.group)
 
@@ -172,9 +171,8 @@ class SmokeBridge(Base):
                      condition)
             self.signal_state_change.emit(self, condition)
 
-        # As long as there is no errors (which return above), call
-        # handle_broadcast for any device that we're the controller
-        # of.
-        super().handle_broadcast(msg)
+            # As long as there is no errors (which return above), call
+            # handle_broadcast for any device that we're the controller of.
+            super().handle_broadcast(msg)
 
     #-----------------------------------------------------------------------

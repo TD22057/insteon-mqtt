@@ -125,15 +125,15 @@ class Remote(Base):
         """Handle broadcast messages from this device.
 
         The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update
-        the device state and look up the group in the all link
-        database.  For each device that is in the group (as a
-        reponsder), we'll call handle_group_cmd() on that device to
-        trigger it.  This way all the devices in the group are updated
-        to the correct values when we see the broadcast message.
+        triggered.  The message has the group ID in it.  We'll update the
+        device state and look up the group in the all link database.  For
+        each device that is in the group (as a reponsder), we'll call
+        handle_group_cmd() on that device to trigger it.  This way all the
+        devices in the group are updated to the correct values when we see
+        the broadcast message.
 
         Args:
-          msg:   (InpStandard) Broadcast message from the device.
+          msg (InpStandard):  Broadcast message from the device.
         """
         # ACK of the broadcast - ignore this.
         if msg.cmd1 == 0x06:
@@ -157,16 +157,15 @@ class Remote(Base):
 
             self.signal_manual.emit(self, msg.group, manual)
 
-        # This will find all the devices we're the controller of for
-        # this group and call their handle_group_cmd() methods to
-        # update their states since they will have seen the group
-        # broadcast and updated (without sending anything out).
+        # This will find all the devices we're the controller of for this
+        # group and call their handle_group_cmd() methods to update their
+        # states since they will have seen the group broadcast and updated
+        # (without sending anything out).
         super().handle_broadcast(msg)
 
-        # Since we just saw a message got by, yse this opportunity to
-        # get the device db since we know the sensor is awake.  This
-        # doesn't always work - but it works enough times to be useful
-        # (probably?).
+        # If we haven't downloaded the device db yet, use this opportunity to
+        # get the device db since we know the sensor is awake.  This doesn't
+        # always seem to work, but it works often enough to be useful to try.
         if len(self.db) == 0:
             LOG.info("Remote %s awake - requesting database", self.addr)
             self.refresh(force=True)

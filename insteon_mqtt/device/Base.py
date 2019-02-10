@@ -24,15 +24,13 @@ class Base:
     functions that are the same for all devices.
 
     The run_command() method is used for arbitrary remote commanding (via
-    MQTT for example).  The input is a dict (or keyword args) containing a
-    'cmd' key with the value as the command name and any additional arguments
-    needed for the command as other key/value pairs. Valid commands for all
-    devices are:
-
-       getdb:    No arguments.  Download the PLM modem all link database
-                 and save it to file.
-       refresh:  No arguments.  Ping the device and see if the database is
-                 current.  Reloads the modem database if needed.
+    MQTT for example).  See the Base.cmd_map attribute for a list of methods
+    tha can be called via run_command().  Derived types can extend that
+    dictionary to add in their own commands to support.  Using a dictionary
+    of the commands allows us to control access to which commands should be
+    supported by remote access via MQTT.  If we just looked up the method
+    names from the class, then anything could be called via remote message
+    which isn't desirable.
     """
     @classmethod
     def from_config(cls, values, protocol, modem, **kwargs):
@@ -660,14 +658,10 @@ class Base:
         Commands are input as a dictionary:
           { 'cmd' : 'COMMAND', ...args }
 
-        where COMMAND is the command name and any additional arguments
-        to the command are other dictionary keywords.  Valid commands
-        are:
-          getdb:  No arguments.  Download the PLM modem all link database
-                  and save it to file.
-
-          refresh:  No arguments.  Ping the device and see if the database is
-                    current.  Reloads the modem database if needed.
+        where COMMAND is the command name and any additional arguments to the
+        command are other dictionary keywords.  To find the arguments to
+        pass, see the method being called for it's argument list.  See the
+        class docs for a list of valid commands.
 
         Derived types may add their own commands to the self.cmd_map
         dictionary for dispatch.

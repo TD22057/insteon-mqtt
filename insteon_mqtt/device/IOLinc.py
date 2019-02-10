@@ -319,7 +319,25 @@ class IOLinc(Base):
         This turns the relay on no matter what.  It ignores the momentary
         A/B/C settings and just turns the relay on.
 
-        TODO: doc
+        NOTE: This does NOT simulate a button press on the device - it just
+        changes the state of the device.  It will not trigger any responders
+        that are linked to this device.  To simulate a button press, call the
+        scene() method.
+
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
+
+        Args:
+          group (int):  The group to send the command to.  For this device,
+                this must be 1.  Allowing a group here gives us a consistent
+                API to the on command across devices.
+          level (int):  If non zero, turn the device on.  Should be in the
+                range 0 to 255.  Only dimmers use the intermediate values, all
+                other devices look at level=0 or level>0.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("IOLinc %s cmd: on", self.addr)
         assert group == 0x01
@@ -339,9 +357,22 @@ class IOLinc(Base):
         This turns the relay on no matter what.  It ignores the momentary
         A/B/C settings and just turns the relay on.
 
+        NOTE: This does NOT simulate a button press on the device - it just
+        changes the state of the device.  It will not trigger any responders
+        that are linked to this device.  To simulate a button press, call the
+        scene() method.
+
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
+
         Args:
-          instant:  (bool) False for a normal ramping change, True for an
-                    instant change.
+          group (int):  The group to send the command to.  For this device,
+                this must be 1.  Allowing a group here gives us a consistent
+                API to the on command across devices.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("IOLinc %s cmd: off", self.addr)
         assert group == 0x01
@@ -356,16 +387,30 @@ class IOLinc(Base):
 
     #-----------------------------------------------------------------------
     def set(self, level, group=0x01, instant=False, on_done=None):
-        """Set the device on or off.
+        """Turn the relay on or off.  Level zero will be off.
+
+        This turns the relay on or off no matter what.  It ignores the
+        momentary A/B/C settings and just turns the relay on.
+
+        NOTE: This does NOT simulate a button press on the device - it just
+        changes the state of the device.  It will not trigger any responders
+        that are linked to this device.  To simulate a button press, call the
+        scene() method.
 
         This will send the command to the device to update it's state.
         When we get an ACK of the result, we'll change our internal
         state and emit the state changed signals.
 
         Args:
-          level:    (int/bool) If non zero, turn the device on.
-          instant:  (bool) False for a normal ramping change, True for an
-                    instant change.
+          level (int):  If non zero, turn the device on.  Should be in the
+                range 0 to 255.  Only dimmers use the intermediate values, all
+                other devices look at level=0 or level>0.
+          group (int):  The group to send the command to.  For this device,
+                this must be 1.  Allowing a group here gives us a consistent
+                API to the on command across devices.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         if level:
             self.on(group, level, instant, on_done)
@@ -374,7 +419,18 @@ class IOLinc(Base):
 
     #-----------------------------------------------------------------------
     def scene(self, is_on, group=None, on_done=None):
-        """TODO: doc
+        """Trigger a scene on the device.
+
+        Triggering a scene is the same as simulating a button press on the
+        device.  It will change the state of the device and notify responders
+        that are linked ot the device to be updated.
+
+        Args:
+          is_on (bool):  True for an on command, False for an off command.
+          group (int):  The group on the device to simulate.  For this device,
+                this must be 1.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         on_done = util.make_callback(on_done)
 
@@ -406,15 +462,15 @@ class IOLinc(Base):
         """Handle broadcast messages from this device.
 
         The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update
-        the device state and look up the group in the all link
-        database.  For each device that is in the group (as a
-        reponsder), we'll call handle_group_cmd() on that device to
-        trigger it.  This way all the devices in the group are updated
-        to the correct values when we see the broadcast message.
+        triggered.  The message has the group ID in it.  We'll update the
+        device state and look up the group in the all link database.  For
+        each device that is in the group (as a reponsder), we'll call
+        handle_group_cmd() on that device to trigger it.  This way all the
+        devices in the group are updated to the correct values when we see
+        the broadcast message.
 
         Args:
-          msg:   (InpStandard) Broadcast message from the device.
+          msg (InpStandard):  Broadcast message from the device.
         """
         # ACK of the broadcast - ignore this.
         if msg.cmd1 == 0x06:

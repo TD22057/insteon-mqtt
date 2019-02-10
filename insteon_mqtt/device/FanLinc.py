@@ -193,21 +193,20 @@ class FanLinc(Dimmer):
         """Handle broadcast messages from this device.
 
         The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update
-        the device state and look up the group in the all link
-        database.  For each device that is in the group (as a
-        reponsder), we'll call handle_group_cmd() on that device to
-        trigger it.  This way all the devices in the group are updated
-        to the correct values when we see the broadcast message.
+        triggered.  The message has the group ID in it.  We'll update the
+        device state and look up the group in the all link database.  For
+        each device that is in the group (as a reponsder), we'll call
+        handle_group_cmd() on that device to trigger it.  This way all the
+        devices in the group are updated to the correct values when we see
+        the broadcast message.
 
         Args:
-          msg:   (InpStandard) Broadcast message from the device.
+          msg (InpStandard):  Broadcast message from the device.
         """
-        # NOTE: the fan linc shouldn't be able to initialize a
-        # broadcast message.  That's for actuators (switches, motion
-        # sensors, etc) to trigger other things to occur.  Since the
-        # fan linc is just a responder to other commands, that
-        # shouldn't occur.
+        # NOTE: the fan linc shouldn't be able to initialize a broadcast
+        # message.  That's for actuators (switches, motion sensors, etc) to
+        # trigger other things to occur.  Since the fan linc is just a
+        # responder to other commands, that shouldn't occur.
         LOG.error("FanLinc unexpected handle_broadcast called: %s", msg)
         super.handle_broadcast(msg)
 

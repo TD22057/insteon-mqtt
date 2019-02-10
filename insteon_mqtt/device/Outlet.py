@@ -146,14 +146,24 @@ class Outlet(Base):
            on_done=None):
         """Turn the device on.
 
-        This will send the command to the device to update it's state.
-        When we get an ACK of the result, we'll change our internal
-        state and emit the state changed signals.
+        NOTE: This does NOT simulate a button press on the device - it just
+        changes the state of the device.  It will not trigger any responders
+        that are linked to this device.  To simulate a button press, call the
+        scene() method.
 
-        TODO: doc
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
+
         Args:
-          instant:  (bool) False for a normal ramping change, True for an
-                    instant change.
+          group (int):  The group to send the command to.  The top outlet is
+                group 1, the bottom outlet is group 2.
+          level (int):  If non zero, turn the device on.  Should be in the
+                range 0 to 255.  Only dimmers use the intermediate values, all
+                other devices look at level=0 or level>0.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Outlet %s grp: %s cmd: on", group, self.addr)
         assert 1 <= group <= 2
@@ -186,13 +196,21 @@ class Outlet(Base):
     def off(self, group=0x01, mode=on_off.Mode.NORMAL, on_done=None):
         """Turn the device off.
 
-        This will send the command to the device to update it's state.
-        When we get an ACK of the result, we'll change our internal
-        state and emit the state changed signals.
+        NOTE: This does NOT simulate a button press on the device - it just
+        changes the state of the device.  It will not trigger any responders
+        that are linked to this device.  To simulate a button press, call the
+        scene() method.
+
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
 
         Args:
-          instant:  (bool) False for a normal ramping change, True for an
-                    instant change.
+          group (int):  The group to send the command to.  The top outlet is
+                group 1, the bottom outlet is group 2.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Outlet %s cmd: off", self.addr)
         assert 1 <= group <= 2
@@ -210,8 +228,8 @@ class Outlet(Base):
             data = bytes([0x02] + [0x00] * 13)
             msg = Msg.OutExtended.direct(self.addr, cmd1, 0x00, data)
 
-        # Use the standard command handler which will notify us when
-        # the command is ACK'ed.
+        # Use the standard command handler which will notify us when the
+        # command is ACK'ed.
         msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
 
         # See __init__ code comments for what this is for.
@@ -222,15 +240,26 @@ class Outlet(Base):
 
     #-----------------------------------------------------------------------
     def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, on_done=None):
-        """Set the device on or off.
+        """Turn the device on or off.  Level zero will be off.
 
-        This will send the command to the device to update it's state.
-        When we get an ACK of the result, we'll change our internal
-        state and emit the state changed signals.
+        NOTE: This does NOT simulate a button press on the device - it just
+        changes the state of the device.  It will not trigger any responders
+        that are linked to this device.  To simulate a button press, call the
+        scene() method.
+
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
 
         Args:
-          level:    (int/bool) If non zero, turn the device on.
-        TODO
+          level (int):  If non zero, turn the device on.  Should be in the
+                range 0 to 255.  Only dimmers use the intermediate values, all
+                other devices look at level=0 or level>0.
+          group (int):  The group to send the command to.  The top outlet is
+                group 1, the bottom outlet is group 2.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         if level:
             self.on(group, level, mode, on_done)
@@ -239,7 +268,18 @@ class Outlet(Base):
 
     #-----------------------------------------------------------------------
     def scene(self, is_on, group=0x01, on_done=None):
-        """TODO: doc
+        """Trigger a scene on the device.
+
+        Triggering a scene is the same as simulating a button press on the
+        device.  It will change the state of the device and notify responders
+        that are linked ot the device to be updated.
+
+        Args:
+          is_on (bool):  True for an on command, False for an off command.
+          group (int):  The group on the device to simulate.  The top outlet
+                is group 1, the bottom outlet is group 2.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Outlet %s scene %s", self.addr, "on" if is_on else "off")
         assert group == 0x01
@@ -257,8 +297,8 @@ class Outlet(Base):
             ] + [0x00] * 8)
         msg = Msg.OutExtended.direct(self.addr, 0x30, 0x00, data)
 
-        # Use the standard command handler which will notify us when
-        # the command is ACK'ed.
+        # Use the standard command handler which will notify us when the
+        # command is ACK'ed.
         callback = on_done if is_on else None
         msg_handler = handler.StandardCmd(msg, self.handle_scene, callback)
         self.send(msg, msg_handler)
@@ -276,11 +316,17 @@ class Outlet(Base):
 
     #-----------------------------------------------------------------------
     def set_backlight(self, level, on_done=None):
-        """TODO: doc
+        """Set the device backlight level.
 
-        NOTE: default factory backlight == 0x1f
-        NOTE: only switches with LED display will do anything with this
-              command.
+        This changes the level of the LED back light that is used by the
+        device status LED's (dimmer levels, KeypadLinc buttons, etc).
+
+        The default factory level is 0x1f.
+
+        Args:
+          level (int):  The backlight level in the range [0,255]
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Outlet %s setting backlight to %s", self.label, level)
 
@@ -296,19 +342,26 @@ class Outlet(Base):
 
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
 
-        # Use the standard command handler which will notify us when
-        # the command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_backlight,
-                                          on_done)
+        # Use the standard command handler which will notify us when the
+        # command is ACK'ed.
+        msg_handler = handler.StandardCmd(msg, self.handle_backlight, on_done)
 
-        # Send the message to the PLM modem for protocol.
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):
-        """TODO: doc
-        valid kwargs:
-           backlight: 0x11-0xff (factory default 0x1f)
+        """Set internal device flags.
+
+        This command is used to change internal device flags and states.
+        Valid inputs are:
+
+        - backlight=level:  Change the backlight LED level (0-255).  See
+          set_backlight() for details.
+
+        Args:
+          kwargs: Key=value pairs of the flags to change.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Outlet %s cmd: set flags", self.label)
 
@@ -320,13 +373,27 @@ class Outlet(Base):
             raise Exception("Unknown Outlet flags input: %s.\n Valid flags "
                             "are: %s" % unknown, flags)
 
-        # FUTURE: to support other flags, use a CommandSeq
-        backlight = util.input_byte(kwargs, "backlight")
-        self.set_backlight(backlight, on_done)
+        # Start a command sequence so we can call the flag methods in series.
+        seq = CommandSeq(self.protocol, "Outlet set_flags complete", on_done)
+
+        if "backlink" in kwargs:
+            backlight = util.input_byte(kwargs, "backlight")
+            seq.add(self.set_backlight, backlight)
+
+        seq.run()
 
     #-----------------------------------------------------------------------
     def handle_backlight(self, msg, on_done):
-        """TODO: doc
+        """Callback for handling set_backlight() responses.
+
+        This is called when we get a response to the set_backlight() command.
+        We don't need to do anything - just call the on_done callback with
+        the status.
+
+        Args:
+          msg (InpStandard):  The response message from the command.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             on_done(True, "Backlight level updated", None)
@@ -338,23 +405,27 @@ class Outlet(Base):
         """Handle broadcast messages from this device.
 
         The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update
-        the device state and look up the group in the all link
-        database.  For each device that is in the group (as a
-        reponsder), we'll call handle_group_cmd() on that device to
-        trigger it.  This way all the devices in the group are updated
-        to the correct values when we see the broadcast message.
+        triggered.  The message has the group ID in it.  We'll update the
+        device state and look up the group in the all link database.  For
+        each device that is in the group (as a reponsder), we'll call
+        handle_group_cmd() on that device to trigger it.  This way all the
+        devices in the group are updated to the correct values when we see
+        the broadcast message.
 
         Args:
-          msg:   (InpStandard) Broadcast message from the device.
+          msg (InpStandard):  Broadcast message from the device.
         """
-        # ACK of the broadcast - ignore this.
+        # ACK of the broadcast.  We don't generally need to do anything for
+        # this kind of message.
         if msg.cmd1 == 0x06:
             LOG.info("Outlet %s broadcast ACK grp: %s", self.addr, msg.group)
+
+            # If we need to do something when the broadcast is done, do that
+            # now (for devices that ignore the off scene command) - see
+            # scene() for details.
             if self.broadcast_done:
                 self.broadcast_done()
             self.broadcast_done = None
-            return
 
         # On/off command codes.
         elif on_off.Mode.is_valid(msg.cmd1):
@@ -362,20 +433,21 @@ class Outlet(Base):
             LOG.info("Outlet %s broadcast grp: %s on: %s mode: %s", self.addr,
                      msg.group, is_on, mode)
 
+            # For an on command, we can update directly.
             if is_on:
                 self._set_is_on(msg.group, True, mode)
 
-            # If broadcast_done is active, this is a generated broadcast and
-            # we need to manually turn the device off so don't update it's
-            # state until that occurs.
+            # For an off command, we need to see if broadcast_done is active.
+            # This is a generated broadcast and we need to manually turn the
+            # device off so don't update it's state until that occurs.
             elif not self.broadcast_done:
                 self._set_is_on(msg.group, False, mode)
 
-        # This will find all the devices we're the controller of for
-        # this group and call their handle_group_cmd() methods to
-        # update their states since they will have seen the group
-        # broadcast and updated (without sending anything out).
-        super().handle_broadcast(msg)
+            # This will find all the devices we're the controller of for this
+            # group and call their handle_group_cmd() methods to update their
+            # states since they will have seen the group broadcast and
+            # updated (without sending anything out).
+            super().handle_broadcast(msg)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
