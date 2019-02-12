@@ -3,6 +3,7 @@
 # Thermostat direct message handler.
 #
 #===========================================================================
+import enum
 from .. import log
 from .. import message as Msg
 from .Base import Base
@@ -23,6 +24,16 @@ class ThermostatCmd(Base):
     NOTE: This handler is designed to always be active - it never returns
     FINISHED.
     """
+
+    # This mapping is different from the Thermostat mapping used in response
+    # to a get_status message even though the names are the same.
+    class Mode(enum.IntEnum):
+        OFF = 0x00
+        HEAT = 0x01
+        COOL = 0x02
+        AUTO = 0x03
+        PROGRAM = 0x04
+
     def __init__(self, device):
         """Constructor
 
@@ -88,7 +99,13 @@ class ThermostatCmd(Base):
             mode_nibble = int(msg.cmd2) & 0b00001111
             self.device.set_fan_mode_state(fan_nibble)
             try:
-                hvac_mode = self.device.Mode(mode_nibble)
+                # Convert from the handler mode to the ThermostatMode since
+                # the integer codes are different.  We can use the enum names
+                # to map between the enums even though they have different
+                # modes.  This way the signal always emits Thermostat.Mode
+                # flags.
+                local_mode = ThermostatCmd.Mode(mode_nibble)
+                hvac_mode = self.device.Mode[local_mode.name]
             except ValueError:
                 LOG.exception("Unknown mode broadcast state %s.", mode_nibble)
             else:

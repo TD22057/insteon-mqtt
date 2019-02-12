@@ -28,13 +28,28 @@ class Motion(BatterySensor):
     light sensor.  In that case, the Motion.signal_dawn signal is emitted
     when the light sensor changes state.
 
-    The motion sensor supports the following input commands (note these only
-    work if the sensor is awake): devices are:
+    The device will broadcast messages on the following groups:
+      group 01 = on (0x11) / off (0x13)
+      group 02 = dusk/dawn light sensor
+      group 03 = low battery (0x11) / good battery (0x13)
+      group 04 = heartbeat (0x11)
 
-       getdb:  No arguments.  Download the PLM modem all link database
-               and save it to file.
-       refresh:  No arguments.  Ping the device and see if the database is
-                 current.  Reloads the modem database if needed.
+    State changes are communicated by emitting signals.  Other classes can
+    connect to these signals to perform an action when a change is made to
+    the device (like sending MQTT messages).  Supported signals are:
+
+    - signal_on_off( Device, bool is_on ): Sent when the sensor is tripped
+      (is_on=True) or resets (is_on=False).
+
+    - signal_low_battery( Device, bool is_low ): Sent to indicate the current
+      battery state.
+
+    - signal_heartbeat( Device, True ): Sent when the device has broadcast a
+      heartbeat signal.
+
+    - signal_dawn( Device, bool is_dawn): Sent when the device indicates that
+      the light level (dusk/dawn) has changed.  Not all motion sensors support
+      this.
     """
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
@@ -60,10 +75,12 @@ class Motion(BatterySensor):
         """Handle a dusk/dawn message.
 
         This is called by the BatterySensor base class when a group broadcast
-        on group 02 is sent out by the sensor.
+        on group 02 is sent out by the sensor.  Not all devices support the
+        the light sensor so this may never happen.
 
         Args:
-          msg:   (InpStandard) Broadcast message from the device.
+          msg (InpStandard):  Broadcast message from the device.
+
         """
         # Send True for dawn, False for dusk.
         self.signal_dawn.emit(msg.cmd1 == 0x11)

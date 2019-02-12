@@ -20,11 +20,8 @@ LOG = log.get_logger()
 class Switch(Base):
     """Insteon on/off switch device.
 
-    This includes any device that turns on and off like an appliance
-    module or non-dimming lamp module.
-
-    This class can be used to modem any device that acts like a dimmer
-    including wall switches, lamp modules, and some remotes.
+    This class can be used to model any device that acts like a on/off switch
+    including wall switches, lamp modules, and appliance modules.
 
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
@@ -35,6 +32,7 @@ class Switch(Base):
 
     - signal_manual( Device, on_off.Manual mode ): Sent when the device
       starts or stops manual mode (when a button is held down or released).
+
     """
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
@@ -376,6 +374,7 @@ class Switch(Base):
         # weird special case - see scene() for details.
         if msg.cmd1 == 0x06:
             LOG.info("Switch %s broadcast ACK grp: %s", self.addr, msg.group)
+
             if self.broadcast_done:
                 self.broadcast_done()
             self.broadcast_done = None
@@ -538,7 +537,7 @@ class Switch(Base):
         changed state.
 
         Args:
-          is_on:   (bool) True if the switch is on, False if it isn't.
+          is_on (bool):  True if the switch is on, False if it isn't.
           mode (on_off.Mode): The type of on/off that was triggered (normal,
                fast, etc).
         """

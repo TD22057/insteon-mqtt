@@ -43,7 +43,7 @@ class SmokeBridge:
             payload='{{on_str.upper()}}')
 
         # Receive notifications from the Insteon device when it changes.
-        device.signal_state_change.connect(self._insteon_change)
+        device.signal_on_off.connect(self._insteon_change)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -91,11 +91,12 @@ class SmokeBridge:
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
-    def template_data(self, condition):
+    def template_data(self, type, is_on):
         """Create the Jinja templating data variables for the messages.
 
         Args:
-          condition (SmokeBridge.Type):  The condition code.
+          type (SmokeBridge.Type):  The condition type code.
+          is_on (bool):  True if the condition is set, false otherwise.
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -104,49 +105,43 @@ class SmokeBridge:
             "address" : self.device.addr.hex,
             "name" : self.device.name if self.device.name
                      else self.device.addr.hex,
-            "on" : 1,
-            "on_str" : "on",
+            "on" : 1 if is_on else 0,
+            "on_str" : "on" if is_on else "off",
             }
-
-        # Clear condition resets status to off.
-        if condition == IDev.SmokeBridge.Type.CLEAR:
-            data["on"] = 0
-            data["on_str"] = "off"
 
         return data
 
     #-----------------------------------------------------------------------
-    def _insteon_change(self, device, condition):
+    def _insteon_change(self, device, type, is_on):
         """Device active condition callback.
 
         This is triggered via signal when the Insteon device emits a state
         change.  It will publish an MQTT message with the new state.
 
         Args:
-          device (device.SmokeBridge):   The Insteon device that changed.
-          condition (SmokeBridge.Type):  The condition code.
+          device (device.SmokeBridge):  The Insteon device that changed.
+          type (SmokeBridge.Type):  The condition type code.
+          is_on (bool):  True if the condition is set, false otherwise.
         """
-        LOG.info("MQTT received active change %s = %s", device.label,
-                 condition)
+        LOG.info("MQTT received active change %s %s = %s", device.label,
+                 type, is_on)
 
         # Set up the variables that can be used in the templates.
-        data = self.template_data(condition)
+        data = self.template_data(type, is_on)
 
-        # Clear resets all conditions to off so make all the calls.
         Type = IDev.SmokeBridge.Type
-        call_all = condition == Type.CLEAR
 
         # Call the right topic depending on the condition field.
-        if call_all or condition == Type.SMOKE:
+        if type == Type.SMOKE:
             self.msg_smoke.publish(self.mqtt, data)
 
-        if call_all or condition == Type.CO:
+        elif type == Type.CO:
             self.msg_co.publish(self.mqtt, data)
 
-        if call_all or condition == Type.LOW_BATTERY:
+        elif type == Type.LOW_BATTERY:
             self.msg_battery.publish(self.mqtt, data)
 
-        if call_all or condition == Type.ERROR:
+        elif type == Type.ERROR:
             self.msg_error.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

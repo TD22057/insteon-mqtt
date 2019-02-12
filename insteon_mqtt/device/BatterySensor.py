@@ -19,6 +19,13 @@ class BatterySensor(Base):
     sensors, hidden door sensors, and window sensors.  This class also serves
     as the base class for other battery sensors like motion sensors.
 
+    The issue with a battery powered sensor is that we can't download the
+    link database without the sensor being on.  You can trigger the sensor
+    manually and then quickly send an MQTT command with the payload 'getdb'
+    to download the database.  We also can't test to see if the local
+    database is current or what the current motion state is - we can really
+    only respond to the sensor when it sends out a message.
+
     The device will broadcast messages on the following groups:
       group 01 = on (0x11) / off (0x13)
       group 03 = low battery (0x11) / good battery (0x13)
@@ -52,9 +59,12 @@ class BatterySensor(Base):
         """
         super().__init__(protocol, modem, address, name)
 
-        self.signal_on_off = Signal()  # (Device, bool is_on)
-        self.signal_low_battery = Signal()  # (Device, bool is_low)
-        self.signal_heartbeat = Signal()  # (Device, True)
+        # Sensor on/off signal.  API: func( Device, bool is_on )
+        self.signal_on_off = Signal()
+        # Sensor low battery signal.  API: func( Device, bool is_low )
+        self.signal_low_battery = Signal()
+        # Sensor heartbeat signal.  API: func( Device, True )
+        self.signal_heartbeat = Signal()
 
         # Derived classes can override these or add to them.  Maps Insteon
         # groups to message type for this sensor.

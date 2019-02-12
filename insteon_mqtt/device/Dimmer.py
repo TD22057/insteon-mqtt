@@ -20,7 +20,7 @@ LOG = log.get_logger()
 class Dimmer(Base):
     """Insteon dimmer device.
 
-    This class can be used to modem any device that acts like a dimmer
+    This class can be used to model any device that acts like a dimmer
     including wall switches, lamp modules, and some remotes.
 
     State changes are communicated by emitting signals.  Other classes can
@@ -686,7 +686,7 @@ class Dimmer(Base):
 
         This will change the internal state and emit the state changed
         signals.  It is called by whenever we're informed that the device has
-        change dstate.
+        changed state.
 
         Args:
           level (int):  The new device level in the range [0,255].  0 is off.
