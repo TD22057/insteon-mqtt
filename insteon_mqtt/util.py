@@ -12,7 +12,7 @@ def to_hex(data, num=None, space=' '):
 
     Args:
       data (bytes): Bytes array to output.
-      num (int):    Number of bytes to output or None for all.
+      num (int):  Number of bytes to output or None for all.
       space (str):  String to space out the byte outputs.
 
     Returns:
@@ -37,10 +37,10 @@ def to_hex(data, num=None, space=' '):
 def make_callback(callback):
     """Insure that callback is a valid function.
 
-    This is used when callbacks are optional.  It makes it so the
-    class can store the callback even if one wasn't entered so that it
-    can just be used.  If the input is None, then a dummy callback
-    that does nothing is returned.
+    This is used when callbacks are optional.  It makes it so the class can
+    store the callback even if one wasn't entered so that it can just be
+    used.  If the input is None, then a dummy callback that does nothing is
+    returned.
 
     Args:
       callback:  Input callback function or None.
@@ -61,6 +61,7 @@ def ctrl_str(is_controller):
 
     Args:
       is_controller (bool):  Controller/responder flag.
+
     Returns:
       str: "CTRL" or "RESP"
     """
@@ -76,7 +77,7 @@ def bit_get(value, bit):
 
     Args:
       value (int):  The value to get the bit from.
-      bit (int):    The bit (0..n) to return.
+      bit (int):  The bit (0..n) to return.
 
     Returns:
       int: Returns the value (0 or 1) of the requested bit.
@@ -89,8 +90,8 @@ def bit_set(value, bit, is_one):
     """Set a bit in an integer.
 
     Args:
-      value (int):   The value to set the bit into.
-      bit (int):     The bit (0..n) to return.
+      value (int): The value to set the bit into.
+      bit (int):  The bit (0..n) to return.
       is_one (bool): True to set the bit to 1, False to set it to 0.
 
     Returns:
@@ -111,7 +112,7 @@ def resolve_data3(defaults, inputs):
 
     Args:
       defaults (bytes[3]):  Default values to use.
-      inputs:               User input.
+      inputs:  User input.
 
     Returns:
       bytes[3]: Returns a 3 byte list to use as the insteon link data.
@@ -136,7 +137,7 @@ def input_choice(inputs, field, choices):
 
     Args:
       inputs (dict):  Key/value pairs of user input fields.
-      field (str):    The field to check.
+      field (str):  The field to check.
       choices (list): Valid choices for the field.
 
     Returns:
@@ -154,8 +155,8 @@ def input_choice(inputs, field, choices):
 
     # Check the value against the valid options for the field.
     if value not in choices:
-        msg = "Invalid %s input.  Valid inputs are on of %s" % \
-              (value, str(choices))
+        msg = ("Invalid %s input.  Valid inputs are on of %s" %
+               (value, str(choices)))
         raise ValueError(msg)
 
     return value
@@ -172,7 +173,7 @@ def input_bool(inputs, field):
 
     Args:
       inputs (dict):  Key/value pairs of user inputs.
-      field (str):    The field to get.
+      field (str):  The field to get.
 
     Returns:
       bool: Returns None if field is not in inputs.  Otherwise the input
@@ -202,15 +203,15 @@ def input_bool(inputs, field):
 def input_byte(inputs, field):
     """Convert an input field to a byte.
 
-    Valid byte inputs are integers or strings leading with '0x' (base
-    16 hex value).
+    Valid byte inputs are integers or strings leading with '0x' (base 16 hex
+    value).
 
     Raises:
       If the input is not a valid byte, an exception is thrown.
 
     Args:
       inputs (dict):  Key/value pairs of user inputs.
-      field (str):    The field to get.
+      field (str):  The field to get.
 
     Returns:
       byte: Returns None if field is not in inputs.  Otherwise the input

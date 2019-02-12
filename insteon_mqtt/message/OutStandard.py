@@ -143,8 +143,8 @@ class OutStandard(Base):
     #-----------------------------------------------------------------------
     def __str__(self):
         ack = "" if self.is_ack is None else "ack: %s" % self.is_ack
-        return "Std: %s, %s, %02x %02x %s" % \
-            (self.to_addr, self.flags, self.cmd1, self.cmd2, ack)
+        return ("Std: %s, %s, %02x %02x %s" %
+                (self.to_addr, self.flags, self.cmd1, self.cmd2, ack))
 
     #-----------------------------------------------------------------------
 

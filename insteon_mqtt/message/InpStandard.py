@@ -115,12 +115,13 @@ class InpStandard(Base):
     #-----------------------------------------------------------------------
     def __str__(self):
         if self.group is None:
-            return "Std: %s->%s %s cmd: %02x %02x" % \
-                (self.from_addr, self.to_addr, self.flags, self.cmd1,
-                 self.cmd2)
+            return ("Std: %s->%s %s cmd: %02x %02x" %
+                    (self.from_addr, self.to_addr, self.flags, self.cmd1,
+                     self.cmd2))
         else:
-            return "Std: %s %s grp: %02x cmd: %02x %02x" % \
-                (self.from_addr, self.flags, self.group, self.cmd1, self.cmd2)
+            return ("Std: %s %s grp: %02x cmd: %02x %02x" %
+                    (self.from_addr, self.flags, self.group, self.cmd1,
+                     self.cmd2))
 
     #-----------------------------------------------------------------------
     def __eq__(self, rhs):

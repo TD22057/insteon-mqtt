@@ -31,8 +31,8 @@ class CommandSeq:
         """Constructor
 
         Args:
-          protocol: The Protocol object to use.  This can also be a
-                    device.Base object.
+          protocol (Protocol): The Protocol object to use.  This can also be a
+                   device.Base object.
           msg (str): String message to pass to on_done if the sequence works.
           on_done: The callback to run when complete.  This will be run
                    when there is an error or when all the commands finish.
@@ -83,7 +83,7 @@ class CommandSeq:
         called if this is the last entry.
 
         Args:
-          msg:      The message object to send.
+          msg:  The message object to send.
           handler:  The handler to use for the message.
         """
         self.calls.append(Entry.from_msg(msg, handler))
@@ -114,7 +114,7 @@ class CommandSeq:
         Args:
           success (bool):  True for success, False for failure.
           msg (str):  str) Message result.
-          data:  Callback data.
+          data:  Arbitrary callback data.
         """
         # Last function failed with an error.
         if not success and self.error_stop:

@@ -75,9 +75,9 @@ class InpAllLinkComplete(Base):
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "All link done: %s grp: %d %s cat: %#04x %#04x %#04x" % \
-            (self.addr, self.group, self.cmd, self.dev_cat, self.dev_subcat,
-             self.firmware)
+        return ("All link done: %s grp: %d %s cat: %#04x %#04x %#04x" %
+                (self.addr, self.group, self.cmd, self.dev_cat,
+                 self.dev_subcat, self.firmware))
 
     #-----------------------------------------------------------------------
 

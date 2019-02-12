@@ -65,9 +65,9 @@ class InpAllLinkRec(Base):
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "InpAllLinkRec: %s grp: %s %s data: %#04x %#04x %#04x" % \
-            (self.addr, self.group, self.db_flags, self.data[0], self.data[1],
-             self.data[2])
+        return ("InpAllLinkRec: %s grp: %s %s data: %#04x %#04x %#04x" %
+                (self.addr, self.group, self.db_flags, self.data[0],
+                 self.data[1], self.data[2]))
 
     #-----------------------------------------------------------------------
 

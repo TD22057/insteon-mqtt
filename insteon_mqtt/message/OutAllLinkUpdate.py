@@ -102,8 +102,8 @@ class OutAllLinkUpdate(Base):
     #-----------------------------------------------------------------------
     def __str__(self):
         ack = "" if self.is_ack is None else " ack: %s" % self.is_ack
-        return "OutAllLinkUpdate: %s grp: %s %s%s" % \
-            (self.addr, self.group, self.cmd, ack)
+        return ("OutAllLinkUpdate: %s grp: %s %s%s" %
+                (self.addr, self.group, self.cmd, ack))
 
     #-----------------------------------------------------------------------
 

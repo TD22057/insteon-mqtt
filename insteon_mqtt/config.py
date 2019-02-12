@@ -126,8 +126,8 @@ class Loader(yaml.Loader):
             return result
 
         else:
-            msg = "Error: unrecognized node type in !include statement: " \
-                  "%s" % str(node)
+            msg = ("Error: unrecognized node type in !include statement: %s"
+                   % str(node))
             raise yaml.constructor.ConstructorError(msg)
 
     #-----------------------------------------------------------------------

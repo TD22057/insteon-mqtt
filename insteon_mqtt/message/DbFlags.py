@@ -126,7 +126,8 @@ class DbFlags:
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "in_use: %s type: %s last: %s" % \
-            (self.in_use, util.ctrl_str(self.is_controller), self.is_last_rec)
+        return ("in_use: %s type: %s last: %s" %
+                (self.in_use, util.ctrl_str(self.is_controller),
+                 self.is_last_rec))
 
     #-----------------------------------------------------------------------
