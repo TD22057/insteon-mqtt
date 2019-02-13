@@ -62,7 +62,7 @@ class FanLinc(Dimmer):
         # Input fan speed level command template.
         self.msg_fan_speed = MsgTemplate(topic='', payload='')
 
-        device.signal_fan_changed.connect(self._insteon_fan_changed)
+        device.signal_fan_speed.connect(self._insteon_fan_speed)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -166,7 +166,7 @@ class FanLinc(Dimmer):
         return data
 
     #-----------------------------------------------------------------------
-    def _insteon_fan_changed(self, device, level):
+    def _insteon_fan_speed(self, device, level):
         """Device speed change callback.
 
         This is triggered via signal when the Insteon device goes active or

@@ -32,7 +32,6 @@ class Switch(Base):
 
     - signal_manual( Device, on_off.Manual mode ): Sent when the device
       starts or stops manual mode (when a button is held down or released).
-
     """
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
@@ -57,7 +56,7 @@ class Switch(Base):
         # API: func(Device, on_off.Manual mode)
         self.signal_manual = Signal()
 
-        # Remove (mqtt) commands mapped to methods calls.  Add to the base
+        # Remote (mqtt) commands mapped to methods calls.  Add to the base
         # class defined commands.
         self.cmd_map.update({
             'on' : self.on,
@@ -75,13 +74,12 @@ class Switch(Base):
     def pair(self, on_done=None):
         """Pair the device with the modem.
 
-        This only needs to be called one time.  It will set the device
-        as a controller and the modem as a responder so the modem will
-        see group broadcasts and report them to us.
+        This only needs to be called one time.  It will set the device as a
+        controller and the modem as a responder so the modem will see group
+        broadcasts and report them to us.
 
-        The device must already be a responder to the modem (push set
-        on the modem, then set on the device) so we can update it's
-        database.
+        The device must already be a responder to the modem (push set on the
+        modem, then set on the device) so we can update it's database.
 
         Args:
           on_done: Finished callback.  This is called when the command has
@@ -354,9 +352,6 @@ class Switch(Base):
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
         """Handle broadcast messages from this device.
-
-        This is called automatically by the system (via handle.Broadcast)
-        when we receive a message from the device.
 
         The broadcast message from a device is sent when the device is
         triggered.  The message has the group ID in it.  We'll update the

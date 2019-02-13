@@ -34,3 +34,4 @@ from .Reply import Reply
 from .SmokeBridge import SmokeBridge
 from .Switch import Switch
 from .Thermostat import Thermostat
+from . import util

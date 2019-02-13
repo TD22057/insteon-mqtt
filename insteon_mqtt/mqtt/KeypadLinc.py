@@ -7,7 +7,7 @@ import functools
 from .. import log
 from .. import on_off
 from .MsgTemplate import MsgTemplate
-from .Switch import Switch
+from . import util
 
 LOG = log.get_logger()
 
@@ -274,7 +274,7 @@ class KeypadLinc:
 
         LOG.info("KeypadLinc btn %s input command: %s", group, data)
         try:
-            is_on, mode = Switch.parse_json(data)
+            is_on, mode = util.parse_on_off(data)
             level = 0xff if is_on else 0x00
             self.device.set(level, group, mode)
         except:
@@ -302,7 +302,7 @@ class KeypadLinc:
 
         LOG.info("KeypadLinc input command: %s", data)
         try:
-            is_on, mode = Switch.parse_json(data)
+            is_on, mode = util.parse_on_off(data)
             level = 0 if not is_on else int(data.get('level'))
             self.device.set(level, mode=mode)
         except:
@@ -366,7 +366,7 @@ class KeypadLinc:
 
         LOG.info("KeypadLinc input command: %s", data)
         try:
-            is_on, _mode = Switch.parse_json(data)
+            is_on, _mode = util.parse_on_off(data)
             self.device.scene(is_on, group)
         except:
             LOG.exception("Invalid KeypadLinc command: %s", data)

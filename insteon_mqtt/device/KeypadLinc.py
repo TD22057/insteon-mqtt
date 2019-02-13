@@ -928,7 +928,7 @@ class KeypadLinc(Base):
 
     #-----------------------------------------------------------------------
     def _set_level(self, group, level, mode=on_off.Mode.NORMAL):
-        """Update the device level state for a gruop..
+        """Update the device level state for a group.
 
         This will change the internal state and emit the state changed
         signals.  It is called by whenever we're informed that the device has

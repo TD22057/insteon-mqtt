@@ -5,7 +5,7 @@
 #===========================================================================
 from .. import log
 from .MsgTemplate import MsgTemplate
-from .Switch import Switch
+from . import util
 
 LOG = log.get_logger()
 
@@ -156,7 +156,7 @@ class IOLinc:
 
         try:
             # Tell the device to update it's state.
-            is_on, _mode = Switch.parse_json(data, have_mode=False)
+            is_on, _mode = util.parse_on_off(data, have_mode=False)
             self.device.set(is_on)
         except:
             LOG.exception("Invalid IOLinc on/off command: %s", data)
@@ -182,7 +182,7 @@ class IOLinc:
 
         try:
             # Tell the device to trigger the scene command.
-            is_on, _mode = Switch.parse_json(data, have_mode=False)
+            is_on, _mode = util.parse_on_off(data, have_mode=False)
             self.device.scene(is_on)
         except:
             LOG.exception("Invalid IOLinc scene command: %s", data)

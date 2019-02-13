@@ -7,7 +7,7 @@ import functools
 from .. import log
 from .. import on_off
 from .MsgTemplate import MsgTemplate
-from .Switch import Switch
+from . import util
 
 LOG = log.get_logger()
 
@@ -181,7 +181,7 @@ class Outlet:
 
         try:
             # Tell the device to update it's state.
-            is_on, mode = Switch.parse_json(data)
+            is_on, mode = util.parse_on_off(data)
             self.device.set(level=is_on, group=group, mode=mode)
         except:
             LOG.exception("Invalid Outlet on/off command: %s", data)
@@ -208,7 +208,7 @@ class Outlet:
 
         try:
             # Tell the device to trigger the scene command.
-            is_on, _mode = Switch.parse_json(data)
+            is_on, _mode = util.parse_on_off(data)
             self.device.scene(is_on, group)
         except:
             LOG.exception("Invalid Outlet scene command: %s", data)

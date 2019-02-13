@@ -5,12 +5,17 @@
 #===========================================================================
 from .. import log
 from .MsgTemplate import MsgTemplate
+from . import util
 
 LOG = log.get_logger()
 
 
 class Modem:
-    """TODO: doc
+    """MQTT interface to an Insteon power line modem (PLM).
+
+    This class connects to an insteon_mqtt.Modem object and allows input MQTT
+    messages to be converted and sent to the modem to simulate scene
+    (activate modem scenes).
     """
     def __init__(self, mqtt, modem):
         """Constructor
@@ -25,8 +30,7 @@ class Modem:
         # Input scene on/off command template.
         self.msg_scene = MsgTemplate(
             topic='insteon/modem/scene',
-            payload='{{value}}',
-            )
+            payload='{{value}}')
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -55,7 +59,7 @@ class Modem:
           qos (int):  The quality of service to use.
         """
         topic = self.msg_scene.render_topic(self.template_data())
-        link.subscribe(topic, qos, self.handle_scene)
+        link.subscribe(topic, qos, self._input_scene)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
@@ -69,7 +73,10 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def template_data(self):
-        """TODO: doc
+        """Create the Jinja templating data variables for messages.
+
+        Returns:
+          dict:  Returns a dict with the variables available for templating.
         """
         data = {
             "address" : self.device.addr.hex,
@@ -78,8 +85,17 @@ class Modem:
         return data
 
     #-----------------------------------------------------------------------
-    def handle_scene(self, client, data, message):
-        """TODO: doc
+    def _input_scene(self, client, data, message):
+        """Handle an input simulate scene MQTT message.
+
+        This is called when we receive a message on the scene change MQTT
+        topic subscription.  Parse the message and pass the command to the
+        Insteon device.
+
+        Args:
+          client (paho.Client):  The paho mqtt client (self.link).
+          data:  Optional user data (unused).
+          message:  MQTT message - has attrs: topic, payload, qos, retain.
         """
         LOG.debug("Modem message %s %s", message.topic, message.payload)
 
@@ -88,20 +104,12 @@ class Modem:
         LOG.info("Modem input command: %s", data)
 
         try:
-            cmd = data.get('cmd')
-            if cmd == 'on':
-                is_on = True
-            elif cmd == 'off':
-                is_on = False
-            else:
-                raise Exception("Invalid modem cmd input '%s'" % cmd)
-
+            is_on = util.parse_on_off(data, have_mode=False)
             group = int(data.get('group', None))
+
+            # Tell the device to trigger the scene command.
+            self.device.scene(is_on, group)
         except:
             LOG.exception("Invalid modem command: %s", data)
-            return
-
-        # Tell the device to trigger the scene command.
-        self.device.scene(is_on, group)
 
     #-----------------------------------------------------------------------

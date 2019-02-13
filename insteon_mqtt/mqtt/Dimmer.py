@@ -7,6 +7,7 @@ from .. import log
 from .. import on_off
 from .MsgTemplate import MsgTemplate
 from .Switch import Switch
+from . import util
 
 LOG = log.get_logger()
 
@@ -194,7 +195,7 @@ class Dimmer(Switch):
         LOG.info("Dimmer input command: %s", data)
 
         try:
-            is_on, mode = Switch.parse_json(data)
+            is_on, mode = util.parse_on_off(data)
             level = 0 if not is_on else int(data.get('level'))
 
             # Tell the device to change it's level.
@@ -222,7 +223,7 @@ class Dimmer(Switch):
         LOG.info("Dimmer input command: %s", data)
 
         try:
-            is_on, _mode = Switch.parse_json(data)
+            is_on, _mode = util.parse_on_off(data)
             group = int(data.get('group', 0x01))
 
             # Tell the device to trigger the scene command.

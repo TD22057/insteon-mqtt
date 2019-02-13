@@ -51,7 +51,7 @@ class Outlet(Base):
         # API: func(Device, int group, bool is_on, on_off.Mode mode)
         self.signal_on_off = Signal()
 
-        # Remove (mqtt) commands mapped to methods calls.  Add to the
+        # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
         self.cmd_map.update({
             'on' : self.on,
