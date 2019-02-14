@@ -228,10 +228,14 @@ class KeypadLinc:
 
         data = self.template_data(group, level, mode)
 
+        # For manual mode messages, don't retain them because they don't
+        # represent persistent state - they're momentary events.
+        retain = False if mode == on_off.Mode.MANUAL else None
+
         if group == 1 and self.device.is_dimmer:
-            self.msg_dimmer_state.publish(self.mqtt, data)
+            self.msg_dimmer_state.publish(self.mqtt, data, retain=retain)
         else:
-            self.msg_btn_state.publish(self.mqtt, data)
+            self.msg_btn_state.publish(self.mqtt, data, retain=retain)
 
     #-----------------------------------------------------------------------
     def _insteon_manual(self, device, group, manual):
@@ -249,8 +253,10 @@ class KeypadLinc:
         LOG.info("MQTT received manual button press %s = btn %s %s",
                  device.label, group, manual)
 
+        # For manual mode messages, don't retain them because they don't
+        # represent persistent state - they're momentary events.
         data = self.template_data(group, manual=manual)
-        self.msg_manual_state.publish(self.mqtt, data)
+        self.msg_manual_state.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------
     def _input_on_off(self, client, data, message, group):

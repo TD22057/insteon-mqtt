@@ -37,15 +37,18 @@ class MsgTemplate:
         return topic.strip()
 
     #-----------------------------------------------------------------------
-    def __init__(self, topic, payload, qos=0):
+    def __init__(self, topic, payload, qos=0, retain=None):
         """Constructor
 
         Args:
           topic (str):  The topic template to use.
           payload (str):  The payload template to use.
           qos (int):  Quality of service to use when publishing.
+          retain (bool):  None to use the MQTT class retain flag.  Otherwise
+                 the retain flag to use.
         """
         self.qos = qos
+        self.retain = retain
 
         # Keep the original string around for better log and error messages.
         self.topic_str = topic
@@ -114,7 +117,7 @@ class MsgTemplate:
         return self._render(self.payload_str, self.payload, data, silent)
 
     #-----------------------------------------------------------------------
-    def publish(self, mqtt, data):
+    def publish(self, mqtt, data, retain=None):
         """Publish a message.
 
         If either the topic or payload fails to render, nothing is done.
@@ -123,11 +126,15 @@ class MsgTemplate:
           mqtt (Mqtt):  The MQTT client to publish to.
           data (dict):  Data dictionary with template variables to pass to the
                jinja templates.
+          retain (bool):  None to use the class retain flag.  Otherwise
+                 the retain flag to use.
         """
         topic = self.render_topic(data)
         payload = self.render_payload(data)
+        retain = retain if retain is not None else self.retain
+
         if topic and payload:
-            mqtt.publish(topic, payload, self.qos)
+            mqtt.publish(topic, payload, self.qos, retain)
 
     #-----------------------------------------------------------------------
     def to_json(self, payload, silent=False):

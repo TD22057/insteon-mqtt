@@ -39,7 +39,7 @@ class Dimmer(Switch):
             payload='{ "state" : "{{on_str.upper()}}", '
                     '"brightness" : {{level_255}} }')
 
-        # self.msg_manual_state inherited from Switch.
+        # Output manual state change is off by default.
         self.msg_manual_state = MsgTemplate(None, None)
 
         # Input level command template.
@@ -155,8 +155,12 @@ class Dimmer(Switch):
         LOG.info("MQTT received level change %s level: %s", device.label,
                  level)
 
+        # For manual mode messages, don't retain them because they don't
+        # represent persistent state - they're momentary events.
+        retain = False if mode == on_off.Mode.MANUAL else None
+
         data = self.template_data(level, mode)
-        self.msg_state.publish(self.mqtt, data)
+        self.msg_state.publish(self.mqtt, data, retain=retain)
 
     #-----------------------------------------------------------------------
     def _insteon_manual(self, device, manual):
@@ -173,8 +177,10 @@ class Dimmer(Switch):
         LOG.info("MQTT received manual change %s mode: %s", device.label,
                  manual)
 
+        # For manual mode messages, don't retain them because they don't
+        # represent persistent state - they're momentary events.
         data = self.template_data(manual=manual)
-        self.msg_manual_state.publish(self.mqtt, data)
+        self.msg_manual_state.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------
     def _input_set_level(self, client, data, message):

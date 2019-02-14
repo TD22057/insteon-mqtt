@@ -136,8 +136,12 @@ class Remote:
         LOG.info("MQTT received button press %s = btn %s on %s %s",
                  device.label, button, is_on, mode)
 
+        # For manual mode messages, don't retain them because they don't
+        # represent persistent state - they're momentary events.
+        retain = False if mode == on_off.Mode.MANUAL else None
+
         data = self.template_data(button, is_on, mode)
-        self.msg_state.publish(self.mqtt, data)
+        self.msg_state.publish(self.mqtt, data, retain=retain)
 
     #-----------------------------------------------------------------------
     def _insteon_manual(self, device, group, manual):
@@ -154,6 +158,6 @@ class Remote:
                  device.label, group, manual)
 
         data = self.template_data(group, manual=manual)
-        self.msg_manual_state.publish(self.mqtt, data)
+        self.msg_manual_state.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------

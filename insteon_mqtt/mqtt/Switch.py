@@ -180,8 +180,12 @@ class Switch:
         LOG.info("MQTT received on/off %s on: %s %s", device.label, is_on,
                  mode)
 
+        # For manual mode messages, don't retain them because they don't
+        # represent persistent state - they're momentary events.
+        retain = False if mode == on_off.Mode.MANUAL else None
+
         data = self.template_data(is_on, mode)
-        self.msg_state.publish(self.mqtt, data)
+        self.msg_state.publish(self.mqtt, data, retain=retain)
 
     #-----------------------------------------------------------------------
     def _insteon_manual(self, device, manual):
@@ -197,8 +201,10 @@ class Switch:
         """
         LOG.info("MQTT received manual change %s %s", device.label, manual)
 
+        # For manual mode messages, don't retain them because they don't
+        # represent persistent state - they're momentary events.
         data = self.template_data(manual=manual)
-        self.msg_manual_state.publish(self.mqtt, data)
+        self.msg_manual_state.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------
     def _input_on_off(self, client, data, message):
