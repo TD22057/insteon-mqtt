@@ -9,9 +9,9 @@ from .Base import Base
 class InpAllLinkStatus(Base):
     """All link cleanup status report.
 
-    This is sent from the PLM modem to the host after a device has
-    broadcast an all link broadcast message to activate a scene as an
-    ACK/NAK of the broadcast.
+    This is sent from the PLM modem to the host after a device has broadcast
+    an all link broadcast message to activate a scene as an ACK/NAK of the
+    broadcast.
     """
     # pylint: disable=abstract-method
 
@@ -23,14 +23,14 @@ class InpAllLinkStatus(Base):
     def from_bytes(cls, raw):
         """Read the message from a byte stream.
 
-        This should only be called if raw[1] == msg_code and len(raw)
-        >= msg_size().
+        This should only be called if raw[1] == msg_code and len(raw) >=
+        msg_size().
 
         Args:
-           raw   (bytes): The current byte stream to read from.
+          raw (bytes):  The current byte stream to read from.
 
         Returns:
-           Returns the constructed InpAllLinkStatus object.
+          Returns the constructed InpAllLinkStatus object.
         """
         assert len(raw) >= InpAllLinkStatus.fixed_msg_size
         assert raw[0] == 0x02 and raw[1] == InpAllLinkStatus.msg_code
@@ -43,7 +43,7 @@ class InpAllLinkStatus(Base):
         """Constructor
 
         Args:
-          is_ack: (bool) True for ACK, False for NAK.
+          is_ack (bool):  True for ACK, False for NAK.
         """
         super().__init__()
 

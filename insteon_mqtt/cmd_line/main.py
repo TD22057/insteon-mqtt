@@ -44,6 +44,14 @@ def parse_args(args):
     sp.set_defaults(func=modem.refresh_all)
 
     #---------------------------------------
+    # modem.factory_reset command
+    sp = sub.add_parser("factory-reset", help="Perform a remote factory "
+                        "reset.  Currently only supported on the modem.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=modem.factory_reset)
+
+    #---------------------------------------
     # modem.get_devices command
     sp = sub.add_parser("get-devices", help="Return a list of all the devices "
                         "that the modem knows about.")

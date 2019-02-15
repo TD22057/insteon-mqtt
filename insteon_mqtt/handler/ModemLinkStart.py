@@ -22,8 +22,8 @@ class ModemLinkStart(Base):
         """Constructor
 
         Args:
-          on_done:   The finished callback.  Calling signature:
-                         on_done( bool success, str message, data )
+          on_done:  The finished callback.  Calling signature:
+                    on_done( bool success, str message, data )
         """
         # pylint: disable=useless-super-delegation
         super().__init__(on_done)
@@ -33,8 +33,8 @@ class ModemLinkStart(Base):
         """See if we can handle the message.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
-          msg:       Insteon message object that was read.
+          protocol (Protocol):  The Insteon Protocol object
+          msg:  Insteon message object that was read.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.

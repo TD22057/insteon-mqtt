@@ -20,14 +20,14 @@ class ModemScene(Base):
         """Constructor
 
         Args
-          modem:     (Modem) The Insteon modem object.
-          msg:       (OutModemScene) The scene message being sent.
-          on_done:   The finished callback.  Calling signature:
-                         on_done( bool success, str message, data )
-          num_retry: (int) The number of times to retry the message if the
-                     handler times out without returning Msg.FINISHED.
-                     This count does include the initial sending so a
-                     retry of 3 will send once and then retry 2 more times.
+          modem (Modem):  The Insteon modem object.
+          msg (OutModemScene):  The scene message being sent.
+          on_done: The finished callback.  Calling signature:
+                   on_done( bool success, str message, data )
+          num_retry (int):  The number of times to retry the message if the
+                    handler times out without returning Msg.FINISHED.
+                    This count does include the initial sending so a
+                    retry of 3 will send once and then retry 2 more times.
         """
         super().__init__(on_done, num_retry)
 
@@ -39,8 +39,8 @@ class ModemScene(Base):
         """See if we can handle the message.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
-          msg:       Insteon message object that was read.
+          protocol (Protocol):  The Insteon Protocol object
+          msg: Insteon message object that was read.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.

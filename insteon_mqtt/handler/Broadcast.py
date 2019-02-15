@@ -34,9 +34,8 @@ class Broadcast(Base):
         """Constructor
 
         Args
-          modem:   (Modem) The Insteon modem object.
-                   Modem.handle_broadcast() is called with the messages
-                   that arrive.
+          modem (Modem):  The Insteon modem object. Modem.handle_broadcast()
+                is called with the messages that arrive.
         """
         super().__init__()
         self.modem = modem
@@ -57,8 +56,8 @@ class Broadcast(Base):
         connected to for that group.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
-          msg:       Insteon message object that was read.
+          protocol (Protocol):  The Insteon Protocol object
+          msg:  Insteon message object that was read.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.
@@ -92,7 +91,7 @@ class Broadcast(Base):
         """Process the all link broadcast message.
 
         Args:
-          msg:   (Msg.InpStandard) Message to handle.
+          msg (Msg.InpStandard):  Message to handle.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.
@@ -118,10 +117,10 @@ class Broadcast(Base):
         """Should we process a cleanup message?
 
         Args:
-          msg:   (Msg.InpStandard) Cleanup message to handle.
+          msg (Msg.InpStandard):  Cleanup message to handle.
 
         Returns:
-          (bool) True if the message should be procssed, False otherwise.
+          bool:  True if the message should be procssed, False otherwise.
         """
         if not self._last_broadcast:
             return True

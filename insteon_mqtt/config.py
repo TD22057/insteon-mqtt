@@ -41,7 +41,7 @@ def load(path):
       path:  The file to load
 
     Returns:
-      (dict) Returns the configuration dictionary.
+      dict: Returns the configuration dictionary.
     """
     with open(path, "r") as f:
         return yaml.load(f, Loader)
@@ -53,8 +53,8 @@ def apply(config, mqtt, modem):
 
     Args:
       config:  The configuration dictionary.
-      mqtt:    (mqtt.Mqtt) The main MQTT handler.
-      modem:   (Modem) The PLM modem object.
+      mqtt (mqtt.Mqtt):  The main MQTT handler.
+      modem (Modem):  The PLM modem object.
     """
     # We must load the MQTT config first - loading the insteon config
     # triggers device creation and we need the various MQTT config's set
@@ -73,7 +73,7 @@ def find(name):
       Exception if the input device is unknown.
 
     Args:
-      name:   (str) The device type name.
+      name (str):  The device type name.
 
     Returns:
       Returns a tuple of the device class to use for the input and
@@ -96,7 +96,7 @@ class Loader(yaml.Loader):
         """Constructor
 
         Args:
-          file:  (file) File like object to read from.
+          file (file):  File like object to read from.
         """
         yaml.Loader.add_constructor('!include', Loader.include)
 
@@ -109,6 +109,9 @@ class Loader(yaml.Loader):
 
         foo: !include file.yaml
         foo: !include [file1.yaml, file2.yaml]
+
+        Args:
+          node:  The YAML node to load.
         """
         # input is a single file to load.
         if isinstance(node, yaml.ScalarNode):
@@ -123,13 +126,15 @@ class Loader(yaml.Loader):
             return result
 
         else:
-            msg = "Error: unrecognized node type in !include statement: " \
-                  "%s" % str(node)
+            msg = ("Error: unrecognized node type in !include statement: %s"
+                   % str(node))
             raise yaml.constructor.ConstructorError(msg)
 
     #-----------------------------------------------------------------------
     def _load_file(self, filename):
         """Read the requested file.
+        Args:
+          filename (str):  The file name to load.
         """
         path = os.path.join(self._base_dir, filename)
         with open(path, 'r') as f:

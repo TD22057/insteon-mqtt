@@ -29,7 +29,7 @@ class Reply:
           data:  The json data to read.
 
         Returns:
-          Returns a created Reply object.
+          Reply:  Returns a created Reply object.
         """
         return Reply(Reply.Type(data["type"]), data["data"])
 
@@ -38,8 +38,8 @@ class Reply:
         """Constructor
 
         Args:
-          type:   The type of reply to send.
-          data:   Addition data (usually a string) to send.
+          type (Type):  The type of reply to send.
+          data:  Addition data (usually a string) to send.
         """
         assert isinstance(type, Reply.Type)
 
@@ -51,7 +51,7 @@ class Reply:
         """Convert the message to JSON format.
 
         Returns:
-          Returns the JSON data.
+          str:  Returns the JSON data converted to a string.
         """
         data = {"type" : self.type.value, "data" : self.data}
         return json.dumps(data)

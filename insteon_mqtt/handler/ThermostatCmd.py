@@ -14,10 +14,9 @@ LOG = log.get_logger()
 class ThermostatCmd(Base):
     """Thermostat direct message handler.
 
-    The thermostats send direct messages concerning changes in their
-    temp, humid, mode, and status.  This catches those messages,
-    confirms they are sent from a thermostat and processes them
-    accordingly.
+    The thermostats send direct messages concerning changes in their temp,
+    humid, mode, and status.  This catches those messages, confirms they are
+    sent from a thermostat and processes them accordingly.
 
     This hander is added to the protocol handlers whenever a thermostat is
     loaded.
@@ -25,20 +24,21 @@ class ThermostatCmd(Base):
     NOTE: This handler is designed to always be active - it never returns
     FINISHED.
     """
-    # Irritatingly, this mapping is different for direct status messages.
-    # Insteon loves to be irritating like that
+
+    # This mapping is different from the Thermostat mapping used in response
+    # to a get_status message even though the names are the same.
     class Mode(enum.IntEnum):
-        off = 0x00
-        heat = 0x01
-        cool = 0x02
-        auto = 0x03
-        program = 0x04
+        OFF = 0x00
+        HEAT = 0x01
+        COOL = 0x02
+        AUTO = 0x03
+        PROGRAM = 0x04
 
     def __init__(self, device):
         """Constructor
 
         Args
-          device:   (Device) The Insteon thermostat object.
+          device (Device):  The Insteon thermostat object.
         """
         super().__init__()
         self.device = device
@@ -47,11 +47,9 @@ class ThermostatCmd(Base):
     def msg_received(self, protocol, msg):
         """See if we can handle the message.
 
-        Try and process the message.
-
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
-          msg:       Insteon message object that was read.
+          protocol (Protocol):  The Insteon Protocol object
+          msg:  Insteon message object that was read.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.
@@ -101,7 +99,13 @@ class ThermostatCmd(Base):
             mode_nibble = int(msg.cmd2) & 0b00001111
             self.device.set_fan_mode_state(fan_nibble)
             try:
-                hvac_mode = ThermostatCmd.Mode(mode_nibble)
+                # Convert from the handler mode to the ThermostatMode since
+                # the integer codes are different.  We can use the enum names
+                # to map between the enums even though they have different
+                # modes.  This way the signal always emits Thermostat.Mode
+                # flags.
+                local_mode = ThermostatCmd.Mode(mode_nibble)
+                hvac_mode = self.device.Mode[local_mode.name]
             except ValueError:
                 LOG.exception("Unknown mode broadcast state %s.", mode_nibble)
             else:

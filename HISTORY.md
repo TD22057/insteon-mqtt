@@ -35,6 +35,8 @@
 - Added a new command line input (get-devices) to get a list of the curren
   Insteon devices in JSON format.  ([Issue #84][I84]).
 
+- Added a new command line input to factory reset the modem.
+
 ## [0.6.4]
 
 ### Additions

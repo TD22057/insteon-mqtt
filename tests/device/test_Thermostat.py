@@ -13,7 +13,7 @@ class Test_Thermostat:
         modem = MockModem()
         addr = IM.Address(0x01, 0x02, 0x03)
         thermo = Thermo(protocol, modem, addr)
-        
+
         # setup signal tracking
         thermo.signal_ambient_temp_change.connect(self.handle_ambient_temp_change)
         thermo.signal_fan_mode_change.connect(self.handle_fan_mode_change)
@@ -25,7 +25,7 @@ class Test_Thermostat:
         thermo.signal_hold_change.connect(self.handle_hold_change)
         thermo.signal_energy_change.connect(self.handle_energy_change)
 
-        # Lightly test pairing and I mean light.  Most of this testing is 
+        # Lightly test pairing and I mean light.  Most of this testing is
         # handled by other tests
         thermo.pair()
         msg = Msg.OutStandard.direct(addr, 0x19, 0x00)
@@ -45,11 +45,11 @@ class Test_Thermostat:
                               bytes([0x01, 0x04, 0x0a, 0x21, 0x05, 0x11, 0x1b,
                                      0x1e, 0x00, 0xe0, 0x88, 0x0e, 0x0f, 0xde]))
         thermo.handle_status(msg, on_done=self.done)
-        assert self.status == 'off'
+        assert self.status == Thermo.Status.OFF
         assert self.hold is False
         assert self.energy is False
-        assert self.fan == Thermo.Fan.on
-        assert self.mode == Thermo.Mode.auto
+        assert self.fan == Thermo.Fan.ON
+        assert self.mode == Thermo.Mode.AUTO
         assert self.humid == 30
         assert self.cool_sp == 27
         assert self.heat_sp == 14
@@ -73,7 +73,7 @@ class Test_Thermostat:
                               bytes([0x01, 0x04, 0x0a, 0x21, 0x05, 0x11, 0x50,
                                      0x1e, 0x00, 0xe0, 0x91, 0x39, 0x0f, 0xde]))
         thermo.handle_status(msg, on_done=self.done)
-        assert self.status == 'cooling'
+        assert self.status == Thermo.Status.COOLING
         assert self.hold == True
 
         # Test heating w/ energy
@@ -82,7 +82,7 @@ class Test_Thermostat:
                               bytes([0x01, 0x04, 0x0a, 0x21, 0x05, 0x11, 0x50,
                                      0x1e, 0x00, 0xe0, 0x86, 0x39, 0x0f, 0xde]))
         thermo.handle_status(msg, on_done=self.done)
-        assert self.status == 'heating'
+        assert self.status == Thermo.Status.HEATING
         assert self.energy == True
 
         # Test bad status response
@@ -95,7 +95,7 @@ class Test_Thermostat:
         # force a bad fan command, currently no way for this to happen
         # in the code, so just fake it here
         thermo.set_fan_mode_state(2)
-        assert self.fan == Thermo.Fan.on
+        assert self.fan == Thermo.Fan.ON
 
         # test humidity setpoints, not enabled in code yet so this is just a
         # shell
@@ -111,23 +111,23 @@ class Test_Thermostat:
                                      bytes([0x00] + [0x08] + [0x00] * 12))
         thermo.enable_broadcast()
         assert msg.to_bytes() == protocol.msgs.pop(0).to_bytes()
-        
+
         thermo.handle_generic_ack(msg, on_done=self.done)
-        
+
         # test thermo broadcast Messages
         flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
         cool = IM.Address(0x00, 0x00, 0x01)
         msg = Msg.InpStandard(addr, cool, flags, 0x11, 0x00)
         thermo.handle_broadcast(msg)
-        assert self.status == 'COOLING'
+        assert self.status == Thermo.Status.COOLING
         msg = Msg.InpStandard(addr, cool, flags, 0x13, 0x00)
         thermo.handle_broadcast(msg)
-        assert self.status == 'OFF'
+        assert self.status == Thermo.Status.OFF
         # test of bad group, shouldn't change status
         cool = IM.Address(0x00, 0x00, 0x07)
         msg = Msg.InpStandard(addr, cool, flags, 0x11, 0x00)
         thermo.handle_broadcast(msg)
-        assert self.status == 'OFF'
+        assert self.status == Thermo.Status.OFF
         # Test non-thermo broadcast
         cool = IM.Address(0x00, 0x00, 0x01)
         msg = Msg.InpStandard(addr, cool, flags, 0x20, 0x00)
@@ -136,36 +136,36 @@ class Test_Thermostat:
         # Test mode command
         msg = Msg.OutExtended.direct(addr, 0x6b, thermo.ModeCommands(0x04),
                                      bytes([0x00] * 14))
-        thermo.mode_command(thermo.ModeCommands.heat)
+        thermo.mode_command(thermo.ModeCommands.HEAT)
         assert msg.to_bytes() == protocol.msgs.pop(0).to_bytes()
 
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
         msg = Msg.InpStandard(addr, addr, flags, 0x6b,
-                              thermo.ModeCommands.heat.value)
+                              thermo.ModeCommands.HEAT.value)
         thermo.handle_mode_command(msg, on_done=self.done)
-        assert self.mode == thermo.ModeCommands.heat
+        assert self.mode == thermo.ModeCommands.HEAT
         # Test bad ack
         msg = Msg.InpStandard(addr, addr, flags, 0x6c,
-                              thermo.ModeCommands.heat.value)
+                              thermo.ModeCommands.HEAT.value)
         thermo.handle_mode_command(msg, on_done=self.done)
-        assert self.mode == thermo.ModeCommands.heat
+        assert self.mode == thermo.ModeCommands.HEAT
 
         # Test fan command
         msg = Msg.OutExtended.direct(addr, 0x6b, thermo.FanCommands(0x07),
                                      bytes([0x00] * 14))
-        thermo.fan_command(thermo.FanCommands.on)
+        thermo.fan_command(thermo.FanCommands.ON)
         assert msg.to_bytes() == protocol.msgs.pop(0).to_bytes()
 
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
         msg = Msg.InpStandard(addr, addr, flags, 0x6b,
-                              thermo.FanCommands.on.value)
+                              thermo.FanCommands.ON.value)
         thermo.handle_fan_command(msg, on_done=self.done)
-        assert self.fan == thermo.FanCommands.on
+        assert self.fan == thermo.FanCommands.ON
         # Test bad ack
         msg = Msg.InpStandard(addr, addr, flags, 0x6c,
-                              thermo.FanCommands.on.value)
+                              thermo.FanCommands.ON.value)
         thermo.handle_fan_command(msg, on_done=self.done)
-        assert self.fan == thermo.FanCommands.on
+        assert self.fan == thermo.FanCommands.ON
 
         # test heat setpoint command CELSIUS
         thermo.units = thermo.CELSIUS
@@ -235,7 +235,7 @@ class Test_Thermostat:
                               int(temp*2))
         thermo.handle_cool_sp_command(msg, on_done=self.done)
         assert self.cool_sp == temp_c
-        
+
         # bad ack
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
         msg = Msg.InpStandard(addr, addr, flags, 0x6a,

@@ -99,8 +99,8 @@ class ModemEntry:
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "ID: %s  grp: %s  type: %s  data: %#04x %#04x %#04x" % \
-            (self.addr.hex, self.group, util.ctrl_str(self.is_controller),
-             self.data[0], self.data[1], self.data[2])
+        return ("ID: %s  grp: %s  type: %s  data: %#04x %#04x %#04x" %
+                (self.addr.hex, self.group, util.ctrl_str(self.is_controller),
+                 self.data[0], self.data[1], self.data[2]))
 
     #-----------------------------------------------------------------------

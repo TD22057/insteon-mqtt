@@ -14,12 +14,12 @@ LOG = log.get_logger()
 class ExtendedCmdResponse(Base):
     """Device extended response message handler.
 
-    This class handles responses from the device where an ACK is made
-    in the form of a standard length message and a subsequent extended
-    length message is sent with the requested payload.
+    This class handles responses from the device where an ACK is made in the
+    form of a standard length message and a subsequent extended length
+    message is sent with the requested payload.
 
-    The handler watches for the proper standard length ACK, returns
-    a continue and then waits for the extended length payload.
+    The handler watches for the proper standard length ACK, returns a
+    continue and then waits for the extended length payload.
     """
     def __init__(self, msg, callback, on_done=None, num_retry=3):
         """Constructor
@@ -30,17 +30,17 @@ class ExtendedCmdResponse(Base):
         The message input is a string to help with logging the result.
 
         Args:
-          msg:       (OutStandard) The output message that was sent.  The
-                     reply must match the address and msg.cmd1 field to be
-                     processed by this handler.
+          msg (OutStandard):  The output message that was sent.  The reply
+              must match the address and msg.cmd1 field to be processed by
+              this handler.
           callback:  Callback function to pass InpStandard messages that match
                      the output to.  Signature: callback(message, on_done).
-          on_done:   Option finished callback.  This is called when the
-                     handler is finished for any reason.
-          num_retry: (int) The number of times to retry the message if the
-                     handler times out without returning Msg.FINISHED.
-                     This count does include the initial sending so a
-                     retry of 3 will send once and then retry 2 more times.
+          on_done:  Option finished callback.  This is called when the
+                    handler is finished for any reason.
+          num_retry (int):  The number of times to retry the message if the
+                    handler times out without returning Msg.FINISHED.
+                    This count does include the initial sending so a
+                    retry of 3 will send once and then retry 2 more times.
         """
         super().__init__(on_done, num_retry)
         self.addr = msg.to_addr
@@ -56,8 +56,8 @@ class ExtendedCmdResponse(Base):
         callback to handle.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
-          msg:       Insteon message object that was read.
+          protocol (Protocol):  The Insteon Protocol object
+          msg:  Insteon message object that was read.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.

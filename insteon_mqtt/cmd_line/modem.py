@@ -19,6 +19,17 @@ def refresh_all(args, config):
 
 
 #===========================================================================
+def factory_reset(args, config):
+    topic = "%s/modem" % (args.topic)
+    payload = {
+        "cmd" : "factory_reset",
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
 def get_devices(args, config):
     topic = "%s/modem" % (args.topic)
     payload = {

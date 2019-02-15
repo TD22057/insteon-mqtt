@@ -27,9 +27,9 @@ class Mode(enum.Enum):
     def is_valid(cmd):
         """See if a command code is a valid on/off code.
         Args:
-          cmd:  (int) The Insteon command code
+          cmd (int):   The Insteon command code
         Returns:
-          Returns True if the input is a valid on/off code
+          bool: Returns True if the input is a valid on/off code
         """
         return cmd in _cmdMap
 
@@ -38,10 +38,10 @@ class Mode(enum.Enum):
         """Convert on/off and a mode enumeration to a command code.
 
         Args:
-          is_on:  (bool) True for on, False for off.
-          mode:   (Mode) The mode enumeration to use.
+          is_on (bool):  True for on, False for off.
+          mode (Mode):   The mode enumeration to use.
         Returns:
-          (int) Returns the Insteon command code for the input.
+          int: Returns the Insteon command code for the input.
         """
         assert isinstance(mode, Mode)
         if is_on:
@@ -56,10 +56,11 @@ class Mode(enum.Enum):
         If the input isn't a valid command code, an Exception is thrown.
 
         Args:
-          cmd:    (int) The Insteon on/off command code.
+          cmd (int):  The Insteon on/off command code.
 
         Returns:
-          (bool, Mode) Returns a tuple of an on/off boolean and the mode enum.
+          (bool, Mode):  Returns a tuple of an on/off boolean and the mode
+          enum.
         """
         result = _cmdMap.get(cmd, None)
         if result is None:
@@ -110,9 +111,9 @@ class Manual(enum.Enum):
     def is_valid(cmd):
         """See if a command code is a valid on/off code.
         Args:
-          cmd:  (int) The Insteon command code
+          cmd (int):  The Insteon command code
         Returns:
-          Returns True if the input is a valid on/off code
+          bool: Returns True if the input is a valid on/off code
         """
         return cmd in (0x17, 0x18)
 
@@ -121,9 +122,9 @@ class Manual(enum.Enum):
         """Convert manual  enumeration to a pair of command codes.
 
         Args:
-          manual:  (Mode) The mode enumeration to use.
+          manual (Mode):  The mode enumeration to use.
         Returns:
-          (int, int) Returns the Insteon code 1 and code 2 for the input.
+          (int, int): Returns the Insteon code 1 and code 2 for the input.
         """
         assert isinstance(manual, Manual)
         if manual is Manual.STOP:
@@ -140,12 +141,12 @@ class Manual(enum.Enum):
         If the input isn't a valid command code, an Exception is thrown.
 
         Args:
-          cmd1:    (int) The Insteon command code 1.  0x17=start, 0x18=stop
-          cmd2:    (int) The Insteon command code 2.  Ignored for stop.
-                   For start, 0x01=up, 0x00=down.
+          cmd1 (int):   The Insteon command code 1.  0x17=start, 0x18=stop
+          cmd2 (int):   The Insteon command code 2.  Ignored for stop.
+                        For start, 0x01=up, 0x00=down.
 
         Returns:
-          (Manual) Returns the manual enum.
+          Manual: Returns the manual enum.
         """
         if cmd1 == 0x18:
             return Manual.STOP
@@ -159,7 +160,9 @@ class Manual(enum.Enum):
 
     def int_value(self):
         """Return an integer value of the command code.
-        UP = +1, STOP = 0, DOWN = -1
+
+        Returns:
+          int: UP = +1, STOP = 0, DOWN = -1
         """
         if self is Manual.UP:
             return +1
@@ -170,7 +173,9 @@ class Manual(enum.Enum):
 
     def openhab_value(self):
         """Return an integer value of the command code for OpenHab.
-        OpenHab uses UP = 2, STOP = 1, DOWN = 0.
+
+        Returns:
+          int: OpenHab uses UP = 2, STOP = 1, DOWN = 0.
         """
         if self is Manual.UP:
             return 2

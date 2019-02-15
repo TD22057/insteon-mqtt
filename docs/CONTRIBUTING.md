@@ -21,12 +21,12 @@ against that.
 
 # Coding Style
 
-- All of the code must follow pep8 style and be checked with flake8
-  and pylint.
+- All of the code must follow pep8 style and be checked with flake8 and
+  pylint.  These must be run from the top level directory of the repository.
 
    ```
-   flake8 insteon-mqtt
-   pylint insteon-mqtt
+   flake8 ./insteon-mqtt
+   pylint ./insteon-mqtt
    ```
 
 - Classes, functions, and methods must be documented with Python
