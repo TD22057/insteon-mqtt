@@ -305,7 +305,7 @@ Button is an integer in the range [1,8].  In the 6 button version, buttons
 commands.
 
    ```
-   { "cmd": "set_button_led", "button" : button, "is_on" : true/false }
+   { "cmd": "set_button_led", "group" : button, "is_on" : true/false }
    ```
 
 ### Get and set operating flags.
