@@ -26,9 +26,9 @@ class ModemDbGet(Base):
         """Constructor
 
         Args
-          modem_db:  (db.Modem) The database to update.
-          on_done:   The finished callback.  Calling signature:
-                         on_done( bool success, str message, data )
+          modem_db (db.Modem):  The database to update.
+          on_done:  The finished callback.  Calling signature:
+                    on_done( bool success, str message, data )
         """
         super().__init__()
 
@@ -44,8 +44,8 @@ class ModemDbGet(Base):
         database to update it's database with the info.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
-          msg:       Insteon message object that was read.
+          protocol (Protocol):  The Insteon Protocol object
+          msg:  Insteon message object that was read.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.

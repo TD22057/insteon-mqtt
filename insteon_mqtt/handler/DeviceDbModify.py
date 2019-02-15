@@ -22,13 +22,12 @@ class DeviceDbModify(Base):
         """Constructor
 
         Args:
-          device_db:       (db.Device) The device database being changed.
-          entry:           (db.DeviceEntry) The new record or record being
-                           erased.  This is the entry that the db will have
-                           if the command works.
-          on_done:         Finished callback.  This is called once for each
-                           call added to the handler.  Signature is:
-                              on_done(success, msg, entry)
+          device_db (db.Device):  The device database being changed.
+          entry (db.DeviceEntry):  The new record or record being erased.
+                This is the entry that the db will have if the command works.
+          on_done:  Finished callback.  This is called once for each call
+                    added to the handler.  Signature is:
+                    on_done(success, msg, entry)
         """
         super().__init__(on_done)
 
@@ -43,8 +42,8 @@ class DeviceDbModify(Base):
         next message is written out.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
-          msg:       Insteon message object that was read.
+          protocol (Protocol):  The Insteon Protocol object
+          msg:  Insteon message object that was read.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.
@@ -77,8 +76,10 @@ class DeviceDbModify(Base):
                                  self.entry)
 
                 elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-                    LOG.error("%s db mod NAK: %s", self.db.addr, msg)
-                    self.on_done(False, "Device database update failed", None)
+                    LOG.error("%s db mod NAK: %s, Message: %s", self.db.addr,
+                              msg.nak_str(), msg)
+                    self.on_done(False, "Device database update failed. " +
+                                 msg.nak_str(), None)
 
                 else:
                     LOG.error("%s db mod unexpected msg type: %s",

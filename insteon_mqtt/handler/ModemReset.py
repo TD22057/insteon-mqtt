@@ -18,13 +18,15 @@ class ModemReset(Base):
 
     When this happens, we'll clear the modem all link database.
     """
-    def __init__(self, modem):
+    def __init__(self, modem, on_done=None):
         """Constructor
 
         Args
-          modem:    (Modem) The Insteon modem object.
+          modem (Modem):  The Insteon modem object.
+          on_done: The finished callback.  Calling signature:
+                   on_done( bool success, str message, data )
         """
-        super().__init__()
+        super().__init__(on_done)
 
         self.modem = modem
 
@@ -35,8 +37,8 @@ class ModemReset(Base):
         If we get an ACK of the user reset, we'll clear the modem database.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
-          msg:       Insteon message object that was read.
+          protocol  (Protocol):  The Insteon Protocol object
+          msg:  Insteon message object that was read.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.
@@ -54,8 +56,10 @@ class ModemReset(Base):
                 # Erase the local modem database.  This also erases the
                 # on-disk store of the database.
                 self.modem.db.clear()
+                self.on_done(True, "Modem has been reset", None)
             else:
                 LOG.error("Modem factory reset failed")
+                self.on_done(False, "Modem reset failed", None)
 
             return Msg.FINISHED
 

@@ -5,16 +5,29 @@
 #===========================================================================
 import functools
 from .. import log
+from .. import on_off
 from .MsgTemplate import MsgTemplate
+from . import util
 
 LOG = log.get_logger()
 
 
 class Outlet:
-    """TODO: doc
+    """MQTT interface to an Insteon on/off outlet.
+
+    This class connects to a device.Outlet object and converts it's
+    output state changes to MQTT messages.  It also subscribes to topics to
+    allow input MQTT messages to change the state of the Insteon device.
+
+    Outlets will report their state (1/socket) and can be commanded to turn
+    on and off.
     """
     def __init__(self, mqtt, device):
-        """TODO: doc
+        """Constructor
+
+        Args:
+          mqtt (mqtt.Mqtt):  The MQTT main interface.
+          device (device.Outlet):  The Insteon object to link to.
         """
         self.mqtt = mqtt
         self.device = device
@@ -22,31 +35,28 @@ class Outlet:
         # Output state change reporting template.
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state/{{button}}',
-            payload='{{on_str.lower()}}',
-            )
+            payload='{{on_str.lower()}}')
 
         # Input on/off command template.
         self.msg_on_off = MsgTemplate(
             topic='insteon/{{address}}/set/{{button}}',
-            payload='{ "cmd" : "{{value.lower()}}" }',
-            )
+            payload='{ "cmd" : "{{value.lower()}}" }')
 
         # Input scene on/off command template.
         self.msg_scene = MsgTemplate(
             topic='insteon/{{address}}/scene/{{button}}',
-            payload='{ "cmd" : "{{value.lower()}}" }',
-            )
+            payload='{ "cmd" : "{{value.lower()}}" }')
 
-        device.signal_active.connect(self.handle_active)
+        device.signal_on_off.connect(self._insteon_on_off)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
 
         Args:
-          config:   The configuration dictionary to load from.  The object
-                    config is stored in config['switch'].
-          qos:      The default quality of service level to use.
+          config (dict:  The configuration dictionary to load from.  The object
+                 config is stored in config['outlet'].
+          qos (int):  The default quality of service level to use.
         """
         data = config.get("outlet", None)
         if not data:
@@ -62,18 +72,24 @@ class Outlet:
     def subscribe(self, link, qos):
         """Subscribe to any MQTT topics the object needs.
 
+        Subscriptions are used when the object has things that can be
+        commanded to change.
+
         Args:
-          link:   The MQTT network client to use.
-          qos:    The quality of service to use.
+          link (network.Mqtt):  The MQTT network client to use.
+          qos (int):  The quality of service to use.
         """
-        for group in range(1, 3):
-            handler = functools.partial(self.handle_set, group=group)
+        # Connect input topics for groups 1 and 2 (top and bottom sockets).
+        # Create a function that will call the input callback with the right
+        # group number set for each socket.
+        for group in [1, 2]:
+            handler = functools.partial(self._input_on_off, group=group)
             data = self.template_data(button=group)
 
             topic = self.msg_on_off.render_topic(data)
             link.subscribe(topic, qos, handler)
 
-            handler = functools.partial(self.handle_scene, group=group)
+            handler = functools.partial(self._input_scene, group=group)
             topic = self.msg_scene.render_topic(data)
             link.subscribe(topic, qos, handler)
 
@@ -82,9 +98,9 @@ class Outlet:
         """Unsubscribe to any MQTT topics the object was subscribed to.
 
         Args:
-          link:   The MQTT network client to use.
+          link (network.Mqtt):  The MQTT network client to use.
         """
-        for group in range(1, 9):
+        for group in [1, 2]:
             data = self.template_data(button=group)
 
             topic = self.msg_on_off.render_topic(data)
@@ -94,8 +110,18 @@ class Outlet:
             link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
-    def template_data(self, is_active=None, button=None):
-        """TODO: doc
+    def template_data(self, is_on=None, button=None, mode=on_off.Mode.NORMAL):
+        """Create the Jinja templating data variables for on/off messages.
+
+        Args:
+          button (int):  The button (group) ID (1-2) of the Insteon button
+                 that was triggered.
+          is_on (bool):  True for on, False for off.  If None, on/off and
+                mode attributes are not added to the data.
+          mode (on_off.Mode):  The on/off mode state.
+
+        Returns:
+          dict:  Returns a dict with the variables available for templating.
         """
         data = {
             "address" : self.device.addr.hex,
@@ -104,61 +130,74 @@ class Outlet:
             "button" : button,
             }
 
-        if is_active is not None:
-            data["on"] = 1 if is_active else 0
-            data["on_str"] = "on" if is_active else "off"
+        if is_on is not None:
+            data["on"] = 1 if is_on else 0
+            data["on_str"] = "on" if is_on else "off"
+            data["mode"] = str(mode)
+            data["fast"] = 1 if mode == on_off.Mode.FAST else 0
+            data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
 
         return data
 
     #-----------------------------------------------------------------------
-    def handle_active(self, device, group, is_active):
+    def _insteon_on_off(self, device, group, is_on, mode=on_off.Mode.NORMAL):
         """Device active on/off callback.
 
-        This is triggered via signal when the Insteon device goes
-        active or inactive.  It will publish an MQTT message with the
-        new state.
+        This is triggered via signal when the Insteon device turns on or off.
+        It will publish an MQTT message with the new state.
 
         Args:
-          device:   (device.Base) The Insteon device that changed.
-          is_active (bool) True for on, False for off.
+          device (device.Outlet):  The Insteon device that changed.
+          group (int):  The socket number (1 or 2) that was changed.
+          is_on (bool):  True for on, False for off.  If None, on/off and
+                mode attributes are not added to the data.
+          mode (on_off.Mode):  The on/off mode state.
         """
-        LOG.info("MQTT received active change %s = %s", device.label,
-                 is_active)
+        LOG.info("MQTT received on/off %s grp: %s on: %s %s", device.label,
+                 group, is_on, mode)
 
-        data = self.template_data(is_active, group)
+        data = self.template_data(is_on, group, mode)
         self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
-    def handle_set(self, client, data, message, group):
-        """TODO: doc
+    def _input_on_off(self, client, data, message, group):
+        """Handle an input on/off change MQTT message.
+
+        This is called when we receive a message on the on/off MQTT topic
+        subscription.  Parse the message and pass the command to the Insteon
+        device.
+
+        Args:
+          client (paho.Client):  The paho mqtt client (self.link).
+          data:  Optional user data (unused).
+          message:  MQTT message - has attrs: topic, payload, qos, retain.
         """
         LOG.debug("Outlet btn %s message %s %s", group, message.topic,
                   message.payload)
 
         # Parse the input MQTT message.
         data = self.msg_on_off.to_json(message.payload)
-        LOG.info("Switch input command: %s", data)
+        LOG.info("Outlet input command: %s", data)
 
         try:
-            cmd = data.get('cmd')
-            if cmd == 'on':
-                is_on = True
-            elif cmd == 'off':
-                is_on = False
-            else:
-                raise Exception("Invalid switch cmd input '%s'" % cmd)
-
-            instant = bool(data.get('instant', False))
+            # Tell the device to update it's state.
+            is_on, mode = util.parse_on_off(data)
+            self.device.set(level=is_on, group=group, mode=mode)
         except:
-            LOG.exception("Invalid switch command: %s", data)
-            return
-
-        # Tell the device to update it's state.
-        self.device.set(level=is_on, group=group, instant=instant)
+            LOG.exception("Invalid Outlet on/off command: %s", data)
 
     #-----------------------------------------------------------------------
-    def handle_scene(self, client, data, message, group):
-        """TODO: doc
+    def _input_scene(self, client, data, message, group):
+        """Handle an input scene MQTT message.
+
+        This is called when we receive a message on the scene trigger MQTT
+        topic subscription.  Parse the message and pass the command to the
+        Insteon device.
+
+        Args:
+          client (paho.Client):  The paho mqtt client (self.link).
+          data:  Optional user data (unused).
+          message:  MQTT message - has attrs: topic, payload, qos, retain.
         """
         LOG.debug("Outlet btn %s message %s %s", group, message.topic,
                   message.payload)
@@ -168,18 +207,10 @@ class Outlet:
         LOG.info("Outlet input command: %s", data)
 
         try:
-            cmd = data.get('cmd')
-            if cmd == 'on':
-                is_on = True
-            elif cmd == 'off':
-                is_on = False
-            else:
-                raise Exception("Invalid outlet cmd input '%s'" % cmd)
+            # Tell the device to trigger the scene command.
+            is_on, _mode = util.parse_on_off(data)
+            self.device.scene(is_on, group)
         except:
-            LOG.exception("Invalid switch command: %s", data)
-            return
-
-        # Tell the device to trigger the scene command.
-        self.device.scene(is_on, group)
+            LOG.exception("Invalid Outlet scene command: %s", data)
 
     #-----------------------------------------------------------------------

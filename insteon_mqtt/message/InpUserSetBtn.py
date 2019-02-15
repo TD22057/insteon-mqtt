@@ -9,8 +9,8 @@ from .Base import Base
 class InpUserSetBtn(Base):
     """User pressed the PLM set button.
 
-    This is sent from the PLM modem to the host when the user presses
-    the modem set button.
+    This is sent from the PLM modem to the host when the user presses the
+    modem set button.
     """
     # pylint: disable=abstract-method
 
@@ -34,14 +34,14 @@ class InpUserSetBtn(Base):
     def from_bytes(cls, raw):
         """Read the message from a byte stream.
 
-        This should only be called if raw[1] == msg_code and len(raw)
-        >= msg_size().
+        This should only be called if raw[1] == msg_code and len(raw) >=
+        msg_size().
 
         Args:
-           raw   (bytes): The current byte stream to read from.
+          raw (bytes):  The current byte stream to read from.
 
         Returns:
-           Returns the constructed InpUserSetBtn object.
+          Returns the constructed InpUserSetBtn object.
         """
         assert len(raw) >= InpUserSetBtn.fixed_msg_size
         assert raw[0] == 0x02 and raw[1] == InpUserSetBtn.msg_code
@@ -54,8 +54,7 @@ class InpUserSetBtn(Base):
         """Constructor
 
         Args:
-          event:   (int) The event code.  See the class attributes for
-                   options.
+          event (int):  The event code.  See the class attributes for options.
         """
         super().__init__()
 

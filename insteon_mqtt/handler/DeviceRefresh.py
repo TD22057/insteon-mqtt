@@ -31,19 +31,19 @@ class DeviceRefresh(Base):
         """Constructor
 
         Args
-          device:    (Device) The Insteon device.
+          device (Device):  The Insteon device.
           callback:  Callback function to call when the reply arrives.  API:
-                        callback( Msg.InpStandard )
-          force:     (bool) If True, force a db download.  If False, only
-                     download the db if it's out of date.
-          on_done:   Finished callback.  Will be called when the refresh
-                     operation is done.
-          num_retry: (int) The number of times to retry the message if the
-                     handler times out without returning Msg.FINISHED.
-                     This count does include the initial sending so a
-                     retry of 3 will send once and then retry 2 more times.
-          skip_db:   (bool) If True, ignore the database version and don't
-                     download the database.
+                     callback( Msg.InpStandard )
+          force (bool):  If True, force a db download.  If False, only
+                download the db if it's out of date.
+          on_done:  Finished callback.  Will be called when the refresh
+                    operation is done.
+          num_retry (int):  The number of times to retry the message if the
+                    handler times out without returning Msg.FINISHED.
+                    This count does include the initial sending so a
+                    retry of 3 will send once and then retry 2 more times.
+          skip_db (bool):  If True, ignore the database version and don't
+                  download the database.
         """
         super().__init__(on_done, num_retry)
 
@@ -58,8 +58,8 @@ class DeviceRefresh(Base):
         """See if we can handle the message.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
-          msg:       Insteon message object that was read.
+          protocol (Protocol):  The Insteon Protocol object
+          msg:  Insteon message object that was read.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.

@@ -4,7 +4,7 @@
 
 This package assumes that you:
 
-- Have a hass.io installation up and running with either SSH access or a 
+- Have a hass.io installation up and running with either SSH access or a
   network share.
 
 - Have a working MQTT broker up and running.  If not, do that first
@@ -26,12 +26,9 @@ This package assumes that you:
     add-on, click the refresh button in the top right corner on the Hass.io
     Add-ons page, and it should show up.
 
-4) Start the addon. This will setup the default config files under `/config/insteon-mqtt/config.yaml`. 
+4) Start the addon. This will setup the default config files under `/config/insteon-mqtt/config.yaml`.
 
-5) Edit `/config/insteon-mqtt/config.yaml` as appropriate. There is no
-   automatic device discovery at this time.  Insteon devices must already
-   be linked with the modem as a controller and the device as a responder
-   (press set on modem first, then the device).
+5) Edit `/config/insteon-mqtt/config.yaml` as appropriate.
 
    - Set the Insteon port to be the USB port or address of the PLM modem.
    - Set the modem Insteon hex address (printed on the back of the modem).
@@ -45,7 +42,11 @@ This package assumes that you:
 
 6) Restart the insteon-mqtt addon to pick up the changes.
 
-7) Download an Insteon device database for every device.  This may
+7) Join, Pair, and Sync each device in your network.  This can be accomplished
+   using mqtt messages as described in the [Required Device Initialization]
+   (mqtt.md#required-device-initialization) section.
+
+8) Download an Insteon device database for every device.  This may
    take awhile and battery operated devices (motion sensors, remotes,
    etc) will fail because they aren't awake. Publish the following command
    to `insteon/command/modem`
@@ -58,7 +59,7 @@ This package assumes that you:
    (by activating it or pressing the set button - it may depend on the
    device) and then quickly send a command to the Insteon hex address
    of that device to download the database (hopefully this will be
-   automatic in the future). Publish the following command to 
+   automatic in the future). Publish the following command to
    `insteon/command/aa.bb.cc`
 
    ```
@@ -75,7 +76,7 @@ This package assumes that you:
    to be done once) means that the correct controller/responder links from
    the device to the PLM modem may not exist and the functionality of the
    device with the Insteon-MQTT system may not work until pair() is called.
-   
+
    Publish the following command to `insteon/command/aa.bb.cc`
    ```
    { "cmd": "pair" }

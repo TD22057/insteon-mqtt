@@ -1,5 +1,42 @@
 # Revision Change History
 
+## [0.6.5]
+
+### Fixes
+- Added better messages when the pair command fails because the modem db
+  is out of date ([Issue #69][I69]).
+
+- Updated docs and example config file because of breaking HomeAssistant
+  MQTT light change for dimmers ([Issue #88][I88]).
+
+### Additions
+- Support for fast on and off commands and reporting has been added.  The
+  on/off mode (normal, fast, instant) is now a command input as well as an
+  output flag in the state templates.  This allows double-clicking of
+  switches to be used in automation triggers (thanks @NickWaterton).
+  ([Issue #66][I66]).
+
+- Added support for manual mode state reporting (holding buttons down).
+  Supported by dimmer, keypadlinc, remote, and switch (thanks
+  @NickWaterton). ([Issue #104][I104]).
+
+- New command 'get_model' added to the command line tool to retrieve and save
+  the Insteon device cat, sub_cat, and firmware revision (thanks @krkeegan).
+  ([Issue #55][I55]).
+
+- New command 'join' added to the command line tool to perform a two-way
+  pairing and refresh to link a device to the modem.  This combines the
+  previous linknig and pair command into a single command (thanks @krkeegan).
+  ([Issue #97][I97]).
+
+- New improved NAK error response codes makes it easier to understand errors
+  when the devices can't communicate (thanks @krkeegan).  ([Issue #95][I95]).
+
+- Added a new command line input (get-devices) to get a list of the curren
+  Insteon devices in JSON format.  ([Issue #84][I84]).
+
+- Added a new command line input to factory reset the modem.
+
 ## [0.6.4]
 
 ### Additions
@@ -179,8 +216,16 @@
 [I43]: https://github.com/TD22057/insteon-mqtt/issues/43
 [I45]: https://github.com/TD22057/insteon-mqtt/issues/45
 [I48]: https://github.com/TD22057/insteon-mqtt/issues/48
+[I55]: https://github.com/TD22057/insteon-mqtt/issues/55
 [I59]: https://github.com/TD22057/insteon-mqtt/issues/59
 [I63]: https://github.com/TD22057/insteon-mqtt/issues/63
+[I66]: https://github.com/TD22057/insteon-mqtt/issues/66
+[I69]: https://github.com/TD22057/insteon-mqtt/issues/69
 [I70]: https://github.com/TD22057/insteon-mqtt/issues/70
 [I76]: https://github.com/TD22057/insteon-mqtt/issues/76
+[I84]: https://github.com/TD22057/insteon-mqtt/issues/84
 [I86]: https://github.com/TD22057/insteon-mqtt/issues/86
+[I88]: https://github.com/TD22057/insteon-mqtt/issues/88
+[I95]: https://github.com/TD22057/insteon-mqtt/issues/95
+[I97]: https://github.com/TD22057/insteon-mqtt/issues/97
+[I104]: https://github.com/TD22057/insteon-mqtt/issues/104

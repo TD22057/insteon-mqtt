@@ -49,10 +49,7 @@ This package assumes that you:
 
 3) Edit the configuration file `config.yaml`.  You may want to make a
    copy and place it in the virtual env directory or somewhere like
-   /etc/insteon-mqtt.yaml.  There is no automatic device discovery at
-   this time.  Insteon devices must already be linked with the modem
-   as a controller and the device as a responder (press set on modem
-   first, then the device).
+   /etc/insteon-mqtt.yaml.
 
    - Set the Insteon port to be the USB port or address of the PLM modem.
    - Set the modem Insteon hex address (printed on the back of the modem).
@@ -73,7 +70,17 @@ This package assumes that you:
    insteon-mqtt config.yaml start
    ```
 
-5) Download an Insteon device database for every device.  This may
+5) Join, Pair, and Sync each device in your network.  This can be accomplished
+   using mqtt messages as described in the [Required Device Initialization]
+  (mqtt.md#required-device-initialization) section.
+
+  ```
+  insteon-mqtt config.yaml join aa.bb.cc
+  insteon-mqtt config.yaml pair aa.bb.cc
+  insteon-mqtt config.yaml sync aa.bb.cc
+  ```
+
+6) Download an Insteon device database for every device.  This may
    take awhile and battery operated devices (motion sensors, remotes,
    etc) will fail because they aren't awake.
 
@@ -111,7 +118,7 @@ This package assumes that you:
    make changes to the Insteon links (scenes) manually without using
    the server.
 
-6) You can monitor the devices to make sure things are working by
+7) You can monitor the devices to make sure things are working by
    watching MQTT messages.  With mosquitto, you can run the following to
    see every messages being sent in and out of the server.
 
@@ -119,7 +126,7 @@ This package assumes that you:
    mosquitto_sub -v -t 'insteon/#'
    ```
 
-7) To command devices, you can use the command line tool or send MQTT
+8) To command devices, you can use the command line tool or send MQTT
    messages.  For example, to turn on a light, both of these will have
    the same affect:
 

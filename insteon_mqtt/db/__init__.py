@@ -4,6 +4,7 @@
 #
 #===========================================================================
 # flake8: noqa
+# pylint: disable=cyclic-import
 
 __doc__ = """Device and modem all link database classes.
 

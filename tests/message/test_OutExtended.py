@@ -36,17 +36,20 @@ class Test_OutExtended:
 
         assert obj.msg_size(b) == Msg.OutExtended.fixed_msg_size
 
-        ob = obj.to_bytes(crc_type=None)
+        obj.crc_type = None
+        ob = obj.to_bytes()
         assert ob == b[:-1]  # output has no ack
 
         # Test CRC computations.  No good way to generate right
         # answers for these so these came from inspection.
-        ob = obj.to_bytes(crc_type="D14")
+        obj.crc_type = "D14"
+        ob = obj.to_bytes()
         raw = list(b[:-1])  # output has no ack
         raw[21] = 0x85
         assert ob == bytes(raw)
 
-        ob = obj.to_bytes(crc_type="CRC")
+        obj.crc_type = "CRC"
+        ob = obj.to_bytes()
         raw = list(b[:-1])  # output has no ack
         raw[20] = 0x41
         raw[21] = 0xf8
@@ -59,7 +62,7 @@ class Test_OutExtended:
         addr = IM.Address(0x3e, 0xe2, 0xc4)
         data = bytes([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
                       0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e])
-        obj = Msg.OutExtended.direct(addr, 0x11, 0x25, data)
+        obj = Msg.OutExtended.direct(addr, 0x11, 0x25, data, crc_type=None)
 
         assert obj.to_addr.ids == [0x3e, 0xe2, 0xc4]
         assert obj.flags.type == Msg.Flags.Type.DIRECT
@@ -72,5 +75,6 @@ class Test_OutExtended:
         assert obj.cmd2 == 0x25
         assert obj.is_ack is None
         assert obj.data == data
+        assert obj.crc_type == None
 
 #===========================================================================

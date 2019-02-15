@@ -6,10 +6,9 @@
 import logging
 import logging.handlers
 
-# Add a custom logging level.  This lets us do some filtering for
-# sending user interface messages to the command line tool about
-# command status and progress that are nicer than the raw logging
-# messages.
+# Add a custom logging level.  This lets us do some filtering for sending
+# user interface messages to the command line tool about command status and
+# progress that are nicer than the raw logging messages.
 UI_LEVEL = 21
 logging.addLevelName(UI_LEVEL, "UI")
 
@@ -19,6 +18,12 @@ def get_logger(name="insteon_mqtt"):
     """Get a logger object to use.
 
     This will return a logging object to use for messages.
+
+    Args:
+      name (str):  The name of the logging objectd.
+
+    Returns:
+      The requested logging object.
     """
     # Force the logging system to use our custom logger class, then restore
     # whatever was set when we're done.
@@ -35,16 +40,16 @@ def initialize(level=None, screen=None, file=None, config=None):
     """Initialize the logging settings.
 
     Args:
-      level:   (int) The logging level to set.
-      screen:  (bool) True to turn on logging to the screen.  False to turn it
-               off.  If None, the default of True is used.
-      file:    (str) File to log to or None to skip.
+      level (int):  The logging level to set.
+      screen (bool):  True to turn on logging to the screen.  False to turn it
+             off.  If None, the default of True is used.
+      file (str): File to log to or None to skip.
       config:  Config object to read logging information from.  This read from
                the yaml file and the 'logging' key is extracted to configure
                the inputs.
     """
-    # Config variables are used if the config is input and if a direct
-    # input variable is not set.
+    # Config variables are used if the config is input and if a direct input
+    # variable is not set.
     if config:
         # Read the logging config and initialize the library logger.
         data = config.get("logging", {})
@@ -87,16 +92,16 @@ def initialize(level=None, screen=None, file=None, config=None):
 class Logger(logging.getLoggerClass()):
     """Custom logging class.
 
-    This allows us to have a custom ui() function for logging.  The ui
-    level can set a callback function which is run when UI messages
-    are logged.  This let's us send back specific user interface
-    messages to the remote command line tool for a nicer interface.
+    This allows us to have a custom ui() function for logging.  The ui level
+    can set a callback function which is run when UI messages are logged.
+    This let's us send back specific user interface messages to the remote
+    command line tool for a nicer interface.
     """
     def __init__(self, name):
         """Constructor
 
         Args:
-          name:   (str) The logging objecst name.
+          name (str):  The logging objecst name.
         """
         super().__init__(name)
         self._ui_handler = None
@@ -108,9 +113,9 @@ class Logger(logging.getLoggerClass()):
         API is the same as standard logging messages.
 
         Args:
-           msg:    (str) The message to log.
-           args:   Optional arguments.
-           kwargs: Optional keyword arguments.
+           msg (str): The message to log.
+           args:  Optional arguments.
+           kwargs:  Optional keyword arguments.
         """
         if self.isEnabledFor(UI_LEVEL):
             self._log(UI_LEVEL, msg, args, **kwargs)
@@ -119,12 +124,12 @@ class Logger(logging.getLoggerClass()):
     def set_ui_callback(self, callback):
         """Add a callback for UI messages.
 
-        The callback will be passed the logging module Record object
-        to process when a UI message is logged.  Only one UI callback can
-        be added at a time.
+        The callback will be passed the logging module Record object to
+        process when a UI message is logged.  Only one UI callback can be
+        added at a time.
 
         Args:
-          callback:   The callback function to use.
+          callback:  The callback function to use.
         """
         self._ui_handler = CallbackHandler(callback)
         self.addHandler(self._ui_handler)
@@ -150,7 +155,7 @@ class CallbackHandler(logging.Handler):
         """Constructor
 
         Args:
-          callback:   The callback function to use.
+          callback:  The callback function to use.
         """
         super().__init__(UI_LEVEL)
         self.callback = callback
