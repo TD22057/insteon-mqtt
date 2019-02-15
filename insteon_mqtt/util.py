@@ -221,13 +221,20 @@ def input_integer(inputs, field):
     if value is None:
         return None
 
-    if isinstance(value, str):
-        lv = value.lower()
-        if lv == 'none':
-            return None
-
     try:
-        return int(value)
+        if isinstance(value, str):
+            lv = value.lower()
+            if lv == 'none':
+                return None
+
+            if '0x' in value:
+                return int(value, 16)
+            elif '0b' in value:
+                return int(value, 2)
+            else:
+                return int(value)
+        else:
+            return int(value)
     except ValueError:
         msg = "Invalid %s input.  Valid inputs are integer values." % input
         raise ValueError(msg)

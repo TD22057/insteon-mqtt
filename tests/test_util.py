@@ -147,7 +147,7 @@ class Test_util:
         inputs = {'key1' : '1', 'key2' : 2,
                   'key3' : '0x03', 'key4' : 0x04,
                   'key5' : None, 'key6' : 'None',
-                  'key7' : 'bad'}
+                  'key7' : '0b101', 'key8' : 'bad'}
 
         v = IM.util.input_integer(inputs, 'key1')
         assert v is 1
@@ -167,11 +167,14 @@ class Test_util:
         v = IM.util.input_integer(inputs, 'key6')
         assert v is None
 
+        v = IM.util.input_integer(inputs, 'key7')
+        assert v is 5
+
         v = IM.util.input_integer(inputs, 'invalid')
         assert v is None
 
         with pytest.raises(ValueError):
-            v = IM.util.input_integer(inputs, 'key7')
+            v = IM.util.input_integer(inputs, 'key8')
 
     #-----------------------------------------------------------------------
     def test_input_byte(self):
