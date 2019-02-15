@@ -166,7 +166,8 @@ def input_choice(inputs, field, choices):
 def input_bool(inputs, field):
     """Convert an input field to a boolean.
 
-    Valid boolean inputs are 'true', 'false', 'on', 'off', 1, 0, True, or False.
+    Valid boolean inputs are 'true', 'false', 'on', 'off', 1, 0, True,
+    or False.
 
     Raises:
       If the input is not a valid bool, an exception is thrown.
