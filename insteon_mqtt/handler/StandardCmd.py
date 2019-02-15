@@ -33,8 +33,8 @@ class StandardCmd(Base):
           msg (OutStandard):  The output message that was sent.  The
               reply must match the address and msg.cmd1 field to be
               processed by this handler.
-          callback:  Callback function to pass InpStandard messages that match
-                     the output to.  Signature: callback(message, on_done).
+          on_done: The finished callback.  Calling signature:
+                   on_done( bool success, str message, data )
           num_retry (int):  The number of times to retry the message if the
                     handler times out without returning Msg.FINISHED.
                     This count does include the initial sending so a

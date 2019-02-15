@@ -179,6 +179,9 @@ class Modem:
         the database on the device.
         """
         self.entries = []
+        self.groups = {}
+        self.aliases = {}
+        self._meta = {}
 
         if self.save_path and os.path.exists(self.save_path):
             os.remove(self.save_path)

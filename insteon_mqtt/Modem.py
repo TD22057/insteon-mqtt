@@ -66,6 +66,7 @@ class Modem:
             'refresh_all' : self.refresh_all,
             'linking' : self.linking,
             'scene' : self.scene,
+            'factory_reset' : self.factory_reset,
             }
 
         # Add a generic read handler for any broadcast messages initiated by
@@ -530,14 +531,18 @@ class Modem:
         self._db_delete(addr, group, False, two_way, refresh, on_done)
 
     #-----------------------------------------------------------------------
-    def factory_reset(self):
+    def factory_reset(self, on_done=None):
         """Factory reset the modem.
 
         This will erase all the entries on the modem.
+
+        Args:
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
         """
         LOG.warning("Modem being reset.  All data will be lost")
         msg = Msg.OutResetModem()
-        msg_handler = handler.ModemReset(self)
+        msg_handler = handler.ModemReset(self, on_done)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
