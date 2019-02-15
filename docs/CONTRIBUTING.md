@@ -26,7 +26,7 @@ against that.
 
    ```
    flake8 ./insteon_mqtt
-   pylint ./insteon-mqtt
+   pylint ./insteon_mqtt
    ```
 
 - Classes, functions, and methods must be documented with Python
