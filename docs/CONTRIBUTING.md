@@ -25,7 +25,7 @@ against that.
   pylint.  These must be run from the top level directory of the repository.
 
    ```
-   flake8 ./insteon-mqtt
+   flake8 ./insteon_mqtt
    pylint ./insteon-mqtt
    ```
 
