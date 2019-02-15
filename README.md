@@ -55,6 +55,7 @@ what they are and how to interpret messages from them.
   - Leak sensors
   - Motion sensors
   - Smoke bridge
+  - Thermostats
 - Automatically link new devices to the modem.  The system will
   correctly link all the Insteon groups for a device (like the smoke
   bridge which has 7 groups).
@@ -86,7 +87,6 @@ what they are and how to interpret messages from them.
 There is still more work to do and here are a some of my plans for
 future enhancements:
 
-- Finish commenting all of the code.
 - Full suite of unit tests.
 - YAML input configuration validation.
 - Heal network (remove records for missing devices, fix missing links).
