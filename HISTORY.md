@@ -2,14 +2,9 @@
 
 ## [0.6.5]
 
-### Fixes
-- Added better messages when the pair command fails because the modem db
-  is out of date ([Issue #69][I69]).
-
-- Updated docs and example config file because of breaking HomeAssistant
-  MQTT light change for dimmers ([Issue #88][I88]).
-
 ### Additions
+- Initial support for Insteon thermostats has been added (thanks @krkeegan).
+
 - Support for fast on and off commands and reporting has been added.  The
   on/off mode (normal, fast, instant) is now a command input as well as an
   output flag in the state templates.  This allows double-clicking of
@@ -36,6 +31,13 @@
   Insteon devices in JSON format.  ([Issue #84][I84]).
 
 - Added a new command line input to factory reset the modem.
+
+### Fixes
+- Added better messages when the pair command fails because the modem db
+  is out of date ([Issue #69][I69]).
+
+- Updated docs and example config file because of breaking HomeAssistant
+  MQTT light change for dimmers ([Issue #88][I88]).
 
 ## [0.6.4]
 
