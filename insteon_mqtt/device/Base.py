@@ -690,7 +690,7 @@ class Base:
 
     #-----------------------------------------------------------------------
     def handle_received(self, msg):
-        """Receives incomming message notifications from protocol
+        """Receives incoming message notifications from protocol
 
         This is called for every standard and extended message that is read
         from the modem from this device.  This is only used to track the hop
@@ -890,7 +890,7 @@ class Base:
             seq.add(self.refresh)
 
         # Get the data array to use.  See Github issue #7 for discussion.
-        # Use teh bytes() cast here so we can take a list as input.
+        # Use the bytes() cast here so we can take a list as input.
         local_data = self.link_data(is_controller, local_group, local_data)
 
         # Group number in the db is the group number of the controller since
