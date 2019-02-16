@@ -568,8 +568,10 @@ class KeypadLinc(Base):
         """
         LOG.info("KeypadLinc %s setting backlight to %s", self.label, level)
 
-        # Bound to 0x11 <= level <= 0xff per page 157 of insteon dev guide.
-        level = max(0x11, min(level, 0xff))
+        # Bound to 0x11 <= level <= 0x7f per page 157 of insteon dev guide.
+        # allow a value of '0x00' to disable the backlight.
+        if level:
+            level = max(0x11, min(level, 0x7f))
 
         # Extended message data - see Insteon dev guide p156.
         data = bytes([
