@@ -533,6 +533,8 @@ class KeypadLinc(Base):
         # depending on the input flag.
         led_bits = util.bit_set(self._led_bits, group - 1, is_on)
 
+        LOG.debug("KeypadLinc setting LED %s bitmask to %s", group,
+                  "{:08b}".format(led_bits))
         # Extended message data - see Insteon dev guide p156.  NOTE: guide is
         # wrong - it says send group, 0x09, 0x01/0x00 to turn that group
         # on/off but that doesn't work.  Must send group 0x01 and the full
@@ -1261,7 +1263,7 @@ class KeypadLinc(Base):
             LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
 
             _is_on, mode = on_off.Mode.decode(msg.cmd1)
-            self._set_level(1, msg.cmd2, mode)
+            self._set_level(self._load_group, msg.cmd2, mode)
             on_done(True, "KeypadLinc state updated to %s" % self._level,
                     msg.cmd2)
 
@@ -1405,8 +1407,9 @@ class KeypadLinc(Base):
             self._level = level
 
         # Update the LED bits in the correct slot.
-        self._led_bits = util.bit_set(self._led_bits, group - 1,
-                                      1 if level else 0)
+        if group < 9:
+            self._led_bits = util.bit_set(self._led_bits, group - 1,
+                                          1 if level else 0)
 
         self.signal_level_changed.emit(self, group, level, mode)
 
