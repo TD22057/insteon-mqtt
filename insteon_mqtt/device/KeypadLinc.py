@@ -83,6 +83,7 @@ class KeypadLinc(Base):
             'set_flags' : self.set_flags,
             'set_button_led' : self.set_button_led,
             'set_button_signal' : self.set_button_signal,
+            'set_led_off_mask' : self.set_led_off_mask,
             })
 
         if self.is_dimmer:
@@ -585,8 +586,47 @@ class KeypadLinc(Base):
         msg_handler = handler.StandardCmd(msg, callback, on_done)
 
         seq.add_msg(msg, msg_handler)
-
         seq.run()
+
+    #-----------------------------------------------------------------------
+    def set_led_off_mask(self, group, mask, on_done=None):
+        """Set the LED off mask.
+
+        The LED off mask is a bitmask defined for each group (button), such
+        that a value of 1 means that the associated button will toggle to
+        off when this button is pressed.
+
+        Args:
+          group (int): The group number to modify
+          mask (int):  A Value in the range of 0x00 to 0x08.  This is
+                       a bitmask, where  each bit represents a button and a
+                       value of one means that the associated button's LED
+                       will turn off when the button associated with
+                       'group' is pressed.
+        """
+        on_done = util.make_callback(on_done)
+        LOG.info("KeypadLinc setting button %s state to turn off: %s",
+                 group, "{:08b}".format(mask))
+
+        if group < 1 or group > 8:
+            LOG.error("KeypadLinc group %s out of range [1,8]", group)
+            on_done(False, "Invalid group", None)
+            return
+
+        data = bytes([
+            group,  # D1 must be group
+            0x03,   # D2 set LED off mask
+            mask,   # D3 bitmask value
+            ] + [0x00] * 11)
+
+        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
+
+        # Use the standard command handler which will notify us when the
+        # command is ACK'ed.
+        callback = functools.partial(self.handle_off_mask, group=group,
+                                     bitmask=mask)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def set_on_level(self, level, on_done=None):
@@ -645,7 +685,8 @@ class KeypadLinc(Base):
 
         # Check the input flags to make sure only ones we can understand were
         # passed in.
-        flags = set(["backlight", "button_signal", "group", "on_level"])
+        flags = set(["backlight", "button_signal", "group",
+                     "off_mask", "on_level"])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown KeypadLinc flags input: %s.\n Valid "
@@ -668,6 +709,14 @@ class KeypadLinc(Base):
             signal = util.input_bool(kwargs, "button_signal")
 
             seq.add(self.set_button_signal, group, signal)
+
+        if "off_mask" in kwargs:
+            if group is None:
+                raise Exception("Must specify 'group=<group_number>' when "
+                                "setting the 'off_mask' flag")
+            off_mask = util.input_byte(kwargs, "off_mask")
+
+            seq.add(self.set_led_off_mask, group, off_mask)
 
         if "on_level" in kwargs:
             on_level = util.input_byte(kwargs, "on_level")
@@ -823,6 +872,30 @@ class KeypadLinc(Base):
             on_done(False, msg, None)
 
     #-----------------------------------------------------------------------
+    def handle_off_mask(self, msg, group, bitmask, on_done):
+        """Callback for changing the load attachment.
+
+        Args:
+          msg (InpStandard):  The reply message from the device.
+          group (int):  The group to send the command to.  This must be in the
+                range [1,8].
+          bitmask (int):  The bitmask describing which groups will turn off
+                          when this group is activated.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        # If this it the ACK we're expecting, update the internal state and
+        # emit our signals.
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+            LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
+            on_done(True, "Group: %s LED turns off %s" %
+                    (group, "{:08b}".format(bitmask)), None)
+
+        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+            LOG.error("KeypadLinc %s NAK error: %s", self.addr, msg)
+            on_done(False, "Changing follow mask failed", None)
+
+    #-----------------------------------------------------------------------
     def handle_refresh_led(self, msg):
         """Callback for handling getting the LED button states.
 
@@ -840,13 +913,13 @@ class KeypadLinc(Base):
         #TODO: delete this method
         #led_bits = msg.cmd2
 
-        ## Currently the led state is stored in cmd2 so update our state to
-        ## match.
+        # Currently the led state is stored in cmd2 so update our state to
+        # match.
         #LOG.ui("KeypadLinc %s setting LED bits %s", self.addr,
         #       "{:08b}".format(led_bits))
 
-        ## Loop over the bits and emit a signal for any that have been
-        ## changed.
+        # Loop over the bits and emit a signal for any that have been
+        # changed.
         #for i in range(8):
         #    is_on = util.bit_get(led_bits, i)
         #    was_on = util.bit_get(self._led_bits, i)
