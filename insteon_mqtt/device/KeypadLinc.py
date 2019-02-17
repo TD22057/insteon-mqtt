@@ -649,7 +649,7 @@ class KeypadLinc(Base):
           led_bits (int): The LED bits that were set to the device.  If the
                    msg is an ACK, we'll set our state to this value.
         """
-        # If this it the ACK we're expecting, update the internal state and
+        # If this is the ACK we're expecting, update the internal state and
         # emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("KeypadLinc LED %s group %s ACK: %s", self.addr, group,
@@ -796,7 +796,7 @@ class KeypadLinc(Base):
           msg:  (message.InpStandard) The reply message from the device.
                 The on/off level will be in the cmd2 field.
         """
-        # If this it the ACK we're expecting, update the internal state and
+        # If this is the ACK we're expecting, update the internal state and
         # emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
