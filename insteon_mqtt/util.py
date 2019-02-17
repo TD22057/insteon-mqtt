@@ -166,7 +166,8 @@ def input_choice(inputs, field, choices):
 def input_bool(inputs, field):
     """Convert an input field to a boolean.
 
-    Valid boolean inputs are 'true', 'false', 1, 0, True, or False.
+    Valid boolean inputs are 'true', 'false', 'on', 'off', 1, 0, True,
+    or False.
 
     Raises:
       If the input is not a valid bool, an exception is thrown.
@@ -185,10 +186,12 @@ def input_bool(inputs, field):
 
     if isinstance(value, str):
         lv = value.lower()
-        if lv == "true":
+        if lv in ["true", 'on']:
             value = True
-        elif lv == "false":
+        elif lv in ["false", 'off']:
             value = False
+        elif lv == 'none':
+            return None
 
     try:
         # Use int() because bool("asdf") also returns true.  This ensures
@@ -200,11 +203,49 @@ def input_bool(inputs, field):
 
 
 #===========================================================================
+def input_integer(inputs, field):
+    """Convert an input field to an integer.
+
+    Raises:
+      If the input is not a valid integer, an exception is thrown.
+
+    Args:
+      inputs (dict):  Key/value pairs of user inputs.
+      field (str): The field to get.
+
+    Returns:
+      Returns None if field is not in inputs.  Otherwise the input field
+      is converted to an integer and returned.
+    """
+    value = inputs.pop(field, None)
+    if value is None:
+        return None
+
+    try:
+        if isinstance(value, str):
+            lv = value.lower()
+            if lv == 'none':
+                return None
+
+            if '0x' in value:
+                return int(value, 16)
+            elif '0b' in value:
+                return int(value, 2)
+            else:
+                return int(value)
+        else:
+            return int(value)
+    except ValueError:
+        msg = "Invalid %s input.  Valid inputs are integer values." % input
+        raise ValueError(msg)
+
+
+#===========================================================================
 def input_byte(inputs, field):
     """Convert an input field to a byte.
 
     Valid byte inputs are integers or strings leading with '0x' (base 16 hex
-    value).
+    value) or '0b' (base 2 binary value).
 
     Raises:
       If the input is not a valid byte, an exception is thrown.
@@ -222,8 +263,13 @@ def input_byte(inputs, field):
         return None
 
     try:
-        if isinstance(value, str) and '0x' in value:
-            v = int(value, 16)
+        if isinstance(value, str):
+            if '0x' in value:
+                v = int(value, 16)
+            elif '0b' in value:
+                v = int(value, 2)
+            else:
+                v = int(value)
         else:
             v = int(value)
 
