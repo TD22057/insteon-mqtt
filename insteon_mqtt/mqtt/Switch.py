@@ -252,6 +252,7 @@ class Switch:
         LOG.info("Switch input command: %s", data)
 
         try:
+            # _mode is unused in scene commands.
             is_on, _mode = util.parse_on_off(data)
             group = int(data.get('group', 0x01))
 
