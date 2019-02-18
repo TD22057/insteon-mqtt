@@ -2,6 +2,7 @@ import serial
 import time
 import binascii
 from io import StringIO
+import insteon_mqtt as IM
 
 # see dev guide p106 for examples and all link stuff
 # SA commands see p165
@@ -636,3 +637,72 @@ get_ext = bytes( [
 # 00  D12
 # 00  D13
 # d2  D14  checksum
+
+#=======================================================
+# test get flags for keypadlinc
+read_op5 = bytes( [
+    0x02, 0x62,
+    0x3c, 0x42, 0x9b,
+    0x0f,
+    0x1f, 0x05 ] )
+# 02 62 3c 42 9b 0f 1f 05
+# 06 02 50 3c 42 9b 44 85 11 2f 1f 0d
+# 0d == 00 N/A, smart hops
+#       00 detach load, N/A
+#       11 blinkon error, cleanupOn,
+#       01 NX10Flag, TenD
+
+detach_load = bytes( [
+    0x02, 0x62,
+    0x3c, 0x42, 0x9b,
+    0x1f,
+    0x20, 0x1b,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc5 ] )
+# 02 62 3c 42 9b 1f 20 1b 00 00 00 00 00 00 00 00 00 00 00 00 00 c5
+# 06 02 50
+# 3c 42 9b
+# 44 85 11
+# 2f   == ACK
+# 20 1b
+# read_op5:
+# 06 02 50 3c 42 9b 44 85 11 2f 1f 2d
+# 0x2d = 0b101101
+# 0d == 00 N/A, smart hops
+#       10 detach load, N/A
+#       11 blinkon error, cleanupOn,
+#       01 NX10Flag, TenD
+attach_load = bytes( [
+    0x02, 0x62,
+    0x3c, 0x42, 0x9b,
+    0x1f,
+    0x20, 0x1a,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc6 ] )
+
+# read_op5 w/ detached_load
+# 02 62 3c 42 9b 0f 1f 05 06
+# 02 50 3c 42 9b 44 85 11 2f 1f 2d
+# 2d = 10 11 01  == load detached (bit 6/8)
+addr = IM.Address( 0x3c, 0x42, 0x9b )
+kp_on1 = bytes( [
+    0x02, 0x62,  # header
+    0x3c, 0x42, 0x9b,  # address
+    0x00, # flags
+    0x11, 0xFF,  # turn on level 255
+    ] )
+# detach load: nothing happens
+# 02 62 3c 42 9b 00 11 ff
+# 06 02 50 3c 42 9b   44 85 11   20   11 ff == ACK (but nothing happened)
+data = bytes( [ 0x01, 0x09, 0b00001001 ] + [0x00]*11 )
+kp_on1a = IM.message.OutExtended.direct(addr,0x2e,0x00,data).to_bytes()
+# DOESN"T WORK!
+# 02 62 3c 42 9b 1f 2e 00 01 09 01 00 00 00 00 00 00 00 00 00 00 c7 06
+# 02 50 3c 42 9b 44 85 11  2f  2e 00 == ack
+
+kp_off1 = bytes( [
+    0x02, 0x62,  # header
+    0x3c, 0x42, 0x9b,  # address
+    0x00, # flags
+    0x13, 0x00,  # turn off
+    ] )
