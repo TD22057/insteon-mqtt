@@ -37,7 +37,7 @@ class Leak:
 
         # Connect the two signals from the insteon device so we get notified
         # of changes.
-        device.signal_is_wet.connect(self._insteon_is_wet)
+        device.signal_wet.connect(self._insteon_wet)
         device.signal_heartbeat.connect(self._insteon_heartbeat)
 
     #-----------------------------------------------------------------------
@@ -113,7 +113,7 @@ class Leak:
         return data
 
     #-----------------------------------------------------------------------
-    def _insteon_is_wet(self, device, is_wet):
+    def _insteon_wet(self, device, is_wet):
         """Device wet/dry on/off callback.
 
         This is triggered via signal when the Insteon device detects

@@ -1,5 +1,11 @@
 # Revision Change History
 
+## [0.6.7]
+
+### Fixes
+- Fixed incorrect Leak signal naming ([Issue #120][I120])
+
+
 ## [0.6.6]
 
 ### Fixes
@@ -238,3 +244,4 @@
 [I97]: https://github.com/TD22057/insteon-mqtt/issues/97
 [I104]: https://github.com/TD22057/insteon-mqtt/issues/104
 [I119]: https://github.com/TD22057/insteon-mqtt/issues/119
+[I120]: https://github.com/TD22057/insteon-mqtt/issues/120
