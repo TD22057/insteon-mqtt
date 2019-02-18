@@ -155,8 +155,8 @@ class IOLinc:
         LOG.info("IOLinc input command: %s", data)
 
         try:
-            # Tell the device to update it's state.
-            is_on, _mode = util.parse_on_off(data, have_mode=False)
+            # IOLinc doesn't support modes so don't parse that element.
+            is_on = util.parse_on_off(data, have_mode=False)
             self.device.set(is_on)
         except:
             LOG.exception("Invalid IOLinc on/off command: %s", data)
@@ -181,8 +181,8 @@ class IOLinc:
         LOG.info("IOLinc input command: %s", data)
 
         try:
-            # Tell the device to trigger the scene command.
-            is_on, _mode = util.parse_on_off(data, have_mode=False)
+            # Scenes don't support modes so don't parse that element.
+            is_on = util.parse_on_off(data, have_mode=False)
             self.device.scene(is_on)
         except:
             LOG.exception("Invalid IOLinc scene command: %s", data)

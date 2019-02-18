@@ -372,7 +372,8 @@ class KeypadLinc:
 
         LOG.info("KeypadLinc input command: %s", data)
         try:
-            is_on, _mode = util.parse_on_off(data)
+            # Scenes don't support modes so don't parse that element.
+            is_on = util.parse_on_off(data, have_mode=False)
             self.device.scene(is_on, group)
         except:
             LOG.exception("Invalid KeypadLinc command: %s", data)

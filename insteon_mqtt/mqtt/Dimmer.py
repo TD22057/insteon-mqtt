@@ -229,7 +229,8 @@ class Dimmer(Switch):
         LOG.info("Dimmer input command: %s", data)
 
         try:
-            is_on, _mode = util.parse_on_off(data)
+            # Scenes don't support modes so don't parse that element.
+            is_on = util.parse_on_off(data, have_mode=False)
             group = int(data.get('group', 0x01))
 
             # Tell the device to trigger the scene command.
