@@ -211,7 +211,7 @@ class Switch(Base):
                    completed.  Signature is: on_done(success, msg, data)
         """
         if level:
-            self.on(group, mode, on_done)
+            self.on(group, level, mode, on_done)
         else:
             self.off(group, mode, on_done)
 

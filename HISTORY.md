@@ -1,5 +1,11 @@
 # Revision Change History
 
+## [0.6.6]
+
+### Fixes
+- Fixed incorrect Switch.set() calling sequence. ([Issue #119][I119])
+
+
 ## [0.6.5]
 
 ### Additions
@@ -231,3 +237,4 @@
 [I95]: https://github.com/TD22057/insteon-mqtt/issues/95
 [I97]: https://github.com/TD22057/insteon-mqtt/issues/97
 [I104]: https://github.com/TD22057/insteon-mqtt/issues/104
+[I119]: https://github.com/TD22057/insteon-mqtt/issues/119
