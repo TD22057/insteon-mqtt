@@ -146,7 +146,7 @@ class MsgTemplate:
         parsed json result is returned.
 
         Args:
-          payload (str):  The input MQTT payload
+          payload (bytes):  The input MQTT payload as bytes.
           silent (bool):  True to silence error logs.
 
         Returns:
