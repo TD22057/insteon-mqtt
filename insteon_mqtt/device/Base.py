@@ -6,6 +6,7 @@
 import json
 import os.path
 from .MsgHistory import MsgHistory
+from .Product import Product
 from ..Address import Address
 from ..CommandSeq import CommandSeq
 from .. import db
@@ -806,8 +807,8 @@ class Base:
             self.db.set_sub_cat(msg.to_addr.ids[1])
             self.db.set_firmware(msg.to_addr.ids[2])
             LOG.ui("Device %s received model information, dev_cat: %#x, " +
-                   "sub_cat: %#x, firmware: %#x ", self.addr, self.db.dev_cat,
-                   self.db.sub_cat, self.db.firmware)
+                   "sub_cat: %#x, firmware: %#x product: %s", self.addr, self.db.dev_cat,
+                   self.db.sub_cat, self.db.firmware, Product((self.db.dev_cat, self.db.sub_cat)))
             on_done(True, "Operation complete", None)
         else:
             LOG.debug("Device %s get_model response with wrong cmd %s",
