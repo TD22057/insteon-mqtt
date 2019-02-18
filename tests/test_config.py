@@ -2,10 +2,11 @@
 #
 # Tests for: insteont_mqtt/config.py
 #
+# pylint: disable=attribute-defined-outside-init
 #===========================================================================
-import insteon_mqtt as IM
 import os
 import pytest
+import insteon_mqtt as IM
 
 
 class Test_config:
@@ -13,9 +14,11 @@ class Test_config:
     def test_basic(self):
         (cls, args) = IM.config.find("dimmer")
         assert cls == IM.device.Dimmer
+        assert args == {}
 
         (cls, args) = IM.config.find("mini_remote8")
         assert cls == IM.device.Remote
+        assert args == {'num_button' : 8}
 
     #-----------------------------------------------------------------------
     def test_errors(self):

@@ -3,10 +3,8 @@
 # Tests for: insteont_mqtt/message/Timed.py
 #
 #===========================================================================
-import insteon_mqtt as IM
-import pytest
-import time
 from unittest import mock
+import insteon_mqtt as IM
 
 
 class Test_Timed:
@@ -15,9 +13,9 @@ class Test_Timed:
         t0 = 1000
         obj = IM.message.Timed("msg", "handler", False, t0)
 
-        assert True == obj.is_active(t0)
-        assert True == obj.is_active(t0+0.1)
-        assert False== obj.is_active(t0-0.1)
+        assert obj.is_active(t0) is True
+        assert obj.is_active(t0+0.1) is True
+        assert obj.is_active(t0-0.1) is False
 
     #-----------------------------------------------------------------------
     def test_send(self):

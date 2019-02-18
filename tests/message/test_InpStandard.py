@@ -87,10 +87,10 @@ class Test_InpStandard:
         obj = Msg.InpStandard.from_bytes(b)
 
         b2 = bytes([0x02, 0x50,  # code
-                   0x3e, 0xe2, 0xc4,  # from addr
-                   0x23, 0x9b, 0x65,  # to addr
-                   0x65,  # flags 1 max_hops and 1 hops_left
-                   0x11, 0x01])  # cmd1, cmd2
+                    0x3e, 0xe2, 0xc4,  # from addr
+                    0x23, 0x9b, 0x65,  # to addr
+                    0x65,  # flags 1 max_hops and 1 hops_left
+                    0x11, 0x01])  # cmd1, cmd2
         obj2 = Msg.InpStandard.from_bytes(b2)
 
         assert obj == obj2

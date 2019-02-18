@@ -8,9 +8,9 @@ import insteon_mqtt.device.Thermostat as Thermo
 import insteon_mqtt.message as Msg
 
 class Test_Thermostat:
-    def test_basic(self):
+    def test_basic(self, tmpdir):
         protocol = MockProto()
-        modem = MockModem()
+        modem = MockModem(tmpdir)
         addr = IM.Address(0x01, 0x02, 0x03)
         thermo = Thermo(protocol, modem, addr)
 
@@ -284,8 +284,8 @@ class Test_Thermostat:
 
 
 class MockModem:
-    def __init__(self):
-        self.save_path = ''
+    def __init__(self, path):
+        self.save_path = str(path)
         self.addr = IM.Address(0x0A, 0x0B, 0x0C)
 
 class MockProto:

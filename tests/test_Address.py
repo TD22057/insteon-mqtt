@@ -3,8 +3,8 @@
 # Tests for: insteont_mqtt/Address.py
 #
 #===========================================================================
-import insteon_mqtt as IM
 import pytest
+import insteon_mqtt as IM
 
 
 class Test_Address:
@@ -71,10 +71,11 @@ class Test_Address:
     #-----------------------------------------------------------------------
     def test_cmp(self):
         a = IM.Address(0x01, 0xe2, 0x40)
+        a1 = IM.Address(0x01, 0xe2, 0x40)
         b = IM.Address(0x01, 0xe2, 0x41)
         assert a < b
         assert b > a
-        assert a == a
+        assert a == a1
         assert a != b
 
         d = {a : 1, b : 2}

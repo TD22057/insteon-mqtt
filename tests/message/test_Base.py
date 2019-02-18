@@ -3,8 +3,8 @@
 # Tests for: insteont_mqtt/message/Base.py
 #
 #===========================================================================
-import insteon_mqtt.message as Msg
 import pytest
+import insteon_mqtt.message as Msg
 
 
 class Test_Base:

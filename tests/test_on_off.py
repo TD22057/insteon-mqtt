@@ -2,17 +2,18 @@
 #
 # Tests for: insteont_mqtt/on_off.py
 #
+# pylint: disable=protected-access
 #===========================================================================
-import insteon_mqtt as IM
 import pytest
+import insteon_mqtt as IM
 
 #===========================================================================
 def test_is_valid():
     for cmd in IM.on_off._cmdMap:
-        assert IM.on_off.Mode.is_valid( cmd )
+        assert IM.on_off.Mode.is_valid(cmd)
 
-    assert not IM.on_off.Mode.is_valid( 0x00 )
-    assert not IM.on_off.Mode.is_valid( 0x50 )
+    assert not IM.on_off.Mode.is_valid(0x00)
+    assert not IM.on_off.Mode.is_valid(0x50)
 
 
 #===========================================================================
@@ -42,32 +43,32 @@ def test_encode():
 #===========================================================================
 def test_decode():
     on, mode = IM.on_off.Mode.decode(0x11)
-    assert on == True
+    assert on is True
     assert mode == IM.on_off.Mode.NORMAL
     str(mode)
 
     on, mode = IM.on_off.Mode.decode(0x12)
-    assert on == True
+    assert on is True
     assert mode == IM.on_off.Mode.FAST
     str(mode)
 
     on, mode = IM.on_off.Mode.decode(0x21)
-    assert on == True
+    assert on is True
     assert mode == IM.on_off.Mode.INSTANT
     str(mode)
 
     on, mode = IM.on_off.Mode.decode(0x23)
-    assert on == True
+    assert on is True
     assert mode == IM.on_off.Mode.MANUAL
     str(mode)
 
     on, mode = IM.on_off.Mode.decode(0x13)
-    assert on == False
+    assert on is False
     assert mode == IM.on_off.Mode.NORMAL
     str(mode)
 
     on, mode = IM.on_off.Mode.decode(0x14)
-    assert on == False
+    assert on is False
     assert mode == IM.on_off.Mode.FAST
     str(mode)
 
@@ -78,10 +79,10 @@ def test_decode():
 #===========================================================================
 def test_manual_is_valid():
     for cmd in [0x17, 0x18]:
-        assert IM.on_off.Manual.is_valid( cmd )
+        assert IM.on_off.Manual.is_valid(cmd)
 
-    assert not IM.on_off.Manual.is_valid( 0x00 )
-    assert not IM.on_off.Manual.is_valid( 0x50 )
+    assert not IM.on_off.Manual.is_valid(0x00)
+    assert not IM.on_off.Manual.is_valid(0x50)
 
 
 #===========================================================================

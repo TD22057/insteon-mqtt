@@ -2,9 +2,10 @@
 #
 # Tests for: insteont_mqtt/Address.py
 #
+# pylint: disable=blacklisted-name, attribute-defined-outside-init
 #===========================================================================
-import insteon_mqtt as IM
 import pytest
+import insteon_mqtt as IM
 
 
 class Test_util:
@@ -53,10 +54,10 @@ class Test_util:
     #-----------------------------------------------------------------------
     def test_bit_get(self):
         v = 0b0010
-        assert 0 == IM.util.bit_get(v, 0)
-        assert 1 == IM.util.bit_get(v, 1)
-        assert 0 == IM.util.bit_get(v, 0)
-        assert 0 == IM.util.bit_get(v, 0)
+        assert IM.util.bit_get(v, 0) == 0
+        assert IM.util.bit_get(v, 1) == 1
+        assert IM.util.bit_get(v, 0) == 0
+        assert IM.util.bit_get(v, 0) == 0
 
     #-----------------------------------------------------------------------
     def test_bit_set(self):
@@ -150,16 +151,16 @@ class Test_util:
                   'key7' : '0b101', 'key8' : 'bad'}
 
         v = IM.util.input_integer(inputs, 'key1')
-        assert v is 1
+        assert v == 1
 
         v = IM.util.input_integer(inputs, 'key2')
-        assert v is 2
+        assert v == 2
 
         v = IM.util.input_integer(inputs, 'key3')
-        assert v is 3
+        assert v == 3
 
         v = IM.util.input_integer(inputs, 'key4')
-        assert v is 4
+        assert v == 4
 
         v = IM.util.input_integer(inputs, 'key5')
         assert v is None
@@ -168,7 +169,7 @@ class Test_util:
         assert v is None
 
         v = IM.util.input_integer(inputs, 'key7')
-        assert v is 5
+        assert v == 5
 
         v = IM.util.input_integer(inputs, 'invalid')
         assert v is None

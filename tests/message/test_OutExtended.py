@@ -75,6 +75,6 @@ class Test_OutExtended:
         assert obj.cmd2 == 0x25
         assert obj.is_ack is None
         assert obj.data == data
-        assert obj.crc_type == None
+        assert obj.crc_type is None
 
 #===========================================================================

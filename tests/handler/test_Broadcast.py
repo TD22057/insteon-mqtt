@@ -8,11 +8,11 @@ import insteon_mqtt.message as Msg
 
 
 class Test_Broadcast:
-    def test_acks(self):
+    def test_acks(self, tmpdir):
         proto = MockProto()
         calls = []
         modem = IM.Modem(proto)
-        modem.save_path = ""
+        modem.save_path = str(tmpdir)
 
         addr = IM.Address('0a.12.34')
         handler = IM.handler.Broadcast(modem)
