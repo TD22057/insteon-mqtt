@@ -35,7 +35,7 @@ class BatterySensor:
             payload='{{on_str.lower()}}')
         self.msg_battery = MsgTemplate(
             topic='insteon/{{address}}/low_battery',
-            payload='{{is_low_str.upper()}}')
+            payload='{{is_low_str.lower()}}')
 
         # Connect the signals from the insteon device so we get notified of
         # changes.
@@ -108,7 +108,7 @@ class BatterySensor:
             data["on_str"] = "on" if is_on else "off"
 
         if is_low is not None:
-            data["low"] = 1 if is_low else 0
+            data["is_low"] = 1 if is_low else 0
             data["is_low_str"] = "on" if is_low else "off"
 
         return data
