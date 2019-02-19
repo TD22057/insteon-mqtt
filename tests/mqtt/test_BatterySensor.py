@@ -39,7 +39,7 @@ def setup(mock_paho_mqtt, tmpdir):
 class Test_BatterySensor:
     #-----------------------------------------------------------------------
     def test_pubsub(self, setup):
-        mdev, dev = setup.getAll(['mdev', 'link'])
+        mdev, link = setup.getAll(['mdev', 'link'])
 
         # Battery sensor doesn't subscribe to any topics.
         mdev.subscribe(link, 2)
