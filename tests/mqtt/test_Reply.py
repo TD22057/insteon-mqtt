@@ -17,7 +17,6 @@ class Test_Reply:
         assert obj.data == data
 
         d = obj.to_json()
-        print(d)
         obj2 = IMM.Reply.from_json(d)
         assert obj2.type == type
         assert obj2.data == data
@@ -32,7 +31,6 @@ class Test_Reply:
         assert obj.data == data
 
         d = obj.to_json()
-        print(d)
         obj2 = IMM.Reply.from_json(d)
         assert obj2.type == type
         assert obj2.data == data
@@ -47,7 +45,6 @@ class Test_Reply:
         assert obj.data == data
 
         d = obj.to_json()
-        print(d)
         obj2 = IMM.Reply.from_json(d)
         assert obj2.type == type
         assert obj2.data == data

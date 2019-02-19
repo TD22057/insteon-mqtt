@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Tests for: insteont_mqtt/mqtt/BatterySensor.py
+# Tests for: insteont_mqtt/mqtt/Motion.py
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
@@ -26,22 +26,22 @@ def setup(mock_paho_mqtt, tmpdir):
     modem = helpers.MockModem(tmpdir)
     addr = IM.Address(1, 2, 3)
     name = "device name"
-    dev = IM.device.BatterySensor(proto, modem, addr, name)
+    dev = IM.device.Motion(proto, modem, addr, name)
 
     link = IM.network.Mqtt()
     mqttModem = helpers.MockMqtt_Modem()
     mqtt = IM.mqtt.Mqtt(link, mqttModem)
-    mdev = IM.mqtt.BatterySensor(mqtt, dev)
+    mdev = IM.mqtt.Motion(mqtt, dev)
 
     return helpers.Data(addr=addr, name=name, dev=dev, mdev=mdev, link=link)
 
 #===========================================================================
-class Test_BatterySensor:
+class Test_Motion:
     #-----------------------------------------------------------------------
     def test_pubsub(self, setup):
-        mdev, dev = setup.getAll(['mdev', 'link'])
+        mdev, link = setup.getAll(['mdev', 'link'])
 
-        # Battery sensor doesn't subscribe to any topics.
+        # Motion sensor doesn't subscribe to any topics.
         mdev.subscribe(link, 2)
         assert len(link.client.sub) == 0
 
@@ -62,6 +62,24 @@ class Test_BatterySensor:
                  "is_low" : 0, "is_low_str" : "off"}
         assert data == right
 
+        data = mdev.template_data_motion()
+        right = {"address" : addr.hex, "name" : name}
+        assert data == right
+
+        data = mdev.template_data_motion(is_dawn=True)
+        right = {"address" : addr.hex, "name" : name,
+                 "is_dawn" : 1, "is_dawn_str" : "on",
+                 "is_dusk" : 0, "is_dusk_str" : "off",
+                 "state": "dawn"}
+        assert data == right
+
+        data = mdev.template_data_motion(is_dawn=False)
+        right = {"address" : addr.hex, "name" : name,
+                 "is_dawn" : 0, "is_dawn_str" : "off",
+                 "is_dusk" : 1, "is_dusk_str" : "on",
+                 "state": "dusk"}
+        assert data == right
+
     #-----------------------------------------------------------------------
     def test_mqtt(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
@@ -79,6 +97,7 @@ class Test_BatterySensor:
             topic='%s/state' % topic, payload='on', qos=0, retain=True)
         assert link.client.pub[1] == dict(
             topic='%s/state' % topic, payload='off', qos=0, retain=True)
+
         link.client.clear()
 
         # Send a low battery signal
@@ -98,13 +117,17 @@ class Test_BatterySensor:
             'state_topic' : 'foo/{{address}}',
             'state_payload' : '{{on}} {{on_str.upper()}}',
             'low_battery_topic' : 'bar/{{address}}',
-            'low_battery_payload' : '{{is_low}} {{is_low_str.upper()}}',
+            'low_battery_payload' : '{{is_low}} {{is_low_str.upper()}}'},
+                  'motion' : {
+            'dawn_dusk_topic' : 'baz/{{address}}',
+            'dawn_dusk_payload' : '{{is_dawn}} {{is_dusk}}',
             }}
         qos = 3
         mdev.load_config(config, qos)
 
         stopic = "foo/%s" % setup['addr'].hex
         btopic = "bar/%s" % setup['addr'].hex
+        dtopic = "baz/%s" % setup['addr'].hex
 
         # Send an on/off signal
         dev.signal_on_off.emit(dev, True)
@@ -114,7 +137,6 @@ class Test_BatterySensor:
             topic=stopic, payload='1 ON', qos=qos, retain=True)
         assert link.client.pub[1] == dict(
             topic=stopic, payload='0 OFF', qos=qos, retain=True)
-
         link.client.clear()
 
         # Send a low battery signal
@@ -125,5 +147,16 @@ class Test_BatterySensor:
             topic=btopic, payload='0 OFF', qos=qos, retain=True)
         assert link.client.pub[1] == dict(
             topic=btopic, payload='1 ON', qos=qos, retain=True)
+        link.client.clear()
+
+        # Send a dawn/dusk battery signal
+        dev.signal_dawn.emit(dev, False)
+        dev.signal_dawn.emit(dev, True)
+        assert len(link.client.pub) == 2
+        assert link.client.pub[0] == dict(
+            topic=dtopic, payload='0 1', qos=qos, retain=True)
+        assert link.client.pub[1] == dict(
+            topic=dtopic, payload='1 0', qos=qos, retain=True)
+        link.client.clear()
 
 #===========================================================================

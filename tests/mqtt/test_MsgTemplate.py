@@ -65,10 +65,10 @@ class Test_MsgTemplate:
         assert len(link.pub) == 1
 
         call = link.pub[0]
-        assert call[0] == '{ "foo"=1, "bar"=2 }'
-        assert call[1] == '{ "baz"=3, "boz"="testing" }'
-        assert call[2] == qos
-        assert call[3] == retain
+        assert call['topic'] == '{ "foo"=1, "bar"=2 }'
+        assert call['payload'] == '{ "baz"=3, "boz"="testing" }'
+        assert call['qos'] == qos
+        assert call['retain'] == retain
 
     #-----------------------------------------------------------------------
     def test_load(self):
@@ -87,10 +87,10 @@ class Test_MsgTemplate:
         assert len(link.pub) == 1
 
         call = link.pub[0]
-        assert call[0] == '{ "foo"=1, "bar"=2 }'
-        assert call[1] == '{ "baz"=3, "boz"="testing" }'
-        assert call[2] == qos
-        assert call[3] is True
+        assert call['topic'] == '{ "foo"=1, "bar"=2 }'
+        assert call['payload'] == '{ "baz"=3, "boz"="testing" }'
+        assert call['qos'] == qos
+        assert call['retain'] is True
 
     #-----------------------------------------------------------------------
     def test_to_json(self):
