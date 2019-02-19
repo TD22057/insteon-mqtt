@@ -420,9 +420,10 @@ mqtt:
     # every 24 hours. Available variables for templating are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
-    #   heartbeat_str = date and time of the last heartbeat
+    #   is_heartbeat = 0/1
+    #   heartbeat_time = UNIX time float of the last heartbeat
     heartbeat_topic: 'insteon/{{address}}/heartbeat'
-    heartbeat_payload: '{{heartbeat_str}}'
+    heartbeat_payload: '{{heartbeat_time}}'
 
   #------------------------------------------------------------------------
   # Smoke Bridge
