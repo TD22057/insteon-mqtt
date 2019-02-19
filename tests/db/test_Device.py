@@ -2,6 +2,7 @@
 #
 # Tests for: insteont_mqtt/db/Device.py
 #
+# pylint: disable=too-many-statements
 #===========================================================================
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg

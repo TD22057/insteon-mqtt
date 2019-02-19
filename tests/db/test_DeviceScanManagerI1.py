@@ -139,7 +139,7 @@ class Test_Device:
         assert grp[0].to_bytes() == entry.to_bytes()
 
         # test changing MSB
-        manager.record = [0xe2,0x01,3,4,5,6,7]
+        manager.record = [0xe2, 0x01, 3, 4, 5, 6, 7]
         manager.lsb = 0x07
 
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
@@ -149,7 +149,7 @@ class Test_Device:
 
         # test on_done callback on last record
         flags = Msg.DbFlags(True, True, True)
-        manager.record = [flags.to_bytes()[0],0x01,3,4,5,6,7]
+        manager.record = [flags.to_bytes()[0], 0x01, 3, 4, 5, 6, 7]
         manager.lsb = 0xFF
 
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)

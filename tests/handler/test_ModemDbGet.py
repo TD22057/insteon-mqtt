@@ -2,6 +2,7 @@
 #
 # Tests for: insteont_mqtt/handler/ModemGetDb.py
 #
+# pylint: disable=attribute-defined-outside-init
 #===========================================================================
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg

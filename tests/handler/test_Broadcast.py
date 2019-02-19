@@ -2,6 +2,7 @@
 #
 # Tests for: insteont_mqtt/handler/Broadcast.py
 #
+# pylint: disable=protected-access
 #===========================================================================
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
