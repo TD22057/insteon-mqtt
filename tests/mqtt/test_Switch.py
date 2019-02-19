@@ -143,8 +143,7 @@ class Test_Switch:
 
     #-----------------------------------------------------------------------
     def test_input_on_off(self, setup):
-        mdev, dev, link, proto, addr = setup.getAll([
-            'mdev', 'dev', 'link', 'proto', 'addr'])
+        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
 
         qos = 2
         config = {'switch' : {
@@ -171,12 +170,11 @@ class Test_Switch:
         proto.clear()
 
         # test error payload
-        link.publish( topic, b'asdf', qos, False)
+        link.publish(topic, b'asdf', qos, False)
 
     #-----------------------------------------------------------------------
     def test_input_scene(self, setup):
-        mdev, dev, link, proto, addr = setup.getAll([
-            'mdev', 'dev', 'link', 'proto', 'addr'])
+        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
 
         qos = 2
         config = {'switch' : {
@@ -204,7 +202,7 @@ class Test_Switch:
         proto.clear()
 
         # test error payload
-        link.publish( topic, b'asdf', qos, False)
+        link.publish(topic, b'asdf', qos, False)
 
 
 #===========================================================================

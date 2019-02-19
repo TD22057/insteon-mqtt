@@ -40,7 +40,7 @@ def setup(mock_paho_mqtt, tmpdir):
 class Test_Remote:
     #-----------------------------------------------------------------------
     def test_pubsub(self, setup):
-        mdev, addr, link = setup.getAll(['mdev', 'addr', 'link'])
+        mdev, link = setup.getAll(['mdev', 'link'])
 
         # Remote sensor doesn't subscribe to any topics.
         mdev.subscribe(link, 2)

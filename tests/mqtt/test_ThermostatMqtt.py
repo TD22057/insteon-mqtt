@@ -2,18 +2,18 @@
 #
 # Tests for: insteont_mqtt/mqtt/Thermostat.py
 #
+# pylint: disable=protected-access, too-many-statements
 #===========================================================================
 import enum
 import insteon_mqtt as IM
 from insteon_mqtt.Signal import Signal
-import insteon_mqtt.mqtt.Thermostat as Thermo
 from insteon_mqtt.mqtt.MsgTemplate import MsgTemplate
 
 class Test_ThermostatMqtt:
     def test_basic(self):
         mqtt = MockMqtt()
         device = MockDevice()
-        thermo = Thermo(mqtt, device)
+        thermo = IM.mqtt.Thermostat(mqtt, device)
 
         #Ambient temperature
         device.signal_ambient_temp_change.emit(device, 22)
@@ -47,23 +47,24 @@ class Test_ThermostatMqtt:
 
         # Status modify default payload to see all values
         thermo.status_state = MsgTemplate(
-                    topic='insteon/{{address}}/status_state',
-                    payload='{"status": "{{status}}", "is_heating": {{is_heating}}, "is_cooling": {{is_cooling}}}',
-                    )
+            topic='insteon/{{address}}/status_state',
+            payload=('{"status": "{{status}}", "is_heating": {{is_heating}}, '
+                     '"is_cooling": {{is_cooling}}}'))
         # Test cooling
         device.signal_status_change.emit(device, device.Status.COOLING)
         assert mqtt.last_topic == 'insteon/01.02.03/status_state'
-        assert mqtt.last_payload == '{"status": "cooling", "is_heating": 0, "is_cooling": 1}'
+        assert mqtt.last_payload == ('{"status": "cooling", "is_heating": 0, '
+                                     '"is_cooling": 1}')
         # Test heating
         device.signal_status_change.emit(device, device.Status.HEATING)
         assert mqtt.last_topic == 'insteon/01.02.03/status_state'
-        assert mqtt.last_payload == '{"status": "heating", "is_heating": 1, "is_cooling": 0}'
+        assert mqtt.last_payload == ('{"status": "heating", "is_heating": 1, '
+                                     '"is_cooling": 0}')
 
         # hold modify default payload to see all values
         thermo.hold_state = MsgTemplate(
-                    topic='insteon/{{address}}/hold_state',
-                    payload='{"hold": "{{hold_str}}", "is_hold": {{is_hold}}}',
-                    )
+            topic='insteon/{{address}}/hold_state',
+            payload='{"hold": "{{hold_str}}", "is_hold": {{is_hold}}}')
         # Test no hold
         device.signal_hold_change.emit(device, False)
         assert mqtt.last_topic == 'insteon/01.02.03/hold_state'
@@ -75,9 +76,8 @@ class Test_ThermostatMqtt:
 
         # energy modify default payload to see all values
         thermo.energy_state = MsgTemplate(
-                    topic='insteon/{{address}}/energy_state',
-                    payload='{"energy": "{{energy_str}}", "is_energy": {{is_energy}}}',
-                    )
+            topic='insteon/{{address}}/energy_state',
+            payload='{"energy": "{{energy_str}}", "is_energy": {{is_energy}}}')
         # Test no energy
         device.signal_energy_change.emit(device, False)
         assert mqtt.last_topic == 'insteon/01.02.03/energy_state'
@@ -115,9 +115,8 @@ class Test_ThermostatMqtt:
 
         # temp sent in C
         thermo.heat_sp_command = MsgTemplate(
-                    topic='insteon/{{address}}/heat_sp_command',
-                    payload='{ "temp_c" : {{value}} }',
-                    )
+            topic='insteon/{{address}}/heat_sp_command',
+            payload='{ "temp_c" : {{value}} }')
         message = MockMessage(
             topic='insteon/01.02.03/heat_sp_command',
             payload='26.6666',
@@ -127,9 +126,9 @@ class Test_ThermostatMqtt:
 
         # temp sent in both should default to F
         thermo.heat_sp_command = MsgTemplate(
-                    topic='insteon/{{address}}/heat_sp_command',
-                    payload='{ "temp_c" : {{json.temp_c}}, "temp_f" : {{json.temp_f}} }',
-                    )
+            topic='insteon/{{address}}/heat_sp_command',
+            payload='{ "temp_c" : {{json.temp_c}}, "temp_f" : {{json.temp_f}} }',
+            )
         message = MockMessage(
             topic='insteon/01.02.03/heat_sp_command',
             payload='{"temp_f": 80, "temp_c": 30}',
@@ -148,9 +147,8 @@ class Test_ThermostatMqtt:
 
         # temp sent in C
         thermo.cool_sp_command = MsgTemplate(
-                    topic='insteon/{{address}}/cool_sp_command',
-                    payload='{ "temp_c" : {{value}} }',
-                    )
+            topic='insteon/{{address}}/cool_sp_command',
+            payload='{ "temp_c" : {{value}} }')
         message = MockMessage(
             topic='insteon/01.02.03/cool_sp_command',
             payload='26.6666',
@@ -160,9 +158,9 @@ class Test_ThermostatMqtt:
 
         # temp sent in both should default to F
         thermo.cool_sp_command = MsgTemplate(
-                    topic='insteon/{{address}}/cool_sp_command',
-                    payload='{ "temp_c" : {{json.temp_c}}, "temp_f" : {{json.temp_f}} }',
-                    )
+            topic='insteon/{{address}}/cool_sp_command',
+            payload='{ "temp_c" : {{json.temp_c}}, "temp_f" : {{json.temp_f}} }',
+            )
         message = MockMessage(
             topic='insteon/01.02.03/cool_sp_command',
             payload='{"temp_f": 80, "temp_c": 30}',
@@ -170,6 +168,8 @@ class Test_ThermostatMqtt:
         thermo._input_cool_setpoint(None, None, message)
         assert round(device.cool_sp, 1) == 30
 
+
+#===========================================================================
 class MockMqtt:
     def __init__(self):
         self.last_payload = None
@@ -180,6 +180,8 @@ class MockMqtt:
         self.last_topic = topic
         self.last_payload = payload
 
+
+#===========================================================================
 class MockDevice:
     # mock thermostat device
     FARENHEIT = 0
@@ -236,6 +238,8 @@ class MockDevice:
     def cool_sp_command(self, mode_member):
         self.cool_sp = mode_member
 
+
+#===========================================================================
 class MockMessage:
     # A mock versio of a paho mqtt message
     def __init__(self, topic, payload):

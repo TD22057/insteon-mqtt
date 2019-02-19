@@ -4,8 +4,8 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
-import pytest
 import time
+import pytest
 import insteon_mqtt as IM
 import helpers
 
@@ -62,8 +62,8 @@ class Test_Leak:
         right = {"address" : addr.hex, "name" : name,
                  "is_wet" : 1, "is_wet_str" : "on", "state" : "wet",
                  "is_dry" : 0, "is_dry_str" : "off",
-                 "is_heartbeat" : 1, "is_heartbeat_str" : "on" }
-        hb = data.pop( 'heartbeat_time' )
+                 "is_heartbeat" : 1, "is_heartbeat_str" : "on"}
+        hb = data.pop('heartbeat_time')
         assert data == right
         pytest.approx(t0, hb, 5)
 

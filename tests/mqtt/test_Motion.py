@@ -113,15 +113,18 @@ class Test_Motion:
     def test_config(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
 
-        config = {'battery_sensor' : {
-            'state_topic' : 'foo/{{address}}',
-            'state_payload' : '{{on}} {{on_str.upper()}}',
-            'low_battery_topic' : 'bar/{{address}}',
-            'low_battery_payload' : '{{is_low}} {{is_low_str.upper()}}'},
-                  'motion' : {
-            'dawn_dusk_topic' : 'baz/{{address}}',
-            'dawn_dusk_payload' : '{{is_dawn}} {{is_dusk}}',
-            }}
+        config = {
+            'battery_sensor' : {
+                'state_topic' : 'foo/{{address}}',
+                'state_payload' : '{{on}} {{on_str.upper()}}',
+                'low_battery_topic' : 'bar/{{address}}',
+                'low_battery_payload' : '{{is_low}} {{is_low_str.upper()}}'
+                },
+            'motion' : {
+                'dawn_dusk_topic' : 'baz/{{address}}',
+                'dawn_dusk_payload' : '{{is_dawn}} {{is_dusk}}',
+                }
+            }
         qos = 3
         mdev.load_config(config, qos)
 

@@ -40,7 +40,7 @@ def setup(mock_paho_mqtt, tmpdir):
 class Test_SmokeBridge:
     #-----------------------------------------------------------------------
     def test_pubsub(self, setup):
-        mdev, addr, link = setup.getAll(['mdev', 'addr', 'link'])
+        mdev, link = setup.getAll(['mdev', 'link'])
 
         # SmokeBridge sensor doesn't subscribe to any topics.
         mdev.subscribe(link, 2)
@@ -55,7 +55,7 @@ class Test_SmokeBridge:
 
         data = mdev.template_data(dev.Type.CO, True)
         right = {"address" : addr.hex, "name" : name, "type" : 'co',
-                 "on" : 1, "on_str" : "on" }
+                 "on" : 1, "on_str" : "on"}
         assert data == right
 
         data = mdev.template_data(dev.Type.ERROR, False)
