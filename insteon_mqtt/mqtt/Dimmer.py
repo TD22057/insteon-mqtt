@@ -36,7 +36,7 @@ class Dimmer(Switch):
         # Output state change reporting template.
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state',
-            payload='{ "state" : "{{on_str.upper()}}", '
+            payload='{ "state" : "{{on_str.lower()}}", '
                     '"brightness" : {{level_255}} }')
 
         # Output manual state change is off by default.

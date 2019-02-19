@@ -32,7 +32,7 @@ class Motion(BatterySensor):
 
         self.msg_dawn = MsgTemplate(
             topic='insteon/{{address}}/dawn',
-            payload='{{is_dawn_str.upper()}}')
+            payload='{{is_dawn_str.lower()}}')
 
         device.signal_dawn.connect(self._insteon_dawn)
 

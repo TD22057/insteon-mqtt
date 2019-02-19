@@ -56,7 +56,7 @@ class KeypadLinc:
             # Output dimmer state change reporting template.
             self.msg_dimmer_state = MsgTemplate(
                 topic='insteon/{{address}}/state/1',
-                payload='{ "state" : "{{on_str.upper()}}", '
+                payload='{ "state" : "{{on_str.lower()}}", '
                         '"brightness" : {{level_255}} }')
 
             # Input dimmer level command template.
