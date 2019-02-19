@@ -65,7 +65,7 @@ class Motion(BatterySensor):
                                          'low_battery_payload', qos)
 
     #-----------------------------------------------------------------------
-    def motion_template_data(self, is_dawn=None):
+    def template_data_motion(self, is_dawn=None):
         """Create the Jinja templating data variables.
 
         Args:
@@ -104,7 +104,7 @@ class Motion(BatterySensor):
         """
         LOG.info("MQTT received dawn change %s = %s", device.label, is_dawn)
 
-        data = self.motion_template_data(is_dawn)
+        data = self.template_data_motion(is_dawn)
         self.msg_dawn.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

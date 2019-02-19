@@ -224,7 +224,6 @@ class Switch:
         # Parse the input MQTT message.
         data = self.msg_on_off.to_json(message.payload)
         LOG.info("Switch input command: %s", data)
-
         try:
             # Tell the device to update it's state.
             is_on, mode = util.parse_on_off(data)
