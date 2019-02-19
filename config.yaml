@@ -455,6 +455,7 @@ mqtt:
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off'/'on'
+    #   type = 'smoke'/'co'/'low_battery'/'error'/'clear'
     smoke_topic: 'insteon/{{address}}/smoke'
     smoke_payload: '{{on_str.upper()}}'
 

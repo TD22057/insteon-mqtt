@@ -42,7 +42,6 @@ class Test_Switch:
     def test_pubsub(self, setup):
         mdev, addr, link = setup.getAll(['mdev', 'addr', 'link'])
 
-        # Switch sensor doesn't subscribe to any topics.
         mdev.subscribe(link, 2)
         assert len(link.client.sub) == 2
         assert link.client.sub[0] == dict(
