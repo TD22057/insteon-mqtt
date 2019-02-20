@@ -1,13 +1,15 @@
 
 single test:
-   pytest file.py::test_name
+pytest file.py::test_name
 
 coverage:
-   pytest --cov=insteon_mqtt
+pytest --cov=insteon_mqtt
 
 coverage with line numbers:
-   pytest --cov=insteon_mqtt --cov-report term-missing
+pytest --cov=insteon_mqtt --cov-report term-missing
 
 coverage with html report output
-   pytest --cov=insteon_mqtt --cov-report html
+pytest --cov=insteon_mqtt --cov-report html
 
+show logs:
+pytest -s -vv --log-cli-level=10
