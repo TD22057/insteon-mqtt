@@ -127,8 +127,10 @@ class Outlet:
             "address" : self.device.addr.hex,
             "name" : self.device.name if self.device.name
                      else self.device.addr.hex,
-            "button" : button,
             }
+
+        if button is not None:
+            data["button"] = button
 
         if is_on is not None:
             data["on"] = 1 if is_on else 0
