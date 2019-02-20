@@ -142,6 +142,8 @@ class Outlet(Base):
         """
         LOG.info("Outlet %s cmd: status refresh", self.label)
 
+        seq = CommandSeq(self.protocol, "Device refreshed", on_done)
+
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the current
         # value.  If it's different, it will send a database download command
@@ -150,7 +152,13 @@ class Outlet(Base):
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
                                             on_done, num_retry=3)
-        self.send(msg, msg_handler)
+        seq.add(msg, msg_handler)
+
+        # If model number is not known, or force true, run get_model
+        self.addRefreshData(seq, force)
+
+        # Run all the commands.
+        seq.run()
 
     #-----------------------------------------------------------------------
     def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL,

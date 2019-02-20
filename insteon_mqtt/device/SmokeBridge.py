@@ -130,13 +130,21 @@ class SmokeBridge(Base):
         """
         LOG.info("Smoke bridge %s cmd: status refresh", self.addr)
 
+        seq = CommandSeq(self.protocol, "Device refreshed", on_done)
+
         # There is no way to get the current device status but we can request
         # the all link database delta so get that.  See smoke bridge dev
         # guide p25.  See the Base.refresh() comments for more details.
         msg = Msg.OutStandard.direct(self.addr, 0x1f, 0x01)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
                                             on_done, num_retry=3)
-        self.send(msg, msg_handler)
+        seq.add(msg, msg_handler)
+
+        # If model number is not known, or force true, run get_model
+        self.addRefreshData(seq, force)
+
+        # Run all the commands.
+        seq.run()
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
