@@ -166,7 +166,7 @@ class KeypadLinc:
         if self.device.is_dimmer:
             data = self.template_data(button=1)
             topic = self.msg_dimmer_level.render_topic(data)
-            self.mqtt.unsubscribe(topic)
+            link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ

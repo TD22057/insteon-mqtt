@@ -155,16 +155,16 @@ class Thermostat:
           link (network.Mqtt):  The MQTT network client to use.
         """
         topic = self.mode_command.render_topic(self.template_data())
-        self.mqtt.unsubscribe(topic)
+        link.unsubscribe(topic)
 
         topic = self.fan_command.render_topic(self.template_data())
-        self.mqtt.unsubscribe(topic)
+        link.unsubscribe(topic)
 
         topic = self.heat_sp_command.render_topic(self.template_data())
-        self.mqtt.unsubscribe(topic)
+        link.unsubscribe(topic)
 
         topic = self.cool_sp_command.render_topic(self.template_data())
-        self.mqtt.unsubscribe(topic)
+        link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
     def template_data(self):
