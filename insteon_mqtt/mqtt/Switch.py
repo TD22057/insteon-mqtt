@@ -19,22 +19,14 @@ class Switch:
     allow input MQTT messages to change the state of the Insteon device.
 
     Switches will report their state and can be commanded to turn on and off.
-
-    Some classes that can act like a switch can inherit from this class to
-    use the same MQTT templates (see Dimmer).
     """
 
-    def __init__(self, mqtt, device, connect_signals=True):
+    def __init__(self, mqtt, device):
         """Constructor
 
         Args:
           mqtt (mqtt.Mqtt):  The MQTT main interface.
           device (device.Switch):  The Insteon object to link to.
-          connect_signals (bool):  If True, connect the signal_active signal
-                          from the device to this class.  If False, the
-                          connection is handled elsewhere.  This is commonly
-                          used by derived classes to stop the switch from
-                          connecting signals.
         """
         self.mqtt = mqtt
         self.device = device
@@ -71,30 +63,17 @@ class Switch:
                  config is stored in config['switch'].
           qos (int):  The default quality of service level to use.
         """
-        self.load_switch_config(config.get("switch", None), qos)
-
-    #-----------------------------------------------------------------------
-    def load_switch_config(self, config, qos):
-        """Load the switch portion of the configuration.
-
-        This is factored out of load_config() so derived classes can call it
-        directly if needed.
-
-        Args:
-          config (dict:  The configuration dictionary to load from.  The object
-                 config is stored in config['switch'].
-          qos (int):  The default quality of service level to use.
-        """
-        if not config:
+        data = config.get("switch", None)
+        if not data:
             return
 
         # Update the MQTT topics and payloads from the config file.
-        self.msg_state.load_config(config, 'state_topic', 'state_payload', qos)
-        self.msg_manual_state.load_config(config, 'manual_state_topic',
+        self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
+        self.msg_manual_state.load_config(data, 'manual_state_topic',
                                           'manual_state_payload', qos)
-        self.msg_on_off.load_config(config, 'on_off_topic', 'on_off_payload',
+        self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
                                     qos)
-        self.msg_scene_on_off.load_config(config, 'scene_on_off_topic',
+        self.msg_scene_on_off.load_config(data, 'scene_on_off_topic',
                                           'scene_on_off_payload', qos)
 
     #-----------------------------------------------------------------------
