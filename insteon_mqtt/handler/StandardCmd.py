@@ -33,6 +33,9 @@ class StandardCmd(Base):
           msg (OutStandard):  The output message that was sent.  The
               reply must match the address and msg.cmd1 field to be
               processed by this handler.
+          callback:  The message handler callback. This is called when a
+                     matching message is read.  Calling signature:
+                     callback( msg, on_done )
           on_done: The finished callback.  Calling signature:
                    on_done( bool success, str message, data )
           num_retry (int):  The number of times to retry the message if the
