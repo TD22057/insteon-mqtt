@@ -50,9 +50,8 @@ class Switch:
             payload='{ "cmd" : "{{value.lower()}}" }')
 
         # Receive notifications from the Insteon device when it changes.
-        if connect_signals:
-            device.signal_on_off.connect(self._insteon_on_off)
-            device.signal_manual.connect(self._insteon_manual)
+        device.signal_on_off.connect(self._insteon_on_off)
+        device.signal_manual.connect(self._insteon_manual)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):

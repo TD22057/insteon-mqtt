@@ -6,7 +6,7 @@
 
 
 class Timed:
-    """Times message container
+    """Timed message container
 
     This stores a message and time at which the message should be sent and is
     used by the Protocol class for storing a message that should be sent at
