@@ -1,5 +1,11 @@
 # Revision Change History
 
+## [0.6.8]
+
+### Fixes
+- Fixed incorrect handling of FanLinc speed change ([Issue #126][I126])
+
+
 ## [0.6.7]
 
 ### Fixes
@@ -245,3 +251,4 @@
 [I104]: https://github.com/TD22057/insteon-mqtt/issues/104
 [I119]: https://github.com/TD22057/insteon-mqtt/issues/119
 [I120]: https://github.com/TD22057/insteon-mqtt/issues/120
+[I126]: https://github.com/TD22057/insteon-mqtt/issues/126
