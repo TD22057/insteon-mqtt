@@ -227,7 +227,7 @@ class KeypadLinc(Base):
                 even if the delta value matches as well as a re-query of the
                 device model information even if it is already known.
         """
-        Base.addRefreshData(seq, force)
+        Base.addRefreshData(self, seq, force)
 
         # TODO: add commands to get detached load, toggle states, etc.
 
