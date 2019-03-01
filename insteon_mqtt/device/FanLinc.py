@@ -325,7 +325,7 @@ class FanLinc(Dimmer):
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("FanLinc fan %s ACK: %s", self.addr, msg)
 
-            self._set_fan_speed(msg.cmd2):
+            self._set_fan_speed(msg.cmd2)
             on_done(True, "Fan %s state updated to %s" %
                     (self.addr, self._fan_speed), msg.cmd2)
 
