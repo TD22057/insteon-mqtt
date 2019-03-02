@@ -138,7 +138,7 @@ class SmokeBridge(Base):
         msg = Msg.OutStandard.direct(self.addr, 0x1f, 0x01)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
                                             on_done, num_retry=3)
-        seq.add(msg, msg_handler)
+        seq.add_msg(msg, msg_handler)
 
         # If model number is not known, or force true, run get_model
         self.addRefreshData(seq, force)
