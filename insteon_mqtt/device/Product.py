@@ -1,166 +1,269 @@
 #===========================================================================
 #
-# Insteon Product Keys
+# Insteon Products
 #
 #===========================================================================
 import enum
 from .Category import Category
 
 class Product(enum.Enum):
+    INSTEON_00_04 = 0x00, 0x04, "2430", "ControlLinc"
+    INSTEON_00_05 = 0x00, 0x05, "2440", "RemoteLinc"
+    INSTEON_00_06 = 0x00, 0x06, "2830", "ICON Tabletop Controller"
+    INSTEON_00_09 = 0x00, 0x09, "2442", "SignaLinc RF Signal Enhancer"
+    INSTEON_00_0B = 0x00, 0x0B, "2443", "Access Point (Wireless Phase Coupler)"
+    INSTEON_00_0C = 0x00, 0x0C, "12005", "IES Color Touchscreen"
+    INSTEON_00_0E = 0x00, 0x0E, "2440EZ", "RemoteLinc EZ"
+    INSTEON_00_10 = 0x00, 0x10, "2444A2xx4", "RemoteLinc 2 Keypad, 4 Scene"
+    INSTEON_00_11 = 0x00, 0x11, "2444A3xx", "RemoteLinc 2 Switch"
+    INSTEON_00_12 = 0x00, 0x12, "2444A2xx8", "RemoteLinc 2 Keypad, 8 Scene"
+    INSTEON_00_13 = 0x00, 0x13, "2993-222", "Insteon Diagnostics Keypad"
+    INSTEON_00_14 = 0x00, 0x14, "2342-432", "Insteon Mini Remote - 4 Scene (869 MHz)"
+    INSTEON_00_15 = 0x00, 0x15, "2342-442", "Insteon Mini Remote - Switch (869 MHz)"
+    INSTEON_00_16 = 0x00, 0x16, "2342-422", "Insteon Mini Remote - 8 Scene (869 MHz)"
+    INSTEON_00_17 = 0x00, 0x17, "2342-532", "Insteon Mini Remote - 4 Scene (921 MHz)"
+    INSTEON_00_18 = 0x00, 0x18, "2342-522", "Insteon Mini Remote - 8 Scene (921 MHz)"
+    INSTEON_00_19 = 0x00, 0x19, "2342-542", "Insteon Mini Remote - Switch (921 MHz)"
+    INSTEON_00_1A = 0x00, 0x1A, "2342-222", "Insteon Mini Remote - 8 Scene (915 MHz)"
+    INSTEON_00_1B = 0x00, 0x1B, "2342-232", "Insteon Mini Remote - 4 Scene (915 MHz)"
+    INSTEON_00_1C = 0x00, 0x1C, "2342-242", "Insteon Mini Remote - Switch (915 MHz)"
+    INSTEON_00_1D = 0x00, 0x1D, "2992-222", "Range Extender"
+    INSTEON_01_00 = 0x01, 0x00, "2456D3", "LampLinc 3-Pin"
+    INSTEON_01_01 = 0x01, 0x01, "2476D", "SwitchLinc Dimmer"
+    INSTEON_01_02 = 0x01, 0x02, "2475D", "In-LineLinc Dimmer"
+    INSTEON_01_03 = 0x01, 0x03, "2876DB", "ICON Dimmer Switch"
+    INSTEON_01_04 = 0x01, 0x04, "2476DH", "SwitchLinc Dimmer (High Wattage)"
+    INSTEON_01_05 = 0x01, 0x05, "2484DWH8", "Keypad Countdown Timer w/ Dimmer"
+    INSTEON_01_06 = 0x01, 0x06, "2456D2", "LampLinc Dimmer (2-Pin)"
+    INSTEON_01_07 = 0x01, 0x07, "2856D2B", "ICON LampLinc"
+    INSTEON_01_08 = 0x01, 0x08, "2476DT", "SwitchLinc Dimmer Count-down Timer"
+    INSTEON_01_09 = 0x01, 0x09, "2486D", "KeypadLinc Dimmer"
+    INSTEON_01_0A = 0x01, 0x0A, "2886D", "Icon In-Wall Controller"
+    INSTEON_01_0B = 0x01, 0x0B, "2632-422", "Insteon Dimmer Module, France (869 MHz)"
+    INSTEON_01_0C = 0x01, 0x0C, "2486DWH8", "KeypadLinc Dimmer"
+    INSTEON_01_0D = 0x01, 0x0D, "2454D", "SocketLinc"
+    INSTEON_01_0E = 0x01, 0x0E, "2457D2", "LampLinc (Dual-Band)"
+    INSTEON_01_0F = 0x01, 0x0F, "2632-432", "Insteon Dimmer Module, Germany (869 MHz)"
+    INSTEON_01_11 = 0x01, 0x11, "2632-442", "Insteon Dimmer Module, UK (869 MHz)"
+    INSTEON_01_12 = 0x01, 0x12, "2632-522", "Insteon Dimmer Module, Aus/NZ (921 MHz)"
+    INSTEON_01_13 = 0x01, 0x13, "2676D-B", "ICON SwitchLinc Dimmer Lixar/Bell Canada"
+    INSTEON_01_17 = 0x01, 0x17, "2466D", "ToggleLinc Dimmer"
+    INSTEON_01_18 = 0x01, 0x18, "2474D", "Icon SwitchLinc Dimmer Inline Companion"
+    INSTEON_01_19 = 0x01, 0x19, "2476D", "SwitchLinc Dimmer [with beeper]"
+    INSTEON_01_1A = 0x01, 0x1A, "2475D", "In-LineLinc Dimmer [with beeper]"
+    INSTEON_01_1B = 0x01, 0x1B, "2486DWH6", "KeypadLinc Dimmer"
+    INSTEON_01_1C = 0x01, 0x1C, "2486DWH8", "KeypadLinc Dimmer"
+    INSTEON_01_1D = 0x01, 0x1D, "2476DH", "SwitchLinc Dimmer (High Wattage)[beeper]"
+    INSTEON_01_1E = 0x01, 0x1E, "2876DB", "ICON Switch Dimmer"
+    INSTEON_01_1F = 0x01, 0x1F, "2466Dx", "ToggleLinc Dimmer [with beeper]"
+    INSTEON_01_20 = 0x01, 0x20, "2477D", "SwitchLinc Dimmer (Dual-Band)"
+    INSTEON_01_21 = 0x01, 0x21, "2472D", "OutletLinc Dimmer (Dual-Band)"
+    INSTEON_01_22 = 0x01, 0x22, "2457D2X", "LampLinc"
+    INSTEON_01_23 = 0x01, 0x23, "2457D2EZ", "LampLinc Dual-Band EZ"
+    INSTEON_01_24 = 0x01, 0x24, "2474DWH", "SwitchLinc 2-Wire Dimmer (RF)"
+    INSTEON_01_25 = 0x01, 0x25, "2475DA2", "In-LineLinc 0-10VDC Dimmer/Dual-SwitchDB"
+    INSTEON_01_2D = 0x01, 0x2D, "2477DH", "SwitchLinc-Dimmer Dual-Band 1000W"
+    INSTEON_01_2E = 0x01, 0x2E, "2475F", "FanLinc"
+    INSTEON_01_2F = 0x01, 0x2F, "2484DST6", "KeypadLinc Schedule Timer with Dimmer"
+    INSTEON_01_30 = 0x01, 0x30, "2476D", "SwitchLinc Dimmer"
+    INSTEON_01_31 = 0x01, 0x31, "2478D", "SwitchLinc Dimmer 240V-50/60Hz Dual-Band"
+    INSTEON_01_32 = 0x01, 0x32, "2475DA1", "In-LineLinc Dimmer (Dual Band)"
+    INSTEON_01_34 = 0x01, 0x34, "2452-222", "Insteon DIN Rail Dimmer (915 MHz)"
+    INSTEON_01_35 = 0x01, 0x35, "2442-222", "Insteon Micro Dimmer (915 MHz)"
+    INSTEON_01_36 = 0x01, 0x36, "2452-422", "Insteon DIN Rail Dimmer (869 MHz)"
+    INSTEON_01_37 = 0x01, 0x37, "2452-522", "Insteon DIN Rail Dimmer (921 MHz)"
+    INSTEON_01_38 = 0x01, 0x38, "2442-422", "Insteon Micro Dimmer (869 MHz)"
+    INSTEON_01_39 = 0x01, 0x39, "2442-522", "Insteon Micro Dimmer (921 MHz)"
+    INSTEON_01_3A = 0x01, 0x3A, "2672-222", "LED Bulb 240V (915 MHz) - Screw-in Base"
+    INSTEON_01_3B = 0x01, 0x3B, "2672-422", "LED Bulb 240V Europe - Screw-in Base"
+    INSTEON_01_3C = 0x01, 0x3C, "2672-522", "LED Bulb 240V Aus/NZ - Screw-in Base"
+    INSTEON_01_3D = 0x01, 0x3D, "2446-422", "Insteon Ballast Dimmer (869 MHz)"
+    INSTEON_01_3E = 0x01, 0x3E, "2446-522", "Insteon Ballast Dimmer (921 MHz)"
+    INSTEON_01_3F = 0x01, 0x3F, "2447-422", "Insteon Fixture Dimmer (869 MHz)"
+    INSTEON_01_40 = 0x01, 0x40, "2447-522", "Insteon Fixture Dimmer (921 MHz)"
+    INSTEON_01_41 = 0x01, 0x41, "2334-222", "Keypad Dimmer Dual-Band, 8 Button"
+    INSTEON_01_42 = 0x01, 0x42, "2334-232", "Keypad Dimmer Dual-Band, 6 Button"
+    INSTEON_01_49 = 0x01, 0x49, "2674-222", "LED Bulb PAR38 US/Can - Screw-in Base"
+    INSTEON_01_4A = 0x01, 0x4A, "2674-422", "LED Bulb PAR38 Europe - Screw-in Base"
+    INSTEON_01_4B = 0x01, 0x4B, "2674-522", "LED Bulb PAR38 Aus/NZ - Screw-in Base"
+    INSTEON_01_4C = 0x01, 0x4C, "2672-432", "LED Bulb 240V Europe - Bayonet Base"
+    INSTEON_01_4D = 0x01, 0x4D, "2672-532", "LED Bulb 240V Aus/NZ - Bayonet Base"
+    INSTEON_01_4E = 0x01, 0x4E, "2674-432", "LED Bulb PAR38 Europe - Bayonet Base"
+    INSTEON_01_50 = 0x01, 0x50, "2632-452", "Insteon Dimmer Module, Chile (915 MHz)"
+    INSTEON_01_51 = 0x01, 0x51, "2672-452", "LED Bulb 240V (915 MHz) - Screw-in Base"
+    INSTEON_02_05 = 0x02, 0x05, "2486SWH8", "KeypadLinc 8-button On/Off Switch"
+    INSTEON_02_06 = 0x02, 0x06, "2456S3E", "Outdoor ApplianceLinc"
+    INSTEON_02_07 = 0x02, 0x07, "2456S3T", "TimerLinc"
+    INSTEON_02_08 = 0x02, 0x08, "2473S", "OutletLinc"
+    INSTEON_02_09 = 0x02, 0x09, "2456S3", "ApplianceLinc (3-Pin)"
+    INSTEON_02_0A = 0x02, 0x0A, "2476S", "SwitchLinc Relay"
+    INSTEON_02_0B = 0x02, 0x0B, "2876S", "ICON On/Off Switch"
+    INSTEON_02_0C = 0x02, 0x0C, "2856S3", "Icon Appliance Module"
+    INSTEON_02_0D = 0x02, 0x0D, "2466S", "ToggleLinc Relay"
+    INSTEON_02_0E = 0x02, 0x0E, "2476ST", "SwitchLinc Relay Countdown Timer"
+    INSTEON_02_0F = 0x02, 0x0F, "2486SWH6", "KeypadLinc On/Off"
+    INSTEON_02_10 = 0x02, 0x10, "2475S", "In-LineLinc Relay"
+    INSTEON_02_12 = 0x02, 0x12, "2474 S/D", "ICON In-lineLinc Relay Companion"
+    INSTEON_02_13 = 0x02, 0x13, "2676R-B", "ICON SwitchLinc Relay Lixar/Bell Canada"
+    INSTEON_02_14 = 0x02, 0x14, "2475S2", "In-LineLinc Relay with Sense"
+    INSTEON_02_15 = 0x02, 0x15, "2476SS", "SwitchLinc Relay with Sense"
+    INSTEON_02_16 = 0x02, 0x16, "2876S", "ICON On/Off Switch (25 max links)"
+    INSTEON_02_17 = 0x02, 0x17, "2856S3B", "ICON Appliance Module"
+    INSTEON_02_18 = 0x02, 0x18, "2494S220", "SwitchLinc 220V Relay"
+    INSTEON_02_19 = 0x02, 0x19, "2494S220", "SwitchLinc 220V Relay [with beeper]"
+    INSTEON_02_1A = 0x02, 0x1A, "2466Sx", "ToggleLinc Relay [with Beeper]"
+    INSTEON_02_1C = 0x02, 0x1C, "2476S", "SwitchLinc Relay"
+    INSTEON_02_1D = 0x02, 0x1D, "4101", "Commercial Switch with relay"
+    INSTEON_02_1E = 0x02, 0x1E, "2487S", "KeypadLinc On/Off (Dual-Band)"
+    INSTEON_02_1F = 0x02, 0x1F, "2475SDB", "In-LineLinc On/Off (Dual-Band)"
+    INSTEON_02_25 = 0x02, 0x25, "2484SWH8", "KeypadLinc 8-Button Countdown On/Off Switch Timer"
+    INSTEON_02_26 = 0x02, 0x26, "2485SWH6", "Keypad Schedule Timer with On/Off Switch"
+    INSTEON_02_29 = 0x02, 0x29, "2476ST", "SwitchLinc Relay Countdown Timer"
+    INSTEON_02_2A = 0x02, 0x2A, "2477S", "SwitchLinc Relay (Dual-Band)"
+    INSTEON_02_2B = 0x02, 0x2B, "2475SDB-50", "In-LineLinc On/Off (Dual Band, 50/60 Hz)"
+    INSTEON_02_2C = 0x02, 0x2C, "2487S", "KeypadLinc On/Off (Dual-Band,50/60 Hz)"
+    INSTEON_02_2D = 0x02, 0x2D, "2633-422", "Insteon On/Off Module, France (869 MHz)"
+    INSTEON_02_2E = 0x02, 0x2E, "2453-222", "Insteon DIN Rail On/Off (915 MHz)"
+    INSTEON_02_2F = 0x02, 0x2F, "2443-222", "Insteon Micro On/Off (915 MHz)"
+    INSTEON_02_30 = 0x02, 0x30, "2633-432", "Insteon On/Off Module, Germany (869 MHz)"
+    INSTEON_02_31 = 0x02, 0x31, "2443-422", "Insteon Micro On/Off (869 MHz)"
+    INSTEON_02_32 = 0x02, 0x32, "2443-522", "Insteon Micro On/Off (921 MHz)"
+    INSTEON_02_33 = 0x02, 0x33, "2453-422", "Insteon DIN Rail On/Off (869 MHz)"
+    INSTEON_02_34 = 0x02, 0x34, "2453-522", "Insteon DIN Rail On/Off (921 MHz)"
+    INSTEON_02_35 = 0x02, 0x35, "2633-442", "Insteon On/Off Module, UK (869 MHz)"
+    INSTEON_02_37 = 0x02, 0x37, "2635-222", "Insteon On/Off Module, US (915 MHz)"
+    INSTEON_02_38 = 0x02, 0x38, "2634-222", "On/Off Outdoor Module (Dual-Band)"
+    INSTEON_02_39 = 0x02, 0x39, "2663-222", "On/Off Outlet"
+    INSTEON_02_3A = 0x02, 0x3A, "2633-452", "Insteon On/Off Module, Chile (915 MHz)"
+    INSTEON_03_01 = 0x03, 0x01, "2414S", "PowerLinc Serial Controller"
+    INSTEON_03_02 = 0x03, 0x02, "2414U", "PowerLinc USB Controller"
+    INSTEON_03_03 = 0x03, 0x03, "2814S", "ICON PowerLinc Serial"
+    INSTEON_03_04 = 0x03, 0x04, "2814U", "ICON PowerLinc USB"
+    INSTEON_03_05 = 0x03, 0x05, "2412S", "PowerLinc Serial Modem"
+    INSTEON_03_06 = 0x03, 0x06, "2411R", "IRLinc Receiver"
+    INSTEON_03_07 = 0x03, 0x07, "2411T", "IRLinc Transmitter"
+    INSTEON_03_09 = 0x03, 0x09, "2600RF", "SmartLabs RF Developer’s Board"
+    INSTEON_03_0A = 0x03, 0x0A, "2410S", "SeriaLinc - Insteon to RS232"
+    INSTEON_03_0B = 0x03, 0x0B, "2412U", "PowerLinc USB Modem"
+    INSTEON_03_0F = 0x03, 0x0F, "EZX10IR", "EZX10IR X10 IR Receiver"
+    INSTEON_03_10 = 0x03, 0x10, "2412N", "SmartLinc"
+    INSTEON_03_11 = 0x03, 0x11, "2413S", "PowerLinc Serial Modem (Dual Band)"
+    INSTEON_03_13 = 0x03, 0x13, "2412UH", "PowerLinc USB Modem for HouseLinc"
+    INSTEON_03_14 = 0x03, 0x14, "2412SH", "PowerLinc Serial Modem for HouseLinc"
+    INSTEON_03_15 = 0x03, 0x15, "2413U", "PowerLinc USB Modem (Dual Band)"
+    INSTEON_03_18 = 0x03, 0x18, "2243-222", "Insteon Central Controller (915 MHz)"
+    INSTEON_03_19 = 0x03, 0x19, "2413SH", "PowerLinc Serial Modem for HL(Dual Band)"
+    INSTEON_03_1A = 0x03, 0x1A, "2413UH", "PowerLinc USB Modem for HL (Dual Band)"
+    INSTEON_03_1B = 0x03, 0x1B, "2423A4", "iGateway"
+    INSTEON_03_1C = 0x03, 0x1C, "2423A7", "iGateway 2.0"
+    INSTEON_03_1E = 0x03, 0x1E, "2412S", "PowerLincModemSerial w/o EEPROM(w/o RF)"
+    INSTEON_03_1F = 0x03, 0x1F, "2448A7", "USB Adapter - Domestically made"
+    INSTEON_03_20 = 0x03, 0x20, "2448A7", "USB Adapter"
+    INSTEON_03_21 = 0x03, 0x21, "2448A7H", "Portable USB Adapter for HouseLinc"
+    INSTEON_03_23 = 0x03, 0x23, "2448A7H", "Portable USB Adapter for HouseLinc"
+    INSTEON_03_24 = 0x03, 0x24, "2448A7T", "TouchLinc"
+    INSTEON_03_27 = 0x03, 0x27, "2448A7T", "TouchLinc"
+    INSTEON_03_28 = 0x03, 0x28, "2413Gxx", "Global PLM, Dual Band (915 MHz)"
+    INSTEON_03_29 = 0x03, 0x29, "2413SAD", "PowerLinc Serial Modem (Dual Band) RF OFF, Auto Detect 128K"
+    INSTEON_03_2B = 0x03, 0x2B, "2242-222", "Insteon Hub (915 MHz) - no RF"
+    INSTEON_03_2E = 0x03, 0x2E, "2242-422", "Insteon Hub (EU - 869 MHz)"
+    INSTEON_03_2F = 0x03, 0x2F, "2242-522", "Insteon Hub (921 MHz)"
+    INSTEON_03_30 = 0x03, 0x30, "2242-442", "Insteon Hub (UK - 869 MHz)"
+    INSTEON_03_31 = 0x03, 0x31, "2242-232", "Insteon Hub (Plug-In Version)"
+    INSTEON_03_33 = 0x03, 0x33, "2245-222", "Insteon Hub II (915 MHz)"
+    INSTEON_03_37 = 0x03, 0x37, "2242-222", "Insteon Hub (915 MHz) - RF"
+    INSTEON_04_00 = 0x04, 0x00, "31270", "Compacta EZRain Sprinkler Controller"
+    INSTEON_04_02 = 0x04, 0x02, "2670IAQ-110", "Broan SMSC110 Exhaust Fan (no beeper)"
+    INSTEON_05_03 = 0x05, 0x03, "2441V", "Thermostat Adapter"
+    INSTEON_05_07 = 0x05, 0x07, "2441ZT", "Insteon Wireless Thermostat"
+    INSTEON_05_0A = 0x05, 0x0A, "2441ZTH", "Insteon Wireless Thermostat (915 MHz)"
+    INSTEON_05_0B = 0x05, 0x0B, "2441TH", "Insteon Thermostat (915 MHz)"
+    INSTEON_05_0C = 0x05, 0x0C, "2670IAQ-80", "Broan SMSC080 Switch for 80CFM Fans"
+    INSTEON_05_0D = 0x05, 0x0D, "2670IAQ-110", "Broan SMSC110 Switch for 110CFM Fans"
+    INSTEON_05_0E = 0x05, 0x0E, "2491TxE", "Integrated Remote Control Thermostat"
+    INSTEON_05_0F = 0x05, 0x0F, "2732-422", "Insteon Thermostat (869 MHz)"
+    INSTEON_05_10 = 0x05, 0x10, "2732-522", "Insteon Thermostat (921 MHz)"
+    INSTEON_05_11 = 0x05, 0x11, "2732-432", "Insteon Zone Thermostat (869 MHz)"
+    INSTEON_05_12 = 0x05, 0x12, "2732-532", "Insteon Zone Thermostat (921 MHz)"
+    INSTEON_05_13 = 0x05, 0x13, "2732-242", "Heat Pump Thermostat - US/Can (915MHz)"
+    INSTEON_05_14 = 0x05, 0x14, "2732-242", "Heat Pump Thermostat - Europe (869.85MHz)"
+    INSTEON_05_15 = 0x05, 0x15, "2732-242", "Heat Pump Thermostat - Aus/NZ (921MHz)"
+    INSTEON_07_00 = 0x07, 0x00, "2450", "I/OLinc"
+    INSTEON_07_03 = 0x07, 0x03, "31274", "Compacta EZIO2X4 #5010D"
+    INSTEON_07_05 = 0x07, 0x05, "31275", "Compacta EZSnsRF RcvrIntrfc Dakota Alert"
+    INSTEON_07_07 = 0x07, 0x07, "31280", "EZIO6I (6 inputs)"
+    INSTEON_07_08 = 0x07, 0x08, "31283", "EZIO4O (4 relay outputs)"
+    INSTEON_07_09 = 0x07, 0x09, "2423A5", "SynchroLinc"
+    INSTEON_07_0C = 0x07, 0x0C, "2448A5", "Lumistat"
+    INSTEON_07_0D = 0x07, 0x0D, "2450", "I/OLinc 50/60Hz Auto Detect"
+    INSTEON_07_0E = 0x07, 0x0E, "2248-222", "I/O Module - US (915 MHz)"
+    INSTEON_07_0F = 0x07, 0x0F, "2248-422", "I/O Module - EU (869.85 MHz)"
+    INSTEON_07_10 = 0x07, 0x10, "2248-442", "I/O Module - UK (869.85 MHz)"
+    INSTEON_07_11 = 0x07, 0x11, "2248-522", "I/O Module - AUS (921 MHz)"
+    INSTEON_07_12 = 0x07, 0x12, "2822-222", "IOLinc Dual-Band - US"
+    INSTEON_07_13 = 0x07, 0x13, "2822-422", "IOLinc Dual-Band - EU"
+    INSTEON_07_14 = 0x07, 0x14, "2822-442", "IOLinc Dual-Band - UK"
+    INSTEON_07_15 = 0x07, 0x15, "2822-522", "IOLinc Dual-Band - AUS/NZ"
+    INSTEON_07_16 = 0x07, 0x16, "2822-222", "Low Voltage/Contact Closure Interface (Dual Band) - US"
+    INSTEON_07_17 = 0x07, 0x17, "2822-422", "Low Voltage/Contact Closure Interface (Dual Band) - EU"
+    INSTEON_07_18 = 0x07, 0x18, "2822-442", "Low Voltage/Contact Closure Interface (Dual Band) - UK"
+    INSTEON_07_19 = 0x07, 0x19, "2822-522", "Low Voltage/Contact Closure Interface (Dual Band) - AUS/NZ"
+    INSTEON_09_07 = 0x09, 0x07, "2423A1", "iMeter Solo"
+    INSTEON_09_08 = 0x09, 0x08, "2423A2", "iMeter Home (Breaker Panel)"
+    INSTEON_09_09 = 0x09, 0x09, "2423A3", "iMeter Home (Meter)"
+    INSTEON_09_0A = 0x09, 0x0A, "2477SA1", "220/240V 30A Load Controller NO (DB)"
+    INSTEON_09_0B = 0x09, 0x0B, "2477SA2", "220/240V 30A Load Controller NC (DB)"
+    INSTEON_09_0C = 0x09, 0x0C, "2630A1", "GE Water Heater U-SNAP module"
+    INSTEON_09_0D = 0x09, 0x0D, "2448A2", "Energy Display"
+    INSTEON_09_11 = 0x09, 0x11, "2423A8", "Insteon Digital Meter Reader"
+    INSTEON_0E_00 = 0x0E, 0x00, "318276I", "Somfy Drape Controller RF Bridge"
+    INSTEON_0E_01 = 0x0E, 0x01, "2444-222", "Insteon Micro Open/Close (915 MHz)"
+    INSTEON_0E_02 = 0x0E, 0x02, "2444-422", "Insteon Micro Open/Close (869 MHz)"
+    INSTEON_0E_03 = 0x0E, 0x03, "2444-522", "Insteon Micro Open/Close (921 MHz)"
+    INSTEON_0E_04 = 0x0E, 0x04, "2772-222", "Window Shade Kit - US"
+    INSTEON_0E_05 = 0x0E, 0x05, "2772-422", "Window Shade Kit - EU"
+    INSTEON_0E_06 = 0x0E, 0x06, "2772-522", "Window Shade Kit - AUS/NZ"
+    INSTEON_0F_06 = 0x0F, 0x06, "2458A1", "MorningLinc"
+    INSTEON_10_01 = 0x10, 0x01, "2842-222", "Motion Sensor - US (915 MHz)"
+    INSTEON_10_02 = 0x10, 0x02, "2843-222", "Insteon Open/Close Sensor (915 MHz)"
+    INSTEON_10_04 = 0x10, 0x04, "2842-422", "Insteon Motion Sensor (869 MHz)"
+    INSTEON_10_05 = 0x10, 0x05, "2842-522", "Insteon Motion Sensor (921 MHz)"
+    INSTEON_10_06 = 0x10, 0x06, "2843-422", "Insteon Open/Close Sensor (869 MHz)"
+    INSTEON_10_07 = 0x10, 0x07, "2843-522", "Insteon Open/Close Sensor (921 MHz)"
+    INSTEON_10_08 = 0x10, 0x08, "2852-222", "Leak Sensor - US (915 MHz)"
+    INSTEON_10_09 = 0x10, 0x09, "2843-232", "Insteon Door Sensor"
+    INSTEON_10_0A = 0x10, 0x0A, "2982-222", "Smoke Bridge"
+    INSTEON_10_0D = 0x10, 0x0D, "2852-422", "Leak Sensor - EU (869 MHz)"
+    INSTEON_10_0E = 0x10, 0x0E, "2852-522", "Leak Sensor - AUS/NZ (921 MHz)"
+    INSTEON_10_11 = 0x10, 0x11, "2845-222", "Door Sensor II (915 MHz)"
+    INSTEON_10_14 = 0x10, 0x14, "2845-422", "Door Sensor II (869 MHz)"
+    INSTEON_10_15 = 0x10, 0x15, "2845-522", "Door Sensor II (921 MHz)"
 
-    # Generalized Controllers
-    CONTROLLINC = 0x00, 0x04, None, "ControlLinc", "2430"
-    REMOTELINC = 0x00, 0x05, 0x000034, "RemoteLinc", "2440"
-    ICON_TABLETOP_CONTROLLER = 0x00, 0x06, None, "Icon Tabletop Controller", "2830"
-    EZBRIDGEEZSERVER = 0x00, 0x08, 0x00003D, "EZBridge/EZServer", None
-    SIGNALINC_RF_SIGNAL_ENHANCER = 0x00, 0x09, None, "SignaLinc RF Signal Enhancer", "2442"
-    BALBOA_INSTRUMENTS_POOLUX_LCD_CONTROLLER = 0x00, 0x0A, 0x000007, "Balboa Instrument’s Poolux LCD Controller", None
-    ACCESS_POINT = 0x00, 0x0B, 0x000022, "Access Point", "2443"
-    IES_COLOR_TOUCHSCREEN = 0x00, 0x0C, 0x000028, "IES Color Touchscreen", None
-    SMARTLABS_KEYFOB = 0x00, 0x0D, 0x00004D, "SmartLabs KeyFOB", None
-    LAMPLINC_V2 = 0x01, 0x00, None, "LampLinc V2", "2456D3"
-    SWITCHLINC_V2_DIMMER_600W = 0x01, 0x01, None, "SwitchLinc V2 Dimmer 600W", "2476D"
-
-    # Dimmable Lighting Control
-    INLINELINC_DIMMER = 0x01, 0x02, None, "In-LineLinc Dimmer", "2475D"
-    ICON_SWITCH_DIMMER = 0x01, 0x03, None, "Icon Switch Dimmer", "2876D"
-    SWITCHLINC_V2_DIMMER_1000W = 0x01, 0x04, None, "SwitchLinc V2 Dimmer 1000W", "2476DH"
-    KEYPADLINC_DIMMER_COUNTDOWN_TIMER = 0x01, 0x05, 0x000041, "KeypadLinc Dimmer Countdown Timer", "2484DWH8"
-    LAMPLINC_2PIN = 0x01, 0x06, None, "LampLinc 2-Pin", "2456D2"
-    ICON_LAMPLINC_V2_2PIN = 0x01, 0x07, None, "Icon LampLinc V2 2-Pin", "2856D2"
-    SWITCHLINC_DIMMER_COUNTDOWN_TIMER = 0x01, 0x08, 0x000040, "SwitchLinc Dimmer Count-down Timer", "2484DWH8"
-    KEYPADLINC_DIMMER = 0x01, 0x09, 0x000037, "KeypadLinc Dimmer", "2486D"
-    ICON_INWALL_CONTROLLER = 0x01, 0x0A, None, "Icon In-Wall Controller", "2886D"
-    ACCESS_POINT_LAMPLINC = 0x01, 0x0B, 0x00001C, "Access Point LampLinc", "2458D3"
-    KEYPADLINC_DIMMER_8BUTTON = 0x01, 0x0C, 0x00001D, "KeypadLinc Dimmer – 8-Button", "2486DWH8"
-    SOCKETLINC = 0x01, 0x0D, 0x00001E, "SocketLinc", "2454D"
-    LAMPLINC_DIMMER_DUALBAND = 0x01, 0x0E, 0x00004B, "LampLinc Dimmer, Dual-Band", "2457D3"
-    ICON_SWITCHLINC_DIMMER_FOR_LIXARBELL_CANADA = 0x01, 0x13, 0x000032, "ICON SwitchLinc Dimmer for Lixar/Bell Canada", "2676D-B"
-    TOGGLELINC_DIMMER = 0x01, 0x17, None, "ToggleLinc Dimmer", "2466D"
-    ICON_SL_DIMMER_INLINE_COMPANION = 0x01, 0x18, 0x00003F, "Icon SL Dimmer Inline Companion", "2474D"
-    SWITCHLINC_800W = 0x01, 0x19, 0x00004E, "SwitchLinc 800W", None
-    INLINELINC_DIMMER_WITH_SENSE = 0x01, 0x1A, 0x00004F, "In-LineLinc Dimmer with Sense", "2475D2"
-    KEYPADLINC_8BUTTON_DIMMER = 0x01, 0x1C, 0x000051, "KeypadLinc 8-button Dimmer", "2486DWH8"
-    SWITCHLINC_DIMMER_1200W = 0x01, 0x1D, 0x000052, "SwitchLinc Dimmer 1200W", "2476D"
-
-    # Switched Lighting Control
-    KEYPADLINC_RELAY_8BUTTON = 0x02, 0x05, 0x000042, "KeypadLinc Relay – 8-Button", "2486SWH8"
-    OUTDOOR_APPLIANCELINC = 0x02, 0x06, 0x000048, "Outdoor ApplianceLinc", "2456S3E"
-    TIMERLINC = 0x02, 0x07, 0x000029, "TimerLinc", "2456ST3"
-    OUTLETLINC = 0x02, 0x08, 0x000023, "OutletLinc", "2473S"
-    APPLIANCELINC = 0x02, 0x09, None, "ApplianceLinc", "2456S3"
-    SWITCHLINC_RELAY = 0x02, 0x0A, None, "SwitchLinc Relay", "2476S"
-    ICON_ON_OFF_SWITCH = 0x02, 0x0B, None, "Icon On Off Switch", "2876S"
-    ICON_APPLIANCE_ADAPTER = 0x02, 0x0C, None, "Icon Appliance Adapter", "2856S3"
-    NAMTOGGLELINC_RELAYEz = 0x02, 0x0D, None, "ToggleLinc Relay", "2466S"
-    SWITCHLINC_RELAY_COUNTDOWN_TIMER = 0x02, 0x0E, None, "SwitchLinc Relay Countdown Timer", "2476ST"
-    KEYPADLINC_ONOFF_SWITCH = 0x02, 0x0F, 0x000036, "KeypadLinc On/Off Switch", "2486SWH6"
-    INLINELINC_RELAY = 0x02, 0x10, 0x00001B, "In-LineLinc Relay", "2475D"
-    EZSWITCH30_240V_30A_LOAD_CONTROLLER = 0x02, 0x11, 0x00003C, "EZSwitch30 (240V, 30A load controller)", None
-    ICON_SL_RELAY_INLINE_COMPANION = 0x02, 0x12, 0x00003E, "Icon SL Relay Inline Companion", None
-    ICON_SWITCHLINC_RELAY_FOR_LIXARBELL_CANADA = 0x02, 0x13, 0x000033, "ICON SwitchLinc Relay for Lixar/Bell Canada", "2676R-B"
-    INLINELINC_RELAY_WITH_SENSE = 0x02, 0x14, 0x000045, "In-LineLinc Relay with Sense", "2475S2"
-    SWITCHLINC_RELAY_WITH_SENSE = 0x02, 0x15, 0x000047, "SwitchLinc Relay with Sense", "2476S2"
-
-    # Network Bridges
-    POWERLINC_SERIAL = 0x03, 0x01, None, "PowerLinc Serial", "2414S"
-    POWERLINC_USB = 0x03, 0x02, None, "PowerLinc USB", "2414U"
-    ICON_POWERLINC_SERIAL = 0x03, 0x03, None, "Icon PowerLinc Serial", "2814 S"
-    ICON_POWERLINC_USB = 0x03, 0x04, None, "Icon PowerLinc USB", "2814U"
-    SMARTLABS_POWERLINC_MODEM_SERIAL = 0x03, 0x05, 0x00000C, "SmartLabs PowerLinc Modem Serial", "2412S"
-    SMARTLABS_IR_TO_INSTEON_INTERFACE = 0x03, 0x06, 0x000016, "SmartLabs IR to Insteon Interface", "2411R"
-    SMARTLABS_IRLINC_IR_TRANSMITTER_INTERFACE = 0x03, 0x07, 0x000017, "SmartLabs IRLinc - IR Transmitter Interface", "2411T"
-    SMARTLABS_BIDIRECTIONAL_IR_INSTEON_INTERFACE = 0x03, 0x08, 0x000018, "SmartLabs Bi-Directional IR -Insteon Interface", None
-    SMARTLABS_RF_DEVELOPERS_BOARD = 0x03, 0x09, 0x000019, "SmartLabs RF Developer’s Board", "2600RF"
-    SMARTLABS_POWERLINC_MODEM_ETHERNET = 0x03, 0x0A, 0x00000D, "SmartLabs PowerLinc Modem Ethernet", "2412E"
-    SMARTLABS_POWERLINC_MODEM_USB = 0x03, 0x0B, 0x000030, "SmartLabs PowerLinc Modem USB", "2412U"
-    SMARTLABS_PLM_ALERT_SERIAL = 0x03, 0x0C, 0x000031, "SmartLabs PLM Alert Serial", None
-    SIMPLEHOMENET_EZX10RF = 0x03, 0x0D, 0x000035, "SimpleHomeNet EZX10RF", None
-    X10_TW523PSC05_TRANSLATOR = 0x03, 0x0E, 0x00002C, "X10 TW-523/PSC05 Translator", None
-    EZX10IR_X10_IR_RECEIVER_INSTEON_CONTROLLER_AND_IR_DISTRIBUTION_HUB = 0x03, 0x0F, 0x00003B, "EZX10IR (X10 IR receiver, Insteon controller and IR distribution hub)", None
-    SMARTLINC_2412N_INSTEON_CENTRAL_CONTROLLER = 0x03, 0x10, 0x000044, "SmartLinc 2412N INSTEON Central Controller", None
-    POWERLINC_SERIAL_DUAL_BAND = 0x03, 0x11, 0x000045, "PowerLinc - Serial (Dual Band)", "2413S"
-    RF_MODEM_CARD = 0x03, 0x12, 0x00004C, "RF Modem Card", None
-    POWERLINC_USB_HOUSELINC_2 = 0x03, 0x13, 0x000053, "PowerLinc USB – HouseLinc 2", "2412UH"
-    POWERLINC_SERIAL_HOUSELINC_2 = 0x03, 0x14, 0x000054, "PowerLinc Serial – HouseLinc 2", "2412SH"
-
-    # Irrigation Control
-    COMPACTA_EZRAIN_SPRINKLER_CONTROLLER = 0x04, 0x00, 0x000001, "Compacta EZRain Sprinkler Controller", None
-
-    # Climate Control
-    BROAN_SMSC080_EXHAUST_FAN = 0x05, 0x00, None, "Broan SMSC080 Exhaust Fan"
-    COMPACTA_EZTHERM = 0x05, 0x01, 0x000002, "Compacta EZTherm", None
-    BROAN_SMSC110_EXHAUST_FAN = 0x05, 0x02, None, "Broan SMSC110 Exhaust Fan", None
-    INSTEON_THERMOSTAT_ADAPTER = 0x05, 0x03, 0x00001F, "INSTEON Thermostat Adapter", "2441V"
-    COMPACTA_EZTHERMX_THERMOSTAT = 0x05, 0x04, 0x000024, "Compacta EZThermx Thermostat", None
-    BROAN_VENMAR_BEST_RANGEHOODS = 0x05, 0x05, 0x000038, "Broan, Venmar, BEST Rangehoods", None
-    BROAN_SMARTSENSE_MAKEUP_DAMPER = 0x05, 0x06, 0x000043, "Broan SmartSense Make-up Damper", None
-
-    # Pool and Spa Control
-    COMPACTA_EZPOOL = 0x06, 0x00, 0x000003, "Compacta EZPool", None
-    LOWEND_POOL_CONTROLLER_TEMP_ENG_PROJECT_NAME = 0x06, 0x01, 0x000008, "Low-end pool controller (Temp. Eng. Project name)", None
-    MIDRANGE_POOL_CONTROLLER_TEMP_ENG_PROJECT_NAME = 0x06, 0x02, 0x000009, "Mid-Range pool controller (Temp. Eng. Project name)", None
-    NEXT_GENERATION_POOL_CONTROLLER_TEMP_ENG_PROJECT_NAME = 0x06, 0x03, 0x00000A, "Next Generation pool controller (Temp. Eng. Project name)", None
-
-    # Sensors and Actuators Sensors, Contact Closures
-    IOLINC = 0x07, 0x00, 0x00001A, "IOLinc", "2450"
-    COMPACTA_EZSNS1W_SENSOR_INTERFACE_MODULE = 0x07, 0x01, 0x000004, "Compacta EZSns1W Sensor Interface Module", None
-    COMPACTA_EZIO8T_IO_MODULE = 0x07, 0x02, 0x000012, "Compacta EZIO8T I/O Module", None
-    COMPACTA_EZIO2X4_5010D_INSTEON_X10_INPUTOUTPUT_MODULE = 0x07, 0x03, 0x000005, "Compacta EZIO2X4 #5010D INSTEON / X10 Input/Output Module", None
-    COMPACTA_EZIO8SA_IO_MODULE = 0x07, 0x04, 0x000013, "Compacta EZIO8SA I/O Module", None
-    COMPACTA_EZSNSRF_5010E_RF_RECEIVER_INTERFACE_MODULE_FOR_DAKOTA_ALERTS_PRODUCTS = 0x07, 0x05, 0x000014, "Compacta EZSnsRF #5010E RF Receiver Interface Module for Dakota Alerts Products", None
-    COMPACTA_EZISNSRF_SENSOR_INTERFACE_MODULE = 0x07, 0x06, 0x000015, "Compacta EZISnsRf Sensor Interface Module", None
-    EZIO6I_6_INPUTS = 0x07, 0x07, 0x000039, "EZIO6I (6 inputs)", None
-    EZIO4O_4_RELAY_OUTPUTS = 0x07, 0x08, 0x00003A, "EZIO4O (4 relay outputs)", None
-
-    # Energy Management
-    COMPACTA_EZENERGY = 0x09, 0x00, 0x000006, "Compacta EZEnergy", None
-    ONSITEPRO_LEAK_DETECTOR = 0x09, 0x01, 0x000020, "OnSitePro Leak Detector", None
-    ONSITEPRO_CONTROL_VALVE = 0x09, 0x02, 0x000021, "OnSitePro Control Valve", None
-    ENERGY_INC_TED_5000_SINGLE_PHASE_MEASURING_TRANSMITTING_UNIT_MTU = 0x09, 0x03, 0x000025, "Energy Inc. TED 5000 Single Phase Measuring Transmitting Unit (MTU)", None
-    ENERGY_INC_TED_5000_GATEWAY_USB = 0x09, 0x04, 0x000026, "Energy Inc. TED 5000 Gateway - USB", None
-    ENERGY_INC_TED_5000_GATEWAY_ETHERNET = 0x09, 0x05, 0x00002A, "Energy Inc. TED 5000 Gateway - Ethernet", None
-    ENERGY_INC_TED_3000_THREE_PHASE_MEASURING_TRANSMITTING_UNIT_MTU = 0x09, 0x06, 0x00002B, "Energy Inc. TED 3000 Three Phase Measuring Transmitting Unit (MTU)", None
-
-    # Window Coverings
-    SOMFY_DRAPE_CONTROLLER_RF_BRIDGE = 0x0E, 0x00, 0x00000B, "Somfy Drape Controller RF Bridge", None
-
-    # Access Control
-    WEILAND_DOORS_CENTRAL_DRIVE_AND_CONTROLLER = 0x0F, 0x00, 0x00000E, "Weiland Doors’ Central Drive and Controller", None
-    WEILAND_DOORS_SECONDARY_CENTRAL_DRIVE = 0x0F, 0x01, 0x00000F, "Weiland Doors’ Secondary Central Drive", None
-    WEILAND_DOORS_ASSIST_DRIVE = 0x0F, 0x02, 0x000010, "Weiland Doors’ Assist Drive", None
-    WEILAND_DOORS_ELEVATION_DRIVE = 0x0F, 0x03, 0x000011, "Weiland Doors’ Elevation Drive", None
-
-    # Security, Health, Safety
-    FIRST_ALERT_ONELINK_RF_TO_INSTEON_BRIDGE = 0x10, 0x00, 0x000027, "First Alert ONELink RF to Insteon Bridge", None
-    MOTION_SENSOR = 0x10, 0x01, 0x00004A, "Motion Sensor", "2420M"
-    TRIGGERLINC_INSTEON_OPEN_CLOSE_SENSOR = 0x10, 0x02, 0x000049, "TriggerLinc - INSTEON Open / Close Sensor", "2421"
-
-    def __init__(self, dev_cat, sub_cat, ipk=None, description=None, model=None):
+    def __init__(self, dev_cat, sub_cat, model=None, description=None):
         super().__init__()
 
         self._value_ = (dev_cat, sub_cat)
         self.category = Category(dev_cat)
-        self.ipk = ipk
-        self.description = description
         self.model = model
+        self.description = description
 
     @classmethod
     def _missing_(cls, value):
         for item in cls:
-            if item.value[0] == value:
+            if item.value == value:
                 return item
         obj = object.__new__(cls)
         obj._value_ = value
-        obj.category = Category(value[0])
-        obj.ipk = None
-        obj.description = "Unknown"
+        obj.category = Category.UNASSIGNED
         obj.model = None
+        obj.description = None
         return obj
 
     def __str__(self):
         if self.model:
-            return "%s model: %s" % (self.description, self.model)
-        else:
+            return "%s [%s] %s" % (self.category, self.model, self.description)
+        elif self.description:
             return "%s" % (self.description)
+        else:
+            return "Unknown"
             

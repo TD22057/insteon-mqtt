@@ -29,6 +29,7 @@ class Category(enum.IntEnum):
     TOYS = 0x14
     TIMEKEEPING = 0x15
     HOLIDAY = 0x16
+    UNASSIGNED = 0xFF
 
     @classmethod
     def _missing_(cls, value):
@@ -37,7 +38,7 @@ class Category(enum.IntEnum):
                 return item
         obj = int.__new__(cls)
         obj._value_ = value
-        obj._name_ = "UNKNOWN"
+        obj._name_ = "Unknown"
         return obj
 
     def __str__(self):
