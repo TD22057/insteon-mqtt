@@ -3,6 +3,7 @@
 # MQTT dimmer switch device
 #
 #===========================================================================
+import functools
 from .. import log
 from .. import device as Dev
 from .Dimmer import Dimmer
@@ -102,11 +103,15 @@ class FanLinc(Dimmer):
 
         topic = self.msg_fan_on_off.render_topic(data)
         if topic:
-            link.subscribe(topic, qos, self._input_set_fan_speed)
+            handler = functools.partial(self._input_set_fan_speed,
+                                        is_speed=False)
+            link.subscribe(topic, qos, handler)
 
         topic = self.msg_fan_speed.render_topic(data)
         if topic:
-            link.subscribe(topic, qos, self._input_set_fan_speed)
+            handler = functools.partial(self._input_set_fan_speed,
+                                        is_speed=True)
+            link.subscribe(topic, qos, handler)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
@@ -177,7 +182,7 @@ class FanLinc(Dimmer):
         self.msg_fan_speed_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
-    def _input_set_fan_speed(self, client, data, message):
+    def _input_set_fan_speed(self, client, data, message, is_speed):
         """Handle an input fan speed change MQTT message.
 
         This is called when we receive a message on the fan speed change MQTT
@@ -188,22 +193,29 @@ class FanLinc(Dimmer):
           client (paho.Client):  The paho mqtt client (self.link).
           data:  Optional user data (unused).
           message:  MQTT message - has attrs: topic, payload, qos, retain.
+          is_speed: (bool): True to use the speed template, False to use
+                    the on/off template.
         """
         LOG.info("FanLink fan on/off message %s %s", message.topic,
                  message.payload)
 
-        data = self.msg_fan_on_off.to_json(message.payload)
+        if is_speed:
+            data = self.msg_fan_speed.to_json(message.payload)
+        else:
+            data = self.msg_fan_on_off.to_json(message.payload)
         if not data:
             return
 
         try:
             LOG.info("FanLink fan on/off input command: %s", data)
 
-            # Commands have the same names as the values in the FanLinc.Speed
-            # enumeration so this will work.  It handles on/off for the
-            # fan_on_off topic as well as speeds for the fan_speed topic.
+            # Command will either be on/off or one of the speed enums.  Map
+            # the command to a fan linc enumeration.  Commands have the same
+            # names as the values in the FanLinc.Speed enumeration so this
+            # will work.  It handles on/off for the fan_on_off topic as well
+            # as speeds for the fan_speed topic.
             cmd = data.get('cmd', None)
-            fan_speed = getattr(FanLinc, cmd.upper(), None)
+            fan_speed = getattr(Dev.FanLinc.Speed, cmd.upper(), None)
             if fan_speed is None:
                 raise ValueError("Can't map cmd '%s' to fan mode" % cmd)
 

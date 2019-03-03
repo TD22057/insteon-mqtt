@@ -289,6 +289,64 @@ class Test_FanLinc:
         link.publish(topic, b'asdf', qos, False)
 
 
-    # TODO: input fan speed messages
+    #-----------------------------------------------------------------------
+    def test_input_fan_on_off(self, setup):
+        mdev, link, proto, addr = setup.getAll(['mdev', 'link', 'proto',
+                                                'addr'])
+
+        qos = 2
+        config = {'fan_linc' : {
+            'fan_on_off_topic' : 'foo/{{address}}',
+            'fan_on_off_payload' : ('{ "cmd" : "{{json.yy.lower()}}" }'),
+            'fan_speed_set_topic' : 'bar/{{address}}',
+            'fan_speed_set_payload' : ('{ "cmd" : "{{json.zz.lower()}}" }' )}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        otopic = 'foo/%s' % addr.hex
+        stopic = 'bar/%s' % addr.hex
+
+        payload = b'{ "yy" : "OFF" }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0]['msg'].cmd1 == 0x13
+        proto.clear()
+
+        payload = b'{ "yy" : "on" }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0]['msg'].cmd1 == 0x11
+        assert proto.sent[0]['msg'].cmd2 == int(IM.device.FanLinc.Speed.MEDIUM)
+        proto.clear()
+
+        payload = b'{ "zz" : "LOW" }'
+        link.publish(stopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0]['msg'].cmd1 == 0x11
+        assert proto.sent[0]['msg'].cmd2 == int(IM.device.FanLinc.Speed.LOW)
+        proto.clear()
+
+        payload = b'{ "zz" : "off" }'
+        link.publish(stopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0]['msg'].cmd1 == 0x13
+        proto.clear()
+
+        # test error payload
+        link.publish(otopic, b'asdf', qos, False)
+        link.publish(stopic, b'asdf', qos, False)
+        assert len(proto.sent) == 0
+
+        # test incorrect command
+        payload = b'{ "zz" : "bad" }'
+        link.publish(stopic, payload, qos, retain=False)
+        assert len(proto.sent) == 0
+
+        mdev.unsubscribe(link)
+        assert len(link.client.unsub) == 5
 
 #===========================================================================
