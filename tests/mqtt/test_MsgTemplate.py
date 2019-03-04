@@ -102,4 +102,15 @@ class Test_MsgTemplate:
         right = {"baz" : 3, "boz" : "testing"}
         assert jdata == right
 
+    #-----------------------------------------------------------------------
+    def test_to_json_error(self, caplog):
+        topic_templ = '{ foo = {{foo}}, bar = {{bar}} }'
+        payload_templ = '{ baz = {{json.baz}} // boz = {{json.boz}} }'
+        msg = MsgTemplate(topic_templ, payload_templ)
+
+        jdata = msg.to_json(b'{ "baz" : 3, "boz" : "testing" }')
+        for rec in caplog.records:
+            assert rec.levelname == "ERROR"
+        assert jdata is None
+
 #===========================================================================

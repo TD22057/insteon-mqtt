@@ -25,6 +25,8 @@ class Data (dict):
 class MockModem:
     # Use the 'tmpdir' fixture and pass that to this constructor.
     def __init__(self, save_path):
+        self.name = "modem"
+        self.addr = IM.Address(0x20, 0x30, 0x40)
         self.save_path = str(save_path)
 
 #===========================================================================
