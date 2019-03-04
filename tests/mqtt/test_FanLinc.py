@@ -148,29 +148,37 @@ class Test_FanLinc:
             qos=0, retain=True)
         link.client.clear()
 
-        # TODO: send a fan speed message
+        # Send a fan speed signal
+        dev.signal_fan_speed.emit(dev, dev.Speed.MEDIUM)
+        dev.signal_fan_speed.emit(dev, dev.Speed.OFF)
+        assert link.client.pub[0] == dict(
+            topic='%s/fan/state' % topic,
+            payload='medium', qos=0, retain=True)
+        assert link.client.pub[1] == dict(
+            topic='%s/fan/state' % topic,
+            payload='off', qos=0, retain=True)
 
     #-----------------------------------------------------------------------
     def test_config(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
 
-        config = {'dimmer' : {
-            'state_topic' : 'foo/{{address}}',
-            'state_payload' : '{{on}} {{level_255}}',
-            'manual_state_topic' : 'bar/{{address}}',
-            'manual_state_payload' : '{{manual}} {{manual_str.upper()}}',
-            },
-                  'fan_linc' : {
-            'fan_state_topic' : 'fan/on/{{address}}',
-            'fan_state_payload' : '{{on}} {{level_str}}',
-            'fan_speed_topic' : 'fan/speed/{{address}}',
-            'fan_speed_payload' : '{{level}} {{level_str}}',
-            }}
+        config = {
+            'dimmer' : {
+                'state_topic' : 'foo/{{address}}',
+                'state_payload' : '{{on}} {{level_255}}',
+                'manual_state_topic' : 'bar/{{address}}',
+                'manual_state_payload' : '{{manual}} {{manual_str.upper()}}',
+                },
+            'fan_linc' : {
+                'fan_state_topic' : 'fan/on/{{address}}',
+                'fan_state_payload' : '{{on}} {{level_str}}',
+                'fan_speed_topic' : 'fan/speed/{{address}}',
+                'fan_speed_payload' : '{{level}} {{level_str}}',
+                }}
         qos = 3
         mdev.load_config(config, qos)
 
         ltopic = "foo/%s" % setup['addr'].hex
-        mtopic = "bar/%s" % setup['addr'].hex
         ftopic = "fan/on/%s" % setup['addr'].hex
         stopic = "fan/speed/%s" % setup['addr'].hex
 
@@ -299,7 +307,7 @@ class Test_FanLinc:
             'fan_on_off_topic' : 'foo/{{address}}',
             'fan_on_off_payload' : ('{ "cmd" : "{{json.yy.lower()}}" }'),
             'fan_speed_set_topic' : 'bar/{{address}}',
-            'fan_speed_set_payload' : ('{ "cmd" : "{{json.zz.lower()}}" }' )}}
+            'fan_speed_set_payload' : ('{ "cmd" : "{{json.zz.lower()}}" }')}}
         mdev.load_config(config, qos=qos)
 
         mdev.subscribe(link, qos)
