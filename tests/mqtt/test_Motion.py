@@ -162,4 +162,55 @@ class Test_Motion:
             topic=dtopic, payload='1 0', qos=qos, retain=True)
         link.client.clear()
 
+    #-----------------------------------------------------------------------
+    def test_old_config(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+
+        config = {
+            'motion' : {
+                'dawn_dusk_topic' : 'baz/{{address}}',
+                'dawn_dusk_payload' : '{{is_dawn}} {{is_dusk}}',
+                'state_topic' : 'foo/{{address}}',
+                'state_payload' : '{{on}} {{on_str.upper()}}',
+                'low_battery_topic' : 'bar/{{address}}',
+                'low_battery_payload' : '{{is_low}} {{is_low_str.upper()}}'
+                }
+            }
+        qos = 3
+        mdev.load_config(config, qos)
+
+        stopic = "foo/%s" % setup['addr'].hex
+        btopic = "bar/%s" % setup['addr'].hex
+        dtopic = "baz/%s" % setup['addr'].hex
+
+        # Send an on/off signal
+        dev.signal_on_off.emit(dev, True)
+        dev.signal_on_off.emit(dev, False)
+        assert len(link.client.pub) == 2
+        assert link.client.pub[0] == dict(
+            topic=stopic, payload='1 ON', qos=qos, retain=True)
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='0 OFF', qos=qos, retain=True)
+        link.client.clear()
+
+        # Send a low battery signal
+        dev.signal_low_battery.emit(dev, False)
+        dev.signal_low_battery.emit(dev, True)
+        assert len(link.client.pub) == 2
+        assert link.client.pub[0] == dict(
+            topic=btopic, payload='0 OFF', qos=qos, retain=True)
+        assert link.client.pub[1] == dict(
+            topic=btopic, payload='1 ON', qos=qos, retain=True)
+        link.client.clear()
+
+        # Send a dawn/dusk battery signal
+        dev.signal_dawn.emit(dev, False)
+        dev.signal_dawn.emit(dev, True)
+        assert len(link.client.pub) == 2
+        assert link.client.pub[0] == dict(
+            topic=dtopic, payload='0 1', qos=qos, retain=True)
+        assert link.client.pub[1] == dict(
+            topic=dtopic, payload='1 0', qos=qos, retain=True)
+        link.client.clear()
+
 #===========================================================================

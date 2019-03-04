@@ -365,7 +365,8 @@ mqtt:
   # inputs from battery_sensor and some sensors add an addition
   # dawn/dusk notification which is configured here.
   #
-  # In Home Assistant use MQTT binary sensor with a configuration like:
+  # To register the dawn/dusk signa in  Home Assistant use MQTT binary
+  # sensor with a configuration like:
   #   binary_sensor:
   #     - platform: mqtt
   #       state_topic: 'insteon/aa.bb.cc/dawn'
