@@ -18,6 +18,7 @@ import helpers
 # correct test pattern is to always use the actual classes that A depends on
 # and mock the classees that those dependencies depend on.
 
+
 # Create our MQTT object to test as well as the linked Insteon object and a
 # mocked MQTT client to publish to.
 @pytest.fixture
@@ -35,6 +36,7 @@ def setup(mock_paho_mqtt, tmpdir):
 
     return helpers.Data(addr=addr, name=name, dev=dev, mdev=mdev, link=link,
                         proto=proto)
+
 
 #===========================================================================
 class Test_FanLinc:
@@ -125,7 +127,6 @@ class Test_FanLinc:
                  "level" : 3, "level_str" : 'high'}
         assert data == right
 
-
     #-----------------------------------------------------------------------
     def test_mqtt(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
@@ -208,7 +209,6 @@ class Test_FanLinc:
         assert link.client.pub[1] == dict(
             topic=stopic, payload='0 off', qos=qos, retain=True)
         link.client.clear()
-
 
     #-----------------------------------------------------------------------
     def test_input_on_off(self, setup):
@@ -295,7 +295,6 @@ class Test_FanLinc:
 
         # test error payload
         link.publish(topic, b'asdf', qos, False)
-
 
     #-----------------------------------------------------------------------
     def test_input_fan_on_off(self, setup):

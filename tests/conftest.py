@@ -11,7 +11,8 @@ import pytest
 # Add the helpers dir to the python path so tests can easily import the
 # helpers module which contains common test code.
 sys.path.append(os.path.join(os.path.dirname(__file__), 'util'))
-import helpers
+import helpers  # noqa: E402
+
 
 #===========================================================================
 #

@@ -7,6 +7,7 @@
 import pytest
 import insteon_mqtt as IM
 
+
 #===========================================================================
 def test_is_valid():
     for cmd in IM.on_off._cmdMap:

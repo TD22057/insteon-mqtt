@@ -14,8 +14,8 @@ class Test_Timed:
         obj = IM.message.Timed("msg", "handler", False, t0)
 
         assert obj.is_active(t0) is True
-        assert obj.is_active(t0+0.1) is True
-        assert obj.is_active(t0-0.1) is False
+        assert obj.is_active(t0 + 0.1) is True
+        assert obj.is_active(t0 - 0.1) is False
 
     #-----------------------------------------------------------------------
     def test_send(self):

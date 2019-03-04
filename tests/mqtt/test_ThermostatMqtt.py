@@ -9,6 +9,7 @@ import insteon_mqtt as IM
 from insteon_mqtt.Signal import Signal
 from insteon_mqtt.mqtt.MsgTemplate import MsgTemplate
 
+
 class Test_ThermostatMqtt:
     def test_basic(self):
         mqtt = MockMqtt()
@@ -127,7 +128,8 @@ class Test_ThermostatMqtt:
         # temp sent in both should default to F
         thermo.heat_sp_command = MsgTemplate(
             topic='insteon/{{address}}/heat_sp_command',
-            payload='{ "temp_c" : {{json.temp_c}}, "temp_f" : {{json.temp_f}} }',
+            payload=('{ "temp_c" : {{json.temp_c}}, '
+                     '"temp_f" : {{json.temp_f}} }'),
             )
         message = MockMessage(
             topic='insteon/01.02.03/heat_sp_command',
@@ -159,7 +161,8 @@ class Test_ThermostatMqtt:
         # temp sent in both should default to F
         thermo.cool_sp_command = MsgTemplate(
             topic='insteon/{{address}}/cool_sp_command',
-            payload='{ "temp_c" : {{json.temp_c}}, "temp_f" : {{json.temp_f}} }',
+            payload=('{ "temp_c" : {{json.temp_c}}, '
+                     '"temp_f" : {{json.temp_f}} }'),
             )
         message = MockMessage(
             topic='insteon/01.02.03/cool_sp_command',
@@ -222,9 +225,9 @@ class MockDevice:
         self.signal_cool_sp_change = Signal()  # emit(device, Int cool_sp in c)
         self.signal_heat_sp_change = Signal()  # emit(device, Int heat_sp in c)
         self.signal_ambient_humid_change = Signal()  # emit(device, Int humid)
-        self.signal_status_change = Signal() #emit(device, Str status)
-        self.signal_hold_change = Signal() #emit(device, bool)
-        self.signal_energy_change = Signal() #emit(device, bool)
+        self.signal_status_change = Signal()  # emit(device, Str status)
+        self.signal_hold_change = Signal()  # emit(device, bool)
+        self.signal_energy_change = Signal()   # emit(device, bool)
 
     def mode_command(self, mode_member):
         self.mode = mode_member

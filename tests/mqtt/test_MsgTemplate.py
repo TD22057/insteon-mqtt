@@ -7,6 +7,7 @@ import helpers
 import insteon_mqtt as IM
 from insteon_mqtt.mqtt import MsgTemplate
 
+
 class Test_MsgTemplate:
     #-----------------------------------------------------------------------
     def test_clean(self):

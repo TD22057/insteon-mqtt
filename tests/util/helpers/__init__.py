@@ -3,8 +3,8 @@
 # Common code test helpers.  These are common classes used by multiple tests.
 #
 #===========================================================================
-import pytest
 import insteon_mqtt as IM
+
 
 #===========================================================================
 class Data (dict):
@@ -20,6 +20,7 @@ class Data (dict):
             return self[name]
         return dict.__getattribute__(self, name)
 
+
 #===========================================================================
 # Modem class
 class MockModem:
@@ -28,6 +29,7 @@ class MockModem:
         self.name = "modem"
         self.addr = IM.Address(0x20, 0x30, 0x40)
         self.save_path = str(save_path)
+
 
 #===========================================================================
 # Protocol class
@@ -45,10 +47,12 @@ class MockProtocol:
     def add_handler(self, handler):
         pass
 
+
 #===========================================================================
 # network/Mqtt class
 class MockNetwork_Mqtt:
     signal_connected = IM.Signal()
+
     def __init__(self):
         self.pub = []
         self.sub = []

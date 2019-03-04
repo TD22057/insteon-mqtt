@@ -6,6 +6,7 @@
 import insteon_mqtt as IM
 import helpers
 
+
 class Test_config:
     #-----------------------------------------------------------------------
     def test_find(self, tmpdir):
