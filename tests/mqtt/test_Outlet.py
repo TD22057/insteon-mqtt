@@ -90,7 +90,7 @@ class Test_Outlet:
     #-----------------------------------------------------------------------
     def test_mqtt(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
-        topic = "insteon/%s" % setup['addr'].hex
+        topic = "insteon/%s" % setup.addr.hex
 
         # Should do nothing
         mdev.load_config({})
@@ -115,7 +115,7 @@ class Test_Outlet:
         qos = 3
         mdev.load_config(config, qos)
 
-        stopic = "foo/%s" % setup['addr'].hex
+        stopic = "foo/%s" % setup.addr.hex
 
         # Send an on/off signal
         dev.signal_on_off.emit(dev, 1, True)
@@ -140,24 +140,24 @@ class Test_Outlet:
         mdev.load_config(config, qos=qos)
 
         mdev.subscribe(link, qos)
-        topic1 = link.client.sub[0]['topic']
-        topic2 = link.client.sub[2]['topic']
+        topic1 = link.client.sub[0].topic
+        topic2 = link.client.sub[2].topic
 
         payload = b'{ "on" : "OFF", "mode" : "NORMAL" }'
         link.publish(topic1, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
         # group 1 = standard, group 2 = extended
-        assert proto.sent[0]['msg'].cmd1 == 0x13
-        assert isinstance(proto.sent[0]['msg'], IM.message.OutStandard)
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert isinstance(proto.sent[0].msg, IM.message.OutStandard)
         proto.clear()
 
         payload = b'{ "on" : "ON", "mode" : "FAST" }'
         link.publish(topic2, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x12
-        assert isinstance(proto.sent[0]['msg'], IM.message.OutExtended)
+        assert proto.sent[0].msg.cmd1 == 0x12
+        assert isinstance(proto.sent[0].msg, IM.message.OutExtended)
         proto.clear()
 
         # test error payload
@@ -174,22 +174,22 @@ class Test_Outlet:
         mdev.load_config(config, qos=qos)
 
         mdev.subscribe(link, qos)
-        topic = link.client.sub[1]['topic']
+        topic = link.client.sub[1].topic
 
         payload = b'{ "on" : "OFF" }'
         link.publish(topic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x30
-        assert proto.sent[0]['msg'].data[3] == 0x13
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x13
         proto.clear()
 
         payload = b'{ "on" : "ON" }'
         link.publish(topic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x30
-        assert proto.sent[0]['msg'].data[3] == 0x11
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x11
         proto.clear()
 
         # test error payload

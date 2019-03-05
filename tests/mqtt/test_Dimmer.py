@@ -94,7 +94,7 @@ class Test_Dimmer:
     #-----------------------------------------------------------------------
     def test_mqtt(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
-        topic = "insteon/%s" % setup['addr'].hex
+        topic = "insteon/%s" % setup.addr.hex
 
         # Should do nothing
         mdev.load_config({})
@@ -130,8 +130,8 @@ class Test_Dimmer:
         qos = 3
         mdev.load_config(config, qos)
 
-        ltopic = "foo/%s" % setup['addr'].hex
-        mtopic = "bar/%s" % setup['addr'].hex
+        ltopic = "foo/%s" % setup.addr.hex
+        mtopic = "bar/%s" % setup.addr.hex
 
         # Send a level signal
         dev.signal_level_changed.emit(dev, 0xff)
@@ -169,38 +169,38 @@ class Test_Dimmer:
         mdev.load_config(config, qos=qos)
 
         mdev.subscribe(link, qos)
-        otopic = link.client.sub[0]['topic']
-        ltopic = link.client.sub[1]['topic']
+        otopic = link.client.sub[0].topic
+        ltopic = link.client.sub[1].topic
 
         payload = b'{ "on" : "OFF", "mode" : "NORMAL" }'
         link.publish(otopic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x13
+        assert proto.sent[0].msg.cmd1 == 0x13
         proto.clear()
 
         payload = b'{ "on" : "ON", "mode" : "FAST" }'
         link.publish(otopic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x12
-        assert proto.sent[0]['msg'].cmd2 == 0xff
+        assert proto.sent[0].msg.cmd1 == 0x12
+        assert proto.sent[0].msg.cmd2 == 0xff
         proto.clear()
 
         payload = b'{ "on" : "OFF", "mode" : "NORMAL", "level" : 0 }'
         link.publish(ltopic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x13
-        assert proto.sent[0]['msg'].cmd2 == 0x00
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert proto.sent[0].msg.cmd2 == 0x00
         proto.clear()
 
         payload = b'{ "on" : "ON", "mode" : "FAST", "level" : 67 }'
         link.publish(ltopic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x12
-        assert proto.sent[0]['msg'].cmd2 == 0x43
+        assert proto.sent[0].msg.cmd1 == 0x12
+        assert proto.sent[0].msg.cmd2 == 0x43
         proto.clear()
 
         # test error payload
@@ -218,22 +218,22 @@ class Test_Dimmer:
         mdev.load_config(config, qos=qos)
 
         mdev.subscribe(link, qos)
-        topic = link.client.sub[2]['topic']
+        topic = link.client.sub[2].topic
 
         payload = b'{ "on" : "OFF" }'
         link.publish(topic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x30
-        assert proto.sent[0]['msg'].data[3] == 0x13
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x13
         proto.clear()
 
         payload = b'{ "on" : "ON" }'
         link.publish(topic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x30
-        assert proto.sent[0]['msg'].data[3] == 0x11
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x11
         proto.clear()
 
         # test error payload

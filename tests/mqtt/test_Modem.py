@@ -79,16 +79,16 @@ class Test_Modem:
         link.publish(topic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x13
-        assert proto.sent[0]['msg'].group == 5
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert proto.sent[0].msg.group == 5
         proto.clear()
 
         payload = b'{ "run" : "ON", "grp" : 10 }'
         link.publish(topic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x11
-        assert proto.sent[0]['msg'].group == 10
+        assert proto.sent[0].msg.cmd1 == 0x11
+        assert proto.sent[0].msg.group == 10
         proto.clear()
 
         # test error payload

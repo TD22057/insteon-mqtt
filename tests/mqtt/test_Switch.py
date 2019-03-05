@@ -88,7 +88,7 @@ class Test_Switch:
     #-----------------------------------------------------------------------
     def test_mqtt(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
-        topic = "insteon/%s" % setup['addr'].hex
+        topic = "insteon/%s" % setup.addr.hex
 
         # Should do nothing
         mdev.load_config({})
@@ -120,8 +120,8 @@ class Test_Switch:
         qos = 3
         mdev.load_config(config, qos)
 
-        stopic = "foo/%s" % setup['addr'].hex
-        mtopic = "bar/%s" % setup['addr'].hex
+        stopic = "foo/%s" % setup.addr.hex
+        mtopic = "bar/%s" % setup.addr.hex
 
         # Send an on/off signal
         dev.signal_on_off.emit(dev, True)
@@ -155,20 +155,20 @@ class Test_Switch:
         mdev.load_config(config, qos=qos)
 
         mdev.subscribe(link, qos)
-        topic = link.client.sub[0]['topic']
+        topic = link.client.sub[0].topic
 
         payload = b'{ "on" : "OFF", "mode" : "NORMAL" }'
         link.publish(topic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x13
+        assert proto.sent[0].msg.cmd1 == 0x13
         proto.clear()
 
         payload = b'{ "on" : "ON", "mode" : "FAST" }'
         link.publish(topic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x12
+        assert proto.sent[0].msg.cmd1 == 0x12
         proto.clear()
 
         # test error payload
@@ -185,22 +185,22 @@ class Test_Switch:
         mdev.load_config(config, qos=qos)
 
         mdev.subscribe(link, qos)
-        topic = link.client.sub[1]['topic']
+        topic = link.client.sub[1].topic
 
         payload = b'{ "on" : "OFF" }'
         link.publish(topic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x30
-        assert proto.sent[0]['msg'].data[3] == 0x13
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x13
         proto.clear()
 
         payload = b'{ "on" : "ON" }'
         link.publish(topic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x30
-        assert proto.sent[0]['msg'].data[3] == 0x11
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x11
         proto.clear()
 
         # test error payload

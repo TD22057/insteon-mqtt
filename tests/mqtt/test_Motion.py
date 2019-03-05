@@ -86,7 +86,7 @@ class Test_Motion:
     def test_mqtt(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
 
-        topic = "insteon/%s" % setup['addr'].hex
+        topic = "insteon/%s" % setup.addr.hex
 
         # Should do nothing
         mdev.load_config({})
@@ -130,9 +130,9 @@ class Test_Motion:
         qos = 3
         mdev.load_config(config, qos)
 
-        stopic = "foo/%s" % setup['addr'].hex
-        btopic = "bar/%s" % setup['addr'].hex
-        dtopic = "baz/%s" % setup['addr'].hex
+        stopic = "foo/%s" % setup.addr.hex
+        btopic = "bar/%s" % setup.addr.hex
+        dtopic = "baz/%s" % setup.addr.hex
 
         # Send an on/off signal
         dev.signal_on_off.emit(dev, True)
@@ -181,9 +181,9 @@ class Test_Motion:
         qos = 3
         mdev.load_config(config, qos)
 
-        stopic = "foo/%s" % setup['addr'].hex
-        btopic = "bar/%s" % setup['addr'].hex
-        dtopic = "baz/%s" % setup['addr'].hex
+        stopic = "foo/%s" % setup.addr.hex
+        btopic = "bar/%s" % setup.addr.hex
+        dtopic = "baz/%s" % setup.addr.hex
 
         # Send an on/off signal
         dev.signal_on_off.emit(dev, True)
