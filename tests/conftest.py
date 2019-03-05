@@ -11,7 +11,7 @@ import pytest
 # Add the helpers dir to the python path so tests can easily import the
 # helpers module which contains common test code.
 sys.path.append(os.path.join(os.path.dirname(__file__), 'util'))
-import helpers  # noqa: E402
+import helpers as H  # noqa: E402
 
 
 #===========================================================================
@@ -30,7 +30,7 @@ def mock_paho_mqtt():
     # Monkey patch paho.mqtt.Client to return self when constructed
     import paho.mqtt.client
     save = paho.mqtt.client.Client
-    paho.mqtt.client.Client = helpers.MockNetwork_MqttClient
+    paho.mqtt.client.Client = H.network.MockMqttClient
     yield
 
     # Code that runs after the test is done - restore the paho module to it's

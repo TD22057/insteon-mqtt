@@ -6,7 +6,7 @@
 #===========================================================================
 import pytest
 import insteon_mqtt as IM
-import helpers
+import helpers as H
 
 # NOTE about mocking: Don't mock classes directly being used by the class
 # being tested.  If we do that, then we're not testing whether the class
@@ -23,7 +23,7 @@ import helpers
 # mocked MQTT client to publish to.
 @pytest.fixture
 def setup(mock_paho_mqtt, tmpdir):
-    proto = helpers.MockProtocol()
+    proto = H.main.MockProtocol()
     modem = IM.Modem(proto)
     modem.name = "modem"
     modem.addr = IM.Address(0x20, 0x30, 0x40)
@@ -32,7 +32,7 @@ def setup(mock_paho_mqtt, tmpdir):
     mqtt = IM.mqtt.Mqtt(link, modem)
     mdev = IM.mqtt.Modem(mqtt, modem)
 
-    return helpers.Data(addr=modem.addr, name=modem.name, link=link,
+    return H.Data(addr=modem.addr, name=modem.name, link=link,
                         mdev=mdev, proto=proto)
 
 
