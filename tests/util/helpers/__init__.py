@@ -29,6 +29,10 @@ class MockModem:
         self.name = "modem"
         self.addr = IM.Address(0x20, 0x30, 0x40)
         self.save_path = str(save_path)
+        self.scenes = []
+
+    def scene(self, is_on, group, num_retry=3, on_done=None):
+        self.scenes.append((is_on, group))
 
 
 #===========================================================================
