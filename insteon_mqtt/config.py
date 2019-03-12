@@ -9,7 +9,7 @@ __doc__ = """Configuration file utilties
 
 #===========================================================================
 import os.path
-import yaml
+from ruamel.yaml import YAML
 from . import device
 
 # Configuration file input description to class map.
@@ -32,6 +32,7 @@ devices = {
     'thermostat' : (device.Thermostat, {}),
     }
 
+base_config_dir = "" # base directory of config files
 
 #===========================================================================
 def load(path):
@@ -43,8 +44,12 @@ def load(path):
     Returns:
       dict: Returns the configuration dictionary.
     """
+    global base_config_dir
+    base_config_dir = os.path.dirname(os.path.abspath(path))
     with open(path, "r") as f:
-        return yaml.load(f, Loader)
+        yaml=YAML(typ='safe', pure=True)
+        yaml.Constructor.add_constructor("!include", include)
+        return yaml.load(f)
 
 
 #===========================================================================
@@ -86,58 +91,10 @@ def find(name):
 
     return dev
 
-
 #===========================================================================
-# YAML multi-file loading helper.  Original code is from here:
-# https://davidchall.github.io/yaml-includes.html (with no license so I'm
-# assuming it's in the public domain).
-class Loader(yaml.Loader):
-    def __init__(self, file):
-        """Constructor
-
-        Args:
-          file (file):  File like object to read from.
-        """
-        yaml.Loader.add_constructor('!include', Loader.include)
-
-        super().__init__(file)
-        self._base_dir = os.path.split(file.name)[0]
-
-    #-----------------------------------------------------------------------
-    def include(self, node):
-        """!include file command.  Supports:
-
-        foo: !include file.yaml
-        foo: !include [file1.yaml, file2.yaml]
-
-        Args:
-          node:  The YAML node to load.
-        """
-        # input is a single file to load.
-        if isinstance(node, yaml.ScalarNode):
-            include_file = self.construct_scalar(node)
-            return self._load_file(include_file)
-
-        # input is a list of files to load.
-        elif isinstance(node, yaml.SequenceNode):
-            result = []
-            for include_file in self.construct_sequence(node):
-                result += self._load_file(include_file)
-            return result
-
-        else:
-            msg = ("Error: unrecognized node type in !include statement: %s"
-                   % str(node))
-            raise yaml.constructor.ConstructorError(msg)
-
-    #-----------------------------------------------------------------------
-    def _load_file(self, filename):
-        """Read the requested file.
-        Args:
-          filename (str):  The file name to load.
-        """
-        path = os.path.join(self._base_dir, filename)
-        with open(path, 'r') as f:
-            return yaml.load(f, Loader)
-
-#===========================================================================
+def include(loader, node):
+    y = loader.loader
+    yaml = YAML(typ=y.typ, pure=y.pure)
+    yaml.composer.anchors = loader.composer.anchors
+    with open(os.path.join(base_config_dir, node.value), "r") as f:
+        return yaml.load(f)
