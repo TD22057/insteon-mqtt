@@ -13,9 +13,10 @@ ignore=CVS
 # regex matches against base names, not paths.
 ignore-patterns=
 
-# Python code to execute, usually for sys.path manipulation such as
-# pygtk.require().
-#init-hook=
+# Python code to execute, usually for sys.path manipulation.
+# Add in the test/util package so tests can import helpers and pylint won't
+# complain.
+init-hook='import sys; sys.path.append("tests/util")'
 
 # Use multiple processes to speed up Pylint.
 jobs=1
@@ -50,7 +51,7 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=invalid-name, no-self-use, redefined-builtin, too-many-boolean-expressions, missing-docstring, unused-argument, bare-except, too-many-instance-attributes, len-as-condition, too-few-public-methods, too-many-arguments, no-else-return, duplicate-code, consider-using-enumerate, too-many-function-args, too-many-ancestors, too-many-public-methods
+disable=invalid-name, no-self-use, redefined-builtin, too-many-boolean-expressions, missing-docstring, unused-argument, bare-except, too-many-instance-attributes, len-as-condition, too-few-public-methods, too-many-arguments, no-else-return, duplicate-code, consider-using-enumerate, too-many-function-args, too-many-ancestors, too-many-public-methods, chained-comparison, too-many-return-statements, too-many-locals, unnecessary-pass, too-many-statements
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

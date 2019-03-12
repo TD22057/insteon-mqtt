@@ -5,6 +5,7 @@
 #===========================================================================
 from ..CommandSeq import CommandSeq
 from .. import log
+from .. import on_off
 from ..Signal import Signal
 from .Base import Base
 
@@ -12,65 +13,55 @@ LOG = log.get_logger()
 
 
 class Remote(Base):
-    """Insteon multi-button mini-remote device.
+    """Insteon multi-button battery powered mini-remote device.
 
-    TODO: docs
+    This class can be used for 4, 6 or 8 (really any number) of battery
+    powered button remote controls.
 
-    Sample configuration input:
+    The issue with a battery powered remotes is that we can't download the
+    link database without the remote being on.  You can trigger the remote
+    manually and then quickly send an MQTT command with the payload 'getdb'
+    to download the database.  We also can't test to see if the local
+    database is current or what the current motion state is - we can really
+    only respond to the remote when it sends out a message.
 
-        insteon:
-          devices:
-            - mini_remote4:
-              name: "Remote A"
-              address: 44.a3.79
+    State changes are communicated by emitting signals.  Other classes can
+    connect to these signals to perform an action when a change is made to
+    the device (like sending MQTT messages).  Supported signals are:
 
-            - mini_remote8:
-              name: "Remote B"
-              address: 44.a3.80
+    - signal_pressed( Device, int group, bool is_on, on_off.Mode mode ):
+      Sent whenever a button is pressed.  The remote will toggle on and off
+      with each button press.
 
-    The issue with a battery powered remotes is that we can't download
-    the link database without the remote being on.  You can trigger
-    the remote manually and then quickly send an MQTT command with the
-    payload 'getdb' to download the database.  We also can't test to
-    see if the local database is current or what the current motion
-    state is - we can really only respond to the remote when it sends
-    out a message.
-
-    The Signal Switch.signal_active will be emitted whenever
-    the device button is pushed.
-
-    The run_command() method is used for arbitrary remote commanding
-    (via MQTT for example).  The input is a dict (or keyword args)
-    containing a 'cmd' key with the value as the command name and any
-    additional arguments needed for the command as other key/value
-    pairs. Valid commands for all devices are:
-
-       getdb:    No arguments.  Download the PLM modem all link database
-                 and save it to file.
-       refresh:  No arguments.  Ping the device to get the current state and
-                 see if the database is current.  Reloads the modem database
-                 if needed.  This will emit the current state as a signal.
+    - signal_manual( Device, int group, on_off.Manual mode ): Sent when the
+      device starts or stops manual mode (when a button is held down or
+      released).
     """
-
-    on_codes = [0x11, 0x12, 0x21, 0x23]  # on, fast on, instant on, manual on
-    off_codes = [0x13, 0x14, 0x22]  # off, fast off, instant off
-
     def __init__(self, protocol, modem, address, name, num_button):
         """Constructor
 
         Args:
-          protocol:    (Protocol) The Protocol object used to communicate
-                       with the Insteon network.  This is needed to allow
-                       the device to send messages to the PLM modem.
-          modem:       (Modem) The Insteon modem used to find other devices.
-          address:     (Address) The address of the device.
-          name         (str) Nice alias name to use for the device.
-          num_button:  (int) Number of buttons on the remote.
+          protocol (Protocol):  The Protocol object used to communicate
+                   with the Insteon network.  This is needed to allow the
+                   device to send messages to the PLM modem.
+          modem (Modem):  The Insteon modem used to find other devices.
+          address (Address):  The address of the device.
+          name (str):  Nice alias name to use for the device.
+          num_button (int):  Number of buttons on the remote.
         """
+        assert num_button > 0
         super().__init__(protocol, modem, address, name)
-        self.num = num_button
 
-        self.signal_pressed = Signal()  # (Device, int group, bool on)
+        self.num = num_button
+        self.type_name = "mini_remote_%d" % self.num
+
+        # Button pressed signal.
+        # API: func(Device, int group, bool on, on_off.Mode mode)
+        self.signal_pressed = Signal()
+
+        # Manual mode start up, down, off
+        # API: func(Device, int group, on_off.Manual mode)
+        self.signal_manual = Signal()
 
     #-----------------------------------------------------------------------
     def pair(self, on_done=None):
@@ -84,8 +75,12 @@ class Remote(Base):
         on the modem, then set on the device) so we can update it's
         database.
 
-        NOTE: The remote code assumes the remote buttons are using
-        groups 1...num (as set in the constructor).
+        NOTE: The remote code assumes the remote buttons are using groups
+        1...num (as set in the constructor).
+
+        Args:
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Remote %s pairing", self.addr)
 
@@ -121,61 +116,51 @@ class Remote(Base):
     def handle_broadcast(self, msg):
         """Handle broadcast messages from this device.
 
+        This is called automatically by the system (via handle.Broadcast)
+        when we receive a message from the device.
+
         The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update
-        the device state and look up the group in the all link
-        database.  For each device that is in the group (as a
-        reponsder), we'll call handle_group_cmd() on that device to
-        trigger it.  This way all the devices in the group are updated
-        to the correct values when we see the broadcast message.
+        triggered.  The message has the group ID in it.  We'll update the
+        device state and look up the group in the all link database.  For
+        each device that is in the group (as a reponsder), we'll call
+        handle_group_cmd() on that device to trigger it.  This way all the
+        devices in the group are updated to the correct values when we see
+        the broadcast message.
 
         Args:
-          msg:   (InptStandard) Broadcast message from the device.
+          msg (InpStandard):  Broadcast message from the device.
         """
-        is_on = None
-        cmd = msg.cmd1
-
         # ACK of the broadcast - ignore this.
-        if cmd == 0x06:
+        if msg.cmd1 == 0x06:
             LOG.info("Remote %s broadcast ACK grp: %s", self.addr, msg.group)
             return
 
-        # On command.  0x11: on, 0x12: on fast
-        elif cmd in Remote.on_codes:
-            LOG.info("Remote %s broadcast ON grp: %s", self.addr, msg.group)
-            is_on = True
+        # On/off command codes.
+        elif on_off.Mode.is_valid(msg.cmd1):
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
+            LOG.info("Remote %s broadcast grp: %s on: %s mode: %s", self.addr,
+                     msg.group, is_on, mode)
 
-        # Off command. 0x13: off, 0x14: off fast
-        elif cmd in Remote.off_codes:
-            LOG.info("Remote %s broadcast OFF grp: %s", self.addr, msg.group)
-            is_on = False
+            # Notify others that the button was pressed.
+            self.signal_pressed.emit(self, msg.group, is_on, mode)
 
-        # Starting manual increment (cmd2 0x00=up, 0x01=down)
-        elif cmd == 0x17:
-            # This is kind of arbitrary - but if the button is held
-            # down we'll emit an on signal if it's dimming up and an
-            # off signal if it's dimming down.
-            is_on = msg.cmd2 == 0x00  # on = up, off = down
+        # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
+        elif on_off.Manual.is_valid(msg.cmd1):
+            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
+            LOG.info("Remote %s manual change group: %s %s", self.addr,
+                     msg.group, manual)
 
-        # Stopping manual increment (cmd2 = unused)
-        elif cmd == 0x18:
-            # Nothing to do - the remote has no state to query about.
-            pass
+            self.signal_manual.emit(self, msg.group, manual)
 
-        # Notify others that the button was pressed.
-        if is_on is not None:
-            self.signal_pressed.emit(self, msg.group, is_on)
-
-        # This will find all the devices we're the controller of for
-        # this group and call their handle_group_cmd() methods to
-        # update their states since they will have seen the group
-        # broadcast and updated (without sending anything out).
+        # This will find all the devices we're the controller of for this
+        # group and call their handle_group_cmd() methods to update their
+        # states since they will have seen the group broadcast and updated
+        # (without sending anything out).
         super().handle_broadcast(msg)
 
-        # Since we just saw a message got by, yse this opportunity to
-        # get the device db since we know the sensor is awake.  This
-        # doesn't always work - but it works enough times to be useful
-        # (probably?).
+        # If we haven't downloaded the device db yet, use this opportunity to
+        # get the device db since we know the sensor is awake.  This doesn't
+        # always seem to work, but it works often enough to be useful to try.
         if len(self.db) == 0:
             LOG.info("Remote %s awake - requesting database", self.addr)
             self.refresh(force=True)

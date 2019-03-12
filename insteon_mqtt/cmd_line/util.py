@@ -24,7 +24,8 @@ def send(config, topic, payload, quiet=False):
                 connection information is read from this.
       topic:    (str) The MQTT topic string.
       payload:  (dict) Message payload dictionary.  Will be converted to json.
-      quiet:    (bool) True to not print any of the reply messages.
+      quiet:    0: show all messages.  1: show no messages.  2: show only
+                the reply messages.
 
     Returns:
       Returns the session reply object.  This is a dict with the results of the
@@ -34,7 +35,7 @@ def send(config, topic, payload, quiet=False):
         "result" : None,
         "done" : False,
         "status" : 0,  # 0 == success
-        "quiet" : quiet,
+        "quiet" : int(quiet),
         }
 
     client = mqtt.Client(userdata=session)
@@ -91,7 +92,7 @@ def callback(client, session, message):
 
     # Extract the message reply object.
     msg = message.payload.decode("utf-8")
-    reply = Reply.from_json(json.loads(msg))
+    reply = Reply.from_json(msg)
 
     # If the command finished, update the session tag to show that.
     if reply.type == Reply.Type.END:
@@ -99,12 +100,13 @@ def callback(client, session, message):
 
     # Print messages to the screen.
     elif reply.type == Reply.Type.MESSAGE:
-        if not quiet:
+        # quiet = 0 or 2: show messages
+        if quiet != 1:
             print(reply.data)
 
     elif reply.type == Reply.Type.ERROR:
         session["status"] = -1
-        if not quiet:
+        if quiet != 1:
             print('ERROR:', reply.data)
 
 

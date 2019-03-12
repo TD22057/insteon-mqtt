@@ -19,6 +19,17 @@ def linking(args, config):
 
 
 #===========================================================================
+def join(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "join",
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
 def set_button_led(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
@@ -73,6 +84,17 @@ def get_engine(args, config):
 
 
 #===========================================================================
+def get_model(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "get_model",
+        }
+
+    reply = util.send(config, topic, payload, False)
+    return reply["status"]
+
+
+#===========================================================================
 def print_db(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
@@ -89,9 +111,10 @@ def on(args, config):
     payload = {
         "cmd" : "on",
         "level" : args.level,
-        "instant" : args.instant,
         "group" : args.group,
         }
+    if args.mode:
+        payload["mode"] = args.mode
 
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]
@@ -102,9 +125,10 @@ def off(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
         "cmd" : "off",
-        "instant" : args.instant,
         "group" : args.group,
         }
+    if args.mode:
+        payload["mode"] = args.mode
 
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]
@@ -116,9 +140,10 @@ def set(args, config):
     payload = {
         "cmd" : "set",
         "level" : args.level,
-        "instant" : args.instant,
         "group" : args.group,
         }
+    if args.mode:
+        payload["mode"] = args.mode
 
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]

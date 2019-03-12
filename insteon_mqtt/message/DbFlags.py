@@ -9,23 +9,22 @@ from .. import util
 class DbFlags:
     """All link database record control bit flags.
 
-    This class handles message bit flags for all link database
-    records.  It can be converted to/from bytes and to/from JSON
-    format.
+    This class handles message bit flags for all link database records.  It
+    can be converted to/from bytes and to/from JSON format.
     """
     #-----------------------------------------------------------------------
     @classmethod
     def from_json(cls, data):
         """Read from JSON data.
 
-        The inverse of this is DbFlags.to_json().  This is used when
-        saving and loading the record flags from a JSON file.
+        The inverse of this is DbFlags.to_json().  This is used when saving
+        and loading the record flags from a JSON file.
 
         Args:
-           data:  (dict) JSON data to read from.
+          data (dict):  JSON data to read from.
 
         Returns:
-           Returns the constructed DbFlags object.
+          Returns the constructed DbFlags object.
         """
         return DbFlags(data['in_use'], data['is_controller'],
                        data['is_last_rec'])
@@ -35,16 +34,15 @@ class DbFlags:
     def from_bytes(cls, raw, offset=0):
         """Read from bytes.
 
-        The inverse of this is DbFlags.to_bytes().  This is used to
-        parse the flags from the raw serial byte.
+        The inverse of this is DbFlags.to_bytes().  This is used to parse the
+        flags from the raw serial byte.
 
         Args:
-           raw:    (bytearray) The byte array to read from.  1 byte
-                   is required.
-           offset: (int)The index in raw to read from.
+          raw (bytearray):  The byte array to read from.  1 byte is required.
+          offset (int):  The index in raw to read from.
 
         Returns:
-           Returns the constructed DbFlags object.
+          Returns the constructed DbFlags object.
         """
         # pylint: disable=superfluous-parens
         b = raw[offset]
@@ -65,11 +63,10 @@ class DbFlags:
         """Constructor
 
         Args:
-          in_use:         (bool) True if the record is in use.
-          is_controller:  (bool) True means the device holding the record is
-                          the controller.  False means it's a responder.
-          is_last_rec:    (bool) True if this is the last record in the
-                          database.
+          in_use (bool):  True if the record is in use.
+          is_controller (bool):  True means the device holding the record is
+                        the controller.  False means it's a responder.
+          is_last_rec (bool):  True if this is the last record in the database.
         """
         self.in_use = in_use
         self.is_controller = is_controller
@@ -80,7 +77,7 @@ class DbFlags:
         """Make a copy of the object.
 
         Returns:
-           Returns a new DbFlags object.
+          Returns a new DbFlags object.
         """
         return DbFlags(self.in_use, self.is_controller, self.is_last_rec)
 
@@ -88,15 +85,15 @@ class DbFlags:
     def to_bytes(self, modem_delete=False):
         """Convert to bytes.
 
-        The inverse of this is DbFlags.from_bytes().  This is used to
-        output the flags as bytes.
+        The inverse of this is DbFlags.from_bytes().  This is used to output
+        the flags as bytes.
 
         Args:
-           is_delete:   (bool) Set to True if this is delete call to the
-                        modem to modify the database.
+          is_delete (bool):  Set to True if this is delete call to the modem
+                    to modify the database.
 
         Returns:
-           (bytes) Returns a 1 byte array containing the bit flags.
+           bytes:  Returns a 1 byte array containing the bit flags.
         """
         data = self.in_use << 7
         data |= self.is_controller << 6
@@ -115,11 +112,11 @@ class DbFlags:
     def to_json(self):
         """Write to JSON data.
 
-        The inverse of this is DbFlags.from_json().  This is used when
-        saving and loading the record flags from a JSON file.
+        The inverse of this is DbFlags.from_json().  This is used when saving
+        and loading the record flags from a JSON file.
 
         Returns:
-           (dict) Returns a dictionary of the JSON data for the class.
+          dict:  Returns a dictionary of the JSON data for the class.
         """
         return {
             'in_use' : self.in_use,
@@ -129,7 +126,8 @@ class DbFlags:
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "in_use: %s type: %s last: %s" % \
-            (self.in_use, util.ctrl_str(self.is_controller), self.is_last_rec)
+        return ("in_use: %s type: %s last: %s" %
+                (self.in_use, util.ctrl_str(self.is_controller),
+                 self.is_last_rec))
 
     #-----------------------------------------------------------------------

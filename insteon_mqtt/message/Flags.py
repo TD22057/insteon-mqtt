@@ -9,8 +9,8 @@ import enum
 class Flags:
     """Standard and extended message flags.
 
-    This class handles message bit flags for all many different
-    Insteon message types.  It can be converted to/from bytes.
+    This class handles message bit flags for all many different Insteon
+    message types.  It can be converted to/from bytes.
     """
 
     # Message types
@@ -29,16 +29,15 @@ class Flags:
     def from_bytes(cls, raw, offset=0):
         """Read from bytes.
 
-        The inverse of this is Flags.to_bytes().  This is used to
-        parse the flags from the raw serial byte.
+        The inverse of this is Flags.to_bytes().  This is used to parse the
+        flags from the raw serial byte.
 
         Args:
-           raw:    (bytearray) The byte array to read from.  1 byte
-                   is required.
-           offset: (int)The index in raw to read from.
+          raw (bytearray):  The byte array to read from.  1 byte is required.
+           offset (int):  The index in raw to read from.
 
         Returns:
-           Returns the constructed Flags object.
+          Returns the constructed Flags object.
         """
         b = raw[offset]
 
@@ -54,11 +53,11 @@ class Flags:
         """Constructor
 
         Args:
-          type:       Integer message type code.  See Flags.Type.
-          is_ext:     (bool) True if this is an extended message.  False if
-                      it's a standard message.
-          hops_left:  (int) Number of message hops left.
-          max_hops:   (int) Maximum number of message hops.
+          type (int):  Integer message type code.  See Flags.Type.
+          is_ext (bool):  True if this is an extended message.  False if it's
+                 a standard message.
+          hops_left (int):  Number of message hops left.
+          max_hops (int):  Maximum number of message hops.
         """
         assert hops_left >= 0 and hops_left <= 3
         assert max_hops >= 0 and max_hops <= 3
@@ -67,8 +66,7 @@ class Flags:
         self.is_ext = is_ext
         self.hops_left = hops_left
         self.max_hops = max_hops
-        self.is_nak = type == Flags.Type.DIRECT_NAK or \
-                      type == Flags.Type.CLEANUP_NAK
+        self.is_nak = type in (Flags.Type.DIRECT_NAK, Flags.Type.CLEANUP_NAK)
         self.is_broadcast = type == Flags.Type.ALL_LINK_BROADCAST
 
     #-----------------------------------------------------------------------
@@ -76,8 +74,8 @@ class Flags:
         """Set the maximum number of hops for the message.
 
         Args:
-          max_hops:  (int) Maximum number of hops to allow.  Must be in the
-                     range [0,3].  Sets hops_left and max_hops to this value.
+          max_hops (int):  Maximum number of hops to allow.  Must be in the
+                   range [0,3].  Sets hops_left and max_hops to this value.
         """
         assert max_hops >= 0 and max_hops <= 3
         self.hops_left = max_hops
@@ -87,11 +85,11 @@ class Flags:
     def to_bytes(self):
         """Convert to bytes.
 
-        The inverse of this is Flags.from_bytes().  This is used to
-        output the flags as bytes.
+        The inverse of this is Flags.from_bytes().  This is used to output
+        the flags as bytes.
 
         Returns:
-           (bytes) Returns a 1 byte array containing the bit flags.
+          bytes:  Returns a 1 byte array containing the bit flags.
         """
         value = self.type.value << 5 | \
                 self.is_ext << 4 | \
@@ -106,10 +104,10 @@ class Flags:
         This ignores differences in the hops_left and max_hops field.
 
         Args:
-          rhs:    (Flags) The object to compare to this one
+          rhs (Flags):  The object to compare to this one
 
         Returns:
-          (bool) True if the objects are the same.
+          bool:  True if the objects are the same.
         """
         return (isinstance(rhs, Flags) and
                 self.type == rhs.type and

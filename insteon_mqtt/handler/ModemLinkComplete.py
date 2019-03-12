@@ -23,7 +23,7 @@ class ModemLinkComplete(Base):
         """Constructor
 
         Args
-          modem:    (Modem) The PLM modem to update.
+          modem (Modem):  The PLM modem to update.
         """
         super().__init__()
         self.modem = modem
@@ -33,8 +33,8 @@ class ModemLinkComplete(Base):
         """See if we can handle the message.
 
         Args:
-          protocol:  (Protocol) The Insteon Protocol object
-          msg:       Insteon message object that was read.
+          protocol (Protocol):  The Insteon Protocol object
+          msg:  Insteon message object that was read.
 
         Returns:
           Msg.UNKNOWN if we can't handle this message.

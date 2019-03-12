@@ -58,7 +58,9 @@ insteon:
   devices:
     # On/off switch devices (outlets, wall switches, appliance modules, etc).
     switch:
-      - 37.2d.35: 'lamp1'
+      - 3a.29.84: 'xmas tree'
+      - 26.48.ff: 'xmas stairs'
+      - 37.2d.20: 'xmas deck'
 
     # Dimming devices (outlets, wall switches, lamp modules, etc).
     dimmer:
@@ -90,7 +92,7 @@ insteon:
 
     # KeypadLinc dimmers (dimmer+scene controller).
     keypad_linc:
-      - 46.7b.bc: 'kp1'
+      - 46.7b.bc: 'porch'
 
     # KeypadLinc switches (on/off+scene controller).
     keypad_linc_sw:
@@ -107,6 +109,10 @@ insteon:
     # On/off ouetlets
     #outlet:
     #  - aa.bb.cc: 'outlet'
+
+    # Thermostatus
+    thermostat:
+    #  - aa.bb.cc: 'downstairs'
 
   #------------------------------------------------------------------------
   # FUTURE: Insteon scene definitions.
@@ -191,14 +197,27 @@ mqtt:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   on = 0/1
-    #   on_str = 'off', 'on'
+    #   on_str = 'off'/'on'
+    #   mode = 'normal'/'fast'/'instant'
+    #   fast = 0/1
+    #   instant = 0/1
     state_topic: 'insteon/{{address}}/state'
     state_payload: '{{on_str.upper()}}'
+
+    # Manual mode (holding down a button) is triggered once when the button
+    # is held and once when it's released.  Available variables for
+    # templating are address (see above), name (see above), and:
+    #   manual_str = 'up'/'off'/'down'
+    #   manual = 1/0/-1
+    #   manual_openhab = 2/1/0
+    #manual_state_topic: 'insteon/{{address}}/manual_state'
+    #manual_state_payload: '{{manual_str.upper()}}'
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
     # passing the payload through the template must match the following:
-    #   { "cmd" : 'on'/'off', ["instant" : 0/1] }
+    #   { "cmd" : 'on'/'off', ["mode" : 'normal'/'fast'/'instant'],
+    #                         ["fast" : 1/0], ["instant" : 1/0] }
     # Available variables for templating are:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
@@ -221,7 +240,8 @@ mqtt:
   # this gets HA to send the brightness value as the payload for all
   # control of the light.
   #   light:
-  #     - platform: mqtt_json
+  #     - platform: mqtt
+  #       schema: json
   #       name: "insteon 1"
   #       state_topic: "insteon/48.b0.ad/state"
   #       command_topic: "insteon/48.b0.ad/level"
@@ -234,17 +254,30 @@ mqtt:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   on = 0/1
-    #   on_str = 'off', 'on'
+    #   on_str = 'off'/'on'
     #   level_255 = 0-255
     #   level_100 = 0-100
+    #   mode = 'normal'/'fast'/'instant'
+    #   fast = 0/1
+    #   instant = 0/1
     state_topic: 'insteon/{{address}}/state'
     state_payload: >
        { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
 
+    # Manual mode (holding down a button) is triggered once when the button
+    # is held and once when it's released.  Available variables for
+    # templating are address (see above), name (see above), and:
+    #   manual_str = 'up'/'off'/'down'
+    #   manual = 1/0/-1
+    #   manual_openhab = 2/1/0
+    #manual_state_topic: 'insteon/{{address}}/manual_state'
+    #manual_state_payload: '{{manual_str.upper()}}'
+
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
     # passing the payload through the template must match the following:
-    #   { "cmd" : "on"/"off", ["instant" : 0/1] }
+    #   { "cmd" : "on"/"off", ["mode" : 'normal'/'fast'/'instant'],
+    #                         ["fast" : 1/0], ["instant" : 1/0] }
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
@@ -257,10 +290,12 @@ mqtt:
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
     # Input dimming on/off command.  Similar functionality to the cmd_topic
-    # but only for turning the device on and off and setting the
-    # level.  The output of passing the payload through the template
-    # must match the following:
-    #   { "cmd" : "on"/"off", "level" : LEVEL, ["instant" : 0/1] }
+    # but only for turning the device on and off and setting the level.
+    # The output of passing the payload through the template must match the
+    # following:
+    #   { "cmd" : "on"/"off", "level" : LEVEL,
+    #                         ["mode" : 'normal'/'fast'/'instant'],
+    #                         ["fast" : 1/0], ["instant" : 1/0] }
     # where:
     #   LEVEL = 0->255 dimmer level
     # Available variables for templating are:
@@ -308,7 +343,7 @@ mqtt:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   on = 0/1
-    #   on_str = 'off', 'on'
+    #   on_str = 'off'/'on'
     state_topic: 'insteon/{{address}}/state'
     state_payload: '{{on_str.upper()}}'
 
@@ -318,7 +353,7 @@ mqtt:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   is_low = 0/1
-    #   is_low_str = 'off', 'on'
+    #   is_low_str = 'off'/'on'
     low_battery_topic: 'insteon/{{address}}/battery'
     low_battery_payload: '{{is_low_str.upper()}}'
 
@@ -330,7 +365,8 @@ mqtt:
   # inputs from battery_sensor and some sensors add an addition
   # dawn/dusk notification which is configured here.
   #
-  # In Home Assistant use MQTT binary sensor with a configuration like:
+  # To register the dawn/dusk signa in  Home Assistant use MQTT binary
+  # sensor with a configuration like:
   #   binary_sensor:
   #     - platform: mqtt
   #       state_topic: 'insteon/aa.bb.cc/dawn'
@@ -342,10 +378,10 @@ mqtt:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   is_dawn = 0/1
-    #   is_dawn_str = 'off', 'on'
+    #   is_dawn_str = 'off'/'on'
     #   is_dusk = 0/1
-    #   is_dusk_str = 'off', 'on'
-    #   state = 'dawn', 'dusk'
+    #   is_dusk_str = 'off'/'on'
+    #   state = 'dawn'/'dusk'
     dawn_dusk_topic: 'insteon/{{address}}/dawn'
     dawn_dusk_payload: '{{is_dawn_str.upper()}}'
 
@@ -374,10 +410,10 @@ mqtt:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   is_wet = 0/1
-    #   is_wet_str = 'off', 'on'
+    #   is_wet_str = 'off'/'on'
     #   is_dry = 0/1
-    #   is_dry_str = 'off', 'on'
-    #   state = 'wet', 'dry'
+    #   is_dry_str = 'off'/'on'
+    #   state = 'wet'/'dry'
     wet_dry_topic: 'insteon/{{address}}/wet'
     wet_dry_payload: '{{is_wet_str.upper()}}'
 
@@ -385,9 +421,10 @@ mqtt:
     # every 24 hours. Available variables for templating are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
-    #   heartbeat_str = date and time of the last heartbeat
+    #   is_heartbeat = 0/1
+    #   heartbeat_time = UNIX time float of the last heartbeat
     heartbeat_topic: 'insteon/{{address}}/heartbeat'
-    heartbeat_payload: '{{heartbeat_str}}'
+    heartbeat_payload: '{{heartbeat_time}}'
 
   #------------------------------------------------------------------------
   # Smoke Bridge
@@ -419,7 +456,8 @@ mqtt:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   on = 0/1
-    #   on_str = 'off', 'on'
+    #   on_str = 'off'/'on'
+    #   type = 'smoke'/'co'/'low_battery'/'error'/'clear'
     smoke_topic: 'insteon/{{address}}/smoke'
     smoke_payload: '{{on_str.upper()}}'
 
@@ -431,6 +469,100 @@ mqtt:
 
     error_topic: 'insteon/{{address}}/error'
     error_payload: '{{on_str.upper()}}'
+
+  #------------------------------------------------------------------------
+  # Thermostat
+  #------------------------------------------------------------------------
+
+  # The thermostat has a lot of available states and commands
+  #
+  #
+  # In Home Assistant use MQTT climate sensor with a configuration like:
+  # climate:
+  #   - platform: mqtt
+  #     name: Study
+  #     mode_state_topic: "insteon/aa.bb.cc/mode_state"
+  #     modes: ["OFF", "AUTO", "HEAT", "COOL", "PROGRAM"]
+  #     current_temperature_topic: "insteon/aa.bb.cc/ambient_temp"
+  #     fan_mode_state_topic: "insteon/aa.bb.cc/fan_state"
+  #     fan_modes: ["AUTO", "ON"]
+  #
+  # The current Home Assistant mqtt hvac component is not great.  It lacks
+  # a lot of functionality offered by the thermostat.  At some point I will
+  # submit a PR to Home Assistant to try and fix this.
+  # Major issues:
+  #   - no concept of separate heat and cool set points
+  #   - no humidity state
+  #   - no status state
+  thermostat:
+    # Output state change topic and payload.  Available variables for
+    # templating in all cases are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    # The following specific variables only apply to the topics listed
+    # directly below
+    #   temp_c = temperature in celsius
+    #   temp_f = temperature in farenheit
+    ambient_temp_topic: 'insteon/{{address}}/ambient_temp'
+    ambient_temp_payload: '{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}'
+    cool_sp_state_topic: 'insteon/{{address}}/cool_sp_state'
+    cool_sp_state_payload: '{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}'
+    heat_sp_state_topic: 'insteon/{{address}}/heat_sp_state'
+    heat_sp_state_payload: '{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}'
+    #   fan_mode = "on", "off"
+    #   is_fan_on = 0/1
+    fan_state_topic: 'insteon/{{address}}/fan_state'
+    fan_state_payload: '{{fan_mode.upper()}}'
+    #   mode = 'off', 'auto', 'heat', 'cool', 'program'
+    mode_state_topic: 'insteon/{{address}}/mode_state'
+    mode_state_payload: '{{mode.upper()}}'
+    #   humid = humidity percentage
+    humid_state_topic: 'insteon/{{address}}/humid_state'
+    humid_state_payload: '{{humid}}'
+    #   status = "off", "heating", "cooling"
+    #   is_heating = 0/1
+    #   is_cooling = 0/1
+    status_state_topic: 'insteon/{{address}}/status_state'
+    status_state_payload: '{{status.upper()}}'
+    # Caution, there is no push update for the hold or energy state.  ie, if
+    # you press hold on the physical device, you will not get any notice of
+    # this unless you run get_status().  There is also no way to programatically
+    # change the hold state or energy state
+    #   hold_str = 'off', 'temp'
+    #   is_hold = 0/1
+    hold_state_topic: 'insteon/{{address}}/hold_state'
+    hold_state_payload: '{{hold_str.upper()}}'
+    # See caution in hold state above
+    #   energy_str = 'off', 'on'
+    #   is_energy = 0/1
+    energy_state_topic: 'insteon/{{address}}/energ_state'
+    energy_state_payload: '{{energy_str.upper()}}'
+
+    # Command Topics
+    # Available variables for templating all of these commands are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
+    #
+    # Mode state command.  The output of passing the payload through the
+    # template must match the following:
+    #   { "cmd" : "auto"/"off"/"heat"/"cool","program" }
+    mode_command_topic: 'insteon/{{address}}/mode_command'
+    mode_command_payload: '{ "cmd" : "{{value.lower()}}" }'
+    # Fan state command.  The output of passing the payload through the
+    # template must match the following:
+    #   { "cmd" : "auto"/"on" }
+    fan_command_topic: 'insteon/{{address}}/fan_command'
+    fan_command_payload: '{ "cmd" : "{{value.lower()}}" }'
+    # Temp setpoint commands. The payloads should be in the form of {temp_c:
+    # float, temp_f: float} Only one unit needs to be present.  If temp_c is
+    # present it will be used regardless
+    heat_sp_command_topic: 'insteon/{{address}}/heat_sp_command'
+    heat_sp_payload: '{ "temp_f" : {{value}} }'
+    cool_sp_command_topic: 'insteon/{{address}}/cool_sp_command'
+    cool_sp_payload: '{ "temp_f" : {{value}} }'
 
   #------------------------------------------------------------------------
   # Mini remotes
@@ -445,9 +577,22 @@ mqtt:
     #   name = 'device name'
     #   button = 1...n  (button number 1-4 or 1-8)
     #   on = 0/1
-    #   on_str = 'off', 'on'
+    #   on_str = 'off'/'on'
+    #   mode = 'normal'/'fast'/'instant'
+    #   fast = 0/1
+    #   instant = 0/1
     state_topic: 'insteon/{{address}}/state/{{button}}'
     state_payload: '{{on_str.upper()}}'
+
+    # Manual mode (holding down a button) is triggered once when the button
+    # is held and once when it's released.  Available variables for
+    # templating are address (see above), name (see above), button (see
+    # above), and:
+    #   manual_str = 'up'/'off'/'down'
+    #   manual = 1/0/-1
+    #   manual_openhab = 2/1/0
+    #manual_state_topic: 'insteon/{{address}}/manual_state'
+    #manual_state_payload: '{{manual_str.upper()}}'
 
   #------------------------------------------------------------------------
   # Fan Linc
@@ -479,9 +624,9 @@ mqtt:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   on = 0/1
-    #   on_str = 'off', 'on'
-    #   level = 0, 1, 2, 3
-    #   level_str = 'off', 'low', 'medium', 'high'
+    #   on_str = 'off'/'on'
+    #   level = 0/1/2/3
+    #   level_str = 'off'/'low'/'medium'/'high'
     fan_state_topic: 'insteon/{{address}}/fan/state'
     fan_state_payload: '{{on_str.upper()}}'
 
@@ -509,8 +654,8 @@ mqtt:
     # passing the payload through the template must match the following:
     #   { "cmd" : SPEED }
     # where
-    #   SPEED = 0, 1, 2, 3 (for off, low, medium, high)
-    #      or = "off", "low", "medium", "high"
+    #   SPEED = 0/1/2/3 (for off, low, medium, high)
+    #      or = "off"/"low"/"medium"/"high"
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
@@ -541,7 +686,8 @@ mqtt:
   # the MQTT json component for a dimmer.  The non-group 1 buttons are switches.
   #   # dimmers:
   #   light:
-  #     - platform: mqtt_json
+  #     - platform: mqtt
+  #       schema: json
   #       state_topic: "insteon/aa.bb.cc/state/1"
   #       command_topic: "insteon/aa.bb.cc/set/1"
   #       brightness: true
@@ -565,7 +711,10 @@ mqtt:
     #   name = 'device name'
     #   button = 1-8
     #   on = 0/1
-    #   on_str = 'off', 'on'
+    #   on_str = 'off'/'on'
+    #   mode = 'normal'/'fast'/'instant'
+    #   fast = 0/1
+    #   instant = 0/1
     btn_state_topic: 'insteon/{{address}}/state/{{button}}'
     btn_state_payload: '{{on_str.upper()}}'
 
@@ -575,17 +724,31 @@ mqtt:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   on = 0/1
-    #   on_str = 'off', 'on'
+    #   on_str = 'off'/'on'
     #   level_255 = 0-255
     #   level_100 = 0-100
+    #   mode = 'normal'/'fast'/'instant'
+    #   fast = 0/1
+    #   instant = 0/1
     dimmer_state_topic: 'insteon/{{address}}/state/1'
     dimmer_state_payload: >
        { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
 
+    # Manual mode (holding down a button) is triggered once when the button
+    # is held and once when it's released.  Available variables for
+    # templating are address (see above), name (see above), and:
+    #   manual_str = 'up'/'off'/'down'
+    #   manual = 1/0/-1
+    #   manual_openhab = 2/1/0
+    #manual_state_topic: 'insteon/{{address}}/manual_state'
+    #manual_state_payload: '{{manual_str.upper()}}'
+
     # Input on/off command.  For button 1, this will set the load.  For other
     # buttons, it just set the button LED.  The output of passing the payload
     # through the template must match the following:
-    #   { "cmd" : 'on'/'off', "button": button }
+    #   { "cmd" : 'on'/'off', "button": button,
+    #                         ["mode" : 'normal'/'fast'/'instant'],
+    #                         ["fast" : 1/0], ["instant" : 1/0] }
     # Available variables for templating are:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
@@ -596,9 +759,11 @@ mqtt:
     # Input dimming on/off command for button 1.  Similar functionality to
     # the cmd_topic but only for turning the group 1 on and off and setting
     # the level.  This topic can be the same as the btn_on_off_topic in which
-    # case either command format is valid. The output of passing the payload
-    # through the template must match the following:
-    #   { "cmd" : "on"/"off", "level" : LEVEL, ["instant" : 0/1] }
+    # case either command format is valid.   The output of passing the
+    # payload through the template must match the following:
+    #   { "cmd" : "on"/"off", "level" : LEVEL,
+    #                         ["mode" : 'normal'/'fast'/'instant'],
+    #                         ["fast" : 1/0], ["instant" : 1/0] }
     # where:
     #   LEVEL = 0->255 dimmer level
     # Available variables for templating are:
@@ -653,7 +818,7 @@ mqtt:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   on = 0/1
-    #   on_str = 'off', 'on'
+    #   on_str = 'off'/'on'
     state_topic: 'insteon/{{address}}/state'
     state_payload: '{{on_str.upper()}}'
 
@@ -701,14 +866,19 @@ mqtt:
     #   name = 'device name'
     #   button = 1 (top outlet) or 2 (bottom outlet)
     #   on = 0/1
-    #   on_str = 'off', 'on'
+    #   on_str = 'off'/'on'
+    #   mode = 'normal'/'fast'/'instant'
+    #   fast = 0/1
+    #   instant = 0/1
     state_topic: 'insteon/{{address}}/state/{{button}}'
     state_payload: '{{on_str.upper()}}'
 
     # Input on/off command.  Similar functionality to the cmd_topic
     # but only for turning the device on and off.  The output of
     # passing the payload through the template must match the following:
-    #   { "cmd" : 'on'/'off', "button": button, ["instant" : 0/1] }
+    #   { "cmd" : 'on'/'off', "button": button,
+    #                         ["mode" : 'normal'/'fast'/'instant'],
+    #                         ["fast" : 1/0], ["instant" : 1/0] }
     # Available variables for templating are:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract

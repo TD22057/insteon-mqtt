@@ -40,22 +40,32 @@ be identified by it's address or the string "modem".
    - [Switches](#switches)
 
 
-## Required links (scenes)
+## Required Device Initialization
 
-These commands assume that the devices have been linked correctly to the
-modem in order for the commands to work.  To use a new device, see the
-linking command - that can be used to pair the device with the modem (in both
-directions) for group 1 which is required to allow the device to accept any
-commands from the modem and report basic state changes.
+When adding a new device or after performing a factory reset on a device it
+is necessary to perform a three step process to setup the device to work
+properly with insteon-mqtt.  The steps are 1) Join, 2) Pair, and 3) Sync (Not
+implemented yet).  These three commands can be re-run at anytime without harm.
 
-More complicated devices need more links than that to fully work.  FanLInc,
-KeypadLinc, IOLinc, multi-button remotes, battery sensors, and the Smoke
-bridge all require link to be created from the device to the modem for every
-group/button and/or message that the device publishes.  Multi-button devices
-also require that the modem have a link to the device for each button in
-order to allow scene simulation.  The pair command can be used to
-automatically configure these links and should used whenever adding a new
-device.
+From the command line these actions can be performed as follows:
+
+```
+insteon-mqtt config.yaml join aa.bb.cc
+insteon-mqtt config.yaml pair aa.bb.cc
+insteon-mqtt config.yaml sync aa.bb.cc
+```
+
+These commands can also be performed using the mqtt interface by publishing
+the following separate commands to the command topic (discussed below):
+
+   ```
+   { "cmd" : "join"}
+   { "cmd" : "pair"}
+   { "cmd" : "sync"}
+   ```
+
+See the following discussion of management commands for a more detailed
+explanation of these actions.
 
 ---
 
@@ -67,7 +77,7 @@ Management commands can be sent by using the command line tool
 by the modem, by the devices, or by both.  For examples of the command
 style, see [command line module source code](../insteon_mqtt/cmd_line).
 
-All management commands use a payload that is JSON dictionary.  If the
+All management commands use a payload that is a JSON dictionary.  In the
 documentation below, if a key/value pair is enclosed in square
 brackets [], then it's optional.  If a value can be one of many like
 true or false, then the possible values are separated by a slash /.
@@ -79,6 +89,59 @@ device address or nice name from the config.yaml file):
    insteon/command/aa.bb.cc
    ```
 
+### Join a New Device to the Network
+
+Supported: devices
+
+New devices<sup>1</sup> will refuse to communicate with the modem until the
+device has been specifically told to respond to the modem.  This can be done by
+running the 'join' command on the device
+
+The command payload is:
+
+   ```
+   { "cmd" : "join"}
+   ```
+
+This command can also be run from the command line:
+
+   ```
+   insteon-mqtt config.yaml join aa.bb.cc
+   ```
+
+<sup>1</sup> Specifically devices that have version I2CS of the engine, which
+have been available since March 2012, and are the only devices sold as new
+since about 2015.  Older I1 and I2 devices do not require this step, however
+they will not be adversely affected by this command.
+
+
+### Pair a Device to the Modem
+
+Supported: devices
+
+This performs the default initialization of the device and in particular tells
+the device that it should inform the modem whenever its state changes. This
+includes devices that have multiple states to track such as KeypadLincs.
+
+The command payload is:
+
+   ```
+   { "cmd" : "pair"}
+   ```
+
+This command can also be run from the command line:
+
+   ```
+   insteon-mqtt config.yaml pair aa.bb.cc
+   ```
+
+
+### Sync Device Links (Placeholder)
+
+Supported: modem, device
+
+This command is not yet supported.
+
 
 ### Activate all linking mode
 
@@ -87,11 +150,20 @@ Supported: modem, devices
 This turns on all linking mode and is the same as pressing the set
 button for 3 sec on the modem or device.  The default group is 1.
 
-This can be used to connect new devices to the modem.  Run 'linking modem',
-'linking aa.bb.cc' to control the device from the modem and 'linking
-aa.bb.cc', 'linking modem' so the modem will get broadcast messages from the
-device.  For more complicated devices, then run a 'pair device' command to
-configure the other links that the device needs.
+This command is not normally needed by most users.  However, if you are
+experiencing difficulty with the 'join' or 'pair' commands, this command can be
+used to solve those issues.
+
+For example, this can be used in place of the 'join' command.  To do this
+use the linking command in place of physically pressing the set button on the
+device.  So first run 'linking modem', then second run 'linking aa.bb.cc' to
+setup a link to control the device from the modem.
+
+Similarly, this can also be used in place of the 'pair' command. To do this
+first run 'linking aa.bb.cc', then run 'linking modem' to make the device a
+controller of the modem so the modem will get state change messages from the
+device.  For more complicated devices, you can also link the other groups on
+the device as well.
 
 The command payload is:
 
@@ -104,21 +176,6 @@ to update it's local database.  The modem will automatically update, but the
 devices don't send a message when the linking is complete so there is no way
 to know when to update the database.
 
-For example, to add a new Insteon device, edit the config.yaml file to
-identify the device and address and restart insteon-mqtt.  Then link it with
-the modem both directions and run the pair command to add any other
-(non-group 1 links):
-
-   ```
-   insteon-mqtt config.yaml linking modem
-   insteon-mqtt config.yaml linking keypad1
-      [device will double beep]
-   insteon-mqtt config.yaml linking keypad1
-   insteon-mqtt config.yaml linking modem
-      [device will double beep]
-   insteon-mqtt config.yaml pair keypad1
-   ```
-
 
 ### Refresh the device state and download it's all link database
 
@@ -127,8 +184,10 @@ Supported: modem, devices
 If this is sent to the modem, it will trigger an all link database
 download.  If it's sent to a device, the device state (on/off, dimmer
 level, etc) will be updated and the database will be downloaded if
-it's out of date.  Setting the force flag to true will download the
-database even if it's not out of date.  The command payload is:
+it's out of date.  The model information of the device will also be
+queried if it is not known. Setting the force flag to true will download
+the database even if it's not out of date and will recheck the model
+information even if known.  The command payload is:
 
 
    ```
@@ -147,6 +206,19 @@ is:
    ```
    { "cmd" : "refresh_all", ["force" : true/false] }
    ```
+
+
+### Get device model information
+
+Supported: device
+
+Will send a command to the device to get the device category, sub-category,
+and firmware version.  This information may be used to determine what
+features are available on the device:
+
+  ```
+  { "cmd" : "get_model" }
+  ```
 
 
 ### Add the device as a controller of another device.
@@ -233,7 +305,7 @@ Button is an integer in the range [1,8].  In the 6 button version, buttons
 commands.
 
    ```
-   { "cmd": "set_button_led", "button" : button, "is_on" : true/false }
+   { "cmd": "set_button_led", "group" : button, "is_on" : true/false }
    ```
 
 ### Get and set operating flags.
@@ -343,6 +415,18 @@ which can be used in the templates:
 
    - 'on' is 1 if the device is on and 0 if the device is off.
    - 'on_str' is "on" if the device is on and "off" if the device is off.
+   - 'mode' is the on/off mode: 'normal', 'fast', or instant'
+   - 'fast' is 1 if the mode is fast, 0 otherwise
+   - 'instant' is 1 if the mode is instant, 0 otherwise
+
+Manual state output is invoked when a button on the device is held down.
+Manual mode flags are UP or DOWN (when the on or off button is pressed and
+held), and STOP (when the button is released.  Manual template variables are
+name, address, and:
+
+   - 'manual_str' = 'up'/'off'/'down'
+   - 'manual' = 1/0/-1
+   - 'manual_openhab' = 2/1/0
 
 Input state change messages have the following variables defined which
 can be used in the templates:
@@ -353,13 +437,12 @@ can be used in the templates:
      accessed using the form 'json.ATTR'.  See the Jinja2 docs for
      more details.
 
-The input state change payload template must convert the input message
-into the format.  The optional instant key defaults to 0 (normal
-ramping behavior) but can be set to 1 to perform an instant state
-change.
+The input state change payload template must convert the input message into
+the format.  The optional mode flag can be used to send a 'normal'
+(default)', 'fast', or 'instant' command to the device.
 
    ```
-   { "cmd" : "on"/"off", ["instant" : 0/1] }
+   { "cmd" : "on"/"off", ["mode" : 'normal'/'fast'/'instant'] }
    ```
 
 The input command can be either a direct on/off command which will just
@@ -372,17 +455,20 @@ using upper case ON an OFF payloads.
 
    ```
    switch:
-      # Output state change:
-      state_topic: 'insteon/{{address}}/state'
-      state_payload: '{{on_str}}'
+     # Output state change:
+     state_topic: 'insteon/{{address}}/state'
+     state_payload: '{{on_str}}'
 
-      # Direct change only changes the load:
-      on_off_topic: 'insteon/{{address}}/set'
-      on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+     manual_state_topic: 'insteon/{{address}}/manual_state'
+     manual_state_payload: '{{manual_str.upper()}}'
 
-      # Scene change simulates clicking the switch:
-      scene_topic: 'insteon/{{address}}/scene'
-      scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+     # Direct change only changes the load:
+     on_off_topic: 'insteon/{{address}}/set'
+     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+     # Scene change simulates clicking the switch:
+     scene_topic: 'insteon/{{address}}/scene'
+     scene_payload: '{ "cmd" : "{{value.lower()}}" }'
    ```
 
 When the switch changes state a message like `ON` or `OFF` is
@@ -406,6 +492,18 @@ which can be used in the templates:
    - 'on_str' is "on" if the device is on and "off" if the device is off.
    - 'level_255' is the dimmer level in the range 0->255.
    - 'level_100' is the dimmer level in the range 0->100.
+   - 'mode' is the on/off mode: 'normal', 'fast', or instant'
+   - 'fast' is 1 if the mode is fast, 0 otherwise
+   - 'instant' is 1 if the mode is instant, 0 otherwise
+
+Manual state output is invoked when a button on the device is held down.
+Manual mode flags are UP or DOWN (when the on or off button is pressed and
+held), and STOP (when the button is released.  Manual template variables are
+name, address, and:
+
+   - 'manual_str' = 'up'/'off'/'down'
+   - 'manual' = 1/0/-1
+   - 'manual_openhab' = 2/1/0
 
 Input state change messages have the following variables defined which
 can be used in the templates:
@@ -420,12 +518,12 @@ The input state change has two inputs.  One is the same as the switch input
 system and only accepts on and off states in either direct or scene mode.
 The second is similar but also accepts the level argument to set the dimmer
 level.  The dimmer payload template must convert the input message into the
-format (LEVEL must be in the range 0->255).  The optional instant key
-defaults to 0 (normal ramping behavior) but can be set to 1 to perform an
-instant state change.
+format (LEVEL must be in the range 0->255).  The optional mode flag can be
+used to send a 'normal' (default)', 'fast', or 'instant' command to the
+device.
 
    ```
-   { "cmd" : "on"/"off", "level" : LEVEL, ["instant" : 0/1] }
+   { "cmd" : "on"/"off", "level" : LEVEL, ["mode" : 'normal'/'fast'/'instant'] }
    ```
 
 Here is a sample configuration that accepts and publishes messages
@@ -433,24 +531,27 @@ using a JSON format that contains the level using the tag
 "brightness".
 
    ```
-   switch:
-      # Output state change:
-      state_topic: 'insteon/{{address}}/state'
-      state_payload: '{ "state" : "{{on_str}}", "brightness" : {{level_255}} }'
+   dimmer:
+     # Output state change:
+     state_topic: 'insteon/{{address}}/state'
+     state_payload: '{ "state" : "{{on_str}}", "brightness" : {{level_255}} }'
 
-      # Input state change for the load:
-      on_off_topic: 'insteon/{{address}}/set'
-      on_off_payload: '{ "cmd" : "{{json.state}}" }'
+     manual_state_topic: 'insteon/{{address}}/manual_state'
+     manual_state_payload: '{{manual_str.upper()}}'
 
-      # Scene change simulates clicking the switch:
-      scene_topic: 'insteon/{{address}}/scene'
-      scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+     # Input state change for the load:
+     on_off_topic: 'insteon/{{address}}/set'
+     on_off_payload: '{ "cmd" : "{{json.state}}" }'
 
-      # Dimming control:
-      level_topic: 'insteon/{{address}}/level'
-      level_payload: >
-         { "cmd" : "{{json.state}}",
-           "level" : {{json.brightness}} }
+     # Scene change simulates clicking the switch:
+     scene_topic: 'insteon/{{address}}/scene'
+     scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+     # Dimming control:
+     level_topic: 'insteon/{{address}}/level'
+     level_payload: >
+        { "cmd" : "{{json.state}}",
+          "level" : {{json.brightness}} }
 
    ```
 
@@ -508,22 +609,22 @@ matching the Home Assistant MQTT fan configuration.
 
    ```
    fan_linc:
-      # Output state change:
-      fan_state_topic: 'insteon/{{address}}/fan/state'
-      fan_state_payload: '{{on_str}}"
+     # Output state change:
+     fan_state_topic: 'insteon/{{address}}/fan/state'
+     fan_state_payload: '{{on_str}}'
 
-      # Input on/off change (payload should be 'ON' or 'OFF')
-      fan_on_off_topic: 'insteon/{{address}}/fan/set'
-      fan_on_off_payload: '{ "cmd" : "{{value.lower}}" }'
+     # Input on/off change (payload should be 'ON' or 'OFF')
+     fan_on_off_topic: 'insteon/{{address}}/fan/set'
+     fan_on_off_payload: '{ "cmd" : "{{value.lower}}" }'
 
-      # Output speed state change.
-      fan_speed_topic: 'insteon/{{address}}/fan/speed/state'
-      fan_speed_payload: '{{level_str}}'
+     # Output speed state change.
+     fan_speed_topic: 'insteon/{{address}}/fan/speed/state'
+     fan_speed_payload: '{{level_str}}'
 
-      # Input fan speed change (payload should be 'off', 'low', 'medium',
-      # or 'high'.
-      fan_speed_set_topic: 'insteon/{{address}}/fan/speed/set'
-      fan_speed_set_payload: '{ "cmd" : "{{value.lower}}" }'
+     # Input fan speed change (payload should be 'off', 'low', 'medium',
+     # or 'high'.
+     fan_speed_set_topic: 'insteon/{{address}}/fan/speed/set'
+     fan_speed_set_payload: '{ "cmd" : "{{value.lower}}" }'
    ```
 
 
@@ -554,33 +655,48 @@ The button change defines the following variables for templates:
    - 'button' is 1...n for the button number.
    - 'on' is 1 if the button is on, 0 if it's off.
    - 'on_str' is 'on' if the button is on, 'off' if it's off.
+   - 'mode' is the on/off mode: 'normal', 'fast', or instant'
+   - 'fast' is 1 if the mode is fast, 0 otherwise
+   - 'instant' is 1 if the mode is instant, 0 otherwise
+
+Manual state output is invoked when a button on the device is held down.
+Manual mode flags are UP or DOWN (when the on or off button is pressed and
+held), and STOP (when the button is released.  Manual template variables are
+name, address, and:
+
+   - 'manual_str' = 'up'/'off'/'down'
+   - 'manual' = 1/0/-1
+   - 'manual_openhab' = 2/1/0
 
 A sample remote control topic and payload configuration is:
 
    ```
    keypad_linc:
-      # Output on/off state change:
-      btn_state_topic: 'insteon/{{address}}/state/{{button}}'
-      btn_state_payload: '{{on_str.upper()}}'
+     # Output on/off state change:
+     btn_state_topic: 'insteon/{{address}}/state/{{button}}'
+     btn_state_payload: '{{on_str.upper()}}'
 
-      # Output dimmer state changes.
-      dimmer_state_topic: 'insteon/{{address}}/state/1'
-      state_payload: '{ "state" : "{{on_str}}", "brightness" : {{level_255}} }'
+     # Output dimmer state changes.
+     dimmer_state_topic: 'insteon/{{address}}/state/1'
+     state_payload: '{ "state" : "{{on_str}}", "brightness" : {{level_255}} }'
 
-      # Input on/off state change.  For any button besides 1, this just
-      # updates the LED state.
-      btn_on_off_topic: 'insteon/{{address}}/set/{{button}}'
-      btn_on_off_payload: '{ "cmd" : "{{json.state}}" }'
+     manual_state_topic: 'insteon/{{address}}/manual_state/{{button}}'
+     manual_state_payload: '{{manual_str.upper()}}'
 
-      # Input dimmer control
-      level_topic: 'insteon/{{address}}/level/1'
-      level_payload: >
-         { "cmd" : "{{json.state}}",
-           "level" : {{json.brightness}} }
+     # Input on/off state change.  For any button besides 1, this just
+     # updates the LED state.
+     btn_on_off_topic: 'insteon/{{address}}/set/{{button}}'
+     btn_on_off_payload: '{ "cmd" : "{{json.state}}" }'
 
-      # Scene input - simulates clicking the button.
-      btn_scene_topic: 'insteon/{{address}}/scene/{{button}}'
-      btn_scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+     # Input dimmer control
+     level_topic: 'insteon/{{address}}/level/1'
+     level_payload: >
+        { "cmd" : "{{json.state}}",
+          "level" : {{json.brightness}} }
+
+     # Scene input - simulates clicking the button.
+     btn_scene_topic: 'insteon/{{address}}/scene/{{button}}'
+     btn_scene_payload: '{ "cmd" : "{{value.lower()}}" }'
    ```
 
 ---
@@ -594,7 +710,7 @@ Internally, they will send state changes on the Insteon groups 1 for
 motion and 3 for low battery.  Each of these messages only has two
 states, on or off.
 
-The battery powered sensor sends motion events on the "state' configuration
+The battery powered sensor sends motion events on the "state" configuration
 topic which defines the following variables defined which can be used
 in the templates:
 
@@ -632,9 +748,9 @@ dawn/dusk (Insteon group 2)
 The dawn/dusk change defines the following variables for templates:
 
    - 'is_dawn' is 1 for dawn, 0 for dusk
-   - 'is_dawn_str' is "on" for dawn", "off" for dusk
+   - 'is_dawn_str' is "on" for dawn, "off" for dusk
    - 'is_dusk' is 1 for dusk, 0 for dawn
-   - 'is_dusk_str' is "on" for dusk", "off" for dawn
+   - 'is_dusk_str' is "on" for dusk, "off" for dawn
    - 'state' is "dawn" or "dusk"
 
 A sample motion sensor topic and payload configuration is:
@@ -670,7 +786,7 @@ A sample leak sensor topic and payload configuration is:
      wet_dry_topic: 'insteon/{{address}}/wet'
      wet_dry_payload: '{{state.upper()}}'
      heartbeat_topic: 'insteon/{{address}}/heartbeat'
-     heartbeat_payload: '{{state}}'
+     heartbeat_payload: '{{heartbeat_time}}'
    ```
 
 ---
@@ -688,6 +804,18 @@ The button change defines the following variables for templates:
    - 'button' is 1...n for the button number.
    - 'on' is 1 if the button is on, 0 if it's off.
    - 'on_str' is 'on' if the button is on, 'off' if it's off.
+   - 'mode' is the on/off mode: 'normal', 'fast', or instant'
+   - 'fast' is 1 if the mode is fast, 0 otherwise
+   - 'instant' is 1 if the mode is instant, 0 otherwise
+
+Manual state output is invoked when a button on the device is held down.
+Manual mode flags are UP or DOWN (when the on or off button is pressed and
+held), and STOP (when the button is released.  Manual template variables are
+name, address, and:
+
+   - 'manual_str' = 'up'/'off'/'down'
+   - 'manual' = 1/0/-1
+   - 'manual_openhab' = 2/1/0
 
 A sample remote control topic and payload configuration is:
 
@@ -695,6 +823,9 @@ A sample remote control topic and payload configuration is:
    remote:
      state_topic: 'insteon/{{address}}/state/{{button}}'
      state_payload: '{{on_str.upper()}}'
+
+     manual_state_topic: 'insteon/{{address}}/manual_state/{{button}}'
+     manual_state_payload: '{{manual_str.upper()}}'
    ```
 
 ---
@@ -746,6 +877,9 @@ which can be used in the templates:
    - 'on' is 1 if the device is on and 0 if the device is off.
    - 'on_str' is "on" if the device is on and "off" if the device is off.
    - 'button' is 1 or 2 for the button number.
+   - 'mode' is the on/off mode: 'normal', 'fast', or instant'
+   - 'fast' is 1 if the mode is fast, 0 otherwise
+   - 'instant' is 1 if the mode is instant, 0 otherwise
 
 Input state change messages have the following variables defined which
 can be used in the templates:
@@ -756,13 +890,12 @@ can be used in the templates:
      accessed using the form 'json.ATTR'.  See the Jinja2 docs for
      more details.
 
-The input state change payload template must convert the input message
-into the format.  The optional instant key defaults to 0 (normal
-ramping behavior) but can be set to 1 to perform an instant state
-change.
+The input state change payload template must convert the input message into
+the format.  The optional mode flag can be used to send a 'normal'
+(default)', 'fast', or 'instant' command to the device.
 
    ```
-   { "cmd" : "on"/"off", "group" : group, ["instant" : 0/1] }
+   { "cmd" : "on"/"off", "group" : group, ["mode" : 'normal'/'fast'/'instant'] }
    ```
 
 The input command can be either a direct on/off command which will just
@@ -788,9 +921,141 @@ using upper case ON an OFF payloads.
       scene_payload: '{ "cmd" : "{{value.lower()}}" }'
    ```
 
-When the ouetl changes state a message like `ON` or `OFF` is
-published to the topic `insteon/a1.b1.c1/state/1`.  To command the
-switch to turn on, send a message to `insteon/a1.b1.c1/set/1` with the
-payload `ON`.
+When the outlet changes state a message like `ON` or `OFF` is published to
+the topic `insteon/a1.b1.c1/state/1`.  To command the switch to turn on, send
+a message to `insteon/a1.b1.c1/set/1` with the payload `ON`.
+
+---
+
+## Thermostat
+
+The thermostat has a lot of available states and commands.
+
+Output state change topic and payload.  Available variables for templating in
+all cases are:
+   address = 'aa.bb.cc'
+   name = 'device name'
+
+### State Topics
+
+The following is an example configuration:
+
+   temp_c = temperature in celsius
+   temp_f = temperature in farenheit
+
+  ```
+  ambient_temp_topic: 'insteon/{{address}}/ambient_temp'
+  ambient_temp_payload: ''{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}''
+  cool_sp_state_topic: 'insteon/{{address}}/cool_sp_state'
+  cool_sp_state_payload: ''{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}''
+  heat_sp_state_topic: 'insteon/{{address}}/heat_sp_state'
+  heat_sp_state_payload: ''{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}''
+  ```
+
+   fan_mode = "ON", "AUTO"
+   is_fan_on = 0/1
+
+  ```
+  fan_state_topic: 'insteon/{{address}}/fan_state'
+  fan_state_payload: '{{fan_mode}}'
+  ```
+
+   mode = 'OFF', 'AUTO', 'HEAT', 'COOL', 'PROGRAM'
+
+  ```
+  mode_state_topic: 'insteon/{{address}}/mode_state'
+  mode_state_payload: '{{mode}}'
+  ```
+   humid = humidity percentage
+
+  ```
+  humid_state_topic: 'insteon/{{address}}/humid_state'
+  humid_state_payload: ''{{humid}}''
+  ```
+
+   status = "OFF", "HEATING", "COOLING"
+   is_heating = 0/1
+   is_cooling = 0/1
+
+  ```
+  status_state_topic: 'insteon/{{address}}/status_state'
+  status_state_payload: ''{{status}}''
+  ```
+
+ Caution, there is no push update for the hold or energy state.  ie, if
+ you press hold on the physical device, you will not get any notice of
+ this unless you run get_status().  There is also no way to programatically
+ change the hold state or energy state
+
+   hold_str = 'OFF', 'TEMP'
+   is_hold = 0/1
+
+  ```
+  hold_state_topic: 'insteon/{{address}}/hold_state'
+  hold_state_payload: '{{hold_str}}'
+  ```
+   energy_str = 'OFF', 'ON'
+   is_energy = 0/1
+
+  ```
+  energy_state_topic: 'insteon/{{address}}/energ_state'
+  energy_state_payload: '{{energy_str}}'
+  ```
+
+### Command Topics
+
+Available variables for templating all of these commands are:
+   address = 'aa.bb.cc'
+   name = 'device name'
+   value = the input payload
+   json = the input payload converted to json.  Use json.VAR to extract
+          a variable from a json payload.
+
+
+Mode state command.  The output of passing the payload through the template
+must match the following:
+
+ ```
+ { "cmd" : "auto"/"off"/"heat"/"cool","program" }
+ ```
+
+Sample configuration:
+
+  ```
+  mode_command_topic: 'insteon/{{address}}/mode_command'
+  mode_command_payload: '{ "cmd" : "{{value.lower()}}" }'
+  ```
+
+Fan state command.  The output of passing the payload through the template must
+match the following:
+
+  ```
+  { "cmd" : "auto"/"on" }
+  ```
+
+Sample configuration:
+
+  ```
+  fan_command_topic: 'insteon/{{address}}/fan_command'
+  fan_command_payload: '{ "cmd" : "{{value.lower()}}" }'
+  ```
+
+Temp setpoint commands. The payloads should be in the form of
+
+  ```
+  {temp_c: float, temp_f: float}
+  ```
+
+Only one unit needs to be present.  If temp_f is present it will be used
+regardless
+
+Sample Configuration:
+
+  ```
+  heat_sp_command_topic: 'insteon/{{address}}/heat_sp_command'
+  heat_sp_payload: '{ "temp_f" : {{value}} }'
+  cool_sp_command_topic: 'insteon/{{address}}/cool_sp_command'
+  cool_sp_payload: '{ "temp_f" : {{value}} }'
+  ```
 
 ---

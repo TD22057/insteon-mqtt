@@ -14,8 +14,8 @@ class OutAllLinkUpdate(Base):
     """Modem database all linking database update message.
 
     This message is used to change (add, edit, delete) an entry in the
-    modem's all link database.  After sending, the modem should ACK
-    this back with the result (ACK = success, NAK = failure).
+    modem's all link database.  After sending, the modem should ACK this back
+    with the result (ACK = success, NAK = failure).
     """
     msg_code = 0x6f
     fixed_msg_size = 12
@@ -34,18 +34,18 @@ class OutAllLinkUpdate(Base):
     def from_bytes(cls, raw):
         """Read the message from a byte stream.
 
-        This should only be called if raw[1] == msg_code and len(raw)
-        >= msg_size().
+        This should only be called if raw[1] == msg_code and len(raw) >=
+        msg_size().
 
-        You cannot pass the output of to_bytes() to this.  to_bytes()
-        is used to output to the PLM but the modem sends back the same
-        message with an extra ack byte which this function can read.
+        You cannot pass the output of to_bytes() to this.  to_bytes() is used
+        to output to the PLM but the modem sends back the same message with
+        an extra ack byte which this function can read.
 
         Args:
-           raw   (bytes): The current byte stream to read from.
+          raw (bytes):  The current byte stream to read from.
 
         Returns:
-           Returns the constructed OutAllLinkUpdate object.
+          Returns the constructed OutAllLinkUpdate object.
         """
         assert len(raw) >= cls.fixed_msg_size
         assert raw[0] == 0x02 and raw[1] == cls.msg_code
@@ -63,14 +63,14 @@ class OutAllLinkUpdate(Base):
         """Constructor
 
         Args:
-          cmd:      (Cmd) Command byte.  See the OutAllLinkUpdate.Cmd
-                    enumeration for valid values.
-          db_flags: (Flags) Message flags to send.
-          group:    (int) All link group for the command.
-          addr:     (Address) Address to send the command to.
-          data:     (bytes) 3 byte data packet.  If None, three 0x00 are sent.
-          is_ack:   (bool) True for ACK, False for NAK.  None for output
-                    commands to the modem.
+          cmd (Cmd):  Command byte.  See the OutAllLinkUpdate.Cmd enumeration
+              for valid values.
+          db_flags (Flags):  Message flags to send.
+          group (int):  All link group for the command.
+          addr (Address):  Address to send the command to.
+          data (bytes):  3 byte data packet.  If None, three 0x00 are sent.
+          is_ack (bool): True for ACK, False for NAK.  None for output
+                 commands to the modem.
         """
         super().__init__()
 
@@ -89,7 +89,7 @@ class OutAllLinkUpdate(Base):
         """Convert the message to a byte array.
 
         Returns:
-           (bytes) Returns the message as bytes.
+          bytes:  Returns the message as bytes.
         """
         o = io.BytesIO()
         o.write(bytes([0x02, self.msg_code, self.cmd.value]))
@@ -102,8 +102,8 @@ class OutAllLinkUpdate(Base):
     #-----------------------------------------------------------------------
     def __str__(self):
         ack = "" if self.is_ack is None else " ack: %s" % self.is_ack
-        return "OutAllLinkUpdate: %s grp: %s %s%s" % \
-            (self.addr, self.group, self.cmd, ack)
+        return ("OutAllLinkUpdate: %s grp: %s %s%s" %
+                (self.addr, self.group, self.cmd, ack))
 
     #-----------------------------------------------------------------------
 

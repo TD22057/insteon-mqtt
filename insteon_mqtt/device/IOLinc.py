@@ -16,12 +16,26 @@ LOG = log.get_logger()
 
 
 class IOLinc(Base):
-    """IOLinc device.
+    """Insteon IOLinc relay/sensor device.
 
-    TODO: doc
+    This class can be used to model the IOLinc device which has a sensor and
+    a relay.  Unfortunately, it behaves very poorly.  Unlike every other
+    device, it doesn't broadcast the relay and sensor on separate groups.  So
+    messages arrive from either and commands are for the relay.  There a
+    number of internal mode state which change how the device behaves (see
+    below for details).
+
+    State changes are communicated by emitting signals.  Other classes can
+    connect to these signals to perform an action when a change is made to
+    the device (like sending MQTT messages).  Supported signals are:
+
+    - signal_on_off( Device, bool is_on, on_off.Mode mode ):
+      Sent whenever the sensor is turned on or off.
+
+    - signal_manual( Device, on_off.Manual mode ): Sent when the device
+      starts or stops manual mode (when a button is held down or released).
 
     NOTES:
-
     Link the relay as responder to another device (controller).  Acttivate
     the controller.  Relay updates but state update is NOT emitted.
 
@@ -114,8 +128,9 @@ class IOLinc(Base):
     obvious whether or not it's a good idea or not.  Might be nice to have an
     option to FORCE a controller of the IO linc to always be in the correct
     state to show the door open or closed.
-
     """
+    type_name = "io_linc"
+
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
 
@@ -131,13 +146,19 @@ class IOLinc(Base):
 
         self._is_on = False
 
-        # Support on/off style signals.
-        self.signal_active = Signal()  # (Device, bool)
+        # Support on/off style signals for the sensor
+        # API: func(Device, bool is_on)
+        self.signal_on_off = Signal()
 
-        # Group number of the virtual modem scene linked to this device.
+        # Group number of the virtual modem scene linked to this device.  We
+        # need this so we can trigger the device and have it respond using
+        # the correct mode information.  If we used a direct command, it will
+        # just turn on/off the relay and not use the various latching and
+        # momentary configurations.  So instead of sending a direct on/off,
+        # we'll trigger this virtual scene.
         self.modem_scene = None
 
-        # Remove (mqtt) commands mapped to methods calls.  Add to the
+        # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
         self.cmd_map.update({
             'on' : self.on,
@@ -151,13 +172,16 @@ class IOLinc(Base):
     def pair(self, on_done=None):
         """Pair the device with the modem.
 
-        This only needs to be called one time.  It will set the device
-        as a controller and the modem as a responder so the modem will
-        see group broadcasts and report them to us.
+        This only needs to be called one time.  It will set the device as a
+        controller and the modem as a responder so the modem will see group
+        broadcasts and report them to us.
 
-        The device must already be a responder to the modem (push set
-        on the modem, then set on the device) so we can update it's
-        database.
+        The device must already be a responder to the modem (push set on the
+        modem, then set on the device) so we can update it's database.
+
+        Args:
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("IOLinc %s pairing", self.addr)
 
@@ -201,11 +225,24 @@ class IOLinc(Base):
 
     #-----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):
-        """TODO: doc
+        """Set internal device flags.
+
+        This command is used to change internal device flags and states.  See
+        the IOLinc user's guide for more information on what these do.  Valid
+        inputs are:
+
         valid kwargs:
-           mode: "latching", "momentary-a", "momentary-b", "momentary-c"
-           trigger_reverse: 1/0
-           relay_linked: 1/0
+        - mode = "latching", "momentary-a", "momentary-b", "momentary-c":
+          Change the relay mode.
+
+        - trigger_reverse = 1/0:  Set the trigger reversing flag.
+
+        - relay_linked = 1/0:  Set the relay link flag.
+
+        Args:
+          kwargs: Key=value pairs of the flags to change.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("IOLinc %s cmd: set operation flags", self.label)
 
@@ -232,7 +269,9 @@ class IOLinc(Base):
 
     #-----------------------------------------------------------------------
     def _change_flags(self, success, msg, bits, kwargs, on_done):
-        """TODO: doc
+        """Change the operating flags.
+
+        See the set_flags() code for details.
         """
         if not success:
             on_done(success, msg, None)
@@ -268,9 +307,9 @@ class IOLinc(Base):
             bits = util.bit_set(bits, 2, trigger_reverse)
 
         # This sends a refresh ping which will respond w/ the current
-        # database delta field.  The handler checks that against the
-        # current value.  If it's different, it will send a database
-        # download command to the device to update the database.
+        # database delta field.  The handler checks that against the current
+        # value.  If it's different, it will send a database download command
+        # to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x20, bits)
         msg_handler = handler.StandardCmd(msg, self.handle_flags)
         self.send(msg, msg_handler)
@@ -279,30 +318,41 @@ class IOLinc(Base):
     def refresh(self, force=False, on_done=None):
         """Refresh the current device state and database if needed.
 
-        This sends a ping to the device.  The reply has the current
-        device state (on/off, level, etc) and the current db delta
-        value which is checked against the current db value.  If the
-        current db is out of date, it will trigger a download of the
-        database.
+        This sends a ping to the device.  The reply has the current device
+        state (on/off, level, etc) and the current db delta value which is
+        checked against the current db value.  If the current db is out of
+        date, it will trigger a download of the database.
 
-        This will send out an updated signal for the current device
-        status whenever possible (like dimmer levels).
+        This will send out an updated signal for the current device status
+        whenever possible (like dimmer levels).
 
-        TODO: doc force
+        Args:
+          force (bool):  If true, will force a refresh of the device database
+                even if the delta value matches as well as a re-query of the
+                device model information even if it is already known.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Device %s cmd: status refresh", self.label)
 
         # NOTE: IOLinc cmd1=0x00 will report the relay state.  cmd2=0x01
         # reports the sensor state which is what we want.
+        seq = CommandSeq(self.protocol, "Device refreshed", on_done)
 
         # This sends a refresh ping which will respond w/ the current
-        # database delta field.  The handler checks that against the
-        # current value.  If it's different, it will send a database
-        # download command to the device to update the database.
+        # database delta field.  The handler checks that against the current
+        # value.  If it's different, it will send a database download command
+        # to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
                                             on_done, num_retry=3)
-        self.send(msg, msg_handler)
+        seq.add_msg(msg, msg_handler)
+
+        # If model number is not known, or force true, run get_model
+        self.addRefreshData(seq, force)
+
+        # Run all the commands.
+        seq.run()
 
     #-----------------------------------------------------------------------
     def is_on(self):
@@ -317,7 +367,25 @@ class IOLinc(Base):
         This turns the relay on no matter what.  It ignores the momentary
         A/B/C settings and just turns the relay on.
 
-        TODO: doc
+        NOTE: This does NOT simulate a button press on the device - it just
+        changes the state of the device.  It will not trigger any responders
+        that are linked to this device.  To simulate a button press, call the
+        scene() method.
+
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
+
+        Args:
+          group (int):  The group to send the command to.  For this device,
+                this must be 1.  Allowing a group here gives us a consistent
+                API to the on command across devices.
+          level (int):  If non zero, turn the device on.  Should be in the
+                range 0 to 255.  Only dimmers use the intermediate values, all
+                other devices look at level=0 or level>0.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("IOLinc %s cmd: on", self.addr)
         assert group == 0x01
@@ -337,9 +405,22 @@ class IOLinc(Base):
         This turns the relay on no matter what.  It ignores the momentary
         A/B/C settings and just turns the relay on.
 
+        NOTE: This does NOT simulate a button press on the device - it just
+        changes the state of the device.  It will not trigger any responders
+        that are linked to this device.  To simulate a button press, call the
+        scene() method.
+
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
+
         Args:
-          instant:  (bool) False for a normal ramping change, True for an
-                    instant change.
+          group (int):  The group to send the command to.  For this device,
+                this must be 1.  Allowing a group here gives us a consistent
+                API to the on command across devices.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("IOLinc %s cmd: off", self.addr)
         assert group == 0x01
@@ -354,16 +435,30 @@ class IOLinc(Base):
 
     #-----------------------------------------------------------------------
     def set(self, level, group=0x01, instant=False, on_done=None):
-        """Set the device on or off.
+        """Turn the relay on or off.  Level zero will be off.
+
+        This turns the relay on or off no matter what.  It ignores the
+        momentary A/B/C settings and just turns the relay on.
+
+        NOTE: This does NOT simulate a button press on the device - it just
+        changes the state of the device.  It will not trigger any responders
+        that are linked to this device.  To simulate a button press, call the
+        scene() method.
 
         This will send the command to the device to update it's state.
         When we get an ACK of the result, we'll change our internal
         state and emit the state changed signals.
 
         Args:
-          level:    (int/bool) If non zero, turn the device on.
-          instant:  (bool) False for a normal ramping change, True for an
-                    instant change.
+          level (int):  If non zero, turn the device on.  Should be in the
+                range 0 to 255.  Only dimmers use the intermediate values, all
+                other devices look at level=0 or level>0.
+          group (int):  The group to send the command to.  For this device,
+                this must be 1.  Allowing a group here gives us a consistent
+                API to the on command across devices.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         if level:
             self.on(group, level, instant, on_done)
@@ -372,7 +467,18 @@ class IOLinc(Base):
 
     #-----------------------------------------------------------------------
     def scene(self, is_on, group=None, on_done=None):
-        """TODO: doc
+        """Trigger a scene on the device.
+
+        Triggering a scene is the same as simulating a button press on the
+        device.  It will change the state of the device and notify responders
+        that are linked ot the device to be updated.
+
+        Args:
+          is_on (bool):  True for an on command, False for an off command.
+          group (int):  The group on the device to simulate.  For this device,
+                this must be 1.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         on_done = util.make_callback(on_done)
 
@@ -404,15 +510,15 @@ class IOLinc(Base):
         """Handle broadcast messages from this device.
 
         The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update
-        the device state and look up the group in the all link
-        database.  For each device that is in the group (as a
-        reponsder), we'll call handle_group_cmd() on that device to
-        trigger it.  This way all the devices in the group are updated
-        to the correct values when we see the broadcast message.
+        triggered.  The message has the group ID in it.  We'll update the
+        device state and look up the group in the all link database.  For
+        each device that is in the group (as a reponsder), we'll call
+        handle_group_cmd() on that device to trigger it.  This way all the
+        devices in the group are updated to the correct values when we see
+        the broadcast message.
 
         Args:
-          msg:   (InptStandard) Broadcast message from the device.
+          msg (InpStandard):  Broadcast message from the device.
         """
         # ACK of the broadcast - ignore this.
         if msg.cmd1 == 0x06:
@@ -437,7 +543,13 @@ class IOLinc(Base):
 
     #-----------------------------------------------------------------------
     def handle_flags(self, msg, on_done):
-        """TODO: doc
+        """Callback for handling flag change responses.
+
+        This is called when we get a response to the set_flags command.
+
+        Args:
+          msg (message.InpStandard):  The refresh message reply.  The current
+              device state is in the msg.cmd2 field.
         """
         LOG.ui("Device %s operating flags: %s", self.addr,
                "{:08b}".format(msg.cmd2))
@@ -476,25 +588,29 @@ class IOLinc(Base):
             mode = "momentary B"
         else:
             mode = "momentary A"
-        LOG.ui("Relay latching : %s", mode)
 
+        # In the future, we should store this information and do something
+        # with it.
+        LOG.ui("Relay latching : %s", mode)
         on_done(True, "Operation complete", msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
-        """Handle replies to the refresh command.
+        """Callback for handling refresh() responses.
 
-        The refresh command reply will contain the current device
-        state in cmd2 and this updates the device with that value.
+        This is called when we get a response to the refresh() command.  The
+        refresh command reply will contain the current device state in cmd2
+        and this updates the device with that value.  It is called by
+        handler.DeviceRefresh when we can an ACK for the refresh command.
 
         Args:
-          msg:  (message.InpStandard) The refresh message reply.  The current
-                device state is in the msg.cmd2 field.
+          msg (message.InpStandard):  The refresh message reply.  The current
+              device state is in the msg.cmd2 field.
         """
         LOG.ui("IOLinc %s refresh on=%s", self.label, msg.cmd2 > 0x00)
 
-        # Current on/off level is stored in cmd2 so update our level
-        # to match.
+        # Current on/off level is stored in cmd2 so update our level to
+        # match.
         self._set_is_on(msg.cmd2 > 0x00)
 
     #-----------------------------------------------------------------------
@@ -502,13 +618,15 @@ class IOLinc(Base):
         """Callback for standard commanded messages.
 
         This callback is run when we get a reply back from one of our
-        commands to the device.  If the command was ACK'ed, we know it
-        worked so we'll update the internal state of the device and
-        emit the signals to notify others of the state change.
+        commands to the device.  If the command was ACK'ed, we know it worked
+        so we'll update the internal state of the device and emit the signals
+        to notify others of the state change.
 
         Args:
-          msg:  (message.InpStandard) The reply message from the device.
-                The on/off level will be in the cmd2 field.
+          msg (message.InpStandard):  The reply message from the device.
+              The on/off level will be in the cmd2 field.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         # Note: don't update the state - the sensor does that.  This state is
         # for the relay.
@@ -517,8 +635,9 @@ class IOLinc(Base):
             on_done(True, "IOLinc command complete", None)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("IOLinc %s NAK error: %s", self.addr, msg)
-            on_done(False, "IOLinc command failed", None)
+            LOG.error("IOLinc %s NAK error: %s, Message: %s", self.addr,
+                      msg.nak_str(), msg)
+            on_done(False, "IOLinc command failed. " + msg.nak_str(), None)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, msg, on_done):
@@ -530,59 +649,66 @@ class IOLinc(Base):
         trigger other updates for the scene devices.
 
         Args:
-          msg:  (message.InpStandard) The reply message from the device.
+          msg (message.InpStandard): The reply message from the device.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
-        # If this it the ACK we're expecting, update the internal
-        # state and emit our signals.
+        # Call the callback.  We don't change state here - the device will
+        # send a regular broadcast message which will run handle_broadcast
+        # which will then update the state.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
             on_done(True, "Scene triggered", None)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("IOLinc %s NAK error: %s", self.addr, msg)
-            on_done(False, "Scene trigger failed failed", None)
+            LOG.error("IOLinc %s NAK error: %s, Message: %s", self.addr,
+                      msg.nak_str(), msg)
+            on_done(False, "Scene trigger failed failed. " + msg.nak_str(),
+                    None)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, group, cmd):
+    def handle_group_cmd(self, addr, msg):
         """Respond to a group command for this device.
 
-        This is called when this device is a responder to a scene.
-        The device should look up the responder entry for the group in
-        it's all link database and update it's state accordingly.
+        This is called when this device is a responder to a scene.  The
+        device that received the broadcast message (handle_broadcast) will
+        call this method for every device that is linked to it.  The device
+        should look up the responder entry for the group in it's all link
+        database and update it's state accordingly.
 
         Args:
-          addr:  (Address) The device that sent the message.  This is the
-                 controller in the scene.
-          group: (int) The group being triggered.
-          cmd:   (int) The command byte being sent.
+          addr (Address):  The device that sent the message.  This is the
+               controller in the scene.
+          msg (InpStandard):  Broadcast message from the device.  Use
+              msg.group to find the group and msg.cmd1 for the command.
         """
-        # Make sure we're really a responder to this message.  This
-        # shouldn't ever occur.
-        entry = self.db.find(addr, group, is_controller=False)
+        # Make sure we're really a responder to this message.  This shouldn't
+        # ever occur.
+        entry = self.db.find(addr, msg.group, is_controller=False)
         if not entry:
             LOG.error("IOLinc %s has no group %s entry from %s", self.addr,
-                      group, addr)
+                      msg.group, addr)
             return
 
         # Nothing to do - there is no "state" to update since the state we
         # care about is the sensor state and this command tells us that the
         # relay state was tripped.
-        LOG.debug("IOLinc %s cmd %#04x", self.addr, cmd)
+        LOG.debug("IOLinc %s cmd %#04x", self.addr, msg.cmd1)
 
     #-----------------------------------------------------------------------
     def _set_is_on(self, is_on):
-        """Set the device on/off state.
+        """Update the device on/off state.
 
         This will change the internal state and emit the state changed
-        signal.
+        signals.  It is called by whenever we're informed that the device has
+        changed state.
 
         Args:
-          is_on:   (bool) True if motion is active, False if it isn't.
+          is_on (bool):  True if the relay is on, False if it isn't.
         """
         LOG.info("Setting device %s on %s", self.label, is_on)
         self._is_on = bool(is_on)
 
-        # Notify others that the switch state has changed.
-        self.signal_active.emit(self, self._is_on)
+        self.signal_on_off.emit(self, self._is_on)
 
     #-----------------------------------------------------------------------

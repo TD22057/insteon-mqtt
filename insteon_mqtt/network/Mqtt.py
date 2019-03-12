@@ -14,34 +14,33 @@ LOG = log.get_logger(__name__)
 class Mqtt(Link):
     """MQTT client link.
 
-    This class bridges an MQTT client (paho-mqtt library) and the
-    network manager.  This class adapts the mqtt package to use the
-    network manager class to allow for multiple connections and other
-    network activity to occur.  This also supports delayed connecting
-    (if the broker is down) and automatic reconnects.
+    This class bridges an MQTT client (paho-mqtt library) and the network
+    manager.  This class adapts the mqtt package to use the network manager
+    class to allow for multiple connections and other network activity to
+    occur.  This also supports delayed connecting (if the broker is down) and
+    automatic reconnects.
 
     If an MQTT message arrives, Mqtt.signal_message(Link, Messsage) is
-    emitted so the message can be processed.  Message is the paho
-    message class with attributes topic, payload, qos, and retain.
+    emitted so the message can be processed.  Message is the paho message
+    class with attributes topic, payload, qos, and retain.
 
-    Input fields can be set via the constructor or by loading a
-    configuration file (see load_config for details).
+    Input fields can be set via the constructor or by loading a configuration
+    file (see load_config for details).
     """
     def __init__(self, host="127.0.0.1", port=1883, id=None,
                  reconnect_dt=10):
         """Construct an MQTT client.
 
-        This will not actually connect to the broker until connect()
-        is called.
+        This will not actually connect to the broker until connect() is
+        called.
 
         Args:
-          host:    (str) The broker host to connect to.
-          port:    (int) Thr broker port to connect to.
-          id:      (str) Optional connection ID to send.  If not set,
-                   'insteon-mqtt' is used.
-          reconnect_dt:  (int) Time in seconds to attempt reconnections if
-                         the broker is unavailable.
-
+          host (str):  The broker host to connect to.
+          port (int):  The broker port to connect to.
+          id (str):  Optional connection ID to send.  If not set,
+             'insteon-mqtt' is used.
+          reconnect_dt (int):  Time in seconds to attempt reconnections if
+                       the broker is unavailable.
         """
         self.signal_message = Signal()    # (MqttLink, Message msg)
 
@@ -51,10 +50,10 @@ class Mqtt(Link):
         self.connected = False
         self.id = id if id is not None else "insteon-mqtt"
 
-        # Insure poll is called at least once every 10 seconds so we
-        # can send a keep alive message to the server so our
-        # connection doesn't get dropped.  This relies on poll()
-        # getting called more often than this time.
+        # Insure poll is called at least once every 10 seconds so we can send
+        # a keep alive message to the server so our connection doesn't get
+        # dropped.  This relies on poll() getting called more often than this
+        # time.
         self.keep_alive = 30
 
         self._reconnect_dt = reconnect_dt
@@ -74,13 +73,13 @@ class Mqtt(Link):
         Configuration inputs will override any set in the constructor.
 
         The input configuration dictionary can contain:
-        - broker:    (str) The broker host to connect to.
-        - port:      (int) Thr broker port to connect to.
-        - username:  (str) Optional user name to log in with.
-        - passord:   (str) Optional password to log in with.
+        - broker (str):  The broker host to connect to.
+        - port (int):  The broker port to connect to.
+        - username (str):  Optional user name to log in with.
+        - passord (str):  Optional password to log in with.
 
         Args:
-          config:   (dict) Configuration data to load.
+          config (dict):  Configuration data to load.
         """
         assert not self.connected
 
@@ -98,10 +97,10 @@ class Mqtt(Link):
         """Publish an MQTT message.
 
         Arg:
-          topic:    (str) The topic to publish with.
-          payload:  (str/bytes) The payload to send for the message.
-          qos:      (int) The MQTT QOS level to use (1, 2, or 3).
-          retain:   (bool) True to mark the message as retained.
+          topic (str):  The topic to publish with.
+          payload (str/bytes):  The payload to send for the message.
+          qos (int): The MQTT QOS level to use (1, 2, or 3).
+          retain (bool):  True to mark the message as retained.
         """
         self.client.publish(topic, payload, qos, retain)
         self.signal_needs_write.emit(self, True)
@@ -113,19 +112,18 @@ class Mqtt(Link):
     def subscribe(self, topic, qos=0, callback=None):
         """Subscribe the client to a topic.
 
-        If a callback is supplied, then that callback will be used for
-        all messages that match the input topic and NO other callbacks
-        or signals will be sent for that message.  The callback
-        signature is:
-           func(client, user_data, message)
+        If a callback is supplied, then that callback will be used for all
+        messages that match the input topic and NO other callbacks or signals
+        will be sent for that message.  The callback signature is:
+          func(client, user_data, message)
 
         Args:
-          topic:    (str) The topic to subscribe to.
-          qos:      (int) The quality of service level to use (0,1,2).
-          callback: Optional message callback.
+          topic (str):  The topic to subscribe to.
+          qos (int): The quality of service level to use (0,1,2).
+          callback:  Optional message callback.
         """
-        # Tell the client about it and then notify the manager that we
-        # have messages to send.
+        # Tell the client about it and then notify the manager that we have
+        # messages to send.
         self.client.subscribe(topic, qos)
 
         if callback:
@@ -140,10 +138,10 @@ class Mqtt(Link):
         """Unsubscribe the client from a topic.
 
         Args:
-          topic:   (str) The topic to unsubscribe from.
+          topic (str):  The topic to unsubscribe from.
         """
-        # Tell the client about it and then notify the manager that we
-        # have messages to send.
+        # Tell the client about it and then notify the manager that we have
+        # messages to send.
         self.client.unsubscribe(topic)
         self.signal_needs_write.emit(self, True)
 
@@ -154,7 +152,7 @@ class Mqtt(Link):
         """Return the file descriptor to watch for this link.
 
         Returns:
-          (int) Returns the descriptor (obj.fileno() usually) to monitor.
+          int:  Returns the descriptor (obj.fileno() usually) to monitor.
         """
         assert self._fd
         return self._fd
@@ -163,12 +161,17 @@ class Mqtt(Link):
     def poll(self, t):
         """Periodic poll callback.
 
-        The manager will call this at recurring intervals in case the
-        link needs to do some periodic manual processing.
+        The manager will call this at recurring intervals in case the link
+        needs to do some periodic manual processing.
 
-        MQTT requires this to insure that the keep alive messages are
-        sent out at reasonable intervals so this must be called
-        roughly every 15-30 seconds.
+        MQTT requires this to insure that the keep alive messages are sent
+        out at reasonable intervals so this must be called roughly every
+        15-30 seconds.
+
+        Args:
+          t (float): The current time at which poll is being called.  This is
+            passed in so that all clients receive the same "current" time
+            instead of each calling time.time() and getting a different value.
         """
         # This is required to handle keepalive messages.
         self.client.loop_misc()
@@ -177,9 +180,9 @@ class Mqtt(Link):
     def retry_connect_dt(self):
         """Return a positive integer (seconds) if the link should reconnect.
 
-        If this returns None, the link will not be reconnected if it
-        closes.  Otherwise this is the retry interval in seconds to
-        try and reconnect the link by calling connect().
+        If this returns None, the link will not be reconnected if it closes.
+        Otherwise this is the retry interval in seconds to try and reconnect
+        the link by calling connect().
         """
         return self._reconnect_dt
 
@@ -190,7 +193,7 @@ class Mqtt(Link):
         This will try and connect to the MQTT broker.
 
         Returns:
-          (bool) Returns True if the connection was successful or False it
+          bool:  Returns True if the connection was successful or False it
           it failed.
         """
         try:
@@ -210,18 +213,18 @@ class Mqtt(Link):
     def read_from_link(self):
         """Read data from the link.
 
-        This will be called by the manager when there is data
-        available on the file descriptor for reading.
+        This will be called by the manager when there is data available on
+        the file descriptor for reading.
 
         Returns:
-           (int) Return -1 if the link should be closed.  Or any other
+           int:  Return -1 if the link should be closed.  Or any other
            integer to indicate success.
         """
         # Tell the MQTT client that it ca read.
         status = self.client.loop_read()
 
-        # If status is zero, everything is ok.  Return 1 to tell the
-        # link that reading was successful.
+        # If status is zero, everything is ok.  Return 1 to tell the link
+        # that reading was successful.
         if status == 0:
             return 1
 
@@ -239,7 +242,7 @@ class Mqtt(Link):
         link should call self.signal_needs_write.emit(False).
 
         Args:
-           t:    (float) The current time (time.time).
+           t (float):  The current time (time.time).
         """
         LOG.debug("MQTT writing")
 
@@ -266,8 +269,15 @@ class Mqtt(Link):
     def _on_connect(self, client, data, flags, result):
         """MQTT connection callback.
 
-        This is called by the MQTT client once the connection has
-        occurred.
+        This is called by the MQTT client once the connection has occurred.
+
+        Args:
+          client (paho.Client):  The paho mqtt client (self.client).
+          data:  Optional user data (unused).
+          flags (dict):  Connection flags.
+          result (int):  0 = success, 1 = incorrect protocol, 2 = invalid
+                 client, 3 = server unavailable, 4 = bad login, 5 = not
+                 authorized.
         """
         if result == 0:
             self.connected = True
@@ -280,6 +290,13 @@ class Mqtt(Link):
         """MQTT disconnection callback.
 
         This is called by the MQTT client when the connection is droppped.
+
+        Args:
+          client (paho.Client):  The paho mqtt client (self.client).
+          data:  Optional user data (unused).
+          result (int):  0 = success, 1 = incorrect protocol, 2 = invalid
+                 client, 3 = server unavailable, 4 = bad login, 5 = not
+                 authorized.
         """
         LOG.info("MQTT disconnection %s %s", self.host, self.port)
 
@@ -291,6 +308,11 @@ class Mqtt(Link):
         """MQTT message sent callback.
 
         This is called by the MQTT client when a message has been sent.
+
+        Args:
+          client (paho.Client):  The paho mqtt client (self.client).
+          data:  Optional user data (unused).
+          message:  MQTT message - has attrs: topic, payload, qos, retain.
         """
         LOG.info("MQTT message %s %s", message.topic, message.payload)
         self.signal_message.emit(self, message)
@@ -298,10 +320,16 @@ class Mqtt(Link):
     #-----------------------------------------------------------------------
     def _on_log(self, client, data, level, buf):
         """MQTT client logging callback
+
+        Args:
+          client (paho.Client):  The paho mqtt client (self.client).
+          data:  Optional user data (unused).
+          level (int):  Logging level.
+          buf (str):  The message to log.
         """
-        # Send a very low level logging message so we can turn on
-        # level 5 logging at the top level to see what is happening in
-        # the MQTT client.
+        # Send a very low level logging message so we can turn on level 5
+        # logging at the top level to see what is happening in the MQTT
+        # client.
         LOG.log(5, buf)
 
     #-----------------------------------------------------------------------

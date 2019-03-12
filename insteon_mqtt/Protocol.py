@@ -66,14 +66,13 @@ class Protocol:
     3) Device database reading.  Reading remote db's from a device involves
        sending one command, getting an ACK, then reading a series of messages
        (1 per db entry) until we get a final message which ends the sequence.
-
     """
     def __init__(self, link):
         """Constructor
 
         Args:
-          link:   (network.Link) Network Serial link class to use to
-                  communicate with the PLM modem.
+          link (network.Link):  Network Serial link class to use to
+               communicate with the PLM modem.
         """
         self.link = link
 
@@ -146,8 +145,7 @@ class Protocol:
         See the classes in the handler sub-package for examples.
 
         Args:
-           handler:   (handler) Message handler class to add.
-
+           handler:  Message handler class to add.
         """
         self._read_handlers.append(handler)
 
@@ -156,8 +154,8 @@ class Protocol:
         """Remove a universal message handler.
 
         Args:
-           handler:   (handler) Message handler to remove.  If this doesn't
-                      exist, nothing is done.
+           handler:  Message handler to remove.  If this doesn't exist,
+                     nothing is done.
         """
         self._read_handlers.pop(handler, None)
 
@@ -169,7 +167,7 @@ class Protocol:
         to load any configuration for the modem connection.
 
         Args:
-          config:   (dict) Configuration data to load.
+          config (dict): Configuration data to load.
         """
         self.link.load_config(config)
 
@@ -188,20 +186,18 @@ class Protocol:
         expected.
 
         Arg:
-          msg:            Output message to write.  This should be an
-                          instance of a message in the message directory that
-                          that starts with 'Out'.
-          msg_handler:    Message handler instance to use when replies to the
-                          message are received.  Any message received after we
-                          write out the msg are passed to this handler until
-                          the handler returns the message.FINISHED flags.
-          high_priority:  (bool)False to add the message at the end of the
-                          queue.  True to insert this message at the start of
-                          the queue.  This is ignored in timed messages.
-          after:          (float) Unix clock time tag to send the message
-                          after. If None, the message is sent as soon as
-                          possible.  Exact time is not guaranteed - the
-                          message will be send no earlier than this.
+          msg:  Output message to write.  This should be an instance of a
+                message in the message directory that that starts with 'Out'.
+          msg_handler:  Message handler instance to use when replies to the
+                        message are received.  Any message received after we
+                        write out the msg are passed to this handler until
+                        the handler returns the message.FINISHED flags.
+          high_priority (bool):  False to add the message at the end of the
+                        queue.  True to insert this message at the start of
+                        the queue.  This is ignored in timed messages.
+          after (float):  Unix clock time tag to send the message after. If
+                None, the message is sent as soon as possible.  Exact time is
+                not guaranteed - the message will be send no earlier than this.
         """
         # If the time is input, append the inputs to the timer list and sort
         # the list by the times field.
@@ -234,7 +230,7 @@ class Protocol:
         replies hasn't been received yet.
 
         Args:
-           t:   (float) Current Unix clock time tag.
+           t (float):  Current Unix clock time tag.
         """
         # Call the link poll function in case it needs to do something.
         self._linkPoll(t)
@@ -249,7 +245,7 @@ class Protocol:
         # the time out in which case we'll mark this message as finished and
         # move on.
         if (self._write_status == WriteStatus.WAIT_FOR_REPLY and
-               self._write_queue[0].handler.is_expired(self, t)):
+                self._write_queue[0].handler.is_expired(self, t)):
             self._write_finished()
 
     #-----------------------------------------------------------------------
@@ -261,8 +257,8 @@ class Protocol:
         that are in it.
 
         Args:
-          link:    network.Link The serial connection that read the data.
-          data:    bytes: The data that was read.
+          link (network.Link): The serial connection that read the data.
+          data (bytes): bytes: The data that was read.
         """
         # Append the read data to the inbound message buffer.
         self._buf.extend(data)
@@ -342,7 +338,7 @@ class Protocol:
           msg:   Insteon message object to process.
 
         Returns:
-          True if this is a duplicate message, false otherwise
+          bool: True if this is a duplicate message, false otherwise
         """
         if not isinstance(msg, Msg.InpStandard):  # Also matches InpExtended
             return False
@@ -371,7 +367,7 @@ class Protocol:
         Removes messages which have expired from the input message history.
 
         Args:
-          t:    (float) The current time.
+          t (float): The current time.
         """
         expired_idx = []
 
@@ -394,7 +390,7 @@ class Protocol:
         message, we'll pass it to the read handlers for processing.
 
         Args:
-          msg:   Insteon message object to process.
+          msg:  Insteon message object to process.
         """
         # Send the general message received notification.
         self.signal_received.emit(msg)
@@ -465,6 +461,11 @@ class Protocol:
 
         This is called by the network link when the message packet has been
         written to the modem.
+
+        Args:
+          link (network.Link):  Network Serial link class to use to
+               communicate with the PLM modem.
+          data (bytes): The data that was written to the link.
         """
         assert self._write_queue
         assert self._write_status == WriteStatus.PENDING_WRITE

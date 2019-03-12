@@ -44,6 +44,22 @@ def parse_args(args):
     sp.set_defaults(func=modem.refresh_all)
 
     #---------------------------------------
+    # modem.factory_reset command
+    sp = sub.add_parser("factory-reset", help="Perform a remote factory "
+                        "reset.  Currently only supported on the modem.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=modem.factory_reset)
+
+    #---------------------------------------
+    # modem.get_devices command
+    sp = sub.add_parser("get-devices", help="Return a list of all the devices "
+                        "that the modem knows about.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=modem.get_devices)
+
+    #---------------------------------------
     # device.linking command
     sp = sub.add_parser("linking", help="Turn on device or modem linking.  "
                         "This is the same as holding the modem set button "
@@ -54,6 +70,15 @@ def parse_args(args):
                     help="Don't print any command results to the screen.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.linking)
+
+    #---------------------------------------
+    # device.join command
+    sp = sub.add_parser("join", help="Join the device to the modem. "
+                        "Allows the modem to talk to the device.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.add_argument("address", help="Device address or name.")
+    sp.set_defaults(func=device.join)
 
     #---------------------------------------
     # device.refresh command
@@ -88,30 +113,42 @@ def parse_args(args):
     sp.set_defaults(func=device.get_engine)
 
     #---------------------------------------
+    # device.get_model command
+    sp = sub.add_parser("get-model", help="Get device model information.")
+    sp.add_argument("address", help="Device address or name.")
+    sp.set_defaults(func=device.get_model)
+
+    #---------------------------------------
     # device.on command
     sp = sub.add_parser("on", help="Turn a device on.")
     sp.add_argument("-l", "--level", metavar="level", type=int, default=255,
                     help="Level to use for dimmers (0-255)")
-    sp.add_argument("-i", "--instant", action="store_true",
-                    help="Instant (rather than ramping) on.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to turn on for multi-button "
                     "devices.")
+    gp = sp.add_mutually_exclusive_group()
+    gp.add_argument("-i", "--instant", dest="mode", action="store_const",
+                    const="instant", help="Instant (rather than ramping) on.")
+    gp.add_argument("-f", "--fast", dest="mode", action="store_const",
+                    const="fast", help="Send an Insteon fast on command.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.on)
 
     #---------------------------------------
     # device.set command
     sp = sub.add_parser("set", help="Turn a device to specific level.")
-    sp.add_argument("-i", "--instant", action="store_true",
-                    help="Instant (rather than ramping) on.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to set for multi-button "
                     "devices.")
+    gp = sp.add_mutually_exclusive_group()
+    gp.add_argument("-i", "--instant", dest="mode", action="store_const",
+                    const="instant", help="Instant (rather than ramping) on.")
+    gp.add_argument("-f", "--fast", dest="mode", action="store_const",
+                    const="fast", help="Send an Insteon fast on command.")
     sp.add_argument("address", help="Device address or name.")
     sp.add_argument("level", type=int, default=255,
                     help="Level to use for dimmers (0-255)")
@@ -122,11 +159,14 @@ def parse_args(args):
     sp = sub.add_parser("off", help="Turn a device off.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.add_argument("-i", "--instant", action="store_true",
-                    help="Instant (rather than ramping) on.")
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to turn off for multi-button "
                     "devices.")
+    gp = sp.add_mutually_exclusive_group()
+    gp.add_argument("-i", "--instant", dest="mode", action="store_const",
+                    const="instant", help="Instant (rather than ramping) on.")
+    gp.add_argument("-f", "--fast", dest="mode", action="store_const",
+                    const="fast", help="Send an Insteon fast on command.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.off)
 

@@ -21,12 +21,12 @@ against that.
 
 # Coding Style
 
-- All of the code must follow pep8 style and be checked with flake8
-  and pylint.
+- All of the code must follow pep8 style and be checked with flake8 and
+  pylint.  These must be run from the top level directory of the repository.
 
    ```
-   flake8 insteon-mqtt
-   pylint insteon-mqtt
+   flake8 ./insteon_mqtt
+   pylint ./insteon_mqtt
    ```
 
 - Classes, functions, and methods must be documented with Python
@@ -47,6 +47,9 @@ single test, pass the file name to pytest on the command line.
    ```
    pytest
    pytest tests/tests_Address.py
+
+   # Show log messages while testing
+   pytest -s -vv --log-cli-level=10 tests/mqtt/test_Outlet.py
    ```
 
 Coverage testing shows which lines needs to have test cases added and can be

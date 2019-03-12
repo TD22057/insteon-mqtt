@@ -4,14 +4,19 @@
 #
 #===========================================================================
 from .. import log
+from .. import on_off
 from .MsgTemplate import MsgTemplate
-from .Switch import Switch
+from . import util
 
 LOG = log.get_logger()
 
 
-class Dimmer(Switch):
-    """Insteon dimmer MQTT interface.
+class Dimmer:
+    """MQTT interface to an Insteon dimmer switch.
+
+    This class connects to a device.Dimmer object and converts it's output
+    state changes to MQTT messages.  It also subscribes to topics to allow
+    input MQTT messages to change the state of the Insteon device.
 
     Dimmers will report their state and brightness (level) and can be
     commanded to turn on and off or on at a specific level (0-255).
@@ -20,93 +25,117 @@ class Dimmer(Switch):
         """Constructor
 
         Args:
-          mqtt:     The MQTT main interface.
-          device:   The Insteon Dimmer object to link to.
+          mqtt (mqtt.Mqtt):  The MQTT main interface.
+          device (device.Dimmer):  The Insteon object to link to.
         """
-        super().__init__(mqtt, device, handle_active=False)
+        self.mqtt = mqtt
+        self.device = device
 
         # Output state change reporting template.
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state',
-            payload='{ "state" : "{{on_str.upper()}}", '
-                    '"brightness" : {{level_255}} }',
-            )
+            payload='{ "state" : "{{on_str.lower()}}", '
+                    '"brightness" : {{level_255}} }')
+
+        # Output manual state change is off by default.
+        self.msg_manual_state = MsgTemplate(None, None)
+
+        # Input on/off command template.
+        self.msg_on_off = MsgTemplate(
+            topic='insteon/{{address}}/set',
+            payload='{ "cmd" : "{{value.lower()}}" }')
 
         # Input level command template.
         self.msg_level = MsgTemplate(
             topic='insteon/{{address}}/level',
             payload='{ "cmd" : "{{json.state.lower()}}", '
-                    '"level" : {{json.brightness}} }',
-            )
+                    '"level" : {{json.brightness}} }')
 
         # Input scene on/off command template.
-        self.msg_scene_on_off = MsgTemplate(
+        self.msg_scene = MsgTemplate(
             topic='insteon/{{address}}/scene',
-            payload='{ "cmd" : "{{value.lower()}}" }',
-            )
+            payload='{ "cmd" : "{{value.lower()}}" }')
 
-        device.signal_level_changed.connect(self.handle_level_changed)
+        # Connect the signals from the insteon device so we get notified of
+        # changes.
+        device.signal_level_changed.connect(self._insteon_level_changed)
+        device.signal_manual.connect(self._insteon_manual)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
 
         Args:
-          config:   The configuration dictionary to load from.  The object
-                    config is stored in config['dimmer'].
-          qos:      The default quality of service level to use.
+          config (dict:  The configuration dictionary to load from.  The object
+                 config is stored in config['dimmer'].
+          qos (int):  The default quality of service level to use.
         """
         data = config.get("dimmer", None)
-        super().load_switch_config(data, qos)
-        self.load_dimmer_config(data, qos)
-
-    #-----------------------------------------------------------------------
-    def load_dimmer_config(self, config, qos):
-        """TODO: doc
-        """
-        if not config:
+        if not data:
             return
 
-        # The Switch base class will load the msg_state template for us.
-        self.msg_level.load_config(config, 'level_topic', 'level_payload', qos)
-        self.msg_scene_on_off.load_config(config, 'scene_on_off_topic',
-                                          'scene_on_off_payload', qos)
+        # Update the MQTT topics and payloads from the config file.
+        self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
+        self.msg_manual_state.load_config(data, 'manual_state_topic',
+                                          'manual_state_payload', qos)
+        self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
+                                    qos)
+        self.msg_level.load_config(data, 'level_topic', 'level_payload', qos)
+        self.msg_scene.load_config(data, 'scene_topic', 'scene_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
         """Subscribe to any MQTT topics the object needs.
 
+        Subscriptions are used when the object has things that can be
+        commanded to change.
+
         Args:
-          link:   The MQTT network client to use.
-          qos:    The quality of service to use.
+          link (network.Mqtt):  The MQTT network client to use.
+          qos (int):  The quality of service to use.
         """
-        super().subscribe(link, qos)
+        # On/off command messages.
+        topic = self.msg_on_off.render_topic(self.template_data())
+        link.subscribe(topic, qos, self._input_on_off)
 
+        # Level changing command messages.
         topic = self.msg_level.render_topic(self.template_data())
-        link.subscribe(topic, qos, self.handle_set_level)
+        link.subscribe(topic, qos, self._input_set_level)
 
-        topic = self.msg_scene_on_off.render_topic(self.template_data())
-        link.subscribe(topic, qos, self.handle_scene)
+        # Scene triggering messages.
+        topic = self.msg_scene.render_topic(self.template_data())
+        link.subscribe(topic, qos, self._input_scene)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
         """Unsubscribe to any MQTT topics the object was subscribed to.
 
         Args:
-          link:   The MQTT network client to use.
+          link (network.Mqtt):  The MQTT network client to use.
         """
-        super().unsubscribe(link)
+        topic = self.msg_on_off.render_topic(self.template_data())
+        link.unsubscribe(topic)
 
         topic = self.msg_level.render_topic(self.template_data())
-        self.mqtt.unsubscribe(topic)
+        link.unsubscribe(topic)
 
-        topic = self.msg_scene_on_off.render_topic(self.template_data())
+        topic = self.msg_scene.render_topic(self.template_data())
         link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
-    def template_data(self, level=None):
-        """TODO: doc
+    def template_data(self, level=None, mode=on_off.Mode.NORMAL, manual=None):
+        """Create the Jinja templating data variables for on/off messages.
+
+        Args:
+          level (int):  The dimmer level.  If None, on/off and levels
+                attributes are not added to the data.
+          mode (on_off.Mode):  The on/off mode state.
+          manual (on_off.Manual):  The manual mode state.  If None, manual
+                 attributes are not added to the data.
+
+        Returns:
+          dict:  Returns a dict with the variables available for templating.
         """
         data = {
             "address" : self.device.addr.hex,
@@ -119,78 +148,137 @@ class Dimmer(Switch):
             data["on_str"] = "on" if level else "off"
             data["level_255"] = level
             data["level_100"] = int(100.0 * level / 255.0)
+            data["mode"] = str(mode)
+            data["fast"] = 1 if mode == on_off.Mode.FAST else 0
+            data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
+
+        if manual is not None:
+            data["manual_str"] = str(manual)
+            data["manual"] = manual.int_value()
+            data["manual_openhab"] = manual.openhab_value()
 
         return data
 
     #-----------------------------------------------------------------------
-    def handle_level_changed(self, device, level):
-        """Device active on/off callback.
+    def _insteon_level_changed(self, device, level, mode=on_off.Mode.NORMAL):
+        """Device on/off and dimmer level changed callback.
 
-        This is triggered via signal when the Insteon device goes
-        active or inactive.  It will publish an MQTT message with the
-        new state.
+        This is triggered via signal when the Insteon device goes active or
+        inactive.  It will publish an MQTT message with the new state.
 
         Args:
-          device:   (device.Base) The Insteon device that changed.
-          level     (int) True for on, False for off.
+          device (device.Dimmer):  The Insteon device that changed.
+          level (int):  The dimmer level (0->255)
+          mode (on_off.Mode):  The on/off mode state.
         """
-        LOG.info("MQTT received level change %s = %s", device.label, level)
+        LOG.info("MQTT received level change %s level: %s", device.label,
+                 level)
 
-        data = self.template_data(level)
-        self.msg_state.publish(self.mqtt, data)
+        # For manual mode messages, don't retain them because they don't
+        # represent persistent state - they're momentary events.
+        retain = False if mode == on_off.Mode.MANUAL else None
+
+        data = self.template_data(level, mode)
+        self.msg_state.publish(self.mqtt, data, retain=retain)
 
     #-----------------------------------------------------------------------
-    def handle_set_level(self, client, data, message):
-        """TODO: doc
+    def _insteon_manual(self, device, manual):
+        """Device manual mode changed callback.
+
+        This is triggered via signal when the Insteon device starts or stops
+        manual mode (holding a button down).  It will publish an MQTT message
+        with the new state.
+
+        Args:
+          device (device.Dimmer):  The Insteon device that changed.
+          manual (on_off.Manual):  The manual mode.
         """
-        LOG.info("Dimmer message %s %s", message.topic, message.payload)
+        LOG.info("MQTT received manual change %s mode: %s", device.label,
+                 manual)
 
-        data = self.msg_level.to_json(message.payload)
-        if not data:
-            return
-
-        LOG.info("Dimmer input command: %s", data)
-        try:
-            cmd = data.get('cmd')
-            if cmd == 'on':
-                level = int(data.get('level'))
-            elif cmd == 'off':
-                level = 0
-            else:
-                raise Exception("Invalid dimmer cmd input '%s'" % cmd)
-
-            instant = bool(data.get('instant', False))
-        except:
-            LOG.exception("Invalid dimmer command: %s", data)
-            return
-
-        self.device.set(level=level, instant=instant)
+        # For manual mode messages, don't retain them because they don't
+        # represent persistent state - they're momentary events.
+        data = self.template_data(manual=manual)
+        self.msg_manual_state.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------
-    def handle_scene(self, client, data, message):
-        """TODO: doc
+    def _input_on_off(self, client, data, message):
+        """Handle an input on/off change MQTT message.
+
+        This is called when we receive a message on the on/off MQTT topic
+        subscription.  Parse the message and pass the command to the Insteon
+        device.
+
+        Args:
+          client (paho.Client):  The paho mqtt client (self.link).
+          data:  Optional user data (unused).
+          message:  MQTT message - has attrs: topic, payload, qos, retain.
         """
         LOG.debug("Dimmer message %s %s", message.topic, message.payload)
 
         # Parse the input MQTT message.
-        data = self.msg_scene_on_off.to_json(message.payload)
+        data = self.msg_on_off.to_json(message.payload)
         LOG.info("Dimmer input command: %s", data)
-
         try:
-            cmd = data.get('cmd')
-            if cmd == 'on':
-                is_on = True
-            elif cmd == 'off':
-                is_on = False
-            else:
-                raise Exception("Invalid dimmer cmd input '%s'" % cmd)
+            # Tell the device to update it's state.
+            is_on, mode = util.parse_on_off(data)
+            level = 0 if not is_on else 0xff
+            self.device.set(level=level, mode=mode)
+        except:
+            LOG.exception("Invalid switch on/off command: %s", data)
 
-            group = int(data.get('group', 0x01))
+    #-----------------------------------------------------------------------
+    def _input_set_level(self, client, data, message):
+        """Handle an input level change MQTT message.
+
+        This is called when we receive a message on the level change MQTT
+        topic subscription.  Parse the message and pass the command to the
+        Insteon device.
+
+        Args:
+          client (paho.Client):  The paho mqtt client (self.link).
+          data:  Optional user data (unused).
+          message:  MQTT message - has attrs: topic, payload, qos, retain.
+        """
+        LOG.info("Dimmer message %s %s", message.topic, message.payload)
+
+        data = self.msg_level.to_json(message.payload)
+        LOG.info("Dimmer input command: %s", data)
+        try:
+            is_on, mode = util.parse_on_off(data)
+            level = 0 if not is_on else int(data.get('level'))
+
+            # Tell the device to change it's level.
+            self.device.set(level=level, mode=mode)
         except:
             LOG.exception("Invalid dimmer command: %s", data)
-            return
 
-        # Tell the device to trigger the scene command.
-        self.device.scene(is_on, group)
+    #-----------------------------------------------------------------------
+    def _input_scene(self, client, data, message):
+        """Handle an input scene MQTT message.
+
+        This is called when we receive a message on the scene trigger MQTT
+        topic subscription.  Parse the message and pass the command to the
+        Insteon device.
+
+        Args:
+          client (paho.Client):  The paho mqtt client (self.link).
+          data:  Optional user data (unused).
+          message:  MQTT message - has attrs: topic, payload, qos, retain.
+        """
+        LOG.debug("Dimmer message %s %s", message.topic, message.payload)
+
+        # Parse the input MQTT message.
+        data = self.msg_scene.to_json(message.payload)
+        LOG.info("Dimmer input command: %s", data)
+        try:
+            # Scenes don't support modes so don't parse that element.
+            is_on = util.parse_on_off(data, have_mode=False)
+            group = int(data.get('group', 0x01))
+
+            # Tell the device to trigger the scene command.
+            self.device.scene(is_on, group)
+        except:
+            LOG.exception("Invalid dimmer command: %s", data)
 
     #-----------------------------------------------------------------------

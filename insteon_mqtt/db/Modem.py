@@ -52,6 +52,9 @@ class Modem:
         for d in data['entries']:
             obj.add_entry(ModemEntry.from_json(d), save=False)
 
+        # pylint: disable=protected-access
+        obj._meta = data.get('meta', {})
+
         return obj
 
     #-----------------------------------------------------------------------
@@ -65,6 +68,10 @@ class Modem:
 
         # Note: unlike devices, the PLM has no delta value so there doesn't
         # seem to be any way to tell if the db value is current or not.
+
+        # Metadata storage.  Used for saving device data to persistent
+        # storage for access across reboots
+        self._meta = {}
 
         # List of ModemEntry objects in the all link database.
         self.entries = []
@@ -85,6 +92,32 @@ class Modem:
                   made.
         """
         self.save_path = path
+
+    #-----------------------------------------------------------------------
+    def set_meta(self, key, value):
+        """Set the metadata key to value.
+
+        Used for saving device parameters to persistent storage between
+        reboots.
+
+        Args:
+          key:    A valid python dictionary key to store the value
+          value:  A data type capable of being represented in json
+        """
+        self._meta[key] = value
+        self.save()
+
+    #-----------------------------------------------------------------------
+    def get_meta(self, key):
+        """Get the metadata key value.
+
+        Used for getting device parameters from persistent storage between
+        reboots.
+
+        Args:
+          key:    A valid python dictionary key to retreive the value from
+        """
+        return self._meta.get(key, None)
 
     #-----------------------------------------------------------------------
     def save(self):
@@ -146,6 +179,9 @@ class Modem:
         the database on the device.
         """
         self.entries = []
+        self.groups = {}
+        self.aliases = {}
+        self._meta = {}
 
         if self.save_path and os.path.exists(self.save_path):
             os.remove(self.save_path)
@@ -242,7 +278,7 @@ class Modem:
         exists = self.find(entry.addr, entry.group, entry.is_controller)
         if exists:
             if exists.data == entry.data:
-                LOG.warning("Mode add db already exists for %s grp %s %s",
+                LOG.warning("Modem add db already exists for %s grp %s %s",
                             entry.addr, entry.group,
                             util.ctrl_str(entry.is_controller))
                 if on_done:
@@ -365,6 +401,7 @@ class Modem:
         entries = [i.to_json() for i in self.entries]
         return {
             'entries' : entries,
+            'meta' : self._meta
             }
 
     #-----------------------------------------------------------------------
