@@ -47,8 +47,8 @@ def load(path):
     global base_config_dir
     base_config_dir = os.path.dirname(os.path.abspath(path))
     with open(path, "r") as f:
-        yaml=YAML(typ='safe', pure=True)
-        yaml.Constructor.add_constructor("!include", include)
+        yaml=YAML()
+        yaml.preserve_quotes = True
         return yaml.load(f)
 
 
@@ -90,11 +90,3 @@ def find(name):
                         "%s." % (name, devices.keys()))
 
     return dev
-
-#===========================================================================
-def include(loader, node):
-    y = loader.loader
-    yaml = YAML(typ=y.typ, pure=y.pure)
-    yaml.composer.anchors = loader.composer.anchors
-    with open(os.path.join(base_config_dir, node.value), "r") as f:
-        return yaml.load(f)
