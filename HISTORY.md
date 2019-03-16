@@ -5,6 +5,8 @@
 ### Fixes
 - Fixed incorrect handling of FanLinc speed change ([Issue #126][I126])
 
+- Fixed incorrect exception log statement in Protocol ([Issue #132][I132])
+
 
 ## [0.6.7]
 
@@ -252,3 +254,4 @@
 [I119]: https://github.com/TD22057/insteon-mqtt/issues/119
 [I120]: https://github.com/TD22057/insteon-mqtt/issues/120
 [I126]: https://github.com/TD22057/insteon-mqtt/issues/126
+[I132]: https://github.com/TD22057/insteon-mqtt/issues/132
