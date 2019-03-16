@@ -309,7 +309,7 @@ class KeypadLinc(Base):
         # Group 1 uses a direct command to set the level.
         else:
             # Send an off or instant off command.
-            cmd1 = on_off.Mode.encode(True, mode)
+            cmd1 = on_off.Mode.encode(False, mode)
             msg = Msg.OutStandard.direct(self.addr, cmd1, 0x00)
 
             # Use the standard command handler which will notify us when the
