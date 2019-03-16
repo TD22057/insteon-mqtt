@@ -169,8 +169,8 @@ class Test_Outlet:
 
         qos = 2
         config = {'outlet' : {
-            'scene_on_off_topic' : 'foo/{{address}}/{{button}}',
-            'scene_on_off_payload' : ('{ "cmd" : "{{json.on.lower()}}" }')}}
+            'scene_topic' : 'foo/{{address}}/{{button}}',
+            'scene_payload' : ('{ "cmd" : "{{json.on.lower()}}" }')}}
         mdev.load_config(config, qos=qos)
 
         mdev.subscribe(link, qos)

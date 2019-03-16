@@ -45,7 +45,7 @@ class Switch:
             payload='{ "cmd" : "{{value.lower()}}" }')
 
         # Input scene on/off command template.
-        self.msg_scene_on_off = MsgTemplate(
+        self.msg_scene = MsgTemplate(
             topic='insteon/{{address}}/scene',
             payload='{ "cmd" : "{{value.lower()}}" }')
 
@@ -72,8 +72,7 @@ class Switch:
                                           'manual_state_payload', qos)
         self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
                                     qos)
-        self.msg_scene_on_off.load_config(data, 'scene_on_off_topic',
-                                          'scene_on_off_payload', qos)
+        self.msg_scene.load_config(data, 'scene_topic', 'scene_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -91,7 +90,7 @@ class Switch:
         link.subscribe(topic, qos, self._input_on_off)
 
         # Scene triggering messages.
-        topic = self.msg_scene_on_off.render_topic(self.template_data())
+        topic = self.msg_scene.render_topic(self.template_data())
         link.subscribe(topic, qos, self._input_scene)
 
     #-----------------------------------------------------------------------
@@ -104,7 +103,7 @@ class Switch:
         topic = self.msg_on_off.render_topic(self.template_data())
         link.unsubscribe(topic)
 
-        topic = self.msg_scene_on_off.render_topic(self.template_data())
+        topic = self.msg_scene.render_topic(self.template_data())
         link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
@@ -225,7 +224,7 @@ class Switch:
         LOG.debug("Switch message %s %s", message.topic, message.payload)
 
         # Parse the input MQTT message.
-        data = self.msg_scene_on_off.to_json(message.payload)
+        data = self.msg_scene.to_json(message.payload)
         LOG.info("Switch input command: %s", data)
 
         try:

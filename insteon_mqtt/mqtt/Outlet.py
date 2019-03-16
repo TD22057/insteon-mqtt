@@ -65,8 +65,7 @@ class Outlet:
         self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
         self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
                                     qos)
-        self.msg_scene.load_config(data, 'scene_on_off_topic',
-                                   'scene_on_off_payload', qos)
+        self.msg_scene.load_config(data, 'scene_topic', 'scene_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):

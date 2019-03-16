@@ -180,8 +180,8 @@ class Test_Switch:
 
         qos = 2
         config = {'switch' : {
-            'scene_on_off_topic' : 'foo/{{address}}',
-            'scene_on_off_payload' : ('{ "cmd" : "{{json.on.lower()}}" }')}}
+            'scene_topic' : 'foo/{{address}}',
+            'scene_payload' : ('{ "cmd" : "{{json.on.lower()}}" }')}}
         mdev.load_config(config, qos=qos)
 
         mdev.subscribe(link, qos)
