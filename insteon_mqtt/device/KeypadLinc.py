@@ -586,7 +586,9 @@ class KeypadLinc(Base):
 
         # Check the input flags to make sure only ones we can understand were
         # passed in.
-        flags = set(["backlight", "on_level"])
+        FLAG_BACKLIGHT = "backlight"
+        FLAG_ON_LEVEL = "on_level"
+        flags = set([FLAG_BACKLIGHT, FLAG_ON_LEVEL])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown KeypadLinc flags input: %s.\n Valid "
@@ -596,12 +598,12 @@ class KeypadLinc(Base):
         seq = CommandSeq(self.protocol, "KeypadLinc set_flags complete",
                          on_done)
 
-        if "backlink" in kwargs:
-            backlight = util.input_byte(kwargs, "backlight")
+        if FLAG_BACKLIGHT in kwargs:
+            backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
             seq.add(self.set_backlight, backlight)
 
-        if "on_level" in kwargs:
-            on_level = util.input_byte(kwargs, "on_level")
+        if FLAG_ON_LEVEL in kwargs:
+            on_level = util.input_byte(kwargs, FLAG_ON_LEVEL)
             seq.add(self.set_on_level, on_level)
 
         seq.run()

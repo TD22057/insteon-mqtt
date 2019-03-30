@@ -11,6 +11,8 @@
   Switch.  This prevented customizing the MQTT scene topic and payload for
   those devices ([Issue #130][I130])
 
+- Fixed incorrect set-backlight command parsing ([Issue #136][I136])
+
 
 ## [0.6.7]
 
@@ -260,3 +262,4 @@
 [I126]: https://github.com/TD22057/insteon-mqtt/issues/126
 [I130]: https://github.com/TD22057/insteon-mqtt/issues/130
 [I132]: https://github.com/TD22057/insteon-mqtt/issues/132
+[I136]: https://github.com/TD22057/insteon-mqtt/issues/136
