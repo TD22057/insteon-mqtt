@@ -92,7 +92,7 @@ def callback(client, session, message):
 
     # Extract the message reply object.
     msg = message.payload.decode("utf-8")
-    reply = Reply.from_json(json.loads(msg))
+    reply = Reply.from_json(msg)
 
     # If the command finished, update the session tag to show that.
     if reply.type == Reply.Type.END:

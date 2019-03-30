@@ -47,6 +47,9 @@ single test, pass the file name to pytest on the command line.
    ```
    pytest
    pytest tests/tests_Address.py
+
+   # Show log messages while testing
+   pytest -s -vv --log-cli-level=10 tests/mqtt/test_Outlet.py
    ```
 
 Coverage testing shows which lines needs to have test cases added and can be

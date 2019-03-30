@@ -127,10 +127,10 @@ class Test_StandardCmd:
         assert calls[0] == msg
 
     #-----------------------------------------------------------------------
-    def test_engine_version(self):
+    def test_engine_version(self, tmpdir):
         # Tests response to get engine version
         proto = MockProto()
-        modem = MockModem()
+        modem = MockModem(tmpdir)
         calls = []
         addr = IM.Address('0a.12.34')
         device = IM.device.Base(proto, modem, addr)
@@ -168,5 +168,5 @@ class MockProto:
 
 
 class MockModem:
-    def __init__(self):
-        self.save_path = ''
+    def __init__(self, path):
+        self.save_path = str(path)

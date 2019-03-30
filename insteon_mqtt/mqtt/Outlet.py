@@ -65,8 +65,7 @@ class Outlet:
         self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
         self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
                                     qos)
-        self.msg_scene.load_config(data, 'scene_on_off_topic',
-                                   'scene_on_off_payload', qos)
+        self.msg_scene.load_config(data, 'scene_topic', 'scene_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -127,8 +126,10 @@ class Outlet:
             "address" : self.device.addr.hex,
             "name" : self.device.name if self.device.name
                      else self.device.addr.hex,
-            "button" : button,
             }
+
+        if button is not None:
+            data["button"] = button
 
         if is_on is not None:
             data["on"] = 1 if is_on else 0
@@ -207,8 +208,8 @@ class Outlet:
         LOG.info("Outlet input command: %s", data)
 
         try:
-            # Tell the device to trigger the scene command.
-            is_on, _mode = util.parse_on_off(data)
+            # Scenes don't support modes so don't parse that element.
+            is_on = util.parse_on_off(data, have_mode=False)
             self.device.scene(is_on, group)
         except:
             LOG.exception("Invalid Outlet scene command: %s", data)

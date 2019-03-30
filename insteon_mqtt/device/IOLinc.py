@@ -337,6 +337,7 @@ class IOLinc(Base):
 
         # NOTE: IOLinc cmd1=0x00 will report the relay state.  cmd2=0x01
         # reports the sensor state which is what we want.
+        seq = CommandSeq(self.protocol, "Device refreshed", on_done)
 
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the current
@@ -345,7 +346,13 @@ class IOLinc(Base):
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
                                             on_done, num_retry=3)
-        self.send(msg, msg_handler)
+        seq.add_msg(msg, msg_handler)
+
+        # If model number is not known, or force true, run get_model
+        self.addRefreshData(seq, force)
+
+        # Run all the commands.
+        seq.run()
 
     #-----------------------------------------------------------------------
     def is_on(self):

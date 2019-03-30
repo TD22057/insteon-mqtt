@@ -45,7 +45,7 @@ class Modem:
         if not data:
             return
 
-        self.msg_scene.load_config(config, 'scene_topic', 'scene_payload', qos)
+        self.msg_scene.load_config(data, 'scene_topic', 'scene_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):

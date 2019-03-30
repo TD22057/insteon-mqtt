@@ -142,6 +142,8 @@ class Outlet(Base):
         """
         LOG.info("Outlet %s cmd: status refresh", self.label)
 
+        seq = CommandSeq(self.protocol, "Device refreshed", on_done)
+
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the current
         # value.  If it's different, it will send a database download command
@@ -150,7 +152,13 @@ class Outlet(Base):
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
                                             on_done, num_retry=3)
-        self.send(msg, msg_handler)
+        seq.add_msg(msg, msg_handler)
+
+        # If model number is not known, or force true, run get_model
+        self.addRefreshData(seq, force)
+
+        # Run all the commands.
+        seq.run()
 
     #-----------------------------------------------------------------------
     def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL,
@@ -342,7 +350,9 @@ class Outlet(Base):
         LOG.info("Outlet %s setting backlight to %s", self.label, level)
 
         # Bound to 0x11 <= level <= 0xff per page 157 of insteon dev guide.
-        level = max(0x11, min(level, 0xff))
+        # 0x00 is used to disable the backlight so allow that explicitly.
+        if level:
+            level = max(0x11, min(level, 0xff))
 
         # Extended message data - see Insteon dev guide p156.
         data = bytes([
@@ -378,7 +388,8 @@ class Outlet(Base):
 
         # Check the input flags to make sure only ones we can understand were
         # passed in.
-        flags = set(["backlight"])
+        FLAG_BACKLIGHT = "backlight"
+        flags = set([FLAG_BACKLIGHT])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown Outlet flags input: %s.\n Valid flags "
@@ -387,8 +398,8 @@ class Outlet(Base):
         # Start a command sequence so we can call the flag methods in series.
         seq = CommandSeq(self.protocol, "Outlet set_flags complete", on_done)
 
-        if "backlink" in kwargs:
-            backlight = util.input_byte(kwargs, "backlight")
+        if FLAG_BACKLIGHT in kwargs:
+            backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
             seq.add(self.set_backlight, backlight)
 
         seq.run()

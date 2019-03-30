@@ -786,7 +786,7 @@ A sample leak sensor topic and payload configuration is:
      wet_dry_topic: 'insteon/{{address}}/wet'
      wet_dry_payload: '{{state.upper()}}'
      heartbeat_topic: 'insteon/{{address}}/heartbeat'
-     heartbeat_payload: '{{state}}'
+     heartbeat_payload: '{{heartbeat_time}}'
    ```
 
 ---

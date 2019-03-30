@@ -280,7 +280,9 @@ class Switch(Base):
         LOG.info("Switch %s setting backlight to %s", self.label, level)
 
         # Bound to 0x11 <= level <= 0xff per page 157 of insteon dev guide.
-        level = max(0x11, min(level, 0xff))
+        # 0x00 is used to disable the backlight so allow that explicitly.
+        if level:
+            level = max(0x11, min(level, 0xff))
 
         # Extended message data - see Insteon dev guide p156.
         data = bytes([
@@ -316,7 +318,8 @@ class Switch(Base):
 
         # Check the input flags to make sure only ones we can understand were
         # passed in.
-        flags = set(["backlight"])
+        FLAG_BACKLIGHT = "backlight"
+        flags = set([FLAG_BACKLIGHT])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown Switch flags input: %s.\n Valid flags "
@@ -325,8 +328,8 @@ class Switch(Base):
         # Start a command sequence so we can call the flag methods in series.
         seq = CommandSeq(self.protocol, "Switch set_flags complete", on_done)
 
-        if "backlink" in kwargs:
-            backlight = util.input_byte(kwargs, "backlight")
+        if FLAG_BACKLIGHT in kwargs:
+            backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
             seq.add(self.set_backlight, backlight)
 
         seq.run()

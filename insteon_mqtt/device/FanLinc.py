@@ -43,7 +43,7 @@ class FanLinc(Dimmer):
     class Speed(enum.IntEnum):
         OFF = 0x00
         LOW = 0x3a   # range 0x01-0x7f - arbitrarily picked the mid point
-        MED = 0xbf   # range 0x80-0xfe - arbitrarily picked the mid point
+        MEDIUM = 0xbf   # range 0x80-0xfe - arbitrarily picked the mid point
         HIGH = 0xff
         ON = -0x01   # turn on at last known speed
 
@@ -179,7 +179,7 @@ class FanLinc(Dimmer):
         Args:
           speed (Speed):  The speed to change to.  If this is None or Speed.ON,
                 the last speed that was active is used.  If there is no last
-                speed set, use MED.
+                speed set, use MEDIUM.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -190,7 +190,7 @@ class FanLinc(Dimmer):
             if self._last_speed is not None:
                 speed = self._last_speed
             else:
-                speed = FanLinc.Speed.MED
+                speed = FanLinc.Speed.MEDIUM
 
         # Send an on command.  The fan control is done via extended message
         # with the first byte set as 0x02 per the fanlinc developers guide.
@@ -250,7 +250,7 @@ class FanLinc(Dimmer):
         Args:
           speed (Speed):  The speed to change to.  If this is None or Speed.ON,
                 the last speed that was active is used.  If there is no last
-                speed set, use MED.
+                speed set, use MEDIUM.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -324,6 +324,8 @@ class FanLinc(Dimmer):
         # emit our signals.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("FanLinc fan %s ACK: %s", self.addr, msg)
+
+            self._set_fan_speed(msg.cmd2)
             on_done(True, "Fan %s state updated to %s" %
                     (self.addr, self._fan_speed), msg.cmd2)
 
@@ -394,7 +396,7 @@ class FanLinc(Dimmer):
             self._fan_speed = FanLinc.Speed.LOW
 
         elif 0x80 <= speed <= 0xfe:
-            self._fan_speed = FanLinc.Speed.MED
+            self._fan_speed = FanLinc.Speed.MEDIUM
 
         elif speed == 0xff:
             self._fan_speed = FanLinc.Speed.HIGH

@@ -2,10 +2,12 @@
 #
 # Tests for: insteont_mqtt/handler/Protocol.py
 #
+# pylint: disable=protected-access
 #===========================================================================
+import time
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
-import time
+
 
 class Test_Protocol:
     def test_reads(self):

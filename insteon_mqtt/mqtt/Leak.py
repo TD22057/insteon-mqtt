@@ -30,10 +30,10 @@ class Leak:
         # Default values for the topics.
         self.msg_wet = MsgTemplate(
             topic='insteon/{{address}}/wet',
-            payload='{{is_wet_str.upper()}}')
+            payload='{{is_wet_str.lower()}}')
         self.msg_heartbeat = MsgTemplate(
             topic='insteon/{{address}}/heartbeat',
-            payload='{{heartbeat_str}}')
+            payload='{{heartbeat_time}}')
 
         # Connect the two signals from the insteon device so we get notified
         # of changes.
@@ -108,7 +108,8 @@ class Leak:
 
         if is_heartbeat is not None:
             data["is_heartbeat"] = 1 if is_heartbeat else 0
-            data["heartbeat_str"] = time.time() if is_heartbeat else ""
+            data["is_heartbeat_str"] = "on" if is_heartbeat else "off"
+            data["heartbeat_time"] = time.time() if is_heartbeat else 0
 
         return data
 

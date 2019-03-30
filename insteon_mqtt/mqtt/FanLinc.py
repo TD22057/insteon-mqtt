@@ -3,6 +3,7 @@
 # MQTT dimmer switch device
 #
 #===========================================================================
+import functools
 from .. import log
 from .. import device as Dev
 from .Dimmer import Dimmer
@@ -21,18 +22,10 @@ class FanLinc(Dimmer):
     """
     # Map of fanlinc levels to MQTT output integer and string values.
     level_map = {
-        Dev.FanLinc.Speed.OFF : (0, "off"),
-        Dev.FanLinc.Speed.LOW : (1, "low"),
-        Dev.FanLinc.Speed.MED : (2, "medium"),
-        Dev.FanLinc.Speed.HIGH : (3, "high"),
-        }
-    # Map of MQTT string values back to fanlinc levels.
-    cmd_map = {
-        "off" : Dev.FanLinc.Speed.OFF,
-        "low" : Dev.FanLinc.Speed.LOW,
-        "medium" : Dev.FanLinc.Speed.MED,
-        "high" : Dev.FanLinc.Speed.HIGH,
-        "on" : Dev.FanLinc.Speed.ON,
+        Dev.FanLinc.Speed.OFF : 0,
+        Dev.FanLinc.Speed.LOW : 1,
+        Dev.FanLinc.Speed.MEDIUM : 2,
+        Dev.FanLinc.Speed.HIGH : 3,
         }
 
     def __init__(self, mqtt, device):
@@ -52,7 +45,7 @@ class FanLinc(Dimmer):
 
         # Input fan on/off command template.
         self.msg_fan_on_off = MsgTemplate(
-            topic='insteon/{{address}}/set',
+            topic='insteon/{{address}}/fan/set',
             payload='{ "cmd" : "{{value.lower()}}" }')
 
         # Output fan speed state change reporting template.  Default is to
@@ -110,11 +103,15 @@ class FanLinc(Dimmer):
 
         topic = self.msg_fan_on_off.render_topic(data)
         if topic:
-            link.subscribe(topic, qos, self._input_set_fan_speed)
+            handler = functools.partial(self._input_set_fan_speed,
+                                        is_speed=False)
+            link.subscribe(topic, qos, handler)
 
         topic = self.msg_fan_speed.render_topic(data)
         if topic:
-            link.subscribe(topic, qos, self._input_set_fan_speed)
+            handler = functools.partial(self._input_set_fan_speed,
+                                        is_speed=True)
+            link.subscribe(topic, qos, handler)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
@@ -157,11 +154,13 @@ class FanLinc(Dimmer):
             }
 
         if level is not None:
-            level_int, level_str = FanLinc.level_map[level]
+            assert isinstance(level, Dev.FanLinc.Speed)
+            level_int = FanLinc.level_map[level]
+
             data["on"] = 1 if level_int else 0
             data["on_str"] = "on" if level_int else "off"
             data["level"] = level_int
-            data["level_str"] = level_str
+            data["level_str"] = level.name.lower()
 
         return data
 
@@ -183,7 +182,7 @@ class FanLinc(Dimmer):
         self.msg_fan_speed_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
-    def _input_set_fan_speed(self, client, data, message):
+    def _input_set_fan_speed(self, client, data, message, is_speed):
         """Handle an input fan speed change MQTT message.
 
         This is called when we receive a message on the fan speed change MQTT
@@ -194,21 +193,31 @@ class FanLinc(Dimmer):
           client (paho.Client):  The paho mqtt client (self.link).
           data:  Optional user data (unused).
           message:  MQTT message - has attrs: topic, payload, qos, retain.
+          is_speed: (bool): True to use the speed template, False to use
+                    the on/off template.
         """
         LOG.info("FanLink fan on/off message %s %s", message.topic,
                  message.payload)
 
-        data = self.msg_fan_on_off.to_json(message.payload)
+        if is_speed:
+            data = self.msg_fan_speed.to_json(message.payload)
+        else:
+            data = self.msg_fan_on_off.to_json(message.payload)
         if not data:
             return
 
         try:
             LOG.info("FanLink fan on/off input command: %s", data)
 
+            # Command will either be on/off or one of the speed enums.  Map
+            # the command to a fan linc enumeration.  Commands have the same
+            # names as the values in the FanLinc.Speed enumeration so this
+            # will work.  It handles on/off for the fan_on_off topic as well
+            # as speeds for the fan_speed topic.
             cmd = data.get('cmd', None)
-            fan_speed = FanLinc.cmd_map.get(cmd, None)
+            fan_speed = getattr(Dev.FanLinc.Speed, cmd.upper(), None)
             if fan_speed is None:
-                raise ValueError("Can't map cmd to fan mode")
+                raise ValueError("Can't map cmd '%s' to fan mode" % cmd)
 
             self.device.fan_set(fan_speed)
         except:

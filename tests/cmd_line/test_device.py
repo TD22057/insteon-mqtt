@@ -4,11 +4,7 @@
 #
 #===========================================================================
 import insteon_mqtt as IM
-
-
-class Data:
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
+import helpers
 
 
 class Test_device:
@@ -24,9 +20,9 @@ class Test_device:
         mocker.patch('insteon_mqtt.cmd_line.util.send')
         IM.cmd_line.util.send.return_value = {"status" : 10}
 
-        args = Data(topic="cmd_topic", force=False, quiet=True, group=5,
-                    address="aa.bb.cc")
-        config = Data(a=1, b=2)
+        args = helpers.Data(topic="cmd_topic", force=False, quiet=True,
+                            group=5, address="aa.bb.cc")
+        config = helpers.Data(a=1, b=2)
 
         r = IM.cmd_line.device.linking(args, config)
         assert r == 10
@@ -43,9 +39,9 @@ class Test_device:
         mocker.patch('insteon_mqtt.cmd_line.util.send')
         IM.cmd_line.util.send.return_value = {"status" : 10}
 
-        args = Data(topic="cmd_topic", force=False, quiet=True, group=5,
-                    address="aa.bb.cc", is_on=True)
-        config = Data(a=1, b=2)
+        args = helpers.Data(topic="cmd_topic", force=False, quiet=True,
+                            group=5, address="aa.bb.cc", is_on=True)
+        config = helpers.Data(a=1, b=2)
 
         r = IM.cmd_line.device.set_button_led(args, config)
         assert r == 10

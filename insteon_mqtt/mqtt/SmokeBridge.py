@@ -31,16 +31,16 @@ class SmokeBridge:
         # Set up the default templates for the MQTT messages and payloads.
         self.msg_smoke = MsgTemplate(
             topic='insteon/{{address}}/smoke',
-            payload='{{on_str.upper()}}')
+            payload='{{on_str.lower()}}')
         self.msg_co = MsgTemplate(
             topic='insteon/{{address}}/co',
-            payload='{{on_str.upper()}}')
+            payload='{{on_str.lower()}}')
         self.msg_battery = MsgTemplate(
             topic='insteon/{{address}}/battery',
-            payload='{{on_str.upper()}}')
+            payload='{{on_str.lower()}}')
         self.msg_error = MsgTemplate(
             topic='insteon/{{address}}/error',
-            payload='{{on_str.upper()}}')
+            payload='{{on_str.lower()}}')
 
         # Receive notifications from the Insteon device when it changes.
         device.signal_on_off.connect(self._insteon_change)
@@ -107,6 +107,7 @@ class SmokeBridge:
                      else self.device.addr.hex,
             "on" : 1 if is_on else 0,
             "on_str" : "on" if is_on else "off",
+            "type" : type.name.lower(),
             }
 
         return data

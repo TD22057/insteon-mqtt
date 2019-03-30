@@ -19,22 +19,14 @@ class Switch:
     allow input MQTT messages to change the state of the Insteon device.
 
     Switches will report their state and can be commanded to turn on and off.
-
-    Some classes that can act like a switch can inherit from this class to
-    use the same MQTT templates (see Dimmer).
     """
 
-    def __init__(self, mqtt, device, connect_signals=True):
+    def __init__(self, mqtt, device):
         """Constructor
 
         Args:
           mqtt (mqtt.Mqtt):  The MQTT main interface.
           device (device.Switch):  The Insteon object to link to.
-          connect_signals (bool):  If True, connect the signal_active signal
-                          from the device to this class.  If False, the
-                          connection is handled elsewhere.  This is commonly
-                          used by derived classes to stop the switch from
-                          connecting signals.
         """
         self.mqtt = mqtt
         self.device = device
@@ -53,14 +45,13 @@ class Switch:
             payload='{ "cmd" : "{{value.lower()}}" }')
 
         # Input scene on/off command template.
-        self.msg_scene_on_off = MsgTemplate(
+        self.msg_scene = MsgTemplate(
             topic='insteon/{{address}}/scene',
             payload='{ "cmd" : "{{value.lower()}}" }')
 
         # Receive notifications from the Insteon device when it changes.
-        if connect_signals:
-            device.signal_on_off.connect(self._insteon_on_off)
-            device.signal_manual.connect(self._insteon_manual)
+        device.signal_on_off.connect(self._insteon_on_off)
+        device.signal_manual.connect(self._insteon_manual)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -71,31 +62,17 @@ class Switch:
                  config is stored in config['switch'].
           qos (int):  The default quality of service level to use.
         """
-        self.load_switch_config(config.get("switch", None), qos)
-
-    #-----------------------------------------------------------------------
-    def load_switch_config(self, config, qos):
-        """Load the switch portion of the configuration.
-
-        This is factored out of load_config() so derived classes can call it
-        directly if needed.
-
-        Args:
-          config (dict:  The configuration dictionary to load from.  The object
-                 config is stored in config['switch'].
-          qos (int):  The default quality of service level to use.
-        """
-        if not config:
+        data = config.get("switch", None)
+        if not data:
             return
 
         # Update the MQTT topics and payloads from the config file.
-        self.msg_state.load_config(config, 'state_topic', 'state_payload', qos)
-        self.msg_manual_state.load_config(config, 'manual_state_topic',
+        self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
+        self.msg_manual_state.load_config(data, 'manual_state_topic',
                                           'manual_state_payload', qos)
-        self.msg_on_off.load_config(config, 'on_off_topic', 'on_off_payload',
+        self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
                                     qos)
-        self.msg_scene_on_off.load_config(config, 'scene_on_off_topic',
-                                          'scene_on_off_payload', qos)
+        self.msg_scene.load_config(data, 'scene_topic', 'scene_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -113,7 +90,7 @@ class Switch:
         link.subscribe(topic, qos, self._input_on_off)
 
         # Scene triggering messages.
-        topic = self.msg_scene_on_off.render_topic(self.template_data())
+        topic = self.msg_scene.render_topic(self.template_data())
         link.subscribe(topic, qos, self._input_scene)
 
     #-----------------------------------------------------------------------
@@ -126,7 +103,7 @@ class Switch:
         topic = self.msg_on_off.render_topic(self.template_data())
         link.unsubscribe(topic)
 
-        topic = self.msg_scene_on_off.render_topic(self.template_data())
+        topic = self.msg_scene.render_topic(self.template_data())
         link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
@@ -224,7 +201,6 @@ class Switch:
         # Parse the input MQTT message.
         data = self.msg_on_off.to_json(message.payload)
         LOG.info("Switch input command: %s", data)
-
         try:
             # Tell the device to update it's state.
             is_on, mode = util.parse_on_off(data)
@@ -248,12 +224,12 @@ class Switch:
         LOG.debug("Switch message %s %s", message.topic, message.payload)
 
         # Parse the input MQTT message.
-        data = self.msg_scene_on_off.to_json(message.payload)
+        data = self.msg_scene.to_json(message.payload)
         LOG.info("Switch input command: %s", data)
 
         try:
-            # _mode is unused in scene commands.
-            is_on, _mode = util.parse_on_off(data)
+            # Scenes don't support modes so don't parse that element.
+            is_on = util.parse_on_off(data, have_mode=False)
             group = int(data.get('group', 0x01))
 
             # Tell the device to trigger the scene command.

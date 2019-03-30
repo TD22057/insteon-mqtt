@@ -26,7 +26,7 @@ class Test_util:
         assert session["status"] == 0
         assert session["end_time"] > 0
 
-        out, err = capsys.readouterr()
+        out, _err = capsys.readouterr()
         assert out == text + "\n"
 
     #-----------------------------------------------------------------------
@@ -68,7 +68,7 @@ class Test_util:
         assert session["status"] == -1
         assert session["end_time"] > 0
 
-        out, err = capsys.readouterr()
+        out, _err = capsys.readouterr()
         assert "ERROR" in out
         assert text in out
 

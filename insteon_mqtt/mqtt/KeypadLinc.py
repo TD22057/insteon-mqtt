@@ -56,7 +56,7 @@ class KeypadLinc:
             # Output dimmer state change reporting template.
             self.msg_dimmer_state = MsgTemplate(
                 topic='insteon/{{address}}/state/1',
-                payload='{ "state" : "{{on_str.upper()}}", '
+                payload='{ "state" : "{{on_str.lower()}}", '
                         '"brightness" : {{level_255}} }')
 
             # Input dimmer level command template.
@@ -134,6 +134,10 @@ class KeypadLinc:
 
                 link.subscribe(topic_dimmer, qos, self._input_set_level)
 
+            handler = functools.partial(self._input_scene, group=1)
+            topic = self.msg_btn_scene.render_topic(data)
+            link.subscribe(topic, qos, handler)
+
         # We need to subscribe to each button topic so we know which one is
         # which.
         for group in range(start_group, 9):
@@ -166,7 +170,7 @@ class KeypadLinc:
         if self.device.is_dimmer:
             data = self.template_data(button=1)
             topic = self.msg_dimmer_level.render_topic(data)
-            self.mqtt.unsubscribe(topic)
+            link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
@@ -194,6 +198,7 @@ class KeypadLinc:
             }
 
         if level is not None:
+            level = int(level)
             data["on"] = 1 if level else 0
             data["on_str"] = "on" if level else "off"
             data["level_255"] = level
@@ -259,7 +264,7 @@ class KeypadLinc:
         self.msg_manual_state.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------
-    def _input_on_off(self, client, data, message, group):
+    def _input_on_off(self, client, data, message, group, raise_errors=False):
         """Handle an input on/off change MQTT message.
 
         This is called when we receive a message on the level change MQTT
@@ -270,6 +275,8 @@ class KeypadLinc:
           client (paho.Client):  The paho mqtt client (self.link).
           data:  Optional user data (unused).
           message:  MQTT message - has attrs: topic, payload, qos, retain.
+          raise_errors (bool):  True to raise any errors - otherwise they
+                       are logged and ignored.
         """
         LOG.info("KeypadLinc btn %s message %s %s", group, message.topic,
                  message.payload)
@@ -285,9 +292,11 @@ class KeypadLinc:
             self.device.set(level, group, mode)
         except:
             LOG.exception("Invalid KeypadLinc on/off command: %s", data)
+            if raise_errors:
+                raise
 
     #-----------------------------------------------------------------------
-    def _input_set_level(self, client, data, message):
+    def _input_set_level(self, client, data, message, raise_errors=False):
         """Handle an input level changechange MQTT message.
 
         This is called when we receive a message on the level change MQTT
@@ -298,6 +307,8 @@ class KeypadLinc:
           client (paho.Client):  The paho mqtt client (self.link).
           data:  Optional user data (unused).
           message:  MQTT message - has attrs: topic, payload, qos, retain.
+          raise_errors (bool):  True to raise any errors - otherwise they
+                       are logged and ignored.
         """
         LOG.info("KeypadLinc message %s %s", message.topic, message.payload)
         assert self.msg_dimmer_level is not None
@@ -313,6 +324,8 @@ class KeypadLinc:
             self.device.set(level, mode=mode)
         except:
             LOG.exception("Invalid KeypadLinc level command: %s", data)
+            if raise_errors:
+                raise
 
     #-----------------------------------------------------------------------
     def _input_btn1(self, client, data, message):
@@ -332,7 +345,7 @@ class KeypadLinc:
         # Try the input as a dimmer command first.
         try:
             if self.msg_dimmer_level.to_json(message.payload, silent=True):
-                self._input_set_level(client, data, message)
+                self._input_set_level(client, data, message, raise_errors=True)
                 return
         except:
             pass
@@ -340,14 +353,15 @@ class KeypadLinc:
         # Try the input as an on/off command.
         try:
             if self.msg_btn_on_off.to_json(message.payload, silent=True):
-                self._input_on_off(client, data, message, 1)
+                self._input_on_off(client, data, message, group=1,
+                                   raise_errors=True)
                 return
         except:
             pass
 
-        # If we make it here, it's an error.  To log the error, call the
-        # regular dimmer handler.
-        self._input_set_level(client, data, message)
+        # If we make it here, it's an error.
+        LOG.error("Invalid input command did match a dimmer or on/off "
+                  "message: %s", message.payload)
 
     #-----------------------------------------------------------------------
     def _input_scene(self, client, data, message, group):
@@ -372,7 +386,8 @@ class KeypadLinc:
 
         LOG.info("KeypadLinc input command: %s", data)
         try:
-            is_on, _mode = util.parse_on_off(data)
+            # Scenes don't support modes so don't parse that element.
+            is_on = util.parse_on_off(data, have_mode=False)
             self.device.scene(is_on, group)
         except:
             LOG.exception("Invalid KeypadLinc command: %s", data)

@@ -308,7 +308,7 @@ class Protocol:
             try:
                 msg = msg_class.from_bytes(self._buf)
             except:
-                LOG.exception()
+                LOG.exception("Unknown message bytes sequence")
                 # Skip the initial 0x02 - this way if we got a weird message
                 # with a 0x02 in the message, we won't miss an actual message
                 # by moving msg_size bytes forward which could be wrong.

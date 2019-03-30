@@ -31,14 +31,16 @@ class Test_Device:
 
         # Test bad MSB, should cause resend of set msb
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
-        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x28, 0x0E)
+        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x28,
+                              0x0E)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x28, 0x0F)
         manager.handle_set_msb(msg, on_done)
         assert device.msgs[0].to_bytes() == db_msg.to_bytes()
 
         # Test receive correct msb
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
-        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x28, 0x0F)
+        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x28,
+                              0x0F)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xF8)
         manager.handle_set_msb(msg, on_done)
         assert device.msgs[1].to_bytes() == db_msg.to_bytes()
@@ -52,13 +54,15 @@ class Test_Device:
         on_done = None
         manager.msb = 0x0F
         calls = []
+
         def callback(success, msg, data):
             calls.append(msg)
 
         # Test receiving a record e2 01   3a 29 84    01 0e 43
         # Link Flag
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
-        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0xE2)
+        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B,
+                              0xE2)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xF9)
         manager.handle_get_lsb(msg, on_done)
         assert device.msgs[0].to_bytes() == db_msg.to_bytes()
@@ -66,7 +70,8 @@ class Test_Device:
 
         # Group
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
-        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x01)
+        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B,
+                              0x01)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xFA)
         manager.handle_get_lsb(msg, on_done)
         assert device.msgs[1].to_bytes() == db_msg.to_bytes()
@@ -74,7 +79,8 @@ class Test_Device:
 
         # Address High
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
-        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x3A)
+        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B,
+                              0x3A)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xFB)
         manager.handle_get_lsb(msg, on_done)
         assert device.msgs[2].to_bytes() == db_msg.to_bytes()
@@ -82,7 +88,8 @@ class Test_Device:
 
         # Address Mid
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
-        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x29)
+        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B,
+                              0x29)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xFC)
         manager.handle_get_lsb(msg, on_done)
         assert device.msgs[3].to_bytes() == db_msg.to_bytes()
@@ -90,7 +97,8 @@ class Test_Device:
 
         # Address Low
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
-        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x84)
+        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B,
+                              0x84)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xFD)
         manager.handle_get_lsb(msg, on_done)
         assert device.msgs[4].to_bytes() == db_msg.to_bytes()
@@ -98,7 +106,8 @@ class Test_Device:
 
         # Address D1
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
-        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x01)
+        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B,
+                              0x01)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xFE)
         manager.handle_get_lsb(msg, on_done)
         assert device.msgs[5].to_bytes() == db_msg.to_bytes()
@@ -106,7 +115,8 @@ class Test_Device:
 
         # Address D2
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
-        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x0E)
+        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B,
+                              0x0E)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xFF)
         manager.handle_get_lsb(msg, on_done)
         assert device.msgs[6].to_bytes() == db_msg.to_bytes()
@@ -114,7 +124,8 @@ class Test_Device:
 
         # Address D3
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
-        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x43)
+        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B,
+                              0x43)
         db_msg = Msg.OutStandard.direct(device_db.addr, 0x2B, 0xF0)
         manager.handle_get_lsb(msg, on_done)
         assert device.msgs[7].to_bytes() == db_msg.to_bytes()
@@ -139,21 +150,23 @@ class Test_Device:
         assert grp[0].to_bytes() == entry.to_bytes()
 
         # test changing MSB
-        manager.record = [0xe2,0x01,3,4,5,6,7]
+        manager.record = [0xe2, 0x01, 3, 4, 5, 6, 7]
         manager.lsb = 0x07
 
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
-        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x08)
+        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B,
+                              0x08)
         manager.handle_get_lsb(msg, on_done)
         assert device.msgs[8].cmd2 == 0x0E
 
         # test on_done callback on last record
         flags = Msg.DbFlags(True, True, True)
-        manager.record = [flags.to_bytes()[0],0x01,3,4,5,6,7]
+        manager.record = [flags.to_bytes()[0], 0x01, 3, 4, 5, 6, 7]
         manager.lsb = 0xFF
 
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
-        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B, 0x08)
+        msg = Msg.InpStandard(device_db.addr, device_db.addr, flags, 0x2B,
+                              0x08)
         manager.handle_get_lsb(msg, callback)
         assert calls[0] == "Database received"
 

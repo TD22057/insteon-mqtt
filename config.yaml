@@ -365,7 +365,8 @@ mqtt:
   # inputs from battery_sensor and some sensors add an addition
   # dawn/dusk notification which is configured here.
   #
-  # In Home Assistant use MQTT binary sensor with a configuration like:
+  # To register the dawn/dusk signa in  Home Assistant use MQTT binary
+  # sensor with a configuration like:
   #   binary_sensor:
   #     - platform: mqtt
   #       state_topic: 'insteon/aa.bb.cc/dawn'
@@ -420,9 +421,10 @@ mqtt:
     # every 24 hours. Available variables for templating are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
-    #   heartbeat_str = date and time of the last heartbeat
+    #   is_heartbeat = 0/1
+    #   heartbeat_time = UNIX time float of the last heartbeat
     heartbeat_topic: 'insteon/{{address}}/heartbeat'
-    heartbeat_payload: '{{heartbeat_str}}'
+    heartbeat_payload: '{{heartbeat_time}}'
 
   #------------------------------------------------------------------------
   # Smoke Bridge
@@ -455,6 +457,7 @@ mqtt:
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off'/'on'
+    #   type = 'smoke'/'co'/'low_battery'/'error'/'clear'
     smoke_topic: 'insteon/{{address}}/smoke'
     smoke_payload: '{{on_str.upper()}}'
 

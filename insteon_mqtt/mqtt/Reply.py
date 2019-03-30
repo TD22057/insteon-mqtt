@@ -22,15 +22,16 @@ class Reply:
 
     #-----------------------------------------------------------------------
     @staticmethod
-    def from_json(data):
+    def from_json(msg):
         """Convert from JSON data.
 
         Args:
-          data:  The json data to read.
+          msg (str):  The json string to read from.
 
         Returns:
           Reply:  Returns a created Reply object.
         """
+        data = json.loads(msg)
         return Reply(Reply.Type(data["type"]), data["data"])
 
     #-----------------------------------------------------------------------

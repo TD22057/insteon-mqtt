@@ -81,7 +81,7 @@ class Test_BroadcastCmdResponse:
         assert r == Msg.FINISHED
         assert len(calls) == 1
         assert calls[0] == msg
-        
+
         # Test receipt of bad payloads
         msg.from_addr = IM.Address('0a.12.33')
         r = handler.msg_received(proto, msg)
@@ -94,8 +94,3 @@ class Test_BroadcastCmdResponse:
 class MockProto:
     def add_handler(self, *args):
         pass
-
-
-class MockModem:
-    def __init__(self):
-        self.save_path = ''

@@ -183,23 +183,53 @@ class KeypadLinc(Base):
 
         seq = CommandSeq(self.protocol, "Refresh complete", on_done)
 
-        # This sends a refresh ping which will respond w/ the LED bit flags
-        # (1-8) and current database delta field.  Pass skip_db here - we'll
-        # let the dimmer refresh handler above take care of getting the
-        # database updated.  Otherwise this handler and the one created in
-        # the dimmer refresh would download the database twice.
+        # First send a refresh command which get's the state of the LED's by
+        # returning a bit flag.  Pass skip_db here - we'll let the second
+        # refresh handler below take care of getting the database updated.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh_led,
                                             force=False, num_retry=3,
                                             skip_db=True)
         seq.add_msg(msg, msg_handler)
 
-        # If we get the LED state correctly, then have the base also get it's
-        # state and update the database if necessary.  This also calls
-        # handle_refresh to set the group 1 level.
-        seq.add(Base.refresh, self, force)
+        # Send a refresh command to get the state of the load.  This may or
+        # may not match the LED state depending on if detached load is set.
+        # This also responds w/ the current database delta field.  The
+        # handler checks that against the current value.  If it's different,
+        # it will send a database download command to the device to update
+        # the database.
+        msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
+        msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
+                                            None, num_retry=3)
+        seq.add_msg(msg, msg_handler)
 
+        # Update any internal configuration data that we don't know (cats,
+        # firmware revisions, etc).  If model number is not known, or force
+        # true, run get_model
+        self.addRefreshData(seq, force)
+
+        # Run all the commands.
         seq.run()
+
+    #-----------------------------------------------------------------------
+    def addRefreshData(self, seq, force=False):
+        """Add commands to refresh any internal data required.
+
+        The base class uses this update the device catalog ID's and firmware
+        if we don't know what they are.
+
+        This is split out of refresh() so derived classes that override
+        refresh can also get this information.
+
+        Args:
+          seq (CommandSeq): The command sequence to add the command to.
+          force (bool):  If true, will force a refresh of the device database
+                even if the delta value matches as well as a re-query of the
+                device model information even if it is already known.
+        """
+        Base.addRefreshData(self, seq, force)
+
+        # TODO: add commands to get detached load, toggle states, etc.
 
     #-----------------------------------------------------------------------
     def on(self, group=1, level=0xff, mode=on_off.Mode.NORMAL, on_done=None):
@@ -279,7 +309,7 @@ class KeypadLinc(Base):
         # Group 1 uses a direct command to set the level.
         else:
             # Send an off or instant off command.
-            cmd1 = on_off.Mode.encode(True, mode)
+            cmd1 = on_off.Mode.encode(False, mode)
             msg = Msg.OutStandard.direct(self.addr, cmd1, 0x00)
 
             # Use the standard command handler which will notify us when the
@@ -481,7 +511,9 @@ class KeypadLinc(Base):
         LOG.info("KeypadLinc %s setting backlight to %s", self.label, level)
 
         # Bound to 0x11 <= level <= 0xff per page 157 of insteon dev guide.
-        level = max(0x11, min(level, 0xff))
+        # 0x00 is used to disable the backlight so allow that explicitly.
+        if level:
+            level = max(0x11, min(level, 0xff))
 
         # Extended message data - see Insteon dev guide p156.
         data = bytes([
@@ -554,7 +586,9 @@ class KeypadLinc(Base):
 
         # Check the input flags to make sure only ones we can understand were
         # passed in.
-        flags = set(["backlight", "on_level"])
+        FLAG_BACKLIGHT = "backlight"
+        FLAG_ON_LEVEL = "on_level"
+        flags = set([FLAG_BACKLIGHT, FLAG_ON_LEVEL])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown KeypadLinc flags input: %s.\n Valid "
@@ -564,12 +598,12 @@ class KeypadLinc(Base):
         seq = CommandSeq(self.protocol, "KeypadLinc set_flags complete",
                          on_done)
 
-        if "backlink" in kwargs:
-            backlight = util.input_byte(kwargs, "backlight")
+        if FLAG_BACKLIGHT in kwargs:
+            backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
             seq.add(self.set_backlight, backlight)
 
-        if "on_level" in kwargs:
-            on_level = util.input_byte(kwargs, "on_level")
+        if FLAG_ON_LEVEL in kwargs:
+            on_level = util.input_byte(kwargs, FLAG_ON_LEVEL)
             seq.add(self.set_on_level, on_level)
 
         seq.run()

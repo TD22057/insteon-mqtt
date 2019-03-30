@@ -32,7 +32,7 @@ class Motion(BatterySensor):
 
         self.msg_dawn = MsgTemplate(
             topic='insteon/{{address}}/dawn',
-            payload='{{is_dawn_str.upper()}}')
+            payload='{{is_dawn_str.lower()}}')
 
         device.signal_dawn.connect(self._insteon_dawn)
 
@@ -57,15 +57,15 @@ class Motion(BatterySensor):
 
         # In versions < 0.6, these were in motion sensor so try and
         # load them to insure old config files still work.
-        if "state_topic" in config:
+        if "state_topic" in data:
             self.msg_state.load_config(data, 'state_topic', 'state_payload',
                                        qos)
-        if "low_battery_topic" in config:
+        if "low_battery_topic" in data:
             self.msg_battery.load_config(data, 'low_battery_topic',
                                          'low_battery_payload', qos)
 
     #-----------------------------------------------------------------------
-    def motion_template_data(self, is_dawn=None):
+    def template_data_motion(self, is_dawn=None):
         """Create the Jinja templating data variables.
 
         Args:
@@ -104,7 +104,7 @@ class Motion(BatterySensor):
         """
         LOG.info("MQTT received dawn change %s = %s", device.label, is_dawn)
 
-        data = self.motion_template_data(is_dawn)
+        data = self.template_data_motion(is_dawn)
         self.msg_dawn.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

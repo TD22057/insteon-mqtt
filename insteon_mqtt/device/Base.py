@@ -377,15 +377,35 @@ class Base:
         seq.add_msg(msg, msg_handler)
 
         # If model number is not known, or force true, run get_model
+        self.addRefreshData(seq, force)
+
+        # Run all the commands.
+        seq.run()
+
+    #-----------------------------------------------------------------------
+    def addRefreshData(self, seq, force=False):
+        """Add commands to refresh any internal data required.
+
+        The base class uses this update the device catalog ID's and firmware
+        if we don't know what they are.
+
+        This is split out of refresh() so derived classes that override
+        refresh can also get this information.
+
+        Args:
+          seq (CommandSeq): The command sequence to add the command to.
+          force (bool):  If true, will force a refresh of the device database
+                even if the delta value matches as well as a re-query of the
+                device model information even if it is already known.
+        """
+        # If model number is not known, or force true, run get_model
         if self.db.dev_cat is None or self.db.sub_cat is None or \
            self.db.firmware is None or force:
             seq.add(self.get_model)
 
-        # Alright run it all
-        seq.run()
-
     #-----------------------------------------------------------------------
     def get_flags(self, on_done=None):
+
         """Get the Insteon operational flags field from the device.
 
         The flags will be passed to the on_done callback as the data field.

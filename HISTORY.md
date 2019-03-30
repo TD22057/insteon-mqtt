@@ -1,5 +1,19 @@
 # Revision Change History
 
+## [0.6.8]
+
+### Fixes
+- Fixed incorrect handling of FanLinc speed change ([Issue #126][I126])
+
+- Fixed incorrect exception log statement in Protocol ([Issue #132][I132])
+
+- Fixed incorrect scene names in the config loader for IOLinc, Outlet, and
+  Switch.  This prevented customizing the MQTT scene topic and payload for
+  those devices ([Issue #130][I130])
+
+- Fixed incorrect set-backlight command parsing ([Issue #136][I136])
+
+
 ## [0.6.7]
 
 ### Fixes
@@ -245,3 +259,7 @@
 [I104]: https://github.com/TD22057/insteon-mqtt/issues/104
 [I119]: https://github.com/TD22057/insteon-mqtt/issues/119
 [I120]: https://github.com/TD22057/insteon-mqtt/issues/120
+[I126]: https://github.com/TD22057/insteon-mqtt/issues/126
+[I130]: https://github.com/TD22057/insteon-mqtt/issues/130
+[I132]: https://github.com/TD22057/insteon-mqtt/issues/132
+[I136]: https://github.com/TD22057/insteon-mqtt/issues/136

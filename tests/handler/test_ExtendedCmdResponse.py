@@ -20,7 +20,7 @@ class Test_ExtendedCmdResponse:
 
         # sent message, match input command
         out = Msg.OutExtended.direct(addr, 0x2e, 0x00,
-                                     bytes([0x00] *2 + [0x01] + [0x00] * 11),
+                                     bytes([0x00] * 2 + [0x01] + [0x00] * 11),
                                      crc_type="CRC")
         handler = IM.handler.ExtendedCmdResponse(out, callback)
 
@@ -77,12 +77,13 @@ class Test_ExtendedCmdResponse:
 
         # Test receipt of extended payloads
         flags = Msg.Flags(Msg.Flags.Type.DIRECT, False)
-        msg = Msg.InpExtended(addr, addr, flags, 0x2e, 0x00, bytes([0x00] * 14))
+        msg = Msg.InpExtended(addr, addr, flags, 0x2e, 0x00,
+                              bytes([0x00] * 14))
         r = handler.msg_received(proto, msg)
         assert r == Msg.FINISHED
         assert len(calls) == 1
         assert calls[0] == msg
-        
+
         # Test receipt of bad payloads
         msg.from_addr = IM.Address('0a.12.33')
         r = handler.msg_received(proto, msg)
@@ -95,8 +96,3 @@ class Test_ExtendedCmdResponse:
 class MockProto:
     def add_handler(self, *args):
         pass
-
-
-class MockModem:
-    def __init__(self):
-        self.save_path = ''

@@ -334,7 +334,9 @@ class Dimmer(Base):
         LOG.info("Dimmer %s setting backlight to %s", self.label, level)
 
         # Bound to 0x11 <= level <= 0xff per page 157 of insteon dev guide.
-        level = max(0x11, min(level, 0xff))
+        # 0x00 is used to disable the backlight so allow that explicitly.
+        if level:
+            level = max(0x11, min(level, 0xff))
 
         # Extended message data - see Insteon dev guide p156.
         data = bytes([
@@ -401,7 +403,9 @@ class Dimmer(Base):
 
         # Check the input flags to make sure only ones we can understand were
         # passed in.
-        flags = set(["backlight", "on_level"])
+        FLAG_BACKLIGHT = "backlight"
+        FLAG_ON_LEVEL = "on_level"
+        flags = set([FLAG_BACKLIGHT, FLAG_ON_LEVEL])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown Dimmer flags input: %s.\n Valid flags "
@@ -410,12 +414,12 @@ class Dimmer(Base):
         # Start a command sequence so we can call the flag methods in series.
         seq = CommandSeq(self.protocol, "Dimmer set_flags complete", on_done)
 
-        if "backlink" in kwargs:
-            backlight = util.input_byte(kwargs, "backlight")
+        if FLAG_BACKLIGHT in kwargs:
+            backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
             seq.add(self.set_backlight, backlight)
 
-        if "on_level" in kwargs:
-            on_level = util.input_byte(kwargs, "on_level")
+        if FLAG_ON_LEVEL in kwargs:
+            on_level = util.input_byte(kwargs, FLAG_ON_LEVEL)
             seq.add(self.set_on_level, on_level)
 
         seq.run()
