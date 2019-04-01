@@ -24,6 +24,7 @@
    ```
    git checkout master
    git merge --no-ff dev
+   git tag -a v#.#.# -m "Version #.#.# delivery"
    git push
    ```
 
