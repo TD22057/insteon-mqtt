@@ -1,5 +1,14 @@
 # Revision Change History
 
+## [0.6.9]
+
+### Additions
+- Added a catalog of known device category and sub-category information.  Just
+  used for display in the get-model command for now.  (thanks @mooshee)
+
+### Fixes
+
+
 ## [0.6.8]
 
 ### Fixes

@@ -8,6 +8,7 @@ import itertools
 import json
 import os
 from ..Address import Address
+from .. import catalog
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .DeviceEntry import DeviceEntry
@@ -59,8 +60,14 @@ class Device:
         # Extract the various files from the JSON data.
         obj.delta = data['delta']
         obj.engine = data.get('engine', None)
-        obj.dev_cat = data.get('dev_cat', None)
-        obj.sub_cat = data.get('sub_cat', None)
+
+        # Load the category fields and turn them into description objecdt.
+        dev_cat = data.get('dev_cat', None)
+        sub_cat = data.get('sub_cat', None)
+        obj.desc = None
+        if dev_cat:
+            obj.desc = catalog.find(dev_cat, sub_cat)
+
         obj.firmware = data.get('firmware', None)
         # pylint: disable=protected-access
         obj._meta = data.get('meta', {})
@@ -110,9 +117,8 @@ class Device:
         # here to show that we haven't checked the engine version yet.
         self.engine = None
 
-        # Device model information
-        self.dev_cat = None
-        self.sub_cat = None
+        # Device model information.
+        self.desc = None
         self.firmware = None
 
         # Metadata storage.  Used for saving device data to persistent
@@ -190,102 +196,47 @@ class Device:
             self.save()
 
     #-----------------------------------------------------------------------
-    def set_dev_cat(self, dev_cat):
-        """Saves the device category to file.
+    def set_info(self, dev_cat, sub_cat, firmware):
+        """Saves the device information to file.
 
-        Insteon devices are each assigned to a broad device category.  The
-        known device categories include:
-            0x00 Generalized Controllers ControLinc, RemoteLinc, SignaLinc,
-                 etc.
-            0x01 Dimmable Lighting Control Dimmable Light Switches, Dimmable
-                 Plug-In Modules
-            0x02 Switched Lighting Control Relay Switches, Relay Plug-In
-                 Modules
-            0x03 Network Bridges PowerLinc Controllers, TRex, Lonworks,
-                 ZigBee, etc.
-            0x04 Irrigation Control Irrigation Management, Sprinkler
-                 Controllers
-            0x05 Climate Control Heating, Air conditioning, Exhausts Fans,
-                 Ceiling Fans, Indoor Air Quality
-            0x06 Pool and Spa Control Pumps, Heaters, Chemicals
-            0x07 Sensors and Actuators Sensors, Contact Closures
-            0x08 Home Entertainment Audio/Video Equipment
-            0x09 Energy Management Electricity, Water, Gas Consumption,
-                 Leak Monitors
-            0x0A Built-In Appliance Control White Goods, Brown Goods
-            0x0B Plumbing Faucets, Showers, Toilets
-            0x0C Communication Telephone System Controls, Intercoms
-            0x0D Computer Control PC On/Off, UPS Control, App Activation,
-                 Remote Mouse, Keyboards
-            0x0E Window Coverings Drapes, Blinds, Awnings
-            0x0F Access Control Automatic Doors, Gates, Windows, Locks
-            0x10 Security, Health, Safety Door and Window Sensors, Motion
-                 Sensors, Scales
-            0x11 Surveillance Video Camera Control, Time-lapse Recorders,
-                 Security System Links
-            0x12 Automotive Remote Starters, Car Alarms, Car Door Locks
-            0x13 Pet Care Pet Feeders, Trackers
-            0x14 Toys Model Trains, Robots
-            0x15 Timekeeping Clocks, Alarms, Timers
-            0x16 Holiday Christmas Lights, Displays
-
-        Args:
-          dev_cat:  (int) The device category.  None to clear the value.
-        """
-        self.dev_cat = dev_cat
-        if dev_cat is not None:
-            self.save()
-
-    #-----------------------------------------------------------------------
-    def set_sub_cat(self, sub_cat):
-        """Saves the device sub-category to file.
+        Insteon devices are each assigned to a broad device category.
+        Individual devices each then have a subcategory.  See the catalog.py
+        module for details.
 
         Within the broad device category, insteon devices are assigned to a
-        more narrow sub category.  Generally a sub-category remains consistent
-        throughout a single model number of a a product, however not always.
-        Smart Labs has done a poor job of publishing the details of the
-        sub-categories.  Some resources for determining the details of a
-        sub-category are:
+        more narrow sub category.  Generally a sub-category remains
+        consistent throughout a single model number of a a product, however
+        not always.  Smart Labs has done a poor job of publishing the details
+        of the sub-categories.  Some resources for determining the details of
+        a sub-category are:
 
         http://cache.insteon.com/pdf/INSTEON_DevCats_and_Product_Keys_20081008.pdf
         http://madreporite.com/insteon/Insteon_device_list.htm
 
-        Generally knowing the Dev_Cat and Sub_Cat is sufficient for determining
-        the features that are available on a device.  Additionally knowing the
-        engine version of the device is also another good indicator.
-
-        Args:
-          sub_cat:  (int) The device sub-category.  None to clear the value.
-        """
-        self.sub_cat = sub_cat
-        if sub_cat is not None:
-            self.save()
-
-    #-----------------------------------------------------------------------
-    def set_firmware(self, firmware):
-        """Saves the firmware of the device to file.
+        Generally knowing the dev_Cat and sub_Cat is sufficient for
+        determining the features that are available on a device.
+        Additionally knowing the engine version of the device is also another
+        good indicator.
 
         The firmware version of a device is just that, the version number of
         the embedded code on the device.  In theory, this firmware is
-        updatable (although not by a casual user), however Smart Labs has never
-        published an update for any device.
+        updatable (although not by a casual user), however Smart Labs has
+        never published an update for any device.
 
-        That said, it does seem that Smart Labs routinely updates the firmware
-        that is installed on devices before they are sold.  However, Smart Labs
-        does not publish changelogs, nor does it discuss what changes have been
-        made.
-
-        Based on anecdotal evidence, few if any changes in firmware have added
-        any features to a device.  Generally knowing the Dev_Cat and Sub_Cat
-        is sufficient for determining the features that are available on a
-        device.
+        That said, it does seem that Smart Labs routinely updates the
+        firmware that is installed on devices before they are sold.  However,
+        Smart Labs does not publish changelogs, nor does it discuss what
+        changes have been made.  Based on anecdotal evidence, few if any
+        changes in firmware have added any features to a device.
 
         Args:
-          sub_cat:  (int) The device sub-category.  None to clear the value.
+          dev_cat (int):  The device category.
+          sub_cat (int):  The device sub-category.
+          firmware (int): The device firmware.
         """
+        self.desc = catalog.find(dev_cat, sub_cat)
         self.firmware = firmware
-        if firmware is not None:
-            self.save()
+        self.save()
 
     #-----------------------------------------------------------------------
     def set_meta(self, key, value):
@@ -572,18 +523,23 @@ class Device:
         """
         used = [i.to_json() for i in self.entries.values()]
         unused = [i.to_json() for i in self.unused.values()]
-        return {
+        data = {
             'address' : self.addr.to_json(),
             'delta' : self.delta,
             'engine' : self.engine,
-            'dev_cat' : self.dev_cat,
-            'sub_cat' : self.sub_cat,
+            'dev_cat' : None,
+            'sub_cat' : None,
             'firmware' : self.firmware,
             'used' : used,
             'unused' : unused,
             'last' : self.last.to_json(),
             'meta' : self._meta
             }
+        if self.desc:
+            data['dev_cat'] = self.desc.dev_cat
+            data['sub_cat'] = self.desc.sub_cat
+
+        return data
 
     #-----------------------------------------------------------------------
     def __str__(self):
