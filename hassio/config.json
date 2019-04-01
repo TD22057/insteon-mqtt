@@ -9,5 +9,5 @@
     "map": ["config:rw"],
     "options": {},
     "schema": {},
-    "image": "lnr0626/{arch}-insteon-mqtt"
+    "image": "td22057/{arch}-insteon-mqtt"
 }
