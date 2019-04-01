@@ -24,8 +24,14 @@
    ```
    git checkout master
    git merge --no-ff dev
-   git tag -a v#.#.# -m "Version #.#.# delivery"
    git push
+   ```
+
+- Tag the release and push the tags to github
+
+   ```
+   git tag -a #.#.# -m "Version #.#.# delivery"
+   git push origin "#.#.#"
    ```
 
 - Update the docker images.  The repository location is linked to a user name
