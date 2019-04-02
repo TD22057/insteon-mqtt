@@ -10,10 +10,14 @@ from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg
+from .. import on_off
 from ..Signal import Signal
 from .. import util
 
 LOG = log.get_logger()
+KEY_TRIGGER_REVERSE = "trigger_reverse"
+KEY_RELAY_LINKED = "relay_linked"
+KEY_MODE = "mode"
 
 
 class IOLinc(Base):
@@ -155,9 +159,10 @@ class IOLinc(Base):
         # Device configuration data - updated in get_flags().  We don't know
         # what these are here so we'll set them to None and update them in
         # refresh.  reasonable defaults.
-        self.trigger_reverse = None  # bool
-        self.relay_linked = None  # bool
-        self.mode = None  # Mode enumeration
+        self.trigger_reverse = self.db.get_meta(KEY_TRIGGER_REVERSE)
+        self.relay_linked = self.db.get_meta(KEY_RELAY_LINKED)
+        mode = self.db.get_meta(KEY_MODE)
+        self.mode = self.Mode(mode) if mode is not None else mode
 
         # Current device states for the sensor and relay.
         self._sensor_on = False
@@ -363,8 +368,8 @@ class IOLinc(Base):
         msg_handler = handler.StandardCmd(msg, self.handle_sensor_refresh,
                                           num_retry=3)
 
-        # If we don't have the configuration data, call get_flags to retrieve
-        # them.
+        # If we don't have the device configuration elements, call get_flags
+        # to retrieve them.
         if self.trigger_reverse is None:
             seq.add(self.get_flags)
 
@@ -603,12 +608,17 @@ class IOLinc(Base):
                     util.bit_get(bits, 7))
         try:
             self.mode = self.Mode(modeBits)
+            LOG.ui("Relay latching : %s", self.mode.name)
         except ValueError:
             LOG.exception("Unknown IO Linc mode bits %s", modeBits)
 
-        # In the future, we should store this information and do something
-        # with it.
-        LOG.ui("Relay latching : %s", self.mode.name)
+        # Set the configuration elements into the device db so we don't have
+        # to retrieve them again.
+        self.db.set_meta(KEY_TRIGGER_REVERSE, self.trigger_reverse)
+        self.db.set_meta(KEY_RELAY_LINKED, self.relay_linked)
+        self.db.set_meta(KEY_MODE, self.mode)
+        self.db.save()
+
         on_done(True, "Operation complete", msg.cmd2)
 
     #-----------------------------------------------------------------------
@@ -660,18 +670,7 @@ class IOLinc(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        # Note: don't update the state - the sensor does that.  This state is
-        # for the relay.
-        # TODO: update the relay state
-        # TODO: set a timer to turn off relay state at the correct moment.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
-            on_done(True, "IOLinc command complete", None)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("IOLinc %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "IOLinc command failed. " + msg.nak_str(), None)
+        self._handle_relay_ack(msg, on_done, "relay updated")
 
     #-----------------------------------------------------------------------
     def handle_scene(self, msg, on_done):
@@ -687,19 +686,7 @@ class IOLinc(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        # Call the callback.  We don't change state here - the device will
-        # send a regular broadcast message which will run handle_broadcast
-        # which will then update the state.
-        # TODO: see handle_ack - should update relay state here.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
-            on_done(True, "Scene triggered", None)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("IOLinc %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Scene trigger failed failed. " + msg.nak_str(),
-                    None)
+        self._handle_relay_ack(msg, on_done, "Scene trigger")
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
@@ -725,10 +712,15 @@ class IOLinc(Base):
                       msg.group, addr)
             return
 
-        # Nothing to do - there is no "state" to update since the state we
-        # care about is the sensor state and this command tells us that the
-        # relay state was tripped.
-        # TODO: update the relay state and schedule an off.
+        is_on, _mode = on_off.Mode.decode(msg.cmd1)
+        self._set_relay_on(is_on)
+
+        # If the relay is turning on, we won't be notified that it turns
+        # off if the iolinc is in momentary mode.  So we'll need to take
+        # care of that ourselves.
+        if self.mode != self.Mode.LATCHING:
+            self._set_off_timer()
+
         LOG.debug("IOLinc %s cmd %#04x", self.addr, msg.cmd1)
 
     #-----------------------------------------------------------------------
@@ -762,5 +754,48 @@ class IOLinc(Base):
         self._relay_on = bool(is_on)
 
         self.signal_relay_on_off.emit(self, self._relay_on)
+
+    #-----------------------------------------------------------------------
+    def _handle_relay_ack(self, msg, on_done, ack_type):
+        """Callback for standard commanded messages.
+
+        This callback is run when we get a reply back from one of our
+        commands to the device.  If the command was ACK'ed, we know it worked
+        so we'll update the internal relay state of the device and emit the
+        signals to notify others of the state change.
+
+        Args:
+          msg (message.InpStandard):  The reply message from the device.
+              The on/off level will be in the cmd2 field.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+          ack_type (str): Message to send to the logs.
+        """
+        # This ack is for the relay - not the sensor.
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+            LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
+            is_on, _mode = on_off.Mode.decode(msg.cmd1)
+            self._set_relay_on(is_on)
+
+            # If the relay is turning on, we won't be notified that it turns
+            # off if the iolinc is in momentary mode.  So we'll need to take
+            # care of that ourselves.
+            if self.mode != self.Mode.LATCHING:
+                self._set_off_timer()
+
+            on_done(True, "IOLinc %s updated to on=%s" % (ack_type, is_on),
+                    None)
+
+        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+            LOG.error("IOLinc %s NAK error: %s, Message: %s", self.addr,
+                      msg.nak_str(), msg)
+            on_done(False, "IOLinc %s failed. %s" % (ack_type, msg.nak_str()),
+                    None)
+
+    #-----------------------------------------------------------------------
+    def _set_off_timer(self):
+        """TODO: doc
+        """
+        pass
 
     #-----------------------------------------------------------------------

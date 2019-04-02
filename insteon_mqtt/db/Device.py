@@ -246,21 +246,24 @@ class Device:
         reboots.
 
         Args:
-          key:    A valid python dictionary key to store the value
+          key (str):   The meta data key to set.
           value:  A data type capable of being represented in json
         """
         self._meta[key] = value
         self.save()
 
     #-----------------------------------------------------------------------
-    def get_meta(self, key, None):
+    def get_meta(self, key):
         """Get the metadata key value.
 
         Used for getting device parameters from persistent storage between
         reboots.
 
         Args:
-          key:    A valid python dictionary key to retreive the value from
+          key (str):   The meta data key to retrieve.
+
+        Returns:
+          Returns the requested value or None if the key doesn't exist.
         """
         return self._meta.get(key, None)
 
