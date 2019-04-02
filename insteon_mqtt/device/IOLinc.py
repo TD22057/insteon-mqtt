@@ -3,6 +3,7 @@
 # Insteon on/off device
 #
 #===========================================================================
+import enum
 import functools
 from .Base import Base
 from ..CommandSeq import CommandSeq
@@ -131,6 +132,13 @@ class IOLinc(Base):
     """
     type_name = "io_linc"
 
+    class Mode(enum.Enum):
+        # Mode values are the flags bits 3, 4, 7 values.
+        LATCHING = (0, 0, 0)
+        MOMENTARY_A = (1, 0, 0)
+        MOMENTARY_B = (1, 1, 0)
+        MOMENTARY_C = (1, 1, 1)
+
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
 
@@ -143,6 +151,13 @@ class IOLinc(Base):
           name         (str) Nice alias name to use for the device.
         """
         super().__init__(protocol, modem, address, name)
+
+        # Device configuration data - updated in get_flags().  We don't know
+        # what these are here so we'll set them to None and update them in
+        # refresh.  reasonable defaults.
+        self.trigger_reverse = None  # bool
+        self.relay_linked = None  # bool
+        self.mode = None  # Mode enumeration
 
         # Current device states for the sensor and relay.
         self._sensor_on = False
@@ -282,24 +297,16 @@ class IOLinc(Base):
 
         # Mode might be None in which case it wasn't input.
         choices = ["latching", "momentary-a", "momentary-b", "momentary-c"]
-        mode = util.input_choice(kwargs, "mode", choices)
+        modeStr = util.input_choice(kwargs, "mode", choices)
 
-        if mode == "latching":
-            bits = util.bit_set(bits, 3, 0)
-            bits = util.bit_set(bits, 4, 0)
-            bits = util.bit_set(bits, 7, 0)
-        elif mode == "momentary-a":
-            bits = util.bit_set(bits, 3, 1)
-            bits = util.bit_set(bits, 4, 0)
-            bits = util.bit_set(bits, 7, 0)
-        elif mode == "momentary-b":
-            bits = util.bit_set(bits, 3, 1)
-            bits = util.bit_set(bits, 4, 1)
-            bits = util.bit_set(bits, 7, 0)
-        elif mode == "momentary-c":
-            bits = util.bit_set(bits, 3, 1)
-            bits = util.bit_set(bits, 4, 1)
-            bits = util.bit_set(bits, 7, 1)
+        # Convert to match the enum name values.
+        modeStr = modeStr.upper().replace("-", "_")
+        mode = self.Mode[modeStr]
+
+        # The enum value is the values for bits 3, 4, and 7.
+        bits = util.bit_set(bits, 3, mode.value[0])
+        bits = util.bit_set(bits, 4, mode.value[1])
+        bits = util.bit_set(bits, 7, mode.value[2])
 
         trigger_reverse = util.input_bool(kwargs, "trigger_reverse")
         if trigger_reverse is not None:
@@ -355,6 +362,11 @@ class IOLinc(Base):
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
         msg_handler = handler.StandardCmd(msg, self.handle_sensor_refresh,
                                           num_retry=3)
+
+        # If we don't have the configuration data, call get_flags to retrieve
+        # them.
+        if self.trigger_reverse is None:
+            seq.add(self.get_flags)
 
         # Finally start the sequence running.  This will return so the
         # network event loop can process everything and the on_done callbacks
@@ -579,20 +591,24 @@ class IOLinc(Base):
         bits = msg.cmd2
         LOG.ui("Program lock   : %d", util.bit_get(bits, 0))
         LOG.ui("Transmit LED   : %d", util.bit_get(bits, 1))
+
+        self.relay_linked = util.bit_get(bits, 2)
         LOG.ui("Relay linked   : %d", util.bit_get(bits, 2))
+
+        self.trigger_reverse = util.bit_get(bits, 6)
         LOG.ui("Trigger reverse: %d", util.bit_get(bits, 6))
-        if not util.bit_get(bits, 3):
-            mode = "latching"
-        elif util.bit_get(bits, 7):
-            mode = "momentary C"
-        elif util.bit_get(bits, 4):
-            mode = "momentary B"
-        else:
-            mode = "momentary A"
+
+        # Bits 3, 4, and 7 control the mode.
+        modeBits = (util.bit_get(bits, 3), util.bit_get(bits, 4),
+                    util.bit_get(bits, 7))
+        try:
+            self.mode = self.Mode(modeBits)
+        except ValueError:
+            LOG.exception("Unknown IO Linc mode bits %s", modeBits)
 
         # In the future, we should store this information and do something
         # with it.
-        LOG.ui("Relay latching : %s", mode)
+        LOG.ui("Relay latching : %s", self.mode.name)
         on_done(True, "Operation complete", msg.cmd2)
 
     #-----------------------------------------------------------------------
@@ -635,8 +651,8 @@ class IOLinc(Base):
 
         This callback is run when we get a reply back from one of our
         commands to the device.  If the command was ACK'ed, we know it worked
-        so we'll update the internal state of the device and emit the signals
-        to notify others of the state change.
+        so we'll update the internal relay state of the device and emit the
+        signals to notify others of the state change.
 
         Args:
           msg (message.InpStandard):  The reply message from the device.
@@ -646,6 +662,8 @@ class IOLinc(Base):
         """
         # Note: don't update the state - the sensor does that.  This state is
         # for the relay.
+        # TODO: update the relay state
+        # TODO: set a timer to turn off relay state at the correct moment.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
             on_done(True, "IOLinc command complete", None)
@@ -672,6 +690,7 @@ class IOLinc(Base):
         # Call the callback.  We don't change state here - the device will
         # send a regular broadcast message which will run handle_broadcast
         # which will then update the state.
+        # TODO: see handle_ack - should update relay state here.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
             on_done(True, "Scene triggered", None)
@@ -709,6 +728,7 @@ class IOLinc(Base):
         # Nothing to do - there is no "state" to update since the state we
         # care about is the sensor state and this command tells us that the
         # relay state was tripped.
+        # TODO: update the relay state and schedule an off.
         LOG.debug("IOLinc %s cmd %#04x", self.addr, msg.cmd1)
 
     #-----------------------------------------------------------------------
@@ -728,7 +748,7 @@ class IOLinc(Base):
         self.signal_sensor_on_off.emit(self, self._sensor_on)
 
     #-----------------------------------------------------------------------
-    def _set_replay_on(self, is_on):
+    def _set_relay_on(self, is_on):
         """Update the device relay on/off state.
 
         This will change the internal relay state and emit the state changed

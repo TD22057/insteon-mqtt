@@ -253,7 +253,7 @@ class Device:
         self.save()
 
     #-----------------------------------------------------------------------
-    def get_meta(self, key):
+    def get_meta(self, key, None):
         """Get the metadata key value.
 
         Used for getting device parameters from persistent storage between

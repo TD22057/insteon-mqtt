@@ -27,9 +27,14 @@ class IOLinc:
         self.mqtt = mqtt
         self.device = device
 
-        # Output state change reporting template.
+        # Output sensor state change reporting template.
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state',
+            payload='{{on_str.lower()}}')
+
+        # Output relay state change reporting template.
+        self.msg_relay_state = MsgTemplate(
+            topic='insteon/{{address}}/relay/state',
             payload='{{on_str.lower()}}')
 
         # Input on/off command template.
@@ -42,7 +47,8 @@ class IOLinc:
             topic='insteon/{{address}}/scene',
             payload='{ "cmd" : "{{value.lower()}}" }')
 
-        device.signal_on_off.connect(self._insteon_on_off)
+        device.signal_sensor_on_off.connect(self._insteon_sensor_on_off)
+        device.signal_relay_on_off.connect(self._insteon_relay_on_off)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -58,6 +64,8 @@ class IOLinc:
             return
 
         self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
+        self.msg_relay_state.load_config(data, 'relay_state_topic',
+                                         'relay_state_payload', qos)
         self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
                                     qos)
         self.msg_scene.load_config(data, 'scene_topic', 'scene_payload', qos)
@@ -119,20 +127,36 @@ class IOLinc:
         return data
 
     #-----------------------------------------------------------------------
-    def _insteon_on_off(self, device, is_on):
-        """Device active on/off callback.
+    def _insteon_sensor_on_off(self, device, is_on):
+        """Device sensor active on/off callback.
 
-        This is triggered via signal when the Insteon device goes active or
-        inactive.  It will publish an MQTT message with the new state.
+        This is triggered via signal when the Insteon device sensor state
+        changes.  It will publish an MQTT message with the new state.
 
         Args:
           device (device.IOLinc):   The Insteon device that changed.
           is_on (bool):   True for on, False for off.
         """
-        LOG.info("MQTT received active change %s = %s", device.label, is_on)
+        LOG.info("MQTT received active sensor %s = %s", device.label, is_on)
 
         data = self.template_data(is_on)
         self.msg_state.publish(self.mqtt, data)
+
+    #-----------------------------------------------------------------------
+    def _insteon_relay_on_off(self, device, is_on):
+        """Device relay active on/off callback.
+
+        This is triggered via signal when the Insteon device relay state
+        changes.  It will publish an MQTT message with the new state.
+
+        Args:
+          device (device.IOLinc):   The Insteon device that changed.
+          is_on (bool):   True for on, False for off.
+        """
+        LOG.info("MQTT received active relay %s = %s", device.label, is_on)
+
+        data = self.template_data(is_on)
+        self.msg_relay_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
     def _input_on_off(self, client, data, message):

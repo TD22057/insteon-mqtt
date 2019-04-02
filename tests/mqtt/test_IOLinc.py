@@ -78,7 +78,7 @@ class Test_IOLinc:
         assert data == right
 
     #-----------------------------------------------------------------------
-    def test_mqtt(self, setup):
+    def test_mqtt_sensor(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
         topic = "insteon/%s" % setup.addr.hex
 
@@ -86,8 +86,8 @@ class Test_IOLinc:
         mdev.load_config({})
 
         # Send an on/off signal
-        dev.signal_on_off.emit(dev, True)
-        dev.signal_on_off.emit(dev, False)
+        dev.signal_sensor_on_off.emit(dev, True)
+        dev.signal_sensor_on_off.emit(dev, False)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic='%s/state' % topic, payload='on', qos=0, retain=True)
@@ -96,25 +96,53 @@ class Test_IOLinc:
         link.client.clear()
 
     #-----------------------------------------------------------------------
+    def test_mqtt_relay(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        # Send an on/off signal
+        dev.signal_relay_on_off.emit(dev, True)
+        dev.signal_relay_on_off.emit(dev, False)
+        assert len(link.client.pub) == 2
+        assert link.client.pub[0] == dict(
+            topic='%s/relay/state' % topic, payload='on', qos=0, retain=True)
+        assert link.client.pub[1] == dict(
+            topic='%s/relay/state' % topic, payload='off', qos=0, retain=True)
+        link.client.clear()
+
+    #-----------------------------------------------------------------------
     def test_config(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
 
         config = {'io_linc' : {
             'state_topic' : 'foo/{{address}}',
-            'state_payload' : '{{on}} {{on_str.upper()}}'}}
+            'state_payload' : '{{on}} {{on_str.upper()}}',
+            'relay_state_topic' : 'bar/{{address}}',
+            'relay_state_payload' : '{{on}} {{on_str.lower()}}'}}
         qos = 3
         mdev.load_config(config, qos)
 
         stopic = "foo/%s" % setup.addr.hex
+        rtopic = "bar/%s" % setup.addr.hex
 
-        # Send an on/off signal
-        dev.signal_on_off.emit(dev, True)
-        dev.signal_on_off.emit(dev, False)
+        # Send a sensor on/off signal
+        dev.signal_sensor_on_off.emit(dev, True)
+        dev.signal_sensor_on_off.emit(dev, False)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic=stopic, payload='1 ON', qos=qos, retain=True)
         assert link.client.pub[1] == dict(
             topic=stopic, payload='0 OFF', qos=qos, retain=True)
+        link.client.clear()
+
+        # Send a relay on/off signal
+        dev.signal_relay_on_off.emit(dev, True)
+        dev.signal_relay_on_off.emit(dev, False)
+        assert len(link.client.pub) == 2
+        assert link.client.pub[0] == dict(
+            topic=rtopic, payload='1 on', qos=qos, retain=True)
+        assert link.client.pub[1] == dict(
+            topic=rtopic, payload='0 off', qos=qos, retain=True)
         link.client.clear()
 
     #-----------------------------------------------------------------------

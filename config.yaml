@@ -822,6 +822,12 @@ mqtt:
     state_topic: 'insteon/{{address}}/state'
     state_payload: '{{on_str.upper()}}'
 
+    # Output relay state change topic and tempalte.  This message is sent
+    # whenever the device relay state changes.  Template variables are the
+    # same as for the state_payload.
+    relay_state_topic: 'insteon/{{address}}/relay/state'
+    relay_state_payload: '{{on_str.upper()}}'
+
     # Input on/off command.  This forces the relay on/off and ignores the
     # momentary-C sensor setting.  Use this to force the relay to respond.
     # If momentary mode is active, it will turn off after the delay.  The
