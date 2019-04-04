@@ -70,24 +70,40 @@ To rotate to the next slot, repeat the 3 hold process)
 ==========================================================================
 sensor closed (touching - i.e. garage door closed)
 0x50: Std: 45.33.d4 Type.ALL_LINK_BROADCAST grp: 01 cmd: 13 00
+0x50: Std: 45.33.d4 Type.ALL_LINK_CLEANUP grp: 01 cmd: 13 01
+0x50: Std: 45.33.d4 Type.ALL_LINK_BROADCAST grp: 01 cmd: 06 00
 
-sensor open (no touching - i.e. garage door open)
+sensor open (not touching - i.e. garage door open)
 0x50: Std: 45.33.d4 Type.ALL_LINK_BROADCAST grp: 01 cmd: 11 00
+0x50: Std: 45.33.d4 Type.ALL_LINK_CLEANUP grp: 01 cmd: 11 01
+0x50: Std: 45.33.d4 Type.ALL_LINK_BROADCAST grp: 01 cmd: 06 00
+
+send direct on command to device:
+0x62: Std: 45.33.d4, Type.DIRECT, 11 ff ack: True
+0x50: Std: 45.33.d4->44.85.11 Type.DIRECT_ACK cmd: 11 ff
 
 sent off command (0x13) when not touching:
+0x62: Std: 45.33.d4, Type.DIRECT, 13 00 ack: True
+0x50: Std: 45.33.d4->44.85.11 Type.DIRECT_ACK cmd: 13 00
 
-INFO IOLinc: IOLinc 45.33.d4 cmd: off
-INFO Protocol: Write to modem: Std: 45.33.d4, Type.DIRECT, 13 00
-INFO Protocol: Read 0x62: Std: 45.33.d4, Type.DIRECT, 13 00 ack: True
-DEBUG StandardCmd: 45.33.d4 got msg ACK
+send on scene command w/ device as responder:
+Modem: 44.85.11 (modem) broadcast to 45.33.d4 for group 21
+Read 0x50: Std: 45.33.d4 Type.CLEANUP_ACK grp: 15 cmd: 11 15
 
-INFO Protocol: Read 0x50: Std: 45.33.d4->44.85.11 Type.DIRECT_ACK cmd: 13 00
-DEBUG IOLinc: IOLinc 45.33.d4 ACK: Std: 45.33.d4->44.85.11 Type.DIRECT_ACK cmd: 13 00
-INFO IOLinc: Setting device 45.33.d4 'garage' on False
+send off scene command w/ device as responder:
+Modem: 44.85.11 (modem) broadcast to 45.33.d4 for group 21
+0x50: Std: 45.33.d4 Type.CLEANUP_ACK grp: 15 cmd: 13 15
 
+direct button press:
+0x50: Std: 45.33.d4 Type.ALL_LINK_BROADCAST grp: 01 cmd: 11 00
+0x50: Std: 45.33.d4 Type.ALL_LINK_CLEANUP grp: 01 cmd: 11 01
+0x50: Std: 45.33.d4 Type.ALL_LINK_BROADCAST grp: 01 cmd: 06 00
 
 so basically, if broadcast, then it's the sensor reading.  If
 DIRECT_ACK, it's a "yes I clicked the relay" message.
+
+PROBLEM: directly pushing the button screws things up - looks like a sensor
+reading.
 
 ==========================================================================
 =
@@ -157,3 +173,45 @@ INFO Protocol: Read 0x50: Std: 45.33.d4 Type.ALL_LINK_BROADCAST grp: 01 cmd: 06 
 NOTE: this is identical to the sensor tripping message.  same group - everything.
 And this does NOT update and send the off command when the relay trips off.  And
 it's value is independent of the sensor being open or closed.
+
+
+==========================================================================
+=
+= Setting momentary delay
+=
+==========================================================================
+https://forums.indigodomo.com/viewtopic.php?f=41&t=10336&start=45
+
+if duration <= 25.5:
+   delayval = int(round(10 * duration))
+   scaleval = 1
+elif duration <= 255.0:
+   delayval = int(round(duration))
+   scaleval = 10
+elif duration <= 2550.0:
+   delayval = int(round(duration / 10.0))
+   scaleval = 100
+else:
+   self.errorLog(u"Momentary duration %.1f seconds is out-of-range" % (duration))
+   return
+
+instnAddr = indigo.devices[iolID].address
+setDelayCmd = [
+   0x2E, 0x00,
+   0x00,         # D1
+   0x06,         # D2  - set delay
+   delayval      # D3  - delay value
+]
+setScalerCmd = [
+   0x2E, 0x00,
+   0x00,         # D1
+   0x07,         # D2  - set scaler
+   scaleval      # D3  - scale value
+]
+
+indigo.insteon.sendRawExtended(instnAddr, setDelayCmd)
+indigo.insteon.sendRawExtended(instnAddr, setScalerCmd)
+
+Use 0x2e to get extended values.  D4 is delay.  D3 is scaler.
+
+=====================================================================

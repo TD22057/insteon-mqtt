@@ -706,3 +706,59 @@ kp_off1 = bytes( [
     0x00, # flags
     0x13, 0x00,  # turn off
     ] )
+
+
+# get extended for io linc
+addr = IM.Address( 0x45, 0x33, 0xd4 )
+data = bytes( [0x00]*14 )
+get_io_ext = IM.message.OutExtended.direct(addr,0x2e,0x00,data).to_bytes()
+# 02 62 45 33 d4 1f 2e 00 00 00 00 00 00 00 00 00 00 00 00 00 00 d2 06
+# 02 50 45 33 d4 44 85 11 2f 2e 00
+# 02 51 45 33 d4 44 85 11 15 2e 00
+#    D1 D2 D3 D4 D5 D6 D7 D8 D9 D10 D11
+#    01 01 00 14 20 00 20 00 00  00  00 00 00 d1
+# D1 = 01 group
+# D2 = 01 response
+# D3 = 00 ?? ( probably scaler - check this)
+# D4 = 14 closure time in (tenths?) (default = 2.0 seconds)
+# D5 = 20 X10 house code (20 = none)
+# D6 = 00 X10 unit code
+# D7 = 20 house out
+# D8 = 00 uni tout
+# D9 = 00 serial number
+
+# set momentary time:
+#   data2=0, D1,D2 = 00 06
+#   D3 = 02-ff = time in tenths of a second
+#   also changes device to momentary mode
+s='''
+if duration <= 25.5:
+   delayval = int(round(10 * duration))
+   scaleval = 1
+elif duration <= 255.0:
+   delayval = int(round(duration))
+   scaleval = 10
+elif duration <= 2550.0:
+   delayval = int(round(duration / 10.0))
+   scaleval = 100
+else:
+   self.errorLog(u"Momentary duration %.1f seconds is out-of-range" % (duration))
+   return
+
+instnAddr = indigo.devices[iolID].address
+setDelayCmd = [
+   0x2E, 0x00,
+   0x00,         # D1
+   0x06,         # D2  - set delay
+   delayval      # D3  - delay value
+]
+setScalerCmd = [
+   0x2E, 0x00,
+   0x00,         # D1
+   0x07,         # D2  - set scaler
+   scaleval      # D3  - scale value
+]
+
+indigo.insteon.sendRawExtended(instnAddr, setDelayCmd)
+indigo.insteon.sendRawExtended(instnAddr, setScalerCmd)
+'''

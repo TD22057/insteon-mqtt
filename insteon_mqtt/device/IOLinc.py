@@ -18,7 +18,7 @@ LOG = log.get_logger()
 KEY_TRIGGER_REVERSE = "trigger_reverse"
 KEY_RELAY_LINKED = "relay_linked"
 KEY_MODE = "mode"
-
+KEY_MOMENTARY_TIME = "momentary_time"
 
 class IOLinc(Base):
     """Insteon IOLinc relay/sensor device.
@@ -162,7 +162,8 @@ class IOLinc(Base):
         self.trigger_reverse = self.db.get_meta(KEY_TRIGGER_REVERSE)
         self.relay_linked = self.db.get_meta(KEY_RELAY_LINKED)
         mode = self.db.get_meta(KEY_MODE)
-        self.mode = self.Mode(mode) if mode is not None else mode
+        self.mode = self.Mode[mode] if mode is not None else mode
+        self.momentary_time = self.db.get_meta(KEY_MOMENTARY_TIME)
 
         # Current device states for the sensor and relay.
         self._sensor_on = False
@@ -367,11 +368,19 @@ class IOLinc(Base):
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
         msg_handler = handler.StandardCmd(msg, self.handle_sensor_refresh,
                                           num_retry=3)
+        seq.add_msg(msg, msg_handler)
 
         # If we don't have the device configuration elements, call get_flags
         # to retrieve them.
-        if self.trigger_reverse is None:
+        if force or self.trigger_reverse is None:
             seq.add(self.get_flags)
+
+        # If we don't have the momentary time delay, get it.
+        if force or self.momentary_time is None:
+            data = bytes([0x00]*14)
+            msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
+            msg_handler = handler.StandardCmd(msg, self.handle_ext_refresh)
+            seq.add_msg(msg, msg_handler)
 
         # Finally start the sequence running.  This will return so the
         # network event loop can process everything and the on_done callbacks
@@ -616,7 +625,7 @@ class IOLinc(Base):
         # to retrieve them again.
         self.db.set_meta(KEY_TRIGGER_REVERSE, self.trigger_reverse)
         self.db.set_meta(KEY_RELAY_LINKED, self.relay_linked)
-        self.db.set_meta(KEY_MODE, self.mode)
+        self.db.set_meta(KEY_MODE, self.mode.name)
         self.db.save()
 
         on_done(True, "Operation complete", msg.cmd2)
@@ -654,6 +663,23 @@ class IOLinc(Base):
 
         # Current on/off is stored in cmd2 so update our level to match.
         self._set_relay_on(msg.cmd2 > 0x00)
+
+    #-----------------------------------------------------------------------
+    def handle_ext_refreshbacklight(self, msg, on_done):
+        """Callback for handling getting extended data responses.
+
+        # TODO: doc
+
+        Args:
+          msg (InpStandard):  The response message from the command.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        # TODO: read out momentary time.
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+            on_done(True, "Backlight level updated", None)
+        else:
+            on_done(False, "Backlight level failed", None)
 
     #-----------------------------------------------------------------------
     def handle_ack(self, msg, on_done):
