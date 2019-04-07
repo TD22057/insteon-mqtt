@@ -60,7 +60,7 @@ insteon:
     switch:
       - 3a.29.84: 'xmas tree'
       - 26.48.ff: 'xmas stairs'
-      - 37.2d.20: 'xmas deck'
+      - 37.2d.20: 'deck'
 
     # Dimming devices (outlets, wall switches, lamp modules, etc).
     dimmer:
@@ -201,6 +201,7 @@ mqtt:
     #   mode = 'normal'/'fast'/'instant'
     #   fast = 0/1
     #   instant = 0/1
+    #   reason = 'device'/'scene'/'command'/'refresh'
     state_topic: 'insteon/{{address}}/state'
     state_payload: '{{on_str.upper()}}'
 
@@ -217,7 +218,7 @@ mqtt:
     # but only for turning the device on and off.  The output of
     # passing the payload through the template must match the following:
     #   { "cmd" : 'on'/'off', ["mode" : 'normal'/'fast'/'instant'],
-    #                         ["fast" : 1/0], ["instant" : 1/0] }
+    #             ["fast" : 1/0], ["instant" : 1/0], ["reason" : ""] }
     # Available variables for templating are:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract

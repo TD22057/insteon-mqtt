@@ -112,6 +112,7 @@ def on(args, config):
         "cmd" : "on",
         "level" : args.level,
         "group" : args.group,
+        "reason" : args.reason,
         }
     if args.mode:
         payload["mode"] = args.mode
@@ -126,6 +127,7 @@ def off(args, config):
     payload = {
         "cmd" : "off",
         "group" : args.group,
+        "reason" : args.reason,
         }
     if args.mode:
         payload["mode"] = args.mode
@@ -141,6 +143,7 @@ def set(args, config):
         "cmd" : "set",
         "level" : args.level,
         "group" : args.group,
+        "reason" : args.reason,
         }
     if args.mode:
         payload["mode"] = args.mode
@@ -178,6 +181,7 @@ def scene(args, config):
         "cmd" : "scene",
         "group" : args.group,
         "is_on" : bool(args.is_on),
+        "reason" : args.reason,
         }
 
     reply = util.send(config, topic, payload, args.quiet)
