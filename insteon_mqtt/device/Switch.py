@@ -137,7 +137,9 @@ class Switch(Base):
           level (int):  If non-zero, turn the device on.  The API is an int
                 to keep a consistent API with other devices.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          reason (str):  TODO
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -175,7 +177,9 @@ class Switch(Base):
                 this must be 1.  Allowing a group here gives us a consistent
                 API to the on command across devices.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          reason (str): TODO
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -214,7 +218,9 @@ class Switch(Base):
                 this must be 1.  Allowing a group here gives us a consistent
                 API to the on command across devices.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          reason (str): TODO
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -235,7 +241,9 @@ class Switch(Base):
           is_on (bool):  True for an on command, False for an off command.
           group (int):  The group on the device to simulate.  For this device,
                 this must be 1.
-          reason (str): TODO
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -450,7 +458,7 @@ class Switch(Base):
         self._set_is_on(msg.cmd2 > 0x00, reason=on_off.REASON_REFRESH)
 
     #-----------------------------------------------------------------------
-    def handle_ack(self, msg, on_done, reason="" ):
+    def handle_ack(self, msg, on_done, reason=""):
         """Callback for standard commanded messages.
 
         This callback is run when we get a reply back from one of our
@@ -463,6 +471,9 @@ class Switch(Base):
               The on/off level will be in the cmd2 field.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
         """
         # If this it the ACK we're expecting, update the internal state and
         # emit our signals.
@@ -494,7 +505,9 @@ class Switch(Base):
           msg (message.InpStandard): The reply message from the device.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
-          reason (str): TODO
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
         """
         # Call the callback.  We don't change state here - the device will
         # send a regular broadcast message which will run handle_broadcast
@@ -504,8 +517,8 @@ class Switch(Base):
 
             # Reason is device because we're simulating a button press.  We
             # can't really pass this around because we just get a broadcast
-            # message later from the device.  So we set it here and pick it
-            # up in handle_broadcast.
+            # message later from the device.  So we set a temporary variable
+            # here and use it in handle_broadcast() to output the reason.
             self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
             on_done(True, "Scene triggered", None)
 
@@ -564,9 +577,11 @@ class Switch(Base):
           is_on (bool):  True if the switch is on, False if it isn't.
           mode (on_off.Mode): The type of on/off that was triggered (normal,
                fast, etc).
-          reason (str): TODO
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
         """
-        LOG.info("Setting device %s on %s %s reason=%s", self.label, is_on,
+        LOG.info("Setting device %s on %s %s %s", self.label, is_on,
                  mode, reason)
         self._is_on = bool(is_on)
 

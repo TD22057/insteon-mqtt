@@ -116,7 +116,9 @@ class Switch:
                 mode attributes are not added to the data.
           mode (on_off.Mode):  The on/off mode state.
           manual (on_off.Manual):  The manual mode state.  If None, manual
-                attributes are not added to the data.
+                 attributes are not added to the data.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -156,7 +158,8 @@ class Switch:
           device (device.Switch):   The Insteon device that changed.
           is_on (bool):   True for on, False for off.
           mode (on_off.Mode):  The on/off mode state.
-          reason (str): TODO
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
         """
         LOG.info("MQTT received on/off %s on: %s %s '%s'", device.label, is_on,
                  mode, reason)
@@ -179,7 +182,8 @@ class Switch:
         Args:
           device (device.Base): The Insteon device that changed.
           manual (on_off.Manual):  The manual mode.
-          reason (str) : TODO
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
         """
         LOG.info("MQTT received manual change %s %s '%s'", device.label,
                  manual, reason)
