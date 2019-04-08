@@ -157,6 +157,7 @@ def increment_up(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
         "cmd" : "increment_up",
+        "reason" : args.reason,
         }
 
     reply = util.send(config, topic, payload, args.quiet)
@@ -168,6 +169,7 @@ def increment_down(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
         "cmd" : "increment_down",
+        "reason" : args.reason,
         }
 
     reply = util.send(config, topic, payload, args.quiet)

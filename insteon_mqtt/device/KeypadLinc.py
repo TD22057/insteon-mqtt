@@ -36,13 +36,15 @@ class KeypadLinc(Base):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_level_changed( Device, int level, on_off.Mode mode ): Sent
-      whenever the dimmer is turned on or off or changes level.  The level
-      field will be in the range 0-255.  For an on/off switch, this will only
-      emit 0 or 255.
+    - signal_level_changed( Device, int level, on_off.Mode mode, str reason):
+      Sent whenever the dimmer is turned on or off or changes level.  The
+      level field will be in the range 0-255.  For an on/off switch, this
+      will only emit 0 or 255.
 
-    - signal_manual( Device, on_off.Manual mode ): Sent when the device
-      starts or stops manual mode (when a button is held down or released).
+    - signal_manual( Device, on_off.Manual mode, str reason ): Sent when the
+      device starts or stops manual mode (when a button is held down or
+      released).
+
     """
 
     #-----------------------------------------------------------------------
@@ -66,11 +68,11 @@ class KeypadLinc(Base):
         self.type_name = "keypad_linc" if dimmer else "keypad_linc_sw"
 
         # Group on/off signal.
-        # API: func(Device, int group, int level, on_off.Mode mode)
+        # API: func(Device, int group, int level, on_off.Mode mode, str reason)
         self.signal_level_changed = Signal()
 
         # Manual mode start up, down, off
-        # API: func(Device, int group, on_off.Manual mode)
+        # API: func(Device, int group, on_off.Manual mode, str reason)
         self.signal_manual = Signal()
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the base
@@ -93,6 +95,7 @@ class KeypadLinc(Base):
         # Special callback to run when receiving a broadcast clean up.  See
         # scene() for details.
         self.broadcast_done = None
+        self.broadcast_reason = ""
 
         # 8 bits representing the LED's on the device for buttons 1-8.  For
         # buttons 2-8 (8 button keypad) and 3-6 (6 button keypad), these also
@@ -232,7 +235,8 @@ class KeypadLinc(Base):
         # TODO: add commands to get detached load, toggle states, etc.
 
     #-----------------------------------------------------------------------
-    def on(self, group=1, level=0xff, mode=on_off.Mode.NORMAL, on_done=None):
+    def on(self, group=1, level=0xff, mode=on_off.Mode.NORMAL, reason="",
+           on_done=None):
         """Turn the device on.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -251,6 +255,9 @@ class KeypadLinc(Base):
                 range 0 to 255.  For non-dimmer groups, it will only look at
                 level=0 or level>0.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -261,7 +268,7 @@ class KeypadLinc(Base):
 
         # Non-load buttons are turned on/off via the LED command.
         if group != 1:
-            self.set_button_led(group, True, on_done)
+            self.set_button_led(group, True, reason, on_done)
 
         # Group 1 uses a direct command to set the level.
         else:
@@ -274,12 +281,12 @@ class KeypadLinc(Base):
 
             # Use the standard command handler which will notify us when the
             # command is ACK'ed.
-            msg_handler = handler.StandardCmd(msg, self.handle_set_load,
-                                              on_done)
+            callback = functools.partial(self.handle_set_load, reason=reason)
+            msg_handler = handler.StandardCmd(msg, callback, on_done)
             self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def off(self, group=1, mode=on_off.Mode.NORMAL, on_done=None):
+    def off(self, group=1, mode=on_off.Mode.NORMAL, reason="", on_done=None):
         """Turn the device off.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -295,6 +302,9 @@ class KeypadLinc(Base):
           group (int):  The group to send the command to.  This must be in the
                 range [1,8].
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -304,7 +314,7 @@ class KeypadLinc(Base):
 
         # Non-load buttons are turned on/off via the LED command.
         if group != 1:
-            self.set_button_led(group, False, on_done)
+            self.set_button_led(group, False, reason, on_done)
 
         # Group 1 uses a direct command to set the level.
         else:
@@ -314,12 +324,13 @@ class KeypadLinc(Base):
 
             # Use the standard command handler which will notify us when the
             # command is ACK'ed.
-            msg_handler = handler.StandardCmd(msg, self.handle_set_load,
-                                              on_done)
+            callback = functools.partial(self.handle_set_load, reason=reason)
+            msg_handler = handler.StandardCmd(msg, callback, on_done)
             self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set(self, level, group=1, mode=on_off.Mode.NORMAL, on_done=None):
+    def set(self, level, group=1, mode=on_off.Mode.NORMAL, reason="",
+            on_done=None):
         """Turn the device on or off.  Level zero will be off.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -338,16 +349,19 @@ class KeypadLinc(Base):
           group (int):  The group to send the command to.  This must be in the
                 range [1,8].
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
         if level:
-            self.on(group, level, mode, on_done)
+            self.on(group, level, mode, reason, on_done)
         else:
-            self.off(group, mode, on_done)
+            self.off(group, mode, reason, on_done)
 
     #-----------------------------------------------------------------------
-    def scene(self, is_on, group=0x01, on_done=None):
+    def scene(self, is_on, group=0x01, reason="", on_done=None):
         """Trigger a scene on the device.
 
         Triggering a scene is the same as simulating a button press on the
@@ -358,6 +372,9 @@ class KeypadLinc(Base):
           is_on (bool):  True for an on command, False for an off command.
           group (int):  The group on the device to simulate.  This must be in
                 the range [1,8].
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -380,8 +397,9 @@ class KeypadLinc(Base):
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        callback = on_done if is_on else None
-        msg_handler = handler.StandardCmd(msg, self.handle_scene, callback)
+        done_callback = on_done if is_on else None
+        callback = functools.partial(self.handle_scene, reason=reason)
+        msg_handler = handler.StandardCmd(msg, callback, done_callback)
         self.send(msg, msg_handler)
 
         # Scene triggering will not turn the device off (no idea why), so we
@@ -392,11 +410,12 @@ class KeypadLinc(Base):
         # command above, it doesn't work - we have to wait until the
         # broadcast msg is finished.
         if not is_on:
-            self.broadcast_done = functools.partial(self.off, group=group,
-                                                    on_done=on_done)
+            self.broadcast_done = \
+                functools.partial(self.off, group=group, on_done=on_done,
+                                  reason=reason)
 
     #-----------------------------------------------------------------------
-    def increment_up(self, on_done=None):
+    def increment_up(self, reason="", on_done=None):
         """Increment the current level up.
 
         Levels increment in units of 8 (32 divisions from off to on).
@@ -406,6 +425,9 @@ class KeypadLinc(Base):
         the state changed signals.
 
         Args:
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -417,12 +439,13 @@ class KeypadLinc(Base):
         LOG.info("KeypadLinc %s cmd: increment up", self.addr)
         msg = Msg.OutStandard.direct(self.addr, 0x15, 0x00)
 
-        callback = functools.partial(self.handle_increment, delta=+8)
+        callback = functools.partial(self.handle_increment, delta=+8,
+                                     reason=reason)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def increment_down(self, on_done=None):
+    def increment_down(self, reason="", on_done=None):
         """Increment the current level down.
 
         Levels increment in units of 8 (32 divisions from off to on).
@@ -432,6 +455,9 @@ class KeypadLinc(Base):
         the state changed signals.
 
         Args:
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -443,12 +469,13 @@ class KeypadLinc(Base):
         LOG.info("KeypadLinc %s cmd: increment down", self.addr)
         msg = Msg.OutStandard.direct(self.addr, 0x16, 0x00)
 
-        callback = functools.partial(self.handle_increment, delta=-8)
+        callback = functools.partial(self.handle_increment, delta=-8,
+                                     reason=reason)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set_button_led(self, group, is_on, on_done=None):
+    def set_button_led(self, group, is_on, reason="", on_done=None):
         """Set a button LED on or off.
 
         This changes the level of the LED state of a button.  NOTE: This does
@@ -460,6 +487,9 @@ class KeypadLinc(Base):
           group (int):  The group to send the command to.  This must be in the
                 range [1,8].
           is_on (bool):  True to turn it on, False to turn it off.
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -490,7 +520,8 @@ class KeypadLinc(Base):
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
         callback = functools.partial(self.handle_button_led, group=group,
-                                     is_on=is_on, led_bits=led_bits)
+                                     is_on=is_on, led_bits=led_bits,
+                                     reason=reason)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
@@ -661,10 +692,11 @@ class KeypadLinc(Base):
 
         # Current group 1 level is stored in cmd2 so update our level to
         # match.
-        self._set_level(1, msg.cmd2)
+        self._set_level(1, msg.cmd2, reason=on_off.REASON_REFRESH)
 
     #-----------------------------------------------------------------------
-    def handle_button_led(self, msg, on_done, group, is_on, led_bits):
+    def handle_button_led(self, msg, on_done, group, is_on, led_bits,
+                          reason=""):
         """Handle replies to setting the button LED state.
 
         This is called when we change one of the LED button states.  Since
@@ -682,6 +714,9 @@ class KeypadLinc(Base):
           is_on (bool):  True for an on command, False for an off command.
           led_bits (int): The LED bits that were set to the device.  If the
                    msg is an ACK, we'll set our state to this value.
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
         """
         # If this is the ACK we're expecting, update the internal state and
         # emit our signals.
@@ -695,7 +730,7 @@ class KeypadLinc(Base):
                    "{:08b}".format(self._led_bits))
 
             # Change the level and emit the active signal.
-            self._set_level(group, 0xff if is_on else 0x00)
+            self._set_level(group, 0xff if is_on else 0x00, reason=reason)
 
             msg = "KeypadLinc %s LED updated to %s" % (self.addr, is_on)
             on_done(True, msg, is_on)
@@ -721,6 +756,7 @@ class KeypadLinc(Base):
           msg (InpStandard):  The message reply.
         """
         led_bits = msg.cmd2
+        reason = on_off.REASON_REFRESH
 
         # Current the led speed is stored in cmd2 so update our speed to
         # match.
@@ -735,7 +771,7 @@ class KeypadLinc(Base):
 
             LOG.debug("Btn %d old: %d new %d", i + 1, is_on, was_on)
             if is_on != was_on:
-                self._set_level(i + 1, 0xff if is_on else 0x00)
+                self._set_level(i + 1, 0xff if is_on else 0x00, reason=reason)
 
         self._led_bits = led_bits
 
@@ -758,6 +794,12 @@ class KeypadLinc(Base):
         # Treat those the same as the remote control does.  They don't have
         # levels to find/set but have similar messages to the dimmer load.
 
+        # If we have a saved reason from a simulated scene command, use that.
+        # Otherwise the device button was pressed.
+        reason = self.broadcast_reason if self.broadcast_reason else \
+                 on_off.REASON_DEVICE
+        self.broadcast_reason = ""
+
         # ACK of the broadcast.  Ignore this unless we sent a simulated off
         # scene in which case run the broadcast done handler.  This is a
         # weird special case - see scene() for details.
@@ -777,20 +819,20 @@ class KeypadLinc(Base):
                      self.addr, msg.group, is_on, mode)
 
             if is_on:
-                self._set_level(msg.group, 0xff, mode)
+                self._set_level(msg.group, 0xff, mode, reason)
 
             # For an off command, we need to see if broadcast_done is active.
             # This is a generated broadcast and we need to manually turn the
             # device off so don't update it's state until that occurs.
             elif not self.broadcast_done:
-                self._set_level(msg.group, 0x00, mode)
+                self._set_level(msg.group, 0x00, mode, reason)
 
         # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
         elif on_off.Manual.is_valid(msg.cmd1):
             manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
             LOG.info("KeypadLinc %s manual change %s", self.addr, manual)
 
-            self.signal_manual.emit(self, msg.group, manual)
+            self.signal_manual.emit(self, msg.group, manual, reason)
 
             # Non-group 1 buttons don't change state in manual mode. (found
             # through experiments)
@@ -798,9 +840,9 @@ class KeypadLinc(Base):
                 # Switches change state when the switch is held.
                 if not self.is_dimmer:
                     if manual == on_off.Manual.UP:
-                        self._set_level(0xff, on_off.Mode.MANUAL)
+                        self._set_level(0xff, on_off.Mode.MANUAL, reason)
                     elif manual == on_off.Manual.DOWN:
-                        self._set_level(0x00, on_off.Mode.MANUAL)
+                        self._set_level(0x00, on_off.Mode.MANUAL, reason)
 
                 # Ping the device to get the dimmer states - we don't know
                 # what the keypadlinc things the state is - could be on or
@@ -817,7 +859,7 @@ class KeypadLinc(Base):
         Base.handle_broadcast(self, msg)
 
     #-----------------------------------------------------------------------
-    def handle_set_load(self, msg, on_done):
+    def handle_set_load(self, msg, on_done, reason=""):
         """Callback for standard commanded messages to the load button.
 
         This callback is run when we get a reply back from one of our
@@ -829,6 +871,9 @@ class KeypadLinc(Base):
         Args:
           msg:  (message.InpStandard) The reply message from the device.
                 The on/off level will be in the cmd2 field.
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
         """
         # If this is the ACK we're expecting, update the internal state and
         # emit our signals.
@@ -836,7 +881,7 @@ class KeypadLinc(Base):
             LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
 
             _is_on, mode = on_off.Mode.decode(msg.cmd1)
-            self._set_level(1, msg.cmd2, mode)
+            self._set_level(1, msg.cmd2, mode, reason)
             on_done(True, "KeypadLinc state updated to %s" % self._level,
                     msg.cmd2)
 
@@ -845,7 +890,7 @@ class KeypadLinc(Base):
             on_done(False, "KeypadLinc state update failed", None)
 
     #-----------------------------------------------------------------------
-    def handle_scene(self, msg, on_done):
+    def handle_scene(self, msg, on_done, reason=""):
         """Callback for scene simulation commanded messages.
 
         This callback is run when we get a reply back from triggering a scene
@@ -857,12 +902,21 @@ class KeypadLinc(Base):
           msg (message.InpStandard): The reply message from the device.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
         """
         # Call the callback.  We don't change state here - the device will
         # send a regular broadcast message which will run handle_broadcast
         # which will then update the state.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
+
+            # Reason is device because we're simulating a button press.  We
+            # can't really pass this around because we just get a broadcast
+            # message later from the device.  So we set a temporary variable
+            # here and use it in handle_broadcast() to output the reason.
+            self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
             on_done(True, "Scene triggered", None)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
@@ -870,7 +924,7 @@ class KeypadLinc(Base):
             on_done(False, "Scene trigger failed failed", None)
 
     #-----------------------------------------------------------------------
-    def handle_increment(self, msg, on_done, delta):
+    def handle_increment(self, msg, on_done, delta, reason=""):
         """Callback for increment up/down commanded messages.
 
         This callback is run when we get a reply back from triggering an
@@ -882,6 +936,9 @@ class KeypadLinc(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
           delta (int):  The amount +/- of level to change by.
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
         """
         # If this it the ACK we're expecting, update the internal state and
         # emit our signals.
@@ -891,7 +948,7 @@ class KeypadLinc(Base):
             # Add the delta and bound at [0, 255]
             level = min(self._level + delta, 255)
             level = max(level, 0)
-            self._set_level(1, level)
+            self._set_level(1, level, reason=reason)
 
             s = "KeypadLinc %s state updated to %s" % (self.addr, self._level)
             on_done(True, s, msg.cmd2)
@@ -924,6 +981,8 @@ class KeypadLinc(Base):
                       msg.group, addr)
             return
 
+        reason = on_off.REASON_SCENE
+
         # Handle on/off codes
         if on_off.Mode.is_valid(msg.cmd1):
             is_on, mode = on_off.Mode.decode(msg.cmd1)
@@ -934,22 +993,24 @@ class KeypadLinc(Base):
             if self.is_dimmer and is_on and msg.group == 1:
                 level = entry.data[0]
 
-            self._set_level(msg.group, level, mode)
+            self._set_level(msg.group, level, mode, reason)
 
         # Increment up 1 unit which is 8 levels.
         elif msg.cmd1 == 0x15:
             assert msg.group == 0x01
-            self._set_level(msg.group, min(0xff, self._level + 8))
+            self._set_level(msg.group, min(0xff, self._level + 8),
+                            reason=reason)
 
         # Increment down 1 unit which is 8 levels.
         elif msg.cmd1 == 0x16:
             assert msg.group == 0x01
-            self._set_level(msg.group, max(0x00, self._level - 8))
+            self._set_level(msg.group, max(0x00, self._level - 8),
+                            reason=reason)
 
         # Starting/stopping manual increment (cmd2 0x00=up, 0x01=down)
         elif on_off.Manual.is_valid(msg.cmd1):
             manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-            self.signal_manual.emit(self, msg.group, manual)
+            self.signal_manual.emit(self, msg.group, manual, reason)
 
             # If the button is released, refresh to get the final level in
             # dimming mode since we don't know where the level stopped.
@@ -961,7 +1022,7 @@ class KeypadLinc(Base):
                         msg.cmd1)
 
     #-----------------------------------------------------------------------
-    def _set_level(self, group, level, mode=on_off.Mode.NORMAL):
+    def _set_level(self, group, level, mode=on_off.Mode.NORMAL, reason=""):
         """Update the device level state for a group.
 
         This will change the internal state and emit the state changed
@@ -973,9 +1034,12 @@ class KeypadLinc(Base):
           level (int):  The new device level in the range [0,255].  0 is off.
           mode (on_off.Mode): The type of on/off that was triggered (normal,
                fast, etc).
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
         """
-        LOG.info("Setting device %s grp=%s on=%s %s", self.label, group,
-                 level, mode)
+        LOG.info("Setting device %s grp=%s on=%s %s%s", self.label, group,
+                 level, mode, reason)
         if group == 0x01:
             self._level = level
 
@@ -983,6 +1047,6 @@ class KeypadLinc(Base):
         self._led_bits = util.bit_set(self._led_bits, group - 1,
                                       1 if level else 0)
 
-        self.signal_level_changed.emit(self, group, level, mode)
+        self.signal_level_changed.emit(self, group, level, mode, reason)
 
     #-----------------------------------------------------------------------

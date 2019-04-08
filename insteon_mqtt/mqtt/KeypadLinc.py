@@ -175,7 +175,7 @@ class KeypadLinc:
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
     def template_data(self, button=None, level=None, mode=on_off.Mode.NORMAL,
-                      manual=None):
+                      manual=None, reason=None):
         """Create the Jinja templating data variables for on/off messages.
 
         Args:
@@ -186,6 +186,8 @@ class KeypadLinc:
           mode (on_off.Mode):  The on/off mode state.
           manual (on_off.Manual):  The manual mode state.  If None, manual
                  attributes are not added to the data.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -206,17 +208,19 @@ class KeypadLinc:
             data["mode"] = str(mode)
             data["fast"] = 1 if mode == on_off.Mode.FAST else 0
             data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
+            data["reason"] = reason if reason is not None else ""
 
         if manual is not None:
             data["manual_str"] = str(manual)
             data["manual"] = manual.int_value()
             data["manual_openhab"] = manual.openhab_value()
+            data["reason"] = reason if reason is not None else ""
 
         return data
 
     #-----------------------------------------------------------------------
     def _insteon_level_changed(self, device, group, level,
-                               mode=on_off.Mode.NORMAL):
+                               mode=on_off.Mode.NORMAL, reason=""):
         """Device on/off and dimmer level changed callback.
 
         This is triggered via signal when the Insteon device goes active or
@@ -227,11 +231,13 @@ class KeypadLinc:
           group (int):  The button (1-8) that was pressed.
           level (int):  The dimmer level (0->255)
           mode (on_off.Mode):  The on/off mode state.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
         """
-        LOG.info("MQTT received button press %s = btn %s at %s %s",
-                 device.label, group, level, mode)
+        LOG.info("MQTT received button press %s = btn %s at %s %s %s",
+                 device.label, group, level, mode, reason)
 
-        data = self.template_data(group, level, mode)
+        data = self.template_data(group, level, mode, reason=reason)
 
         # For manual mode messages, don't retain them because they don't
         # represent persistent state - they're momentary events.
@@ -243,7 +249,7 @@ class KeypadLinc:
             self.msg_btn_state.publish(self.mqtt, data, retain=retain)
 
     #-----------------------------------------------------------------------
-    def _insteon_manual(self, device, group, manual):
+    def _insteon_manual(self, device, group, manual, reason=""):
         """Device manual mode changed callback.
 
         This is triggered via signal when the Insteon device starts or stops
@@ -255,12 +261,12 @@ class KeypadLinc:
           group (int):  The button (1-8) that was pressed.
           manual (on_off.Manual):  The manual mode.
         """
-        LOG.info("MQTT received manual button press %s = btn %s %s",
-                 device.label, group, manual)
+        LOG.info("MQTT received manual button press %s = btn %s %s %s",
+                 device.label, group, manual, reason)
 
         # For manual mode messages, don't retain them because they don't
         # represent persistent state - they're momentary events.
-        data = self.template_data(group, manual=manual)
+        data = self.template_data(group, manual=manual, reason=reason)
         self.msg_manual_state.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------
@@ -289,7 +295,8 @@ class KeypadLinc:
         try:
             is_on, mode = util.parse_on_off(data)
             level = 0xff if is_on else 0x00
-            self.device.set(level, group, mode)
+            reason = data.get("reason", "")
+            self.device.set(level, group, mode, reason=reason)
         except:
             LOG.exception("Invalid KeypadLinc on/off command: %s", data)
             if raise_errors:
@@ -321,7 +328,8 @@ class KeypadLinc:
         try:
             is_on, mode = util.parse_on_off(data)
             level = 0 if not is_on else int(data.get('level'))
-            self.device.set(level, mode=mode)
+            reason = data.get("reason", "")
+            self.device.set(level, mode=mode, reason=reason)
         except:
             LOG.exception("Invalid KeypadLinc level command: %s", data)
             if raise_errors:
@@ -388,7 +396,8 @@ class KeypadLinc:
         try:
             # Scenes don't support modes so don't parse that element.
             is_on = util.parse_on_off(data, have_mode=False)
-            self.device.scene(is_on, group)
+            reason = data.get("reason", "")
+            self.device.scene(is_on, group, reason=reason)
         except:
             LOG.exception("Invalid KeypadLinc command: %s", data)
 

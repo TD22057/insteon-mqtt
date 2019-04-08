@@ -77,7 +77,7 @@ class Test_FanLinc:
         data = mdev.template_data(level=0x55, mode=IM.on_off.Mode.FAST,
                                   manual=IM.on_off.Manual.STOP)
         right = {"address" : addr.hex, "name" : name,
-                 "on" : 1, "on_str" : "on",
+                 "on" : 1, "on_str" : "on", "reason" : "",
                  "level_255" : 85, "level_100" : 33,
                  "mode" : "fast", "fast" : 1, "instant" : 0,
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
@@ -85,13 +85,13 @@ class Test_FanLinc:
 
         data = mdev.template_data(level=0x00)
         right = {"address" : addr.hex, "name" : name,
-                 "on" : 0, "on_str" : "off",
+                 "on" : 0, "on_str" : "off", "reason" : "",
                  "level_255" : 0, "level_100" : 0,
                  "mode" : "normal", "fast" : 0, "instant" : 0}
         assert data == right
 
         data = mdev.template_data(manual=IM.on_off.Manual.UP)
-        right = {"address" : addr.hex, "name" : name,
+        right = {"address" : addr.hex, "name" : name, "reason" : "",
                  "manual_str" : "up", "manual" : 1, "manual_openhab" : 2}
         assert data == right
 
@@ -105,25 +105,25 @@ class Test_FanLinc:
 
         data = mdev.fan_template_data(level=dev.Speed.OFF)
         right = {"address" : addr.hex, "name" : name,
-                 "on" : 0, "on_str" : "off",
+                 "on" : 0, "on_str" : "off", "reason" : "",
                  "level" : 0, "level_str" : 'off'}
         assert data == right
 
         data = mdev.fan_template_data(level=dev.Speed.LOW)
         right = {"address" : addr.hex, "name" : name,
-                 "on" : 1, "on_str" : "on",
+                 "on" : 1, "on_str" : "on", "reason" : "",
                  "level" : 1, "level_str" : 'low'}
         assert data == right
 
         data = mdev.fan_template_data(level=dev.Speed.MEDIUM)
         right = {"address" : addr.hex, "name" : name,
-                 "on" : 1, "on_str" : "on",
+                 "on" : 1, "on_str" : "on", "reason" : "",
                  "level" : 2, "level_str" : 'medium'}
         assert data == right
 
         data = mdev.fan_template_data(level=dev.Speed.HIGH)
         right = {"address" : addr.hex, "name" : name,
-                 "on" : 1, "on_str" : "on",
+                 "on" : 1, "on_str" : "on", "reason" : "",
                  "level" : 3, "level_str" : 'high'}
         assert data == right
 

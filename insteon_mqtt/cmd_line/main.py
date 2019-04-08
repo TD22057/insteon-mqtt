@@ -184,6 +184,9 @@ def parse_args(args):
     sp = sub.add_parser("up", help="Increments a dimmer up.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
+    sp.add_argument("-r", "--reason", metavar="reason", type=str, default="",
+                    help="Reason message to send with the command.  No "
+                    "message with use 'command'.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.increment_up)
 
@@ -192,6 +195,9 @@ def parse_args(args):
     sp = sub.add_parser("down", help="Decrements a dimmer up.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
+    sp.add_argument("-r", "--reason", metavar="reason", type=str, default="",
+                    help="Reason message to send with the command.  No "
+                    "message with use 'command'.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.increment_down)
 

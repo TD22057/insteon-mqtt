@@ -135,7 +135,7 @@ class FanLinc(Dimmer):
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
-    def fan_template_data(self, level=None):
+    def fan_template_data(self, level=None, reason=None):
         """Create the Jinja templating data variables for fan messages.
 
         NOTE: Dimmer messages are handled via Dimmer.template_data().
@@ -143,6 +143,8 @@ class FanLinc(Dimmer):
         Args:
           level (FanLinc.Speed):  The fan speed enumeration.  If None, speed
                 attributes are not added to the data.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -161,11 +163,12 @@ class FanLinc(Dimmer):
             data["on_str"] = "on" if level_int else "off"
             data["level"] = level_int
             data["level_str"] = level.name.lower()
+            data["reason"] = reason if reason is not None else ""
 
         return data
 
     #-----------------------------------------------------------------------
-    def _insteon_fan_speed(self, device, level):
+    def _insteon_fan_speed(self, device, level, reason=""):
         """Device speed change callback.
 
         This is triggered via signal when the Insteon device goes active or
@@ -175,9 +178,10 @@ class FanLinc(Dimmer):
           device (device.FanLinc):  The Insteon device that changed.
           level (device.FanLinc.Speed):  The new fan level.
         """
-        LOG.info("MQTT received level change %s = %s", device.label, level)
+        LOG.info("MQTT received level change %s = %s %s", device.label, level,
+                 reason)
 
-        data = self.fan_template_data(level)
+        data = self.fan_template_data(level, reason=reason)
         self.msg_fan_state.publish(self.mqtt, data)
         self.msg_fan_speed_state.publish(self.mqtt, data)
 
@@ -219,8 +223,9 @@ class FanLinc(Dimmer):
             if fan_speed is None:
                 raise ValueError("Can't map cmd '%s' to fan mode" % cmd)
 
-            self.device.fan_set(fan_speed)
+            reason = data.get("reason", "")
+            self.device.fan_set(fan_speed, reason=reason)
         except:
-            LOG.error("Invalid fan set speed command: %s", data)
+            LOG.exception("Invalid fan set speed command: %s", data)
 
     #-----------------------------------------------------------------------

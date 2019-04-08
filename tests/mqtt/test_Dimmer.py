@@ -73,7 +73,7 @@ class Test_Dimmer:
         data = mdev.template_data(level=0x55, mode=IM.on_off.Mode.FAST,
                                   manual=IM.on_off.Manual.STOP)
         right = {"address" : addr.hex, "name" : name,
-                 "on" : 1, "on_str" : "on",
+                 "on" : 1, "on_str" : "on", "reason" : "",
                  "level_255" : 85, "level_100" : 33,
                  "mode" : "fast", "fast" : 1, "instant" : 0,
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
@@ -81,13 +81,13 @@ class Test_Dimmer:
 
         data = mdev.template_data(level=0x00)
         right = {"address" : addr.hex, "name" : name,
-                 "on" : 0, "on_str" : "off",
+                 "on" : 0, "on_str" : "off", "reason" : "",
                  "level_255" : 0, "level_100" : 0,
                  "mode" : "normal", "fast" : 0, "instant" : 0}
         assert data == right
 
         data = mdev.template_data(manual=IM.on_off.Manual.UP)
-        right = {"address" : addr.hex, "name" : name,
+        right = {"address" : addr.hex, "name" : name, "reason" : "",
                  "manual_str" : "up", "manual" : 1, "manual_openhab" : 2}
         assert data == right
 

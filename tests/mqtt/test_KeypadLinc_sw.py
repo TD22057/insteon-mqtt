@@ -75,7 +75,7 @@ class Test_KeypadLinc_sw:
                                   mode=IM.on_off.Mode.FAST,
                                   manual=IM.on_off.Manual.STOP)
         right = {"address" : addr.hex, "name" : name, "button" : 3,
-                 "on" : 1, "on_str" : "on",
+                 "on" : 1, "on_str" : "on", "reason" : "",
                  "level_255" : 1, "level_100" : 0,
                  "mode" : "fast", "fast" : 1, "instant" : 0,
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
@@ -83,14 +83,15 @@ class Test_KeypadLinc_sw:
 
         data = mdev.template_data(button=1, level=0)
         right = {"address" : addr.hex, "name" : name, "button" : 1,
-                 "on" : 0, "on_str" : "off",
+                 "on" : 0, "on_str" : "off", "reason" : "",
                  "level_255" : 0, "level_100" : 0,
                  "mode" : "normal", "fast" : 0, "instant" : 0}
         assert data == right
 
         data = mdev.template_data(button=2, manual=IM.on_off.Manual.UP)
         right = {"address" : addr.hex, "name" : name, "button" : 2,
-                 "manual_str" : "up", "manual" : 1, "manual_openhab" : 2}
+                 "reason" : "", "manual_str" : "up", "manual" : 1,
+                 "manual_openhab" : 2}
         assert data == right
 
     #-----------------------------------------------------------------------
