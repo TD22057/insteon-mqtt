@@ -77,13 +77,13 @@ class Test_Outlet:
         data = mdev.template_data(is_on=True, button=1,
                                   mode=IM.on_off.Mode.FAST)
         right = {"address" : addr.hex, "name" : name, "button" : 1,
-                 "on" : 1, "on_str" : "on",
+                 "on" : 1, "on_str" : "on", "reason" : "",
                  "mode" : "fast", "fast" : 1, "instant" : 0}
         assert data == right
 
         data = mdev.template_data(is_on=False, button=2)
         right = {"address" : addr.hex, "name" : name, "button" : 2,
-                 "on" : 0, "on_str" : "off",
+                 "on" : 0, "on_str" : "off", "reason" : "",
                  "mode" : "normal", "fast" : 0, "instant" : 0}
         assert data == right
 
