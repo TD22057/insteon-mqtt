@@ -196,7 +196,7 @@ class Test_Switch:
 
         assert proto.sent[0].msg.cmd1 == 0x13
         cb = proto.sent[0].handler.callback
-        assert cb.keywords == { "reason" : "ABC" }
+        assert cb.keywords == {"reason" : "ABC"}
         proto.clear()
 
         payload = b'{ "on" : "ON", "mode" : "FAST", "reason" : "baz" }'
@@ -205,7 +205,7 @@ class Test_Switch:
 
         assert proto.sent[0].msg.cmd1 == 0x12
         cb = proto.sent[0].handler.callback
-        assert cb.keywords == { "reason" : "baz" }
+        assert cb.keywords == {"reason" : "baz"}
         proto.clear()
 
         # test error payload
@@ -243,7 +243,6 @@ class Test_Switch:
         # test error payload
         link.publish(topic, b'asdf', qos, False)
 
-
     #-----------------------------------------------------------------------
     def test_input_scene_reason(self, setup):
         mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
@@ -265,7 +264,7 @@ class Test_Switch:
         assert proto.sent[0].msg.cmd1 == 0x30
         assert proto.sent[0].msg.data[3] == 0x13
         cb = proto.sent[0].handler.callback
-        assert cb.keywords == { "reason" : "a b c" }
+        assert cb.keywords == {"reason" : "a b c"}
         proto.clear()
 
         payload = b'{ "on" : "ON", "reason" : "zyx" }'
@@ -275,7 +274,7 @@ class Test_Switch:
         assert proto.sent[0].msg.cmd1 == 0x30
         assert proto.sent[0].msg.data[3] == 0x11
         cb = proto.sent[0].handler.callback
-        assert cb.keywords == { "reason" : "zyx" }
+        assert cb.keywords == {"reason" : "zyx"}
         proto.clear()
 
 

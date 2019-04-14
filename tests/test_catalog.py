@@ -9,7 +9,6 @@ import insteon_mqtt as IM
 
 class Test_catalog:
     def test_exists(self):
-        x = IM.catalog.exists(0x01, 0x02)
         assert IM.catalog.exists(0x01, 0x02) is True
         assert IM.catalog.exists(0x01, 0xff) is False
         assert IM.catalog.exists(0xff, 0xff) is False
@@ -45,8 +44,8 @@ class Test_catalog:
 
     #-----------------------------------------------------------------------
     def test_print(self):
-        obj = IM.catalog.Entry(0x01, 0x02, "Model", "Desc" )
-        s = str(obj)
+        obj = IM.catalog.Entry(0x01, 0x02, "Model", "Desc")
+        str(obj)
 
-        obj = IM.catalog.Entry(0xff, 0x02 )
-        s = str(obj)
+        obj = IM.catalog.Entry(0xff, 0x02)
+        str(obj)
