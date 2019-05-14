@@ -660,7 +660,8 @@ class KeypadLinc(Base):
         FLAG_FOLLOW_MASK = "follow_mask"
         FLAG_GROUP = "group"
         FLAG_ON_LEVEL = "on_level"
-        flags = set([FLAG_BACKLIGHT, FLAG_ON_LEVEL])
+        flags = set([FLAG_BACKLIGHT, FLAG_FOLLOW_MASK,
+                     FLAG_GROUP, FLAG_ON_LEVEL])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown KeypadLinc flags input: %s.\n Valid "
