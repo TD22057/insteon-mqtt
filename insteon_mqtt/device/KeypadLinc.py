@@ -246,7 +246,9 @@ class KeypadLinc(Base):
 
         # TODO: add commands to get detached load, toggle states, etc.
 
-        # get the state of which buttons 'toggle'.
+        # get the state of which buttons 'toggle' and the signal they emit.
+        # since the values we are interested in will be returned regardless
+        # of the group number we use, we just use group 1.
         data = bytes([0x01] + [0x00] * 13)
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
         msg_handler = handler.ExtendedCmdResponse(msg,
