@@ -733,7 +733,6 @@ class KeypadLinc(Base):
                 raise Exception("Must specify 'group=<group_number>' when "
                                 "setting the 'button_signal' flag")
             signal = util.input_bool(kwargs, FLAG_BTN_SIGNAL)
-
             seq.add(self.set_button_signal, group, signal)
 
         if FLAG_ON_LEVEL in kwargs:
@@ -937,30 +936,30 @@ class KeypadLinc(Base):
         # - needs an updated refresh handler that can accept an extended reply
         LOG.debug("KeypadLinc %s Get button state: %s", self.addr, msg)
 
-        reason = on_off.REASON_REFRESH
+        #LED reason = on_off.REASON_REFRESH
 
         non_toggle_mask = msg.data[9]
-        led_bits = msg.data[10]
+        #LED led_bits = msg.data[10]
         signal_mask = msg.data[12]
 
         #TODO: we can remove the 'handle_refresh_led' call and the command
         #      that caused it and replace it with the following commented out
         #      block of code:
 
-        #LOG.ui("KeypadLinc %s setting LED bits %s", self.addr,
-        #       "{:08b}".format(led_bits))
+        #LED LOG.ui("KeypadLinc %s setting LED bits %s", self.addr,
+        #LED        "{:08b}".format(led_bits))
 
-        ## Loop over the bits and emit a signal for any that have been
-        ## changed.
-        #for i in range(8):
-        #    is_on = util.bit_get(led_bits, i)
-        #    was_on = util.bit_get(self._led_bits, i)
+        #LED # Loop over the bits and emit a signal for any that have been
+        #LED # changed.
+        #LED for i in range(8):
+        #LED     is_on = util.bit_get(led_bits, i)
+        #LED     was_on = util.bit_get(self._led_bits, i)
 
-        #    LOG.debug("Btn %d old: %d new %d", i + 1, is_on, was_on)
-        #    if is_on != was_on:
-        #        self._set_level(i + 1, 0xff if is_on else 0x00, reason=reason)
+        #LED     LOG.debug("Btn %d old: %d new %d", i + 1, is_on, was_on)
+        #LED     if is_on != was_on:
+        #LED         self._set_level(i + 1, 0xff if is_on else 0x00, reason=reason)
 
-        #self._led_bits = led_bits
+        #LED self._led_bits = led_bits
 
         LOG.ui("KeypadLinc %s setting non_toggle_mask %s",
                self.addr, "{:08b}".format(non_toggle_mask))
