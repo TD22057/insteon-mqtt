@@ -84,6 +84,7 @@ class KeypadLinc(Base):
             'scene' : self.scene,
             'set_flags' : self.set_flags,
             'set_button_led' : self.set_button_led,
+            'set_button_signal' : self.set_button_signal,
             })
 
         if self.is_dimmer:
@@ -105,6 +106,17 @@ class KeypadLinc(Base):
         # Since the non-load buttons have nothing to switch, the led state is
         # the state of the switch.
         self._led_bits = 0x00
+
+        # 8 bits representing the buttons on the keypad.  Bit0=button1, ...,
+        # Bit7=button8.  If a bit is set, then the button will no longer
+        # automatically 'toggle', it will only send a 'on' command.
+        self._non_toggle = 0x00
+
+        # A bitmask representing what signal is sent when a button is pressed
+        # and it is a non-toggle button.  A value of 0 means 'off' will be
+        # sent.  A value of 1 means 'on' will be sent.  Bit0=button1, ...,
+        # bit7=button8.
+        self._press_signal = 0x00
 
         # Button 1 level (0-255)
         self._level = 0
@@ -233,6 +245,14 @@ class KeypadLinc(Base):
         Base.addRefreshData(self, seq, force)
 
         # TODO: add commands to get detached load, toggle states, etc.
+
+        # get the state of which buttons 'toggle'.
+        data = bytes([0x01] + [0x00] * 13)
+        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
+        msg_handler = handler.ExtendedCmdResponse(msg,
+                                                  self.handle_refresh_state,
+                                                  num_retry=3)
+        seq.add_msg(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def on(self, group=1, level=0xff, mode=on_off.Mode.NORMAL, reason="",
@@ -561,6 +581,76 @@ class KeypadLinc(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
+    def set_button_signal(self, group, signal, on_done=None):
+        """Set whether or not a button toggles.
+        Args:
+           group (int):  The group number to modify
+           signal (bool):  If True, then pressing the specified group will
+                       send the 'on' signal.  If False, then it will emit the
+                       'off' signal.  If None, then pressing the group will
+                       toggle the state (this is the default behaviour).
+        """
+        on_done = util.make_callback(on_done)
+
+        msg = "toggle"
+        if signal is not None:
+            msg = "emit %s when pressed" % ("'on'" if signal else "'off'")
+        LOG.info("setting button %s to %s", group, msg)
+
+        if group < 1 or group > 8:
+            LOG.error("KeypadLinc group %s out of range [1,8]", group)
+            on_done(False, "Invalid group", None)
+            return
+
+        seq = CommandSeq(self.protocol, "KeypadLinc set_button_signal done",
+                         on_done)
+
+        toggle_off = False
+        if signal is not None:
+            toggle_off = True
+            LOG.debug("group %s - disable toggle", group)
+
+            # First specify what signal to send (if non-toggle enabled)
+            signal_bits = util.bit_set(self._press_signal, group - 1, signal)
+            LOG.debug("signal_bits: %s", "{:08b}".format(signal_bits))
+            data = bytes([
+                0x01,   # D1 must be group 0x01
+                0x0b,   # D2 set non-toggle signal
+                signal_bits,  # D3 non-toggle signal
+                ] + [0x00] * 11)
+
+            msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
+
+            # Use the standard command handler which will notify us when the
+            # command is ACK'ed.
+            callback = functools.partial(self.handle_button_signal,
+                                         group=group, signal_bits=signal_bits)
+            msg_handler = handler.StandardCmd(msg, callback, on_done)
+
+            seq.add_msg(msg, msg_handler)
+
+        # next set the non-toggle flag
+        toggle_bits = util.bit_set(self._non_toggle, group - 1, toggle_off)
+        LOG.debug("toggle_bits: %s", "{:08b}".format(toggle_bits))
+        data = bytes([
+            0x01,   # D1 must be group 0x01
+            0x08,   # D2 set non-toggle enabled
+            toggle_bits,  # D3 non-toggle enabled
+            ] + [0x00] * 11)
+
+        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
+
+        # Use the standard command handler which will notify us when the
+        # command is ACK'ed.
+        callback = functools.partial(self.handle_button_signal,
+                                     group=group, toggle_bits=toggle_bits)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
+
+        seq.add_msg(msg, msg_handler)
+
+        seq.run()
+
+    #-----------------------------------------------------------------------
     def set_on_level(self, level, on_done=None):
         """Set the device default on level.
 
@@ -618,20 +708,33 @@ class KeypadLinc(Base):
         # Check the input flags to make sure only ones we can understand were
         # passed in.
         FLAG_BACKLIGHT = "backlight"
+        FLAG_BTN_SIGNAL = "button_signal"
+        FLAG_GROUP = "group"
         FLAG_ON_LEVEL = "on_level"
-        flags = set([FLAG_BACKLIGHT, FLAG_ON_LEVEL])
+        flags = set([FLAG_BACKLIGHT, FLAG_BTN_SIGNAL,
+                     FLAG_GROUP, FLAG_ON_LEVEL])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown KeypadLinc flags input: %s.\n Valid "
-                            "flags are: %s" % unknown, flags)
+                            "flags are: %s" % (unknown, flags))
 
         # Start a command sequence so we can call the flag methods in series.
         seq = CommandSeq(self.protocol, "KeypadLinc set_flags complete",
                          on_done)
 
+        group = util.input_integer(kwargs, FLAG_GROUP)
+
         if FLAG_BACKLIGHT in kwargs:
             backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
             seq.add(self.set_backlight, backlight)
+
+        if FLAG_BTN_SIGNAL in kwargs:
+            if group is None:
+                raise Exception("Must specify 'group=<group_number>' when "
+                                "setting the 'button_signal' flag")
+            signal = util.input_bool(kwargs, FLAG_BTN_SIGNAL)
+
+            seq.add(self.set_button_signal, group, signal)
 
         if FLAG_ON_LEVEL in kwargs:
             on_level = util.input_byte(kwargs, FLAG_ON_LEVEL)
@@ -742,6 +845,53 @@ class KeypadLinc(Base):
                     None)
 
     #-----------------------------------------------------------------------
+    def handle_button_signal(self, msg, on_done, group, toggle_bits=None,
+                             signal_bits=None):
+        """Handle replies to setting the button signal.
+        This is called when we change what signal a button sends when it is
+        pressed.
+        Args:
+          msg (InpStandard):  The message reply.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+          group (int):  The group to send the command to.  This must be in the
+                range [1,8].
+          toggle_bits (int): The button bits that determine if the button
+                             toggles or not.  If the message is an ACK, then
+                             we store the state.
+          signal_bits (int):  The button bits that determine what signal is
+                              emitted if the button does not toggle.  If the
+                              mesaage is an ACK, then we store the state.
+        """
+        # If this is the ACK we're expecting, update the internal state and
+        # emit our signals.
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+            LOG.debug("KeypadLinc toggle %s group %s ACK: %s", self.addr,
+                      group, msg)
+
+            if toggle_bits is not None:
+                # update with the new toggle bit mask
+                self._non_toggle = toggle_bits
+
+                LOG.ui("KeypadLinc %s non_toggle changed to %s", self.addr,
+                       "{:08b}".format(self._non_toggle))
+
+            if signal_bits is not None:
+                # update with the new signal bit mask
+                self._press_signal = signal_bits
+
+                LOG.ui("KeypadLinc %s press_signal changed to %s", self.addr,
+                       "{:08b}".format(self._press_signal))
+
+            msg = "KeypadLinc %s toggle flags updated" % self.addr
+            on_done(True, msg, None)
+
+        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+            LOG.error("KeypadLinc toggle %s NAK error: %s", self.addr, msg)
+            msg = "KeypadLinc %s toggle update failed" % self.addr
+            on_done(False, msg, None)
+
+    #-----------------------------------------------------------------------
     def handle_refresh_led(self, msg):
         """Callback for handling getting the LED button states.
 
@@ -774,6 +924,53 @@ class KeypadLinc(Base):
                 self._set_level(i + 1, 0xff if is_on else 0x00, reason=reason)
 
         self._led_bits = led_bits
+
+    #-----------------------------------------------------------------------
+    def handle_refresh_state(self, msg, on_done):
+        """Callback for handling getting the button states.
+        Args:
+          msg (InpExtended):  The message reply.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        #TODO: merge this with 'handle_refresh_led'
+        # - needs an updated refresh handler that can accept an extended reply
+        LOG.debug("KeypadLinc %s Get button state: %s", self.addr, msg)
+
+        reason = on_off.REASON_REFRESH
+
+        non_toggle_mask = msg.data[9]
+        led_bits = msg.data[10]
+        signal_mask = msg.data[12]
+
+        #TODO: we can remove the 'handle_refresh_led' call and the command
+        #      that caused it and replace it with the following commented out
+        #      block of code:
+
+        #LOG.ui("KeypadLinc %s setting LED bits %s", self.addr,
+        #       "{:08b}".format(led_bits))
+
+        ## Loop over the bits and emit a signal for any that have been
+        ## changed.
+        #for i in range(8):
+        #    is_on = util.bit_get(led_bits, i)
+        #    was_on = util.bit_get(self._led_bits, i)
+
+        #    LOG.debug("Btn %d old: %d new %d", i + 1, is_on, was_on)
+        #    if is_on != was_on:
+        #        self._set_level(i + 1, 0xff if is_on else 0x00, reason=reason)
+
+        #self._led_bits = led_bits
+
+        LOG.ui("KeypadLinc %s setting non_toggle_mask %s",
+               self.addr, "{:08b}".format(non_toggle_mask))
+        self._non_toggle = non_toggle_mask
+
+        LOG.ui("KeypadLinc %s setting signal_mask %s", self.addr,
+               "{:08b}".format(signal_mask))
+        self._press_signal = signal_mask
+
+        on_done(True, "Refreshed keypad state", None)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
