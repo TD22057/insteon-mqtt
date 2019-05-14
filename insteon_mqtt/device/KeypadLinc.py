@@ -524,7 +524,7 @@ class KeypadLinc(Base):
 
         # The dev KeypadLinc guide says this should be a Standard message,
         # but, it should actually be Extended.
-        msg = Msg.OutExtended.direct(self.addr, 0x20, cmd, [0x00] * 14)
+        msg = Msg.OutExtended.direct(self.addr, 0x20, cmd, bytes([0x00] * 14))
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
