@@ -64,6 +64,7 @@ class Switch(Base):
             'set' : self.set,
             'scene' : self.scene,
             'set_flags' : self.set_flags,
+            'set_led_on' : self.set_led_on,
             })
 
         # Special callback to run when receiving a broadcast clean up.  See
@@ -319,6 +320,32 @@ class Switch(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
+    def set_led_on(self, is_on, on_done=None):
+        """Set whether or not the switch LED is always on.
+
+        Args:
+          is_on (bool):  True to turn it on, False to turn it off.
+
+        """
+        on_done = util.make_callback(on_done)
+
+        LOG.info("KeypadLinc setting the switch LED state to %s", is_on )
+
+        cmd = 0x08
+        if is_on:
+            cmd = 0x09
+
+        # The dev KeypadLinc guide says this should be a Standard message,
+        # but, it should actually be Extended.
+        msg = Msg.OutExtended.direct(self.addr, 0x20, cmd, bytes([0x00] * 14))
+
+        # Use the standard command handler which will notify us when the
+        # command is ACK'ed.
+        callback = functools.partial(self.handle_led_on, is_on=is_on)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):
         """Set internal device flags.
 
@@ -338,11 +365,12 @@ class Switch(Base):
         # Check the input flags to make sure only ones we can understand were
         # passed in.
         FLAG_BACKLIGHT = "backlight"
-        flags = set([FLAG_BACKLIGHT])
+        FLAG_LED_ON = "led_on"
+        flags = set([FLAG_BACKLIGHT, FLAG_LED_ON])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown Switch flags input: %s.\n Valid flags "
-                            "are: %s" % unknown, flags)
+                            "are: %s" % (unknown, flags))
 
         # Start a command sequence so we can call the flag methods in series.
         seq = CommandSeq(self.protocol, "Switch set_flags complete", on_done)
@@ -350,6 +378,10 @@ class Switch(Base):
         if FLAG_BACKLIGHT in kwargs:
             backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
             seq.add(self.set_backlight, backlight)
+
+        if FLAG_LED_ON in kwargs:
+            is_on = util.input_bool(kwargs, FLAG_LED_ON)
+            seq.add(self.set_led_on, is_on)
 
         seq.run()
 
@@ -370,6 +402,26 @@ class Switch(Base):
             on_done(True, "Backlight level updated", None)
         else:
             on_done(False, "Backlight level failed", None)
+
+    #-----------------------------------------------------------------------
+    def handle_led_on(self, msg, is_on, on_done):
+        """Callback for changing the load attachment.
+
+        Args:
+          msg (InpStandard):  The reply message from the device.
+          is_on (bool):  True for an on command, False for an off command.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        # If this it the ACK we're expecting, update the internal state and
+        # emit our signals.
+        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+            LOG.debug("Switch %s ACK: %s", self.addr, msg)
+            on_done(True, "Switch LED is on: %s" % is_on, None)
+
+        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+            LOG.error("Switch %s NAK error: %s", self.addr, msg)
+            on_done(False, "Changing the switch LED failed", None)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
