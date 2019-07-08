@@ -83,6 +83,6 @@ class Motion(BatterySensor):
 
         """
         # Send True for dawn, False for dusk.
-        self.signal_dawn.emit(msg.cmd1 == 0x11)
+        self.signal_dawn.emit(self, msg.cmd1 == 0x11)
 
     #-----------------------------------------------------------------------

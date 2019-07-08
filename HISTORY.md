@@ -18,6 +18,7 @@
   @jrevans).
 
 ### Fixes
+- Fixed bug in message emits for battery sensors. ([Issue #157][I157])
 
 
 ## [0.6.8]
@@ -284,3 +285,4 @@
 [I132]: https://github.com/TD22057/insteon-mqtt/issues/132
 [I136]: https://github.com/TD22057/insteon-mqtt/issues/136
 [I138]: https://github.com/TD22057/insteon-mqtt/issues/138
+[I157]: https://github.com/TD22057/insteon-mqtt/issues/157
