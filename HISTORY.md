@@ -10,6 +10,13 @@
   as an optional input for input commands.  This allows for automations to
   change behavior based on why something changed. ([Issue #138][I138])
 
+- Added KeypadLinc low level set_flags commands to modify: load (de)attached,
+  button follow masks, button off masks, non-toggle buttons.  (thanks
+  @jrevans).
+
+- Added KeypadLinc support for turning of the backlight completely (thanks
+  @jrevans).
+
 ### Fixes
 
 

@@ -331,10 +331,27 @@ The MQTT format of the command is:
 
 Switch, KeypadLinc, and Dimmer all support the flags:
 
-   - backlight: integer in the range 0x11-0xff which changes the LED backlight
+   - backlight: integer in the range 0x00-0xff which changes the LED backlight
      level on the device.
    - on_level: integer in the range 0x00-0xff which sets the on level that will
      be used when the button is pressed.
+   - load_attached: 0/1 to attach or detach the load from the group 1 button.
+   - follow_mask: 8 bit integer flags - 1 per button.  Requires a group=N
+     input as well.  This sets the follow mask for the input group.  When
+     that button is pressed, any button with the bit set in this mask will be
+     changed to match the state of the button.  This is used for the 6 button
+     device to have the groups (1,2) and (7,8) stay in sync.
+   - off_mask: 8 bit integer flags - 1 per button.  Requires a group=N input
+     as well.  This sets the off mask for the input group.  When that button
+     is pressed, all the buttons with the bits set in this mask will turn
+     off.  This is used to implement radio buttons.
+   - signal_bits: 8 bit integer flags - 1 per button.  Only used for
+     non-toggle buttons.  If a bit is 1, then the button only sends on
+     commands.  If a bit is 0, hten the button only sends off commands.
+   - nontoggle_bits: 8 bit integer flags - 1 per button.  If a bit is 1, then
+     that button is a non-toggle button and will only send a signal per the
+     signal_bits input.  If a bit is 0, then that button is a toggle button
+     and will alternate on an doff signals
 
 IOLinc supports the flags:
 
