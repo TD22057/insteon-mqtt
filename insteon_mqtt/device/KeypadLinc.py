@@ -3,7 +3,6 @@
 # KeypadLinc module
 #
 #===========================================================================
-import enum
 import functools
 from ..CommandSeq import CommandSeq
 from .. import handler
@@ -307,7 +306,7 @@ class KeypadLinc(Base):
         # If the group is 0, use the load group.
         group = self._load_group if group == 0 else group
 
-        LOG.debug( "load group= %s group= %s", self._load_group, group)
+        LOG.debug("load group= %s group= %s", self._load_group, group)
 
         assert 1 <= group <= 9
         assert 0 <= level <= 0xff
@@ -695,7 +694,8 @@ class KeypadLinc(Base):
 
             # Use the standard command handler which will notify us when the
             # command is ACK'ed.
-            callback = functools.partial(self.handle_ack, task="Backlight level")
+            callback = functools.partial(self.handle_ack,
+                                         task="Backlight level")
             msg_handler = handler.StandardCmd(msg, callback, on_done)
             seq.add_msg(msg, msg_handler)
 
@@ -1052,13 +1052,14 @@ class KeypadLinc(Base):
           msg (InpStandard):  The response message from the command.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
-          is_on (bool): True if the backlight is being turned on, False for off.
+          is_on (bool): True if the backlight is being turned on, False for
+                off.
         """
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             on_done(True, "backlight set to %s" % is_on, None)
             self._backlight = is_on
         else:
-            on_done(False, "%s failed" % task, None)
+            on_done(False, "backlight set failed", None)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
@@ -1235,7 +1236,8 @@ class KeypadLinc(Base):
 
         #LED     LOG.debug("Btn %d old: %d new %d", i + 1, is_on, was_on)
         #LED     if is_on != was_on:
-        #LED         self._set_level(i + 1, 0xff if is_on else 0x00, reason=reason)
+        #LED         self._set_level(i + 1, 0xff if is_on else 0x00,
+        #LED reason=reason)
 
         #LED self._led_bits = led_bits
 
