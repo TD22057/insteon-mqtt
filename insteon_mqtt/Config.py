@@ -8,7 +8,12 @@ __doc__ = """Configuration file utilties
 """
 
 #===========================================================================
+import time
+import difflib
+import os
+from datetime import datetime
 from ruamel.yaml import YAML
+from shutil import copy
 from . import device
 
 
@@ -53,6 +58,48 @@ class Config:
             yaml = YAML()
             yaml.preserve_quotes = True
             self.data = yaml.load(f)
+
+#===========================================================================
+    def save(self):
+        """Saves the configuration data to file.  Creates and keeps a backup
+        file if diff produced is significant in size compared to original
+        file size.  The diff process is a little intensive.  We could
+        consider making this a user configurable option, but it seems prudent
+        to have this given the amount of work a user may put into creating
+        a config file.
+        """
+        # Create a backup file first`
+        ts = time.time()
+        timestamp = datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
+        backup = self.path + "." + timestamp
+        copy(self.path, backup)
+
+        # Save the config file
+        with open(self.path, "w") as f:
+            yaml = YAML()
+            yaml.preserve_quotes = True
+            yaml.indent(mapping=2, sequence=4, offset=2)
+            yaml.dump(self.data, f)
+
+        # Check for diff
+        orgCount = 0
+        with open(backup, 'r') as old:
+            for line in old:
+                orgCount += 1
+        with open(self.path, 'r') as new:
+            with open(backup, 'r') as old:
+                diff = difflib.unified_diff(
+                    new.readlines(),
+                    old.readlines(),
+                    fromfile='new',
+                    tofile='old',
+                )
+        diffCount = len(list(diff))
+
+        # Delete backup if # of lines in diff is less than 5% of original file
+        # this is arbitrary, a diff contains many more lines than just the diff
+        if diffCount / orgCount <= 0.05:
+            os.remove(backup)
 
 #===========================================================================
     def apply(self, mqtt, modem):
