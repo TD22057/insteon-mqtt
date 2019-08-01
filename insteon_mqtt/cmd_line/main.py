@@ -5,11 +5,11 @@
 #===========================================================================
 import argparse
 import sys
-from .. import config
+from ..Config import Config
 from . import device
 from . import modem
 from . import start
-
+from ruamel.yaml import YAML
 
 def parse_args(args):
     """Input is command line arguments w/o arg[0]
@@ -320,10 +320,17 @@ def parse_args(args):
 def main(mqtt_converter=None):
     args = parse_args(sys.argv[1:])
 
-    # Load the configuration file.
-    cfg = config.load(args.config)
+    # Initialize the configuration file.
+    cfg = Config(args.config)
 
-    topic = cfg.get("mqtt", {}).get("cmd_topic", None)
+    # # Test of writing
+    # with open("/home/krkeegan/testing.yaml", "w") as f:
+    #     yaml=YAML()
+    #     yaml.preserve_quotes = True
+    #     yaml.indent(mapping=2, sequence=4, offset=2)
+    #     yaml.dump(cfg, f)
+
+    topic = cfg.data.get("mqtt", {}).get("cmd_topic", None)
     if topic:
         args.topic = topic
 

@@ -167,7 +167,7 @@ class Protocol:
         to load any configuration for the modem connection.
 
         Args:
-          config (dict): Configuration data to load.
+          config (object): Configuration data to load.
         """
         self.link.load_config(config)
 

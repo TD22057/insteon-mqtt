@@ -52,7 +52,7 @@ def initialize(level=None, screen=None, file=None, config=None):
     # variable is not set.
     if config:
         # Read the logging config and initialize the library logger.
-        data = config.get("logging", {})
+        data = config.data.get("logging", {})
 
         if level is None:
             level = data.get("level", None)

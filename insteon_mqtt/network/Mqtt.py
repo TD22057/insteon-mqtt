@@ -79,17 +79,20 @@ class Mqtt(Link):
         - passord (str):  Optional password to log in with.
 
         Args:
-          config (dict):  Configuration data to load.
+          config (object):  Configuration data to load.
         """
         assert not self.connected
 
-        self.host = config['broker']
-        self.port = config['port']
-        self.keep_alive = config.get("keep_alive", self.keep_alive)
+        # MQTT Specific config settings
+        data = config.data['mqtt']
 
-        username = config.get('username', None)
+        self.host = data['broker']
+        self.port = data['port']
+        self.keep_alive = data.get("keep_alive", self.keep_alive)
+
+        username = data.get('username', None)
         if username is not None:
-            password = config.get('password', None)
+            password = data.get('password', None)
             self.client.username_pw_set(username, password)
 
     #-----------------------------------------------------------------------

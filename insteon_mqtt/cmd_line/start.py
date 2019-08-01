@@ -3,7 +3,6 @@
 # Start the main server
 #
 #===========================================================================
-from .. import config
 from .. import log
 from .. import mqtt
 from .. import network
@@ -18,7 +17,7 @@ def start(args, cfg):
 
     Args:
       args:  The command line arguments.
-      cfg:   The configuration dictionary.
+      cfg:   The configuration object.
     """
     # Always log to the screen if a file isn't active.
     if not args.log:
@@ -45,7 +44,7 @@ def start(args, cfg):
     mqtt_handler = mqtt.Mqtt(mqtt_link, modem)
 
     # Load the configuration data into the objects.
-    config.apply(cfg, mqtt_handler, modem)
+    cfg.apply(mqtt_handler, modem)
 
     # Start the network event loop.
     while loop.active():

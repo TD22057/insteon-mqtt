@@ -7,7 +7,6 @@ import json
 import os
 from .Address import Address
 from .CommandSeq import CommandSeq
-from . import config
 from . import db
 from . import handler
 from . import log
@@ -91,7 +90,7 @@ class Modem:
         return "Modem"
 
     #-----------------------------------------------------------------------
-    def load_config(self, data):
+    def load_config(self, config):
         """Load a configuration dictionary.
 
         This should be the insteon key in the configuration data.  Key inputs
@@ -108,12 +107,15 @@ class Modem:
                     address of the device.
 
         Args:
-          data (dict):  Configuration data to load.
+          config (object):  Configuration data to load.
         """
         LOG.info("Loading configuration data")
 
         # Pass the data to the modem network link.
-        self.protocol.load_config(data)
+        self.protocol.load_config(config)
+
+        # Modem specific config
+        data = config.data['insteon']
 
         # Read the modem address.
         self.addr = Address(data['address'])
@@ -134,7 +136,7 @@ class Modem:
             LOG.debug(str(self.db))
 
         # Read the device definitions and scenes.
-        self._load_devices(data.get('devices', []))
+        self._load_devices(config)
         #FUTURE: self.scenes = self._load_scenes(data.get('scenes', []))
 
         # Send refresh messages to each device to check if the database is up
@@ -737,7 +739,7 @@ class Modem:
         pass
 
     #-----------------------------------------------------------------------
-    def _load_devices(self, data):
+    def _load_devices(self, config):
         """Load device definitions from a configuration data object.
 
         The input is the insteon.devices configuration dictionary.  Keys are
@@ -745,13 +747,15 @@ class Modem:
         the package documentation for an example.
 
         Args:
-          data:   Configuration devices dictionary.
+          config (object):   Configuration object.
         """
         # Add ourselves as a device.
         self.signal_new_device.emit(self, self)
 
         self.devices.clear()
         self.device_names.clear()
+
+        data = config.data['insteon'].get('devices', [])
 
         for device_type in data:
             # Use a default list so that if the config field is empty, the

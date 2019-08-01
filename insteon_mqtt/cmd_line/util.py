@@ -20,7 +20,7 @@ def send(config, topic, payload, quiet=False):
     """Send a message and get the replies from the server.
 
     Args:
-      config:   (dict) Configuration dictionary.  The MQTT broker and
+      config:   (object) Configuration object.  The MQTT broker and
                 connection information is read from this.
       topic:    (str) The MQTT topic string.
       payload:  (dict) Message payload dictionary.  Will be converted to json.
@@ -41,13 +41,13 @@ def send(config, topic, payload, quiet=False):
     client = mqtt.Client(userdata=session)
 
     # Add user/password if the config file has them set.
-    if config["mqtt"].get("username", None):
-        user = config["mqtt"]["username"]
-        password = config["mqtt"].get("password", None)
+    if config.data["mqtt"].get("username", None):
+        user = config.data["mqtt"]["username"]
+        password = config.data["mqtt"].get("password", None)
         client.username_pw_set(user, password)
 
     # Connect to the broker.
-    client.connect(config["mqtt"]["broker"], config["mqtt"]["port"])
+    client.connect(config.data["mqtt"]["broker"], config.data["mqtt"]["port"])
 
     # Generate a random session ID to use so the server can reply directly to
     # us via MQTT.

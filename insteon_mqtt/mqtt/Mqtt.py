@@ -7,7 +7,7 @@ import functools
 import json
 import logging
 from .. import log
-from . import config
+from . import config as mqttConfig
 from .MsgTemplate import MsgTemplate
 from .Reply import Reply
 
@@ -45,9 +45,9 @@ class Mqtt:
         """Constructor
 
         Args:
-          mqtt_link (network.Mqtt):  The network MQTT link to use for
-                    communicating with the MQTT broker.
-          modem (mqtt.Modem):  The MQTT PLM modem object.
+          mqtt_link:  (network.Mqtt) The network MQTT link to use for
+                      communicating with the MQTT broker.
+          modem:      (mqtt.Modem) The MQTT PLM modem objec.t
         """
         # Connect a callback for handling when a new device is created in the
         # modem.  We'll use it to create a corresponding MQTT device.
@@ -73,7 +73,7 @@ class Mqtt:
         self._config = None
 
     #-----------------------------------------------------------------------
-    def load_config(self, data):
+    def load_config(self, config):
         """Load a configuration dictionary.
 
         This should be the mqtt key in the configuration data.  Key inputs
@@ -91,11 +91,14 @@ class Mqtt:
                        system commands.
 
         Args:
-          data (dict):  Configuration data to load.
+          config:   (object) Configuration object containing data to load.
         """
         # Pass connection data to the MQTT link.  This will configure the
         # connection to the broker.
-        self.link.load_config(data)
+        self.link.load_config(config)
+
+        # MQTT specific config data
+        data = config.data['mqtt']
 
         # Create a template for prcessing messages on the command topic.
         self._cmd_topic = MsgTemplate.clean_topic(data['cmd_topic'])
@@ -105,7 +108,7 @@ class Mqtt:
         self.retain = data.get('retain', self.retain)
 
         # Save the config for later passing to devices when they are created.
-        self._config = data
+        self._config = config
 
         # Subscribe to the new topics.
         if self.link.connected:
@@ -116,12 +119,12 @@ class Mqtt:
         """Publish a message out.
 
         Args:
-          topic (str):  The MQTT topic to publish with.
-          payload (str):  The MQTT payload to send.
-          qos (int):  None to use the class QOS. Otherwise the QOS level
-              to use.
-          retain (bool):  None to use the class retain flag.  Otherwise
-                 the retain flag to use.
+          topic:   (str) The MQTT topic to publish with.
+          payload: (str) The MQTT payload to send.
+          qos:     (int) None to use the class QOS. Otherwise the QOS level
+                   to use.
+          retain:  (bool) None to use the class retain flag.  Otherwise
+                   the retain flag to use.
         """
         qos = self.qos if qos is None else qos
         retain = self.retain if retain is None else retain
@@ -139,12 +142,12 @@ class Mqtt:
     def handle_connected(self, link, connected):
         """MQTT (dis)connection callback.
 
-        This is called when the low level MQTT client connects to the broker.
+        This is called when the low levle MQTT client connects to the broker.
         After the connection, we'll subscribe to our topics.
 
         Args:
-          link (network.Mqtt):  The MQTT network link.
-          connected (bool):  True if connected, False if disconnected.
+          link:      (network.Mqtt) The MQTT network link.
+          connected: (bool) True if connected, False if disconnected.
         """
         if connected:
             self._subscribe()
@@ -158,11 +161,11 @@ class Mqtt:
         we can send out MQTT messages when the device changes.
 
         Args:
-          modem (Modem):  The Insteon modem device.
-          device (device.Base):  The Insteon device that was added.
+          modem:   (Modem) The Insteon modem device.
+          device:  (device.Base) The Insteon device that was added.
         """
         # Find the MQTT class type that matches the new insteon device.
-        mqtt_cls = config.find(device)
+        mqtt_cls = mqttConfig.find(device)
         if not mqtt_cls:
             LOG.error("Coding error - can't find MQTT device class for "
                       "Insteon device %s: %s", device.__class__, device)
@@ -174,7 +177,7 @@ class Mqtt:
 
         # Set the configuration input data for this device type.
         if self._config:
-            obj.load_config(self._config, self.qos)
+            obj.load_config(self._config.data['mqtt'], self.qos)
 
         # Save the MQTT device so we can find it again.
         self.devices[device.addr.id] = obj
@@ -195,9 +198,10 @@ class Mqtt:
           that corresponds to the Instoen device for decoding.
 
         Args:
-          client (paho.Client):  The paho mqtt client (self.link).
-          data:  Optional user data (unused).
-          message:  MQTT message - has attrs: topic, payload, qos, retain.
+          client:   The Paho.Client the message was read from.
+          userdata: Optional data passed to the MQTT link.  Not used.
+          message:  Paho.mqtt message object.  Has attributes topic and
+                    payload.
         """
         LOG.info("MQTT message %s %s", message.topic, message.payload)
 
@@ -295,8 +299,8 @@ class Mqtt:
         ourselves as a callback on the logging system in that case.
 
         Args:
-          record:  Logging record.  None if the command is finished.
-          topic (str):  The session topic to publish the log message to.
+          record:   Logging record.  None if the command is finished.
+          topic:    The session topic to publish the log message to.
         """
         # Command is finished.  Cleanup and send an END reply.
         if record is None:

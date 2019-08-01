@@ -84,13 +84,16 @@ class Serial(Link):
         - parity:  Parity to use (optional)
 
         Args:
-          config (dict):  Configuration data to load.
+          config (object):  Configuration data to load.
         """
         assert self._fd is None
 
-        self._port = config.get('port', self._port)
-        self._baudrate = config.get('baudrate', self._baudrate)
-        self._parity = config.get('parity', self._parity)
+        # Serial specific config settings
+        data = config.data['insteon']
+
+        self._port = data.get('port', self._port)
+        self._baudrate = data.get('baudrate', self._baudrate)
+        self._parity = data.get('parity', self._parity)
 
         self.client = self._open_client()
 
