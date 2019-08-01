@@ -322,14 +322,6 @@ def main(mqtt_converter=None):
 
     # Initialize the configuration file.
     cfg = Config(args.config)
-
-    # # Test of writing
-    # with open("/home/krkeegan/testing.yaml", "w") as f:
-    #     yaml=YAML()
-    #     yaml.preserve_quotes = True
-    #     yaml.indent(mapping=2, sequence=4, offset=2)
-    #     yaml.dump(cfg, f)
-
     topic = cfg.data.get("mqtt", {}).get("cmd_topic", None)
     if topic:
         args.topic = topic
