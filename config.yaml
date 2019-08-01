@@ -49,7 +49,7 @@ insteon:
 
   # Automatically refresh device states and databases (if needed) at
   # startup.  This may be slow depending on the number of devices.
-  startup_refresh: False
+  startup_refresh: false
 
   #------------------------------------------------------------------------
   # Devices require the Insteon hex address and an optional name. Note
@@ -265,8 +265,8 @@ mqtt:
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
     state_topic: 'insteon/{{address}}/state'
     state_payload: >
-       { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
-
+      { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
+    #
     # Manual mode (holding down a button) is triggered once when the button
     # is held and once when it's released.  Available variables for
     # templating are address (see above), name (see above), and:
@@ -314,13 +314,13 @@ mqtt:
     # when actuated so handle that here in the template code.  The
     # other HASS MQTT options also have this problem.
     level_payload: >
-       { "cmd" : "{{json.state.lower()}}",
-         "level" : {% if json.brightness is defined %}
-                      {{json.brightness}}
-                   {% else %}
-                      255
-                   {% endif %} }
-
+      { "cmd" : "{{json.state.lower()}}",
+        "level" : {% if json.brightness is defined %}
+                     {{json.brightness}}
+                  {% else %}
+                     255
+                  {% endif %} }
+    #
     # Scene on/off command.  This triggers the scene broadcast on the switch
     # in the same way clicking the button would.  The inputs are the same as
     # those for the on_off topic and payload.
@@ -742,8 +742,8 @@ mqtt:
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
     dimmer_state_topic: 'insteon/{{address}}/state/1'
     dimmer_state_payload: >
-       { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
-
+      { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
+    #
     # Manual mode (holding down a button) is triggered once when the button
     # is held and once when it's released.  Available variables for
     # templating are address (see above), name (see above), and:
@@ -789,13 +789,13 @@ mqtt:
     # when actuated so handle that here in the template code.  The
     # other HASS MQTT options also have this problem.
     dimmer_level_payload: >
-       { "cmd" : "{{json.state.lower()}}",
-         "level" : {% if json.brightness is defined %}
-                      {{json.brightness}}
-                   {% else %}
-                      255
-                   {% endif %} }
-
+      { "cmd" : "{{json.state.lower()}}",
+        "level" : {% if json.brightness is defined %}
+                     {{json.brightness}}
+                  {% else %}
+                     255
+                  {% endif %} }
+    #
     # Scene on/off command.  This triggers the scene broadcast on the switch
     # in the same way clicking the button would.  The inputs are the same as
     # those for the btn_on_off topic and payload.
