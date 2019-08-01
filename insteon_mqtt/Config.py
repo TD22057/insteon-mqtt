@@ -13,6 +13,7 @@ import difflib
 import os
 from datetime import datetime
 from ruamel.yaml import YAML
+from ruamel.yaml.nodes import ScalarNode, SequenceNode
 from shutil import copy
 from . import device
 
@@ -56,6 +57,7 @@ class Config:
         """
         with open(self.path, "r") as f:
             yaml = YAML()
+            yaml.Constructor.add_constructor("!include", self._include)
             yaml.preserve_quotes = True
             self.data = yaml.load(f)
 
@@ -137,3 +139,39 @@ class Config:
                             "%s." % (name, self.devices.keys()))
 
         return dev
+
+#===========================================================================
+    def _include(self, loader, node):
+        """Used as a function in the construtor that is called whenever an
+        include tag is found.  Since we do not have an include representer
+        this will collapse the include tree into a single config file on
+        save
+        Args:
+          loader:  The yaml loader
+          node:  The include node
+        Returns:
+          The loaded and parsed data from the include file
+        """
+        y = loader.loader
+        yaml = YAML(typ=y.typ, pure=y.pure)
+        yaml.composer.anchors = loader.composer.anchors
+        baseDir = os.path.dirname(self.path)
+
+        # input is a single file to load.
+        if isinstance(node, ScalarNode):
+            with open(os.path.join(baseDir, node.value), "r") as f:
+                return yaml.load(f)
+
+        # input is a list of files to load.
+        elif isinstance(node, SequenceNode):
+            result = []
+            for include_file in node.value:
+                with open(os.path.join(baseDir, include_file), "r") as f:
+                    singleFile = yaml.load(f)
+                    result += singleFile
+            return result
+
+        else:
+            msg = ("Error: unrecognized node type in !include statement: %s"
+                   % str(node))
+            raise yaml.constructor.ConstructorError(msg)
