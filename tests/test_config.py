@@ -5,64 +5,91 @@
 # pylint: disable=attribute-defined-outside-init
 #===========================================================================
 import os
+import glob
 import pytest
+from insteon_mqtt.Config import Config
 import insteon_mqtt as IM
 
 
 class Test_config:
     #-----------------------------------------------------------------------
     def test_basic(self):
-        (cls, args) = IM.config.find("dimmer")
+        file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'configs', 'basic.yaml')
+        cfg = Config(file)
+        (cls, args) = cfg.find("dimmer")
         assert cls == IM.device.Dimmer
         assert args == {}
 
-        (cls, args) = IM.config.find("mini_remote8")
+        (cls, args) = cfg.find("mini_remote8")
         assert cls == IM.device.Remote
         assert args == {'num_button' : 8}
 
     #-----------------------------------------------------------------------
     def test_errors(self):
+        file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'configs', 'basic.yaml')
+        cfg = Config(file)
         with pytest.raises(Exception):
-            IM.config.find("foo")
+            cfg.find("foo")
 
     #-----------------------------------------------------------------------
     def test_load(self):
         file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             'configs', 'basic.yaml')
-        cfg = IM.config.load(file)
-        assert "logging" in cfg
-        assert "insteon" in cfg
-        assert "mqtt" in cfg
+        cfg = Config(file)
+        assert "logging" in cfg.data
+        assert "insteon" in cfg.data
+        assert "mqtt" in cfg.data
 
     #-----------------------------------------------------------------------
     def test_apply(self):
         file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             'configs', 'basic.yaml')
-        cfg = IM.config.load(file)
+        cfg = Config(file)
 
         mqtt = MockManager()
         modem = MockManager()
-        IM.config.apply(cfg, mqtt, modem)
+        Config.apply(cfg, mqtt, modem)
 
-        assert mqtt.config == cfg["mqtt"]
-        assert modem.config == cfg["insteon"]
+        assert mqtt.config == cfg
+        assert modem.config == cfg
 
     #-----------------------------------------------------------------------
     def test_multi(self):
         file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             'configs', 'multi.yaml')
-        cfg = IM.config.load(file)
-        assert "logging" in cfg
-        assert "insteon" in cfg
-        assert "mqtt" in cfg
+        cfg = Config(file)
+        assert "logging" in cfg.data
+        assert "insteon" in cfg.data
+        assert "mqtt" in cfg.data
 
     #-----------------------------------------------------------------------
     def test_multi_error(self):
         file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             'configs', 'multi_error.yaml')
         with pytest.raises(Exception):
-            IM.config.load(file)
+            Config(file)
 
+    #-----------------------------------------------------------------------
+    def test_basic_save(self):
+        file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'configs', 'basic.yaml')
+        cfg = Config(file)
+        cfg.save()
+        assert not os.path.exists(cfg.backup)
+
+    #-----------------------------------------------------------------------
+    def test_save_backup(self):
+        file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'configs', 'basic.yaml')
+        cfg = Config(file)
+        cfg.data = []
+        cfg.save()
+        assert os.path.exists(cfg.backup)
+        if os.path.exists(cfg.backup):
+            os.remove(file)
+            os.rename(cfg.backup, file)
 
 #===========================================================================
 class MockManager:

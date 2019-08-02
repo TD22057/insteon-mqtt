@@ -5,7 +5,7 @@ insteon:
   port: '/dev/insteon'
   address: 44.85.11
   storage: 'data'
-  startup_refresh: False
+  startup_refresh: false
   devices:
     switch:
       - 37.2d.35: 'lamp1'

@@ -12,9 +12,9 @@ import time
 import difflib
 import os
 from datetime import datetime
+from shutil import copy
 from ruamel.yaml import YAML
 from ruamel.yaml.nodes import ScalarNode, SequenceNode
-from shutil import copy
 from . import device
 
 
@@ -47,6 +47,7 @@ class Config:
             'thermostat' : (device.Thermostat, {}),
             }
         self.data = []
+        self.backup = ''  # Contains the most recent backup file name
 
         # Initialize the config data
         self.load()
@@ -73,8 +74,8 @@ class Config:
         # Create a backup file first`
         ts = time.time()
         timestamp = datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
-        backup = self.path + "." + timestamp
-        copy(self.path, backup)
+        self.backup = self.path + "." + timestamp
+        copy(self.path, self.backup)
 
         # Save the config file
         with open(self.path, "w") as f:
@@ -85,23 +86,24 @@ class Config:
 
         # Check for diff
         orgCount = 0
-        with open(backup, 'r') as old:
-            for line in old:
+        with open(self.backup, 'r') as old:
+            for line in old:  # pylint: disable=W0612
                 orgCount += 1
         with open(self.path, 'r') as new:
-            with open(backup, 'r') as old:
+            with open(self.backup, 'r') as old:
                 diff = difflib.unified_diff(
-                    new.readlines(),
                     old.readlines(),
-                    fromfile='new',
-                    tofile='old',
+                    new.readlines(),
+                    fromfile='old',
+                    tofile='new',
                 )
-        diffCount = len(list(diff))
-
-        # Delete backup if # of lines in diff is less than 5% of original file
-        # this is arbitrary, a diff contains many more lines than just the diff
+        # Count the number of deleted lines
+        diffCount = len([l for l in diff if l.startswith('- ')])
+        # Delete backup if # of lines deleted or altered from original file
+        # is less than 5% of original file
         if diffCount / orgCount <= 0.05:
-            os.remove(backup)
+            os.remove(self.backup)
+            self.backup = ''
 
 #===========================================================================
     def apply(self, mqtt, modem):
@@ -160,18 +162,18 @@ class Config:
         # input is a single file to load.
         if isinstance(node, ScalarNode):
             with open(os.path.join(baseDir, node.value), "r") as f:
-                return yaml.load(f)
+                result = yaml.load(f)
 
         # input is a list of files to load.
         elif isinstance(node, SequenceNode):
             result = []
             for include_file in node.value:
-                with open(os.path.join(baseDir, include_file), "r") as f:
+                with open(os.path.join(baseDir, include_file.value), "r") as f:
                     singleFile = yaml.load(f)
                     result += singleFile
-            return result
 
         else:
             msg = ("Error: unrecognized node type in !include statement: %s"
                    % str(node))
             raise yaml.constructor.ConstructorError(msg)
+        return result

@@ -9,7 +9,7 @@ from ..Config import Config
 from . import device
 from . import modem
 from . import start
-from ruamel.yaml import YAML
+
 
 def parse_args(args):
     """Input is command line arguments w/o arg[0]
