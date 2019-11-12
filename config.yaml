@@ -51,6 +51,15 @@ insteon:
   # startup.  This may be slow depending on the number of devices.
   startup_refresh: False
 
+  # Path to Scenes Definition file (Optional)
+  # Scenes must be stored in an seperate file so that the file can be altered
+  # and saved by insteon_mqtt.
+  # The path can be specified either as an absolute path or as a relative path 
+  # using the !rel_path directive.
+  #
+  #scenes: /home/user/insteon_mqtt/scenes.yaml
+  #scenes: !rel_path scenes.yaml
+
   #------------------------------------------------------------------------
   # Devices require the Insteon hex address and an optional name. Note
   # that MQTT address topics are always the lower case hex address or
@@ -113,12 +122,6 @@ insteon:
     # Thermostatus
     thermostat:
     #  - aa.bb.cc: 'downstairs'
-
-  #------------------------------------------------------------------------
-  # FUTURE: Insteon scene definitions.
-  #scenes:
-  #  - scene_01:
-
 
 #==========================================================================
 #

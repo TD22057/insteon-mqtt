@@ -446,4 +446,21 @@ class Modem:
         if save:
             self.save()
 
+    #-----------------------------------------------------------------------
+    def add_from_config(self, addr, group, is_controller, data):
+        """Add an entry to the config database from the config file.
+        Is called by _load_scenes() on the modem.  Adds an entry to the next
+        available mem_loc from an entry specified in the config file.  This
+        should only be used to add an entry to a db_config database, which is
+        then compared with the actual database using diff().
+        Args:
+          TODO
+        """
+
+        # Generate the entry
+        entry = ModemEntry(addr, group, is_controller, data)
+
+        # Add the Entry to the DB
+        self.add_entry(entry, save=False)
+
 #===========================================================================

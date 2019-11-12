@@ -1,0 +1,35 @@
+# Scenes Definition File
+#
+# This file allows users to define scenes that should exist on their network.
+# This enables the sync and delete links functions to work.  A user is not
+# required to have a scenes file, but it can make the process of maintianing
+# a complex network of links easier by enabling the user to specify links in
+# a single location rather than individually adding links to each defice by
+# hand.
+
+- name: scene 1
+  responders:
+    - living room lamp:
+        group: 1
+        level: 50
+        ramp: 0.5
+    - living room keypad: 3
+    - living_room_sw1
+  controllers:
+    - living room keypad: 3
+    - living_room_sw1
+    - modem
+
+- name: scene 2
+  responders:
+    - porch light
+    - driveway light
+  controllers:
+    - motion porch
+
+- name: outdoors
+  responders: 
+    - porch light
+    - backyard light
+  controllers:
+    - modem: 21

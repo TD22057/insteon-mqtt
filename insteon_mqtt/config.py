@@ -99,6 +99,7 @@ class Loader(yaml.Loader):
           file (file):  File like object to read from.
         """
         yaml.Loader.add_constructor('!include', Loader.include)
+        yaml.Loader.add_constructor('!rel_path', Loader.rel_path)
 
         super().__init__(file)
         self._base_dir = os.path.split(file.name)[0]
@@ -139,5 +140,27 @@ class Loader(yaml.Loader):
         path = os.path.join(self._base_dir, filename)
         with open(path, 'r') as f:
             return yaml.load(f, Loader)
+
+    #-----------------------------------------------------------------------
+    def rel_path(self, node):
+        """Handles !rel_path file command.  Supports:
+
+        scenes: !rel_path file.yaml
+
+        Allows the use of relative paths in the config.yaml file.  Intended
+        for use with scenes.
+
+        Args:
+          node:  The YAML node to load.
+        """
+        # input is a single file to load.
+        if isinstance(node, yaml.ScalarNode):
+            filename = self.construct_scalar(node)
+            return os.path.join(self._base_dir, filename)
+
+        else:
+            msg = ("Error: unrecognized node type in !rel_path statement: %s"
+                   % str(node))
+            raise yaml.constructor.ConstructorError(msg)
 
 #===========================================================================

@@ -13,6 +13,7 @@ from . import handler
 from . import log
 from . import message as Msg
 from . import util
+from . import Scenes
 from .Signal import Signal
 
 LOG = log.get_logger()
@@ -48,6 +49,12 @@ class Modem:
         self.devices = {}
         self.device_names = {}
         self.db = db.Modem()
+
+        # Prepare the config db
+        self.db_config = db.Modem()
+
+        # Prepare Scenes object
+        self.scenes = []
 
         # Signal to emit when a new device is added.
         self.signal_new_device = Signal()  # emit(modem, device)
@@ -137,7 +144,7 @@ class Modem:
         self._load_devices(data.get('devices', []))
 
         # Read the scenes definitions and load db_configs
-        self._load_scenes(data.get('scenes', []))
+        self.scenes = Scenes.Scenes(self, data.get('scenes', None))
 
         # Send refresh messages to each device to check if the database is up
         # to date.
