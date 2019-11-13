@@ -487,12 +487,15 @@ class Base:
 
         diff = self.db_config.diff(self)
 
-        LOG.ui("  A sync would delete the following links:")
-        for entry in diff.del_entries:
-            LOG.ui("    %s", entry)
-        LOG.ui("  A sync would add the following links:")
-        for entry in diff.add_entries:
-            LOG.ui("    %s", entry)
+        if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
+            LOG.ui("  A sync would delete the following links:")
+            for entry in diff.del_entries:
+                LOG.ui("    %s", entry)
+            LOG.ui("  A sync would add the following links:")
+            for entry in diff.add_entries:
+                LOG.ui("    %s", entry)
+        else:
+            LOG.ui("  No changes would be made.")
         on_done(True, "Complete", None)
 
     #-----------------------------------------------------------------------

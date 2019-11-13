@@ -74,7 +74,8 @@ class Modem:
             'linking' : self.linking,
             'scene' : self.scene,
             'factory_reset' : self.factory_reset,
-            'sync_dry_run' : self.sync_dry_run
+            'sync_dry_run' : self.sync_dry_run,
+            'sync_dry_run_all' : self.sync_dry_run_all
             }
 
         # Add a generic read handler for any broadcast messages initiated by
@@ -573,12 +574,15 @@ class Modem:
 
         diff = self.db_config.diff(self)
 
-        LOG.ui("  A sync would delete the following links:")
-        for entry in diff.del_entries:
-            LOG.ui("    %s", entry)
-        LOG.ui("  A sync would add the following links:")
-        for entry in diff.add_entries:
-            LOG.ui("    %s", entry)
+        if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
+            LOG.ui("  A sync would delete the following links:")
+            for entry in diff.del_entries:
+                LOG.ui("    %s", entry)
+            LOG.ui("  A sync would add the following links:")
+            for entry in diff.add_entries:
+                LOG.ui("    %s", entry)
+        else:
+            LOG.ui("  No changes would be made.")
         on_done(True, "Complete", None)
 
     #-----------------------------------------------------------------------
@@ -606,6 +610,31 @@ class Modem:
 
         # Perform the sync.
         pass
+
+    #-----------------------------------------------------------------------
+    def sync_dry_run_all(self, on_done=None):
+        """Perform the 'sync_dry_run' command on all devices.
+
+        See the 'sync_dry_run' command for a description.
+
+        Args:
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+        """
+        # Set the error stop to false so a failed refresh doesn't stop the
+        # sequence from trying to refresh other devices.
+        seq = CommandSeq(self.protocol, "Sync Dry Run All complete", on_done,
+                         error_stop=False)
+
+        # First the modem database.
+        seq.add(self.sync_dry_run)
+
+        # Then each other device.
+        for device in self.devices.values():
+            seq.add(device.sync_dry_run)
+
+        # Start the command sequence.
+        seq.run()
 
     #-----------------------------------------------------------------------
     def linking(self, group=0x01, on_done=None):
