@@ -425,7 +425,7 @@ class Modem:
         rhsRemove = rhs.entries.copy()
 
         delta = DbDiff(None)  # Modem db doesn't have addr
-        for entry in self.entries.values():
+        for entry in self.entries:
             rhsEntry = rhs.find(entry.addr, entry.group, entry.is_controller)
 
             # RHS is missing this entry or has different data bytes we need
@@ -439,7 +439,7 @@ class Modem:
 
         # Add in remaining rhs entries that where not matches as entries that
         # need to be removed.
-        for entry in rhsRemove.values():
+        for entry in rhsRemove:
             delta.remove(entry)
 
         return delta
