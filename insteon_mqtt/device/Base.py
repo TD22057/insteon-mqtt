@@ -485,7 +485,7 @@ class Base:
         # Send the get_engine_version request.
         LOG.ui("Performing a DRY RUN Sync Command on %s device", self.label)
 
-        diff = self.db_config.diff(self.db)
+        diff = self.db_config.diff(self)
 
         LOG.ui("  A sync would delete the following links:")
         for entry in diff.del_entries:

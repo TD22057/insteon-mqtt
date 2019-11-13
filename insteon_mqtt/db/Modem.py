@@ -406,13 +406,13 @@ class Modem:
         additions and deletions needed to update rhs to match self.
 
         Args:
-           rhs:   (Modem) The other device database to compare with.
+           rhs:   (Modem) The other device to compare with.
 
         Returns:
            Returns the list changes needed in rhs to make it equal to this
            object.
         """
-        if not isinstance(rhs, Modem):
+        if not isinstance(rhs.db, Modem):
             LOG.error("Error trying to compare modem databases for %s vs"
                       " %s.  Only the same device can be differenced.",
                       type(self).__name__, type(rhs).__name__)
@@ -422,11 +422,11 @@ class Modem:
         # that we find, we'll remove that address from the dict.  The result
         # will be the entries that need to be removed from rhs to make it
         # match.
-        rhsRemove = rhs.entries.copy()
+        rhsRemove = rhs.db.entries.copy()
 
         delta = DbDiff(None)  # Modem db doesn't have addr
         for entry in self.entries:
-            rhsEntry = rhs.find(entry.addr, entry.group, entry.is_controller)
+            rhsEntry = rhs.db.find(entry.addr, entry.group, entry.is_controller)
 
             # RHS is missing this entry or has different data bytes we need
             # to update.
@@ -436,6 +436,21 @@ class Modem:
             # Otherwise this is match so we can note that from the list.
             elif rhsEntry:
                 rhsRemove.remove(rhsEntry)
+
+        # Ignore certain links created by 'join' or 'pair'
+        # #1 any responder link from a valid device.  These are normally
+        # created by the 'pair' command.  There is currently no way to know the
+        # groups that should exist on a device.  So we ignore all, but in the
+        # future may want to add something to each device so that we can delete
+        # erroneous entries.
+        # #2 any controller links from group 0x01 or 0x02 to a valid device,
+        # these are results from the 'join' command
+        for entry in list(rhsRemove):
+            if not entry.is_controller and rhs.find(entry.addr) is not None:
+                rhsRemove.remove(entry)
+            if (entry.is_controller and entry.group in (0x00, 0x01) and
+                    rhs.find(entry.addr) is not None):
+                rhsRemove.remove(entry)
 
         # Add in remaining rhs entries that where not matches as entries that
         # need to be removed.

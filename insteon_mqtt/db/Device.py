@@ -577,13 +577,13 @@ class Device:
         additions and deletions needed to update rhs to match self.
 
         Args:
-           rhs:   (Device) The other device database to compare with.
+           rhs:   (Device) The other device to compare with.
 
         Returns:
            Returns the list changes needed in rhs to make it equal to this
            object.
         """
-        if self.addr != rhs.addr and self.engine == rhs.self.engine:
+        if self.addr != rhs.addr and self.engine == rhs.db.engine:
             LOG.error("Error trying to compare device databases for %s vs"
                       " %s.  Only the same device can be differenced.",
                       self.addr, rhs.addr)
@@ -593,11 +593,11 @@ class Device:
         # that we find, we'll remove that address from the dict.  The result
         # will be the entries that need to be removed from rhs to make it
         # match.
-        rhsRemove = {k : v for k, v in rhs.entries.items()}
+        rhsRemove = {k : v for k, v in rhs.db.entries.items()}
 
         delta = DbDiff(self.addr)
         for entry in self.entries.values():
-            rhsEntry = rhs.find(entry.addr, entry.group, entry.is_controller)
+            rhsEntry = rhs.db.find(entry.addr, entry.group, entry.is_controller)
 
             # RHS is missing this entry or has different data bytes we need
             # to update.
@@ -608,6 +608,22 @@ class Device:
             # address from the set.
             elif rhsEntry:
                 del rhsRemove[rhsEntry.mem_loc]
+
+        # Ignore certain links created by 'join' or 'pair'
+        # #1 any controller link to the modem.  These are normally
+        # created by the 'pair' command.  There is currently no way to know the
+        # groups that should exist on a device.  So we ignore all, but in the
+        # future may want to add something to each device so that we can delete
+        # erroneous entries.
+        # #2 any responder links from the modem for groups 0x01 or 0x02,
+        # these are results from the 'join' command
+        for _addr in list(rhsRemove):
+            entry = rhsRemove[_addr]
+            if entry.is_controller and entry.addr == rhs.modem.addr:
+                del rhsRemove[_addr]
+            if (not entry.is_controller and entry.group in (0x00, 0x01) and
+                    entry.addr == rhs.modem.addr):
+                del rhsRemove[_addr]
 
         # Add in remaining rhs entries that where not matches as entries that
         # need to be removed.
