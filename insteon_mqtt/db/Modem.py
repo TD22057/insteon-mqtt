@@ -12,6 +12,8 @@ from .. import log
 from .. import message as Msg
 from .. import util
 from .ModemEntry import ModemEntry
+from .DbDiff import DbDiff
+from ..CommandSeq import CommandSeq
 
 LOG = log.get_logger()
 
@@ -390,6 +392,75 @@ class Modem:
         # Send the first message.  If it ACK's, it will keep sending more
         # deletes - one per entry.
         protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def diff(self, rhs):
+        """Compare this database with another Modem database.
+
+        It's an error (logged and will return None) to use this on databases
+        other than for the modem.  The purpose of this method is to compare
+        two database for the same modem and generate a list of commands that
+        will cause the input rhs database to be equal to the self database.
+
+        The return value is a db.DbDiff object that contains the
+        additions and deletions needed to update rhs to match self.
+
+        Args:
+           rhs:   (Modem) The other device database to compare with.
+
+        Returns:
+           Returns the list changes needed in rhs to make it equal to this
+           object.
+        """
+        if not isinstance(rhs, Modem):
+            LOG.error("Error trying to compare modem databases for %s vs"
+                      " %s.  Only the same device can be differenced.",
+                      type(self).__name__, type(rhs).__name__)
+            return None
+
+        # Copy the rhs entry list of ModemEntry.  For each match
+        # that we find, we'll remove that address from the dict.  The result
+        # will be the entries that need to be removed from rhs to make it
+        # match.
+        rhsRemove = rhs.entries.copy()
+
+        delta = DbDiff(None)  # Modem db doesn't have addr
+        for _addr, entry in enumerate(self.entries):
+            rhsEntry = rhs.find(entry.addr, entry.group, entry.is_controller)
+
+            # RHS is missing this entry or has different data bytes we need
+            # to update.
+            if rhsEntry is None or not entry.identical(rhsEntry):
+                delta.add(entry)
+
+            # Otherwise this is match so we can note that from the list.
+            elif rhsEntry:
+                rhsRemove.remove(rhsEntry)
+
+        # Add in remaining rhs entries that where not matches as entries that
+        # need to be removed.
+        for entry in rhsRemove.values():
+            delta.remove(entry)
+
+        return delta
+
+    #-----------------------------------------------------------------------
+    def apply_diff(self, device, diff, on_done=None):
+        """TODO: doc
+        """
+        assert diff.addr is None  # Modem db doesn't have address
+
+        seq = CommandSeq(device, "Modem database sync complete", on_done)
+
+        # Start by removing all the entries we don't need.
+        for entry in diff.del_entries:
+            seq.add(self.delete_on_device, device.protocol, entry)
+
+        # Add the missing entries.
+        for entry in diff.add_entries:
+            seq.add(self.add_on_device, device.protocol, entry)
+
+        seq.run()
 
     #-----------------------------------------------------------------------
     def to_json(self):

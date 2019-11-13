@@ -76,6 +76,12 @@ class ModemEntry:
             }
 
     #-----------------------------------------------------------------------
+    def identical(self, rhs):
+        """TODO: doc
+        """
+        return self == rhs and self.data == rhs.data
+
+    #-----------------------------------------------------------------------
     def __eq__(self, rhs):
         """Check for equality.
 

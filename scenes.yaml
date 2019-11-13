@@ -4,7 +4,7 @@
 # This enables the sync and delete links functions to work.  A user is not
 # required to have a scenes file, but it can make the process of maintianing
 # a complex network of links easier by enabling the user to specify links in
-# a single location rather than individually adding links to each defice by
+# a single location rather than individually adding links to each device by
 # hand.
 
 - name: scene 1
