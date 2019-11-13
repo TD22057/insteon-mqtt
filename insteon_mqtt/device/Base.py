@@ -130,7 +130,8 @@ class Base:
             'pair' : self.pair,
             'get_flags' : self.get_flags,
             'get_engine' : self.get_engine,
-            'get_model' : self.get_model
+            'get_model' : self.get_model,
+            'sync_dry_run': self.sync_dry_run
             }
 
         # Device database delta.  The delta tells us if the database is
@@ -467,6 +468,58 @@ class Base:
         msg_handler = handler.BroadcastCmdResponse(msg, self.handle_model,
                                                    on_done)
         self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def sync_dry_run(self, on_done=None):
+        """Logs the actions that would be completed by the 'sync' command, but
+        does not actually perform that command.
+
+        Helpful for diagnosing
+
+        Args:
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.info("Device %s cmd: sync dry run", self.label)
+
+        # Send the get_engine_version request.
+        LOG.ui("Performing a DRY RUN Sync Command on %s device", self.label)
+
+        diff = self.db_config.diff(self.db)
+
+        LOG.ui("  A sync would delete the following links:")
+        for entry in diff.del_entries:
+            LOG.ui("    %s", entry)
+        LOG.ui("  A sync would add the following links:")
+        for entry in diff.add_entries:
+            LOG.ui("    %s", entry)
+        on_done(True, "Complete", None)
+
+    #-----------------------------------------------------------------------
+    def sync(self, on_done=None):
+        """Syncs the links on the device.
+
+        This will add, remove, and fix links on the device to ensure that the
+        device matches the links that are defined in the scenes config.
+
+        WARNING: If you have no links defined in your scenes config, this will
+        erase all links except the links created by the 'join' and 'pair'
+        commands.
+
+        It is recommended that you perform a 'sync_dry_run' command first to
+        see what changes would be made to this device.
+
+        In the future an 'import_links' command will be added which will allow
+        for manually created links to be added to the scenes config.
+
+        Args:
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.info("Device %s cmd: sync", self.label)
+
+        # Perform the sync.
+        pass
 
     #-----------------------------------------------------------------------
     def db_add_ctrl_of(self, local_group, remote_addr, remote_group,
