@@ -75,7 +75,8 @@ class Modem:
             'scene' : self.scene,
             'factory_reset' : self.factory_reset,
             'sync_dry_run' : self.sync_dry_run,
-            'sync_dry_run_all' : self.sync_dry_run_all
+            'sync_dry_run_all' : self.sync_dry_run_all,
+            'sync' : self.sync
             }
 
         # Add a generic read handler for any broadcast messages initiated by
@@ -568,8 +569,6 @@ class Modem:
                    completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Device %s cmd: sync dry run", self.label)
-
-        # Send the get_engine_version request.
         LOG.ui("Performing a DRY RUN Sync Command on %s device", self.label)
 
         diff = self.db_config.diff(self)
@@ -607,9 +606,26 @@ class Modem:
                    completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Device %s cmd: sync", self.label)
+        LOG.ui("Syncing %s device", self.label)
 
-        # Perform the sync.
-        pass
+        diff = self.db_config.diff(self)
+
+        # Prepare command sequence
+        seq = CommandSeq(self.protocol, "Sync complete", on_done,
+                         error_stop=False)
+
+        if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
+            LOG.ui("  Deleting the following links:")
+            for entry in diff.del_entries:
+                LOG.ui("    %s", entry)
+                seq.add(self.db.delete_on_device, self.protocol, entry)
+            LOG.ui("  Adding the following links:")
+            for entry in diff.add_entries:
+                LOG.ui("    %s", entry)
+                seq.add(self.db.add_on_device, self.protocol, entry)
+        else:
+            LOG.ui("  No changes made.")
+        seq.run()
 
     #-----------------------------------------------------------------------
     def sync_dry_run_all(self, on_done=None):

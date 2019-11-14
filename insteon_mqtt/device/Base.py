@@ -131,7 +131,8 @@ class Base:
             'get_flags' : self.get_flags,
             'get_engine' : self.get_engine,
             'get_model' : self.get_model,
-            'sync_dry_run': self.sync_dry_run
+            'sync_dry_run': self.sync_dry_run,
+            'sync': self.sync
             }
 
         # Device database delta.  The delta tells us if the database is
@@ -481,8 +482,6 @@ class Base:
                    completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Device %s cmd: sync dry run", self.label)
-
-        # Send the get_engine_version request.
         LOG.ui("Performing a DRY RUN Sync Command on %s device", self.label)
 
         diff = self.db_config.diff(self)
@@ -520,9 +519,27 @@ class Base:
                    completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Device %s cmd: sync", self.label)
+        LOG.ui("Syncing %s device", self.label)
 
-        # Perform the sync.
-        pass
+        diff = self.db_config.diff(self)
+
+        # Prepare command sequence
+        seq = CommandSeq(self.protocol, "Sync complete", on_done,
+                         error_stop=False)
+
+        if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
+            LOG.ui("  Deleting the following links:")
+            for entry in diff.del_entries:
+                LOG.ui("    %s", entry)
+                seq.add(self.db.delete_on_device, self, entry)
+            LOG.ui("  Adding the following links:")
+            for entry in diff.add_entries:
+                LOG.ui("    %s", entry)
+                seq.add(self.db.add_on_device, self, entry.addr, entry.group,
+                        entry.is_controller, entry.data)
+        else:
+            LOG.ui("  No changes made.")
+        seq.run()
 
     #-----------------------------------------------------------------------
     def db_add_ctrl_of(self, local_group, remote_addr, remote_group,
