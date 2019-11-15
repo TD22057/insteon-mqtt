@@ -470,7 +470,7 @@ class Base:
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def sync(self, dry_run=True, on_done=None):
+    def sync(self, dry_run=True, refresh=True, on_done=None):
         """Syncs the links on the device.
 
         This will add, remove, and fix links on the device to ensure that the
@@ -487,8 +487,11 @@ class Base:
         for manually created links to be added to the scenes config.
 
         Args:
-          dry_run: (Boolean). Logs the actions that would be completed by the
+          dry_run: (Boolean) Logs the actions that would be completed by the
                    'sync' command, but does not actually perform any actions.
+                   Default: True
+          refresh: (Boolean) performs a device refresh before syncing.
+                   Default: True
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -503,6 +506,9 @@ class Base:
         # Prepare command sequence
         seq = CommandSeq(self.protocol, "Sync complete", on_done,
                          error_stop=False)
+
+        if refresh:
+            seq.add(self.refresh)
 
         if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
             LOG.ui("  Deleting the following links %s:", dry_run_text)

@@ -584,7 +584,7 @@ class Modem:
         on_done(True, "Complete", None)
 
     #-----------------------------------------------------------------------
-    def sync(self, dry_run=True, on_done=None):
+    def sync(self, dry_run=True, refresh=True, on_done=None):
         """Syncs the links on the device.
 
         This will add, remove, and fix links on the device to ensure that the
@@ -603,6 +603,8 @@ class Modem:
         Args:
           dry_run: (Boolean). Logs the actions that would be completed by the
                    'sync' command, but does not actually perform any actions.
+          refresh: (Boolean) performs a device refresh before syncing.
+                   Default: True
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -617,6 +619,9 @@ class Modem:
         # Prepare command sequence
         seq = CommandSeq(self.protocol, "Sync complete", on_done,
                          error_stop=False)
+
+        if refresh:
+            seq.add(self.refresh)
 
         if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
             LOG.ui("  Deleting the following links %s:", dry_run_text)
@@ -634,7 +639,7 @@ class Modem:
         seq.run()
 
     #-----------------------------------------------------------------------
-    def sync_all(self, dry_run=True, on_done=None):
+    def sync_all(self, dry_run=True, refresh=True, on_done=None):
         """Perform the 'sync' command on all devices.
 
         See the 'sync' command for a description.
@@ -642,6 +647,8 @@ class Modem:
         Args:
           dry_run:  (Boolean). Logs the actions that would be completed by the
                     'sync' command, but does not actually perform any actions.
+          refresh:  (Boolean) performs a device refresh before syncing.
+                    Default: True
           on_done:  Finished callback.  This is called when the command has
                     completed.  Signature is: on_done(success, msg, data)
         """
@@ -651,11 +658,11 @@ class Modem:
                          error_stop=False)
 
         # First the modem database.
-        seq.add(self.sync, dry_run=dry_run)
+        seq.add(self.sync, dry_run=dry_run, refresh=refresh)
 
         # Then each other device.
         for device in self.devices.values():
-            seq.add(device.sync, dry_run=dry_run)
+            seq.add(device.sync, dry_run=dry_run, refresh=refresh)
 
         # Start the command sequence.
         seq.run()
