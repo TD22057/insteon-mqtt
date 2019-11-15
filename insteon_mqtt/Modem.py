@@ -74,8 +74,7 @@ class Modem:
             'linking' : self.linking,
             'scene' : self.scene,
             'factory_reset' : self.factory_reset,
-            'sync_dry_run' : self.sync_dry_run,
-            'sync_dry_run_all' : self.sync_dry_run_all,
+            'sync_all' : self.sync_all,
             'sync' : self.sync
             }
 
@@ -585,7 +584,7 @@ class Modem:
         on_done(True, "Complete", None)
 
     #-----------------------------------------------------------------------
-    def sync(self, on_done=None):
+    def sync(self, dry_run=True, on_done=None):
         """Syncs the links on the device.
 
         This will add, remove, and fix links on the device to ensure that the
@@ -602,11 +601,16 @@ class Modem:
         for manually created links to be added to the scenes config.
 
         Args:
+          dry_run: (Boolean). Logs the actions that would be completed by the
+                   'sync' command, but does not actually perform any actions.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+        dry_run_text = ''
+        if dry_run:
+            dry_run_text = '- DRY RUN'
         LOG.info("Device %s cmd: sync", self.label)
-        LOG.ui("Syncing %s device", self.label)
+        LOG.ui("Syncing %s device %s", self.label, dry_run_text)
 
         diff = self.db_config.diff(self)
 
@@ -615,25 +619,29 @@ class Modem:
                          error_stop=False)
 
         if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
-            LOG.ui("  Deleting the following links:")
+            LOG.ui("  Deleting the following links %s:", dry_run_text)
             for entry in diff.del_entries:
                 LOG.ui("    %s", entry)
-                seq.add(self.db.delete_on_device, self.protocol, entry)
-            LOG.ui("  Adding the following links:")
+                if not dry_run:
+                    seq.add(self.db.delete_on_device, self.protocol, entry)
+            LOG.ui("  Adding the following links %s:", dry_run_text)
             for entry in diff.add_entries:
                 LOG.ui("    %s", entry)
-                seq.add(self.db.add_on_device, self.protocol, entry)
+                if not dry_run:
+                    seq.add(self.db.add_on_device, self.protocol, entry)
         else:
             LOG.ui("  No changes made.")
         seq.run()
 
     #-----------------------------------------------------------------------
-    def sync_dry_run_all(self, on_done=None):
-        """Perform the 'sync_dry_run' command on all devices.
+    def sync_all(self, dry_run=True, on_done=None):
+        """Perform the 'sync' command on all devices.
 
-        See the 'sync_dry_run' command for a description.
+        See the 'sync' command for a description.
 
         Args:
+          dry_run:  (Boolean). Logs the actions that would be completed by the
+                    'sync' command, but does not actually perform any actions.
           on_done:  Finished callback.  This is called when the command has
                     completed.  Signature is: on_done(success, msg, data)
         """
@@ -643,11 +651,11 @@ class Modem:
                          error_stop=False)
 
         # First the modem database.
-        seq.add(self.sync_dry_run)
+        seq.add(self.sync, dry_run=dry_run)
 
         # Then each other device.
         for device in self.devices.values():
-            seq.add(device.sync_dry_run)
+            seq.add(device.sync, dry_run=dry_run)
 
         # Start the command sequence.
         seq.run()

@@ -131,7 +131,6 @@ class Base:
             'get_flags' : self.get_flags,
             'get_engine' : self.get_engine,
             'get_model' : self.get_model,
-            'sync_dry_run': self.sync_dry_run,
             'sync': self.sync
             }
 
@@ -471,34 +470,7 @@ class Base:
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def sync_dry_run(self, on_done=None):
-        """Logs the actions that would be completed by the 'sync' command, but
-        does not actually perform that command.
-
-        Helpful for diagnosing
-
-        Args:
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Device %s cmd: sync dry run", self.label)
-        LOG.ui("Performing a DRY RUN Sync Command on %s device", self.label)
-
-        diff = self.db_config.diff(self)
-
-        if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
-            LOG.ui("  A sync would delete the following links:")
-            for entry in diff.del_entries:
-                LOG.ui("    %s", entry)
-            LOG.ui("  A sync would add the following links:")
-            for entry in diff.add_entries:
-                LOG.ui("    %s", entry)
-        else:
-            LOG.ui("  No changes would be made.")
-        on_done(True, "Complete", None)
-
-    #-----------------------------------------------------------------------
-    def sync(self, on_done=None):
+    def sync(self, dry_run=True, on_done=None):
         """Syncs the links on the device.
 
         This will add, remove, and fix links on the device to ensure that the
@@ -515,11 +487,16 @@ class Base:
         for manually created links to be added to the scenes config.
 
         Args:
+          dry_run: (Boolean). Logs the actions that would be completed by the
+                   'sync' command, but does not actually perform any actions.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+        dry_run_text = ''
+        if dry_run:
+            dry_run_text = '- DRY RUN'
         LOG.info("Device %s cmd: sync", self.label)
-        LOG.ui("Syncing %s device", self.label)
+        LOG.ui("Syncing %s device %s", self.label, dry_run_text)
 
         diff = self.db_config.diff(self)
 
@@ -528,15 +505,17 @@ class Base:
                          error_stop=False)
 
         if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
-            LOG.ui("  Deleting the following links:")
+            LOG.ui("  Deleting the following links %s:", dry_run_text)
             for entry in diff.del_entries:
                 LOG.ui("    %s", entry)
-                seq.add(self.db.delete_on_device, self, entry)
-            LOG.ui("  Adding the following links:")
+                if not dry_run:
+                    seq.add(self.db.delete_on_device, self, entry)
+            LOG.ui("  Adding the following links %s:", dry_run_text)
             for entry in diff.add_entries:
                 LOG.ui("    %s", entry)
-                seq.add(self.db.add_on_device, self, entry.addr, entry.group,
-                        entry.is_controller, entry.data)
+                if not dry_run:
+                    seq.add(self.db.add_on_device, self, entry.addr, entry.group,
+                            entry.is_controller, entry.data)
         else:
             LOG.ui("  No changes made.")
         seq.run()
