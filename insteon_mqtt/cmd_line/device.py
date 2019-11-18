@@ -282,3 +282,15 @@ def db_delete(args, config):
 
 
 #===========================================================================
+def sync(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "sync",
+        "refresh" : not args.no_refresh,
+        "dry_run" : not args.run
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+#===========================================================================

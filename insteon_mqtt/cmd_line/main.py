@@ -44,6 +44,21 @@ def parse_args(args):
     sp.set_defaults(func=modem.refresh_all)
 
     #---------------------------------------
+    # modem.sync_all command
+    sp = sub.add_parser("sync-all", help="Call sync on all the devices "
+                        "in the configuration.")
+    sp.add_argument("--run", action="store_true", default=False,
+                    help="Perform the actions altering the device db to bring "
+                    "it in sync.  If not specified, will perform a dry-run "
+                    "which only lists the changes to be made.")
+    sp.add_argument("--no-refresh", action="store_true", default=False,
+                    help="Don't refresh the db before syncing.  This can "
+                    "be dangerous if the device db is out of date.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=modem.sync_all)
+
+    #---------------------------------------
     # modem.factory_reset command
     sp = sub.add_parser("factory-reset", help="Perform a remote factory "
                         "reset.  Currently only supported on the modem.")
@@ -294,6 +309,21 @@ def parse_args(args):
     sp = sub.add_parser("print-db", help="Print the current device database")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.print_db)
+
+    #---------------------------------------
+    # device.sync
+    sp = sub.add_parser("sync", help="Sync the defined scenes with device db")
+    sp.add_argument("address", help="Device address or name.")
+    sp.add_argument("--run", action="store_true", default=False,
+                    help="Perform the actions altering the device db to bring "
+                    "it in sync.  If not specified, will perform a dry-run "
+                    "which only lists the changes to be made.")
+    sp.add_argument("--no-refresh", action="store_true", default=False,
+                    help="Don't refresh the db before syncing.  This can "
+                    "be dangerous if the device db is out of date.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=device.sync)
 
     return p.parse_args(args)
 
