@@ -614,8 +614,6 @@ class Modem:
         LOG.info("Device %s cmd: sync", self.label)
         LOG.ui("Syncing %s device %s", self.label, dry_run_text)
 
-        diff = self.db_config.diff(self)
-
         # Prepare command sequence
         seq = CommandSeq(self.protocol, "Sync complete", on_done,
                          error_stop=False)
@@ -623,19 +621,24 @@ class Modem:
         if refresh:
             seq.add(self.refresh)
 
+        # Perform diff after refresh
+        diff = self.db_config.diff(self)
+
         if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
-            LOG.ui("  Deleting the following links %s:", dry_run_text)
+            seq.add(LOG.ui, "  Deleting the following links %s:",
+                    dry_run_text)
             for entry in diff.del_entries:
-                LOG.ui("    %s", entry)
+                seq.add(LOG.ui, "    %s", entry)
                 if not dry_run:
                     seq.add(self.db.delete_on_device, self.protocol, entry)
-            LOG.ui("  Adding the following links %s:", dry_run_text)
+            seq.add(LOG.ui, "  Adding the following links %s:",
+                    dry_run_text)
             for entry in diff.add_entries:
-                LOG.ui("    %s", entry)
+                seq.add(LOG.ui, "    %s", entry)
                 if not dry_run:
                     seq.add(self.db.add_on_device, self.protocol, entry)
         else:
-            LOG.ui("  No changes made.")
+            seq.add(LOG.ui, "  No changes necessary.")
         seq.run()
 
     #-----------------------------------------------------------------------
