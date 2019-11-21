@@ -623,10 +623,10 @@ class Device:
         # these are results from the 'join' command
         for _addr in list(rhsRemove):
             entry = rhsRemove[_addr]
-            if entry.is_controller and entry.addr == rhs.modem.addr:
+            if entry.is_controller and entry.addr == rhs.device.modem.addr:
                 del rhsRemove[_addr]
             if (not entry.is_controller and entry.group in (0x00, 0x01) and
-                    entry.addr == rhs.modem.addr):
+                    entry.addr == rhs.device.modem.addr):
                 del rhsRemove[_addr]
 
         # Add in remaining rhs entries that where not matches as entries that

@@ -108,11 +108,11 @@ class Base:
             self.label += " (%s)" % self.name
 
         self.save_path = modem.save_path
-        self.db = db.Device(self.addr)
+        self.db = db.Device(self.addr, None, self)
         self.load_db()
 
         # Prepare the config db
-        self.db_config = db.Device(self.addr)
+        self.db_config = db.Device(self.addr, None, self)
 
         # Map (mqtt) commands mapped to methods calls.  These are handled in
         # run_command().  Derived classes can add more commands to the dict
