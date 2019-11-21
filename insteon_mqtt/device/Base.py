@@ -480,7 +480,7 @@ class Base:
         erase all links except the links created by the 'join' and 'pair'
         commands.
 
-        It is recommended that you perform a 'sync_dry_run' command first to
+        It is recommended that you perform a 'dry_run' command first to
         see what changes would be made to this device.
 
         In the future an 'import_links' command will be added which will allow
