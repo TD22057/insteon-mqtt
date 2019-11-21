@@ -48,10 +48,10 @@ class Modem:
         # so devices might not be in that map.
         self.devices = {}
         self.device_names = {}
-        self.db = db.Modem()
+        self.db = db.Modem(None, self)
 
         # Prepare the config db
-        self.db_config = db.Modem()
+        self.db_config = db.Modem(None, self)
 
         # Prepare Scenes object
         self.scenes = []
@@ -208,7 +208,7 @@ class Modem:
             with open(path) as f:
                 data = json.load(f)
 
-            self.db = db.Modem.from_json(data, path)
+            self.db = db.Modem.from_json(data, path, self)
         except:
             LOG.exception("Error reading modem db file %s", path)
             return
@@ -595,7 +595,7 @@ class Modem:
             seq.add(self.refresh)
 
         # Perform diff after refresh
-        diff = self.db_config.diff(self)
+        diff = self.db_config.diff(self.db)
 
         if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
             seq.add(LOG.ui, "  Deleting the following links %s:",

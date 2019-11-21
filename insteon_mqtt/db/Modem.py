@@ -37,7 +37,7 @@ class Modem:
     after requesting them from the modem.
     """
     @staticmethod
-    def from_json(data, path=None):
+    def from_json(data, path=None, device=None):
         """Read a Modem database from a JSON input.
 
         The inverse of this is to_json().
@@ -46,11 +46,12 @@ class Modem:
           data:    (dict): The data to read from.
           path:    (str) The file to save the database to when changes are
                    made.
+          device:  (Modem): The Modem device object
 
         Returns:
           Modem: Returns the created Modem object.
         """
-        obj = Modem(path)
+        obj = Modem(path, device)
         for d in data['entries']:
             obj.add_entry(ModemEntry.from_json(d), save=False)
 
@@ -60,11 +61,12 @@ class Modem:
         return obj
 
     #-----------------------------------------------------------------------
-    def __init__(self, path=None):
+    def __init__(self, path=None, device=None):
         """Constructor
 
         Args:
           path:  (str) The file to save the database to when changes are made.
+          device: (Modem) The Modem device object.
         """
         self.save_path = path
 
@@ -84,6 +86,9 @@ class Modem:
 
         # Map of string scene names to integer controller groups
         self.aliases = {}
+
+        # Link to the Modem device
+        self.device = device
 
     #-----------------------------------------------------------------------
     def set_path(self, path):
@@ -406,13 +411,13 @@ class Modem:
         additions and deletions needed to update rhs to match self.
 
         Args:
-           rhs:   (Modem) The other device to compare with.
+           rhs:   (db.Modem) The other device db to compare with.
 
         Returns:
            Returns the list changes needed in rhs to make it equal to this
            object.
         """
-        if not isinstance(rhs.db, Modem):
+        if not isinstance(rhs, Modem):
             LOG.error("Error trying to compare modem databases for %s vs"
                       " %s.  Only the same device can be differenced.",
                       type(self).__name__, type(rhs).__name__)
@@ -422,11 +427,11 @@ class Modem:
         # that we find, we'll remove that address from the dict.  The result
         # will be the entries that need to be removed from rhs to make it
         # match.
-        rhsRemove = rhs.db.entries.copy()
+        rhsRemove = rhs.entries.copy()
 
         delta = DbDiff(None)  # Modem db doesn't have addr
         for entry in self.entries:
-            rhsEntry = rhs.db.find(entry.addr, entry.group, entry.is_controller)
+            rhsEntry = rhs.find(entry.addr, entry.group, entry.is_controller)
 
             # RHS is missing this entry or has different data bytes we need
             # to update.
@@ -446,10 +451,11 @@ class Modem:
         # #2 any controller links from group 0x01 or 0x02 to a valid device,
         # these are results from the 'join' command
         for entry in list(rhsRemove):
-            if not entry.is_controller and rhs.find(entry.addr) is not None:
+            if (not entry.is_controller and 
+                    rhs.device.find(entry.addr) is not None):
                 rhsRemove.remove(entry)
             if (entry.is_controller and entry.group in (0x00, 0x01) and
-                    rhs.find(entry.addr) is not None):
+                    rhs.device.find(entry.addr) is not None):
                 rhsRemove.remove(entry)
 
         # Add in remaining rhs entries that where not matches as entries that

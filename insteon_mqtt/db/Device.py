@@ -41,7 +41,7 @@ class Device:
     """
 
     @staticmethod
-    def from_json(data, path):
+    def from_json(data, path, device):
         """Read a Device database from a JSON input.
 
         The inverse of this is to_json().
@@ -50,12 +50,12 @@ class Device:
           data:   (dict) The data to read from.
           path:   (str) The file to save the database to when changes are
                   made.
-
+          device: (Device) The device object.
         Returns:
           Device: Returns the created Device object.
         """
         # Create the basic database object.
-        obj = Device(Address(data['address']), path)
+        obj = Device(Address(data['address']), path, device)
 
         # Extract the various files from the JSON data.
         obj.delta = data['delta']
@@ -87,7 +87,7 @@ class Device:
         return obj
 
     #-----------------------------------------------------------------------
-    def __init__(self, addr, path=None):
+    def __init__(self, addr, path=None, device=None):
         """Constructor
 
         Args:
@@ -95,6 +95,7 @@ class Device:
                  is for.
           path:  (str) The file to save the database to when changes are
                  made.
+          device: (Device) The device object.
         """
         self.addr = addr
         self.save_path = path
@@ -144,6 +145,9 @@ class Device:
         # Map of all link group number to DeviceEntry objects that respond to
         # that group command.
         self.groups = {}
+
+        # Link to the Modem device
+        self.device = device
 
     #-----------------------------------------------------------------------
     def is_current(self, delta):
@@ -577,13 +581,13 @@ class Device:
         additions and deletions needed to update rhs to match self.
 
         Args:
-           rhs:   (Device) The other device to compare with.
+           rhs:   (db.Device) The other device db to compare with.
 
         Returns:
            Returns the list changes needed in rhs to make it equal to this
            object.
         """
-        if self.addr != rhs.addr and self.engine == rhs.db.engine:
+        if self.addr != rhs.addr:
             LOG.error("Error trying to compare device databases for %s vs"
                       " %s.  Only the same device can be differenced.",
                       self.addr, rhs.addr)
@@ -593,11 +597,11 @@ class Device:
         # that we find, we'll remove that address from the dict.  The result
         # will be the entries that need to be removed from rhs to make it
         # match.
-        rhsRemove = {k : v for k, v in rhs.db.entries.items()}
+        rhsRemove = {k : v for k, v in rhs.entries.items()}
 
         delta = DbDiff(self.addr)
         for entry in self.entries.values():
-            rhsEntry = rhs.db.find(entry.addr, entry.group, entry.is_controller)
+            rhsEntry = rhs.find(entry.addr, entry.group, entry.is_controller)
 
             # RHS is missing this entry or has different data bytes we need
             # to update.
