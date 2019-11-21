@@ -217,7 +217,7 @@ class Base:
             with open(path) as f:
                 data = json.load(f)
 
-            self.db = db.Device.from_json(data, path)
+            self.db = db.Device.from_json(data, path, self)
         except:
             LOG.exception("Error reading file %s", path)
             return
@@ -509,7 +509,7 @@ class Base:
             seq.add(self.refresh)
 
         # Perform diff after refresh
-        diff = self.db_config.diff(self)
+        diff = self.db_config.diff(self.db)
 
         if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
             seq.add(LOG.ui, "  Deleting the following links %s:",
