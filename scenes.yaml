@@ -10,9 +10,9 @@
 - name: scene 1
   responders:
     - living room lamp:
-        group: 1
-        level: 50
-        ramp: 0.5
+        data_1: 0xFF
+        data_2: 0x00
+        data_3: 0x01
     - living room keypad: 3
     - living_room_sw1
   controllers:
