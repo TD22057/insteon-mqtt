@@ -50,8 +50,8 @@ class Modem:
         self.device_names = {}
         self.db = db.Modem(None, self)
 
-        # Prepare the config db
-        self.db_config = db.Modem(None, self)
+        # Config db is initiated by Scenes
+        self.db_config = None
 
         # Prepare Scenes object
         self.scenes = []
@@ -94,6 +94,12 @@ class Modem:
         # Log messages as they received so we can track the message hop count
         # to each device.
         self.protocol.signal_received.connect(self.handle_received)
+
+    #-----------------------------------------------------------------------
+    def clear_db_config(self):
+        """Clears and initializes the device config database
+        """
+        self.db_config = db.Modem(None, self)
 
     #-----------------------------------------------------------------------
     def type(self):
@@ -646,7 +652,7 @@ class Modem:
         seq.run()
 
     #-----------------------------------------------------------------------
-    def import_scenes(self, dry_run=True, on_done=None):
+    def import_scenes(self, dry_run=True, save=True, on_done=None):
         """Imports Scenes Defined on the Device into the Scenes Config.
 
         Any scene present on the device, but not defined in the Scenes Config
@@ -666,11 +672,15 @@ class Modem:
           dry_run: (Boolean) Logs the actions that would be completed by the
                    'import_scenes' command, but does not actually perform any
                    actions. Default: True
+          save:    (Boolean) If true will save the resulting scenes to disk if
+                    dry-run is also True.  Not meant to be used by a user, is
+                    used by import_scenes_all.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
         on_done = util.make_callback(on_done)
         dry_run_text = ''
+        changes = False
         if dry_run:
             dry_run_text = '- DRY RUN'
         LOG.info("Device %s cmd: import_scenes", self.label)
@@ -686,8 +696,14 @@ class Modem:
                 LOG.ui("    %s", entry)
                 if not dry_run:
                     self.scenes.add_or_update(self.addr, entry)
+                    changes = True
         else:
             LOG.ui("  No changes necessary.")
+        if changes and save:
+            self.scenes.save()
+        # No matter what, repopulate db_configs so that we can skip importing
+        # the other half of a link
+        self.scenes.populate_scenes()
         LOG.ui("Import Scenes Done.")
         on_done(True, "Import Scenes Done.", None)
 
@@ -711,11 +727,15 @@ class Modem:
                          error_stop=False)
 
         # First the modem database.
-        seq.add(self.import_scenes, dry_run=dry_run)
+        seq.add(self.import_scenes, dry_run=dry_run, save=False)
 
         # Then each other device.
         for device in self.devices.values():
-            seq.add(device.import_scenes, dry_run=dry_run)
+            seq.add(device.import_scenes, dry_run=dry_run, save=False)
+
+        # Save everything at the end
+        if not dry_run:
+            seq.add(self.scenes.save)
 
         # Start the command sequence.
         seq.run()

@@ -15,6 +15,7 @@ from datetime import datetime
 from shutil import copy
 from ruamel.yaml import YAML
 from collections import Counter
+from .Address import Address
 
 
 class Scenes:
@@ -257,8 +258,11 @@ class Scenes:
                 yaml.preserve_quotes = True
                 self.data = yaml.load(f)
 
+            # First fix any Modem Controllers that lack a proper group
+            self._assign_modem_group()
+
             # Parse yaml, add groups to modem, and push definitions to devices
-            self._populate_scenes()
+            self.populate_scenes()
 
     #-----------------------------------------------------------------------
     def save(self):
@@ -304,20 +308,27 @@ class Scenes:
             backup = ''
 
     #-----------------------------------------------------------------------
-    def _populate_scenes(self):
+    def populate_scenes(self):
         """Load scenes from a configuration dict.
 
-        Load scenes from the configuration file.  This includes both virtual
+        Empty the config databases on each device. The populate the config
+        databses from the configuration data.  This includes both virtual
         modem scenes and interdevice scenes. Virtual modem scenes are defined
         in software - they are links where the modem is the controller and
         devices are the responders.  The modem can have up to 253 virtual modem
         scenes which we can trigger by software to broadcast a message to
         update all of the defined devices.
+
         Args:
           config (object):   Configuration object.
         """
-        # First fix any Modem Controllers that lack a proper group
-        self._assign_modem_group()
+
+        # First clear modem
+        self.modem.clear_db_config()
+
+        # Then clear all devices
+        for device in self.modem.devices.values():
+            device.clear_db_config()
 
         for scene in self.data:
             controllers = []
@@ -339,12 +350,13 @@ class Scenes:
                               controller.get('data_2', 0x00),
                               controller.get('data_3', controller['group'])])
                 for responder in responders:
-                    controller['device'].db_config.add_from_config(
-                        responder['device'].addr,
-                        controller['group'],
-                        True,
-                        data
-                    )
+                    if controller['device'] is not None:
+                        controller['device'].db_config.add_from_config(
+                            responder['addr'],
+                            controller['group'],
+                            True,
+                            data
+                        )
 
             # Generate Responder Entries
             for responder in responders:
@@ -360,12 +372,13 @@ class Scenes:
                                             responder.get('group', 0x00))
                               ])
                 for controller in controllers:
-                    responder['device'].db_config.add_from_config(
-                        controller['device'].addr,
-                        controller['group'],
-                        False,
-                        data
-                    )
+                    if responder['device'] is not None:
+                        responder['device'].db_config.add_from_config(
+                            controller['addr'],
+                            controller['group'],
+                            False,
+                            data
+                        )
 
     #-----------------------------------------------------------------------
     def _parse_scene_device(self, data):
@@ -404,6 +417,10 @@ class Scenes:
                 ret.update(data)
         # Try and find this device
         ret['device'] = self.modem.find(ret['device_str'])
+        if ret['device'] is not None:
+            ret['addr'] = ret['device'].addr
+        else:
+            ret['addr'] = Address(ret['device_str'])
         return ret
 
     #-----------------------------------------------------------------------
@@ -430,7 +447,8 @@ class Scenes:
             for def_i in range(len(config_scenes[scene_i]['controllers'])):
                 definition = config_scenes[scene_i]['controllers'][def_i]
                 controller = self._parse_scene_device(definition)
-                if (controller['device'].type() == "Modem"
+                if (controller['device'] is not None
+                        and controller['device'].type() == "Modem"
                         and controller['group'] <= 0x01):
                     updated = True
 
