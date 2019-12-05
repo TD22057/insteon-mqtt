@@ -151,7 +151,11 @@ class Scenes:
         """
         ret = False
         scene_def = self._parse_scene_device(scene_def)
-        scene_addr = scene_def['device'].addr
+        if scene_def['device'] is not None:
+            scene_addr = scene_def['device'].addr
+        else:
+            # This device is not defined in config file
+            scene_addr = scene_def['device_str']
         if scene_addr == test_addr:
             if not is_controller:
                 ret = True
