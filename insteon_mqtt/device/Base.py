@@ -553,6 +553,7 @@ class Base:
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+        on_done = util.make_callback(on_done)
         dry_run_text = ''
         if dry_run:
             dry_run_text = '- DRY RUN'
@@ -572,6 +573,7 @@ class Base:
         else:
             LOG.ui("  No changes necessary.")
         LOG.ui("Import Scenes Done.")
+        on_done(True, "Import Scenes Done.", None)
 
     #-----------------------------------------------------------------------
     def db_add_ctrl_of(self, local_group, remote_addr, remote_group,

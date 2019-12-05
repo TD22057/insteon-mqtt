@@ -76,7 +76,8 @@ class Modem:
             'factory_reset' : self.factory_reset,
             'sync_all' : self.sync_all,
             'sync' : self.sync,
-            'import_scenes': self.import_scenes
+            'import_scenes': self.import_scenes,
+            'import_scenes_all': self.import_scenes_all
             }
 
         # Add a generic read handler for any broadcast messages initiated by
@@ -631,7 +632,7 @@ class Modem:
         """
         # Set the error stop to false so a failed refresh doesn't stop the
         # sequence from trying to refresh other devices.
-        seq = CommandSeq(self.protocol, "Sync Dry Run All complete", on_done,
+        seq = CommandSeq(self.protocol, "Sync All complete", on_done,
                          error_stop=False)
 
         # First the modem database.
@@ -644,6 +645,7 @@ class Modem:
         # Start the command sequence.
         seq.run()
 
+    #-----------------------------------------------------------------------
     def import_scenes(self, dry_run=True, on_done=None):
         """Imports Scenes Defined on the Device into the Scenes Config.
 
@@ -667,6 +669,7 @@ class Modem:
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+        on_done = util.make_callback(on_done)
         dry_run_text = ''
         if dry_run:
             dry_run_text = '- DRY RUN'
@@ -686,6 +689,36 @@ class Modem:
         else:
             LOG.ui("  No changes necessary.")
         LOG.ui("Import Scenes Done.")
+        on_done(True, "Import Scenes Done.", None)
+
+    #-----------------------------------------------------------------------
+    def import_scenes_all(self, dry_run=True, on_done=None):
+        """Perform the 'import_scenes' command on all devices.
+
+        See the 'import_scenes' command for a description.
+
+        Args:
+          dry_run:  (Boolean). Logs the actions that would be completed by the
+                    'import_scenes' command, but does not actually perform any
+                    actions.
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+        """
+        on_done = util.make_callback(on_done)
+        # Set the error stop to false so a failed refresh doesn't stop the
+        # sequence from trying to refresh other devices.
+        seq = CommandSeq(self.protocol, "Import Scenes All complete", on_done,
+                         error_stop=False)
+
+        # First the modem database.
+        seq.add(self.import_scenes, dry_run=dry_run)
+
+        # Then each other device.
+        for device in self.devices.values():
+            seq.add(device.import_scenes, dry_run=dry_run)
+
+        # Start the command sequence.
+        seq.run()
 
     #-----------------------------------------------------------------------
     def linking(self, group=0x01, on_done=None):
