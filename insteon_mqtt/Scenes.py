@@ -156,7 +156,7 @@ class Scenes:
             scene_addr = scene_def['device'].addr
         else:
             # This device is not defined in config file
-            scene_addr = scene_def['device_str']
+            scene_addr = scene_def['addr']
         if scene_addr == test_addr:
             if not is_controller:
                 ret = True
