@@ -436,7 +436,17 @@ class Modem:
             # RHS is missing this entry or has different data bytes we need
             # to update.
             if rhsEntry is None or not entry.identical(rhsEntry):
-                delta.add(entry)
+                # Ignore certain links created by 'join' or 'pair'
+                # See notes below.
+                if not entry.is_controller:
+                    # This is a link from the pair command
+                    pass
+                elif (entry.is_controller and
+                      entry.group in (0x00, 0x01)):
+                    # This is a link from the join command
+                    pass
+                else:
+                    delta.add(entry)
 
             # Otherwise this is match so we can note that from the list.
             elif rhsEntry:

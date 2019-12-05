@@ -75,7 +75,8 @@ class Modem:
             'scene' : self.scene,
             'factory_reset' : self.factory_reset,
             'sync_all' : self.sync_all,
-            'sync' : self.sync
+            'sync' : self.sync,
+            'import_scenes': self.import_scenes
             }
 
         # Add a generic read handler for any broadcast messages initiated by
@@ -642,6 +643,49 @@ class Modem:
 
         # Start the command sequence.
         seq.run()
+
+    def import_scenes(self, dry_run=True, on_done=None):
+        """Imports Scenes Defined on the Device into the Scenes Config.
+
+        Any scene present on the device, but not defined in the Scenes Config
+        will be added to the Scenes Config.  This will only add definitions,
+        it will not remove them.  It is overly optimistic and will add a
+        scene even when only half the the link pair is defined as well as
+        when a scene is linked to an unknown device.
+
+        WARNING: There is no way to ensure that the newly created scenes
+        match the style and formatting that you may have adopted for your
+        Scenes Config file.
+
+        It is recommended that you perform a 'dry_run' command first to
+        see what changes would be made to Scenes Config.
+
+        Args:
+          dry_run: (Boolean) Logs the actions that would be completed by the
+                   'import_scenes' command, but does not actually perform any
+                   actions. Default: True
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        dry_run_text = ''
+        if dry_run:
+            dry_run_text = '- DRY RUN'
+        LOG.info("Device %s cmd: import_scenes", self.label)
+        LOG.ui("Importing Scenes from %s device %s", self.label, dry_run_text)
+
+        # Perform diff after refresh
+        diff = self.db.diff(self.db_config)
+
+        # Import only cares about adding entries, ignore deletes
+        if len(diff.add_entries) > 0:
+            LOG.ui("  Adding the following scenes %s:", dry_run_text)
+            for entry in diff.add_entries:
+                LOG.ui("    %s", entry)
+                if not dry_run:
+                    self.scenes.add_or_update(self.addr, entry)
+        else:
+            LOG.ui("  No changes necessary.")
+        LOG.ui("Import Scenes Done.")
 
     #-----------------------------------------------------------------------
     def linking(self, group=0x01, on_done=None):
