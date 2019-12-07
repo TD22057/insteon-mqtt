@@ -769,7 +769,7 @@ class Device:
             self.save()
 
     #-----------------------------------------------------------------------
-    def add_from_config(self, addr, group, is_controller, data):
+    def add_from_config(self, device):
         """Add an entry to the config database from the config file.
 
         Is called by _load_scenes() on the modem.  Adds an entry to the next
@@ -778,16 +778,17 @@ class Device:
         then compared with the actual database using diff().
 
         Args:
-          TODO
+          device (SceneDevice): The device link to add
         """
         # Get the mem_loc and move last entry down 1 position
         mem_loc = self.last.mem_loc
         self.last.mem_loc -= 0x08
 
         # Generate the entry
-        db_flags = Msg.DbFlags(in_use=True, is_controller=is_controller,
+        db_flags = Msg.DbFlags(in_use=True, is_controller=device.is_controller,
                                is_last_rec=False)
-        entry = DeviceEntry(addr, group, mem_loc, db_flags, data)
+        entry = DeviceEntry(device.addr, device.group, mem_loc, db_flags,
+                            device.raw_data_list)
 
         # Add the Entry to the DB
         self.add_entry(entry, save=False)

@@ -461,7 +461,7 @@ class Modem:
         # #2 any controller links from group 0x01 or 0x02 to a valid device,
         # these are results from the 'join' command
         for entry in list(rhsRemove):
-            if (not entry.is_controller and 
+            if (not entry.is_controller and
                     rhs.device.find(entry.addr) is not None):
                 rhsRemove.remove(entry)
             if (entry.is_controller and entry.group in (0x00, 0x01) and
@@ -549,18 +549,21 @@ class Modem:
             self.save()
 
     #-----------------------------------------------------------------------
-    def add_from_config(self, addr, group, is_controller, data):
+    def add_from_config(self, device):
         """Add an entry to the config database from the config file.
+
         Is called by _load_scenes() on the modem.  Adds an entry to the next
         available mem_loc from an entry specified in the config file.  This
         should only be used to add an entry to a db_config database, which is
         then compared with the actual database using diff().
+
         Args:
-          TODO
+          device (SceneDevice): The device link to add
         """
 
         # Generate the entry
-        entry = ModemEntry(addr, group, is_controller, data)
+        entry = ModemEntry(device.addr, device.group, device.is_controller,
+                           device.raw_data_list)
 
         # Add the Entry to the DB
         self.add_entry(entry, save=False)
