@@ -543,14 +543,6 @@ class SceneDevice:
         self._modem = self.scene.scene_manager.modem
         self._data = data
 
-        # Try to match the style used by the config file
-        # Style=0:
-        #   {device: {'group': group}}
-        # Style=1:
-        #   {device:group}
-        # Style=2:
-        #   str(device)
-        self.style = 2
         self.device = None
         self._addr = None
 
@@ -567,11 +559,9 @@ class SceneDevice:
             self._label = next(iter(data))
             if isinstance(data[self._label], int):
                 # The value is the group
-                self.style = 1
                 self._group = data[self._label]
             else:
                 # This is a dict try and extract values
-                self.style = 0
                 if 'group' in data[self._label]:
                     self._group = data[self._label]['group']
                 if 'data_1' in data[self._label]:
@@ -592,6 +582,48 @@ class SceneDevice:
         else:
             # This will break if a name is used that doesn't exist
             self._addr = Address(self._label)
+        self.fix_modem()
+
+    def fix_modem(self):
+        """Cleans up modem devices
+
+        They do not need data values, as these are irrelevant
+        """
+        if self.device == self._modem and self.style == 0:
+            # Modem Data values are irrelevant and we ignore them
+            self._data_1 = None
+            self._data_2 = None
+            self._data_3 = None
+            if 'data_1' in self._data[self._label]:
+                del self._data[self._label]['data_1']
+            if 'data_2' in self._data[self._label]:
+                del self._data[self._label]['data_2']
+            if 'data_3' in self._data[self._label]:
+                del self._data[self._label]['data_3']
+            if self._group > 0x01:
+                self._data[self._label] = self._group
+            else:
+                self._data = self._label
+            self.scene.update_device(self)
+
+    @property
+    def style(self):
+        # Try to match the style used by the config file
+        # Style=0:
+        #   {device: {'group': group}}
+        # Style=1:
+        #   {device:group}
+        # Style=2:
+        #   str(device)
+        style = 2
+        if isinstance(self._data, dict):
+            if isinstance(self._data[self._label], int):
+                # The value is the group
+                style = 1
+            else:
+                # This is a dict try and extract values
+                style = 0
+        return style
 
     #-----------------------------------------------------------------------
     @property
@@ -648,8 +680,6 @@ class SceneDevice:
                 self._data[self._label] = self._group
             elif self.style == 2:
                 self._data = {self._label: self._group}
-                # Groups can only be specified in Styles < 2
-                self.style = 1
             self.scene.update_device(self)
 
     #-----------------------------------------------------------------------
@@ -709,6 +739,9 @@ class SceneDevice:
     def data_1(self, value):
         """Sets the raw data1 value
         """
+        # Ignore Writes to Modem Data Values, they are never used
+        if self.device == self._modem:
+            return
         # TODO probably insert the concept of default values in here
         if value != self._data_1:
             self._data_1 = value
@@ -720,8 +753,6 @@ class SceneDevice:
             elif self.style == 2:
                 self._data = {self._label: {'group': self._group,
                                             'data_1': self._data_1}}
-            # Style 0 is the only way to have data values
-            self.style = 0
             self.scene.update_device(self)
 
     @property
@@ -736,6 +767,9 @@ class SceneDevice:
     def data_2(self, value):
         """Sets the raw data2 value
         """
+        # Ignore Writes to Modem Data Values, they are never used
+        if self.device == self._modem:
+            return
         # TODO probably insert the concept of default values in here
         if value != self._data_2:
             self._data_2 = value
@@ -747,8 +781,6 @@ class SceneDevice:
             elif self.style == 2:
                 self._data = {self._label: {'group': self._group,
                                             'data_2': self._data_2}}
-            # Style 0 is the only way to have data values
-            self.style = 0
             self.scene.update_device(self)
 
     @property
@@ -763,6 +795,9 @@ class SceneDevice:
     def data_3(self, value):
         """Sets the raw data3 value
         """
+        # Ignore Writes to Modem Data Values, they are never used
+        if self.device == self._modem:
+            return
         # TODO probably insert the concept of default values in here
         if value != self._data_3:
             self._data_3 = value
@@ -774,6 +809,4 @@ class SceneDevice:
             elif self.style == 2:
                 self._data = {self._label: {'group': self._group,
                                             'data_3': self._data_3}}
-            # Style 0 is the only way to have data values
-            self.style = 0
             self.scene.update_device(self)

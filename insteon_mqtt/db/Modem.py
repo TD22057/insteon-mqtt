@@ -433,9 +433,9 @@ class Modem:
         for entry in self.entries:
             rhsEntry = rhs.find(entry.addr, entry.group, entry.is_controller)
 
-            # RHS is missing this entry or has different data bytes we need
-            # to update.
-            if rhsEntry is None or not entry.identical(rhsEntry):
+            # RHS is missing this entry
+            # The Modem Data bytes never matter, we ignore them entirely
+            if rhsEntry is None:
                 # Ignore certain links created by 'join' or 'pair'
                 # See notes below.
                 if not entry.is_controller:
