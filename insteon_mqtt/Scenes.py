@@ -58,13 +58,19 @@ class Scenes:
         new_responder = new_entry.responders[0]
 
         # Loop existing Scenes
+        found_controller = None
         for scene in self.entries:
             found_controller = scene.find_controller(new_controller)
             found_responder = scene.find_responder(new_responder)
             if found_controller is not None:
                 if found_responder is not None:
                     # 1 Update responder if necessary
-                    found_responder.raw_data_list = new_responder.raw_data_list
+                    if new_responder.data_1 is not None:
+                        found_responder.data_1 = new_responder.data_1
+                    if new_responder.data_2 is not None:
+                        found_responder.data_2 = new_responder.data_2
+                    if new_responder.data_3 is not None:
+                        found_responder.data_3 = new_responder.data_3
                 else:
                     if len(scene.controllers) > 1:
                         # 2 Split controller from this scene and make new scene
@@ -123,6 +129,9 @@ class Scenes:
                 yaml.preserve_quotes = True
                 self.data = yaml.load(f)
 
+            if self.data is None:
+                self.data = []
+
             self._init_scene_entries()
 
             # First fix any Modem Controllers that lack a proper group
@@ -178,7 +187,7 @@ class Scenes:
         diffCount = len([l for l in diff if l.startswith('- ')])
         # Delete backup if # of lines deleted or altered from original file
         # is less than 5% of original file
-        if diffCount / orgCount <= 0.05:
+        if orgCount != 0 and diffCount / orgCount <= 0.05:
             os.remove(backup)
             backup = ''
 
@@ -197,7 +206,6 @@ class Scenes:
         Args:
           config (object):   Configuration object.
         """
-
         # First clear modem
         self.modem.clear_db_config()
 
@@ -211,13 +219,15 @@ class Scenes:
             for controller in scene.controllers:
                 for responder in scene.responders:
                     if controller.device is not None:
-                        controller.device.db_config.add_from_config(responder)
+                        controller.device.db_config.add_from_config(responder, 
+                                                                    controller)
 
             # Generate Responder Entries
             for responder in scene.responders:
                 for controller in scene.controllers:
                     if responder.device is not None:
-                        responder.device.db_config.add_from_config(controller)
+                        responder.device.db_config.add_from_config(controller, 
+                                                                   responder)
 
     #-----------------------------------------------------------------------
     def _assign_modem_group(self):
@@ -265,8 +275,8 @@ class Scenes:
         Args:
           scene:    (SceneEntry) The scene
         """
-        if scene.id is not None and self.data[scene.id] != scene.data:
-            self.data[scene.id] = scene.data
+        if scene.index is not None and self.data[scene.index] != scene.data:
+            self.data[scene.index] = scene.data
 
     #-----------------------------------------------------------------------
     def append_scene(self, scene):
@@ -288,9 +298,9 @@ class Scenes:
         Args:
           scene:    (SceneEntry) The scene to be deleted
         """
-        if scene.id is not None:
-            del self.entries[scene.id]
-            del self.data[scene.id]
+        if scene.index is not None:
+            del self.entries[scene.index]
+            del self.data[scene.index]
 
 #===========================================================================
 
@@ -318,12 +328,14 @@ class SceneEntry:
             self._name = scene['name']
         if 'controllers' in scene:
             for controller in scene['controllers']:
-                controller = SceneDevice(self, controller)
+                controller = SceneDevice(self, controller, is_controller=True)
                 self._controllers.append(controller)
+                controller.make_pretty()
         if 'responders' in scene:
             for responder in scene['responders']:
                 responder = SceneDevice(self, responder)
                 self._responders.append(responder)
+                responder.make_pretty()
 
     #-----------------------------------------------------------------------
     @staticmethod
@@ -342,33 +354,36 @@ class SceneEntry:
           (SceneEntry)
         """
         scene = {"controllers": [], "responders": []}
+        dev_addr = str(dev_addr)
+        entry_addr = str(entry.addr)
+
         if entry.is_controller:
             scene['controllers'].append({dev_addr: {'group': entry.group,
                                                     'data_1': entry.data[0],
                                                     'data_2': entry.data[1],
                                                     'data_3': entry.data[2]}})
-            scene['responders'].append(entry.addr)
+            scene['responders'].append(entry_addr)
         else:
             scene['responders'].append({dev_addr: {'data_1': entry.data[0],
                                                    'data_2': entry.data[1],
                                                    'data_3': entry.data[2]}})
             if entry.group > 0x01:
-                scene['controllers'].append({entry.addr: entry.group})
+                scene['controllers'].append({entry_addr: entry.group})
             else:
-                scene['controllers'].append(entry.addr)
+                scene['controllers'].append(entry_addr)
         return SceneEntry(scene_manager, scene)
 
     #-----------------------------------------------------------------------
     @property
-    def id(self):
+    def index(self):
         """Returns the index of the scene on the scene_manager
         """
-        id = None
+        index = None
         for scene_i in range(len(self.scene_manager.entries)):
             if self.scene_manager.entries[scene_i] == self:
-                id = scene_i
+                index = scene_i
                 break
-        return id
+        return index
 
     #-----------------------------------------------------------------------
     @property
@@ -477,9 +492,9 @@ class SceneEntry:
         Args:
           controller:    (SceneDevice) The controller
         """
-        if controller.id is not None:
-            del self._controllers[controller.id]
-            del self._data['controllers'][controller.id]
+        if controller.index is not None:
+            del self._controllers[controller.index]
+            del self._data['controllers'][controller.index]
             self.scene_manager.update_scene(self)
 
     #-----------------------------------------------------------------------
@@ -491,17 +506,17 @@ class SceneEntry:
           data: The raw data that replaces the device entry
         """
         update = False
-        if device.id is None:
+        if device.index is None:
             LOG.exception("Device %s %s not defined in scene ", device.addr,
                           device.label)
         else:
             if device.is_controller:
-                if self._data['controllers'][device.id] != device.data:
-                    self._data['controllers'][device.id] = device.data
+                if self._data['controllers'][device.index] != device.data:
+                    self._data['controllers'][device.index] = device.data
                     update = True
             else:
-                if self._data['responders'][device.id] != device.data:
-                    self._data['responders'][device.id] = device.data
+                if self._data['responders'][device.index] != device.data:
+                    self._data['responders'][device.index] = device.data
                     update = True
             # Push the changes to the scene_manager data
             if update:
@@ -544,9 +559,9 @@ class SceneDevice:
         self._group = 0x01
         self._label = data
         # TODO we need some default values for these
-        self._data_1 = 0
-        self._data_2 = 0
-        self._data_3 = 0
+        self._data_1 = None
+        self._data_2 = None
+        self._data_3 = None
         if isinstance(data, dict):
             # The key is the device string
             self._label = next(iter(data))
@@ -566,34 +581,35 @@ class SceneDevice:
                 if 'data_3' in data[self._label]:
                     self._data_3 = data[self._label]['data_3']
 
-        # Generate address and device
-
-    def find_device(self):
+    def make_pretty(self):
+        """Converts the Label from Address to a Name if one can be found
+        """
         # Try and find this device
         self.device = self._modem.find(self._label)
         if self.device is not None:
             self._addr = self.device.addr
+            self.label = self.device.name
         else:
             # This will break if a name is used that doesn't exist
             self._addr = Address(self._label)
 
     #-----------------------------------------------------------------------
     @property
-    def id(self):
+    def index(self):
         """Returns the index of the device in the scene
         """
-        id = None
+        index = None
         if self.is_controller:
             for dev_i in range(len(self.scene.controllers)):
                 if self.scene.controllers[dev_i] == self:
-                    id = dev_i
+                    index = dev_i
                     break
         else:
             for dev_i in range(len(self.scene.responders)):
                 if self.scene.responders[dev_i] == self:
-                    id = dev_i
+                    index = dev_i
                     break
-        return id
+        return index
 
     #-----------------------------------------------------------------------
     @property
@@ -665,17 +681,21 @@ class SceneDevice:
     def raw_data_list(self):
         """Returns the Data1-3 values as a list
         """
-        return [self._data_1, self._data_2, self._data_3]
+        # TODO this is a bad way to solve this.
+        data_1 = self._data_1 if self._data_1 is not None else 0
+        data_2 = self._data_2 if self._data_2 is not None else 0
+        data_3 = self._data_3 if self._data_3 is not None else 0
+        return [data_1, data_2, data_3]
 
     @raw_data_list.setter
     #-----------------------------------------------------------------------
-    def raw_data_list(self, list):
+    def raw_data_list(self, data_list):
         """Sets the raw data1-3 values via a list
         """
-        if len(list) == 3:
-            self.data_1 = list[0]
-            self.data_2 = list[1]
-            self.data_3 = list[2]
+        if len(data_list) == 3:
+            self.data_1 = data_list[0]
+            self.data_2 = data_list[1]
+            self.data_3 = data_list[2]
 
     @property
     #-----------------------------------------------------------------------

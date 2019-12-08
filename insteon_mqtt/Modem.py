@@ -969,68 +969,6 @@ class Modem:
                 self.signal_new_device.emit(self, dev)
 
     #-----------------------------------------------------------------------
-    def _load_scenes(self, data):
-        """Load scenes from a configuration dict.
-
-        Load scenes from the configuration file.  This includes both virtual
-        modem scenes and interdevice scenes. Virtual modem scenes are defined
-        in software - they are links where the modem is the controller and
-        devices are the responders.  The modem can have up to 253 virtual modem
-        scenes which we can trigger by software to broadcast a message to
-        update all of the defined devices.
-
-        Args:
-          data:   Configuration dictionary for scenes.
-        """
-        for scene in data:
-            controllers = []
-            responders = []
-
-            # Gather controllers list
-            for item in scene['controllers']:
-                controllers.append(self._parse_scene_device(item))
-
-            # Gather responders list
-            for item in scene['responders']:
-                responders.append(self._parse_scene_device(item))
-
-            # Generate Controller Entries
-            for controller in controllers:
-                # Generate Link Data Fields, See DeviceEntry for documentation
-                # of purposes and values
-                data = bytes([controller.get('data_1', 0x03),
-                              controller.get('data_2', 0x00),
-                              controller.get('data_3', controller['group'])])
-                for responder in responders:
-                    controller['device'].db_config.add_from_config(
-                        responder['device'].addr,
-                        controller['group'],
-                        True,
-                        data
-                    )
-
-            # Generate Responder Entries
-            for responder in responders:
-                # Generate Link Data Fields, See DeviceEntry for documentation
-                # of purposes and values
-                # data_# values override everything
-                data = bytes([responder.get('data_1',
-                                            responder.get('level', 0xFF)),
-                              responder.get('data_2',
-                                            responder.get('ramp', 0x1F)),
-                              responder.get('data_3',
-                                            responder.get('group', 0x00))
-                             ])
-                for controller in controllers:
-                    responder['device'].db_config.add_from_config(
-                        controller['device'].addr,
-                        controller['group'],
-                        False,
-                        data
-                    )
-
-
-    #-----------------------------------------------------------------------
     def _parse_scene_device(self, data):
         """Parse a device from the scene config format
 

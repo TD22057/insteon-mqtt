@@ -549,7 +549,7 @@ class Modem:
             self.save()
 
     #-----------------------------------------------------------------------
-    def add_from_config(self, device):
+    def add_from_config(self, remote, local):
         """Add an entry to the config database from the config file.
 
         Is called by _load_scenes() on the modem.  Adds an entry to the next
@@ -558,12 +558,16 @@ class Modem:
         then compared with the actual database using diff().
 
         Args:
-          device (SceneDevice): The device link to add
+          remote (SceneDevice): The remote device to link to
+          local (SceneDevice): The local device link pair of this entry
         """
 
         # Generate the entry
-        entry = ModemEntry(device.addr, device.group, device.is_controller,
-                           device.raw_data_list)
+        group = local.group
+        if remote.is_controller:
+            group = remote.group
+        entry = ModemEntry(remote.addr, group, local.is_controller,
+                           local.raw_data_list)
 
         # Add the Entry to the DB
         self.add_entry(entry, save=False)
