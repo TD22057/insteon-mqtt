@@ -219,14 +219,14 @@ class Scenes:
             for controller in scene.controllers:
                 for responder in scene.responders:
                     if controller.device is not None:
-                        controller.device.db_config.add_from_config(responder, 
+                        controller.device.db_config.add_from_config(responder,
                                                                     controller)
 
             # Generate Responder Entries
             for responder in scene.responders:
                 for controller in scene.controllers:
                     if responder.device is not None:
-                        responder.device.db_config.add_from_config(controller, 
+                        responder.device.db_config.add_from_config(controller,
                                                                    responder)
 
     #-----------------------------------------------------------------------
