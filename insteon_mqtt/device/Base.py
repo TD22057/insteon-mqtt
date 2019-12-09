@@ -752,17 +752,19 @@ class Base:
         """Create default device 3 byte link data.
 
         This is the 3 byte field (D1, D2, D3) stored in the device database
-        entry.
+        entry.  This varies by device type.  These "base" settings are present
+        on on/off (non-dimming) devices.  This function can and should be
+        overwritten by other specialized devices.
 
         For controllers, the default fields are:
-           D1: number of retries (3)
-           D2: unknown (0)
-           D3: the group number
+           D1: number of retries (0x03)
+           D2: unknown (0x00)
+           D3: the group number on the local device (0x01)
 
         For responders, the default fields are:
            D1: on level for switches and dimmers (0xff)
-           D2: ramp rate (0 to use the device default)
-           D3: the group number
+           D2: ramp rate, not used on base devices (0x00)
+           D3: the group number on the local device (0x01)
 
         Args:
           is_controller (bool):  True if the device is the controller, false

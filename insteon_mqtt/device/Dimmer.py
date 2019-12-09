@@ -318,6 +318,57 @@ class Dimmer(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
+    def link_data(self, is_controller, group, data=None):
+        """Create default device 3 byte link data.
+
+        This is the 3 byte field (D1, D2, D3) stored in the device database
+        entry.  This overrides the defaults specified in base.py for
+        specific values used by dimming devices.
+
+        For controllers, the default fields are:
+           D1: number of retries (0x03)
+           D2: unknown (0x00)
+           D3: the group number on the local device (0x01)
+
+        For responders, the default fields are:
+           D1: on level for switches and dimmers (0xff)
+           D2: ramp rate (0x1f, or .1s)
+           D3: the group number on the local device (0x01)
+
+        Args:
+          is_controller (bool):  True if the device is the controller, false
+                        if it's the responder.
+          group (int):  The group number of the controller button or the
+                group number of the responding button.
+          data (bytes[3]):  Optional 3 byte data entry.  If this is None,
+               defaults are returned.  Otherwise it must be a 3 element list.
+               Any element that is not None is replaced with the default.
+
+        Returns:
+          bytes[3]:  Returns a list of 3 bytes to use as D1,D2,D3.
+        """
+        # Most of this is from looking through Misterhouse bug reports.
+        if is_controller:
+            # D1 = 0x03 number of retries to use for the command
+            # D2 = ???
+            # D3 = some devices need 0x01 or group number others don't care
+            defaults = [0x03, 0x00, group]
+
+        # Responder data is always link dependent.  Since nothing was given,
+        # assume the user wants to turn the device on (0xff).
+        else:
+            # D1 = on level for on/off, dimmers
+            # D2 = ramp rate for on/off, dimmers.  I believe leaving this
+            #      at 0 uses the default ramp rate.
+            # D3 = The local group number of the local button.  The input
+            #      group is the controller group number (and broadcast msg)
+            #      so this is the local button group number it maps to.
+            defaults = [0xff, 0x1f, group]
+
+        # For each field, use the input if not -1, else the default.
+        return util.resolve_data3(defaults, data)
+
+    #-----------------------------------------------------------------------
     def set_backlight(self, level, on_done=None):
         """Set the device backlight level.
 
