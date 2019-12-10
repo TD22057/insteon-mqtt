@@ -20,6 +20,7 @@ from .Address import Address
 
 LOG = log.get_logger()
 
+
 class Scenes:
     """Scenes Config File Class
 
@@ -330,12 +331,12 @@ class SceneEntry:
             for controller in scene['controllers']:
                 controller = SceneDevice(self, controller, is_controller=True)
                 self._controllers.append(controller)
-                controller.make_pretty()
+                self.update_device(controller)
         if 'responders' in scene:
             for responder in scene['responders']:
                 responder = SceneDevice(self, responder)
                 self._responders.append(responder)
-                responder.make_pretty()
+                self.update_device(responder)
 
     #-----------------------------------------------------------------------
     @staticmethod
@@ -506,21 +507,17 @@ class SceneEntry:
           data: The raw data that replaces the device entry
         """
         update = False
-        if device.index is None:
-            LOG.exception("Device %s %s not defined in scene ", device.addr,
-                          device.label)
+        if device.is_controller:
+            if self._data['controllers'][device.index] != device.data:
+                self._data['controllers'][device.index] = device.data
+                update = True
         else:
-            if device.is_controller:
-                if self._data['controllers'][device.index] != device.data:
-                    self._data['controllers'][device.index] = device.data
-                    update = True
-            else:
-                if self._data['responders'][device.index] != device.data:
-                    self._data['responders'][device.index] = device.data
-                    update = True
-            # Push the changes to the scene_manager data
-            if update:
-                self.scene_manager.update_scene(self)
+            if self._data['responders'][device.index] != device.data:
+                self._data['responders'][device.index] = device.data
+                update = True
+        # Push the changes to the scene_manager data
+        if update:
+            self.scene_manager.update_scene(self)
 
 #===========================================================================
 
@@ -535,23 +532,26 @@ class SceneDevice:
     def __init__(self, scene, data, is_controller=False):
         """Initializes Object
 
+        Initialization also make entries pretty, meaning it may alter the
+        raw data object.  As such, it is necessary to call update_device
+        after initializing a SceneDevice so that the SceneEntry raw data
+        is updated.
         Args:
           TODO
         """
+        # Default Attribute Values
         self.scene = scene
         self.is_controller = is_controller
+        self.device = None
+        self.addr = None
         self._modem = self.scene.scene_manager.modem
         self._data = data
-
-        self.device = None
-        self._addr = None
-
-        # Start with the default assumption that only a device is specified
-        # with no other details
         self._group = 0x01
         self._label = data
-        # TODO we need some default values for these
         self._data_list = [None, None, None]
+        self._data_defaults = [None, None, None]
+
+        # Parse the Data object and extract values from it
         if isinstance(data, dict):
             # The key is the device string
             self._label = next(iter(data))
@@ -569,38 +569,23 @@ class SceneDevice:
                 if 'data_3' in data[self._label]:
                     self._data_list[2] = data[self._label]['data_3']
 
-    def make_pretty(self):
-        """Converts the Label from Address to a Name if one can be found
-        """
         # Try and find this device
         self.device = self._modem.find(self._label)
         if self.device is not None:
-            self._addr = self.device.addr
+            self.addr = self.device.addr
             self.label = self.device.name
+            # Fix Data Values now that we know data defaults
+            self._data_defaults = self.device.link_data(self.is_controller,
+                                                        self._group)
+            # Set data values equal to themselves this will
+            # delete data values if they are equal to default value
+            self.data_1 = self.data_1
+            self.data_2 = self.data_2
+            self.data_3 = self.data_3
         else:
+            # This is an device not defined in our config
             # This will break if a name is used that doesn't exist
-            self._addr = Address(self._label)
-        self.fix_modem()
-
-    def fix_modem(self):
-        """Cleans up modem devices
-
-        They do not need data values, as these are irrelevant
-        """
-        if self.device == self._modem and self.style == 0:
-            # Modem Data values are irrelevant and we ignore them
-            self._data_list = [None, None, None]
-            if 'data_1' in self._data[self._label]:
-                del self._data[self._label]['data_1']
-            if 'data_2' in self._data[self._label]:
-                del self._data[self._label]['data_2']
-            if 'data_3' in self._data[self._label]:
-                del self._data[self._label]['data_3']
-            if self._group > 0x01:
-                self._data[self._label] = self._group
-            else:
-                self._data = self._label
-            self.scene.update_device(self)
+            self.addr = Address(self._label)
 
     @property
     def style(self):
@@ -648,13 +633,6 @@ class SceneDevice:
 
     #-----------------------------------------------------------------------
     @property
-    def addr(self):
-        """Returns the addr value
-        """
-        return self._addr
-
-    #-----------------------------------------------------------------------
-    @property
     def group(self):
         """Returns the group value
         """
@@ -676,7 +654,7 @@ class SceneDevice:
                 self._data[self._label] = self._group
             elif self.style == 2:
                 self._data = {self._label: self._group}
-            self.scene.update_device(self)
+            self.update_device()
 
     #-----------------------------------------------------------------------
     @property
@@ -700,18 +678,14 @@ class SceneDevice:
             elif self.style == 2:
                 self._data = value
             self._label = value
-            self.scene.update_device(self)
+            self.update_device()
 
     @property
     #-----------------------------------------------------------------------
     def raw_data_list(self):
         """Returns the Data1-3 values as a list
         """
-        # TODO this is a bad way to solve this.
-        data_1 = self._data_list[0] if self._data_list[0] is not None else 0
-        data_2 = self._data_list[1] if self._data_list[1] is not None else 0
-        data_3 = self._data_list[2] if self._data_list[2] is not None else 0
-        return [data_1, data_2, data_3]
+        return [self.data_1, self.data_2, self.data_3]
 
     @raw_data_list.setter
     #-----------------------------------------------------------------------
@@ -728,13 +702,19 @@ class SceneDevice:
     def data_1(self):
         """Returns the Data1 raw values
         """
-        return self._data_list[0]
+        ret = self._data_list[0]
+        if ret is None:
+            #return default value
+            ret = self._data_defaults[0]
+        return ret
 
     @data_1.setter
     #-----------------------------------------------------------------------
     def data_1(self, value):
         """Sets the raw data1 value
         """
+        if value == self._data_defaults[0]:
+            value = None
         self.write_data(0, value)
 
     @property
@@ -742,13 +722,19 @@ class SceneDevice:
     def data_2(self):
         """Returns the Data1 raw values
         """
-        return self._data_list[1]
+        ret = self._data_list[1]
+        if ret is None:
+            #return default value
+            ret = self._data_defaults[1]
+        return ret
 
     @data_2.setter
     #-----------------------------------------------------------------------
     def data_2(self, value):
         """Sets the raw data2 value
         """
+        if value == self._data_defaults[1]:
+            value = None
         self.write_data(1, value)
 
     @property
@@ -756,13 +742,19 @@ class SceneDevice:
     def data_3(self):
         """Returns the Data3 raw values
         """
-        return self._data_list[2]
+        ret = self._data_list[2]
+        if ret is None:
+            #return default value
+            ret = self._data_defaults[2]
+        return ret
 
     @data_3.setter
     #-----------------------------------------------------------------------
     def data_3(self, value):
         """Sets the raw data3 value
         """
+        if value == self._data_defaults[2]:
+            value = None
         self.write_data(2, value)
 
     #-----------------------------------------------------------------------
@@ -771,18 +763,43 @@ class SceneDevice:
         """
         names = ['data_1', 'data_2', 'data_3']
         name = names[position]
-        # Ignore Writes to Modem Data Values, they are never used
         if self.device == self._modem:
-            return
-        # TODO probably insert the concept of default values in here
+            # Ignore Writes to Modem Data Values, they are never used.
+            # Basically this prevents data1-3 values from appearing in the
+            # scenes config for a modem entry
+            value = None
         if value != self._data_list[position]:
-            self._data_list[position] = value
-            if self.style == 0:
-                self._data[self._label][name] = value
-            elif self.style == 1:
-                self._data[self._label] = {'group': self._group,
-                                           name: value}
-            elif self.style == 2:
-                self._data = {self._label: {'group': self._group,
-                                            name: value}}
+            if value is None:  # Using default value
+                self._data_list[position] = value
+                if self.style == 0 and name in self._data[self._label]:
+                    del self._data[self._label][name]
+            else:
+                self._data_list[position] = value
+                if self.style == 0:
+                    self._data[self._label][name] = value
+                elif self.style == 1:
+                    self._data[self._label] = {'group': self._group,
+                                               name: value}
+                elif self.style == 2:
+                    if self._group > 0x01:
+                        self._data = {self._label: {'group': self._group,
+                                                    name: value}}
+                    else:
+                        self._data = {self._label: {name: value}}
+            self.update_device()
+
+    #-----------------------------------------------------------------------
+    def update_device(self):
+        """Cleans up Data and Notifies SceneEntry of Updated Data if
+        SceneEntry Exists
+        """
+        if self.style == 0 and len(self._data[self._label]) == 0:
+            # There is nothing in the dict, convert to style 2
+            self._data = self._label
+        elif (self.style == 0 and
+              'group' in self._data[self._label] and
+              len(self._data[self._label]) == 1):
+            # Group is the only thing in dict, convert to style 1
+            self._data = {self._label: self._group}
+        if self.index is not None:
             self.scene.update_device(self)
