@@ -577,8 +577,20 @@ class SceneDevice:
             # Fix Data Values now that we know data defaults
             self._data_defaults = self.device.link_data(self.is_controller,
                                                         self._group)
+            # Convert data values from human readable form
+            if self.style == 0:
+                data_values = self.device.link_data_from_pretty(
+                    self.is_controller, self.data[self.label]
+                )
+                if data_values[0] is not None:
+                    self._data_list[0] = data_values[0]
+                if data_values[1] is not None:
+                    self._data_list[1] = data_values[1]
+                if data_values[2] is not None:
+                    self._data_list[2] = data_values[2]
             # Set data values equal to themselves this will
-            # delete data values if they are equal to default value
+            # delete data values from the raw data if they are equal to
+            # default value
             self.data_1 = self.data_1
             self.data_2 = self.data_2
             self.data_3 = self.data_3
@@ -589,20 +601,27 @@ class SceneDevice:
 
     @property
     def style(self):
-        # Try to match the style used by the config file
-        # Style=0:
-        #   {device: {'group': group}}
-        # Style=1:
-        #   {device:group}
-        # Style=2:
-        #   str(device)
+        """Returns the Style Type of the Raw Data
+
+        This allows us to match the user defined style.
+
+        Style=0:
+          {device: {'group': group}}
+        Style=1:
+          {device:group}
+        Style=2:
+          str(device)
+
+        Returns:
+          (int): 0-2
+        """
         style = 2
         if isinstance(self._data, dict):
             if isinstance(self._data[self._label], int):
                 # The value is the group
                 style = 1
             else:
-                # This is a dict try and extract values
+                # This is a dict
                 style = 0
         return style
 
@@ -793,6 +812,14 @@ class SceneDevice:
         """Cleans up Data and Notifies SceneEntry of Updated Data if
         SceneEntry Exists
         """
+        # Remove group details if not necessary
+        if (self.style == 0 and 'group' in self._data[self._label] and
+                self._group <= 0x01):
+            del self._data[self._label]['group']
+        elif self.style == 1 and self._group <= 0x01:
+            self._data = self._label
+
+        # Remove Data dict if not necessary
         if self.style == 0 and len(self._data[self._label]) == 0:
             # There is nothing in the dict, convert to style 2
             self._data = self._label

@@ -35,16 +35,24 @@ class Dimmer(Base):
       starts or stops manual mode (when a button is held down or released).
     """
 
+    # Mapping of ramp rates to human readable values
+    ramp_pretty = {0x00: 540, 0x01: 480, 0x02: 420, 0x03: 360, 0x04: 300,
+                   0x05: 270, 0x06: 240, 0x07: 210, 0x08: 180, 0x09: 150,
+                   0x0a: 120, 0x0b: 90, 0x0c: 60, 0x0d: 47, 0x0e: 43, 0x0f: 39,
+                   0x10: 34, 0x11: 32, 0x12: 30, 0x13: 28, 0x14: 26,
+                   0x15: 23.5, 0x16: 21.5, 0x17: 19, 0x18: 8.5, 0x19: 6.5,
+                   0x1a: 4.5, 0x1b: 2, 0x1c: .5, 0x1d: .3, 0x1e: .2, 0x1f: .1}
+
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
 
         Args:
-          protocol (Protocol):  The Protocol object used to communicate
+          protocol (Protocol): The Protocol object used to communicate
                    with the Insteon network.  This is needed to allow the
                    device to send messages to the PLM modem.
-          modem (Modem):  The Insteon modem used to find other devices.
-          address (Address):  The address of the device.
-          name (str):  Nice alias name to use for the device.
+          modem (Modem): The Insteon modem used to find other devices.
+          address (Address): The address of the device.
+          name (str): Nice alias name to use for the device.
         """
         super().__init__(protocol, modem, address, name)
 
@@ -52,7 +60,7 @@ class Dimmer(Base):
         self._level = 0x00
 
         # Support dimmer style signals and motion on/off style signals.
-        # API:  func(Device, int level, on_off.Mode mode)
+        # API: func(Device, int level, on_off.Mode mode)
         self.signal_level_changed = Signal()
 
         # Manual mode start up, down, off
@@ -135,10 +143,10 @@ class Dimmer(Base):
         the state changed signals.
 
         Args:
-          group (int):  The group to send the command to.  For this device,
+          group (int): The group to send the command to.  For this device,
                 this must be 1.  Allowing a group here gives us a consistent
                 API to the on command across devices.
-          level (int):  If non zero, turn the device on.  Should be in the
+          level (int): If non zero, turn the device on.  Should be in the
                 range 0 to 255.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           on_done: Finished callback.  This is called when the command has
@@ -172,7 +180,7 @@ class Dimmer(Base):
         the state changed signals.
 
         Args:
-          group (int):  The group to send the command to.  For this device,
+          group (int): The group to send the command to.  For this device,
                 this must be 1.  Allowing a group here gives us a consistent
                 API to the on command across devices.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
@@ -206,9 +214,9 @@ class Dimmer(Base):
         the state changed signals.
 
         Args:
-          level (int):  If non zero, turn the device on.  Should be in the
+          level (int): If non zero, turn the device on.  Should be in the
                 range 0 to 255.
-          group (int):  The group to send the command to.  For this device,
+          group (int): The group to send the command to.  For this device,
                 this must be 1.  Allowing a group here gives us a consistent
                 API to the on command across devices.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
@@ -234,8 +242,8 @@ class Dimmer(Base):
         that are linked ot the device to be updated.
 
         Args:
-          is_on (bool):  True for an on command, False for an off command.
-          group (int):  The group on the device to simulate.  For this device,
+          is_on (bool): True for an on command, False for an off command.
+          group (int): The group on the device to simulate.  For this device,
                 this must be 1.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
@@ -336,16 +344,16 @@ class Dimmer(Base):
            D3: the group number on the local device (0x01)
 
         Args:
-          is_controller (bool):  True if the device is the controller, false
+          is_controller (bool): True if the device is the controller, false
                         if it's the responder.
-          group (int):  The group number of the controller button or the
+          group (int): The group number of the controller button or the
                 group number of the responding button.
-          data (bytes[3]):  Optional 3 byte data entry.  If this is None,
+          data (bytes[3]): Optional 3 byte data entry.  If this is None,
                defaults are returned.  Otherwise it must be a 3 element list.
                Any element that is not None is replaced with the default.
 
         Returns:
-          bytes[3]:  Returns a list of 3 bytes to use as D1,D2,D3.
+          bytes[3]: Returns a list of 3 bytes to use as D1,D2,D3.
         """
         # Most of this is from looking through Misterhouse bug reports.
         if is_controller:
@@ -358,8 +366,7 @@ class Dimmer(Base):
         # assume the user wants to turn the device on (0xff).
         else:
             # D1 = on level for on/off, dimmers
-            # D2 = ramp rate for on/off, dimmers.  I believe leaving this
-            #      at 0 uses the default ramp rate.
+            # D2 = ramp rate for on/off, dimmers.  1f is .1s.
             # D3 = The local group number of the local button.  The input
             #      group is the controller group number (and broadcast msg)
             #      so this is the local button group number it maps to.
@@ -367,6 +374,80 @@ class Dimmer(Base):
 
         # For each field, use the input if not -1, else the default.
         return util.resolve_data3(defaults, data)
+
+    #-----------------------------------------------------------------------
+    def link_data_to_pretty(self, is_controller, data):
+        """Converts Link Data1-3 to Human Readable Attributes
+
+        This takes a list of the data values 1-3 and returns a dict with
+        the human readable attibutes as keys and the human readable values
+        as values.
+
+        For base devices, this doesn't do anything.  So the return values will
+        simply match the passed values.  Howevever, this function is meant
+        to be overridded by specialized devices, look at the dimmer module
+        for an example
+
+        Args:
+          is_controller (bool): True if the device is the controller, false
+                        if it's the responder.
+          data (list[3]): List of three data values.
+
+        Returns:
+          dict[3]: Dict of the human readable values
+        """
+        ret = {'data_1': data[0], 'data_2': data[1], 'data_3': data[2]}
+        if not is_controller:
+            ramp = self.ramp_pretty[data[1]]
+            on_level = round(data[0] / 2.55)
+            ret = {'on_level': on_level,
+                   'ramp_rate': ramp,
+                   'data_3': data[2]}
+        return ret
+
+    #-----------------------------------------------------------------------
+    def link_data_from_pretty(self, is_controller, data):
+        """Converts Link Data1-3 from Human Readable Attributes
+
+        This takes a dict of the human readable attributes as keys and their
+        associated values and returns a list of the data1-3 values.
+
+        For base devices, this doesn't do anything.  So the return values will
+        simply match the passed values.  Howevever, this function is meant
+        to be overridded by specialized devices, look at the dimmer module
+        for an example
+
+        Args:
+          is_controller (bool): True if the device is the controller, false
+                        if it's the responder.
+          data (dict[3]): Dict of three data values.
+
+        Returns:
+          list[3]: List of Data1-3 values
+        """
+        data_1 = None
+        if 'data_1' in data:
+            data_1 = data['data_1']
+        data_2 = None
+        if 'data_2' in data:
+            data_2 = data['data_2']
+        data_3 = None
+        if 'data_3' in data:
+            data_3 = data['data_3']
+        ret = [data_1, data_2, data_3]
+        if not is_controller:
+            ramp = None
+            if 'ramp' in data:
+                ramp = 0x1f
+                for ramp_key, ramp_value in self.ramp_pretty.items():
+                    if data['ramp'] >= ramp_value:
+                        ramp = ramp_key
+                        break
+            on_level = None
+            if 'on_level' in data:
+                on_level = round(data['on_level'] * 2.55)
+            ret = [on_level, ramp, data_3]
+        return ret
 
     #-----------------------------------------------------------------------
     def set_backlight(self, level, on_done=None):
@@ -378,7 +459,7 @@ class Dimmer(Base):
         The default factory level is 0x1f.
 
         Args:
-          level (int):  The backlight level in the range [0,255]
+          level (int): The backlight level in the range [0,255]
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -412,7 +493,7 @@ class Dimmer(Base):
         (fast-on) will the turn the device to full brightness if needed.
 
         Args:
-          level (int):  The default on level in the range [0,255]
+          level (int): The default on level in the range [0,255]
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -439,7 +520,7 @@ class Dimmer(Base):
         This command is used to change internal device flags and states.
         Valid inputs are:
 
-        - backlight=level:  Change the backlight LED level (0-255).  See
+        - backlight=level: Change the backlight LED level (0-255).  See
           set_backlight() for details.
 
         - on_level=level: Change the default device on level (0-255) See
@@ -482,7 +563,7 @@ class Dimmer(Base):
         the status.
 
         Args:
-          msg (InpStandard):  The response message from the command.
+          msg (InpStandard): The response message from the command.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -500,7 +581,7 @@ class Dimmer(Base):
         the status.
 
         Args:
-          msg (InpStandard):  The response message from the command.
+          msg (InpStandard): The response message from the command.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -525,7 +606,7 @@ class Dimmer(Base):
         the broadcast message.
 
         Args:
-          msg (InpStandard):  Broadcast message from the device.
+          msg (InpStandard): Broadcast message from the device.
         """
         # ACK of the broadcast.  Ignore this unless we sent a simulated off
         # scene in which case run the broadcast done handler.  This is a
@@ -581,7 +662,7 @@ class Dimmer(Base):
         handler.DeviceRefresh when we can an ACK for the refresh command.
 
         Args:
-          msg (message.InpStandard):  The refresh message reply.  The current
+          msg (message.InpStandard): The refresh message reply.  The current
               device state is in the msg.cmd2 field.
         """
         LOG.ui("Dimmer %s refresh at level %s", self.addr, msg.cmd2)
@@ -599,7 +680,7 @@ class Dimmer(Base):
         to notify others of the state change.
 
         Args:
-          msg (message.InpStandard):  The reply message from the device.
+          msg (message.InpStandard): The reply message from the device.
               The on/off level will be in the cmd2 field.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
@@ -659,7 +740,7 @@ class Dimmer(Base):
           msg (message.InpStandard): The reply message from the device.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
-          delta (int):  The amount +/- of level to change by.
+          delta (int): The amount +/- of level to change by.
         """
         # If this it the ACK we're expecting, update the internal state and
         # emit our signals.
@@ -691,9 +772,9 @@ class Dimmer(Base):
         database and update it's state accordingly.
 
         Args:
-          addr (Address):  The device that sent the message.  This is the
+          addr (Address): The device that sent the message.  This is the
                controller in the scene.
-          msg (InpStandard):  Broadcast message from the device.  Use
+          msg (InpStandard): Broadcast message from the device.  Use
               msg.group to find the group and msg.cmd1 for the command.
         """
         # Make sure we're really a responder to this message.  This shouldn't
@@ -742,7 +823,7 @@ class Dimmer(Base):
         changed state.
 
         Args:
-          level (int):  The new device level in the range [0,255].  0 is off.
+          level (int): The new device level in the range [0,255].  0 is off.
           mode (on_off.Mode): The type of on/off that was triggered (normal,
                fast, etc).
         """

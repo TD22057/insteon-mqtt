@@ -783,7 +783,7 @@ class Base:
             # D1 = 0x03 number of retries to use for the command
             # D2 = ???
             # D3 = some devices need 0x01 or group number others don't care
-            defaults = [0x03, 0x00, group]
+            defaults = [0x03, 0x00, 0x01]
 
         # Responder data is always link dependent.  Since nothing was given,
         # assume the user wants to turn the device on (0xff).
@@ -794,10 +794,66 @@ class Base:
             # D3 = The local group number of the local button.  The input
             #      group is the controller group number (and broadcast msg)
             #      so this is the local button group number it maps to.
-            defaults = [0xff, 0x00, group]
+            defaults = [0xff, 0x00, 0x01]
 
         # For each field, use the input if not -1, else the default.
         return util.resolve_data3(defaults, data)
+
+    #-----------------------------------------------------------------------
+    def link_data_to_pretty(self, is_controller, data):
+        """Converts Link Data1-3 to Human Readable Attributes
+
+        This takes a list of the data values 1-3 and returns a dict with
+        the human readable attibutes as keys and the human readable values
+        as values.
+
+        For base devices, this doesn't do anything.  So the return values will
+        simply match the passed values.  Howevever, this function is meant
+        to be overridded by specialized devices, look at the dimmer module
+        for an example.
+
+        Args:
+          is_controller (bool):  True if the device is the controller, false
+                        if it's the responder.
+          data (list[3]):  List of three data values.
+
+        Returns:
+          dict[3]:  Dict of the human readable values
+        """
+        # For the base devices this does nothing
+        return {'data_1': data[0], 'data_2': data[1], 'data_3': data[2]}
+
+    #-----------------------------------------------------------------------
+    def link_data_from_pretty(self, is_controller, data):
+        """Converts Link Data1-3 from Human Readable Attributes
+
+        This takes a dict of the human readable attributes as keys and their
+        associated values and returns a list of the data1-3 values.
+
+        For base devices, this doesn't do anything.  So the return values will
+        simply match the passed values.  Howevever, this function is meant
+        to be overridded by specialized devices, look at the dimmer module
+        for an example
+
+        Args:
+          is_controller (bool):  True if the device is the controller, false
+                        if it's the responder.
+          data (dict[3]):  Dict of three data values.
+
+        Returns:
+          list[3]:  List of Data1-3 values
+        """
+        # For the base devices this does nothing
+        data_1 = None
+        if 'data_1' in data:
+            data_1 = data['data_1']
+        data_2 = None
+        if 'data_2' in data:
+            data_2 = data['data_2']
+        data_3 = None
+        if 'data_3' in data:
+            data_3 = data['data_3']
+        return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):

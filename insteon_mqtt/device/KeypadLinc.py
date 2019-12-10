@@ -12,6 +12,7 @@ from .. import on_off
 from ..Signal import Signal
 from .. import util
 from .Base import Base
+from . import Dimmer
 
 LOG = log.get_logger()
 
@@ -446,6 +447,139 @@ class KeypadLinc(Base):
         callback = functools.partial(self.handle_increment, delta=-8)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def link_data(self, is_controller, group, data=None):
+        """Create default device 3 byte link data.
+
+        This is the 3 byte field (D1, D2, D3) stored in the device database
+        entry.  This overrides the defaults specified in base.py for
+        specific values used by dimming devices.
+
+        For controllers, the default fields are:
+           D1: number of retries (0x03)
+           D2: unknown (0x00)
+           D3: the group number on the local device (0x01)
+
+        For responders, the default fields are:
+           D1: on level for switches and dimmers (0xff)
+           D2: ramp rate (0x1f, or .1s)
+           D3: the group number on the local device (0x01)
+
+        Args:
+          is_controller (bool): True if the device is the controller, false
+                        if it's the responder.
+          group (int): The group number of the controller button or the
+                group number of the responding button.
+          data (bytes[3]): Optional 3 byte data entry.  If this is None,
+               defaults are returned.  Otherwise it must be a 3 element list.
+               Any element that is not None is replaced with the default.
+
+        Returns:
+          bytes[3]: Returns a list of 3 bytes to use as D1,D2,D3.
+        """
+        # Most of this is from looking through Misterhouse bug reports.
+        if is_controller:
+            # D1 = 0x03 number of retries to use for the command
+            # D2 = ???
+            # D3 = some devices need 0x01 or group number others don't care
+            defaults = [0x03, 0x00, group]
+
+        # Responder data is always link dependent.  Since nothing was given,
+        # assume the user wants to turn the device on (0xff).
+        else:
+            data_2 = 0x00
+            if self.is_dimmer:
+                data_2 = 0x1f
+            # D1 = on level for on/off, dimmers
+            # D2 = ramp rate for on/off, dimmers.  1f is .1s.
+            # D3 = The local group number of the local button.  The input
+            #      group is the controller group number (and broadcast msg)
+            #      so this is the local button group number it maps to.
+            defaults = [0xff, data_2, group]
+
+        # For each field, use the input if not -1, else the default.
+        return util.resolve_data3(defaults, data)
+
+    #-----------------------------------------------------------------------
+    def link_data_to_pretty(self, is_controller, data):
+        """Converts Link Data1-3 to Human Readable Attributes
+
+        This takes a list of the data values 1-3 and returns a dict with
+        the human readable attibutes as keys and the human readable values
+        as values.
+
+        For base devices, this doesn't do anything.  So the return values will
+        simply match the passed values.  Howevever, this function is meant
+        to be overridded by specialized devices, look at the dimmer module
+        for an example
+
+        Args:
+          is_controller (bool): True if the device is the controller, false
+                        if it's the responder.
+          data (list[3]): List of three data values.
+
+        Returns:
+          dict[3]: Dict of the human readable values
+        """
+        ret = {'data_1': data[0], 'data_2': data[1], 'data_3': data[2]}
+        if not is_controller:
+            ret = {'data_1': data[0],
+                   'data_2': data[1],
+                   'group': data[2]}
+            if self.is_dimmer:
+                ramp = Dimmer.ramp_pretty[data[1]]
+                on_level = round(data[0] / 2.55)
+                ret = {'on_level': on_level,
+                       'ramp_rate': ramp,
+                       'group': data[2]}
+        return ret
+
+    #-----------------------------------------------------------------------
+    def link_data_from_pretty(self, is_controller, data):
+        """Converts Link Data1-3 from Human Readable Attributes
+
+        This takes a dict of the human readable attributes as keys and their
+        associated values and returns a list of the data1-3 values.
+
+        For base devices, this doesn't do anything.  So the return values will
+        simply match the passed values.  Howevever, this function is meant
+        to be overridded by specialized devices, look at the dimmer module
+        for an example
+
+        Args:
+          is_controller (bool): True if the device is the controller, false
+                        if it's the responder.
+          data (dict[3]): Dict of three data values.
+
+        Returns:
+          list[3]: List of Data1-3 values
+        """
+        data_1 = None
+        if 'data_1' in data:
+            data_1 = data['data_1']
+        data_2 = None
+        if 'data_2' in data:
+            data_2 = data['data_2']
+        data_3 = None
+        if 'data_3' in data:
+            data_3 = data['data_3']
+        ret = [data_1, data_2, data_3]
+        if not is_controller:
+            if 'group' in data:
+                data_3 = data['group']
+            if self.is_dimmer:
+                ramp = None
+                if 'ramp' in data:
+                    ramp = 0x1f
+                    for ramp_key, ramp_value in Dimmer.ramp_pretty:
+                        if data['ramp'] >= ramp_value:
+                            ramp = ramp_key
+                on_level = None
+                if 'on_level' in data:
+                    on_level = round(data['on_level'] * 2.55)
+                ret = [on_level, ramp, data_3]
+        return ret
 
     #-----------------------------------------------------------------------
     def set_button_led(self, group, is_on, on_done=None):
