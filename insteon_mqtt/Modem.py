@@ -1025,43 +1025,6 @@ class Modem:
                 self.signal_new_device.emit(self, dev)
 
     #-----------------------------------------------------------------------
-    def _parse_scene_device(self, data):
-        """Parse a device from the scene config format
-
-        Devices can be defined in the scene config using a number of
-        different formats.  This function parses all of the formats into
-        single style.
-
-        Args:
-          data:   Configuration dictionary for scenes.
-
-        Returns:
-          {
-          device : (Device) the device object
-          device_str : (str) the string passed in the config
-          group : (int) the group number of the device
-          level : (int) optionally the light level
-          ramp : (int) optionally the ramp rate
-          }
-        """
-        # Start with the default assumption that only a device is specified
-        # with no other details
-        ret = {'group' : 0x01, 'device_str' : data}
-        if isinstance(ret['device_str'], dict):
-            # The key is the device string
-            ret['device_str'] = next(iter(data))
-            if isinstance(data[ret['device_str']], int):
-                # The value is the group
-                ret['group'] = data[ret['device_str']]
-            else:
-                # This is a dict just update the return
-                ret.update(ret['device_str'])
-        # Try and find this device
-        ret['device'] = self.find(ret['device_str'])
-        return ret
-
-
-    #-----------------------------------------------------------------------
     def _db_update(self, local_group, is_controller, remote_addr, remote_group,
                    two_way, refresh, on_done, local_data, remote_data):
         """Update the modem database.
