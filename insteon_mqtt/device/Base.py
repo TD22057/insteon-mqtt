@@ -818,10 +818,10 @@ class Base:
           data (list[3]):  List of three data values.
 
         Returns:
-          dict[3]:  Dict of the human readable values
+          list[3]:  list, containing a dict of the human readable values
         """
         # For the base devices this does nothing
-        return {'data_1': data[0], 'data_2': data[1], 'data_3': data[2]}
+        return [{'data_1': data[0]}, {'data_2': data[1]}, {'data_3': data[2]}]
 
     #-----------------------------------------------------------------------
     def link_data_from_pretty(self, is_controller, data):

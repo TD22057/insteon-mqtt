@@ -520,19 +520,19 @@ class KeypadLinc(Base):
           data (list[3]): List of three data values.
 
         Returns:
-          dict[3]: Dict of the human readable values
+          list[3]:  list, containing a dict of the human readable values
         """
-        ret = {'data_1': data[0], 'data_2': data[1], 'data_3': data[2]}
+        ret = [{'data_1': data[0]}, {'data_2': data[1]}, {'data_3': data[2]}]
         if not is_controller:
-            ret = {'data_1': data[0],
-                   'data_2': data[1],
-                   'group': data[2]}
+            ret = [{'data_1': data[0]},
+                   {'data_2': data[1]},
+                   {'group': data[2]}]
             if self.is_dimmer:
                 ramp = Dimmer.ramp_pretty[data[1]]
                 on_level = round(data[0] / 2.55)
-                ret = {'on_level': on_level,
-                       'ramp_rate': ramp,
-                       'group': data[2]}
+                ret = [{'on_level': on_level},
+                       {'ramp_rate': ramp},
+                       {'group': data[2]}]
         return ret
 
     #-----------------------------------------------------------------------

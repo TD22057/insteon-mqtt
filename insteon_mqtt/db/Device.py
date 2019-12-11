@@ -792,7 +792,7 @@ class Device:
         if remote.is_controller:
             group = remote.group
         entry = DeviceEntry(remote.addr, group, mem_loc, db_flags,
-                            local.raw_data_list)
+                            local.link_data)
 
         # Add the Entry to the DB
         self.add_entry(entry, save=False)

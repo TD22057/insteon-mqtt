@@ -567,7 +567,7 @@ class Modem:
         if remote.is_controller:
             group = remote.group
         entry = ModemEntry(remote.addr, group, local.is_controller,
-                           local.raw_data_list)
+                           local.link_data)
 
         # Add the Entry to the DB
         self.add_entry(entry, save=False)
