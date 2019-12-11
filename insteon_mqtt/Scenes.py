@@ -540,54 +540,20 @@ class SceneDevice:
         self.addr = None
         self._modem = self.scene.scene_manager.modem
         self._yaml_data = data
-        self._group = 0x01
-        self._label = data
-        self._link_data = [None, None, None]
-        self._link_defaults = [None, None, None]
 
-        # Parse the Data object and extract values from it
-        if isinstance(data, dict):
-            # The key is the device string
-            self._label = next(iter(data))
-            if isinstance(data[self._label], int):
-                # The value is the group
-                self._group = data[self._label]
-            else:
-                # This is a dict try and extract values
-                if 'group' in data[self._label]:
-                    self._group = data[self._label]['group']
-                if 'data_1' in data[self._label]:
-                    self._link_data[0] = data[self._label]['data_1']
-                if 'data_2' in data[self._label]:
-                    self._link_data[1] = data[self._label]['data_2']
-                if 'data_3' in data[self._label]:
-                    self._link_data[2] = data[self._label]['data_3']
-
-        # Try and find this device
-        self.device = self._modem.find(self._label)
+        # Try and find this device and populate device attibutes
+        self.device = self._modem.find(self.label)
         if self.device is not None:
             self.addr = self.device.addr
             self.label = self.device.name
-            # Fix Data Values now that we know data defaults
-            self._link_defaults = self.device.link_data(self.is_controller,
-                                                        self._group)
-            # Convert data values from human readable form
-            if self.style == 0:
-                data_values = self.device.link_data_from_pretty(
-                    self.is_controller, self.data[self.label]
-                )
-                if data_values[0] is not None:
-                    self._link_data[0] = data_values[0]
-                if data_values[1] is not None:
-                    self._link_data[1] = data_values[1]
-                if data_values[2] is not None:
-                    self._link_data[2] = data_values[2]
-            # Convert data values if necessary
-            self.update_device()
         else:
             # This is an device not defined in our config
-            # This will break if a name is used that doesn't exist
-            self.addr = Address(self._label)
+            self.addr = Address(self.label)
+
+        # Remove values from yaml_data if they are default values and make
+        # pretty. Easiest way to do this is just to set things to themselves
+        self.group = self.group
+        self.link_data = self.link_data
 
     @property
     def style(self):
@@ -607,7 +573,9 @@ class SceneDevice:
         """
         style = 2
         if isinstance(self._yaml_data, dict):
-            if isinstance(self._yaml_data[self._label], int):
+            # This is necessary to avoid recursion loop with self.label
+            label = next(iter(self._yaml_data))
+            if isinstance(self._yaml_data[label], int):
                 # The value is the group
                 style = 1
             else:
@@ -645,7 +613,14 @@ class SceneDevice:
     def group(self):
         """Returns the group value
         """
-        return self._group
+        group = 0x01
+        if self.style == 1:
+            # The value is the group
+            group = self._yaml_data[self.label]
+        elif self.style == 0:
+            if 'group' in self._yaml_data[self.label]:
+                group = self._yaml_data[self.label]['group']
+        return group
 
     #-----------------------------------------------------------------------
     @group.setter
@@ -655,7 +630,21 @@ class SceneDevice:
         Args:
           value:    (int)The group value
         """
-        self._group = value
+        if self.style == 0 and value > 0x01:
+            if ('group' not in self._yaml_data[self.label] or
+                    self._yaml_data[self.label]['group'] != value):
+                self._yaml_data[self.label]['group'] = value
+        if self.style == 1 and value > 0x01:
+            self._yaml_data[self.label] = value
+        if self.style == 0 and value > 0x01:
+            self._yaml_data = {self.label: value}
+
+        # Remove group entry in yaml_data if default value of 0x00 or 0x01
+        if (self.style == 0 and 'group' in self._yaml_data[self.label] and
+                value <= 0x01):
+            del self._yaml_data[self.label]['group']
+        elif self.style == 1 and value <= 0x01:
+            self._yaml_data = self.label
         self.update_device()
 
     #-----------------------------------------------------------------------
@@ -663,7 +652,11 @@ class SceneDevice:
     def label(self):
         """Returns the label value
         """
-        return self._label
+        label = self._yaml_data  # For style == 2
+        if self.style < 2:
+            # The key is the device string
+            label = next(iter(self._yaml_data))
+        return label
 
     #-----------------------------------------------------------------------
     @label.setter
@@ -673,95 +666,105 @@ class SceneDevice:
         Args:
           value:    (int)The label value
         """
-        self._label = value
+        if self.style < 2:
+            if next(iter(self._yaml_data)) != value:
+                key = next(iter(self._yaml_data))
+                yaml_value = self._yaml_data[key]
+                del self._yaml_data[key]
+                self._yaml_data[value] = yaml_value
+        else:
+            if self._yaml_data != value:
+                self._yaml_data = value
         self.update_device()
 
     @property
     #-----------------------------------------------------------------------
     def link_data(self):
         """Returns the Data1-3 values as a list
+
+        If values are not specified in yaml_data the defaults are returned.
         """
-        return self._link_data
+        link_data = self.link_defaults
+        if self.style == 0:
+            if 'data_1' in self._yaml_data[self.label]:
+                link_data[0] = self._yaml_data[self.label]['data_1']
+            if 'data_2' in self._yaml_data[self.label]:
+                link_data[1] = self._yaml_data[self.label]['data_2']
+            if 'data_3' in self._yaml_data[self.label]:
+                link_data[2] = self._yaml_data[self.label]['data_3']
+            if self.device is not None:
+                # Convert data values from human readable form
+                pretty_data = self.device.link_data_from_pretty(
+                    self.is_controller, self._yaml_data[self.label]
+                )
+                for i in range(0, 3):
+                    if pretty_data[i] is not None:
+                        link_data[i] = pretty_data[i]
+        return link_data
 
     @link_data.setter
     #-----------------------------------------------------------------------
     def link_data(self, data_list):
         """Sets the raw data1-3 values via a list
         """
-        if len(data_list) == 3:
-            self._link_data = data_list
-            self.update_device()
+        if len(data_list) != 3:
+            return
+        if self.device is not None:
+            pretty_data = self.device.link_data_to_pretty(self.is_controller,
+                                                          self.link_data)
+        else:
+            pretty_data = [{'data_1': self.link_data[0]},
+                           {'data_2': self.link_data[1]},
+                           {'data_3': self.link_data[2]}]
+        orig_names = ['data_1', 'data_2', 'data_3']
+        for i in range(0, 3):
+            pretty_name = next(iter(pretty_data[i].keys()))
+            pretty_value = pretty_data[i][pretty_name]
+            if (self.link_data[i] == self.link_defaults[i] and
+                    self.style == 0):
+                # Default, so delete if in entry
+                if orig_names[i] in self._yaml_data[self.label]:
+                    del self._yaml_data[self.label][orig_names[i]]
+                if pretty_name in self._yaml_data[self.label]:
+                    del self._yaml_data[self.label][pretty_name]
+            elif self.link_data[i] != self.link_defaults[i]:
+                # not default, so make sure value is set
+                if self.style == 0:
+                    # first delete orig name
+                    if orig_names[i] in self._yaml_data[self.label]:
+                        del self._yaml_data[self.label][orig_names[i]]
+                    self._yaml_data[self.label][pretty_name] = pretty_value
+                else:
+                    self._yaml_data = {self.label: {'group': self.group,
+                                                    pretty_name: pretty_value}}
+        self.update_device()
+
+    @property
+    #-----------------------------------------------------------------------
+    def link_defaults(self):
+        """Returns the Default Data1-3 values as a list
+        """
+        if self.device is not None:
+            ret = list(self.device.link_data(self.is_controller, self.group))
+        elif self.is_controller:
+            ret = [0x03, 0x00, 0x01]
+        else:
+            ret = [0xff, 0x00, 0x01]
+        return ret
 
     #-----------------------------------------------------------------------
     def update_device(self):
         """Cleans up Data and Notifies SceneEntry of Updated Data if
         SceneEntry Exists
         """
-        # This is complicated because we want to preserve as much of the
-        # users data as possible so as to preserve comments and such
-        # 1 Update yaml_data as necessary
-        # Fix label
-        if self.style < 2:
-            if next(iter(self._yaml_data)) != self._label:
-                key = next(iter(self._yaml_data))
-                value = self._yaml_data[key]
-                del self._yaml_data[key]
-                self._yaml_data[self._label] = value
-        else:
-            if self._yaml_data != self._label:
-                self._yaml_data = self._label
-
-        # Fix Group
-        if self.style == 0 and self._group > 0x01:
-            if ('group' not in self._yaml_data[self._label] or
-                    self._yaml_data[self._label]['group'] != self._group):
-                self._yaml_data[self._label]['group'] = self._group
-        if self.style == 1 and self._group > 0x01:
-            self._yaml_data[self._label] = self._group
-        if self.style == 0 and self._group > 0x01:
-            self._yaml_data = {self._label: self._group}
-
-        # Fix Data
-        pretty_data = self.device.link_data_to_pretty(self.is_controller,
-                                                      self.link_data)
-        orig_names = ['data_1', 'data_2', 'data_3']
-        for i in range(0, 2):
-            pretty_name = next(iter(pretty_data[i].keys()))
-            pretty_value = pretty_data[i][pretty_name]
-            if (self._link_data[i] == self._link_defaults[i] and
-                    self.style == 2):
-                # Default, so delete if in entry
-                if orig_names[i] in self._yaml_data[self._label]:
-                    del self._yaml_data[self._label][orig_names[i]]
-                if pretty_name in self._yaml_data[self._label]:
-                    del self._yaml_data[self._label][pretty_name]
-            else:
-                # not default, so make sure value is set
-                if self.style == 2:
-                    # first delete orig name
-                    if orig_names[i] in self._yaml_data[self._label]:
-                        del self._yaml_data[self._label][orig_names[i]]
-                    self._yaml_data[self._label][pretty_name] = pretty_value
-                else:
-                    self._yaml_data = {self._label: {'group': self._group,
-                                                     pretty_name: pretty_data}}
-
-        # 2 Clean Up (remove things that are unnecessary to make thing cleaner)
-        # 2a Remove group details if not necessary
-        if (self.style == 0 and 'group' in self._yaml_data[self._label] and
-                self._group <= 0x01):
-            del self._yaml_data[self._label]['group']
-        elif self.style == 1 and self._group <= 0x01:
-            self._yaml_data = self._label
-
-        # 2b Remove Data dict if not necessary
-        if self.style == 0 and len(self._yaml_data[self._label]) == 0:
+        # Remove Data dict if not necessary
+        if self.style == 0 and len(self._yaml_data[self.label]) == 0:
             # There is nothing in the dict, convert to style 2
-            self._yaml_data = self._label
+            self._yaml_data = self.label
         elif (self.style == 0 and
-              'group' in self._yaml_data[self._label] and
-              len(self._yaml_data[self._label]) == 1):
+              'group' in self._yaml_data[self.label] and
+              len(self._yaml_data[self.label]) == 1):
             # Group is the only thing in dict, convert to style 1
-            self._yaml_data = {self._label: self._group}
+            self._yaml_data = {self.label: self.group}
         if self.index is not None:
             self.scene.update_device(self)

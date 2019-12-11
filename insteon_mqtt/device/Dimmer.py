@@ -360,7 +360,7 @@ class Dimmer(Base):
             # D1 = 0x03 number of retries to use for the command
             # D2 = ???
             # D3 = some devices need 0x01 or group number others don't care
-            defaults = [0x03, 0x00, group]
+            defaults = [0x03, 0x00, 0x01]
 
         # Responder data is always link dependent.  Since nothing was given,
         # assume the user wants to turn the device on (0xff).
@@ -370,7 +370,7 @@ class Dimmer(Base):
             # D3 = The local group number of the local button.  The input
             #      group is the controller group number (and broadcast msg)
             #      so this is the local button group number it maps to.
-            defaults = [0xff, 0x1f, group]
+            defaults = [0xff, 0x1f, 0x01]
 
         # For each field, use the input if not -1, else the default.
         return util.resolve_data3(defaults, data)
