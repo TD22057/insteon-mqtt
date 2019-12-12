@@ -8,11 +8,7 @@ __doc__ = """Scenes file utilties
 """
 
 #===========================================================================
-import time
-import difflib
 import os
-from datetime import datetime
-from shutil import copy
 from ruamel.yaml import YAML
 from collections import Counter
 from . import log
@@ -119,21 +115,22 @@ class Scenes:
         """Load and returns the scenes file.
         """
         if self.path is not None:
-            with open(self.path, "r") as f:
-                yaml = YAML()
-                yaml.preserve_quotes = True
-                self.data = yaml.load(f)
+            if os.path.exists(self.path):
+                with open(self.path, "r") as f:
+                    yaml = YAML()
+                    yaml.preserve_quotes = True
+                    self.data = yaml.load(f)
 
-            if self.data is None:
-                self.data = []
+        if self.data is None:
+            self.data = []
 
-            self._init_scene_entries()
+        self._init_scene_entries()
 
-            # First fix any Modem Controllers that lack a proper group
-            self._assign_modem_group()
+        # First fix any Modem Controllers that lack a proper group
+        self._assign_modem_group()
 
-            # Parse yaml, add groups to modem, and push definitions to devices
-            self.populate_scenes()
+        # Parse yaml, add groups to modem, and push definitions to devices
+        self.populate_scenes()
 
     #-----------------------------------------------------------------------
     def _init_scene_entries(self):
@@ -145,46 +142,16 @@ class Scenes:
 
     #-----------------------------------------------------------------------
     def save(self):
-        """Saves the scenes data to file.  Creates and keeps a backup
-        file if diff produced is significant in size compared to original
-        file size.  The diff process is a little intensive.  We could
-        consider making this a user configurable option, but it seems prudent
-        to have this given the amount of work a user may put into creating
-        a scenes file.
+        """Saves the scenes data to file.
         """
-        # Create a backup file first`
-        ts = time.time()
-        timestamp = datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H-%M-%S')
-        backup = self.path + "." + timestamp
-        copy(self.path, backup)
-
-        # Save the config file
-        with open(self.path, "w") as f:
-            yaml = YAML()
-            yaml.preserve_quotes = True
-            yaml.indent(mapping=2, sequence=4, offset=2)
-            yaml.dump(self.data, f)
-
-        # Check for diff
-        orgCount = 0
-        with open(backup, 'r') as old:
-            for line in old:  # pylint: disable=W0612
-                orgCount += 1
-        with open(self.path, 'r') as new:
-            with open(backup, 'r') as old:
-                diff = difflib.unified_diff(
-                    old.readlines(),
-                    new.readlines(),
-                    fromfile='old',
-                    tofile='new',
-                )
-        # Count the number of deleted lines
-        diffCount = len([l for l in diff if l.startswith('- ')])
-        # Delete backup if # of lines deleted or altered from original file
-        # is less than 5% of original file
-        if orgCount != 0 and diffCount / orgCount <= 0.05:
-            os.remove(backup)
-            backup = ''
+        if self.path is not None:
+            with open(self.path, "w") as f:
+                yaml = YAML()
+                yaml.preserve_quotes = True
+                yaml.indent(mapping=2, sequence=4, offset=2)
+                yaml.dump(self.data, f)
+        else:
+            LOG.error("Scenes File not Defined in Config.  Scenes not saved.")
 
     #-----------------------------------------------------------------------
     def populate_scenes(self):
