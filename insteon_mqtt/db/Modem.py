@@ -448,8 +448,10 @@ class Modem:
                 else:
                     delta.add(entry)
 
-            # Otherwise this is match so we can note that from the list.
-            elif rhsEntry:
+            # Otherwise this is match so we can note that from the list
+            # if it is there.  If there are duplicates on the left hand side, 
+            # may already have been removed
+            elif rhsEntry and rhsEntry.mem_loc in rhsRemove:
                 rhsRemove.remove(rhsEntry)
 
         # Ignore certain links created by 'join' or 'pair'

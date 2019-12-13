@@ -621,8 +621,9 @@ class Device:
                     delta.add(entry)
 
             # Otherwise this is match so we can note that by removing this
-            # address from the set.
-            elif rhsEntry:
+            # address from the set, if it is there.  If there are duplicates
+            # on the left hand side, this address may already have been removed
+            elif rhsEntry and rhsEntry.mem_loc in rhsRemove:
                 del rhsRemove[rhsEntry.mem_loc]
 
         # Ignore certain links created by 'join' or 'pair'
