@@ -577,7 +577,7 @@ class KeypadLinc(Base):
                             data_1 = ramp_key
                 if 'on_level' in data:
                     data_2 = round(data['on_level'] * 2.55)
-        return [on_level, ramp, data_3]
+        return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
     def set_button_led(self, group, is_on, on_done=None):
