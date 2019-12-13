@@ -59,6 +59,18 @@ def parse_args(args):
     sp.set_defaults(func=modem.sync_all)
 
     #---------------------------------------
+    # modem.import_scenes_all command
+    sp = sub.add_parser("import-scenes-all", help="Call import-scenes on all "
+                        "the devices in the configuration.")
+    sp.add_argument("--run", action="store_true", default=False,
+                    help="Perform the actions altering the scenes config file "
+                    "to bring it in sync.  If not specified, will perform a "
+                    "dry-run which only lists the changes to be made.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=modem.import_scenes_all)
+
+    #---------------------------------------
     # modem.factory_reset command
     sp = sub.add_parser("factory-reset", help="Perform a remote factory "
                         "reset.  Currently only supported on the modem.")
@@ -324,6 +336,19 @@ def parse_args(args):
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
     sp.set_defaults(func=device.sync)
+
+    #---------------------------------------
+    # device.import_scenes
+    sp = sub.add_parser("import-scenes", help="Import all of the scenes "
+                        "defined on the device into the scenes config file.")
+    sp.add_argument("address", help="Device address or name.")
+    sp.add_argument("--run", action="store_true", default=False,
+                    help="Perform the actions altering the scenes config file "
+                    " to bring it in sync.  If not specified, will perform a "
+                    "dry-run which only lists the changes to be made.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=device.import_scenes)
 
     return p.parse_args(args)
 

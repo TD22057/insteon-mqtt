@@ -293,4 +293,15 @@ def sync(args, config):
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]
 
+
+#===========================================================================
+def import_scenes(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "import_scenes",
+        "dry_run" : not args.run
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 #===========================================================================
