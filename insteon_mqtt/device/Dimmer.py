@@ -398,7 +398,9 @@ class Dimmer(Base):
         """
         ret = [{'data_1': data[0]}, {'data_2': data[1]}, {'data_3': data[2]}]
         if not is_controller:
-            ramp = self.ramp_pretty[data[1]]
+            ramp = 0x1f  # default
+            if data[1] in self.ramp_pretty:
+                ramp = self.ramp_pretty[data[1]]
             on_level = round(data[0] / 2.55)
             ret = [{'on_level': on_level},
                    {'ramp_rate': ramp},

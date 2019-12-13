@@ -528,7 +528,9 @@ class KeypadLinc(Base):
                    {'data_2': data[1]},
                    {'group': data[2]}]
             if self.is_dimmer:
-                ramp = Dimmer.ramp_pretty[data[1]]
+                ramp = 0x1f  # default
+                if data[1] in Dimmer.ramp_pretty:
+                    ramp = Dimmer.ramp_pretty[data[1]]
                 on_level = round(data[0] / 2.55)
                 ret = [{'on_level': on_level},
                        {'ramp_rate': ramp},
