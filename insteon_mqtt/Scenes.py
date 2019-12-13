@@ -543,11 +543,12 @@ class SceneDevice:
             # This is necessary to avoid recursion loop with self.label
             label = next(iter(self._yaml_data))
             if isinstance(self._yaml_data[label], int):
-                # The value is the group
                 style = 1
-            else:
-                # This is a dict
+            elif isinstance(self._yaml_data[label], dict):
                 style = 0
+            elif self._yaml_data[label] is None:
+                # This happens if the entry has a colon, but no dict or group
+                self._yaml_data = label
         return style
 
     #-----------------------------------------------------------------------
@@ -619,10 +620,11 @@ class SceneDevice:
     def label(self):
         """Returns the label value
         """
-        label = self._yaml_data  # For style == 2
         if self.style < 2:
             # The key is the device string
             label = next(iter(self._yaml_data))
+        else:
+            label = self._yaml_data
         return label
 
     #-----------------------------------------------------------------------
