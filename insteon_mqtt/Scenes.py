@@ -682,23 +682,22 @@ class SceneDevice:
             return
         if self.device is not None:
             pretty_data = self.device.link_data_to_pretty(self.is_controller,
-                                                          self.link_data)
+                                                          data_list)
         else:
-            pretty_data = [{'data_1': self.link_data[0]},
-                           {'data_2': self.link_data[1]},
-                           {'data_3': self.link_data[2]}]
+            pretty_data = [{'data_1': data_list[0]},
+                           {'data_2': data_list[1]},
+                           {'data_3': data_list[2]}]
         orig_names = ['data_1', 'data_2', 'data_3']
         for i in range(0, 3):
             pretty_name = next(iter(pretty_data[i].keys()))
             pretty_value = pretty_data[i][pretty_name]
-            if (self.link_data[i] == self.link_defaults[i] and
-                    self.style == 0):
+            if data_list[i] == self.link_defaults[i] and self.style == 0:
                 # Default, so delete if in entry
                 if orig_names[i] in self._yaml_data[self.label]:
                     del self._yaml_data[self.label][orig_names[i]]
                 if pretty_name in self._yaml_data[self.label]:
                     del self._yaml_data[self.label][pretty_name]
-            elif self.link_data[i] != self.link_defaults[i]:
+            elif self.link_data[i] != data_list[i]:
                 # not default, so make sure value is set
                 if self.style == 0:
                     # first delete orig name

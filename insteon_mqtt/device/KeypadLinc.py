@@ -566,22 +566,18 @@ class KeypadLinc(Base):
         data_3 = None
         if 'data_3' in data:
             data_3 = data['data_3']
-        ret = [data_1, data_2, data_3]
         if not is_controller:
             if 'group' in data:
                 data_3 = data['group']
             if self.is_dimmer:
-                ramp = None
                 if 'ramp' in data:
-                    ramp = 0x1f
+                    data_1 = 0x1f
                     for ramp_key, ramp_value in Dimmer.ramp_pretty:
                         if data['ramp'] >= ramp_value:
-                            ramp = ramp_key
-                on_level = None
+                            data_1 = ramp_key
                 if 'on_level' in data:
-                    on_level = round(data['on_level'] * 2.55)
-                ret = [on_level, ramp, data_3]
-        return ret
+                    data_2 = round(data['on_level'] * 2.55)
+        return [on_level, ramp, data_3]
 
     #-----------------------------------------------------------------------
     def set_button_led(self, group, is_on, on_done=None):

@@ -436,20 +436,16 @@ class Dimmer(Base):
         data_3 = None
         if 'data_3' in data:
             data_3 = data['data_3']
-        ret = [data_1, data_2, data_3]
         if not is_controller:
-            ramp = None
             if 'ramp' in data:
-                ramp = 0x1f
+                data_1 = 0x1f
                 for ramp_key, ramp_value in self.ramp_pretty.items():
                     if data['ramp'] >= ramp_value:
-                        ramp = ramp_key
+                        data_1 = ramp_key
                         break
-            on_level = None
             if 'on_level' in data:
-                on_level = round(data['on_level'] * 2.55)
-            ret = [on_level, ramp, data_3]
-        return ret
+                data_2 = round(data['on_level'] * 2.55)
+        return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
     def set_backlight(self, level, on_done=None):
