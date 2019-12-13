@@ -24,17 +24,12 @@ class Test_Device:
         obj.set_engine(1)
         assert obj.engine == 1
 
-        assert obj.dev_cat is None
-        obj.set_dev_cat(1)
-        assert obj.dev_cat == 1
-
-        assert obj.sub_cat is None
-        obj.set_sub_cat(1)
-        assert obj.sub_cat == 1
-
+        assert obj.desc is None
         assert obj.firmware is None
-        obj.set_firmware(1)
-        assert obj.firmware == 1
+        obj.set_info(1, 2, 3)
+        assert obj.desc.dev_cat == 1
+        assert obj.desc.sub_cat == 2
+        assert obj.firmware == 3
 
         addr = IM.Address(0x10, 0xab, 0x1c)
         flags = Msg.Flags(Msg.Flags.Type.DIRECT, True)

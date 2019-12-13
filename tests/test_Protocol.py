@@ -8,6 +8,7 @@ import time
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
 
+
 class Test_Protocol:
     def test_reads(self):
         link = MockSerial()

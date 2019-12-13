@@ -6,7 +6,7 @@
 #===========================================================================
 import pytest
 import insteon_mqtt as IM
-import helpers
+import helpers as H
 
 # NOTE about mocking: Don't mock classes directly being used by the class
 # being tested.  If we do that, then we're not testing whether the class
@@ -18,23 +18,25 @@ import helpers
 # correct test pattern is to always use the actual classes that A depends on
 # and mock the classees that those dependencies depend on.
 
+
 # Create our MQTT object to test as well as the linked Insteon object and a
 # mocked MQTT client to publish to.
 @pytest.fixture
 def setup(mock_paho_mqtt, tmpdir):
-    proto = helpers.MockProtocol()
-    modem = helpers.MockModem(tmpdir)
+    proto = H.main.MockProtocol()
+    modem = H.main.MockModem(tmpdir)
     addr = IM.Address(1, 2, 3)
     name = "device name"
     dev = IM.device.Outlet(proto, modem, addr, name)
 
     link = IM.network.Mqtt()
-    mqttModem = helpers.MockMqtt_Modem()
+    mqttModem = H.mqtt.MockModem()
     mqtt = IM.mqtt.Mqtt(link, mqttModem)
     mdev = IM.mqtt.Outlet(mqtt, dev)
 
-    return helpers.Data(addr=addr, name=name, dev=dev, mdev=mdev, link=link,
+    return H.Data(addr=addr, name=name, dev=dev, mdev=mdev, link=link,
                         proto=proto)
+
 
 #===========================================================================
 class Test_Outlet:
@@ -72,23 +74,23 @@ class Test_Outlet:
         right = {"address" : addr.hex, "name" : name}
         assert data == right
 
-        data = mdev.template_data(is_on=True, button=1,
+        data = mdev.template_data(is_on=True, button=1, reason="something",
                                   mode=IM.on_off.Mode.FAST)
         right = {"address" : addr.hex, "name" : name, "button" : 1,
-                 "on" : 1, "on_str" : "on",
+                 "on" : 1, "on_str" : "on", "reason" : "something",
                  "mode" : "fast", "fast" : 1, "instant" : 0}
         assert data == right
 
         data = mdev.template_data(is_on=False, button=2)
         right = {"address" : addr.hex, "name" : name, "button" : 2,
-                 "on" : 0, "on_str" : "off",
+                 "on" : 0, "on_str" : "off", "reason" : "",
                  "mode" : "normal", "fast" : 0, "instant" : 0}
         assert data == right
 
     #-----------------------------------------------------------------------
     def test_mqtt(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
-        topic = "insteon/%s" % setup['addr'].hex
+        topic = "insteon/%s" % setup.addr.hex
 
         # Should do nothing
         mdev.load_config({})
@@ -113,7 +115,7 @@ class Test_Outlet:
         qos = 3
         mdev.load_config(config, qos)
 
-        stopic = "foo/%s" % setup['addr'].hex
+        stopic = "foo/%s" % setup.addr.hex
 
         # Send an on/off signal
         dev.signal_on_off.emit(dev, 1, True)
@@ -138,24 +140,65 @@ class Test_Outlet:
         mdev.load_config(config, qos=qos)
 
         mdev.subscribe(link, qos)
-        topic1 = link.client.sub[0]['topic']
-        topic2 = link.client.sub[2]['topic']
+        topic1 = link.client.sub[0].topic
+        topic2 = link.client.sub[2].topic
 
         payload = b'{ "on" : "OFF", "mode" : "NORMAL" }'
         link.publish(topic1, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
         # group 1 = standard, group 2 = extended
-        assert proto.sent[0]['msg'].cmd1 == 0x13
-        assert isinstance(proto.sent[0]['msg'], IM.message.OutStandard)
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert isinstance(proto.sent[0].msg, IM.message.OutStandard)
         proto.clear()
 
         payload = b'{ "on" : "ON", "mode" : "FAST" }'
         link.publish(topic2, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x12
-        assert isinstance(proto.sent[0]['msg'], IM.message.OutExtended)
+        assert proto.sent[0].msg.cmd1 == 0x12
+        assert isinstance(proto.sent[0].msg, IM.message.OutExtended)
+        proto.clear()
+
+        # test error payload
+        link.publish(topic1, b'asdf', qos, False)
+
+    #-----------------------------------------------------------------------
+    def test_input_on_off_reason(self, setup):
+        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
+
+        # button in topic
+        qos = 2
+        config = {'outlet' : {
+            'on_off_topic' : 'foo/{{address}}/{{button}}',
+            'on_off_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
+                                '"mode" : "{{json.mode.lower()}}",'
+                                '"reason" : "{{json.reason}}" }')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        topic1 = link.client.sub[0].topic
+        topic2 = link.client.sub[2].topic
+
+        payload = b'{ "on" : "OFF", "mode" : "NORMAL", "reason" : "ABC" }'
+        link.publish(topic1, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        # group 1 = standard, group 2 = extended
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert isinstance(proto.sent[0].msg, IM.message.OutStandard)
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords == {"reason" : "ABC"}
+        proto.clear()
+
+        payload = b'{ "on" : "ON", "mode" : "FAST", "reason" : "baz" }'
+        link.publish(topic2, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x12
+        assert isinstance(proto.sent[0].msg, IM.message.OutExtended)
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords == {"reason" : "baz"}
         proto.clear()
 
         # test error payload
@@ -167,31 +210,65 @@ class Test_Outlet:
 
         qos = 2
         config = {'outlet' : {
-            'scene_on_off_topic' : 'foo/{{address}}/{{button}}',
-            'scene_on_off_payload' : ('{ "cmd" : "{{json.on.lower()}}" }')}}
+            'scene_topic' : 'foo/{{address}}/{{button}}',
+            'scene_payload' : ('{ "cmd" : "{{json.on.lower()}}" }')}}
         mdev.load_config(config, qos=qos)
 
         mdev.subscribe(link, qos)
-        topic = link.client.sub[1]['topic']
+        topic = link.client.sub[1].topic
 
         payload = b'{ "on" : "OFF" }'
         link.publish(topic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x30
-        assert proto.sent[0]['msg'].data[3] == 0x13
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x13
         proto.clear()
 
         payload = b'{ "on" : "ON" }'
         link.publish(topic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
-        assert proto.sent[0]['msg'].cmd1 == 0x30
-        assert proto.sent[0]['msg'].data[3] == 0x11
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x11
         proto.clear()
 
         # test error payload
         link.publish(topic, b'asdf', qos, False)
+
+    #-----------------------------------------------------------------------
+    def test_input_scene_reason(self, setup):
+        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
+
+        qos = 2
+        config = {'outlet' : {
+            'scene_topic' : 'foo/{{address}}/{{button}}',
+            'scene_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
+                               '"reason" : "{{json.reason}}"}')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        topic = link.client.sub[1].topic
+
+        payload = b'{ "on" : "OFF", "reason" : "a b c" }'
+        link.publish(topic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x13
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords == {"reason" : "a b c"}
+        proto.clear()
+
+        payload = b'{ "on" : "ON", "reason" : "zyx" }'
+        link.publish(topic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x11
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords == {"reason" : "zyx"}
+        proto.clear()
 
 
 #===========================================================================

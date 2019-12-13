@@ -134,6 +134,10 @@ class KeypadLinc:
 
                 link.subscribe(topic_dimmer, qos, self._input_set_level)
 
+            handler = functools.partial(self._input_scene, group=1)
+            topic = self.msg_btn_scene.render_topic(data)
+            link.subscribe(topic, qos, handler)
+
         # We need to subscribe to each button topic so we know which one is
         # which.
         for group in range(start_group, 9):
@@ -171,7 +175,7 @@ class KeypadLinc:
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
     def template_data(self, button=None, level=None, mode=on_off.Mode.NORMAL,
-                      manual=None):
+                      manual=None, reason=None):
         """Create the Jinja templating data variables for on/off messages.
 
         Args:
@@ -182,6 +186,8 @@ class KeypadLinc:
           mode (on_off.Mode):  The on/off mode state.
           manual (on_off.Manual):  The manual mode state.  If None, manual
                  attributes are not added to the data.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -194,6 +200,7 @@ class KeypadLinc:
             }
 
         if level is not None:
+            level = int(level)
             data["on"] = 1 if level else 0
             data["on_str"] = "on" if level else "off"
             data["level_255"] = level
@@ -201,17 +208,19 @@ class KeypadLinc:
             data["mode"] = str(mode)
             data["fast"] = 1 if mode == on_off.Mode.FAST else 0
             data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
+            data["reason"] = reason if reason is not None else ""
 
         if manual is not None:
             data["manual_str"] = str(manual)
             data["manual"] = manual.int_value()
             data["manual_openhab"] = manual.openhab_value()
+            data["reason"] = reason if reason is not None else ""
 
         return data
 
     #-----------------------------------------------------------------------
     def _insteon_level_changed(self, device, group, level,
-                               mode=on_off.Mode.NORMAL):
+                               mode=on_off.Mode.NORMAL, reason=""):
         """Device on/off and dimmer level changed callback.
 
         This is triggered via signal when the Insteon device goes active or
@@ -222,11 +231,13 @@ class KeypadLinc:
           group (int):  The button (1-8) that was pressed.
           level (int):  The dimmer level (0->255)
           mode (on_off.Mode):  The on/off mode state.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
         """
-        LOG.info("MQTT received button press %s = btn %s at %s %s",
-                 device.label, group, level, mode)
+        LOG.info("MQTT received button press %s = btn %s at %s %s %s",
+                 device.label, group, level, mode, reason)
 
-        data = self.template_data(group, level, mode)
+        data = self.template_data(group, level, mode, reason=reason)
 
         # For manual mode messages, don't retain them because they don't
         # represent persistent state - they're momentary events.
@@ -238,7 +249,7 @@ class KeypadLinc:
             self.msg_btn_state.publish(self.mqtt, data, retain=retain)
 
     #-----------------------------------------------------------------------
-    def _insteon_manual(self, device, group, manual):
+    def _insteon_manual(self, device, group, manual, reason=""):
         """Device manual mode changed callback.
 
         This is triggered via signal when the Insteon device starts or stops
@@ -250,16 +261,16 @@ class KeypadLinc:
           group (int):  The button (1-8) that was pressed.
           manual (on_off.Manual):  The manual mode.
         """
-        LOG.info("MQTT received manual button press %s = btn %s %s",
-                 device.label, group, manual)
+        LOG.info("MQTT received manual button press %s = btn %s %s %s",
+                 device.label, group, manual, reason)
 
         # For manual mode messages, don't retain them because they don't
         # represent persistent state - they're momentary events.
-        data = self.template_data(group, manual=manual)
+        data = self.template_data(group, manual=manual, reason=reason)
         self.msg_manual_state.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------
-    def _input_on_off(self, client, data, message, group):
+    def _input_on_off(self, client, data, message, group, raise_errors=False):
         """Handle an input on/off change MQTT message.
 
         This is called when we receive a message on the level change MQTT
@@ -270,6 +281,8 @@ class KeypadLinc:
           client (paho.Client):  The paho mqtt client (self.link).
           data:  Optional user data (unused).
           message:  MQTT message - has attrs: topic, payload, qos, retain.
+          raise_errors (bool):  True to raise any errors - otherwise they
+                       are logged and ignored.
         """
         LOG.info("KeypadLinc btn %s message %s %s", group, message.topic,
                  message.payload)
@@ -282,12 +295,15 @@ class KeypadLinc:
         try:
             is_on, mode = util.parse_on_off(data)
             level = 0xff if is_on else 0x00
-            self.device.set(level, group, mode)
+            reason = data.get("reason", "")
+            self.device.set(level, group, mode, reason=reason)
         except:
             LOG.exception("Invalid KeypadLinc on/off command: %s", data)
+            if raise_errors:
+                raise
 
     #-----------------------------------------------------------------------
-    def _input_set_level(self, client, data, message):
+    def _input_set_level(self, client, data, message, raise_errors=False):
         """Handle an input level changechange MQTT message.
 
         This is called when we receive a message on the level change MQTT
@@ -298,6 +314,8 @@ class KeypadLinc:
           client (paho.Client):  The paho mqtt client (self.link).
           data:  Optional user data (unused).
           message:  MQTT message - has attrs: topic, payload, qos, retain.
+          raise_errors (bool):  True to raise any errors - otherwise they
+                       are logged and ignored.
         """
         LOG.info("KeypadLinc message %s %s", message.topic, message.payload)
         assert self.msg_dimmer_level is not None
@@ -310,9 +328,12 @@ class KeypadLinc:
         try:
             is_on, mode = util.parse_on_off(data)
             level = 0 if not is_on else int(data.get('level'))
-            self.device.set(level, mode=mode)
+            reason = data.get("reason", "")
+            self.device.set(level, mode=mode, reason=reason)
         except:
             LOG.exception("Invalid KeypadLinc level command: %s", data)
+            if raise_errors:
+                raise
 
     #-----------------------------------------------------------------------
     def _input_btn1(self, client, data, message):
@@ -332,7 +353,7 @@ class KeypadLinc:
         # Try the input as a dimmer command first.
         try:
             if self.msg_dimmer_level.to_json(message.payload, silent=True):
-                self._input_set_level(client, data, message)
+                self._input_set_level(client, data, message, raise_errors=True)
                 return
         except:
             pass
@@ -340,14 +361,15 @@ class KeypadLinc:
         # Try the input as an on/off command.
         try:
             if self.msg_btn_on_off.to_json(message.payload, silent=True):
-                self._input_on_off(client, data, message, 1)
+                self._input_on_off(client, data, message, group=1,
+                                   raise_errors=True)
                 return
         except:
             pass
 
-        # If we make it here, it's an error.  To log the error, call the
-        # regular dimmer handler.
-        self._input_set_level(client, data, message)
+        # If we make it here, it's an error.
+        LOG.error("Invalid input command did match a dimmer or on/off "
+                  "message: %s", message.payload)
 
     #-----------------------------------------------------------------------
     def _input_scene(self, client, data, message, group):
@@ -374,7 +396,8 @@ class KeypadLinc:
         try:
             # Scenes don't support modes so don't parse that element.
             is_on = util.parse_on_off(data, have_mode=False)
-            self.device.scene(is_on, group)
+            reason = data.get("reason", "")
+            self.device.scene(is_on, group, reason=reason)
         except:
             LOG.exception("Invalid KeypadLinc command: %s", data)
 

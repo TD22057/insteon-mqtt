@@ -103,6 +103,7 @@ class Test_Device:
         addr = IM.Address(0x01, 0x02, 0x03)
         device = IM.device.Base(protocol, modem, addr)
         calls = []
+
         def callback(success, msg, data):
             calls.append(msg)
 
@@ -139,6 +140,7 @@ class MockProto:
 
     def send(self, msg, handler, high_priority=False, after=None):
         self.msgs.append(msg)
+
 
 class MockModem():
     def __init__(self):

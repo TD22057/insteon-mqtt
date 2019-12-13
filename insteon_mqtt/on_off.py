@@ -1,9 +1,20 @@
 #===========================================================================
 #
-# Insteon on/off command utilities.
+# Insteon on/off command utilities and constants.
 #
 #===========================================================================
 import enum
+
+# Constants used for the built in reasons.
+
+# Device button being pressed or initiating the change.
+REASON_DEVICE = "device"
+# Device responding to a scene command.
+REASON_SCENE = "scene"
+# Device responding to a direct command.
+REASON_COMMAND = "command"
+# Device state from a refresh command.
+REASON_REFRESH = "refresh"
 
 
 #===========================================================================

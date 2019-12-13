@@ -20,8 +20,8 @@ class Test_device:
         mocker.patch('insteon_mqtt.cmd_line.util.send')
         IM.cmd_line.util.send.return_value = {"status" : 10}
 
-        args = helpers.Data(topic="cmd_topic", force=False, quiet=True, group=5,
-                            address="aa.bb.cc")
+        args = helpers.Data(topic="cmd_topic", force=False, quiet=True,
+                            group=5, address="aa.bb.cc")
         config = helpers.Data(a=1, b=2)
 
         r = IM.cmd_line.device.linking(args, config)
@@ -39,8 +39,8 @@ class Test_device:
         mocker.patch('insteon_mqtt.cmd_line.util.send')
         IM.cmd_line.util.send.return_value = {"status" : 10}
 
-        args = helpers.Data(topic="cmd_topic", force=False, quiet=True, group=5,
-                            address="aa.bb.cc", is_on=True)
+        args = helpers.Data(topic="cmd_topic", force=False, quiet=True,
+                            group=5, address="aa.bb.cc", is_on=True)
         config = helpers.Data(a=1, b=2)
 
         r = IM.cmd_line.device.set_button_led(args, config)

@@ -7,7 +7,7 @@
 import time
 import pytest
 import insteon_mqtt as IM
-import helpers
+import helpers as H
 
 # NOTE about mocking: Don't mock classes directly being used by the class
 # being tested.  If we do that, then we're not testing whether the class
@@ -19,22 +19,24 @@ import helpers
 # correct test pattern is to always use the actual classes that A depends on
 # and mock the classees that those dependencies depend on.
 
+
 # Create our MQTT object to test as well as the linked Insteon object and a
 # mocked MQTT client to publish to.
 @pytest.fixture
 def setup(mock_paho_mqtt, tmpdir):
-    proto = helpers.MockProtocol()
-    modem = helpers.MockModem(tmpdir)
+    proto = H.main.MockProtocol()
+    modem = H.main.MockModem(tmpdir)
     addr = IM.Address(1, 2, 3)
     name = "device name"
     dev = IM.device.Leak(proto, modem, addr, name)
 
     link = IM.network.Mqtt()
-    mqttModem = helpers.MockMqtt_Modem()
+    mqttModem = H.mqtt.MockModem()
     mqtt = IM.mqtt.Mqtt(link, mqttModem)
     mdev = IM.mqtt.Leak(mqtt, dev)
 
-    return helpers.Data(addr=addr, name=name, dev=dev, mdev=mdev, link=link)
+    return H.Data(addr=addr, name=name, dev=dev, mdev=mdev, link=link)
+
 
 #===========================================================================
 class Test_Leak:
@@ -77,7 +79,7 @@ class Test_Leak:
     def test_mqtt(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
 
-        topic = "insteon/%s" % setup['addr'].hex
+        topic = "insteon/%s" % setup.addr.hex
 
         # Should do nothing
         mdev.load_config({})
@@ -119,8 +121,8 @@ class Test_Leak:
         qos = 3
         mdev.load_config(config, qos)
 
-        stopic = "foo/%s" % setup['addr'].hex
-        htopic = "bar/%s" % setup['addr'].hex
+        stopic = "foo/%s" % setup.addr.hex
+        htopic = "bar/%s" % setup.addr.hex
 
         # Send an on/off signal
         dev.signal_wet.emit(dev, True)

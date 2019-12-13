@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Tests for: insteont_mqtt/mqtt/BatterySensor.py
+# Tests for: insteont_mqtt/mqtt/IOLinc.py
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
@@ -27,28 +27,37 @@ def setup(mock_paho_mqtt, tmpdir):
     modem = H.main.MockModem(tmpdir)
     addr = IM.Address(1, 2, 3)
     name = "device name"
-    dev = IM.device.BatterySensor(proto, modem, addr, name)
+    dev = IM.device.IOLinc(proto, modem, addr, name)
+    dev.modem_scene = 50
 
     link = IM.network.Mqtt()
     mqttModem = H.mqtt.MockModem()
     mqtt = IM.mqtt.Mqtt(link, mqttModem)
-    mdev = IM.mqtt.BatterySensor(mqtt, dev)
+    mdev = IM.mqtt.IOLinc(mqtt, dev)
 
-    return H.Data(addr=addr, name=name, dev=dev, mdev=mdev, link=link)
+    return H.Data(addr=addr, name=name, dev=dev, mdev=mdev, link=link,
+                        proto=proto, modem=modem)
 
 
 #===========================================================================
-class Test_BatterySensor:
+class Test_IOLinc:
     #-----------------------------------------------------------------------
     def test_pubsub(self, setup):
-        mdev, link = setup.getAll(['mdev', 'link'])
+        mdev, addr, link = setup.getAll(['mdev', 'addr', 'link'])
 
-        # Battery sensor doesn't subscribe to any topics.
         mdev.subscribe(link, 2)
-        assert len(link.client.sub) == 0
+        assert len(link.client.sub) == 2
+        assert link.client.sub[0] == dict(
+            topic='insteon/%s/set' % addr.hex, qos=2)
+        assert link.client.sub[1] == dict(
+            topic='insteon/%s/scene' % addr.hex, qos=2)
 
         mdev.unsubscribe(link)
-        assert len(link.client.sub) == 0
+        assert len(link.client.unsub) == 2
+        assert link.client.unsub[0] == dict(
+            topic='insteon/%s/set' % addr.hex)
+        assert link.client.unsub[1] == dict(
+            topic='insteon/%s/scene' % addr.hex)
 
     #-----------------------------------------------------------------------
     def test_template(self, setup):
@@ -58,16 +67,19 @@ class Test_BatterySensor:
         right = {"address" : addr.hex, "name" : name}
         assert data == right
 
-        data = mdev.template_data(is_on=True, is_low=False)
+        data = mdev.template_data(is_on=True)
         right = {"address" : addr.hex, "name" : name,
-                 "on" : 1, "on_str" : "on",
-                 "is_low" : 0, "is_low_str" : "off"}
+                 "on" : 1, "on_str" : "on"}
+        assert data == right
+
+        data = mdev.template_data(is_on=False)
+        right = {"address" : addr.hex, "name" : name,
+                 "on" : 0, "on_str" : "off"}
         assert data == right
 
     #-----------------------------------------------------------------------
     def test_mqtt(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
-
         topic = "insteon/%s" % setup.addr.hex
 
         # Should do nothing
@@ -83,30 +95,17 @@ class Test_BatterySensor:
             topic='%s/state' % topic, payload='off', qos=0, retain=True)
         link.client.clear()
 
-        # Send a low battery signal
-        dev.signal_low_battery.emit(dev, False)
-        dev.signal_low_battery.emit(dev, True)
-        assert len(link.client.pub) == 2
-        assert link.client.pub[0] == dict(
-            topic='%s/low_battery' % topic, payload='off', qos=0, retain=True)
-        assert link.client.pub[1] == dict(
-            topic='%s/low_battery' % topic, payload='on', qos=0, retain=True)
-
     #-----------------------------------------------------------------------
     def test_config(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
 
-        config = {'battery_sensor' : {
+        config = {'io_linc' : {
             'state_topic' : 'foo/{{address}}',
-            'state_payload' : '{{on}} {{on_str.upper()}}',
-            'low_battery_topic' : 'bar/{{address}}',
-            'low_battery_payload' : '{{is_low}} {{is_low_str.upper()}}',
-            }}
+            'state_payload' : '{{on}} {{on_str.upper()}}'}}
         qos = 3
         mdev.load_config(config, qos)
 
         stopic = "foo/%s" % setup.addr.hex
-        btopic = "bar/%s" % setup.addr.hex
 
         # Send an on/off signal
         dev.signal_on_off.emit(dev, True)
@@ -116,16 +115,68 @@ class Test_BatterySensor:
             topic=stopic, payload='1 ON', qos=qos, retain=True)
         assert link.client.pub[1] == dict(
             topic=stopic, payload='0 OFF', qos=qos, retain=True)
-
         link.client.clear()
 
-        # Send a low battery signal
-        dev.signal_low_battery.emit(dev, False)
-        dev.signal_low_battery.emit(dev, True)
-        assert len(link.client.pub) == 2
-        assert link.client.pub[0] == dict(
-            topic=btopic, payload='0 OFF', qos=qos, retain=True)
-        assert link.client.pub[1] == dict(
-            topic=btopic, payload='1 ON', qos=qos, retain=True)
+    #-----------------------------------------------------------------------
+    def test_input_on_off(self, setup):
+        mdev, link, proto, addr = setup.getAll(['mdev', 'link', 'proto',
+                                                'addr'])
+
+        qos = 2
+        config = {'io_linc' : {
+            'on_off_topic' : 'foo/{{address}}',
+            'on_off_payload' : '{ "cmd" : "{{json.on.lower()}}" }'}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        topic = 'foo/%s' % addr.hex
+
+        payload = b'{ "on" : "OFF" }'
+        link.publish(topic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x13
+        proto.clear()
+
+        payload = b'{ "on" : "ON" }'
+        link.publish(topic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x11
+        proto.clear()
+
+        # test error payload
+        link.publish(topic, b'asdf', qos, False)
+
+    #-----------------------------------------------------------------------
+    def test_input_scene(self, setup):
+        mdev, link, modem, addr = setup.getAll(['mdev', 'link', 'modem',
+                                                'addr'])
+
+        qos = 2
+        config = {'io_linc' : {
+            'scene_topic' : 'foo/{{address}}',
+            'scene_payload' : '{ "cmd" : "{{json.on.lower()}}" }'}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        topic = 'foo/%s' % addr.hex
+
+        payload = b'{ "on" : "OFF" }'
+        link.publish(topic, payload, qos, retain=False)
+        assert len(modem.scenes) == 1
+        assert modem.scenes[0][0] == 0  # is_on
+        assert modem.scenes[0][1] == 50  # group
+        modem.scenes = []
+
+        payload = b'{ "on" : "ON" }'
+        link.publish(topic, payload, qos, retain=False)
+        assert modem.scenes[0][0] == 1  # is_on
+        assert modem.scenes[0][1] == 50  # group
+        modem.scenes = []
+
+        # test error payload
+        link.publish(topic, b'asdf', qos, False)
+
 
 #===========================================================================

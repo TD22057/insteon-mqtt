@@ -4,13 +4,14 @@
 #
 #===========================================================================
 import insteon_mqtt as IM
-import helpers
+import helpers as H
+
 
 class Test_config:
     #-----------------------------------------------------------------------
     def test_find(self, tmpdir):
-        proto = helpers.MockProtocol()
-        modem = helpers.MockModem(tmpdir)
+        proto = H.main.MockProtocol()
+        modem = H.main.MockModem(tmpdir)
         addr = IM.Address(1, 2, 3)
 
         types = ["BatterySensor", "Dimmer", "FanLinc", "IOLinc", "KeypadLinc",

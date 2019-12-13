@@ -139,7 +139,7 @@ class Mqtt:
     def handle_connected(self, link, connected):
         """MQTT (dis)connection callback.
 
-        This is called when the low levle MQTT client connects to the broker.
+        This is called when the low level MQTT client connects to the broker.
         After the connection, we'll subscribe to our topics.
 
         Args:

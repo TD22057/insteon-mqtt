@@ -124,7 +124,8 @@ class Dimmer:
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
-    def template_data(self, level=None, mode=on_off.Mode.NORMAL, manual=None):
+    def template_data(self, level=None, mode=on_off.Mode.NORMAL, manual=None,
+                      reason=None):
         """Create the Jinja templating data variables for on/off messages.
 
         Args:
@@ -133,6 +134,8 @@ class Dimmer:
           mode (on_off.Mode):  The on/off mode state.
           manual (on_off.Manual):  The manual mode state.  If None, manual
                  attributes are not added to the data.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -151,16 +154,19 @@ class Dimmer:
             data["mode"] = str(mode)
             data["fast"] = 1 if mode == on_off.Mode.FAST else 0
             data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
+            data["reason"] = reason if reason is not None else ""
 
         if manual is not None:
             data["manual_str"] = str(manual)
             data["manual"] = manual.int_value()
             data["manual_openhab"] = manual.openhab_value()
+            data["reason"] = reason if reason is not None else ""
 
         return data
 
     #-----------------------------------------------------------------------
-    def _insteon_level_changed(self, device, level, mode=on_off.Mode.NORMAL):
+    def _insteon_level_changed(self, device, level, mode=on_off.Mode.NORMAL,
+                               reason=""):
         """Device on/off and dimmer level changed callback.
 
         This is triggered via signal when the Insteon device goes active or
@@ -170,19 +176,21 @@ class Dimmer:
           device (device.Dimmer):  The Insteon device that changed.
           level (int):  The dimmer level (0->255)
           mode (on_off.Mode):  The on/off mode state.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
         """
-        LOG.info("MQTT received level change %s level: %s", device.label,
-                 level)
+        LOG.info("MQTT received level change %s level: %s %s", device.label,
+                 level, reason)
 
         # For manual mode messages, don't retain them because they don't
         # represent persistent state - they're momentary events.
         retain = False if mode == on_off.Mode.MANUAL else None
 
-        data = self.template_data(level, mode)
+        data = self.template_data(level, mode, reason=reason)
         self.msg_state.publish(self.mqtt, data, retain=retain)
 
     #-----------------------------------------------------------------------
-    def _insteon_manual(self, device, manual):
+    def _insteon_manual(self, device, manual, reason=""):
         """Device manual mode changed callback.
 
         This is triggered via signal when the Insteon device starts or stops
@@ -192,13 +200,15 @@ class Dimmer:
         Args:
           device (device.Dimmer):  The Insteon device that changed.
           manual (on_off.Manual):  The manual mode.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
         """
-        LOG.info("MQTT received manual change %s mode: %s", device.label,
-                 manual)
+        LOG.info("MQTT received manual change %s mode: %s %s", device.label,
+                 manual, reason)
 
         # For manual mode messages, don't retain them because they don't
         # represent persistent state - they're momentary events.
-        data = self.template_data(manual=manual)
+        data = self.template_data(manual=manual, reason=reason)
         self.msg_manual_state.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------
@@ -223,7 +233,8 @@ class Dimmer:
             # Tell the device to update it's state.
             is_on, mode = util.parse_on_off(data)
             level = 0 if not is_on else 0xff
-            self.device.set(level=level, mode=mode)
+            reason = data.get("reason", "")
+            self.device.set(level=level, mode=mode, reason=reason)
         except:
             LOG.exception("Invalid switch on/off command: %s", data)
 
@@ -247,9 +258,10 @@ class Dimmer:
         try:
             is_on, mode = util.parse_on_off(data)
             level = 0 if not is_on else int(data.get('level'))
+            reason = data.get("reason", "")
 
             # Tell the device to change it's level.
-            self.device.set(level=level, mode=mode)
+            self.device.set(level=level, mode=mode, reason=reason)
         except:
             LOG.exception("Invalid dimmer command: %s", data)
 
@@ -275,9 +287,10 @@ class Dimmer:
             # Scenes don't support modes so don't parse that element.
             is_on = util.parse_on_off(data, have_mode=False)
             group = int(data.get('group', 0x01))
+            reason = data.get("reason", "")
 
             # Tell the device to trigger the scene command.
-            self.device.scene(is_on, group)
+            self.device.scene(is_on, group, reason)
         except:
             LOG.exception("Invalid dimmer command: %s", data)
 

@@ -194,6 +194,8 @@ information even if known.  The command payload is:
    { "cmd" : "refresh", ["force" : true/false] }
    ```
 
+If the device reports a state change because of the refresh command the
+reason string will be set to "refresh".
 
 ### Refresh all devices
 
@@ -329,10 +331,27 @@ The MQTT format of the command is:
 
 Switch, KeypadLinc, and Dimmer all support the flags:
 
-   - backlight: integer in the range 0x11-0xff which changes the LED backlight
+   - backlight: integer in the range 0x00-0xff which changes the LED backlight
      level on the device.
    - on_level: integer in the range 0x00-0xff which sets the on level that will
      be used when the button is pressed.
+   - load_attached: 0/1 to attach or detach the load from the group 1 button.
+   - follow_mask: 8 bit integer flags - 1 per button.  Requires a group=N
+     input as well.  This sets the follow mask for the input group.  When
+     that button is pressed, any button with the bit set in this mask will be
+     changed to match the state of the button.  This is used for the 6 button
+     device to have the groups (1,2) and (7,8) stay in sync.
+   - off_mask: 8 bit integer flags - 1 per button.  Requires a group=N input
+     as well.  This sets the off mask for the input group.  When that button
+     is pressed, all the buttons with the bits set in this mask will turn
+     off.  This is used to implement radio buttons.
+   - signal_bits: 8 bit integer flags - 1 per button.  Only used for
+     non-toggle buttons.  If a bit is 1, then the button only sends on
+     commands.  If a bit is 0, hten the button only sends off commands.
+   - nontoggle_bits: 8 bit integer flags - 1 per button.  If a bit is 1, then
+     that button is a non-toggle button and will only send a signal per the
+     signal_bits input.  If a bit is 0, then that button is a toggle button
+     and will alternate on an doff signals
 
 IOLinc supports the flags:
 
@@ -365,10 +384,11 @@ controller).  For devices, the group is the button number and this will
 simulate pressing the button on the device.  Note that devices do not work
 properly with the off command - they will emit the off scene message but not
 actually turn off themselves so insteon-mqtt will send an off command to the
-device once the scene messages are done.
+device once the scene messages are done.  The reason field is optional and
+will be passed through to the output state change payload.
 
    ```
-   { "cmd": "scene", "group" : group, "is_on" : 0/1 }
+   { "cmd": "scene", "group" : group, "is_on" : 0/1, ["reason" : "..."] }
    ```
 
 
@@ -418,6 +438,11 @@ which can be used in the templates:
    - 'mode' is the on/off mode: 'normal', 'fast', or instant'
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
+   - 'reason' is the reason for the change.  'device' if a button was pressed
+     on the device.  'scene' if the device is responding to a scene trigger.
+     'refresh' if the update is from a refresh'.  'command' if the device is
+     responding to an on/off command.  Or an arbitrary string if one was
+     passed in via the scene or on/off style command inputs.
 
 Manual state output is invoked when a button on the device is held down.
 Manual mode flags are UP or DOWN (when the on or off button is pressed and
@@ -495,6 +520,11 @@ which can be used in the templates:
    - 'mode' is the on/off mode: 'normal', 'fast', or instant'
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
+   - 'reason' is the reason for the change.  'device' if a button was pressed
+     on the device.  'scene' if the device is responding to a scene trigger.
+     'refresh' if the update is from a refresh'.  'command' if the device is
+     responding to an on/off command.  Or an arbitrary string if one was
+     passed in via the scene or on/off style command inputs.
 
 Manual state output is invoked when a button on the device is held down.
 Manual mode flags are UP or DOWN (when the on or off button is pressed and
@@ -583,6 +613,11 @@ which can be used in the templates:
    - 'level' is the integer speed level 0-3 for off (0), low (1), medium (2),
       and high (3)
    - 'level_str' is the speed level 'off', 'low', 'medium', or 'high'.
+   - 'reason' is the reason for the change.  'device' if a button was pressed
+     on the device.  'scene' if the device is responding to a scene trigger.
+     'refresh' if the update is from a refresh'.  'command' if the device is
+     responding to an on/off command.  Or an arbitrary string if one was
+     passed in via the scene or on/off style command inputs.
 
 Input state change messages have the following variables defined which
 can be used in the templates:
@@ -658,6 +693,11 @@ The button change defines the following variables for templates:
    - 'mode' is the on/off mode: 'normal', 'fast', or instant'
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
+   - 'reason' is the reason for the change.  'device' if a button was pressed
+     on the device.  'scene' if the device is responding to a scene trigger.
+     'refresh' if the update is from a refresh'.  'command' if the device is
+     responding to an on/off command.  Or an arbitrary string if one was
+     passed in via the scene or on/off style command inputs.
 
 Manual state output is invoked when a button on the device is held down.
 Manual mode flags are UP or DOWN (when the on or off button is pressed and
@@ -667,6 +707,7 @@ name, address, and:
    - 'manual_str' = 'up'/'off'/'down'
    - 'manual' = 1/0/-1
    - 'manual_openhab' = 2/1/0
+   - 'reason' (see above)
 
 A sample remote control topic and payload configuration is:
 
@@ -880,6 +921,11 @@ which can be used in the templates:
    - 'mode' is the on/off mode: 'normal', 'fast', or instant'
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
+   - 'reason' is the reason for the change.  'device' if a button was pressed
+     on the device.  'scene' if the device is responding to a scene trigger.
+     'refresh' if the update is from a refresh'.  'command' if the device is
+     responding to an on/off command.  Or an arbitrary string if one was
+     passed in via the scene or on/off style command inputs.
 
 Input state change messages have the following variables defined which
 can be used in the templates:

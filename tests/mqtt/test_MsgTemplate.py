@@ -3,9 +3,10 @@
 # Tests for: insteont_mqtt/mqtt/MsgTemplate.py
 #
 #===========================================================================
-import helpers
+import helpers as H
 import insteon_mqtt as IM
 from insteon_mqtt.mqtt import MsgTemplate
+
 
 class Test_MsgTemplate:
     #-----------------------------------------------------------------------
@@ -27,8 +28,8 @@ class Test_MsgTemplate:
         t = msg.render_payload(data)
         assert t is None
 
-        link = helpers.MockNetwork_Mqtt()
-        mqtt = IM.mqtt.Mqtt(link, helpers.MockMqtt_Modem())
+        link = H.network.MockMqtt()
+        mqtt = IM.mqtt.Mqtt(link, H.mqtt.MockModem())
         msg.publish(mqtt, data)
         assert len(link.pub) == 0
 
@@ -59,16 +60,16 @@ class Test_MsgTemplate:
         msg = MsgTemplate(topic_templ, payload_templ, qos, retain)
 
         data = {"foo" : 1, "bar" : 2, "baz" : 3, "boz" : "testing"}
-        link = helpers.MockNetwork_Mqtt()
-        mqtt = IM.mqtt.Mqtt(link, helpers.MockMqtt_Modem())
+        link = H.network.MockMqtt()
+        mqtt = IM.mqtt.Mqtt(link, H.mqtt.MockModem())
         msg.publish(mqtt, data)
         assert len(link.pub) == 1
 
         call = link.pub[0]
-        assert call['topic'] == '{ "foo"=1, "bar"=2 }'
-        assert call['payload'] == '{ "baz"=3, "boz"="testing" }'
-        assert call['qos'] == qos
-        assert call['retain'] == retain
+        assert call.topic == '{ "foo"=1, "bar"=2 }'
+        assert call.payload == '{ "baz"=3, "boz"="testing" }'
+        assert call.qos == qos
+        assert call.retain == retain
 
     #-----------------------------------------------------------------------
     def test_load(self):
@@ -81,16 +82,16 @@ class Test_MsgTemplate:
         msg.load_config(config, 'abc', 'def', qos)
 
         data = {"foo" : 1, "bar" : 2, "baz" : 3, "boz" : "testing"}
-        link = helpers.MockNetwork_Mqtt()
-        mqtt = IM.mqtt.Mqtt(link, helpers.MockMqtt_Modem())
+        link = H.network.MockMqtt()
+        mqtt = IM.mqtt.Mqtt(link, H.mqtt.MockModem())
         msg.publish(mqtt, data, True)
         assert len(link.pub) == 1
 
         call = link.pub[0]
-        assert call['topic'] == '{ "foo"=1, "bar"=2 }'
-        assert call['payload'] == '{ "baz"=3, "boz"="testing" }'
-        assert call['qos'] == qos
-        assert call['retain'] is True
+        assert call.topic == '{ "foo"=1, "bar"=2 }'
+        assert call.payload == '{ "baz"=3, "boz"="testing" }'
+        assert call.qos == qos
+        assert call.retain is True
 
     #-----------------------------------------------------------------------
     def test_to_json(self):

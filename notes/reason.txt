@@ -1,0 +1,63 @@
+
+on/off switch:
+
+1) button push
+
+Set reason as DEVICE in handle_broadcast()
+
+INFO Protocol: Read 0x50: Std: 37.2d.20 Type.ALL_LINK_BROADCAST grp: 01 cmd: 11 00
+INFO Broadcast: Handling all link broadcast for 37.2d.20 'deck'
+INFO Switch: Switch 37.2d.20 broadcast grp: 1 on: True mode: normal
+INFO Switch: Setting device 37.2d.20 (deck) on True normal reason=
+INFO Protocol: Read 0x50: Std: 37.2d.20 Type.ALL_LINK_CLEANUP grp: 01 cmd: 11 01
+INFO Protocol: Read 0x50: Std: 37.2d.20 Type.ALL_LINK_BROADCAST grp: 01 cmd: 06 00
+INFO Broadcast: Handling all link broadcast for 37.2d.20 'deck'
+INFO Switch: Switch 37.2d.20 broadcast ACK grp: 1
+
+----------------
+
+2) MQTT command (HA/cmd line)
+
+Pass reason through via callback so signal triggers it.  Otherwise default to
+COMMAND.
+
+INFO Switch: Switch 37.2d.20 cmd: off normal
+INFO Protocol: Write message to modem: Std: 37.2d.20, Type.DIRECT, 13 00
+INFO Protocol: Read 0x62: Std: 37.2d.20, Type.DIRECT, 13 00 ack: True
+DEBUG StandardCmd: 37.2d.20 got msg ACK
+INFO Protocol: Read 0x50: Std: 37.2d.20->44.85.11 Type.DIRECT_ACK cmd: 13 00
+DEBUG Switch: Switch 37.2d.20 ACK: Std: 37.2d.20->44.85.11 Type.DIRECT_ACK cmd: 13 00
+INFO Switch: Setting device 37.2d.20 (deck) on False normal reason=
+INFO Switch: MQTT received on/off 37.2d.20 (deck) on: False normal ''
+
+-----------------
+
+3) Insteon scene response
+
+Controller device is triggered.  This sends the broadcast and results in
+Device.handle_group_cmd() being called on the responders.  So that method can
+set the reason as SCENE.
+
+-----------------
+
+4) Insteon-mqtt scene simulation
+
+Result: from insteon's point of view, this is the same as button press and
+sends the same type of message as case 1) above.  Device would need to store
+reason to override.
+
+INFO Switch: Switch 37.2d.20 scene on
+INFO Protocol: Write message to modem: Ext: 37.2d.20, Type.DIRECT ext, 30 00 01 00 00 11 00 00 00 00 00 00 00 00 00 00
+INFO Protocol: Read 0x62: Ext: 37.2d.20, Type.DIRECT ext, 30 00 ack: True 01 00 00 11 00 00 00 00 00 00 00 00 00 be
+DEBUG StandardCmd: 37.2d.20 got msg ACK
+INFO Protocol: Read 0x50: Std: 37.2d.20->44.85.11 Type.DIRECT_ACK cmd: 30 00
+DEBUG Protocol: Passing msg to write handler: StandardCmd handler
+DEBUG Switch: Switch 37.2d.20 ACK: Std: 37.2d.20->44.85.11 Type.DIRECT_ACK cmd: 30 00
+INFO Protocol: Read 0x50: Std: 37.2d.20 Type.ALL_LINK_BROADCAST grp: 01 cmd: 11 00
+INFO Broadcast: Handling all link broadcast for 37.2d.20 'deck'
+INFO Switch: Switch 37.2d.20 broadcast grp: 1 on: True mode: normal
+INFO Switch: Setting device 37.2d.20 (deck) on True normal reason=
+INFO Protocol: Read 0x50: Std: 37.2d.20 Type.ALL_LINK_CLEANUP grp: 01 cmd: 11 01
+INFO Protocol: Read 0x50: Std: 37.2d.20 Type.ALL_LINK_BROADCAST grp: 01 cmd: 06 00
+INFO Broadcast: Handling all link broadcast for 37.2d.20 'deck'
+INFO Switch: Switch 37.2d.20 broadcast ACK grp: 1
