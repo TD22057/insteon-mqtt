@@ -180,14 +180,16 @@ class Scenes:
             # Generate Controller Entries
             for controller in scene.controllers:
                 for responder in scene.responders:
-                    if controller.device is not None:
+                    if (controller.device is not None and
+                            controller.addr != responder.addr):
                         controller.device.db_config.add_from_config(responder,
                                                                     controller)
 
             # Generate Responder Entries
             for responder in scene.responders:
                 for controller in scene.controllers:
-                    if responder.device is not None:
+                    if (responder.device is not None and
+                            controller.addr != responder.addr):
                         responder.device.db_config.add_from_config(controller,
                                                                    responder)
 
