@@ -9,8 +9,8 @@ __doc__ = """Scenes file utilties
 
 #===========================================================================
 import os
-from ruamel.yaml import YAML
 from collections import Counter
+from ruamel.yaml import YAML
 from . import log
 from .Address import Address
 
@@ -217,9 +217,9 @@ class Scenes:
         updated = False
         for scene in self.entries:
             for controller in scene.controllers:
-                if (controller.device is not None
-                        and controller.device.type() == "Modem"
-                        and controller.group <= 0x01):
+                if (controller.device is not None and
+                        controller.device.type() == "Modem" and
+                        controller.group <= 0x01):
                     updated = True
 
                     # Get and set the next available group id

@@ -109,7 +109,7 @@ class Test_Device:
         str(obj)
 
         j = obj.to_json()
-        obj2 = IM.db.Device.from_json(j, '')
+        obj2 = IM.db.Device.from_json(j, '', None)
         assert len(obj2.entries) == 4
         assert len(obj2.unused) == 1
         assert len(obj2.groups) == 2
