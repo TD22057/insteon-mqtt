@@ -401,7 +401,7 @@ class Dimmer(Base):
             ramp = 0x1f  # default
             if data[1] in self.ramp_pretty:
                 ramp = self.ramp_pretty[data[1]]
-            on_level = round(data[0] / 2.55)
+            on_level = int((data[0] / .255) + .5) / 10
             ret = [{'on_level': on_level},
                    {'ramp_rate': ramp},
                    {'data_3': data[2]}]
@@ -444,7 +444,7 @@ class Dimmer(Base):
                         data_2 = ramp_key
                         break
             if 'on_level' in data:
-                data_1 = round(data['on_level'] * 2.55)
+                data_1 = int(data['on_level'] * 2.55 + .5)
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------

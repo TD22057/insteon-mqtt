@@ -531,7 +531,7 @@ class KeypadLinc(Base):
                 ramp = 0x1f  # default
                 if data[1] in Dimmer.ramp_pretty:
                     ramp = Dimmer.ramp_pretty[data[1]]
-                on_level = round(data[0] / 2.55)
+                on_level = int((data[0] / .255) + .5) / 10
                 ret = [{'on_level': on_level},
                        {'ramp_rate': ramp},
                        {'group': data[2]}]
@@ -576,7 +576,7 @@ class KeypadLinc(Base):
                         if data['ramp'] >= ramp_value:
                             data_2 = ramp_key
                 if 'on_level' in data:
-                    data_1 = round(data['on_level'] * 2.55)
+                    data_1 = int(data['on_level'] * 2.55 + .5)
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
