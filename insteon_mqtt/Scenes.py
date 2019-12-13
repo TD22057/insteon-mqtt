@@ -61,7 +61,10 @@ class Scenes:
             found_responder = scene.find_responder(new_responder)
             if found_controller is not None:
                 if found_responder is not None:
-                    found_responder.link_data = new_responder.link_data
+                    if new_responder.addr == dev_addr:
+                        found_responder.link_data = new_responder.link_data
+                    else:
+                        found_controller.link_data = new_controller.link_data
                 else:
                     if len(scene.controllers) > 1:
                         # 2 Split controller from this scene and make new scene
