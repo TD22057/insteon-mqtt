@@ -266,8 +266,8 @@ class Scenes:
           scene:    (SceneEntry) The scene to be deleted
         """
         if scene.index is not None:
-            del self.entries[scene.index]
             del self.data[scene.index]
+            del self.entries[scene.index]
 
 #===========================================================================
 
@@ -526,6 +526,20 @@ class SceneDevice:
         # pretty. Easiest way to do this is just to set things to themselves
         self.group = self.group
         self.link_data = self.link_data
+
+    def __eq__(self, other):
+        ret = False
+        if (self.addr == other.addr and self.group == other.group and
+                self.is_controller == other.is_controller):
+            ret = True
+        return ret
+
+    def __str__(self):
+        subs = (self.addr, self.group, self.is_controller)
+        return 'Dev Addr: %s Group: %s Ctrl: %s' % subs
+
+    def __hash__(self):
+        return hash(str(self))
 
     @property
     def style(self):
