@@ -230,22 +230,6 @@ class Scenes:
             self.save()
 
     #-----------------------------------------------------------------------
-    def update_scene(self, scene):
-        """Writes Changes in a SceneEntry to the SceneManager
-
-        A scene may not be present in the SceneManager, this occurs when a
-        new template scene is made from a link database entry.  In such cases
-        ignore the update request.
-
-        Changes will only be saved to disk on a call to self.save()
-
-        Args:
-          scene:    (SceneEntry) The scene
-        """
-        if scene.index is not None and self.data[scene.index] != scene.data:
-            self.data[scene.index] = scene.data
-
-    #-----------------------------------------------------------------------
     def append_scene(self, scene):
         """Adds a new SceneEntry to the SceneManager
 
@@ -373,7 +357,6 @@ class SceneEntry:
                 self._data['name'] = self._name
             else:
                 del self._data['name']
-            self.scene_manager.update_scene(self)
 
     #-----------------------------------------------------------------------
     @property
@@ -462,7 +445,6 @@ class SceneEntry:
         if controller.index is not None:
             del self._data['controllers'][controller.index]
             del self._controllers[controller.index]
-            self.scene_manager.update_scene(self)
 
     #-----------------------------------------------------------------------
     def update_device(self, device):
@@ -472,18 +454,12 @@ class SceneEntry:
           device:    (SceneDevice) The device
           data: The raw data that replaces the device entry
         """
-        update = False
         if device.is_controller:
             if self._data['controllers'][device.index] != device.data:
                 self._data['controllers'][device.index] = device.data
-                update = True
         else:
             if self._data['responders'][device.index] != device.data:
                 self._data['responders'][device.index] = device.data
-                update = True
-        # Push the changes to the scene_manager data
-        if update:
-            self.scene_manager.update_scene(self)
 
 #===========================================================================
 
