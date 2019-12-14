@@ -460,8 +460,8 @@ class SceneEntry:
           controller:    (SceneDevice) The controller
         """
         if controller.index is not None:
-            del self._controllers[controller.index]
             del self._data['controllers'][controller.index]
+            del self._controllers[controller.index]
             self.scene_manager.update_scene(self)
 
     #-----------------------------------------------------------------------
