@@ -623,7 +623,7 @@ class SceneDevice:
                 self._yaml_data[self.label]['group'] = value
         if self.style == 1 and value > 0x01:
             self._yaml_data[self.label] = value
-        if self.style == 0 and value > 0x01:
+        if self.style == 2 and value > 0x01:
             self._yaml_data = {self.label: value}
 
         # Remove group entry in yaml_data if default value of 0x00 or 0x01
