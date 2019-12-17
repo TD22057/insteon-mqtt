@@ -58,9 +58,15 @@ class Scenes:
         found_controller = None
         for scene in self.entries:
             found_controller = scene.find_controller(new_controller)
-            found_responder = scene.find_responder(new_responder)
+            found_responder = scene.find_responder_weak(new_responder)
             if found_controller is not None:
                 if found_responder is not None:
+                    # 1 found ctrl and resp link, so just update relevant
+                    # link data.
+                    # TODO, this assumes only one responder on a device per
+                    # ctrl, which generally makes sense.  But breaks on things
+                    # like KPLs if we wanted a single modem scene to control
+                    # muliple buttons.
                     if new_responder.addr == dev_addr:
                         found_responder.link_data = new_responder.link_data
                     else:
@@ -394,8 +400,9 @@ class SceneEntry:
         Args:
           controller:    (SceneDevice) The controller
         """
-        self._controllers.append(controller)
-        self._data['controllers'].append(controller.data)
+        if controller not in self._controllers:
+            self._controllers.append(controller)
+            self._data['controllers'].append(controller.data)
 
     #-----------------------------------------------------------------------
     def append_responder(self, responder):
@@ -404,12 +411,15 @@ class SceneEntry:
         Args:
           responder:    (SceneDevice) The responder
         """
-        self._responders.append(responder)
-        self._data['responders'].append(responder.data)
+        if responder not in self._responders:
+            self._responders.append(responder)
+            self._data['responders'].append(responder.data)
 
     #-----------------------------------------------------------------------
     def find_controller(self, controller):
         """Finds a Controller to the SceneEntry
+
+        Only matches the address and group, data1-3 do not have to match
 
         Args:
           controller:    (SceneDevice) The controller
@@ -418,19 +428,16 @@ class SceneEntry:
         """
         ret = None
         for my_controller in self.controllers:
-            if controller.addr == my_controller.addr:
-                # Ensure that group matches for controllers
-                if my_controller.group == 0x00:
-                    my_controller.group = 0x01
-                if controller.group == 0x00:
-                    controller.group = 0x01
-                if my_controller.group == controller.group:
-                    ret = my_controller
+            if (controller.addr == my_controller.addr and
+                    controller.group == my_controller.group):
+                ret = my_controller
         return ret
 
     #-----------------------------------------------------------------------
-    def find_responder(self, responder):
-        """Appends a Responder to the SceneEntry
+    def find_responder_weak(self, responder):
+        """Finds a Responder in the SceneEntry Using Weak Comparison
+
+        Only requires the addr to match
 
         Args:
           responder:    (SceneDevice) The responder
@@ -440,6 +447,24 @@ class SceneEntry:
         ret = None
         for my_responder in self.responders:
             if responder.addr == my_responder.addr:
+                ret = my_responder
+        return ret
+
+    #-----------------------------------------------------------------------
+    def find_responder(self, responder):
+        """Finds a Responder in the SceneEntry Using Strong Comparison
+
+        Requires the addr and group to match
+
+        Args:
+          responder:    (SceneDevice) The responder
+        Returns:
+          The responder
+        """
+        ret = None
+        for my_responder in self.responders:
+            if (responder.addr == my_responder.addr and
+                    responder.group == my_responder.group):
                 ret = my_responder
         return ret
 
@@ -513,14 +538,17 @@ class SceneDevice:
 
     def __eq__(self, other):
         ret = False
-        if (self.addr == other.addr and self.group == other.group and
-                self.is_controller == other.is_controller):
+        self_group = self.group if self.group > 0x00 else 0x01
+        other_group = other.group if other.group > 0x00 else 0x01
+        if (self.addr == other.addr and self_group == other_group and
+                self.link_data == other.link_data):
             ret = True
         return ret
 
     def __str__(self):
-        subs = (self.addr, self.group, self.is_controller)
-        return 'Dev Addr: %s Group: %s Ctrl: %s' % subs
+        self_group = self.group if self.group > 0x00 else 0x01
+        subs = (self.addr, self_group, self.link_data)
+        return 'Dev Addr: %s Group: %s Data1-3: %s' % subs
 
     def __hash__(self):
         return hash(str(self))
