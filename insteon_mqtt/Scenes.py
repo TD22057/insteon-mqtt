@@ -85,7 +85,12 @@ class Scenes:
                         # Second merge in responders from old into new one
                         for old_responder in scene.responders:
                             new_entry.append_responder(old_responder)
-                        # Third append new record to end
+                        # Third, if this was created from an entry on the
+                        # responder device, then copy controller link_data from
+                        # old entry since resp links don't have ctrl d1-3
+                        if new_controller.addr != dev_addr:
+                            new_controller.link_data = found_controller.link_data
+                        # Fourth append new record to end
                         self.append_scene(new_entry)
                     else:
                         # 3 Append only new responder
@@ -488,11 +493,9 @@ class SceneEntry:
           data: The raw data that replaces the device entry
         """
         if device.is_controller:
-            if self._data['controllers'][device.index] != device.data:
-                self._data['controllers'][device.index] = device.data
+            self._data['controllers'][device.index] = device.data
         else:
-            if self._data['responders'][device.index] != device.data:
-                self._data['responders'][device.index] = device.data
+            self._data['responders'][device.index] = device.data
 
 #===========================================================================
 
@@ -693,9 +696,14 @@ class SceneDevice:
             if 'data_3' in self._yaml_data[self.label]:
                 link_data[2] = self._yaml_data[self.label]['data_3']
             if self.device is not None:
+                # Group is a bit special and gets added to link_data
+                # a few responders (kpl) need to know group to set data_3
+                link_dict = self._yaml_data[self.label].copy()
+                if self.group > 0x01:
+                    link_dict['group'] = self.group
                 # Convert data values from human readable form
                 pretty_data = self.device.link_data_from_pretty(
-                    self.is_controller, self._yaml_data[self.label]
+                    self.is_controller, link_dict
                 )
                 for i in range(0, 3):
                     if pretty_data[i] is not None:
@@ -720,13 +728,14 @@ class SceneDevice:
         for i in range(0, 3):
             pretty_name = next(iter(pretty_data[i].keys()))
             pretty_value = pretty_data[i][pretty_name]
-            if data_list[i] == self.link_defaults[i] and self.style == 0:
-                # Default, so delete if in entry
-                if orig_names[i] in self._yaml_data[self.label]:
-                    del self._yaml_data[self.label][orig_names[i]]
-                if pretty_name in self._yaml_data[self.label]:
-                    del self._yaml_data[self.label][pretty_name]
-            elif self.link_data[i] != data_list[i]:
+            if data_list[i] == self.link_defaults[i]:
+                if self.style == 0:
+                    # Default, so delete if in entry
+                    if orig_names[i] in self._yaml_data[self.label]:
+                        del self._yaml_data[self.label][orig_names[i]]
+                    if pretty_name in self._yaml_data[self.label]:
+                        del self._yaml_data[self.label][pretty_name]
+            else:
                 # not default, so make sure value is set
                 if self.style == 0:
                     # first delete orig name
@@ -734,8 +743,9 @@ class SceneDevice:
                         del self._yaml_data[self.label][orig_names[i]]
                     self._yaml_data[self.label][pretty_name] = pretty_value
                 else:
-                    self._yaml_data = {self.label: {'group': self.group,
-                                                    pretty_name: pretty_value}}
+                    self._yaml_data = {self.label: {pretty_name: pretty_value}}
+                    if pretty_name != 'group':
+                        self._yaml_data[self.label]['group'] = self.group
         self.update_device()
 
     @property
