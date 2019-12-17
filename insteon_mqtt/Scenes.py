@@ -10,7 +10,7 @@ __doc__ = """Scenes file utilties
 #===========================================================================
 import os
 from collections import Counter
-from ruamel.yaml import YAML
+from ruamel.yaml import YAML, RoundTripRepresenter
 from . import log
 from .Address import Address
 
@@ -147,9 +147,17 @@ class Scenes:
     def save(self):
         """Saves the scenes data to file.
         """
+        # This is necessary to prevent the representer from making its own
+        # yaml aliases.  While aliases are helpful, the computer generated
+        # ones would just confuse people.
+        class Representer(RoundTripRepresenter):
+            def ignore_aliases(self, data):
+                return True
+
         if self.path is not None:
             with open(self.path, "w") as f:
                 yaml = YAML()
+                yaml.Representer = Representer
                 yaml.preserve_quotes = True
                 yaml.indent(mapping=2, sequence=4, offset=2)
                 yaml.dump(self.data, f)
