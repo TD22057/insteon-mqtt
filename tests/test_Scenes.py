@@ -121,6 +121,7 @@ class Test_Scenes:
                                        "addr": "cc.bb.aa"})
         dev_addr = Address("aa.bb.cc")
         scenes.add_or_update(dev_addr, entry)
+        scenes._compress_scenes()
         assert len(scenes.entries) == 1
 
     def test_populate_scenes(self):
