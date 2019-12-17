@@ -96,33 +96,80 @@ class Scenes:
                         # 3 Append only new responder
                         scene.append_responder(new_responder)
                         # See if we can compress with another scene now
-                        self._merge_by_responders(scene)
                 break  # Found controller entry, end looping scenes
         if not found_controller:
             # 4 No matching scene_entry, append a new one
             self.append_scene(new_entry)
 
     #-----------------------------------------------------------------------
-    def _merge_by_responders(self, test_scene):
-        """Test if Passed Scene has the same responders as any other scene, if
-        it does, merge with that scene
+    def _compress_scenes(self):
+        """Compress Scenes Down into the Fewest Definitions
 
-        Args:
-          scene  (SceneEntry): The Passed Scene
-
+        Attempts to make things more readable to humans, by compressing
+        scene defintions.  First 3-way or N-way links are compressed into a
+        single definition.  Second, any two definitions which have identical
+        responders are merged.
         """
-        for scene in self.entries:
-            if test_scene == scene:
-                # Can't merge with ourselves
-                continue
-            if len(test_scene.responders) == len(scene.responders):
+        i = 0
+        while i < len(self.entries):
+            found = False
+            test_scene = self.entries[i]
+            for scene in self.entries:
+                if test_scene == scene:
+                    # Can't merge with ourselves
+                    continue
+                # Merge n-way switches
+                if self._can_merge_n_way(test_scene, scene):
+                    for new_controller in test_scene.controllers:
+                        scene.append_controller(new_controller)
+                    for new_responder in test_scene.responders:
+                        scene.append_responder(new_responder)
+                    if test_scene.name is not None:
+                        scene.name = test_scene.name
+                    self.del_scene(test_scene)
+                    found = True
+                    break
+                # See if we can merge controllers that have identical responders
                 if Counter(test_scene.responders) == Counter(scene.responders):
                     for new_controller in test_scene.controllers:
                         scene.append_controller(new_controller)
                     if test_scene.name is not None:
                         scene.name = test_scene.name
                     self.del_scene(test_scene)
-                    return
+                    found = True
+                    break
+            if found is not True:
+                # if we found something we deleted the current entry so check
+                # this position again.
+                i += 1
+
+    #-----------------------------------------------------------------------
+    def _can_merge_n_way(self, lhs, rhs):
+        """Determines Whether two Scenes Can be Merged as N-Way Scenes
+
+        The test is whether all of the devices (ctrl & resp) appear on both
+        the left and right side
+
+        Returns:
+          True if they are N-way compatible, False otherwise
+        """
+        for controller in lhs.controllers:
+            if (rhs.find_controller(controller) is None and
+                    rhs.find_responder(controller) is None):
+                return False
+        for responder in lhs.responders:
+            if (rhs.find_controller(responder) is None and
+                    rhs.find_responder(responder) is None):
+                return False
+        for controller in rhs.controllers:
+            if (lhs.find_controller(controller) is None and
+                    lhs.find_responder(controller) is None):
+                return False
+        for responder in rhs.responders:
+            if (lhs.find_controller(responder) is None and
+                    lhs.find_responder(responder) is None):
+                return False
+        return True
 
     #-----------------------------------------------------------------------
     def _load(self):
@@ -158,6 +205,9 @@ class Scenes:
     def save(self):
         """Saves the scenes data to file.
         """
+        # first merge everything
+        self._compress_scenes()
+
         # This is necessary to prevent the representer from making its own
         # yaml aliases.  While aliases are helpful, the computer generated
         # ones would just confuse people.
