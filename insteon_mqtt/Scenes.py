@@ -17,8 +17,8 @@ from .Address import Address
 LOG = log.get_logger()
 
 
-class Scenes:
-    """Scenes Config File Class
+class SceneManager:
+    """SceneManager Class
 
     This class creates an object that holds and manages the scenes file
     definitions.
@@ -39,20 +39,20 @@ class Scenes:
         the scene data object if the scene is not defined.  It will also
         update a scene if it is defined.
 
-        The scene may be added in the following manner
+        The scene may be added/updated in the following manner
         1 Update responder if necessary
         2 Split controller from old record and make a new scene
         3 Append new responder to a scene
-        4 No matching scene entry, append a new scene one
+        4 No matching scene entry, append a new scene
 
         Args:
           device   (Device): The device the entry was found on.
-          entry      (DeviceEntry/ModemEntry): Entry.
+          entry    (DeviceEntry/ModemEntry): Entry.
         """
         # Create basic entry for this scene
         new_entry = SceneEntry.from_link_entry(self, device, entry)
+
         # There is never more than one controller in this case
-        print(new_entry.data)
         new_controller = new_entry.controllers[0]
 
         # Loop existing Scenes
@@ -61,16 +61,32 @@ class Scenes:
             found_controller = scene.find_controller(new_controller)
             if found_controller is not None:
                 for new_responder in new_entry.responders:
+                    # Update the scene for each responder
                     self._update_scene(new_entry, found_controller,
                                        new_responder, scene)
-                break  # Found controller entry, end looping scenes
+                break
         if not found_controller:
             # 4 No matching scene_entry, append a new scene
             self.append_scene(new_entry)
 
     #-----------------------------------------------------------------------
     def _update_scene(self, new_entry, found_controller, new_responder, scene):
-        """TODO
+        """Adds or Updates a Responder Entry in a Scene
+
+        Does one of Three Things:
+          1. If the responder entry is found - updates it
+          If no responder entry is found:
+            2. Adds the responder entry if there is only one controller
+            3. Splits the controller entry into its own new entry and adds the
+                responder
+
+        Args:
+          new_entry (SceneEntry): The template scene entry
+          found_controller (SceneDevice): The existing controller device in
+            this scene.
+          new_responder (SceneDevice): The new responder device to add or
+            update in the scene.
+          scene (SceneEntry): The existing scene entry to modify.
         """
         new_controller = new_entry.controllers[0]
         found_responder = scene.find_responder(new_responder)
@@ -101,12 +117,17 @@ class Scenes:
 
     #-----------------------------------------------------------------------
     def _compress_scenes(self):
-        """Compress Scenes Down into the Fewest Definitions
+        """Compress Scenes Down into a Human Readable Form
 
         Attempts to make things more readable to humans, by compressing
         scene defintions.  First 3-way or N-way links are compressed into a
         single definition.  Second, any two definitions which have identical
-        responders are merged.
+        responders are merged.  Third, any two definitions that have identical
+        controllers are merged.
+
+        This function only processes the scenes in a single pass.  If it runs
+        multiple passes, it may further compress things.  However, this
+        function is a bit time consuming, so can't keep looping through it.
         """
         i = 0
         while i < len(self.entries):
@@ -127,7 +148,7 @@ class Scenes:
                     self.del_scene(test_scene)
                     found = True
                     break
-                # See if we can merge controllers that have identical responders
+                # Merge controllers that have identical responders
                 if Counter(test_scene.responders) == Counter(scene.responders):
                     for new_controller in test_scene.controllers:
                         scene.append_controller(new_controller)
@@ -136,7 +157,16 @@ class Scenes:
                     self.del_scene(test_scene)
                     found = True
                     break
-                # TODO merge responders that have identical controllers
+                # Merge responders that have identical controllers
+                test_ctrls = test_scene.controllers
+                if Counter(test_ctrls) == Counter(scene.controllers):
+                    for new_responder in test_scene.responders:
+                        scene.append_responder(new_responder)
+                    if test_scene.name is not None:
+                        scene.name = test_scene.name
+                    self.del_scene(test_scene)
+                    found = True
+                    break
             if found is not True:
                 # if we found something we deleted the current entry so check
                 # this position again.
@@ -172,7 +202,7 @@ class Scenes:
 
     #-----------------------------------------------------------------------
     def _load(self):
-        """Load and returns the scenes file.
+        """Load the scenes file and push scenes to devices
         """
         if self.path is not None:
             if os.path.exists(self.path):
@@ -324,7 +354,7 @@ class Scenes:
 class SceneEntry:
     """Scene Entry Class
 
-    Parses each Scene Entry into a unified and manageable object.
+    An object representation of a yaml scene.
     """
 
     #-----------------------------------------------------------------------
@@ -332,8 +362,8 @@ class SceneEntry:
         """Initializes Scene Entry
 
         Args:
-          scene_manager: (Scenes) The scene manager object
-          scene:    (dict): The data read from the config file.
+          scene_manager: (SceneManager) The scene manager object
+          scene:    (dict): The parsed yaml data read from the config file.
         """
         self.scene_manager = scene_manager
         self._name = None
@@ -359,12 +389,11 @@ class SceneEntry:
         """Generate a Scene Entry from a Device Link Entry
 
         Generates what a completely new SceneEntry would look like from a
-        DB Entry.  Because a DB Entry is only half of a link pair, there is
-        some information we will be lacking when we generate this scene.
+        DB Entry.
 
         Args:
           device   (Device): The device the entry is found on.
-          entry      (DeviceEntry/ModemEntry): Entry.
+          entry    (DeviceEntry/ModemEntry): Entry.
 
         Returns:
           (SceneEntry)
@@ -382,6 +411,8 @@ class SceneEntry:
                             'data_3': entry.data[2]}}
             )
             # Generate the Responder section
+            # From a controller link, we need to find all possible responder
+            # links on this device.  A multigroup device could have many.
             resp_dev = scene_manager.modem.find(entry.addr)
             found_responder = False
             if resp_dev is not None:
@@ -401,6 +432,9 @@ class SceneEntry:
                 # could be completely wrong in which case this is entry is bad
                 scene['responders'].append(entry_addr)
         else:
+            # Generate the Responder section
+            # Since we know the responder device already, we can just assume
+            # a single responder device
             scene['responders'].append({dev_addr: {'data_1': entry.data[0],
                                                    'data_2': entry.data[1],
                                                    'data_3': entry.data[2]}})
@@ -462,7 +496,7 @@ class SceneEntry:
     #-----------------------------------------------------------------------
     @property
     def data(self):
-        """Returns the raw data for the scene entry
+        """Returns the yaml data for the scene entry
         """
         return self._data
 
@@ -521,27 +555,10 @@ class SceneEntry:
         return ret
 
     #-----------------------------------------------------------------------
-    def find_responder_weak(self, responder):
-        """Finds a Responder in the SceneEntry Using Weak Comparison
-
-        Only requires the addr to match
-
-        Args:
-          responder:    (SceneDevice) The responder
-        Returns:
-          The responder
-        """
-        ret = None
-        for my_responder in self.responders:
-            if responder.addr == my_responder.addr:
-                ret = my_responder
-        return ret
-
-    #-----------------------------------------------------------------------
     def find_responder(self, responder):
         """Finds a Responder in the SceneEntry Using Strong Comparison
 
-        Requires the addr and group to match
+        Requires the addr and group to match, data1-3 do not have to match
 
         Args:
           responder:    (SceneDevice) The responder
@@ -568,7 +585,7 @@ class SceneEntry:
 
     #-----------------------------------------------------------------------
     def update_device(self, device):
-        """Writes Chagnes in a SceneDevice to the SceneEntry
+        """Writes Changes in a SceneDevice to the SceneEntry
 
         Args:
           device:    (SceneDevice) The device
@@ -586,7 +603,6 @@ class SceneDevice:
     """A Device Definition Contained in a SceneEntry
 
     Parses all details about a device definition, into a managable object.
-    For devices that are known we can determine a lot of information
     """
 
     def __init__(self, scene, data, is_controller=False):
@@ -597,7 +613,9 @@ class SceneDevice:
         after initializing a SceneDevice so that the SceneEntry raw data
         is updated.
         Args:
-          TODO
+          scene (SceneEntry): The parent SceneEntry
+          data (dict/list/str): The parsed yaml data for this device
+          is_controller (Boolean): Is this device a controller?
         """
         # Default Attribute Values
         self.scene = scene
@@ -622,6 +640,12 @@ class SceneDevice:
         self.link_data = self.link_data
 
     def __eq__(self, other):
+        '''A strong comparison of devices.
+        
+        Requires address, group, and data1-3 to be the same.  Does not look
+        at is_controller, but this is likely captured by data1-3 anyways. Used
+        primarily by the _compress_scenes functions
+        '''
         ret = False
         self_group = self.group if self.group > 0x00 else 0x01
         other_group = other.group if other.group > 0x00 else 0x01
@@ -688,7 +712,7 @@ class SceneDevice:
     #-----------------------------------------------------------------------
     @property
     def data(self):
-        """Returns the raw data suitable for Ruamel for the SceneDevice
+        """Returns the parsed yaml data for the SceneDevice
         """
         return self._yaml_data
 
@@ -768,6 +792,8 @@ class SceneDevice:
         """Returns the Data1-3 values as a list
 
         If values are not specified in yaml_data the defaults are returned.
+
+        Values will be parsed from human readable to byte like values.
         """
         link_data = self.link_defaults
         if self.style == 0:
@@ -796,6 +822,12 @@ class SceneDevice:
     #-----------------------------------------------------------------------
     def link_data(self, data_list):
         """Sets the raw data1-3 values via a list
+
+        If human readable pretty names are available, will convert to those
+        values on saving to yaml data
+
+        Args:
+          data_list (list[int:3]): The byte like values for data1-3
         """
         if len(data_list) != 3:
             return
@@ -838,6 +870,8 @@ class SceneDevice:
         if self.device is not None:
             ret = list(self.device.link_data(self.is_controller, self.group))
         elif self.is_controller:
+            # These are the values used in base.py.  They may not be right for
+            # this device, but we don't know anything else about it.
             ret = [0x03, 0x00, 0x01]
         else:
             ret = [0xff, 0x00, 0x01]

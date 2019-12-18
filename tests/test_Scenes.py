@@ -17,7 +17,7 @@ class Test_Scenes:
     def test_add_or_update(self):
         # empty
         modem = MockModem()
-        scenes = Scenes.Scenes(modem, None)
+        scenes = Scenes.SceneManager(modem, None)
 
         # test updating controller entry
         scenes.data = [{'controllers': ['aa.bb.cc'],
@@ -102,7 +102,7 @@ class Test_Scenes:
     def test_merge_by_responders(self):
         # empty
         modem = MockModem()
-        scenes = Scenes.Scenes(modem, None)
+        scenes = Scenes.SceneManager(modem, None)
 
         # test updating controller entry
         scenes.data = [{'controllers': ['aa.bb.cc'],
@@ -130,7 +130,7 @@ class Test_Scenes:
         modem.devices[device.label] = device
         device = modem.find(Address("aa.bb.22"))
         modem.devices[device.label] = device
-        scenes = Scenes.Scenes(modem, None)
+        scenes = Scenes.SceneManager(modem, None)
         scenes.data = [{'controllers': ['aa.bb.cc'],
                         'responders': ['aa.bb.22'],
                         'name': 'test'}]
@@ -139,7 +139,7 @@ class Test_Scenes:
 
     def test_assign_modem_group(self):
         modem = MockModem()
-        scenes = Scenes.Scenes(modem, None)
+        scenes = Scenes.SceneManager(modem, None)
         scenes.data = [{'controllers': ['ff.ff.ff'],
                         'responders': ['cc.bb.22'],
                         'name': 'test'}]
@@ -150,7 +150,7 @@ class Test_Scenes:
 
     def test_bad_config(self):
         modem = MockModem()
-        scenes = Scenes.Scenes(modem, None)
+        scenes = Scenes.SceneManager(modem, None)
         scenes.data = [{'controllers': [{'a1.b1.c1': None}],
                         'responders': ['cc.bb.22'],
                         'name': 'test'}]
@@ -159,7 +159,7 @@ class Test_Scenes:
 
     def test_set_group(self):
         modem = MockModem()
-        scenes = Scenes.Scenes(modem, None)
+        scenes = Scenes.SceneManager(modem, None)
         scenes.data = [{'controllers': [{'a1.b1.c1': {'data_1': 0}}],
                         'responders': ['cc.bb.22'],
                         'name': 'test'}]

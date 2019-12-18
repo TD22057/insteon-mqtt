@@ -154,7 +154,7 @@ class Modem:
         self._load_devices(data.get('devices', []))
 
         # Read the scenes definitions and load db_configs
-        self.scenes = Scenes.Scenes(self, data.get('scenes', None))
+        self.scenes = Scenes.SceneManager(self, data.get('scenes', None))
 
         # Send refresh messages to each device to check if the database is up
         # to date.
