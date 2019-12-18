@@ -695,7 +695,7 @@ class Modem:
             for entry in diff.add_entries:
                 LOG.ui("    %s", entry)
                 if not dry_run:
-                    self.scenes.add_or_update(self.addr, entry)
+                    self.scenes.add_or_update(self, entry)
                     changes = True
         else:
             LOG.ui("  No changes necessary.")

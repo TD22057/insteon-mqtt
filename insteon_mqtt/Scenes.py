@@ -31,7 +31,7 @@ class Scenes:
         self._load()
 
     #-----------------------------------------------------------------------
-    def add_or_update(self, dev_addr, entry):
+    def add_or_update(self, device, entry):
         """Adds a scene to the scene config, or if it is already defined
         updates that scene to match the passed entry
 
@@ -41,65 +41,63 @@ class Scenes:
 
         The scene may be added in the following manner
         1 Update responder if necessary
-        2 Split controller from old record and make new
-        3 Append only new responder
-        4 No matching entry, append a new one
+        2 Split controller from old record and make a new scene
+        3 Append new responder to a scene
+        4 No matching scene entry, append a new scene one
 
         Args:
-          dev_addr   (Address): Address of device entry is on.
+          device   (Device): The device the entry was found on.
           entry      (DeviceEntry/ModemEntry): Entry.
         """
         # Create basic entry for this scene
-        new_entry = SceneEntry.from_link_entry(self, dev_addr, entry)
+        new_entry = SceneEntry.from_link_entry(self, device, entry)
+        # There is never more than one controller in this case
+        print(new_entry.data)
         new_controller = new_entry.controllers[0]
-        new_responder = new_entry.responders[0]
 
         # Loop existing Scenes
         found_controller = None
         for scene in self.entries:
             found_controller = scene.find_controller(new_controller)
-            found_responder = scene.find_responder_weak(new_responder)
             if found_controller is not None:
-                if found_responder is not None:
-                    # 1 found ctrl and resp link, so just update relevant
-                    # link data.
-                    # TODO, this assumes only one responder on a device per
-                    # ctrl, which generally makes sense.  But breaks on things
-                    # like KPLs if we wanted a single modem scene to control
-                    # muliple buttons.
-                    if new_responder.addr == dev_addr:
-                        found_responder.link_data = new_responder.link_data
-                    else:
-                        found_controller.link_data = new_controller.link_data
-                else:
-                    if len(scene.controllers) > 1:
-                        # 2 Split controller from this scene and make new scene
-                        # First delete controller record in orig scene
-                        scene.del_controller(found_controller)
-                        # Take Scene Name if this is Modem
-                        if (found_controller.device is not None and
-                                found_controller.device == self.modem and
-                                scene.name is not None):
-                            new_entry.name = scene.name
-                            scene.name = None
-                        # Second merge in responders from old into new one
-                        for old_responder in scene.responders:
-                            new_entry.append_responder(old_responder)
-                        # Third, if this was created from an entry on the
-                        # responder device, then copy controller link_data from
-                        # old entry since resp links don't have ctrl d1-3
-                        if new_controller.addr != dev_addr:
-                            new_controller.link_data = found_controller.link_data
-                        # Fourth append new record to end
-                        self.append_scene(new_entry)
-                    else:
-                        # 3 Append only new responder
-                        scene.append_responder(new_responder)
-                        # See if we can compress with another scene now
+                for new_responder in new_entry.responders:
+                    self._update_scene(new_entry, found_controller,
+                                       new_responder, scene)
                 break  # Found controller entry, end looping scenes
         if not found_controller:
-            # 4 No matching scene_entry, append a new one
+            # 4 No matching scene_entry, append a new scene
             self.append_scene(new_entry)
+
+    #-----------------------------------------------------------------------
+    def _update_scene(self, new_entry, found_controller, new_responder, scene):
+        """TODO
+        """
+        new_controller = new_entry.controllers[0]
+        found_responder = scene.find_responder(new_responder)
+        if found_responder is not None:
+            # 1 found ctrl and resp link, so just update relevant
+            # link data.
+            found_responder.link_data = new_responder.link_data
+            found_controller.link_data = new_controller.link_data
+        else:
+            if len(scene.controllers) > 1:
+                # 2 Split controller from this scene and make new scene
+                # First delete controller record in orig scene
+                scene.del_controller(found_controller)
+                # Take Scene Name if this is Modem
+                if (found_controller.device is not None and
+                        found_controller.device == self.modem and
+                        scene.name is not None):
+                    new_entry.name = scene.name
+                    scene.name = None
+                # Second merge in responders from old into new one
+                for old_responder in scene.responders:
+                    new_entry.append_responder(old_responder)
+                # Third append new record to end
+                self.append_scene(new_entry)
+            else:
+                # 3 Append only new responder
+                scene.append_responder(new_responder)
 
     #-----------------------------------------------------------------------
     def _compress_scenes(self):
@@ -138,6 +136,7 @@ class Scenes:
                     self.del_scene(test_scene)
                     found = True
                     break
+                # TODO merge responders that have identical controllers
             if found is not True:
                 # if we found something we deleted the current entry so check
                 # this position again.
@@ -249,17 +248,14 @@ class Scenes:
 
         # Push Scenes to Devices and DeviceEntrys
         for scene in self.entries:
-            # Generate Controller Entries
             for controller in scene.controllers:
                 for responder in scene.responders:
+                    # Generate Controller Entries
                     if (controller.device is not None and
                             controller.addr != responder.addr):
                         controller.device.db_config.add_from_config(responder,
                                                                     controller)
-
-            # Generate Responder Entries
-            for responder in scene.responders:
-                for controller in scene.controllers:
+                    # Generate Responder Entries
                     if (responder.device is not None and
                             controller.addr != responder.addr):
                         responder.device.db_config.add_from_config(controller,
@@ -359,7 +355,7 @@ class SceneEntry:
 
     #-----------------------------------------------------------------------
     @staticmethod
-    def from_link_entry(scene_manager, dev_addr, entry):
+    def from_link_entry(scene_manager, device, entry):
         """Generate a Scene Entry from a Device Link Entry
 
         Generates what a completely new SceneEntry would look like from a
@@ -367,30 +363,66 @@ class SceneEntry:
         some information we will be lacking when we generate this scene.
 
         Args:
-          dev_addr   (Address): Address of device entry is on.
+          device   (Device): The device the entry is found on.
           entry      (DeviceEntry/ModemEntry): Entry.
 
         Returns:
           (SceneEntry)
         """
         scene = {"controllers": [], "responders": []}
-        dev_addr = str(dev_addr)
+        dev_addr = str(device.addr)
         entry_addr = str(entry.addr)
 
         if entry.is_controller:
-            scene['controllers'].append({dev_addr: {'group': entry.group,
-                                                    'data_1': entry.data[0],
-                                                    'data_2': entry.data[1],
-                                                    'data_3': entry.data[2]}})
-            scene['responders'].append(entry_addr)
+            # Generate the Controller section of the entry
+            scene['controllers'].append(
+                {dev_addr: {'group': entry.group,
+                            'data_1': entry.data[0],
+                            'data_2': entry.data[1],
+                            'data_3': entry.data[2]}}
+            )
+            # Generate the Responder section
+            resp_dev = scene_manager.modem.find(entry.addr)
+            found_responder = False
+            if resp_dev is not None:
+                for resp_entry in resp_dev.db.find_all(addr=entry.addr,
+                                                       group=entry.group,
+                                                       is_controller=False):
+                    scene['responders'].append(
+                        {entry_addr: {'group': resp_entry.group,
+                                      'data_1': resp_entry.data[0],
+                                      'data_2': resp_entry.data[1],
+                                      'data_3': resp_entry.data[2]}}
+                    )
+                    found_responder = True
+            if not found_responder:
+                # We know nothing about the responder so set to default values
+                # but this could be completely wrong.  Specifically, the group
+                # could be completely wrong in which case this is entry is bad
+                scene['responders'].append(entry_addr)
         else:
             scene['responders'].append({dev_addr: {'data_1': entry.data[0],
                                                    'data_2': entry.data[1],
                                                    'data_3': entry.data[2]}})
-            if entry.group > 0x01:
-                scene['controllers'].append({entry_addr: entry.group})
-            else:
-                scene['controllers'].append(entry_addr)
+            ctrl_dev = scene_manager.modem.find(entry.addr)
+            found_ctrl = False
+            if ctrl_dev is not None:
+                ctrl_entry = ctrl_dev.db.find(entry.addr, entry.group, True)
+                if ctrl_entry is not None:
+                    scene['controllers'].append(
+                        {entry_addr: {'group': ctrl_entry.group,
+                                      'data_1': ctrl_entry.data[0],
+                                      'data_2': ctrl_entry.data[1],
+                                      'data_3': ctrl_entry.data[2]}}
+                    )
+                    found_ctrl = True
+            if not found_ctrl:
+                # We know nothing about the controller so set to default values
+                # the link-data may be wrong, but it doesn't seem to matter
+                if entry.group > 0x01:
+                    scene['controllers'].append({entry_addr: entry.group})
+                else:
+                    scene['controllers'].append(entry_addr)
         return SceneEntry(scene_manager, scene)
 
     #-----------------------------------------------------------------------

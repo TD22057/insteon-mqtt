@@ -31,8 +31,8 @@ class Test_Scenes:
                                                     "in_use": False,
                                                     "is_controller": True},
                                        "addr": "cc.bb.aa"})
-        dev_addr = Address("aa.bb.cc")
-        scenes.add_or_update(dev_addr, entry)
+        device = modem.find("aa.bb.cc")
+        scenes.add_or_update(device, entry)
         assert len(scenes.entries) == 1
 
         # test updating responder entry
@@ -47,8 +47,8 @@ class Test_Scenes:
                                                     "in_use": False,
                                                     "is_controller": False},
                                        "addr": "cc.bb.aa"})
-        dev_addr = Address("aa.bb.cc")
-        scenes.add_or_update(dev_addr, entry)
+        device = modem.find("aa.bb.cc")
+        scenes.add_or_update(device, entry)
         assert len(scenes.entries) == 1
 
         # test splitting scene
@@ -63,8 +63,8 @@ class Test_Scenes:
                                                     "in_use": False,
                                                     "is_controller": False},
                                        "addr": "ff.ff.ff"})
-        dev_addr = Address("aa.bb.cc")
-        scenes.add_or_update(dev_addr, entry)
+        device = modem.find("aa.bb.cc")
+        scenes.add_or_update(device, entry)
         assert len(scenes.entries) == 2
 
         # test appending responder
@@ -79,8 +79,8 @@ class Test_Scenes:
                                                     "in_use": False,
                                                     "is_controller": False},
                                        "addr": "cc.bb.aa"})
-        dev_addr = Address("aa.bb.cc")
-        scenes.add_or_update(dev_addr, entry)
+        device = modem.find("aa.bb.cc")
+        scenes.add_or_update(device, entry)
         assert len(scenes.entries) == 1
 
         # test appending entire new scene
@@ -95,8 +95,8 @@ class Test_Scenes:
                                                     "in_use": False,
                                                     "is_controller": False},
                                        "addr": "cc.bb.aa"})
-        dev_addr = Address("aa.bb.cc")
-        scenes.add_or_update(dev_addr, entry)
+        device = modem.find("aa.bb.cc")
+        scenes.add_or_update(device, entry)
         assert len(scenes.entries) == 2
 
     def test_merge_by_responders(self):
@@ -119,8 +119,8 @@ class Test_Scenes:
                                                     "in_use": False,
                                                     "is_controller": True},
                                        "addr": "cc.bb.aa"})
-        dev_addr = Address("aa.bb.cc")
-        scenes.add_or_update(dev_addr, entry)
+        device = modem.find("aa.bb.cc")
+        scenes.add_or_update(device, entry)
         scenes._compress_scenes()
         assert len(scenes.entries) == 1
 
