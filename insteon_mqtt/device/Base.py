@@ -779,20 +779,11 @@ class Base:
         """
         # Most of this is from looking through Misterhouse bug reports.
         if is_controller:
-            # D1 = 0x03 number of retries to use for the command
-            # D2 = ???
-            # D3 = some devices need 0x01 or group number others don't care
             defaults = [0x03, 0x00, 0x01]
 
         # Responder data is always link dependent.  Since nothing was given,
         # assume the user wants to turn the device on (0xff).
         else:
-            # D1 = on level for on/off, dimmers
-            # D2 = ramp rate for on/off, dimmers.  I believe leaving this
-            #      at 0 uses the default ramp rate.
-            # D3 = The local group number of the local button.  The input
-            #      group is the controller group number (and broadcast msg)
-            #      so this is the local button group number it maps to.
             defaults = [0xff, 0x00, 0x01]
 
         # For each field, use the input if not -1, else the default.

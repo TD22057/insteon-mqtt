@@ -385,19 +385,11 @@ class Dimmer(Base):
         """
         # Most of this is from looking through Misterhouse bug reports.
         if is_controller:
-            # D1 = 0x03 number of retries to use for the command
-            # D2 = ???
-            # D3 = some devices need 0x01 or group number others don't care
             defaults = [0x03, 0x00, 0x01]
 
         # Responder data is always link dependent.  Since nothing was given,
         # assume the user wants to turn the device on (0xff).
         else:
-            # D1 = on level for on/off, dimmers
-            # D2 = ramp rate for on/off, dimmers.  1f is .1s.
-            # D3 = The local group number of the local button.  The input
-            #      group is the controller group number (and broadcast msg)
-            #      so this is the local button group number it maps to.
             defaults = [0xff, 0x1f, 0x01]
 
         # For each field, use the input if not -1, else the default.
@@ -410,11 +402,6 @@ class Dimmer(Base):
         This takes a list of the data values 1-3 and returns a dict with
         the human readable attibutes as keys and the human readable values
         as values.
-
-        For base devices, this doesn't do anything.  So the return values will
-        simply match the passed values.  Howevever, this function is meant
-        to be overridded by specialized devices, look at the dimmer module
-        for an example
 
         Args:
           is_controller (bool): True if the device is the controller, false
@@ -441,11 +428,6 @@ class Dimmer(Base):
 
         This takes a dict of the human readable attributes as keys and their
         associated values and returns a list of the data1-3 values.
-
-        For base devices, this doesn't do anything.  So the return values will
-        simply match the passed values.  Howevever, this function is meant
-        to be overridded by specialized devices, look at the dimmer module
-        for an example
 
         Args:
           is_controller (bool): True if the device is the controller, false
