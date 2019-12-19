@@ -46,7 +46,7 @@ configuration file, either for backup or to allow for modifications.
 ### Defining a Scenes.yaml File
 The scenes.yaml file location has to be defined in the config.yaml file. An
 example of how the definition should be written can be found in the 
-[config.yaml](config.yaml) file.  The scenes.yaml file needs to be defined under
+[config.yaml](../config.yaml) file.  The scenes.yaml file needs to be defined under
 the insteon key using the scenes key. If a scenes.yaml file is not defined, the
 results of 'import-scenes' cannot be saved to disk.
 
@@ -54,7 +54,7 @@ results of 'import-scenes' cannot be saved to disk.
 The scenes.yaml file has a simple structure that allows the user to quickly
 define one or more controllers and one or more responders to define a scene.
 
-A sample [scenes.yaml](scenes.yaml) is included which describes in detail how
+A sample [scenes.yaml](../scenes.yaml) is included which describes in detail how
 to define a scene in the scenes.yaml file.  You do not need to place anything
 in your scenes.yaml file to use the 'import-scenes' function.  As long as the
 file is defined in your config.yaml file, and the location is writable by
@@ -79,9 +79,9 @@ to maintain comments and ordering in the scenes.yaml file.**
 
 Much like other insteon-mqtt command.  The 'import-scenes' command can be run
 from either the command line or from mqtt.  Help running [commands from the 
-command line](docs/quick_start.md), you can also run `insteon-mqtt config.yaml
+command line](quick_start.md), you can also run `insteon-mqtt config.yaml
 import-scenes -h` for help from the command line.  Help running [mqtt
-commands](docs/mqtt.md).  It is important to note, that by default, the command
+commands](mqtt.md).  It is important to note, that by default, the command
 will perform a *dry-run* and will only report the changes that would be made
 unless you tell it to write the changes to disk.
 
@@ -96,11 +96,11 @@ computer. For reference 85 devices on a raspberry pi takes about 20 seconds
 to complete.  This may cause the command line to time out before the command
 completes.  The command should continue to run and complete in the background
 however, you will not see the results printed to the screen.  You can solve this
-by editing the file (insteon_mqtt/cmd_line/util.py) and changing the line at
+by editing the file (../insteon_mqtt/cmd_line/util.py) and changing the line at
 the top from `TIME_OUT = 10` to something like `TIME_OUT = 30`.
 
 You can run `insteon-mqtt config.yaml import-scenes-all -h` for help from the
-command line.  Help running [mqtt commands](docs/mqtt.md).
+command line.  Help running [mqtt commands](mqtt.md).
 
 ### The 'Sync' Function
 The 'sync' function will alter the device's link database to match the scenes
