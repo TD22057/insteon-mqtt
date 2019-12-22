@@ -24,7 +24,7 @@ class Test_Device:
 
         manager = IM.db.DeviceModifyManagerI1(device,
                                               device.db,
-                                              i1_entry.to_i1_bytes())
+                                              i1_entry)
 
         db_msg = Msg.OutStandard.direct(device.addr, 0x28, 0x0F)
 
@@ -47,7 +47,7 @@ class Test_Device:
 
         manager = IM.db.DeviceModifyManagerI1(device,
                                               device.db,
-                                              i1_entry.to_i1_bytes())
+                                              i1_entry)
 
         # Test bad MSB, should cause resend of set msb
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
@@ -79,7 +79,7 @@ class Test_Device:
 
         manager = IM.db.DeviceModifyManagerI1(device,
                                               device.db,
-                                              i1_entry.to_i1_bytes())
+                                              i1_entry)
 
         # Test wrong LSB, should cause poke of set lsb
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
@@ -103,7 +103,6 @@ class Test_Device:
         addr = IM.Address(0x01, 0x02, 0x03)
         device = IM.device.Base(protocol, modem, addr)
         calls = []
-
         def callback(success, msg, data):
             calls.append(msg)
 
@@ -115,7 +114,7 @@ class Test_Device:
 
         manager = IM.db.DeviceModifyManagerI1(device,
                                               device.db,
-                                              i1_entry.to_i1_bytes())
+                                              i1_entry)
 
         # Test received unused from start
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
@@ -140,7 +139,6 @@ class MockProto:
 
     def send(self, msg, handler, high_priority=False, after=None):
         self.msgs.append(msg)
-
 
 class MockModem():
     def __init__(self):
