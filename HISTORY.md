@@ -20,6 +20,13 @@
 ### Fixes
 - Fixed bug in message emits for battery sensors. ([Issue #157][I157])
 
+- Fixed bug in thermostat not reporting humidity changes ([Issue #160][I160])
+
+- Updated hassio config file to include the required arch listing.
+  ([Issue #139][I139])
+
+- Added docker builds for hassio from my repo (td22057) ([Issue #148][I148])
+
 
 ## [0.6.8]
 
@@ -285,4 +292,7 @@
 [I132]: https://github.com/TD22057/insteon-mqtt/issues/132
 [I136]: https://github.com/TD22057/insteon-mqtt/issues/136
 [I138]: https://github.com/TD22057/insteon-mqtt/issues/138
+[I139]: https://github.com/TD22057/insteon-mqtt/issues/139
+[I148]: https://github.com/TD22057/insteon-mqtt/issues/148
 [I157]: https://github.com/TD22057/insteon-mqtt/issues/157
+[I160]: https://github.com/TD22057/insteon-mqtt/issues/160
