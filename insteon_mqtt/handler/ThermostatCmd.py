@@ -91,7 +91,9 @@ class ThermostatCmd(Base):
             return Msg.CONTINUE
 
         elif msg.cmd1 == STATUS_HUMID:
-            self.device.signal_humid_change.emit(self.device, int(msg.cmd2))
+            self.device.signal_ambient_humid_change.emit(
+                self.device, int(msg.cmd2)
+            )
             return Msg.CONTINUE
 
         elif msg.cmd1 == STATUS_MODE:

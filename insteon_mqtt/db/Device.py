@@ -414,9 +414,8 @@ class Device:
         new_entry.db_flags.in_use = False
 
         if self.engine == 0:
-            i1_entry = new_entry.to_i1_bytes()
             modify_manager = DeviceModifyManagerI1(device, self,
-                                                   i1_entry, on_done=on_done,
+                                                   new_entry, on_done=on_done,
                                                    num_retry=3)
             modify_manager.start_modify()
         else:
@@ -637,9 +636,8 @@ class Device:
         entry.update_from(addr, group, is_controller, data)
 
         if self.engine == 0:
-            i1_entry = entry.to_i1_bytes()
             modify_manager = DeviceModifyManagerI1(device, self,
-                                                   i1_entry, on_done=on_done,
+                                                   entry, on_done=on_done,
                                                    num_retry=3)
             modify_manager.start_modify()
         else:
@@ -679,10 +677,9 @@ class Device:
         # Start by writing the last record - that way if it fails, we don't
         # try and update w/ the new data record.
         if self.engine == 0:
-            i1_entry = last.to_i1_bytes()
             # on_done is passed by the sequence manager inside seq.add()
             modify_manager = DeviceModifyManagerI1(device, self,
-                                                   i1_entry, on_done=None,
+                                                   last, on_done=None,
                                                    num_retry=3)
             seq.add(modify_manager.start_modify)
         else:
@@ -697,10 +694,9 @@ class Device:
         entry = DeviceEntry(addr, group, self.last.mem_loc, db_flags, data)
 
         if self.engine == 0:
-            i1_entry = entry.to_i1_bytes()
             # on_done is passed by the sequence manager inside seq.add()
             modify_manager = DeviceModifyManagerI1(device, self,
-                                                   i1_entry, on_done=None,
+                                                   entry, on_done=None,
                                                    num_retry=3)
             seq.add(modify_manager.start_modify)
         else:

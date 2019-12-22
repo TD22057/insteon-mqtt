@@ -47,14 +47,16 @@ class DeviceModifyManagerI1:
     """
 
     #-------------------------------------------------------------------
-    def __init__(self, device, device_db, i1_entry, on_done=None,
+    def __init__(self, device, device_db, entry, on_done=None,
                  num_retry=3):
         """Constructor
 
         Args
           device:    (Device) The Insteon Device object
           device_db: (db.Device) The device database being manipulated.
-          i1_entry:  (bytes) 10 byte array of the i1_entry
+          entry:     (db.DeviceEntry):  The new record or record being erased.
+                     This is the entry that the db will have if the command
+                     works.
           on_done:   Finished callback.  Will be called when the modify
                      operation is done.
           num_retry: (int) The number of times to retry the message if the
@@ -64,10 +66,12 @@ class DeviceModifyManagerI1:
         """
         self.db = device_db
         self.device = device
-        self.record = i1_entry[2:10]
+        self.entry = entry
+        self.i1_entry = entry.to_i1_bytes()
+        self.record = self.i1_entry[2:10]
         self.record_index = 0
-        self.msb = i1_entry[0]
-        self.lsb = i1_entry[1]  # this is the end address
+        self.msb = self.i1_entry[0]
+        self.lsb = self.i1_entry[1]  # this is the end address
         self.on_done = util.make_callback(on_done)
         self._num_retry = num_retry
 
@@ -185,11 +189,13 @@ class DeviceModifyManagerI1:
             flags = Msg.DbFlags.from_bytes(self.record)
             if not flags.in_use:
                 # We are done
+                self.db.add_entry(self.entry)
                 on_done(True, "Database entry written", None)
                 return
 
         if self.record_index == 7:
             # We are done
+            self.db.add_entry(self.entry)
             on_done(True, "Database entry written", None)
         else:
             # Still more to go, bump up record index and continue
