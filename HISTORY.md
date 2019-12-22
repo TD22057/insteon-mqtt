@@ -27,6 +27,8 @@
 
 - Added docker builds for hassio from my repo (td22057) ([Issue #148][I148])
 
+- Fixed bug in motion sensor replies to a model info request
+  ([Issue #163][I163]).
 
 ## [0.6.8]
 
@@ -296,3 +298,4 @@
 [I148]: https://github.com/TD22057/insteon-mqtt/issues/148
 [I157]: https://github.com/TD22057/insteon-mqtt/issues/157
 [I160]: https://github.com/TD22057/insteon-mqtt/issues/160
+[I163]: https://github.com/TD22057/insteon-mqtt/issues/163
