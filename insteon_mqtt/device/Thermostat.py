@@ -197,12 +197,62 @@ class Thermostat(Base):
         seq.run()
 
     #-----------------------------------------------------------------------
+    def refresh(self, force=False, on_done=None):
+        """Refresh the current device state and database if needed.
+
+        This sends a ping to the device.  The reply has the current device
+        state (on/off, level, etc) and the current db delta value which is
+        checked against the current db value.  If the current db is out of
+        date, it will trigger a download of the database.
+
+        This will send out an updated signal for the current device status
+        whenever possible.
+
+        In addition, this also runs the 'get_status' command as well, which
+        asks the thermostat for the current state of its attributes as well
+        the current units selected on the device.  If you are seeing errors
+        in temperatures that look like C and F are reversed, running a refresh
+        may fix the issue.
+
+        Args:
+          force (bool):  If true, will force a refresh of the device database
+                even if the delta value matches as well as a re-query of the
+                device model information even if it is already known.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.info("Device %s cmd: fan status refresh", self.addr)
+
+        seq = CommandSeq(self.protocol, "Refresh complete", on_done)
+
+        # Send a 0x19 0x03 command to get the fan speed level.  This sends a
+        # refresh ping which will respond w/ the fan level and current
+        # database delta field.  Pass skip_db here - we'll let the dimmer
+        # refresh handler above take care of getting the database updated.
+        # Otherwise this handler and the one created in the dimmer refresh
+        # would download the database twice.
+        msg = Msg.OutStandard.direct(self.addr, 0x19, 0x03)
+        msg_handler = handler.DeviceRefresh(self, self.handle_refresh,
+                                            force=False, num_retry=3,
+                                            skip_db=True)
+        seq.add_msg(msg, msg_handler)
+
+        # If we get the FAN state correctly, then have the dimmer also get
+        # it's state and update the database if necessary.
+        seq.add(self.get_status)
+        seq.run()
+
+    #-----------------------------------------------------------------------
     def get_status(self, on_done=None):
         """Request the status of the common attributes of the thermostat
 
         Gets the mode state, current temp, heating/cooling state, fan mode,
         cool setpoint, heat setpoint, and ambient humidity.  Will then emit
         all necessary signal_* events to cause mqtt messages to be sent
+
+        Also receives the units (C or F) selected on the thermostat which is
+        important for understanding the ambient temp and set point.  If you see
+        odd temperature values, try running 'get_status' or 'refresh'
 
         Args:
           on_done: Finished callback.  This is called when the command has
