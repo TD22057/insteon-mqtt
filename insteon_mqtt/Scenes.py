@@ -271,6 +271,8 @@ class SceneManager:
         """
         # First clear modem
         self.modem.clear_db_config()
+        # And clear the virtual scene to group map
+        self.modem.scene_map = {}
 
         # Then clear all devices
         for device in self.modem.devices.values():
@@ -279,6 +281,10 @@ class SceneManager:
         # Push Scenes to Devices and DeviceEntrys
         for scene in self.entries:
             for controller in scene.controllers:
+                if (controller.device == self.modem and 'name' and
+                        scene.name is not None):
+                    # Add to the virtual scene to group map
+                    self.modem.scene_map[scene.name] = controller.group
                 for responder in scene.responders:
                     # Generate Controller Entries
                     if (controller.device is not None and

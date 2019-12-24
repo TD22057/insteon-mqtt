@@ -16,7 +16,7 @@ def parse_args(args):
     """
     # pylint: disable=too-many-statements
     p = argparse.ArgumentParser(prog="insteon-mqtt",
-                                description="Inseton<->MQTT tool")
+                                description="Insteon<->MQTT tool")
     p.add_argument("config", metavar="config.yaml", help="Configuration "
                    "file to use.")
     sub = p.add_subparsers(help="Command help")
@@ -237,8 +237,11 @@ def parse_args(args):
                     help="Reason message to send with the command.  No "
                     "message with use 'scene'.")
     sp.add_argument("address", help="Device address or name.")
-    sp.add_argument("group", type=int, help="Group (button) number of the "
-                    "scene to trigger (use 1 for single buttons.")
+    sp.add_argument("group", help="Group (button) number of the "
+                    "scene to trigger (use 1 for single buttons.) "
+                    "For modem scenes the group can alternatively be the "
+                    "scene name as defined in a scenes.yaml file."
+                    )
     sp.add_argument("is_on", type=int, default=1, choices=[0, 1],
                     help="1 to turn the scene on, 0 to turn it off.")
     sp.set_defaults(func=device.scene)

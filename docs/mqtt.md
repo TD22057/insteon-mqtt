@@ -467,6 +467,16 @@ will be passed through to the output state change payload.
    { "cmd": "scene", "group" : group, "is_on" : 0/1, ["reason" : "..."] }
    ```
 
+   Supported: modem
+
+   The modem also allows the triggering of scenes from a name defined in a
+   [Scene Management](scenes.md) file as well. To access a scene by its name
+   simply drop the group attribute and add the name attribute such as.
+
+   ```
+   { "cmd": "scene", "name" : "test_scene", "is_on" : 0/1, ["reason" : "..."] }
+   ```
+
 
 ---
 

@@ -165,10 +165,19 @@ mqtt:
   #       command_topic: "insteon/modem/scene"
   #       payload_on: { "cmd" : "on", "group" : 10 }
   #       payload_off: { "cmd" : "off", "group" : 10 }
+  # In Home Assistant use MQTT switch with a configuration like this to trigger
+  # modem scene named 'test_scene':
+  #   switch:
+  #     - platform: mqtt
+  #       name: "test_scene"
+  #       command_topic: "insteon/modem/scene"
+  #       payload_on: { "cmd" : "on", "name" : test_scene }
+  #       payload_off: { "cmd" : "off", "name" : test_scene }
   modem:
     # The output of passing the payload through the template must match the
-    # following where group is in the range 1-255.
-    #   { "cmd" : 'on'/'off', "group" : GROUP }
+    # following where group is in the range 1-255 and NAME is a string name
+    # defined in a scenes.yaml file.  Either GROUP or NAME must be specified.
+    #   { "cmd" : 'on'/'off', ["group" : GROUP, "name": NAME] }
     # Available variables for templating are:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract

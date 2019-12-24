@@ -105,10 +105,11 @@ class Modem:
 
         try:
             is_on = util.parse_on_off(data, have_mode=False)
-            group = int(data.get('group', None))
+            group = int(data.get('group', None)) if 'group' in data else None
+            name = str(data.get('name', None)) if 'name' in data else None
 
             # Tell the device to trigger the scene command.
-            self.device.scene(is_on, group)
+            self.device.scene(is_on, group=group, name=name)
         except:
             LOG.exception("Invalid modem command: %s", data)
 

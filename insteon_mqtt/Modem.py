@@ -56,6 +56,9 @@ class Modem:
         # Prepare Scenes object
         self.scenes = []
 
+        # Map of Virtual Modem Scene Names to groups
+        self.scene_map = {}
+
         # Signal to emit when a new device is added.
         self.signal_new_device = Signal()  # emit(modem, device)
 
@@ -848,7 +851,8 @@ class Modem:
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
-    def scene(self, is_on, group, num_retry=3, reason="", on_done=None):
+    def scene(self, is_on, group=None, name=None, num_retry=3, reason="",
+              on_done=None):
         """Trigger a virtual modem scene.
 
         This will send out a scene command from the modem.  When the scene
@@ -858,6 +862,7 @@ class Modem:
           is_on (bool): True to send an on (0x11) command for the scene.
                 False to send an off (0x13) command for the scene.
           group (int):  The modem group (scene) number to send.
+          name (str):  The name of the scene as defined in a scenes.yaml file
           num_retry (int):  The number of retries to use if the message fails.
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
@@ -867,7 +872,16 @@ class Modem:
                     completed.  Signature is: on_done(success, msg, data)
         """
         # TODO: figure out how to pass reason around
-        assert 0x01 <= group <= 0xff
+        on_done = util.make_callback(on_done)
+        if name is not None:
+            try:
+                group = self.scene_map[name]
+            except KeyError:
+                LOG.error("Unable to find modem scene %s", name)
+                on_done(False, "Scene command failed", None)
+                return
+        else:
+            assert 0x01 <= group <= 0xff
         LOG.info("Modem scene %s on=%s", group, "on" if is_on else "off")
 
         cmd1 = 0x11 if is_on else 0x13
