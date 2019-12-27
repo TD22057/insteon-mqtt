@@ -740,6 +740,12 @@ class Modem:
 
         # Save everything at the end
         if not dry_run:
+            group.add(LOG.ui, "Compressing Scenes 1/3")
+            group.add(self.scenes.compress_responders)
+            group.add(LOG.ui, "Compressing Scenes 2/3")
+            group.add(self.scenes.compress_controllers)
+            group.add(LOG.ui, "Compressing Scenes 3/3")
+            group.add(self.scenes.compress_n_way)
             group.add(self.scenes.save)
 
         # Output success message to log

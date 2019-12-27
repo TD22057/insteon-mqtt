@@ -116,14 +116,15 @@ class SceneManager:
                 scene.append_responder(new_responder)
 
     #-----------------------------------------------------------------------
-    def _compress_scenes(self):
-        """Compress Scenes Down into a Human Readable Form
+    def compress_controllers(self):
+        """Compress Scenes Down into a Human Readable Form by Controllers
 
         Attempts to make things more readable to humans, by compressing
-        scene defintions.  First 3-way or N-way links are compressed into a
-        single definition.  Second, any two definitions which have identical
-        responders are merged.  Third, any two definitions that have identical
+        scene defintions.  Any two definitions that have identical
         controllers are merged.
+
+        This is a companion to compress_responders and compress_n_way.  These are
+        seperate functions to that they can be called seperately using Stacks.
 
         This function only processes the scenes in a single pass.  If it runs
         multiple passes, it may further compress things.  However, this
@@ -133,21 +134,11 @@ class SceneManager:
         while i < len(self.entries):
             found = False
             test_scene = self.entries[i]
-            for scene in self.entries:
-                if test_scene == scene:
-                    # Can't merge with ourselves
-                    continue
-                # Merge n-way switches
-                if self._can_merge_n_way(test_scene, scene):
-                    for new_controller in test_scene.controllers:
-                        scene.append_controller(new_controller)
-                    for new_responder in test_scene.responders:
-                        scene.append_responder(new_responder)
-                    if test_scene.name is not None:
-                        scene.name = test_scene.name
-                    self.del_scene(test_scene)
-                    found = True
-                    break
+            # Anything less than or equal to ourselves has already been tested
+            j = i + 1
+            while j < len(self.entries):
+                scene = self.entries[j]
+                j += 1
                 # Merge controllers that have identical responders
                 if Counter(test_scene.responders) == Counter(scene.responders):
                     for new_controller in test_scene.controllers:
@@ -157,9 +148,78 @@ class SceneManager:
                     self.del_scene(test_scene)
                     found = True
                     break
+            if found is not True:
+                # if we found something we deleted the current entry so check
+                # this position again.
+                i += 1
+
+    #-----------------------------------------------------------------------
+    def compress_responders(self):
+        """Compress Scenes Down into a Human Readable Form by Responders
+
+        Attempts to make things more readable to humans, by compressing
+        scene defintions.  Any two definitions that have identical
+        responders are merged.
+
+        This is a companion to compress_controllers and compress_n_way.  These are
+        seperate functions to that they can be called seperately using Stacks.
+
+        This function only processes the scenes in a single pass.  If it runs
+        multiple passes, it may further compress things.  However, this
+        function is a bit time consuming, so can't keep looping through it.
+        """
+        i = 0
+        while i < len(self.entries):
+            found = False
+            test_scene = self.entries[i]
+            # Anything less than or equal to ourselves has already been tested
+            j = i + 1
+            while j < len(self.entries):
+                scene = self.entries[j]
+                j += 1
                 # Merge responders that have identical controllers
                 test_ctrls = test_scene.controllers
                 if Counter(test_ctrls) == Counter(scene.controllers):
+                    for new_responder in test_scene.responders:
+                        scene.append_responder(new_responder)
+                    if test_scene.name is not None:
+                        scene.name = test_scene.name
+                    self.del_scene(test_scene)
+                    found = True
+                    break
+            if found is not True:
+                # if we found something we deleted the current entry so check
+                # this position again.
+                i += 1
+
+    #-----------------------------------------------------------------------
+    def compress_n_way(self):
+        """Compress Scenes Down into a Human Readable Form by Controllers
+
+        Attempts to make things more readable to humans, by compressing
+        scene defintions.  3-way or N-way links are compressed into a
+        single definition..
+
+        This is a companion to compress_responders and compress_controllers.  These
+        are seperate functions to that they can be called seperately using Stacks.
+
+        This function only processes the scenes in a single pass.  If it runs
+        multiple passes, it may further compress things.  However, this
+        function is a bit time consuming, so can't keep looping through it.
+        """
+        i = 0
+        while i < len(self.entries):
+            found = False
+            test_scene = self.entries[i]
+            # Anything less than or equal to ourselves has already been tested
+            j = i + 1
+            while j < len(self.entries):
+                scene = self.entries[j]
+                j += 1
+                # Merge n-way switches
+                if self._can_merge_n_way(test_scene, scene):
+                    for new_controller in test_scene.controllers:
+                        scene.append_controller(new_controller)
                     for new_responder in test_scene.responders:
                         scene.append_responder(new_responder)
                     if test_scene.name is not None:
@@ -234,8 +294,6 @@ class SceneManager:
     def save(self):
         """Saves the scenes data to file.
         """
-        # first merge everything
-        self._compress_scenes()
 
         # This is necessary to prevent the representer from making its own
         # yaml aliases.  While aliases are helpful, the computer generated
@@ -647,10 +705,10 @@ class SceneDevice:
 
     def __eq__(self, other):
         '''A strong comparison of devices.
-        
+
         Requires address, group, and data1-3 to be the same.  Does not look
         at is_controller, but this is likely captured by data1-3 anyways. Used
-        primarily by the _compress_scenes functions
+        primarily by the compress_* functions
         '''
         ret = False
         self_group = self.group if self.group > 0x00 else 0x01
