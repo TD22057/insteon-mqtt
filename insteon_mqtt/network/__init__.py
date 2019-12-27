@@ -20,6 +20,7 @@ for maximum robustness.
 
 from .Link import Link
 from .Serial import Serial
+from .Stack import Stack
 from .Mqtt import Mqtt
 
 # Use Poll on non-windows systems - For windows we have to use select.

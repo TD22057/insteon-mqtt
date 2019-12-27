@@ -27,7 +27,7 @@ class Modem:
     input).  This allows devices to be looked up by address to send commands
     to those devices.
     """
-    def __init__(self, protocol):
+    def __init__(self, protocol, stack):
         """Constructor
 
         Actual modem definitions must be loaded from a configuration file via
@@ -37,6 +37,8 @@ class Modem:
           protocol (Protocol):  Insteon message handling protocol object.
         """
         self.protocol = protocol
+
+        self.stack = stack
 
         self.addr = None
         self.name = "modem"
@@ -724,24 +726,25 @@ class Modem:
                     completed.  Signature is: on_done(success, msg, data)
         """
         on_done = util.make_callback(on_done)
-        # Set the error stop to false so a failed refresh doesn't stop the
-        # sequence from trying to refresh other devices.
-        seq = CommandSeq(self.protocol, "Import Scenes All complete", on_done,
-                         error_stop=False)
+        # Set the error stop to true so an error in one of the import functions
+        # stops the stack from running and stopping potentially garbage data
+        # from being written to the scenes.yaml file.
+        group = self.stack.new(error_stop=True)
 
         # First the modem database.
-        seq.add(self.import_scenes, dry_run=dry_run, save=False)
+        group.add(self.import_scenes, dry_run=dry_run, save=False)
 
         # Then each other device.
         for device in self.devices.values():
-            seq.add(device.import_scenes, dry_run=dry_run, save=False)
+            group.add(device.import_scenes, dry_run=dry_run, save=False)
 
         # Save everything at the end
         if not dry_run:
-            seq.add(self.scenes.save)
+            group.add(self.scenes.save)
 
-        # Start the command sequence.
-        seq.run()
+        # Output success message to log
+        group.add(LOG.ui, "Import Scenes All Complete")
+        group.add(on_done, True, 'Command Complete', None)
 
     #-----------------------------------------------------------------------
     def linking(self, group=0x01, on_done=None):
