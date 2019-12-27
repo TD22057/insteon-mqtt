@@ -480,12 +480,11 @@ class SceneEntry:
             resp_dev = scene_manager.modem.find(entry.addr)
             found_responder = False
             if resp_dev is not None:
-                for resp_entry in resp_dev.db.find_all(addr=entry.addr,
+                for resp_entry in resp_dev.db.find_all(addr=device.addr,
                                                        group=entry.group,
                                                        is_controller=False):
                     scene['responders'].append(
-                        {entry_addr: {'group': resp_entry.group,
-                                      'data_1': resp_entry.data[0],
+                        {entry_addr: {'data_1': resp_entry.data[0],
                                       'data_2': resp_entry.data[1],
                                       'data_3': resp_entry.data[2]}}
                     )
@@ -505,7 +504,7 @@ class SceneEntry:
             ctrl_dev = scene_manager.modem.find(entry.addr)
             found_ctrl = False
             if ctrl_dev is not None:
-                ctrl_entry = ctrl_dev.db.find(entry.addr, entry.group, True)
+                ctrl_entry = ctrl_dev.db.find(device.addr, entry.group, True)
                 if ctrl_entry is not None:
                     scene['controllers'].append(
                         {entry_addr: {'group': ctrl_entry.group,
