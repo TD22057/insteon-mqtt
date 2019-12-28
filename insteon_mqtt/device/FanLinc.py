@@ -368,17 +368,20 @@ class FanLinc(Dimmer):
           msg (InpStandard):  Broadcast message from the device.  Use
               msg.group to find the group and msg.cmd1 for the command.
         """
-        # Group 1 is for the dimmer - pass that to the base class:
-        if msg.group == 1:
-            super().handle_group_cmd(addr, msg)
-            return
-
         # Make sure we're really a responder to this message.  This shouldn't
         # ever occur.
         entry = self.db.find(addr, msg.group, is_controller=False)
         if not entry:
             LOG.error("FanLinc %s has no group %s entry from %s", self.addr,
                       msg.group, addr)
+            return
+
+        # The local button being modified is stored in the db entry.
+        localGroup = entry.data[2]
+
+        # Group 1 is for the dimmer - pass that to the base class:
+        if localGroup == 1:
+            super().handle_group_cmd(addr, msg)
             return
 
         # 0x11: on

@@ -30,6 +30,13 @@
 - Fixed bug in motion sensor replies to a model info request
   ([Issue #163][I163]).
 
+- Fixed bug in thermostat ambient temperature calculation ([Issue #142][I142])
+  (thanks @krkeegan).
+
+- Fixed bug in KeypadLinc, FanLinc, and Outlet for non-group 1 links
+  ([Issue #159][I159]) (thanks @chris153002).
+
+
 ## [0.6.8]
 
 ### Fixes
@@ -295,7 +302,9 @@
 [I136]: https://github.com/TD22057/insteon-mqtt/issues/136
 [I138]: https://github.com/TD22057/insteon-mqtt/issues/138
 [I139]: https://github.com/TD22057/insteon-mqtt/issues/139
+[I142]: https://github.com/TD22057/insteon-mqtt/issues/142
 [I148]: https://github.com/TD22057/insteon-mqtt/issues/148
 [I157]: https://github.com/TD22057/insteon-mqtt/issues/157
+[I159]: https://github.com/TD22057/insteon-mqtt/issues/159
 [I160]: https://github.com/TD22057/insteon-mqtt/issues/160
 [I163]: https://github.com/TD22057/insteon-mqtt/issues/163

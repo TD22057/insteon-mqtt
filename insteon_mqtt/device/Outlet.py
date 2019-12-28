@@ -635,10 +635,13 @@ class Outlet(Base):
                       msg.group, addr)
             return
 
+        # The local button being modified is stored in the db entry.
+        localGroup = entry.data[2]
+
         # Handle on/off commands codes.
         if on_off.Mode.is_valid(msg.cmd1):
             is_on, mode = on_off.Mode.decode(msg.cmd1)
-            self._set_is_on(msg.group, is_on, mode, on_off.REASON_SCENE)
+            self._set_is_on(localGroup, is_on, mode, on_off.REASON_SCENE)
 
         # Note: I don't believe the on/off switch can participate in manual
         # mode stopping commands since it changes state when the button is
