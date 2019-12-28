@@ -9,7 +9,7 @@ My initial intent with this package is better integrate Insteon into
 Home Assistant and make it easier and more understandable to add new
 features and devices.
 
-Version: 0.6.8  ([History](HISTORY.md))
+Version: 0.6.9  ([History](HISTORY.md))
 
 ### Breaking changes from last version:
 
@@ -42,7 +42,9 @@ what they are and how to interpret messages from them.
 - Report Insteon device states changes by MQTT messages.  Topics and
   payloads can be customized using Jinja templates.
 - Report state changes for any device in an Insteon scene when the
-  scene is triggered.
+  scene is triggered including normal, fast, and manual modes.
+- State changes can be tagged with arbitrary reason strings to allow
+  automations to change behavior based on context.
 - Currently supported Insteon devices
   - On/off switches (lamp modules, appliance modules, etc.)
   - Dimmer switches (lamp modules, dimmer switches, etc.)

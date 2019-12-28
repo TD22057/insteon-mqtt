@@ -27,7 +27,7 @@ class Switch(Base):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_on_off( Device, bool is_on, on_off.Mode mode ):
+    - signal_on_off( Device, bool is_on, on_off.Mode mode, str reason ):
       Sent whenever the switch is turned on or off.
 
     - signal_manual( Device, on_off.Manual mode ): Sent when the device
@@ -49,7 +49,7 @@ class Switch(Base):
         self._is_on = False
 
         # Support on/off style signals.
-        # API: func(Device, bool is_on, on_off.Mode mode)
+        # API: func(Device, bool is_on, on_off.Mode mode, str reason)
         self.signal_on_off = Signal()
 
         # Manual mode start up, down, off
@@ -69,6 +69,7 @@ class Switch(Base):
         # Special callback to run when receiving a broadcast clean up.  See
         # scene() for details.
         self.broadcast_done = None
+        self.broadcast_reason = ""
 
     #-----------------------------------------------------------------------
     def pair(self, on_done=None):
@@ -116,7 +117,7 @@ class Switch(Base):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL,
+    def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
            on_done=None):
         """Turn the device on.
 
@@ -136,6 +137,9 @@ class Switch(Base):
           level (int):  If non-zero, turn the device on.  The API is an int
                 to keep a consistent API with other devices.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -149,12 +153,14 @@ class Switch(Base):
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
+        callback = functools.partial(self.handle_ack, reason=reason)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
 
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def off(self, group=0x01, mode=on_off.Mode.NORMAL, on_done=None):
+    def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
+            on_done=None):
         """Turn the device off.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -171,6 +177,9 @@ class Switch(Base):
                 this must be 1.  Allowing a group here gives us a consistent
                 API to the on command across devices.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -184,11 +193,13 @@ class Switch(Base):
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
+        callback = functools.partial(self.handle_ack, reason=reason)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, on_done=None):
+    def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, reason="",
+            on_done=None):
         """Turn the device on or off.  Level zero will be off.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -207,16 +218,19 @@ class Switch(Base):
                 this must be 1.  Allowing a group here gives us a consistent
                 API to the on command across devices.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
         if level:
-            self.on(group, level, mode, on_done)
+            self.on(group, level, mode, reason, on_done)
         else:
-            self.off(group, mode, on_done)
+            self.off(group, mode, reason, on_done)
 
     #-----------------------------------------------------------------------
-    def scene(self, is_on, group=0x01, on_done=None):
+    def scene(self, is_on, group=0x01, reason="", on_done=None):
         """Trigger a scene on the device.
 
         Triggering a scene is the same as simulating a button press on the
@@ -227,6 +241,9 @@ class Switch(Base):
           is_on (bool):  True for an on command, False for an off command.
           group (int):  The group on the device to simulate.  For this device,
                 this must be 1.
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -248,8 +265,9 @@ class Switch(Base):
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        callback = on_done if is_on else None
-        msg_handler = handler.StandardCmd(msg, self.handle_scene, callback)
+        done_callback = on_done if is_on else None
+        callback = functools.partial(self.handle_scene, reason=reason)
+        msg_handler = handler.StandardCmd(msg, callback, done_callback)
         self.send(msg, msg_handler)
 
         # Scene triggering will not turn the device off (no idea why), so we
@@ -260,8 +278,9 @@ class Switch(Base):
         # command above, it doesn't work - we have to wait until the
         # broadcast msg is finished.
         if not is_on:
-            self.broadcast_done = functools.partial(self.off, group=group,
-                                                    on_done=on_done)
+            self.broadcast_done = \
+                functools.partial(self.off, group=group, on_done=on_done,
+                                  reason=reason)
 
     #-----------------------------------------------------------------------
     def set_backlight(self, level, on_done=None):
@@ -367,6 +386,12 @@ class Switch(Base):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
+        # If we have a saved reason from a simulated scene command, use that.
+        # Otherwise the device button was pressed.
+        reason = self.broadcast_reason if self.broadcast_reason else \
+                 on_off.REASON_DEVICE
+        self.broadcast_reason = ""
+
         # ACK of the broadcast.  Ignore this unless we sent a simulated off
         # scene in which case run the broadcast done handler.  This is a
         # weird special case - see scene() for details.
@@ -386,13 +411,13 @@ class Switch(Base):
 
             # For an on command, we can update directly.
             if is_on:
-                self._set_is_on(True, mode)
+                self._set_is_on(True, mode, reason)
 
             # For an off command, we need to see if broadcast_done is active.
             # This is a generated broadcast and we need to manually turn the
             # device off so don't update it's state until that occurs.
             elif not self.broadcast_done:
-                self._set_is_on(False, mode)
+                self._set_is_on(False, mode, reason)
 
         # Starting or stopping manual mode.
         elif on_off.Manual.is_valid(msg.cmd1):
@@ -404,9 +429,9 @@ class Switch(Base):
             # Switches change state when the switch is held (not all devices
             # do this).
             if manual == on_off.Manual.UP:
-                self._set_is_on(True, on_off.Mode.MANUAL)
+                self._set_is_on(True, on_off.Mode.MANUAL, reason)
             elif manual == on_off.Manual.DOWN:
-                self._set_is_on(False, on_off.Mode.MANUAL)
+                self._set_is_on(False, on_off.Mode.MANUAL, reason)
 
         # This will find all the devices we're the controller of for this
         # group and call their handle_group_cmd() methods to update their
@@ -430,10 +455,10 @@ class Switch(Base):
         LOG.ui("Switch %s refresh on=%s", self.label, msg.cmd2 > 0x00)
 
         # Current on/off level is stored in cmd2 so update our level.
-        self._set_is_on(msg.cmd2 > 0x00)
+        self._set_is_on(msg.cmd2 > 0x00, reason=on_off.REASON_REFRESH)
 
     #-----------------------------------------------------------------------
-    def handle_ack(self, msg, on_done):
+    def handle_ack(self, msg, on_done, reason=""):
         """Callback for standard commanded messages.
 
         This callback is run when we get a reply back from one of our
@@ -446,6 +471,9 @@ class Switch(Base):
               The on/off level will be in the cmd2 field.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
         """
         # If this it the ACK we're expecting, update the internal state and
         # emit our signals.
@@ -453,7 +481,8 @@ class Switch(Base):
             LOG.debug("Switch %s ACK: %s", self.addr, msg)
 
             is_on, mode = on_off.Mode.decode(msg.cmd1)
-            self._set_is_on(is_on, mode)
+            reason = reason if reason else on_off.REASON_COMMAND
+            self._set_is_on(is_on, mode, reason)
             on_done(True, "Switch state updated to on=%s" % self._is_on,
                     self._is_on)
 
@@ -464,7 +493,7 @@ class Switch(Base):
                     None)
 
     #-----------------------------------------------------------------------
-    def handle_scene(self, msg, on_done):
+    def handle_scene(self, msg, on_done, reason=""):
         """Callback for scene simulation commanded messages.
 
         This callback is run when we get a reply back from triggering a scene
@@ -476,17 +505,27 @@ class Switch(Base):
           msg (message.InpStandard): The reply message from the device.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
         """
         # Call the callback.  We don't change state here - the device will
         # send a regular broadcast message which will run handle_broadcast
         # which will then update the state.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("Switch %s ACK: %s", self.addr, msg)
+
+            # Reason is device because we're simulating a button press.  We
+            # can't really pass this around because we just get a broadcast
+            # message later from the device.  So we set a temporary variable
+            # here and use it in handle_broadcast() to output the reason.
+            self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
             on_done(True, "Scene triggered", None)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("Switch %s NAK error: %s, Message: %s", self.addr,
                       msg.nak_str(), msg)
+            self.broadcast_reason = None
             on_done(False, "Scene trigger failed failed. " + msg.nak_str(),
                     None)
 
@@ -517,7 +556,7 @@ class Switch(Base):
         # Handle on/off commands codes.
         if on_off.Mode.is_valid(msg.cmd1):
             is_on, mode = on_off.Mode.decode(msg.cmd1)
-            self._set_is_on(is_on, mode)
+            self._set_is_on(is_on, mode, on_off.REASON_SCENE)
 
         # Note: I don't believe the on/off switch can participate in manual
         # mode stopping commands since it changes state when the button is
@@ -527,7 +566,7 @@ class Switch(Base):
                         msg.cmd1)
 
     #-----------------------------------------------------------------------
-    def _set_is_on(self, is_on, mode=on_off.Mode.NORMAL):
+    def _set_is_on(self, is_on, mode=on_off.Mode.NORMAL, reason=""):
         """Update the device on/off state.
 
         This will change the internal state and emit the state changed
@@ -538,10 +577,14 @@ class Switch(Base):
           is_on (bool):  True if the switch is on, False if it isn't.
           mode (on_off.Mode): The type of on/off that was triggered (normal,
                fast, etc).
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
         """
-        LOG.info("Setting device %s on %s %s", self.label, is_on, mode)
+        LOG.info("Setting device %s on %s %s %s", self.label, is_on,
+                 mode, reason)
         self._is_on = bool(is_on)
 
-        self.signal_on_off.emit(self, self._is_on, mode)
+        self.signal_on_off.emit(self, self._is_on, mode, reason)
 
     #-----------------------------------------------------------------------

@@ -597,7 +597,7 @@ class Modem:
         return util.resolve_data3(defaults, data)
 
     #-----------------------------------------------------------------------
-    def scene(self, is_on, group, num_retry=3, on_done=None):
+    def scene(self, is_on, group, num_retry=3, reason="", on_done=None):
         """Trigger a virtual modem scene.
 
         This will send out a scene command from the modem.  When the scene
@@ -608,9 +608,14 @@ class Modem:
                 False to send an off (0x13) command for the scene.
           group (int):  The modem group (scene) number to send.
           num_retry (int):  The number of retries to use if the message fails.
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
+                 TODO: can we handle this?
           on_done:  Finished callback.  This is called when the command has
                     completed.  Signature is: on_done(success, msg, data)
         """
+        # TODO: figure out how to pass reason around
         assert 0x01 <= group <= 0xff
         LOG.info("Modem scene %s on=%s", group, "on" if is_on else "off")
 

@@ -27,9 +27,10 @@ class Outlet(Base):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_on_off( Device, int group, bool is_on, on_off.Mode mode ): Sent
-      whenever the switch is turned on or off.  Group will be 1 for the top
-      outlet and 2 for the bottom outlet.
+    - signal_on_off( Device, int group, bool is_on, on_off.Mode mode, str
+                     reason ): Sent whenever the switch is turned on or off.
+                     Group will be 1 for the top outlet and 2 for the bottom
+                     outlet.
     """
 
     def __init__(self, protocol, modem, address, name=None):
@@ -48,7 +49,8 @@ class Outlet(Base):
         self._is_on = [False, False]  # top outlet, bottom outlet
 
         # Support on/off style signals.
-        # API: func(Device, int group, bool is_on, on_off.Mode mode)
+        # API: func(Device, int group, bool is_on, on_off.Mode mode,
+        #           str reason)
         self.signal_on_off = Signal()
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the
@@ -64,6 +66,7 @@ class Outlet(Base):
         # Special callback to run when receiving a broadcast clean up.  See
         # scene() for details.
         self.broadcast_done = None
+        self.broadcast_reason = ""
 
         # NOTE: the outlet does NOT include the group in the ACK of an on/off
         # command.  So there is no way to tell which outlet is being ACK'ed
@@ -162,7 +165,7 @@ class Outlet(Base):
 
     #-----------------------------------------------------------------------
     def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL,
-           on_done=None):
+           reason="", on_done=None):
         """Turn the device on.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -181,6 +184,9 @@ class Outlet(Base):
                 range 0 to 255.  Only dimmers use the intermediate values, all
                 other devices look at level=0 or level>0.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -203,7 +209,8 @@ class Outlet(Base):
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
+        callback = functools.partial(self.handle_ack, reason=reason)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
 
         # See __init__ code comments for what this is for.
         self._which_outlet.append(group)
@@ -212,7 +219,8 @@ class Outlet(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def off(self, group=0x01, mode=on_off.Mode.NORMAL, on_done=None):
+    def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
+            on_done=None):
         """Turn the device off.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -228,6 +236,9 @@ class Outlet(Base):
           group (int):  The group to send the command to.  The top outlet is
                 group 1, the bottom outlet is group 2.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -249,7 +260,8 @@ class Outlet(Base):
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
+        callback = functools.partial(self.handle_ack, reason=reason)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
 
         # See __init__ code comments for what this is for.
         self._which_outlet.append(group)
@@ -258,7 +270,8 @@ class Outlet(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, on_done=None):
+    def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, reason="",
+            on_done=None):
         """Turn the device on or off.  Level zero will be off.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -281,12 +294,12 @@ class Outlet(Base):
                    completed.  Signature is: on_done(success, msg, data)
         """
         if level:
-            self.on(group, level, mode, on_done)
+            self.on(group, level, mode, reason, on_done)
         else:
-            self.off(group, mode, on_done)
+            self.off(group, mode, reason, on_done)
 
     #-----------------------------------------------------------------------
-    def scene(self, is_on, group=0x01, on_done=None):
+    def scene(self, is_on, group=0x01, reason="", on_done=None):
         """Trigger a scene on the device.
 
         Triggering a scene is the same as simulating a button press on the
@@ -297,6 +310,9 @@ class Outlet(Base):
           is_on (bool):  True for an on command, False for an off command.
           group (int):  The group on the device to simulate.  The top outlet
                 is group 1, the bottom outlet is group 2.
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -318,8 +334,9 @@ class Outlet(Base):
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        callback = on_done if is_on else None
-        msg_handler = handler.StandardCmd(msg, self.handle_scene, callback)
+        done_callback = on_done if is_on else None
+        callback = functools.partial(self.handle_scene, reason=reason)
+        msg_handler = handler.StandardCmd(msg, callback, done_callback)
         self.send(msg, msg_handler)
 
         # Scene triggering will not turn the device off (no idea why), so we
@@ -330,8 +347,9 @@ class Outlet(Base):
         # command above, it doesn't work - we have to wait until the
         # broadcast msg is finished.
         if not is_on:
-            self.broadcast_done = functools.partial(self.off, group=group,
-                                                    on_done=on_done)
+            self.broadcast_done = \
+                functools.partial(self.off, group=group, on_done=on_done,
+                                  reason=reason)
 
     #-----------------------------------------------------------------------
     def set_backlight(self, level, on_done=None):
@@ -440,6 +458,12 @@ class Outlet(Base):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
+        # If we have a saved reason from a simulated scene command, use that.
+        # Otherwise the device button was pressed.
+        reason = self.broadcast_reason if self.broadcast_reason else \
+                 on_off.REASON_DEVICE
+        self.broadcast_reason = ""
+
         # ACK of the broadcast.  Ignore this unless we sent a simulated off
         # scene in which case run the broadcast done handler.  This is a
         # weird special case - see scene() for details.
@@ -458,13 +482,13 @@ class Outlet(Base):
 
             # For an on command, we can update directly.
             if is_on:
-                self._set_is_on(msg.group, True, mode)
+                self._set_is_on(msg.group, True, mode, reason)
 
             # For an off command, we need to see if broadcast_done is active.
             # This is a generated broadcast and we need to manually turn the
             # device off so don't update it's state until that occurs.
             elif not self.broadcast_done:
-                self._set_is_on(msg.group, False, mode)
+                self._set_is_on(msg.group, False, mode, reason)
 
             # This will find all the devices we're the controller of for this
             # group and call their handle_group_cmd() methods to update their
@@ -501,15 +525,15 @@ class Outlet(Base):
                    is_on[1])
 
             # Set the state for each outlet.
-            self._set_is_on(1, is_on[0])
-            self._set_is_on(2, is_on[1])
+            self._set_is_on(1, is_on[0], reason=on_off.REASON_REFRESH)
+            self._set_is_on(2, is_on[1], reason=on_off.REASON_REFRESH)
 
         else:
             LOG.error("Outlet %s unknown refresh response %s", self.label,
                       msg.cmd2)
 
     #-----------------------------------------------------------------------
-    def handle_ack(self, msg, on_done):
+    def handle_ack(self, msg, on_done, reason=""):
         """Callback for standard commanded messages.
 
         This callback is run when we get a reply back from one of our
@@ -522,6 +546,9 @@ class Outlet(Base):
               The on/off level will be in the cmd2 field.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
         """
         # Get the last outlet we were commanding.  The message doesn't tell
         # us which outlet it was so we have to track it here.  See __init__
@@ -540,7 +567,8 @@ class Outlet(Base):
             LOG.debug("Outlet %s grp: %s ACK: %s", self.addr, group, msg)
 
             is_on, mode = on_off.Mode.decode(msg.cmd1)
-            self._set_is_on(group, is_on, mode)
+            reason = reason if reason else on_off.REASON_COMMAND
+            self._set_is_on(group, is_on, mode, reason)
             on_done(True, "Outlet state updated to on=%s" % self._is_on,
                     self._is_on)
 
@@ -549,7 +577,7 @@ class Outlet(Base):
             on_done(False, "Outlet state update failed", None)
 
     #-----------------------------------------------------------------------
-    def handle_scene(self, msg, on_done):
+    def handle_scene(self, msg, on_done, reason=""):
         """Callback for scene simulation commanded messages.
 
         This callback is run when we get a reply back from triggering a scene
@@ -561,16 +589,26 @@ class Outlet(Base):
           msg (message.InpStandard): The reply message from the device.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
         """
         # Call the callback.  We don't change state here - the device will
         # send a regular broadcast message which will run handle_broadcast
         # which will then update the state.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("Outlet %s ACK: %s", self.addr, msg)
+
+            # Reason is device because we're simulating a button press.  We
+            # can't really pass this around because we just get a broadcast
+            # message later from the device.  So we set a temporary variable
+            # here and use it in handle_broadcast() to output the reason.
+            self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
             on_done(True, "Scene triggered", None)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("Outlet %s NAK error: %s", self.addr, msg)
+            self.broadcast_reason = None
             on_done(False, "Scene trigger failed failed", None)
 
     #-----------------------------------------------------------------------
@@ -597,10 +635,13 @@ class Outlet(Base):
                       msg.group, addr)
             return
 
+        # The local button being modified is stored in the db entry.
+        localGroup = entry.data[2]
+
         # Handle on/off commands codes.
         if on_off.Mode.is_valid(msg.cmd1):
             is_on, mode = on_off.Mode.decode(msg.cmd1)
-            self._set_is_on(msg.group, is_on, mode)
+            self._set_is_on(localGroup, is_on, mode, on_off.REASON_SCENE)
 
         # Note: I don't believe the on/off switch can participate in manual
         # mode stopping commands since it changes state when the button is
@@ -610,7 +651,7 @@ class Outlet(Base):
                         msg.cmd1)
 
     #-----------------------------------------------------------------------
-    def _set_is_on(self, group, is_on, mode=on_off.Mode.NORMAL):
+    def _set_is_on(self, group, is_on, mode=on_off.Mode.NORMAL, reason=""):
         """Update the device on/off state.
 
         This will change the internal state and emit the state changed
@@ -622,14 +663,17 @@ class Outlet(Base):
           is_on (bool):  True if the switch is on, False if it isn't.
           mode (on_off.Mode): The type of on/off that was triggered (normal,
                fast, etc).
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
         """
         is_on = bool(is_on)
 
-        LOG.info("Setting device %s grp: %s on %s %s", self.label, group,
-                 is_on, mode)
+        LOG.info("Setting device %s grp: %s on %s %s %s", self.label, group,
+                 is_on, mode, reason)
         self._is_on[group - 1] = is_on
 
         # Notify others that the outlet state has changed.
-        self.signal_on_off.emit(self, group, is_on, mode)
+        self.signal_on_off.emit(self, group, is_on, mode, reason)
 
     #-----------------------------------------------------------------------

@@ -128,6 +128,9 @@ def parse_args(args):
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to turn on for multi-button "
                     "devices.")
+    sp.add_argument("-r", "--reason", metavar="reason", type=str, default="",
+                    help="Reason message to send with the command.  No "
+                    "message with use 'command'.")
     gp = sp.add_mutually_exclusive_group()
     gp.add_argument("-i", "--instant", dest="mode", action="store_const",
                     const="instant", help="Instant (rather than ramping) on.")
@@ -144,6 +147,9 @@ def parse_args(args):
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to set for multi-button "
                     "devices.")
+    sp.add_argument("-r", "--reason", metavar="reason", type=str, default="",
+                    help="Reason message to send with the command.  No "
+                    "message with use 'command'.")
     gp = sp.add_mutually_exclusive_group()
     gp.add_argument("-i", "--instant", dest="mode", action="store_const",
                     const="instant", help="Instant (rather than ramping) on.")
@@ -162,6 +168,9 @@ def parse_args(args):
     sp.add_argument("-g", "--group", type=int, default=0x01,
                     help="Group (button) number to turn off for multi-button "
                     "devices.")
+    sp.add_argument("-r", "--reason", metavar="reason", type=str, default="",
+                    help="Reason message to send with the command.  No "
+                    "message with use 'command'.")
     gp = sp.add_mutually_exclusive_group()
     gp.add_argument("-i", "--instant", dest="mode", action="store_const",
                     const="instant", help="Instant (rather than ramping) on.")
@@ -175,6 +184,9 @@ def parse_args(args):
     sp = sub.add_parser("up", help="Increments a dimmer up.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
+    sp.add_argument("-r", "--reason", metavar="reason", type=str, default="",
+                    help="Reason message to send with the command.  No "
+                    "message with use 'command'.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.increment_up)
 
@@ -183,6 +195,9 @@ def parse_args(args):
     sp = sub.add_parser("down", help="Decrements a dimmer up.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
+    sp.add_argument("-r", "--reason", metavar="reason", type=str, default="",
+                    help="Reason message to send with the command.  No "
+                    "message with use 'command'.")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.increment_down)
 
@@ -191,6 +206,9 @@ def parse_args(args):
     sp = sub.add_parser("scene", help="Simulate a scene command.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
+    sp.add_argument("-r", "--reason", metavar="reason", type=str, default="",
+                    help="Reason message to send with the command.  No "
+                    "message with use 'scene'.")
     sp.add_argument("address", help="Device address or name.")
     sp.add_argument("group", type=int, help="Group (button) number of the "
                     "scene to trigger (use 1 for single buttons.")

@@ -203,7 +203,7 @@ class BatterySensor(Base):
               stored in msg.cmd1.
         """
         # Send True for low battery, False for regular.
-        self.signal_low_battery.emit(msg.cmd1 == 0x11)
+        self.signal_low_battery.emit(self, msg.cmd1 == 0x11)
 
     #-----------------------------------------------------------------------
     def handle_heartbeat(self, msg):
@@ -216,7 +216,7 @@ class BatterySensor(Base):
           msg (InpStandard):  Broadcast message from the device.
         """
         # Send True for any heart beat message
-        self.signal_heartbeat.emit(True)
+        self.signal_heartbeat.emit(self, True)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):

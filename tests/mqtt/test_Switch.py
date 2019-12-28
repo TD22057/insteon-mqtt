@@ -67,21 +67,22 @@ class Test_Switch:
         assert data == right
 
         data = mdev.template_data(is_on=True, mode=IM.on_off.Mode.FAST,
-                                  manual=IM.on_off.Manual.STOP)
+                                  manual=IM.on_off.Manual.STOP,
+                                  reason="something")
         right = {"address" : addr.hex, "name" : name,
-                 "on" : 1, "on_str" : "on",
+                 "on" : 1, "on_str" : "on", "reason" : "something",
                  "mode" : "fast", "fast" : 1, "instant" : 0,
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
         assert data == right
 
         data = mdev.template_data(is_on=False)
-        right = {"address" : addr.hex, "name" : name,
+        right = {"address" : addr.hex, "name" : name, "reason" : "",
                  "on" : 0, "on_str" : "off",
                  "mode" : "normal", "fast" : 0, "instant" : 0}
         assert data == right
 
-        data = mdev.template_data(manual=IM.on_off.Manual.UP)
-        right = {"address" : addr.hex, "name" : name,
+        data = mdev.template_data(manual=IM.on_off.Manual.UP, reason="foo")
+        right = {"address" : addr.hex, "name" : name, "reason" : "foo",
                  "manual_str" : "up", "manual" : 1, "manual_openhab" : 2}
         assert data == right
 
@@ -151,7 +152,7 @@ class Test_Switch:
         config = {'switch' : {
             'on_off_topic' : 'foo/{{address}}',
             'on_off_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
-                                '"mode" : "{{json.mode.lower()}}" }')}}
+                                '"mode" : "{{json.mode.lower()}}"}')}}
         mdev.load_config(config, qos=qos)
 
         mdev.subscribe(link, qos)
@@ -169,6 +170,42 @@ class Test_Switch:
         assert len(proto.sent) == 1
 
         assert proto.sent[0].msg.cmd1 == 0x12
+        proto.clear()
+
+        # test error payload
+        link.publish(topic, b'asdf', qos, False)
+
+    #-----------------------------------------------------------------------
+    def test_input_on_off_reason(self, setup):
+        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
+
+        qos = 2
+        config = {'switch' : {
+            'on_off_topic' : 'foo/{{address}}',
+            'on_off_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
+                                '"mode" : "{{json.mode.lower()}}",'
+                                '"reason" : "{{json.reason}}" }')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        topic = link.client.sub[0].topic
+
+        payload = b'{ "on" : "OFF", "mode" : "NORMAL", "reason" : "ABC" }'
+        link.publish(topic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x13
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords == {"reason" : "ABC"}
+        proto.clear()
+
+        payload = b'{ "on" : "ON", "mode" : "FAST", "reason" : "baz" }'
+        link.publish(topic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x12
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords == {"reason" : "baz"}
         proto.clear()
 
         # test error payload
@@ -205,6 +242,40 @@ class Test_Switch:
 
         # test error payload
         link.publish(topic, b'asdf', qos, False)
+
+    #-----------------------------------------------------------------------
+    def test_input_scene_reason(self, setup):
+        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
+
+        qos = 2
+        config = {'switch' : {
+            'scene_topic' : 'foo/{{address}}',
+            'scene_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
+                               '"reason" : "{{json.reason}}"}')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        topic = link.client.sub[1].topic
+
+        payload = b'{ "on" : "OFF", "reason" : "a b c" }'
+        link.publish(topic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x13
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords == {"reason" : "a b c"}
+        proto.clear()
+
+        payload = b'{ "on" : "ON", "reason" : "zyx" }'
+        link.publish(topic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x11
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords == {"reason" : "zyx"}
+        proto.clear()
 
 
 #===========================================================================

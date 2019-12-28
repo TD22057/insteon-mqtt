@@ -50,7 +50,7 @@ class Mqtt(Link):
         self.connected = False
         self.id = id if id is not None else "insteon-mqtt"
 
-        # Insure poll is called at least once every 10 seconds so we can send
+        # Insure poll is called at least once every 30 seconds so we can send
         # a keep alive message to the server so our connection doesn't get
         # dropped.  This relies on poll() getting called more often than this
         # time.

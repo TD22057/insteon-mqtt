@@ -399,8 +399,7 @@ class Base:
                 device model information even if it is already known.
         """
         # If model number is not known, or force true, run get_model
-        if self.db.dev_cat is None or self.db.sub_cat is None or \
-           self.db.firmware is None or force:
+        if self.db.desc is None or self.db.firmware is None or force:
             seq.add(self.get_model)
 
     #-----------------------------------------------------------------------
@@ -801,13 +800,12 @@ class Base:
           on_done:  Finished callback.  This is called when the command has
                     completed.  Signature is: on_done(success, msg, data)
         """
-        if msg.cmd1 == 0x01:
-            self.db.set_dev_cat(msg.to_addr.ids[0])
-            self.db.set_sub_cat(msg.to_addr.ids[1])
-            self.db.set_firmware(msg.to_addr.ids[2])
-            LOG.ui("Device %s received model information, dev_cat: %#x, " +
-                   "sub_cat: %#x, firmware: %#x ", self.addr, self.db.dev_cat,
-                   self.db.sub_cat, self.db.firmware)
+        if msg.cmd1 == 0x01 or msg.cmd1 == 0x02:
+            dev_cat, sub_cat = msg.to_addr.ids[0], msg.to_addr.ids[1]
+            firmware = msg.to_addr.ids[2]
+            self.db.set_info(dev_cat, sub_cat, firmware)
+            LOG.ui("Device %s received model information: %s firmware: %#x",
+                   self.addr, self.db.desc, firmware)
             on_done(True, "Operation complete", None)
         else:
             LOG.debug("Device %s get_model response with wrong cmd %s",

@@ -13,8 +13,9 @@ ignore =
   # hanging indent indentation,
   E131,
   # allow lambda assignments
-  E731
+  E731,
+  # allow line break after binary operator
+  W504
 
 exclude = notes,
 jobs = auto
-

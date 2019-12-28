@@ -109,7 +109,8 @@ class Outlet:
             link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
-    def template_data(self, is_on=None, button=None, mode=on_off.Mode.NORMAL):
+    def template_data(self, is_on=None, button=None, mode=on_off.Mode.NORMAL,
+                      reason=None):
         """Create the Jinja templating data variables for on/off messages.
 
         Args:
@@ -118,6 +119,8 @@ class Outlet:
           is_on (bool):  True for on, False for off.  If None, on/off and
                 mode attributes are not added to the data.
           mode (on_off.Mode):  The on/off mode state.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -137,11 +140,13 @@ class Outlet:
             data["mode"] = str(mode)
             data["fast"] = 1 if mode == on_off.Mode.FAST else 0
             data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
+            data["reason"] = reason if reason is not None else ""
 
         return data
 
     #-----------------------------------------------------------------------
-    def _insteon_on_off(self, device, group, is_on, mode=on_off.Mode.NORMAL):
+    def _insteon_on_off(self, device, group, is_on, mode=on_off.Mode.NORMAL,
+                        reason=""):
         """Device active on/off callback.
 
         This is triggered via signal when the Insteon device turns on or off.
@@ -153,11 +158,13 @@ class Outlet:
           is_on (bool):  True for on, False for off.  If None, on/off and
                 mode attributes are not added to the data.
           mode (on_off.Mode):  The on/off mode state.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
         """
-        LOG.info("MQTT received on/off %s grp: %s on: %s %s", device.label,
-                 group, is_on, mode)
+        LOG.info("MQTT received on/off %s grp: %s on: %s %s '%s'",
+                 device.label, group, is_on, mode, reason)
 
-        data = self.template_data(is_on, group, mode)
+        data = self.template_data(is_on, group, mode, reason=reason)
         self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
@@ -183,7 +190,8 @@ class Outlet:
         try:
             # Tell the device to update it's state.
             is_on, mode = util.parse_on_off(data)
-            self.device.set(level=is_on, group=group, mode=mode)
+            reason = data.get("reason", "")
+            self.device.set(level=is_on, group=group, mode=mode, reason=reason)
         except:
             LOG.exception("Invalid Outlet on/off command: %s", data)
 
@@ -210,7 +218,8 @@ class Outlet:
         try:
             # Scenes don't support modes so don't parse that element.
             is_on = util.parse_on_off(data, have_mode=False)
-            self.device.scene(is_on, group)
+            reason = data.get("reason", "")
+            self.device.scene(is_on, group, reason)
         except:
             LOG.exception("Invalid Outlet scene command: %s", data)
 

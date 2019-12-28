@@ -10,10 +10,11 @@ __doc__ = """Insteon <-> MQTT bridge package
 For docs, see: https://www.github.com/TD22057/insteon-mqtt
 """
 
-__version__ = "0.6.8"
+__version__ = "0.6.9"
 
 #===========================================================================
 
+from . import catalog
 from . import cmd_line
 from . import db
 from . import device

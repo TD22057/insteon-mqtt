@@ -1,6 +1,7 @@
 #!/bin/bash
 
-DOCKER_REPO=lnr0626
+#DOCKER_REPO=lnr0626
+DOCKER_REPO=td22057
 
 TAG=$(jq -r '.version' ./hassio/config.json)
 
@@ -27,4 +28,3 @@ docker push ${DOCKER_REPO}/amd64-insteon-mqtt
 docker push ${DOCKER_REPO}/amd64-insteon-mqtt:$TAG
 docker push ${DOCKER_REPO}/aarch64-insteon-mqtt:$TAG
 docker push ${DOCKER_REPO}/aarch64-insteon-mqtt
-

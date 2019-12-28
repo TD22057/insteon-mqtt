@@ -1,5 +1,42 @@
 # Revision Change History
 
+## [0.6.9]
+
+### Additions
+- Added a catalog of known device category and sub-category information.  Just
+  used for display in the get-model command for now.  (thanks @mooshee)
+
+- Added an optional reason string to the state change reporting payloads and
+  as an optional input for input commands.  This allows for automations to
+  change behavior based on why something changed. ([Issue #138][I138])
+
+- Added KeypadLinc low level set_flags commands to modify: load (de)attached,
+  button follow masks, button off masks, non-toggle buttons.  (thanks
+  @jrevans).
+
+- Added KeypadLinc support for turning of the backlight completely (thanks
+  @jrevans).
+
+### Fixes
+- Fixed bug in message emits for battery sensors. ([Issue #157][I157])
+
+- Fixed bug in thermostat not reporting humidity changes ([Issue #160][I160])
+
+- Updated hassio config file to include the required arch listing.
+  ([Issue #139][I139])
+
+- Added docker builds for hassio from my repo (td22057) ([Issue #148][I148])
+
+- Fixed bug in motion sensor replies to a model info request
+  ([Issue #163][I163]).
+
+- Fixed bug in thermostat ambient temperature calculation ([Issue #142][I142])
+  (thanks @krkeegan).
+
+- Fixed bug in KeypadLinc, FanLinc, and Outlet for non-group 1 links
+  ([Issue #159][I159]) (thanks @chris153002).
+
+
 ## [0.6.8]
 
 ### Fixes
@@ -263,3 +300,11 @@
 [I130]: https://github.com/TD22057/insteon-mqtt/issues/130
 [I132]: https://github.com/TD22057/insteon-mqtt/issues/132
 [I136]: https://github.com/TD22057/insteon-mqtt/issues/136
+[I138]: https://github.com/TD22057/insteon-mqtt/issues/138
+[I139]: https://github.com/TD22057/insteon-mqtt/issues/139
+[I142]: https://github.com/TD22057/insteon-mqtt/issues/142
+[I148]: https://github.com/TD22057/insteon-mqtt/issues/148
+[I157]: https://github.com/TD22057/insteon-mqtt/issues/157
+[I159]: https://github.com/TD22057/insteon-mqtt/issues/159
+[I160]: https://github.com/TD22057/insteon-mqtt/issues/160
+[I163]: https://github.com/TD22057/insteon-mqtt/issues/163

@@ -17,16 +17,18 @@ This package assumes that you:
 - Have hass.io connected to your mqtt broker.
 
 1) Create a directory for insteon-mqtt in your /addons folder:
-  `mkdir /addons/insteon-mqtt`
+   `mkdir /addons/insteon-mqtt`
 
-2) Copy the `hassio/config.json` file into `/addons/insteon-mqtt/config.json`
+2) Copy the `hassio/config.json` from this repository into
+   `/addons/insteon-mqtt/config.json` on your hass.io device.
 
 3) Install the Local Insteon MQTT addon through the hass.io addon store.
   * If you do not see the 'Local Add-ons' repository or the Insteon MQTT
     add-on, click the refresh button in the top right corner on the Hass.io
     Add-ons page, and it should show up.
 
-4) Start the addon. This will setup the default config files under `/config/insteon-mqtt/config.yaml`.
+4) Start the addon. This will setup the default config files under
+   `/config/insteon-mqtt/config.yaml`.
 
 5) Edit `/config/insteon-mqtt/config.yaml` as appropriate.
 
@@ -43,8 +45,9 @@ This package assumes that you:
 6) Restart the insteon-mqtt addon to pick up the changes.
 
 7) Join, Pair, and Sync each device in your network.  This can be accomplished
-   using mqtt messages as described in the [Required Device Initialization]
-   (mqtt.md#required-device-initialization) section.
+   using mqtt messages as described in the
+   [Required Device Initialization](mqtt.md#required-device-initialization)
+   section.
 
 8) Download an Insteon device database for every device.  This may
    take awhile and battery operated devices (motion sensors, remotes,

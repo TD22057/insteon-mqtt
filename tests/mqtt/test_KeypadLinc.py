@@ -110,11 +110,11 @@ class Test_KeypadLinc:
         right = {"address" : addr.hex, "name" : name, "button" : 5}
         assert data == right
 
-        data = mdev.template_data(button=3, level=255,
+        data = mdev.template_data(button=3, level=255, reason="something",
                                   mode=IM.on_off.Mode.FAST,
                                   manual=IM.on_off.Manual.STOP)
         right = {"address" : addr.hex, "name" : name, "button" : 3,
-                 "on" : 1, "on_str" : "on",
+                 "on" : 1, "on_str" : "on", "reason" : "something",
                  "level_255" : 255, "level_100" : 100,
                  "mode" : "fast", "fast" : 1, "instant" : 0,
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
@@ -123,21 +123,23 @@ class Test_KeypadLinc:
         data = mdev.template_data(button=1, level=128,
                                   mode=IM.on_off.Mode.INSTANT)
         right = {"address" : addr.hex, "name" : name, "button" : 1,
-                 "on" : 1, "on_str" : "on",
+                 "on" : 1, "on_str" : "on", "reason" : "",
                  "level_255" : 128, "level_100" : 50,
                  "mode" : "instant", "fast" : 0, "instant" : 1}
         assert data == right
 
-        data = mdev.template_data(button=2, level=0)
+        data = mdev.template_data(button=2, level=0, reason="foo")
         right = {"address" : addr.hex, "name" : name, "button" : 2,
-                 "on" : 0, "on_str" : "off",
+                 "on" : 0, "on_str" : "off", "reason" : "foo",
                  "level_255" : 0, "level_100" : 0,
                  "mode" : "normal", "fast" : 0, "instant" : 0}
         assert data == right
 
-        data = mdev.template_data(button=2, manual=IM.on_off.Manual.UP)
+        data = mdev.template_data(button=2, manual=IM.on_off.Manual.UP,
+                                  reason="HELLO")
         right = {"address" : addr.hex, "name" : name, "button" : 2,
-                 "manual_str" : "up", "manual" : 1, "manual_openhab" : 2}
+                 "reason" : "HELLO", "manual_str" : "up", "manual" : 1,
+                 "manual_openhab" : 2}
         assert data == right
 
     #-----------------------------------------------------------------------
@@ -230,9 +232,41 @@ class Test_KeypadLinc:
 
         # test error payload
         link.publish("foo/%s/1" % addr.hex, b'asdf', qos, False)
-        link.publish("foo/%s/1" % addr.hex, b'{ "on" : "foo", "mode" : "bad" }',
-                     qos, False)
+        link.publish("foo/%s/1" % addr.hex,
+                     b'{ "on" : "foo", "mode" : "bad" }', qos, False)
 
+    #-----------------------------------------------------------------------
+    def test_input_on_off_reason(self, setup):
+        mdev, link, addr, proto = setup.getAll(['mdev', 'link', 'addr',
+                                                'proto'])
+
+        qos = 2
+        config = {'keypad_linc' : {
+            'btn_on_off_topic' : 'foo/{{address}}/{{button}}',
+            'btn_on_off_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
+                                    '"mode" : "{{json.mode.lower()}}",'
+                                    '"reason" : "{{json.reason}}"}')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+
+        payload = b'{ "on" : "OFF", "mode" : "NORMAL", "reason" : "abc" }'
+        link.publish("foo/%s/3" % addr.hex, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x2e
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords["reason"] == "abc"
+        proto.clear()
+
+        payload = b'{ "on" : "ON", "mode" : "FAST", "reason" : "def" }'
+        link.publish("foo/%s/1" % addr.hex, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x12
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords["reason"] == "def"
+        proto.clear()
 
     #-----------------------------------------------------------------------
     def test_input_level(self, setup):
@@ -243,7 +277,7 @@ class Test_KeypadLinc:
         config = {'keypad_linc' : {
             'dimmer_level_topic' : 'foo/{{address}}/1',
             'dimmer_level_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
-                                    '"level" : "{{json.num}}" }')}}
+                                      '"level" : "{{json.num}}" }')}}
         mdev.load_config(config, qos=qos)
 
         mdev.subscribe(link, qos)
@@ -267,6 +301,38 @@ class Test_KeypadLinc:
         link.publish("foo/%s/1" % addr.hex, b'{ "on" : "foo", "num" : "bad" }',
                      qos, False)
 
+    #-----------------------------------------------------------------------
+    def test_input_level_reason(self, setup):
+        mdev, link, addr, proto = setup.getAll(['mdev', 'link', 'addr',
+                                                'proto'])
+
+        qos = 2
+        config = {'keypad_linc' : {
+            'dimmer_level_topic' : 'foo/{{address}}/1',
+            'dimmer_level_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
+                                      '"level" : "{{json.num}}",'
+                                      '"reason" : "{{json.reason}}"}')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+
+        payload = b'{ "on" : "OFF", "num" : 0, "reason" : "ABC" }'
+        link.publish("foo/%s/1" % addr.hex, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x13
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords["reason"] == "ABC"
+        proto.clear()
+
+        payload = b'{ "on" : "ON", "num" : 128, "reason" : "DEF" }'
+        link.publish("foo/%s/1" % addr.hex, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x11
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords["reason"] == "DEF"
+        proto.clear()
 
     #-----------------------------------------------------------------------
     def test_input_any(self, setup):
@@ -279,9 +345,8 @@ class Test_KeypadLinc:
             'btn_on_off_payload' : ('{ "cmd" : "{{json.on.lower()}}" }'),
             'dimmer_level_topic' : 'foo/{{address}}/1',
             'dimmer_level_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
-                                    '"level" : "{{json.num}}" }')}}
+                                      '"level" : "{{json.num}}" }')}}
         mdev.load_config(config, qos=qos)
-
         mdev.subscribe(link, qos)
 
         # Test an off using the on/off format
@@ -321,7 +386,6 @@ class Test_KeypadLinc:
         link.publish("foo/%s/1" % addr.hex, b'{ "on" : "foo", "num" : "bad" }',
                      qos, False)
 
-
     #-----------------------------------------------------------------------
     def test_input_scene(self, setup):
         mdev, link, addr, proto = setup.getAll(['mdev', 'link', 'addr',
@@ -355,5 +419,38 @@ class Test_KeypadLinc:
         link.publish("foo/%s/3" % addr.hex, b'asdf', qos, False)
         link.publish("foo/%s/3" % addr.hex, b'{ "on" : "foo" }', qos, False)
 
+    #-----------------------------------------------------------------------
+    def test_input_scene_reason(self, setup):
+        mdev, link, addr, proto = setup.getAll(['mdev', 'link', 'addr',
+                                                'proto'])
+
+        qos = 2
+        config = {'keypad_linc' : {
+            'btn_scene_topic' : 'foo/{{address}}/{{button}}',
+            'btn_scene_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
+                                   '"reason" : "{{json.reason}}"}')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+
+        payload = b'{ "on" : "OFF", "reason" : "A b C" }'
+        link.publish("foo/%s/3" % addr.hex, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x13
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords["reason"] == "A b C"
+        proto.clear()
+
+        payload = b'{ "on" : "ON", "reason" : "d E f" }'
+        link.publish("foo/%s/1" % addr.hex, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x11
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords["reason"] == "d E f"
+        proto.clear()
 
 #===========================================================================

@@ -71,9 +71,10 @@ class Test_Dimmer:
         assert data == right
 
         data = mdev.template_data(level=0x55, mode=IM.on_off.Mode.FAST,
-                                  manual=IM.on_off.Manual.STOP)
+                                  manual=IM.on_off.Manual.STOP,
+                                  reason="something")
         right = {"address" : addr.hex, "name" : name,
-                 "on" : 1, "on_str" : "on",
+                 "on" : 1, "on_str" : "on", "reason" : "something",
                  "level_255" : 85, "level_100" : 33,
                  "mode" : "fast", "fast" : 1, "instant" : 0,
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
@@ -81,13 +82,13 @@ class Test_Dimmer:
 
         data = mdev.template_data(level=0x00)
         right = {"address" : addr.hex, "name" : name,
-                 "on" : 0, "on_str" : "off",
+                 "on" : 0, "on_str" : "off", "reason" : "",
                  "level_255" : 0, "level_100" : 0,
                  "mode" : "normal", "fast" : 0, "instant" : 0}
         assert data == right
 
-        data = mdev.template_data(manual=IM.on_off.Manual.UP)
-        right = {"address" : addr.hex, "name" : name,
+        data = mdev.template_data(manual=IM.on_off.Manual.UP, reason="foo")
+        right = {"address" : addr.hex, "name" : name, "reason" : "foo",
                  "manual_str" : "up", "manual" : 1, "manual_openhab" : 2}
         assert data == right
 
@@ -208,6 +209,68 @@ class Test_Dimmer:
         link.publish(ltopic, b'asdf', qos, False)
 
     #-----------------------------------------------------------------------
+    def test_input_on_off_reason(self, setup):
+        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
+
+        qos = 2
+        config = {'dimmer' : {
+            'on_off_topic' : 'foo/{{address}}',
+            'on_off_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
+                                '"mode" : "{{json.mode.lower()}}",'
+                                '"reason" : "{{json.reason}}" }'),
+            'level_topic' : 'bar/{{address}}',
+            'level_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
+                               '"mode" : "{{json.mode.lower()}}",'
+                               '"level" : {{json.level}},'
+                               '"reason" : "{{json.reason}}" }')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        otopic = link.client.sub[0].topic
+        ltopic = link.client.sub[1].topic
+
+        payload = b'{ "on" : "OFF", "mode" : "NORMAL", "reason" : "abc" }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x13
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords == {"reason" : "abc"}
+        proto.clear()
+
+        payload = b'{ "on" : "ON", "mode" : "FAST", "reason" : "def" }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x12
+        assert proto.sent[0].msg.cmd2 == 0xff
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords == {"reason" : "def"}
+        proto.clear()
+
+        payload = (b'{ "on" : "OFF", "mode" : "NORMAL", "level" : 0,'
+                   b'"reason" : "ghi" }')
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert proto.sent[0].msg.cmd2 == 0x00
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords == {"reason" : "ghi"}
+        proto.clear()
+
+        payload = (b'{ "on" : "ON", "mode" : "FAST", "level" : 67, '
+                   b'"reason" : "jkl" }')
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x12
+        assert proto.sent[0].msg.cmd2 == 0x43
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords == {"reason" : "jkl"}
+        proto.clear()
+
+    #-----------------------------------------------------------------------
     def test_input_scene(self, setup):
         mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
 
@@ -220,7 +283,7 @@ class Test_Dimmer:
         mdev.subscribe(link, qos)
         topic = link.client.sub[2].topic
 
-        payload = b'{ "on" : "OFF" }'
+        payload = b'{ "on" : "OFF"}'
         link.publish(topic, payload, qos, retain=False)
         assert len(proto.sent) == 1
 
@@ -238,6 +301,40 @@ class Test_Dimmer:
 
         # test error payload
         link.publish(topic, b'asdf', qos, False)
+
+    #-----------------------------------------------------------------------
+    def test_input_scene_reason(self, setup):
+        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
+
+        qos = 2
+        config = {'dimmer' : {
+            'scene_topic' : 'foo/{{address}}/scene',
+            'scene_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
+                               '"reason" : "{{json.reason}}" }')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        topic = link.client.sub[2].topic
+
+        payload = b'{ "on" : "OFF", "reason" : "ABC" }'
+        link.publish(topic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x13
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords == {"reason" : "ABC"}
+        proto.clear()
+
+        payload = b'{ "on" : "ON", "reason" : "DEF" }'
+        link.publish(topic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x11
+        cb = proto.sent[0].handler.callback
+        assert cb.keywords == {"reason" : "DEF"}
+        proto.clear()
 
 
 #===========================================================================

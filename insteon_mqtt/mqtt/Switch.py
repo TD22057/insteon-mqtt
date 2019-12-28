@@ -108,7 +108,7 @@ class Switch:
 
     #-----------------------------------------------------------------------
     def template_data(self, is_on=None, mode=on_off.Mode.NORMAL,
-                      manual=None):
+                      manual=None, reason=None):
         """Create the Jinja templating data variables for on/off messages.
 
         Args:
@@ -116,7 +116,9 @@ class Switch:
                 mode attributes are not added to the data.
           mode (on_off.Mode):  The on/off mode state.
           manual (on_off.Manual):  The manual mode state.  If None, manual
-                attributes are not added to the data.
+                 attributes are not added to the data.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -134,16 +136,19 @@ class Switch:
             data["mode"] = str(mode)
             data["fast"] = 1 if mode == on_off.Mode.FAST else 0
             data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
+            data["reason"] = reason if reason is not None else ""
 
         if manual is not None:
             data["manual_str"] = str(manual)
             data["manual"] = manual.int_value()
             data["manual_openhab"] = manual.openhab_value()
+            data["reason"] = reason if reason is not None else ""
 
         return data
 
     #-----------------------------------------------------------------------
-    def _insteon_on_off(self, device, is_on, mode=on_off.Mode.NORMAL):
+    def _insteon_on_off(self, device, is_on, mode=on_off.Mode.NORMAL,
+                        reason=""):
         """Device on/off callback.
 
         This is triggered via signal when the Insteon device is turned on or
@@ -153,19 +158,21 @@ class Switch:
           device (device.Switch):   The Insteon device that changed.
           is_on (bool):   True for on, False for off.
           mode (on_off.Mode):  The on/off mode state.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
         """
-        LOG.info("MQTT received on/off %s on: %s %s", device.label, is_on,
-                 mode)
+        LOG.info("MQTT received on/off %s on: %s %s '%s'", device.label, is_on,
+                 mode, reason)
 
         # For manual mode messages, don't retain them because they don't
         # represent persistent state - they're momentary events.
         retain = False if mode == on_off.Mode.MANUAL else None
 
-        data = self.template_data(is_on, mode)
+        data = self.template_data(is_on, mode, reason=reason)
         self.msg_state.publish(self.mqtt, data, retain=retain)
 
     #-----------------------------------------------------------------------
-    def _insteon_manual(self, device, manual):
+    def _insteon_manual(self, device, manual, reason=""):
         """Device manual mode callback.
 
         This is triggered via signal when the Insteon device starts or stops
@@ -173,14 +180,17 @@ class Switch:
         with the new state.
 
         Args:
-          device:   (device.Base) The Insteon device that changed.
-          manual:   (on_off.Manual) The manual mode.
+          device (device.Base): The Insteon device that changed.
+          manual (on_off.Manual):  The manual mode.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
         """
-        LOG.info("MQTT received manual change %s %s", device.label, manual)
+        LOG.info("MQTT received manual change %s %s '%s'", device.label,
+                 manual, reason)
 
         # For manual mode messages, don't retain them because they don't
         # represent persistent state - they're momentary events.
-        data = self.template_data(manual=manual)
+        data = self.template_data(manual=manual, reason=reason)
         self.msg_manual_state.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------
@@ -204,7 +214,8 @@ class Switch:
         try:
             # Tell the device to update it's state.
             is_on, mode = util.parse_on_off(data)
-            self.device.set(level=is_on, mode=mode)
+            reason = data.get("reason", "")
+            self.device.set(level=is_on, mode=mode, reason=reason)
         except:
             LOG.exception("Invalid switch on/off command: %s", data)
 
@@ -231,9 +242,10 @@ class Switch:
             # Scenes don't support modes so don't parse that element.
             is_on = util.parse_on_off(data, have_mode=False)
             group = int(data.get('group', 0x01))
+            reason = data.get("reason", "")
 
             # Tell the device to trigger the scene command.
-            self.device.scene(is_on, group)
+            self.device.scene(is_on, group, reason)
         except:
             LOG.exception("Invalid switch scene command: %s", data)
 
