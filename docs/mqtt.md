@@ -143,12 +143,12 @@ This function will alter the device's link database to match the scenes
 defined in the scenes.yaml file.  This includes adding new links as well as
 deleting un-defined links.  Details can be found in [Scene Management](scenes.md)
 
-The command payload is below.  Setting the dry-run flag to true will cause the
+The command payload is below.  Setting the dry_run flag to true will cause the
 changes to be made to the device, the default false will only report what would
 happen:
 
   ```
-  { "cmd" : "sync", ["dry-run" : true/false]}
+  { "cmd" : "sync", ["dry_run" : true/false]}
   ```
 
   This command can also be run from the command line:
@@ -163,12 +163,12 @@ Supported: modem
 
 This function will perform the sync command on all devices.
 
-The command payload is as follows.  Setting the dry-run flag to true will cause
+The command payload is as follows.  Setting the dry_run flag to true will cause
 the changes to be made to the device, the default false will only report what
 would happen:
 
   ```
-  { "cmd" : "sync_all", ["dry-run" : true/false]}
+  { "cmd" : "sync_all", ["dry_run" : true/false]}
   ```
 
  This command can also be run from the command line:
@@ -185,12 +185,12 @@ The 'import-scenes' function will take the links defined on each device and
 parse them into a scene which can be saved to the scenes.yaml file.  Please
 read the in [Scene Management](scenes.md)
 
-The command payload is below.  Setting the dry-run flag to true will cause the
+The command payload is below.  Setting the dry_run flag to true will cause the
 changes to be made to the file, the default false will only report what would
 happen:
 
   ```
-  { "cmd" : "import_scenes", ["dry-run" : true/false]}
+  { "cmd" : "import_scenes", ["dry_run" : true/false]}
   ```
 
   This command can also be run from the command line:
@@ -205,12 +205,12 @@ Supported: modem
 
 This function will perform the import-scenes command on all devices.
 
-The command payload is as follows.  Setting the dry-run flag to true will cause
+The command payload is as follows.  Setting the dry_run flag to true will cause
 the changes to be made to the file, the default false will only report what
 would happen:
 
   ```
-  { "cmd" : "import_scenes_all", ["dry-run" : true/false]}
+  { "cmd" : "import_scenes_all", ["dry_run" : true/false]}
   ```
 
  This command can also be run from the command line:
