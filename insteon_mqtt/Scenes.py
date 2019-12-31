@@ -693,6 +693,13 @@ class SceneDevice:
         if self.device is not None:
             self.addr = self.device.addr
             self.label = self.device.name
+            # The group for responder links on multi-group devices is stored
+            # in data3.  We have to extract this early, because the group may
+            # influence other settings, particularly the link_defaults
+            pretty_data = self.device.link_data_to_pretty(self.is_controller,
+                                                          self.link_data)
+            if 'group' in pretty_data[2]:
+                self.group = pretty_data[2]['group']
         else:
             # This is an device not defined in our config
             self.addr = Address(self.label)
@@ -905,7 +912,9 @@ class SceneDevice:
         for i in range(0, 3):
             pretty_name = next(iter(pretty_data[i].keys()))
             pretty_value = pretty_data[i][pretty_name]
-            if data_list[i] == self.link_defaults[i]:
+            # Don't delete default entries for group that is handled by group
+            if (data_list[i] == self.link_defaults[i] and
+                    pretty_name != 'group'):
                 if self.style == 0:
                     # Default, so delete if in entry
                     if orig_names[i] in self._yaml_data[self.label]:
