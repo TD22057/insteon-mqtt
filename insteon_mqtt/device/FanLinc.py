@@ -431,7 +431,7 @@ class FanLinc(Dimmer):
         # assume the user wants to turn the device on (0xff).
         else:
             data_2 = 0x00
-            if group > 0x01:
+            if group <= 0x01:
                 data_2 = 0x1f
             defaults = [0xff, data_2, group]
 
@@ -459,7 +459,7 @@ class FanLinc(Dimmer):
             ret = [{'on_level': int((data[0] / .255) + .5) / 10},
                    {'data_2': data[1]},
                    {'group': data[2]}]
-            if data[2] > 0x01:
+            if data[2] <= 0x01:
                 ramp = 0x1f  # default
                 if data[1] in Dimmer.ramp_pretty:
                     ramp = Dimmer.ramp_pretty[data[1]]
@@ -495,7 +495,7 @@ class FanLinc(Dimmer):
         if not is_controller:
             if 'group' in data:
                 data_3 = data['group']
-                if 'ramp' in data and data['group'] > 0x01:
+                if 'ramp' in data and data['group'] <= 0x01:
                     data_2 = 0x1f
                     for ramp_key, ramp_value in Dimmer.ramp_pretty:
                         if data['ramp'] >= ramp_value:
