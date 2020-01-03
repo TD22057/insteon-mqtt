@@ -45,7 +45,7 @@ configuration file, either for backup or to allow for modifications.
 ## Scenes.yaml
 ### Defining a Scenes.yaml File
 The scenes.yaml file location has to be defined in the config.yaml file. An
-example of how the definition should be written can be found in the 
+example of how the definition should be written can be found in the
 [config.yaml](../config.yaml) file.  The scenes.yaml file needs to be defined under
 the insteon key using the scenes key. If a scenes.yaml file is not defined, the
 results of 'import-scenes' cannot be saved to disk.
@@ -60,6 +60,13 @@ in your scenes.yaml file to use the 'import-scenes' function.  As long as the
 file is defined in your config.yaml file, and the location is writable by
 insteon-mqtt, a scenes.yaml file will be created by the 'import-scenes'
 function.
+
+### A Note about the Modem and Group Numbers
+The modem can control devices using virtual scenes.  This can be helpful for
+turning on an off a keypadlinc button with a light or for turning off a group
+of lights simultaneously.  While, all modem controller entries require a group
+number, you __should not__ specify one.  A group number will be added
+automatically for you when the scenes file is processed.
 
 ### The 'Import-Scenes' Function
 NOTE: Because the 'import-scenes' function may make direct writes to your
@@ -78,7 +85,7 @@ may be combined or split in the process of importing, **it is not always possibl
 to maintain comments and ordering in the scenes.yaml file.**
 
 Much like other insteon-mqtt command.  The 'import-scenes' command can be run
-from either the command line or from mqtt.  Help running [commands from the 
+from either the command line or from mqtt.  Help running [commands from the
 command line](quick_start.md), you can also run `insteon-mqtt config.yaml
 import-scenes -h` for help from the command line.  Help running [mqtt
 commands](mqtt.md).  It is important to note, that by default, the command
@@ -126,4 +133,3 @@ network.  The same caveats about 'sync' apply to this function as well.
 
 You can run `insteon-mqtt config.yaml sync-all -h` for help from the command
 line. Help running [mqtt commands](docs/mqtt.md).
-
