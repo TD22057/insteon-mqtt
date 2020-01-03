@@ -701,8 +701,16 @@ class SceneDevice:
             if 'group' in pretty_data[2]:
                 self.group = pretty_data[2]['group']
         else:
-            # This is an device not defined in our config
-            self.addr = Address(self.label)
+            # This is an device not defined in our config if it uses an
+            # address string, we can work with that.
+            try:
+                self.addr = Address(self.label)
+            except ValueError:
+                msg = ("Error trying to parse the scenes file.  Found a "
+                       "device that is neither defined in the config file nor "
+                       "defined in the scenes file as an address: %s" %
+                       self.label)
+                raise Exception(msg)
 
         # Remove values from yaml_data if they are default values and make
         # pretty. Easiest way to do this is just to set things to themselves
