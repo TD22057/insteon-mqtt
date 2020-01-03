@@ -476,7 +476,7 @@ class Base:
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def sync(self, dry_run=True, refresh=True, on_done=None):
+    def sync(self, dry_run=True, refresh=True, sequence=None, on_done=None):
         """Syncs the links on the device.
 
         This will add, remove, and fix links on the device to ensure that the
@@ -498,42 +498,71 @@ class Base:
                    Default: True
           refresh: (Boolean) performs a device refresh before syncing.
                    Default: True
+          sequence: (CommandSeq) Sequence entries will be added onto this
+                   sequence.  If None, will create and execute a new sequence.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
         dry_run_text = ''
         if dry_run:
             dry_run_text = '- DRY RUN'
+        on_done = util.make_callback(on_done)
         LOG.info("Device %s cmd: sync", self.label)
-        LOG.ui("Syncing %s device %s", self.label, dry_run_text)
 
         # Prepare command sequence
-        seq = CommandSeq(self.protocol, "Sync complete", on_done,
-                         error_stop=False)
+        if sequence is not None:
+            seq = sequence
+        else:
+            seq = CommandSeq(self.protocol, "Sync complete", on_done,
+                             error_stop=False)
 
         if refresh:
+            LOG.ui("Performing DB Refresh of %s device", self.label)
             seq.add(self.refresh)
-
-        # Perform diff after refresh
-        diff = self.db_config.diff(self.db)
-
-        if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
-            seq.add(LOG.ui, "  Deleting the following links %s:",
-                    dry_run_text)
-            for entry in diff.del_entries:
-                seq.add(LOG.ui, "    %s", entry)
-                if not dry_run:
-                    seq.add(self.db.delete_on_device, self, entry)
-            seq.add(LOG.ui, "  Adding the following links %s:",
-                    dry_run_text)
-            for entry in diff.add_entries:
-                seq.add(LOG.ui, "    %s", entry)
-                if not dry_run:
-                    seq.add(self.db.add_on_device, self, entry.addr,
-                            entry.group, entry.is_controller, entry.data)
+            seq.add(self.sync, dry_run, refresh=False, sequence=sequence)
         else:
-            seq.add(LOG.ui, "  No changes necessary.")
-        seq.run()
+            LOG.ui("Syncing %s device %s", self.label, dry_run_text)
+            # Perform diff after refresh if asked for
+            diff = self.db_config.diff(self.db)
+
+            if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
+                for entry in diff.del_entries:
+                    seq.add(self._sync_del, entry, dry_run)
+                for entry in diff.add_entries:
+                    seq.add(self._sync_add, entry, dry_run)
+            else:
+                LOG.ui("  No changes necessary.")
+
+        if sequence is None:
+            seq.run()
+        else:
+            on_done(True, "Sync Complete", None)
+
+    def _sync_del(self, entry, dry_run, on_done=None):
+        '''Deletes a link on the device with a Log UI Message
+
+        Used by sync() so that messages are displayed in a logical fashion
+        '''
+        if dry_run:
+            LOG.ui("  Would Delete %s:", entry)
+            on_done(True, None, None)
+        else:
+            LOG.ui("  Deleting %s:", entry)
+            self.db.delete_on_device(self, entry, on_done=on_done)
+
+    def _sync_add(self, entry, dry_run, on_done=None):
+        ''' Adds a link to the device with a Log UI Message
+
+        Used by sync() so that messages are displayed in a logical fashion
+        '''
+        if dry_run:
+            LOG.ui("  Would Add %s:", entry)
+            on_done(True, None, None)
+        else:
+            LOG.ui("  Adding %s:", entry)
+            self.db.add_on_device(self, entry.addr, entry.group,
+                                  entry.is_controller, entry.data,
+                                  on_done=on_done)
 
     def import_scenes(self, dry_run=True, save=True, on_done=None):
         """Imports Scenes Defined on the Device into the Scenes Config.
@@ -569,7 +598,6 @@ class Base:
         LOG.info("Device %s cmd: import_scenes", self.label)
         LOG.ui("Importing Scenes from %s device %s", self.label, dry_run_text)
 
-        # Perform diff after refresh
         diff = self.db.diff(self.db_config)
 
         # Import only cares about adding entries, ignore deletes

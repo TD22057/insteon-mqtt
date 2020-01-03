@@ -198,14 +198,5 @@ class Entry:
             protocol.send(self.msg, self.handler)
 
         else:
-            try:
-                self.func(*self.args, on_done=on_done, **self.kwargs)
-            except TypeError:
-                # This may be a synchronous function that doesn't have an
-                # on_done kwarg.  Try running without that kwarg and call
-                # on_done.  Notably, this allows LOG messages to be added
-                # as function calls.
-                self.func(*self.args, **self.kwargs)
-                on_done(True, None, None)
-
+            self.func(*self.args, on_done=on_done, **self.kwargs)
 #===========================================================================
