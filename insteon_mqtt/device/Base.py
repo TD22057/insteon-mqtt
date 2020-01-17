@@ -1003,7 +1003,7 @@ class Base:
           on_done:  Finished callback.  This is called when the command has
                     completed.  Signature is: on_done(success, msg, data)
         """
-        if msg.cmd1 == 0x01:
+        if msg.cmd1 == 0x01 or msg.cmd1 == 0x02:
             dev_cat, sub_cat = msg.to_addr.ids[0], msg.to_addr.ids[1]
             firmware = msg.to_addr.ids[2]
             self.db.set_info(dev_cat, sub_cat, firmware)

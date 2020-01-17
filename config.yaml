@@ -682,7 +682,7 @@ mqtt:
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
     fan_speed_set_topic: 'insteon/{{address}}/fan/speed/set'
-    fan_speed_set_payload: '{ "cmd" : "{{value.lower}}" }'
+    fan_speed_set_payload: '{ "cmd" : "{{value.lower()}}" }'
 
   #------------------------------------------------------------------------
   # Keypad Linc

@@ -1567,6 +1567,9 @@ class KeypadLinc(Base):
 
         reason = on_off.REASON_SCENE
 
+        # The local button being modified is stored in the db entry.
+        localGroup = entry.data[2]
+
         # Handle on/off codes
         if on_off.Mode.is_valid(msg.cmd1):
             is_on, mode = on_off.Mode.decode(msg.cmd1)
@@ -1574,27 +1577,27 @@ class KeypadLinc(Base):
             # For switches, on/off determines the level.  For dimmers, it's
             # set by the responder entry in the database.
             level = 0xff if is_on else 0x00
-            if self.is_dimmer and is_on and msg.group == self._load_group:
+            if self.is_dimmer and is_on and localGroup == self._load_group:
                 level = entry.data[0]
 
-            self._set_level(msg.group, level, mode, reason)
+            self._set_level(localGroup, level, mode, reason)
 
         # Increment up 1 unit which is 8 levels.
         elif msg.cmd1 == 0x15:
-            assert msg.group == self._load_group
-            self._set_level(msg.group, min(0xff, self._level + 8),
+            assert localGroup == self._load_group
+            self._set_level(localGroup, min(0xff, self._level + 8),
                             reason=reason)
 
         # Increment down 1 unit which is 8 levels.
         elif msg.cmd1 == 0x16:
             assert msg.group == self._load_group
-            self._set_level(msg.group, max(0x00, self._level - 8),
+            self._set_level(localGroup, max(0x00, self._level - 8),
                             reason=reason)
 
         # Starting/stopping manual increment (cmd2 0x00=up, 0x01=down)
         elif on_off.Manual.is_valid(msg.cmd1):
             manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-            self.signal_manual.emit(self, msg.group, manual, reason)
+            self.signal_manual.emit(self, localGroup, manual, reason)
 
             # If the button is released, refresh to get the final level in
             # dimming mode since we don't know where the level stopped.

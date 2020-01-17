@@ -1193,4 +1193,23 @@ Sample Configuration:
   cool_sp_payload: '{ "temp_f" : {{value}} }'
   ```
 
+### Polling
+
+If the 'pair' command has been run correctly, the thermostat should push
+ambient temp, setpoint temps, humdity, and status message automatically.
+However if you want, you can poll the device for the status of these values
+as well by running 'get_status'.  This command will also get the units (C or F)
+specified on the device, which is necessary for properly decoding some of the
+temp messages from the device.  This command is also run as part of a 'refresh'.
+So if you are seeing strange temperatures, try running this command or 'refresh'
+
+Topic:
+  ```
+  insteon/command/aa.bb.cc
+  ```
+
+Payload:
+  ```
+  { "cmd" : "get_status"}
+  ```
 ---
