@@ -20,12 +20,16 @@ above, but in some cases these terms may have been commingled. This is in
 part because the Insteon specification is itself not very good at keeping these
 terms straight.  Apologies for whatever confusion results.
 
-## Managing Scenes
+## Options for Managing Scenes
 ### Physically
 Insteon has a process by which you can manually create and delete scenes. We
 won't go into detail, but generally this involves pressing and holding a button
 for a certain period of time on the controller and each responder.  It may or
 may not be helpful to invoke some magic incantation when doing this process.
+Details about how to do this can be found in the instruction manuals that came
+with each device.  What? You don't save those little scraps of paper? Well
+you can also find most of the manuals here as well
+[Insteon Support](https://www.insteon.com/support)
 
 ### Using the Command Line
 Insteon-mqtt contains the 'db-add' and 'db-delete' commands which allow the
@@ -126,6 +130,25 @@ the 'sync' command.
 
 You can run `insteon-mqtt config.yaml sync -h` for help from the command line.
 Help running [mqtt commands](docs/mqtt.md).
+
+#### Unexpected Sync Changes
+The prudent thing to do before performing a sync, is to perform a *dry-run*
+sync and look at all of the changes that will be made.  It can be helpful to
+also run the print_db command on the relevant devices to see what we know about
+the current state of the device database.
+
+Unexpected additions may be as a result of 1) devices that were not refreshed
+such as battery powered devices or 2) small changes in the on_level or
+ramp_rates.  Unexpected deletions may be the result of 1) duplicate entries
+(the entry exists more than once on the device), 2) small changes in the
+on_level or ramp_rate, 3) links from devices that are no longer present on your
+network.
+
+It is also possible that our understanding of the device database is wrong.
+It is not uncommon for corrupt insteon messages to exist, in this case we may
+believe that the device database is different than it actually is.  Try forcing
+a refresh of the device database and running a *dry-run* sync on the device
+again to see if the changes are still necessary.
 
 ### The 'Sync-All' Function
 The 'sync-all' function will perform the 'sync' function on all devices in the

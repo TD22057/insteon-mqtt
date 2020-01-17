@@ -44,7 +44,10 @@ be identified by it's address or the string "modem".
 
 When adding a new device or after performing a factory reset on a device it
 is necessary to perform a three step process to setup the device to work
-properly with insteon-mqtt.  The steps are 1) Join, 2) Pair, and 3) Sync (only if you have scenes defined for this device in a scenes.yaml file).  These three commands can be re-run at anytime without harm.
+properly with insteon-mqtt.  The steps are 1) Join, 2) Pair, and 3) Sync
+(only if you have scenes defined for this device in a scenes.yaml file).  
+The Join and Pair commands can be re-run at anytime without harm.  You can also
+run sync in dry-run mode at any time to see what changes would be made.
 
 From the command line these actions can be performed as follows:
 
