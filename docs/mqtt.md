@@ -85,10 +85,16 @@ brackets [], then it's optional.  If a value can be one of many like
 true or false, then the possible values are separated by a slash /.
 
 The MQTT topic to publish management commands to is (aa.bb.cc is the
-device address or nice name from the config.yaml file):
+example device address):
 
    ```
    insteon/command/aa.bb.cc
+   ```
+
+Alternatively you can use the nice names from the config.yaml file too:
+
+   ```
+   insteon/command/NICE NAME
    ```
 
 ### Join a New Device to the Network
@@ -220,7 +226,7 @@ would happen:
 
   ```
   insteon-mqtt config.yaml import-scenes-all
-    ```
+  ```
 
 ### Activate all linking mode
 
