@@ -6,7 +6,7 @@
 from .. import log
 from .. import message as Msg
 from .Base import Base
-from .Flags import Flags
+from ..message.Flags import Flags
 
 LOG = log.get_logger()
 
