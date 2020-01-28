@@ -71,6 +71,21 @@ class ModemScene(Base):
                             self.modem.label, msg.from_addr)
             return Msg.CONTINUE
 
+        # This is an all link failure report.
+        elif (isinstance(msg, Msg.InpAllLinkFailure) and
+              msg.group == self.msg.group):
+            LOG.error("%s failed to respond to broadcast for group %s",
+                      msg.addr, msg.group)
+            return Msg.CONTINUE
+
+        # This is a NAK response from a device.
+        elif (isinstance(msg, Msg.InpStandard) and
+              msg.flags.type == Flags.Type.CLEANUP_NAK and
+              msg.group == self.msg.group):
+            LOG.error("%s responded NAK to broadcast for group %s",
+                      msg.from_addr, msg.group)
+            return Msg.CONTINUE
+
         # Finally there should be an InpAllLinkStatus which tells us the
         # scene command is complete.
         elif isinstance(msg, Msg.InpAllLinkStatus):
