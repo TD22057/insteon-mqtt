@@ -596,11 +596,8 @@ class KeypadLinc(Base):
         Returns:
           list[3]:  list, containing a dict of the human readable values
         """
-        ret = [{'data_1': data[0]}, {'data_2': data[1]}, {'data_3': data[2]}]
+        ret = [{'data_1': data[0]}, {'data_2': data[1]}, {'group': data[2]}]
         if not is_controller:
-            ret = [{'data_1': data[0]},
-                   {'data_2': data[1]},
-                   {'group': data[2]}]
             if self.is_dimmer:
                 ramp = 0x1f  # default
                 if data[1] in Dimmer.ramp_pretty:
@@ -635,17 +632,16 @@ class KeypadLinc(Base):
         data_3 = None
         if 'data_3' in data:
             data_3 = data['data_3']
-        if not is_controller:
-            if 'group' in data:
-                data_3 = data['group']
-            if self.is_dimmer:
-                if 'ramp' in data:
-                    data_2 = 0x1f
-                    for ramp_key, ramp_value in Dimmer.ramp_pretty:
-                        if data['ramp'] >= ramp_value:
-                            data_2 = ramp_key
-                if 'on_level' in data:
-                    data_1 = int(data['on_level'] * 2.55 + .5)
+        if 'group' in data:
+            data_3 = data['group']
+        if not is_controller and self.is_dimmer:
+            if 'ramp' in data:
+                data_2 = 0x1f
+                for ramp_key, ramp_value in Dimmer.ramp_pretty:
+                    if data['ramp'] >= ramp_value:
+                        data_2 = ramp_key
+            if 'on_level' in data:
+                data_1 = int(data['on_level'] * 2.55 + .5)
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
