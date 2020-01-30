@@ -451,6 +451,7 @@ entries = {
         0x11: Desc("2845-222", "Door Sensor II (915 MHz)"),
         0x14: Desc("2845-422", "Door Sensor II (869 MHz)"),
         0x15: Desc("2845-522", "Door Sensor II (921 MHz)"),
+        0x16: Desc("2844-222", "Motion Sensor II - (915 MHz)"),
         },
     # dev_cat = 0x11
     Category.SURVEILLANCE: {
