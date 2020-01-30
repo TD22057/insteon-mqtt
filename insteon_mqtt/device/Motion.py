@@ -117,9 +117,10 @@ class Motion(BatterySensor):
 
         - on_only = 1/0: Should only on motions be reported?
 
-        - timeout = seconds between state updates (30 second increments, 2842
-        models allow between 30 seconds to over 4 hours, the 2844 models allow
-        between 30 seconds and 40 minutes)
+        - timeout = seconds between state updates (The older 2842  models
+        allow between 30 seconds to over 4 hours in 30 second intervals,
+        the 2844 models allow between 10 seconds and 40 minutes in 10
+        second intervals)
 
         - light_sensitivity = 1-255:  Amount of darkness required for night
         to be triggered.
@@ -138,9 +139,9 @@ class Motion(BatterySensor):
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown Motion flags input: %s.\n Valid flags "
-                            "are: %s" % unknown, flags)
+                            "are: %s" % (unknown, flags))
 
-        seq = CommandSeq(self.protocol, "Flags set", on_done)
+        seq = CommandSeq(self.protocol, "Motion Set Flags Success", on_done)
 
         # For some flags we need to know the existing bit before we change it.
         # So to insure that we are starting from the correct values, get the
@@ -167,9 +168,18 @@ class Motion(BatterySensor):
         # Generate the value of the combined flags.
         value = 0
         value = util.bit_set(value, 3, flags.get("led_on", self.led_on))
-        value = util.bit_set(value, 2,
-                             flags.get("night_only", self.night_only))
-        value = util.bit_set(value, 1, flags.get("on_only", self.on_only))
+        night_only = flags.get("night_only", None)
+        if night_only is None:
+            night_only = self.night_only
+        else:
+            night_only ^= 1
+        value = util.bit_set(value, 2, night_only)
+        on_only = flags.get("on_only", None)
+        if on_only is None:
+            on_only = self.on_only
+        else:
+            on_only ^= 1
+        value = util.bit_set(value, 1, on_only)
 
         # Push the flags value to the device.
         data = bytes([
@@ -178,7 +188,8 @@ class Motion(BatterySensor):
             value,  # D3 = the flag value
             ] + [0x00] * 11)
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-        msg_handler = handler.StandardCmd(msg, self.handle_ext_cmd)
+        msg_handler = handler.StandardCmd(msg, self.handle_ext_cmd,
+                                          on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -245,7 +256,8 @@ class Motion(BatterySensor):
             int(sensitivity),  # D3 = the sensitivity value
             ] + [0x00] * 11)
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-        msg_handler = handler.StandardCmd(msg, self.handle_ext_cmd)
+        msg_handler = handler.StandardCmd(msg, self.handle_ext_cmd,
+                                          on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -258,14 +270,14 @@ class Motion(BatterySensor):
         See the set_flags() code for details.
         """
         timeout = int(timeout)
-        # 30 seconds is the minimum permitted timeout
-        if timeout < 30:
-            timeout = 30
         # The calculation of the timeout value is stored differently on the
         # older 2842 and the newer 2844 motion sensors.  We will assume the
         # newer style as a default.
         if (self.db.desc is not None and
                 self.db.desc.model.split("-")[0] == "2842"):
+            # Minimum of 30 seconds
+            if timeout < 30:
+                timeout = 30
             # Max 4 hours
             if timeout > 14400:
                 timeout = 14400
@@ -274,6 +286,9 @@ class Motion(BatterySensor):
                    ((timeout + 1) * 30))
         else:
             # Assuming this is a 2844 sensor or that is uses the same style
+            # Minimum 10 Seconds
+            if timeout < 10:
+                timeout = 10
             # Max 40 Minutes
             if timeout > 2400:
                 timeout = 2400
@@ -288,7 +303,8 @@ class Motion(BatterySensor):
             timeout,  # D3 = the sensitivity value
             ] + [0x00] * 11)
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-        msg_handler = handler.StandardCmd(msg, self.handle_ext_cmd)
+        msg_handler = handler.StandardCmd(msg, self.handle_ext_cmd,
+                                          on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
