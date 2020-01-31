@@ -64,6 +64,7 @@ class Modem:
             'print_db' : self.print_db,
             'refresh' : self.refresh,
             'refresh_all' : self.refresh_all,
+            'get_engine_all' : self.get_engine_all,
             'linking' : self.linking,
             'scene' : self.scene,
             'factory_reset' : self.factory_reset,
@@ -318,6 +319,36 @@ class Modem:
         # Reload all the device databases.
         for device in self.devices.values():
             seq.add(device.refresh, force)
+
+        # Start the command sequence.
+        seq.run()
+
+    #-----------------------------------------------------------------------
+    def get_engine_all(self, skip_battery=True, on_done=None):
+        """Run Get Engine on all the devices, except Modem
+
+        Devices are assumed to be i2cs, which all new devices are.  If you
+        have a bunch of old devices, this can be a handy thing if you ever
+        lose your data directory.  Otherwise you likely never need to use
+        this.
+
+        Args:
+          skip_battery (bool):  If True, skips a battery device.
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+        """
+        # Set the error stop to false so a failed refresh doesn't stop the
+        # sequence from trying to refresh other devices.
+        seq = CommandSeq(self.protocol, "Get Engine all complete", on_done,
+                         error_stop=False)
+
+        # Reload all the device databases.
+        for device in self.devices.values():
+            if skip_battery and isinstance(device, BatterySensor):
+                LOG.ui("Get engine all, skipping battery device %s",
+                       device.label)
+                continue
+            seq.add(device.get_engine)
 
         # Start the command sequence.
         seq.run()
