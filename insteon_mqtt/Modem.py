@@ -641,7 +641,7 @@ class Modem:
             on_done(True, None, None)
         else:
             LOG.ui("  Deleting %s:", entry)
-            self.db.delete_on_device(self, entry, on_done=on_done)
+            self.db.delete_on_device(self.protocol, entry, on_done=on_done)
 
     def _sync_add(self, entry, dry_run, on_done=None):
         ''' Adds a link to the device with a Log UI Message
@@ -653,7 +653,7 @@ class Modem:
             on_done(True, None, None)
         else:
             LOG.ui("  Adding %s:", entry)
-            self.db.add_on_device(self, entry.addr, entry.group,
+            self.db.add_on_device(self.protocol, entry.addr, entry.group,
                                   entry.is_controller, entry.data,
                                   on_done=on_done)
 
