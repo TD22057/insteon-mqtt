@@ -13,8 +13,8 @@ from . import handler
 from . import log
 from . import message as Msg
 from . import util
+from . import device as DevClass
 from .Signal import Signal
-from .device import BatterySensor
 
 LOG = log.get_logger()
 
@@ -320,7 +320,9 @@ class Modem:
 
         # Reload all the device databases.
         for device in self.devices.values():
-            if not battery and isinstance(device, BatterySensor):
+            if not battery and isinstance(device, (DevClass.BatterySensor,
+                                                   DevClass.Leak,
+                                                   DevClass.Remote)):
                 LOG.ui("Refresh all, skipping battery device %s", device.label)
                 continue
             seq.add(device.refresh, force)
