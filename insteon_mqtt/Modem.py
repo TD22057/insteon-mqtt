@@ -293,7 +293,7 @@ class Modem:
         return device
 
     #-----------------------------------------------------------------------
-    def refresh_all(self, skip_battery=True, force=False, on_done=None):
+    def refresh_all(self, battery=False, force=False, on_done=None):
         """Refresh all the all link databases.
 
         This forces a refresh of the modem and device databases.  This can
@@ -302,6 +302,8 @@ class Modem:
         activity is expected on the network.
 
         Args:
+          battery (bool): If true, will scan battery devices as well, by
+                default they are skipped.
           force (bool):  Force flag passed to devices.  If True, devices
                 will refresh their Insteon db's even if they think the db
                 is up to date.
@@ -318,7 +320,7 @@ class Modem:
 
         # Reload all the device databases.
         for device in self.devices.values():
-            if skip_battery and isinstance(device, BatterySensor):
+            if not battery and isinstance(device, BatterySensor):
                 LOG.ui("Refresh all, skipping battery device %s", device.label)
                 continue
             seq.add(device.refresh, force)

@@ -11,6 +11,7 @@ def refresh_all(args, config):
     topic = "%s/modem" % (args.topic)
     payload = {
         "cmd" : "refresh_all",
+        "battery" : args.battery,
         "force" : args.force,
         }
 

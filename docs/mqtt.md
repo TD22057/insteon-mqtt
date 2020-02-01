@@ -202,11 +202,12 @@ reason string will be set to "refresh".
 Supported: modem
 
 The modem will send a refresh command to each device that it knows
-about (i.e. devices defined in the config file).  The command payload
+about (i.e. devices defined in the config file).  If the battery flag is false
+or not present, battery operated devices will be skipped. The command payload
 is:
 
    ```
-   { "cmd" : "refresh_all", ["force" : true/false] }
+   { "cmd" : "refresh_all", ["battery" : true/false, "force" : true/false] }
    ```
 
 
