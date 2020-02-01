@@ -224,6 +224,38 @@ features are available on the device:
   ```
 
 
+### Get device engine information
+
+Supported: device
+
+The engine version can be i1, i2, or i2cs.  The engine version defines what
+type of messages can be used with a device and the type of all link database
+used by a device.
+
+New Insteon devices purchased after 2018 are almost certainly all i2cs devices.
+By default, we assume a device is i2cs.
+
+If you have an older device that is not responding the the refresh command try
+running get_engine and then try running refresh again.  This only needs to be
+run once on any device.  The resulting information will be saved in the device
+data.
+
+  ```
+  { "cmd" : "get_engine" }
+  ```
+
+### Get all device engines
+
+Supported: modem
+
+This will cause a get_engine command to be sent to each device (i.e. devices
+defined in the config file).  If the battery flag is false or not present,
+battery operated devices will be skipped. The command payload is:
+
+  ```
+  { "cmd" : "get_engine", ["battery": true/false]}
+  ```
+
 ### Add the device as a controller of another device.
 
 Supported: modem, devices

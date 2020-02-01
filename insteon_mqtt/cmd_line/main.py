@@ -47,6 +47,17 @@ def parse_args(args):
     sp.set_defaults(func=modem.refresh_all)
 
     #---------------------------------------
+    # modem.get_engine_all command
+    sp = sub.add_parser("get-engine-all", help="Call get-engine on the devices "
+                        "in the configuration.")
+    sp.add_argument("--battery", action="store_true",
+                    help="Run get-engine on battery devices too, by default "
+                         "they are skipped.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=modem.get_engine_all)
+
+    #---------------------------------------
     # modem.factory_reset command
     sp = sub.add_parser("factory-reset", help="Perform a remote factory "
                         "reset.  Currently only supported on the modem.")

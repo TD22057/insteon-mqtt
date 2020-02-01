@@ -332,7 +332,7 @@ class Modem:
         seq.run()
 
     #-----------------------------------------------------------------------
-    def get_engine_all(self, skip_battery=True, on_done=None):
+    def get_engine_all(self, battery=False, on_done=None):
         """Run Get Engine on all the devices, except Modem
 
         Devices are assumed to be i2cs, which all new devices are.  If you
@@ -341,7 +341,8 @@ class Modem:
         this.
 
         Args:
-          skip_battery (bool):  If True, skips a battery device.
+          battery (bool):  If True, will run on battery devices as well,
+                           defaults to skipping them.
           on_done:  Finished callback.  This is called when the command has
                     completed.  Signature is: on_done(success, msg, data)
         """
@@ -352,7 +353,9 @@ class Modem:
 
         # Reload all the device databases.
         for device in self.devices.values():
-            if skip_battery and isinstance(device, BatterySensor):
+            if not battery and isinstance(device, (DevClass.BatterySensor,
+                                                   DevClass.Leak,
+                                                   DevClass.Remote)):
                 LOG.ui("Get engine all, skipping battery device %s",
                        device.label)
                 continue

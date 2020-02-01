@@ -456,7 +456,7 @@ class Base:
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("Device %s cmd: get engine version", self.label)
+        LOG.info("Device %s cmd: get model", self.label)
 
         # Send the get_engine_version request.
         msg = Msg.OutStandard.direct(self.addr, 0x10, 0x00)

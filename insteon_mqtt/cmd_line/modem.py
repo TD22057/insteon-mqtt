@@ -20,6 +20,18 @@ def refresh_all(args, config):
 
 
 #===========================================================================
+def get_engine_all(args, config):
+    topic = "%s/modem" % (args.topic)
+    payload = {
+        "cmd" : "get_engine_all",
+        "battery" : args.battery,
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
 def factory_reset(args, config):
     topic = "%s/modem" % (args.topic)
     payload = {
