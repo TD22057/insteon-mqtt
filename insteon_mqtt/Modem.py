@@ -621,7 +621,7 @@ class Modem:
 
         cmd1 = 0x11 if is_on else 0x13
         msg = Msg.OutModemScene(group, cmd1, 0x00)
-        msg_handler = handler.ModemScene(self, msg, on_done, num_retry=1)
+        msg_handler = handler.ModemScene(self, msg, on_done, num_retry=0)
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

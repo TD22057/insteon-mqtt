@@ -130,38 +130,48 @@ class ModemScene(Base):
 
         # Next we should get cleanup_acks from each device
         elif (isinstance(msg, Msg.InpStandard) and
-              msg.flags.type == Flags.Type.CLEANUP_ACK and
-              msg.group == self.msg.group):
-            # Remove this from dev_list of it exists
-            try:
-                self.dev_list.remove(msg.from_addr)
-            except ValueError:
-                pass
-
-            # Trigger an update of our internal state of this device
-            device = self.modem.find(msg.from_addr)
-            if device:
-                LOG.debug("%s broadcast to %s for group %s was ack'd",
-                          self.modem.label, device.addr, msg.group)
-                device.handle_group_cmd(msg.from_addr, msg)
+              msg.flags.type == Flags.Type.CLEANUP_ACK):
+            if msg.group != self.msg.group:
+                # This isn't the right group, so don't remove from list
+                # but extend the waiting time to see if we get more
+                self.update_expire_time()
+                return Msg.UNKNOWN
             else:
-                LOG.warning("%s broadcast - ack for device %s not found",
-                            self.modem.label, msg.from_addr)
+                # Remove this from dev_list of it exists
+                try:
+                    self.dev_list.remove(msg.from_addr)
+                except ValueError:
+                    pass
 
-            if len(self.dev_list) == 0:
-                LOG.debug("All ACKs of Scene Command grp: %s received.",
-                          msg.group)
-                self.on_done(True, "Scene command complete", None)
-                return Msg.FINISHED
-            else:
-                return Msg.CONTINUE
+                # Trigger an update of our internal state of this device
+                device = self.modem.find(msg.from_addr)
+                if device:
+                    LOG.debug("%s broadcast to %s for group %s was ack'd",
+                              self.modem.label, device.addr, msg.group)
+                    device.handle_group_cmd(self.modem.addr, self.msg)
+                else:
+                    LOG.warning("%s broadcast - ack for device %s not found",
+                                self.modem.label, msg.from_addr)
+
+                if len(self.dev_list) == 0:
+                    LOG.debug("All ACKs of Scene Command grp: %s received.",
+                              msg.group)
+                    self.on_done(True, "Scene command complete", None)
+                    return Msg.FINISHED
+                else:
+                    return Msg.CONTINUE
 
         # This is an all link failure report.
-        elif (isinstance(msg, Msg.InpAllLinkFailure) and
-              msg.group == self.msg.group):
-            LOG.error("%s failed to respond to broadcast for group %s",
-                      msg.addr, msg.group)
-            return Msg.CONTINUE
+        elif isinstance(msg, Msg.InpAllLinkFailure):
+            if msg.group != self.msg.group:
+                # This isn't the right group, so don't report anything
+                # but extend the waiting time to see if we get more
+                self.update_expire_time()
+                return Msg.UNKNOWN
+            else:
+                LOG.error("%s failed to respond to broadcast for group %s",
+                          msg.addr, msg.group)
+                return Msg.CONTINUE
 
         # This is a NAK response from a device.
         elif (isinstance(msg, Msg.InpStandard) and
@@ -178,7 +188,10 @@ class ModemScene(Base):
                 self.modem.handle_scene(self.msg)
                 self.on_done(True, "Scene command complete", None)
             else:
-                self.on_done(False, "Scene command failed", None)
+                #self.on_done(False, "Scene command failed", None)
+                LOG.warning("Received NAK, waiting instead")
+                #self._send_direct_cmds()
+                return Msg.CONTINUE
 
             return Msg.FINISHED
 
@@ -193,11 +206,12 @@ class ModemScene(Base):
         Will cause direct commands to be send to each device to put the device
         in the appropriate state based on its db entry for the scene
         """
-        for element in self.dev_list:
-            device = self.modem.find(element.addr)
+        for addr in self.dev_list:
+            device = self.modem.find(addr)
             if device:
+                LOG.ui("Sending Direct")
                 device.send_direct_cleanup(self.msg, self)
             else:
                 LOG.warning("Scene cleanup - device %s not found",
-                            element.addr)
+                            addr)
     #-----------------------------------------------------------------------
