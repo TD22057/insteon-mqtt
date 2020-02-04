@@ -79,6 +79,22 @@ class OutStandard(Base):
 
     #-----------------------------------------------------------------------
     @classmethod
+    def link_cleanup(cls, to_addr, cmd1, cmd2):
+        """Construct a ALL_LINK_CLEANUP message
+
+        Args:
+          to_addr (Address):  The adddress to send the commadn to.
+          cmd1 (int):  The command 1 field to set.
+          cmd2 (int):  The command 2 field to set.
+
+        Returns:
+          Returns the created OutStandard message.
+        """
+        flags = Flags(Flags.Type.ALL_LINK_CLEANUP, is_ext=False)
+        return OutStandard(to_addr, flags, cmd1, cmd2)
+
+    #-----------------------------------------------------------------------
+    @classmethod
     def msg_size(cls, raw):
         """Return the message size in bytes.
 
