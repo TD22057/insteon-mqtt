@@ -708,19 +708,6 @@ class Base:
                           "%s with args: %s", self.label, cmd, str(kwargs))
 
     #-----------------------------------------------------------------------
-    def send_direct_cleanup(self, msg, msg_handler):
-        """Sends a Direct Message to a Device after a Failed ModemScene Cmd
-
-        Args:
-          msg (OutModemScene): The scene message that was attempted by the
-                               modem
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        msg = Msg.OutStandard.link_cleanup(self.addr, msg.cmd1, msg.group)
-        self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
     def handle_received(self, msg):
         """Receives incoming message notifications from protocol
 
