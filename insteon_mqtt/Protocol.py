@@ -222,6 +222,17 @@ class Protocol:
             self._send_next_msg()
 
     #-----------------------------------------------------------------------
+    def set_wait_time(self, wait_time):
+        """Set the Next Time that a Message Can be Sent to Avoid Collision.
+
+        Next time that a message can be written.
+
+        Args:
+          wait_time (epoch Seconds): The next time a message can be sent
+        """
+        self._next_write_time = wait_time
+
+    #-----------------------------------------------------------------------
     def _poll(self, t):
         """Periodic polling function.
 
