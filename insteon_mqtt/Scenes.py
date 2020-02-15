@@ -123,12 +123,14 @@ class SceneManager:
         scene defintions.  Any two definitions that have identical
         controllers are merged.
 
-        This is a companion to compress_responders and compress_n_way.  These are
-        seperate functions to that they can be called seperately using Stacks.
+        This is a companion to compress_responders and compress_n_way.  These
+        are seperate functions to that they can be called seperately using
+        Stacks.
 
         This function only processes the scenes in a single pass.  If it runs
         multiple passes, it may further compress things.  However, this
         function is a bit time consuming, so can't keep looping through it.
+
         """
         i = 0
         while i < len(self.entries):
@@ -157,16 +159,18 @@ class SceneManager:
     def compress_responders(self):
         """Compress Scenes Down into a Human Readable Form by Responders
 
-        Attempts to make things more readable to humans, by compressing
-        scene defintions.  Any two definitions that have identical
-        responders are merged.
+        Attempts to make things more readable to humans, by compressing scene
+        defintions.  Any two definitions that have identical responders are
+        merged.
 
-        This is a companion to compress_controllers and compress_n_way.  These are
-        seperate functions to that they can be called seperately using Stacks.
+        This is a companion to compress_controllers and compress_n_way.
+        These are seperate functions to that they can be called seperately
+        using Stacks.
 
         This function only processes the scenes in a single pass.  If it runs
         multiple passes, it may further compress things.  However, this
         function is a bit time consuming, so can't keep looping through it.
+
         """
         i = 0
         while i < len(self.entries):
@@ -196,16 +200,18 @@ class SceneManager:
     def compress_n_way(self):
         """Compress Scenes Down into a Human Readable Form by Controllers
 
-        Attempts to make things more readable to humans, by compressing
-        scene defintions.  3-way or N-way links are compressed into a
-        single definition..
+        Attempts to make things more readable to humans, by compressing scene
+        defintions.  3-way or N-way links are compressed into a single
+        definition..
 
-        This is a companion to compress_responders and compress_controllers.  These
-        are seperate functions to that they can be called seperately using Stacks.
+        This is a companion to compress_responders and compress_controllers.
+        These are seperate functions to that they can be called seperately
+        using Stacks.
 
         This function only processes the scenes in a single pass.  If it runs
         multiple passes, it may further compress things.  However, this
         function is a bit time consuming, so can't keep looping through it.
+
         """
         i = 0
         while i < len(self.entries):

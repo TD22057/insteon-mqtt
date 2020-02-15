@@ -43,7 +43,7 @@ class ModemLinkComplete(Base):
         """
         # Import here - at file scope this makes a circular import which is
         # ok in Python>=3.5 but not 3.4.
-        from .. import db
+        from .. import db    # pylint: disable=import-outside-toplevel
 
         # All linking was successful.
         if isinstance(msg, Msg.InpAllLinkComplete):

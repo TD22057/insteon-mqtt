@@ -38,7 +38,6 @@ class Modem:
           protocol (Protocol):  Insteon message handling protocol object.
         """
         self.protocol = protocol
-
         self.stack = stack
 
         self.addr = None

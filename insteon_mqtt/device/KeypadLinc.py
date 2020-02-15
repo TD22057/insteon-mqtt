@@ -172,8 +172,9 @@ class KeypadLinc(Base):
         # Note: originally modem was set as the controller for each button.
         # I don't think that's actually necessary - I think the group 1 link
         # above is enough for the modem to control the device.
-        ## Also add the modem as a controller for the buttons - this lets the
-        ## modem issue simulated scene commands to those buttons.
+
+        # Also add the modem as a controller for the buttons - this lets the
+        # modem issue simulated scene commands to those buttons.
         #for group in range(1, 10):
         #    seq.add(self.db_add_resp_of, group, self.modem.addr, group,
         #            refresh=False)

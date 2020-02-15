@@ -74,8 +74,8 @@ def parse_args(args):
     sp.set_defaults(func=modem.import_scenes_all)
 
     # modem.get_engine_all command
-    sp = sub.add_parser("get-engine-all", help="Call get-engine on the devices "
-                        "in the configuration.")
+    sp = sub.add_parser("get-engine-all", help="Call get-engine on the "
+                        "devices in the configuration.")
     sp.add_argument("--battery", action="store_true",
                     help="Run get-engine on battery devices too, by default "
                          "they are skipped.")
