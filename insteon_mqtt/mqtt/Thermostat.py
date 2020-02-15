@@ -115,13 +115,13 @@ class Thermostat:
                                     'hold_state_payload', qos)
         self.energy_state.load_config(data, 'energy_state_topic',
                                       'energy_state_payload', qos)
-        self.mode_command.load_config(config, 'mode_command_topic',
+        self.mode_command.load_config(data, 'mode_command_topic',
                                       'mode_command_payload', qos)
-        self.fan_command.load_config(config, 'fan_command_topic',
+        self.fan_command.load_config(data, 'fan_command_topic',
                                      'fan_command_payload', qos)
-        self.heat_sp_command.load_config(config, 'heat_sp_command_topic',
+        self.heat_sp_command.load_config(data, 'heat_sp_command_topic',
                                          'heat_sp_command_payload', qos)
-        self.cool_sp_command.load_config(config, 'cool_sp_command_topic',
+        self.cool_sp_command.load_config(data, 'cool_sp_command_topic',
                                          'cool_sp_command_payload', qos)
 
     #-----------------------------------------------------------------------
