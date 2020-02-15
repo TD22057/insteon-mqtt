@@ -14,6 +14,7 @@ from . import log
 from . import message as Msg
 from . import util
 from . import Scenes
+from . import device as DevClass
 from .Signal import Signal
 
 LOG = log.get_logger()
@@ -76,6 +77,7 @@ class Modem:
             'print_db' : self.print_db,
             'refresh' : self.refresh,
             'refresh_all' : self.refresh_all,
+            'get_engine_all' : self.get_engine_all,
             'linking' : self.linking,
             'scene' : self.scene,
             'factory_reset' : self.factory_reset,
@@ -316,7 +318,7 @@ class Modem:
         return device
 
     #-----------------------------------------------------------------------
-    def refresh_all(self, force=False, on_done=None):
+    def refresh_all(self, battery=False, force=False, on_done=None):
         """Refresh all the all link databases.
 
         This forces a refresh of the modem and device databases.  This can
@@ -325,6 +327,8 @@ class Modem:
         activity is expected on the network.
 
         Args:
+          battery (bool): If true, will scan battery devices as well, by
+                default they are skipped.
           force (bool):  Force flag passed to devices.  If True, devices
                 will refresh their Insteon db's even if they think the db
                 is up to date.
@@ -341,7 +345,45 @@ class Modem:
 
         # Reload all the device databases.
         for device in self.devices.values():
+            if not battery and isinstance(device, (DevClass.BatterySensor,
+                                                   DevClass.Leak,
+                                                   DevClass.Remote)):
+                LOG.ui("Refresh all, skipping battery device %s", device.label)
+                continue
             seq.add(device.refresh, force)
+
+        # Start the command sequence.
+        seq.run()
+
+    #-----------------------------------------------------------------------
+    def get_engine_all(self, battery=False, on_done=None):
+        """Run Get Engine on all the devices, except Modem
+
+        Devices are assumed to be i2cs, which all new devices are.  If you
+        have a bunch of old devices, this can be a handy thing if you ever
+        lose your data directory.  Otherwise you likely never need to use
+        this.
+
+        Args:
+          battery (bool):  If True, will run on battery devices as well,
+                           defaults to skipping them.
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+        """
+        # Set the error stop to false so a failed refresh doesn't stop the
+        # sequence from trying to refresh other devices.
+        seq = CommandSeq(self.protocol, "Get Engine all complete", on_done,
+                         error_stop=False)
+
+        # Reload all the device databases.
+        for device in self.devices.values():
+            if not battery and isinstance(device, (DevClass.BatterySensor,
+                                                   DevClass.Leak,
+                                                   DevClass.Remote)):
+                LOG.ui("Get engine all, skipping battery device %s",
+                       device.label)
+                continue
+            seq.add(device.get_engine)
 
         # Start the command sequence.
         seq.run()

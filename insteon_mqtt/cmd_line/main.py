@@ -39,6 +39,9 @@ def parse_args(args):
                         "in the configuration.")
     sp.add_argument("-f", "--force", action="store_true",
                     help="Force the modem/device database to be downloaded.")
+    sp.add_argument("--battery", action="store_true",
+                    help="Refresh battery devices too, by default they are "
+                    "skipped.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
     sp.set_defaults(func=modem.refresh_all)
@@ -69,6 +72,16 @@ def parse_args(args):
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
     sp.set_defaults(func=modem.import_scenes_all)
+
+    # modem.get_engine_all command
+    sp = sub.add_parser("get-engine-all", help="Call get-engine on the devices "
+                        "in the configuration.")
+    sp.add_argument("--battery", action="store_true",
+                    help="Run get-engine on battery devices too, by default "
+                         "they are skipped.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=modem.get_engine_all)
 
     #---------------------------------------
     # modem.factory_reset command
