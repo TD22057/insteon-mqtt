@@ -85,9 +85,11 @@ insteon:
       - 21.d6.d9: 'door'
 
     # Battery powered mini remotes.
-    mini_remote4:
+    mini_remote1:  # Single Button Remotes
 
-    mini_remote8:
+    mini_remote4:  # Remotes with 4 Buttons
+
+    mini_remote8:  # Remotes with 8 Buttons
       - 3f.07.d4: 'remote1'
 
     # Smoke bridge module.
@@ -591,7 +593,7 @@ mqtt:
     # whenever a button is pressed.  Available variables for templating are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
-    #   button = 1...n  (button number 1-4 or 1-8)
+    #   button = 1...n  (button number 1-8 depending on configuration)
     #   on = 0/1
     #   on_str = 'off'/'on'
     #   mode = 'normal'/'fast'/'instant'

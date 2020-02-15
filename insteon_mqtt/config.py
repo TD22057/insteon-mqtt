@@ -23,6 +23,7 @@ devices = {
     'keypad_linc' : (device.KeypadLinc, {'dimmer' : True}),
     'keypad_linc_sw' : (device.KeypadLinc, {'dimmer' : False}),
     'leak' : (device.Leak, {}),
+    'mini_remote1' : (device.Remote, {'num_button' : 1}),
     'mini_remote4' : (device.Remote, {'num_button' : 4}),
     'mini_remote8' : (device.Remote, {'num_button' : 8}),
     'motion' : (device.Motion, {}),

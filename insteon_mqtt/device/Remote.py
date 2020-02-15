@@ -16,7 +16,7 @@ LOG = log.get_logger()
 class Remote(Base):
     """Insteon multi-button battery powered mini-remote device.
 
-    This class can be used for 4, 6 or 8 (really any number) of battery
+    This class can be used for 1, 4, 6 or 8 (really any number) of battery
     powered button remote controls.
 
     The issue with a battery powered remotes is that we can't download the
