@@ -44,8 +44,10 @@ be identified by it's address or the string "modem".
 
 When adding a new device or after performing a factory reset on a device it
 is necessary to perform a three step process to setup the device to work
-properly with insteon-mqtt.  The steps are 1) Join, 2) Pair, and 3) Sync (Not
-implemented yet).  These three commands can be re-run at anytime without harm.
+properly with insteon-mqtt.  The steps are 1) Join, 2) Pair, and 3) Sync
+(only if you have scenes defined for this device in a scenes.yaml file).  
+The Join and Pair commands can be re-run at anytime without harm.  You can also
+run sync in dry-run mode at any time to see what changes would be made.
 
 From the command line these actions can be performed as follows:
 
@@ -83,10 +85,16 @@ brackets [], then it's optional.  If a value can be one of many like
 true or false, then the possible values are separated by a slash /.
 
 The MQTT topic to publish management commands to is (aa.bb.cc is the
-device address or nice name from the config.yaml file):
+example device address):
 
    ```
    insteon/command/aa.bb.cc
+   ```
+
+Alternatively you can use the nice names from the config.yaml file too:
+
+   ```
+   insteon/command/NICE NAME
    ```
 
 ### Join a New Device to the Network
@@ -136,12 +144,89 @@ This command can also be run from the command line:
    ```
 
 
-### Sync Device Links (Placeholder)
+### Sync Device Links
 
 Supported: modem, device
 
-This command is not yet supported.
+This function will alter the device's link database to match the scenes
+defined in the scenes.yaml file.  This includes adding new links as well as
+deleting un-defined links.  Details can be found in [Scene Management](scenes.md)
 
+The command payload is below.  Setting the dry_run flag to true will cause the
+changes to be made to the device, the default false will only report what would
+happen:
+
+  ```
+  { "cmd" : "sync", ["dry_run" : true/false]}
+  ```
+
+  This command can also be run from the command line:
+
+   ```
+   insteon-mqtt config.yaml sync aa.bb.cc
+   ```
+
+### Sync All Device Links
+
+Supported: modem
+
+This function will perform the sync command on all devices.
+
+The command payload is as follows.  Setting the dry_run flag to true will cause
+the changes to be made to the device, the default false will only report what
+would happen:
+
+  ```
+  { "cmd" : "sync_all", ["dry_run" : true/false]}
+  ```
+
+ This command can also be run from the command line:
+
+  ```
+  insteon-mqtt config.yaml sync-all
+  ```
+
+### Import Device Links
+
+Supported: modem, device
+
+The 'import-scenes' function will take the links defined on each device and
+parse them into a scene which can be saved to the scenes.yaml file.  Please
+read the in [Scene Management](scenes.md)
+
+The command payload is below.  Setting the dry_run flag to true will cause the
+changes to be made to the file, the default false will only report what would
+happen:
+
+  ```
+  { "cmd" : "import_scenes", ["dry_run" : true/false]}
+  ```
+
+  This command can also be run from the command line:
+
+   ```
+   insteon-mqtt config.yaml import-scenes aa.bb.cc
+   ```
+
+### Sync All Device Links
+
+Supported: modem
+
+This function will perform the import-scenes command on all devices.
+
+The command payload is as follows.  Setting the dry_run flag to true will cause
+the changes to be made to the file, the default false will only report what
+would happen:
+
+  ```
+  { "cmd" : "import_scenes_all", ["dry_run" : true/false]}
+  ```
+
+ This command can also be run from the command line:
+
+  ```
+  insteon-mqtt config.yaml import-scenes-all
+  ```
 
 ### Activate all linking mode
 
@@ -202,11 +287,12 @@ reason string will be set to "refresh".
 Supported: modem
 
 The modem will send a refresh command to each device that it knows
-about (i.e. devices defined in the config file).  The command payload
+about (i.e. devices defined in the config file).  If the battery flag is false
+or not present, battery operated devices will be skipped. The command payload
 is:
 
    ```
-   { "cmd" : "refresh_all", ["force" : true/false] }
+   { "cmd" : "refresh_all", ["battery" : true/false, "force" : true/false] }
    ```
 
 
@@ -222,6 +308,38 @@ features are available on the device:
   { "cmd" : "get_model" }
   ```
 
+
+### Get device engine information
+
+Supported: device
+
+The engine version can be i1, i2, or i2cs.  The engine version defines what
+type of messages can be used with a device and the type of all link database
+used by a device.
+
+New Insteon devices purchased after 2018 are almost certainly all i2cs devices.
+By default, we assume a device is i2cs.
+
+If you have an older device that is not responding the the refresh command try
+running get_engine and then try running refresh again.  This only needs to be
+run once on any device.  The resulting information will be saved in the device
+data.
+
+  ```
+  { "cmd" : "get_engine" }
+  ```
+
+### Get all device engines
+
+Supported: modem
+
+This will cause a get_engine command to be sent to each device (i.e. devices
+defined in the config file).  If the battery flag is false or not present,
+battery operated devices will be skipped. The command payload is:
+
+  ```
+  { "cmd" : "get_engine", ["battery": true/false]}
+  ```
 
 ### Add the device as a controller of another device.
 
@@ -347,7 +465,7 @@ Switch, KeypadLinc, and Dimmer all support the flags:
      off.  This is used to implement radio buttons.
    - signal_bits: 8 bit integer flags - 1 per button.  Only used for
      non-toggle buttons.  If a bit is 1, then the button only sends on
-     commands.  If a bit is 0, hten the button only sends off commands.
+     commands.  If a bit is 0, then the button only sends off commands.
    - nontoggle_bits: 8 bit integer flags - 1 per button.  If a bit is 1, then
      that button is a non-toggle button and will only send a signal per the
      signal_bits input.  If a bit is 0, then that button is a toggle button
@@ -360,7 +478,21 @@ IOLinc supports the flags:
    - trigger_reverse: 0/1 reverses the trigger command state
    - relay_linked: 0/1 links the relay to the sensor value
 
+Motion Sensors support the flags:
 
+   - led_on: 0/1 - Should led on the device flash on motion?
+
+   - night_only: 0/1 - Should motion only be reported at night?
+
+   - on_only: 0/1 - Should only on motions be reported with no off messages?
+
+   - timeout: seconds between state updates (30 second increments, 2842
+     models allow between 30 seconds to 4 hours, the 2844 models allow
+     between 30 seconds and 40 minutes).
+
+   - light_sensitivity: 1-255:  Amount of darkness required for night
+     to be triggered.  Affects night_only mode as well as the dawn/dusk
+     reporting
 
 ### Print the current all link database.
 
@@ -389,6 +521,16 @@ will be passed through to the output state change payload.
 
    ```
    { "cmd": "scene", "group" : group, "is_on" : 0/1, ["reason" : "..."] }
+   ```
+
+   Supported: modem
+
+   The modem also allows the triggering of scenes from a name defined in a
+   [Scene Management](scenes.md) file as well. To access a scene by its name
+   simply drop the group attribute and add the name attribute such as.
+
+   ```
+   { "cmd": "scene", "name" : "test_scene", "is_on" : 0/1, ["reason" : "..."] }
    ```
 
 

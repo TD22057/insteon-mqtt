@@ -61,7 +61,7 @@ class DeviceDbGet(Base):
         """
         # Import here - at file scope this makes a circular import which is
         # ok in Python>=3.5 but not 3.4.
-        from .. import db
+        from .. import db  # pylint: disable=import-outside-toplevel
 
         # Probably an echo back of our sent message.  See if the message
         # matches the address we sent to and assume it's the ACK/NAK message.

@@ -199,5 +199,4 @@ class Entry:
 
         else:
             self.func(*self.args, on_done=on_done, **self.kwargs)
-
 #===========================================================================

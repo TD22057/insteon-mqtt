@@ -21,6 +21,22 @@ class DeviceEntry:
     entry.
 
     The entry can be converted to/from JSON with to_json() and from_json().
+
+    Notes on the values for Data 1-3 in links:
+      Responder Records
+        Data 1    Link-specific data (e.g. On-Level)
+        Data 2    Link-specific data (e.g. Ramp Rates, Setpoints, etc.)
+        Data 3    Link-specific data (listed by Insteon as "normally unused"
+                             but for multi-function items, we know that this
+                             is set to the linked "group" on the responding
+                             device)
+
+      Controller Records
+        Data 1    Number of retries (Normally set to 03, FF = no retries,
+                  00 = Broadcast for cleanup)
+        Data 2    Listed as Ignored?
+        Data 3    Listed as 00 for switchlinc type devices and 01-08 for KPL
+                  type devices
     """
 
     @staticmethod
@@ -226,6 +242,12 @@ class DeviceEntry:
         assert len(data) == 10
 
         return data
+
+    #-----------------------------------------------------------------------
+    def identical(self, rhs):
+        """TODO: doc
+        """
+        return self == rhs and self.data == rhs.data
 
     #-----------------------------------------------------------------------
     def __eq__(self, rhs):

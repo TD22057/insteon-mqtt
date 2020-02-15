@@ -4,6 +4,7 @@
 #
 #===========================================================================
 import json
+import time
 import os.path
 from .MsgHistory import MsgHistory
 from ..Address import Address
@@ -108,8 +109,11 @@ class Base:
             self.label += " (%s)" % self.name
 
         self.save_path = modem.save_path
-        self.db = db.Device(self.addr)
+        self.db = db.Device(self.addr, None, self)
         self.load_db()
+
+        # Config db is initiated by Scenes
+        self.db_config = None
 
         # Map (mqtt) commands mapped to methods calls.  These are handled in
         # run_command().  Derived classes can add more commands to the dict
@@ -127,13 +131,21 @@ class Base:
             'pair' : self.pair,
             'get_flags' : self.get_flags,
             'get_engine' : self.get_engine,
-            'get_model' : self.get_model
+            'get_model' : self.get_model,
+            'sync': self.sync,
+            'import_scenes': self.import_scenes
             }
 
         # Device database delta.  The delta tells us if the database is
         # current.  The only way to get this is by sending a refresh message
         # out and getting the response - not by downloading the database.
         self._next_db_delta = None
+
+    #-----------------------------------------------------------------------
+    def clear_db_config(self):
+        """Clears and initializes the device config database
+        """
+        self.db_config = db.Device(self.addr, None, self)
 
     #-----------------------------------------------------------------------
     def type(self):
@@ -213,7 +225,7 @@ class Base:
             with open(path) as f:
                 data = json.load(f)
 
-            self.db = db.Device.from_json(data, path)
+            self.db = db.Device.from_json(data, path, self)
         except:
             LOG.exception("Error reading file %s", path)
             return
@@ -456,13 +468,156 @@ class Base:
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("Device %s cmd: get engine version", self.label)
+        LOG.info("Device %s cmd: get model", self.label)
 
         # Send the get_engine_version request.
         msg = Msg.OutStandard.direct(self.addr, 0x10, 0x00)
         msg_handler = handler.BroadcastCmdResponse(msg, self.handle_model,
                                                    on_done)
         self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def sync(self, dry_run=True, refresh=True, sequence=None, on_done=None):
+        """Syncs the links on the device.
+
+        This will add, remove, and fix links on the device to ensure that the
+        device matches the links that are defined in the scenes config.
+
+        WARNING: If you have no links defined in your scenes config, this will
+        erase all links except the links created by the 'join' and 'pair'
+        commands.
+
+        It is recommended that you perform a 'dry_run' command first to
+        see what changes would be made to this device.
+
+        In the future an 'import_links' command will be added which will allow
+        for manually created links to be added to the scenes config.
+
+        Args:
+          dry_run: (Boolean) Logs the actions that would be completed by the
+                   'sync' command, but does not actually perform any actions.
+                   Default: True
+          refresh: (Boolean) performs a device refresh before syncing.
+                   Default: True
+          sequence: (CommandSeq) Sequence entries will be added onto this
+                   sequence.  If None, will create and execute a new sequence.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        dry_run_text = ''
+        if dry_run:
+            dry_run_text = '- DRY RUN'
+        on_done = util.make_callback(on_done)
+        LOG.info("Device %s cmd: sync", self.label)
+
+        # Prepare command sequence
+        if sequence is not None:
+            seq = sequence
+        else:
+            seq = CommandSeq(self.protocol, "Sync complete", on_done,
+                             error_stop=False)
+
+        if refresh:
+            LOG.ui("Performing DB Refresh of %s device", self.label)
+            seq.add(self.refresh)
+            seq.add(self.sync, dry_run, refresh=False, sequence=sequence)
+        else:
+            LOG.ui("Syncing %s device %s", self.label, dry_run_text)
+            # Perform diff after refresh if asked for
+            diff = self.db_config.diff(self.db)
+
+            if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
+                for entry in diff.del_entries:
+                    seq.add(self._sync_del, entry, dry_run)
+                for entry in diff.add_entries:
+                    seq.add(self._sync_add, entry, dry_run)
+            else:
+                LOG.ui("  No changes necessary.")
+
+        if sequence is None:
+            seq.run()
+        else:
+            on_done(True, "Sync Complete", None)
+
+    def _sync_del(self, entry, dry_run, on_done=None):
+        '''Deletes a link on the device with a Log UI Message
+
+        Used by sync() so that messages are displayed in a logical fashion
+        '''
+        if dry_run:
+            LOG.ui("  Would Delete %s:", entry)
+            on_done(True, None, None)
+        else:
+            LOG.ui("  Deleting %s:", entry)
+            self.db.delete_on_device(self, entry, on_done=on_done)
+
+    def _sync_add(self, entry, dry_run, on_done=None):
+        ''' Adds a link to the device with a Log UI Message
+
+        Used by sync() so that messages are displayed in a logical fashion
+        '''
+        if dry_run:
+            LOG.ui("  Would Add %s:", entry)
+            on_done(True, None, None)
+        else:
+            LOG.ui("  Adding %s:", entry)
+            self.db.add_on_device(self, entry.addr, entry.group,
+                                  entry.is_controller, entry.data,
+                                  on_done=on_done)
+
+    def import_scenes(self, dry_run=True, save=True, on_done=None):
+        """Imports Scenes Defined on the Device into the Scenes Config.
+
+        Any scene present on the device, but not defined in the Scenes Config
+        will be added to the Scenes Config.  This will only add definitions,
+        it will not remove them.  It is overly optimistic and will add a
+        scene even when only half the the link pair is defined as well as
+        when a scene is linked to an unknown device.
+
+        WARNING: There is no way to ensure that the newly created scenes
+        match the style and formatting that you may have adopted for your
+        Scenes Config file.
+
+        It is recommended that you perform a 'dry_run' command first to
+        see what changes would be made to Scenes Config.
+
+        Args:
+          dry_run: (Boolean) Logs the actions that would be completed by the
+                   'import_scenes' command, but does not actually perform any
+                   actions. Default: True
+          save:    (Boolean) If true will save the resulting scenes to disk if
+                    dry-run is also True.  Not meant to be used by a user, is
+                    used by import_scenes_all.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        on_done = util.make_callback(on_done)
+        dry_run_text = ''
+        changes = False
+        if dry_run:
+            dry_run_text = '- DRY RUN'
+        LOG.info("Device %s cmd: import_scenes", self.label)
+        LOG.ui("Importing Scenes from %s device %s", self.label, dry_run_text)
+
+        diff = self.db.diff(self.db_config)
+
+        # Import only cares about adding entries, ignore deletes
+        if len(diff.add_entries) > 0:
+            LOG.ui("  Adding the following scenes %s:", dry_run_text)
+            for entry in diff.add_entries:
+                LOG.ui("    %s", entry)
+                if not dry_run:
+                    self.modem.scenes.add_or_update(self, entry)
+                    changes = True
+        else:
+            LOG.ui("  No changes necessary.")
+        if changes and save:
+            self.modem.scenes.save()
+        # No matter what, repopulate db_configs so that we can skip importing
+        # the other half of a link
+        self.modem.scenes.populate_scenes()
+        LOG.ui("Import Scenes Done.")
+        on_done(True, "Import Scenes Done.", None)
 
     #-----------------------------------------------------------------------
     def db_add_ctrl_of(self, local_group, remote_addr, remote_group,
@@ -625,17 +780,19 @@ class Base:
         """Create default device 3 byte link data.
 
         This is the 3 byte field (D1, D2, D3) stored in the device database
-        entry.
+        entry.  This varies by device type.  These "base" settings are present
+        on on/off (non-dimming) devices.  This function can and should be
+        overwritten by other specialized devices.
 
         For controllers, the default fields are:
-           D1: number of retries (3)
-           D2: unknown (0)
-           D3: the group number
+           D1: number of retries (0x03)
+           D2: unknown (0x00)
+           D3: the group number on the local device (0x01)
 
         For responders, the default fields are:
            D1: on level for switches and dimmers (0xff)
-           D2: ramp rate (0 to use the device default)
-           D3: the group number
+           D2: ramp rate, not used on base devices (0x00)
+           D3: the group number on the local device (0x01)
 
         Args:
           is_controller (bool):  True if the device is the controller, false
@@ -651,24 +808,71 @@ class Base:
         """
         # Most of this is from looking through Misterhouse bug reports.
         if is_controller:
-            # D1 = 0x03 number of retries to use for the command
-            # D2 = ???
-            # D3 = some devices need 0x01 or group number others don't care
-            defaults = [0x03, 0x00, group]
+            defaults = [0x03, 0x00, 0x01]
 
         # Responder data is always link dependent.  Since nothing was given,
         # assume the user wants to turn the device on (0xff).
         else:
-            # D1 = on level for on/off, dimmers
-            # D2 = ramp rate for on/off, dimmers.  I believe leaving this
-            #      at 0 uses the default ramp rate.
-            # D3 = The local group number of the local button.  The input
-            #      group is the controller group number (and broadcast msg)
-            #      so this is the local button group number it maps to.
-            defaults = [0xff, 0x00, group]
+            defaults = [0xff, 0x00, 0x01]
 
         # For each field, use the input if not -1, else the default.
         return util.resolve_data3(defaults, data)
+
+    #-----------------------------------------------------------------------
+    def link_data_to_pretty(self, is_controller, data):
+        """Converts Link Data1-3 to Human Readable Attributes
+
+        This takes a list of the data values 1-3 and returns a dict with
+        the human readable attibutes as keys and the human readable values
+        as values.
+
+        For base devices, this doesn't do anything.  So the return values will
+        simply match the passed values.  Howevever, this function is meant
+        to be overridded by specialized devices, look at the dimmer module
+        for an example.
+
+        Args:
+          is_controller (bool):  True if the device is the controller, false
+                        if it's the responder.
+          data (list[3]):  List of three data values.
+
+        Returns:
+          list[3]:  list, containing a dict of the human readable values
+        """
+        # For the base devices this does nothing
+        return [{'data_1': data[0]}, {'data_2': data[1]}, {'data_3': data[2]}]
+
+    #-----------------------------------------------------------------------
+    def link_data_from_pretty(self, is_controller, data):
+        """Converts Link Data1-3 from Human Readable Attributes
+
+        This takes a dict of the human readable attributes as keys and their
+        associated values and returns a list of the data1-3 values.
+
+        For base devices, this doesn't do anything.  So the return values will
+        simply match the passed values.  Howevever, this function is meant
+        to be overridded by specialized devices, look at the dimmer module
+        for an example
+
+        Args:
+          is_controller (bool):  True if the device is the controller, false
+                        if it's the responder.
+          data (dict[3]):  Dict of three data values.
+
+        Returns:
+          list[3]:  List of Data1-3 values
+        """
+        # For the base devices this does nothing
+        data_1 = None
+        if 'data_1' in data:
+            data_1 = data['data_1']
+        data_2 = None
+        if 'data_2' in data:
+            data_2 = data['data_2']
+        data_3 = None
+        if 'data_3' in data:
+            data_3 = data['data_3']
+        return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):
@@ -832,6 +1036,16 @@ class Base:
         responders = self.db.find_group(group)
         LOG.debug("Found %s responders in group %s", len(responders), group)
         LOG.debug("Group %s -> %s", group, [i.addr.hex for i in responders])
+
+        # A device broadcast will be followed up a series of cleanup messages
+        # between the devices and sent to the modem.  Don't send anything
+        # during this time to avoid causing a collision.  Time is equal to .5
+        # second of overhead, plus .5 seconds per responer device.  This is
+        # based off the same 87 msec empircal testing performed when designing
+        # misterhouse.  Each device causes a cleanup and an ack.  Assuminng
+        # a max of three hops in each direction that is 6 * .087 or .522 per
+        # device.
+        self.protocol.set_wait_time(time.time() + .5 + (len(responders) * .5))
 
         # For each device that we're the controller of call it's handler for
         # the broadcast message.

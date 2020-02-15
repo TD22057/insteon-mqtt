@@ -51,6 +51,14 @@ insteon:
   # startup.  This may be slow depending on the number of devices.
   startup_refresh: False
 
+  # Path to Scenes Definition file (Optional)
+  # The path can be specified either as an absolute path or as a relative path 
+  # using the !rel_path directive.  Where the path is relative to the
+  # config.yaml location
+  #
+  #scenes: /home/user/insteon_mqtt/scenes.yaml
+  #scenes: !rel_path scenes.yaml
+
   #------------------------------------------------------------------------
   # Devices require the Insteon hex address and an optional name. Note
   # that MQTT address topics are always the lower case hex address or
@@ -77,9 +85,11 @@ insteon:
       - 21.d6.d9: 'door'
 
     # Battery powered mini remotes.
-    mini_remote4:
+    mini_remote1:  # Single Button Remotes
 
-    mini_remote8:
+    mini_remote4:  # Remotes with 4 Buttons
+
+    mini_remote8:  # Remotes with 8 Buttons
       - 3f.07.d4: 'remote1'
 
     # Smoke bridge module.
@@ -113,12 +123,6 @@ insteon:
     # Thermostatus
     thermostat:
     #  - aa.bb.cc: 'downstairs'
-
-  #------------------------------------------------------------------------
-  # FUTURE: Insteon scene definitions.
-  #scenes:
-  #  - scene_01:
-
 
 #==========================================================================
 #
@@ -163,10 +167,19 @@ mqtt:
   #       command_topic: "insteon/modem/scene"
   #       payload_on: { "cmd" : "on", "group" : 10 }
   #       payload_off: { "cmd" : "off", "group" : 10 }
+  # In Home Assistant use MQTT switch with a configuration like this to trigger
+  # modem scene named 'test_scene':
+  #   switch:
+  #     - platform: mqtt
+  #       name: "test_scene"
+  #       command_topic: "insteon/modem/scene"
+  #       payload_on: { "cmd" : "on", "name" : test_scene }
+  #       payload_off: { "cmd" : "off", "name" : test_scene }
   modem:
     # The output of passing the payload through the template must match the
-    # following where group is in the range 1-255.
-    #   { "cmd" : 'on'/'off', "group" : GROUP }
+    # following where group is in the range 1-255 and NAME is a string name
+    # defined in a scenes.yaml file.  Either GROUP or NAME must be specified.
+    #   { "cmd" : 'on'/'off', ["group" : GROUP, "name": NAME] }
     # Available variables for templating are:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
@@ -580,7 +593,7 @@ mqtt:
     # whenever a button is pressed.  Available variables for templating are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
-    #   button = 1...n  (button number 1-4 or 1-8)
+    #   button = 1...n  (button number 1-8 depending on configuration)
     #   on = 0/1
     #   on_str = 'off'/'on'
     #   mode = 'normal'/'fast'/'instant'
@@ -671,7 +684,7 @@ mqtt:
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
     fan_speed_set_topic: 'insteon/{{address}}/fan/speed/set'
-    fan_speed_set_payload: '{ "cmd" : "{{value.lower}}" }'
+    fan_speed_set_payload: '{ "cmd" : "{{value.lower()}}" }'
 
   #------------------------------------------------------------------------
   # Keypad Linc

@@ -29,7 +29,7 @@ class Test_config:
         instances.append(inst)
 
         types.append("Modem")
-        inst = IM.Modem(proto)
+        inst = IM.Modem(proto, IM.network.Stack())
         instances.append(inst)
 
         for i in range(len(types)):

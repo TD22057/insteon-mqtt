@@ -9,7 +9,7 @@ My initial intent with this package is better integrate Insteon into
 Home Assistant and make it easier and more understandable to add new
 features and devices.
 
-Version: 0.6.9  ([History](HISTORY.md))
+Version: 0.7.0  ([History](HISTORY.md))
 
 ### Breaking changes from last version:
 
@@ -71,6 +71,9 @@ what they are and how to interpret messages from them.
   sensor or push a remote button to get it to download the database).
 - Trigger modem virtual scenes
 - Automatic inbound message de-duplication.
+- Scene/Link Management
+  - Add or delete links on devices from a defined configuration
+  - Import scenes defined on the network into a file for backup
 
 
 # Detailed Documentation
@@ -80,6 +83,8 @@ what they are and how to interpret messages from them.
   on each those commands.
 
 - [Full system install and automatically starting the server](docs/auto_start.md) on startup.
+
+- [Scene/Link Management](docs/scenes.md)
 
 - [Development Guide](docs/CONTRIBUTING.md)
 
@@ -91,11 +96,6 @@ future enhancements:
 
 - Full suite of unit tests.
 - YAML input configuration validation.
-- Heal network (remove records for missing devices, fix missing links).
-- Modem and device scene management.  Define all the links (scenes) in
-  a configuration file and have the system push that information to the
-  devices.  Eliminates the need to do any manual linking of devices and
-  serves as a backup of the Insteon network and scenes.
 
 
 # Thanks

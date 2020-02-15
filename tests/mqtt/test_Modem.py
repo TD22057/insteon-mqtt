@@ -24,7 +24,7 @@ import helpers as H
 @pytest.fixture
 def setup(mock_paho_mqtt, tmpdir):
     proto = H.main.MockProtocol()
-    modem = IM.Modem(proto)
+    modem = IM.Modem(proto, IM.network.Stack())
     modem.name = "modem"
     modem.addr = IM.Address(0x20, 0x30, 0x40)
 

@@ -54,7 +54,7 @@ class ModemDbGet(Base):
         """
         # Import here - at file scope this makes a circular import which is
         # ok in Python>=3.5 but not 3.4.
-        from .. import db
+        from .. import db    # pylint: disable=import-outside-toplevel
 
         # Message is an ACK/NAK of the record request.
         if isinstance(msg, (Msg.OutAllLinkGetFirst, Msg.OutAllLinkGetNext)):

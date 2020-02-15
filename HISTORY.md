@@ -1,5 +1,32 @@
 # Revision Change History
 
+## [0.7.0]
+
+### Additions
+- Thanks to @krkeegan, scene management and syncing are now supported.  This
+  allows you to define all of your Insteon scenes in a configuration file and
+  have the system sync your devices to that file. ([Issue #25][I25],
+  [Issue #179][I179])
+
+- Enable software control of motion sensor flags ([Issue #184][I184])
+  (thanks @krkeegan)
+
+- Added support for single button remotes ([Issue #185][I185])
+  (thanks @krkeegan)
+
+- Added an option to skip battery devices when doing a refresh and a new
+  command to get the engine version (for older I1 devices) ([Issue #189][I189])
+  (thanks @krkeegan)
+
+
+### Fixes
+- Fixed an error in the Thermostat MQTT code preventing user specified topics
+  ([Issue #182][I182]) (thanks @krkeegan)
+
+- Fixed issues with handling housekeeping messages sent to the model during
+  a scene command.  ([Issue #183][I183]) (thanks @krkeegan)
+
+
 ## [0.6.9]
 
 ### Additions
@@ -271,6 +298,7 @@
 [I20]: https://github.com/TD22057/insteon-mqtt/issues/20
 [I21]: https://github.com/TD22057/insteon-mqtt/issues/21
 [I24]: https://github.com/TD22057/insteon-mqtt/issues/24
+[I25]: https://github.com/TD22057/insteon-mqtt/issues/25
 [I27]: https://github.com/TD22057/insteon-mqtt/issues/27
 [I28]: https://github.com/TD22057/insteon-mqtt/issues/28
 [I29]: https://github.com/TD22057/insteon-mqtt/issues/29
@@ -308,3 +336,9 @@
 [I159]: https://github.com/TD22057/insteon-mqtt/issues/159
 [I160]: https://github.com/TD22057/insteon-mqtt/issues/160
 [I163]: https://github.com/TD22057/insteon-mqtt/issues/163
+[I179]: https://github.com/TD22057/insteon-mqtt/issues/179
+[I182]: https://github.com/TD22057/insteon-mqtt/issues/182
+[I183]: https://github.com/TD22057/insteon-mqtt/issues/183
+[I184]: https://github.com/TD22057/insteon-mqtt/issues/184
+[I185]: https://github.com/TD22057/insteon-mqtt/issues/185
+[I189]: https://github.com/TD22057/insteon-mqtt/issues/189

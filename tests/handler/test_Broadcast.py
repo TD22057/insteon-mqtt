@@ -12,7 +12,7 @@ class Test_Broadcast:
     def test_acks(self, tmpdir):
         proto = MockProto()
         calls = []
-        modem = IM.Modem(proto)
+        modem = IM.Modem(proto, IM.network.Stack())
         modem.save_path = str(tmpdir)
 
         addr = IM.Address('0a.12.34')

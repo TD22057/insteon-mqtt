@@ -181,10 +181,14 @@ def scene(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
         "cmd" : "scene",
-        "group" : args.group,
         "is_on" : bool(args.is_on),
         "reason" : args.reason,
         }
+
+    try:
+        payload["group"] = int(args.group)
+    except ValueError:
+        payload["name"] = str(args.group)
 
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]
@@ -287,4 +291,27 @@ def db_delete(args, config):
     return reply["status"]
 
 
+#===========================================================================
+def sync(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "sync",
+        "refresh" : not args.no_refresh,
+        "dry_run" : not args.run
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
+def import_scenes(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "import_scenes",
+        "dry_run" : not args.run
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 #===========================================================================

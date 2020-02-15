@@ -74,6 +74,9 @@ class InpStandard(Base):
             self.group = self.to_addr.ids[2]
         elif (self.flags.type == Flags.Type.ALL_LINK_CLEANUP or
               self.flags.type == Flags.Type.CLEANUP_ACK):
+            # The INSTEON Whitepaper defines cmd2 as status for CLEANUP_ACK
+            # so it is possible that on some devices this isn't group, so use
+            # with caution.
             self.group = self.cmd2
 
         # This is the time by which the final hop would arrive, used to

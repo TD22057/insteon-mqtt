@@ -33,15 +33,17 @@ def start(args, cfg):
     loop = network.Manager()
     mqtt_link = network.Mqtt()
     plm_link = network.Serial()
+    stack_link = network.Stack()
 
     # Add the clients to the event loop.
     loop.add(mqtt_link, connected=False)
     loop.add(plm_link, connected=False)
+    loop.add(stack_link, connected=True)
 
     # Create the insteon message protocol, modem, and MQTT handler and
     # link them together.
     insteon = Protocol(plm_link)
-    modem = Modem(insteon)
+    modem = Modem(insteon, stack_link)
     mqtt_handler = mqtt.Mqtt(mqtt_link, modem)
 
     # Load the configuration data into the objects.

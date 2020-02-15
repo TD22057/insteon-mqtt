@@ -13,6 +13,8 @@ from . import handler
 from . import log
 from . import message as Msg
 from . import util
+from . import Scenes
+from . import device as DevClass
 from .Signal import Signal
 
 LOG = log.get_logger()
@@ -26,7 +28,7 @@ class Modem:
     input).  This allows devices to be looked up by address to send commands
     to those devices.
     """
-    def __init__(self, protocol):
+    def __init__(self, protocol, stack):
         """Constructor
 
         Actual modem definitions must be loaded from a configuration file via
@@ -36,6 +38,7 @@ class Modem:
           protocol (Protocol):  Insteon message handling protocol object.
         """
         self.protocol = protocol
+        self.stack = stack
 
         self.addr = None
         self.name = "modem"
@@ -47,7 +50,16 @@ class Modem:
         # so devices might not be in that map.
         self.devices = {}
         self.device_names = {}
-        self.db = db.Modem()
+        self.db = db.Modem(None, self)
+
+        # Config db is initiated by Scenes
+        self.db_config = None
+
+        # Prepare Scenes object
+        self.scenes = []
+
+        # Map of Virtual Modem Scene Names to groups
+        self.scene_map = {}
 
         # Signal to emit when a new device is added.
         self.signal_new_device = Signal()  # emit(modem, device)
@@ -64,9 +76,14 @@ class Modem:
             'print_db' : self.print_db,
             'refresh' : self.refresh,
             'refresh_all' : self.refresh_all,
+            'get_engine_all' : self.get_engine_all,
             'linking' : self.linking,
             'scene' : self.scene,
             'factory_reset' : self.factory_reset,
+            'sync_all' : self.sync_all,
+            'sync' : self.sync,
+            'import_scenes': self.import_scenes,
+            'import_scenes_all': self.import_scenes_all
             }
 
         # Add a generic read handler for any broadcast messages initiated by
@@ -83,6 +100,12 @@ class Modem:
         # Log messages as they received so we can track the message hop count
         # to each device.
         self.protocol.signal_received.connect(self.handle_received)
+
+    #-----------------------------------------------------------------------
+    def clear_db_config(self):
+        """Clears and initializes the device config database
+        """
+        self.db_config = db.Modem(None, self)
 
     #-----------------------------------------------------------------------
     def type(self):
@@ -133,9 +156,11 @@ class Modem:
                      len(self.db))
             LOG.debug(str(self.db))
 
-        # Read the device definitions and scenes.
+        # Read the device definitions
         self._load_devices(data.get('devices', []))
-        #FUTURE: self.scenes = self._load_scenes(data.get('scenes', []))
+
+        # Read the scenes definitions and load db_configs
+        self.scenes = Scenes.SceneManager(self, data.get('scenes', None))
 
         # Send refresh messages to each device to check if the database is up
         # to date.
@@ -197,7 +222,7 @@ class Modem:
             with open(path) as f:
                 data = json.load(f)
 
-            self.db = db.Modem.from_json(data, path)
+            self.db = db.Modem.from_json(data, path, self)
         except:
             LOG.exception("Error reading modem db file %s", path)
             return
@@ -292,7 +317,7 @@ class Modem:
         return device
 
     #-----------------------------------------------------------------------
-    def refresh_all(self, force=False, on_done=None):
+    def refresh_all(self, battery=False, force=False, on_done=None):
         """Refresh all the all link databases.
 
         This forces a refresh of the modem and device databases.  This can
@@ -301,6 +326,8 @@ class Modem:
         activity is expected on the network.
 
         Args:
+          battery (bool): If true, will scan battery devices as well, by
+                default they are skipped.
           force (bool):  Force flag passed to devices.  If True, devices
                 will refresh their Insteon db's even if they think the db
                 is up to date.
@@ -317,7 +344,45 @@ class Modem:
 
         # Reload all the device databases.
         for device in self.devices.values():
+            if not battery and isinstance(device, (DevClass.BatterySensor,
+                                                   DevClass.Leak,
+                                                   DevClass.Remote)):
+                LOG.ui("Refresh all, skipping battery device %s", device.label)
+                continue
             seq.add(device.refresh, force)
+
+        # Start the command sequence.
+        seq.run()
+
+    #-----------------------------------------------------------------------
+    def get_engine_all(self, battery=False, on_done=None):
+        """Run Get Engine on all the devices, except Modem
+
+        Devices are assumed to be i2cs, which all new devices are.  If you
+        have a bunch of old devices, this can be a handy thing if you ever
+        lose your data directory.  Otherwise you likely never need to use
+        this.
+
+        Args:
+          battery (bool):  If True, will run on battery devices as well,
+                           defaults to skipping them.
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+        """
+        # Set the error stop to false so a failed refresh doesn't stop the
+        # sequence from trying to refresh other devices.
+        seq = CommandSeq(self.protocol, "Get Engine all complete", on_done,
+                         error_stop=False)
+
+        # Reload all the device databases.
+        for device in self.devices.values():
+            if not battery and isinstance(device, (DevClass.BatterySensor,
+                                                   DevClass.Leak,
+                                                   DevClass.Remote)):
+                LOG.ui("Get engine all, skipping battery device %s",
+                       device.label)
+                continue
+            seq.add(device.get_engine)
 
         # Start the command sequence.
         seq.run()
@@ -546,6 +611,218 @@ class Modem:
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
+    def sync(self, dry_run=True, refresh=True, sequence=None, on_done=None):
+        """Syncs the links on the device.
+
+        This will add, remove, and fix links on the device to ensure that the
+        device matches the links that are defined in the scenes config.
+
+        WARNING: If you have no links defined in your scenes config, this will
+        erase all links except the links created by the 'join' and 'pair'
+        commands.
+
+        It is recommended that you perform a 'dry_run' command first to
+        see what changes would be made to this device.
+
+        In the future an 'import_links' command will be added which will allow
+        for manually created links to be added to the scenes config.
+
+        Args:
+          dry_run: (Boolean). Logs the actions that would be completed by the
+                   'sync' command, but does not actually perform any actions.
+          refresh: (Boolean) performs a device refresh before syncing.
+                   Default: True
+          sequence: (CommandSeq) Sequence entries will be added onto this
+                   sequence.  If None, will create and execute a new sequence.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        dry_run_text = ''
+        if dry_run:
+            dry_run_text = '- DRY RUN'
+        on_done = util.make_callback(on_done)
+        LOG.info("Device %s cmd: sync", self.label)
+
+        # Prepare command sequence
+        if sequence is not None:
+            seq = sequence
+        else:
+            seq = CommandSeq(self.protocol, "Sync complete", on_done,
+                             error_stop=False)
+
+        if refresh:
+            LOG.ui("Performing DB Refresh of %s device", self.label)
+            seq.add(self.refresh)
+            seq.add(self.sync, dry_run, refresh=False, sequence=sequence)
+        else:
+            LOG.ui("Syncing %s device %s", self.label, dry_run_text)
+            # Perform diff after refresh
+            diff = self.db_config.diff(self.db)
+
+            if len(diff.del_entries) > 0 or len(diff.add_entries) > 0:
+                for entry in diff.del_entries:
+                    seq.add(self._sync_del, entry, dry_run)
+                for entry in diff.add_entries:
+                    seq.add(self._sync_add, entry, dry_run)
+            else:
+                seq.add(LOG.ui, "  No changes necessary.")
+
+        if sequence is None:
+            seq.run()
+        else:
+            on_done(True, "Sync Complete", None)
+
+    def _sync_del(self, entry, dry_run, on_done=None):
+        '''Deletes a link on the device with a Log UI Message
+
+        Used by sync() so that messages are displayed in a logical fashion
+        '''
+        if dry_run:
+            LOG.ui("  Would Delete %s:", entry)
+            on_done(True, None, None)
+        else:
+            LOG.ui("  Deleting %s:", entry)
+            self.db.delete_on_device(self.protocol, entry, on_done=on_done)
+
+    def _sync_add(self, entry, dry_run, on_done=None):
+        ''' Adds a link to the device with a Log UI Message
+
+        Used by sync() so that messages are displayed in a logical fashion
+        '''
+        if dry_run:
+            LOG.ui("  Would Add %s:", entry)
+            on_done(True, None, None)
+        else:
+            LOG.ui("  Adding %s:", entry)
+            self.db.add_on_device(self.protocol, entry.addr, entry.group,
+                                  entry.is_controller, entry.data,
+                                  on_done=on_done)
+
+    #-----------------------------------------------------------------------
+    def sync_all(self, dry_run=True, refresh=True, on_done=None):
+        """Perform the 'sync' command on all devices.
+
+        See the 'sync' command for a description.
+
+        Args:
+          dry_run:  (Boolean). Logs the actions that would be completed by the
+                    'sync' command, but does not actually perform any actions.
+          refresh:  (Boolean) performs a device refresh before syncing.
+                    Default: True
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+        """
+        # Set the error stop to false so a failed refresh doesn't stop the
+        # sequence from trying to refresh other devices.
+        seq = CommandSeq(self.protocol, "Sync All complete", on_done,
+                         error_stop=False)
+
+        # First the modem database.
+        seq.add(self.sync, dry_run=dry_run, refresh=refresh)
+
+        # Then each other device.
+        for device in self.devices.values():
+            seq.add(device.sync, dry_run=dry_run, refresh=refresh)
+
+        # Start the command sequence.
+        seq.run()
+
+    #-----------------------------------------------------------------------
+    def import_scenes(self, dry_run=True, save=True, on_done=None):
+        """Imports Scenes Defined on the Device into the Scenes Config.
+
+        Any scene present on the device, but not defined in the Scenes Config
+        will be added to the Scenes Config.  This will only add definitions,
+        it will not remove them.  It is overly optimistic and will add a
+        scene even when only half the the link pair is defined as well as
+        when a scene is linked to an unknown device.
+
+        WARNING: There is no way to ensure that the newly created scenes
+        match the style and formatting that you may have adopted for your
+        Scenes Config file.
+
+        It is recommended that you perform a 'dry_run' command first to
+        see what changes would be made to Scenes Config.
+
+        Args:
+          dry_run: (Boolean) Logs the actions that would be completed by the
+                   'import_scenes' command, but does not actually perform any
+                   actions. Default: True
+          save:    (Boolean) If true will save the resulting scenes to disk if
+                    dry-run is also True.  Not meant to be used by a user, is
+                    used by import_scenes_all.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        on_done = util.make_callback(on_done)
+        dry_run_text = ''
+        changes = False
+        if dry_run:
+            dry_run_text = '- DRY RUN'
+        LOG.info("Device %s cmd: import_scenes", self.label)
+        LOG.ui("Importing Scenes from %s device %s", self.label, dry_run_text)
+
+        diff = self.db.diff(self.db_config)
+
+        # Import only cares about adding entries, ignore deletes
+        if len(diff.add_entries) > 0:
+            LOG.ui("  Adding the following scenes %s:", dry_run_text)
+            for entry in diff.add_entries:
+                LOG.ui("    %s", entry)
+                if not dry_run:
+                    self.scenes.add_or_update(self, entry)
+                    changes = True
+        else:
+            LOG.ui("  No changes necessary.")
+        if changes and save:
+            self.scenes.save()
+        # No matter what, repopulate db_configs so that we can skip importing
+        # the other half of a link
+        self.scenes.populate_scenes()
+        LOG.ui("Import Scenes Done.")
+        on_done(True, "Import Scenes Done.", None)
+
+    #-----------------------------------------------------------------------
+    def import_scenes_all(self, dry_run=True, on_done=None):
+        """Perform the 'import_scenes' command on all devices.
+
+        See the 'import_scenes' command for a description.
+
+        Args:
+          dry_run:  (Boolean). Logs the actions that would be completed by the
+                    'import_scenes' command, but does not actually perform any
+                    actions.
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+        """
+        on_done = util.make_callback(on_done)
+        # Set the error stop to true so an error in one of the import functions
+        # stops the stack from running and stopping potentially garbage data
+        # from being written to the scenes.yaml file.
+        group = self.stack.new(error_stop=True)
+
+        # First the modem database.
+        group.add(self.import_scenes, dry_run=dry_run, save=False)
+
+        # Then each other device.
+        for device in self.devices.values():
+            group.add(device.import_scenes, dry_run=dry_run, save=False)
+
+        # Save everything at the end
+        if not dry_run:
+            group.add(LOG.ui, "Compressing Scenes 1/3")
+            group.add(self.scenes.compress_responders)
+            group.add(LOG.ui, "Compressing Scenes 2/3")
+            group.add(self.scenes.compress_controllers)
+            group.add(LOG.ui, "Compressing Scenes 3/3")
+            group.add(self.scenes.compress_n_way)
+            group.add(self.scenes.save)
+
+        # Output success message to log
+        group.add(LOG.ui, "Import Scenes All Complete")
+        group.add(on_done, True, 'Command Complete', None)
+
+    #-----------------------------------------------------------------------
     def linking(self, group=0x01, on_done=None):
         """Enable linking mode on the modem.
 
@@ -597,7 +874,64 @@ class Modem:
         return util.resolve_data3(defaults, data)
 
     #-----------------------------------------------------------------------
-    def scene(self, is_on, group, num_retry=3, reason="", on_done=None):
+    def link_data_to_pretty(self, is_controller, data):
+        """Converts Link Data1-3 to Human Readable Attributes
+
+        This takes a list of the data values 1-3 and returns a dict with
+        the human readable attibutes as keys and the human readable values
+        as values.
+
+        For base devices, this doesn't do anything.  So the return values will
+        simply match the passed values.  Howevever, this function is meant
+        to be overridded by specialized devices, look at the dimmer module
+        for an example
+
+        Args:
+          is_controller (bool):  True if the device is the controller, false
+                        if it's the responder.
+          data (list[3]):  List of three data values.
+
+        Returns:
+          list[3]:  list, containing a dict of the human readable values
+        """
+        # For the base devices this does nothing
+        return [{'data_1': data[0]}, {'data_2': data[1]}, {'data_3': data[2]}]
+
+    #-----------------------------------------------------------------------
+    def link_data_from_pretty(self, is_controller, data):
+        """Converts Link Data1-3 from Human Readable Attributes
+
+        This takes a dict of the human readable attributes as keys and their
+        associated values and returns a list of the data1-3 values.
+
+        For base devices, this doesn't do anything.  So the return values will
+        simply match the passed values.  Howevever, this function is meant
+        to be overridded by specialized devices, look at the dimmer module
+        for an example
+
+        Args:
+          is_controller (bool):  True if the device is the controller, false
+                        if it's the responder.
+          data (dict[3]):  Dict of three data values.
+
+        Returns:
+          list[3]:  List of Data1-3 values
+        """
+        # For the base devices this does nothing
+        data_1 = None
+        if 'data_1' in data:
+            data_1 = data['data_1']
+        data_2 = None
+        if 'data_2' in data:
+            data_2 = data['data_2']
+        data_3 = None
+        if 'data_3' in data:
+            data_3 = data['data_3']
+        return [data_1, data_2, data_3]
+
+    #-----------------------------------------------------------------------
+    def scene(self, is_on, group=None, name=None, num_retry=3, reason="",
+              on_done=None):
         """Trigger a virtual modem scene.
 
         This will send out a scene command from the modem.  When the scene
@@ -607,6 +941,7 @@ class Modem:
           is_on (bool): True to send an on (0x11) command for the scene.
                 False to send an off (0x13) command for the scene.
           group (int):  The modem group (scene) number to send.
+          name (str):  The name of the scene as defined in a scenes.yaml file
           num_retry (int):  The number of retries to use if the message fails.
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
@@ -616,7 +951,16 @@ class Modem:
                     completed.  Signature is: on_done(success, msg, data)
         """
         # TODO: figure out how to pass reason around
-        assert 0x01 <= group <= 0xff
+        on_done = util.make_callback(on_done)
+        if name is not None:
+            try:
+                group = self.scene_map[name]
+            except KeyError:
+                LOG.error("Unable to find modem scene %s", name)
+                on_done(False, "Scene command failed", None)
+                return
+        else:
+            assert 0x01 <= group <= 0xff
         LOG.info("Modem scene %s on=%s", group, "on" if is_on else "off")
 
         cmd1 = 0x11 if is_on else 0x13
@@ -777,26 +1121,6 @@ class Modem:
 
                 # Notify anyone else that new device is available.
                 self.signal_new_device.emit(self, dev)
-
-    #-----------------------------------------------------------------------
-    def _load_scenes(self, data):
-        """Load virtual modem scenes from a configuration dict.
-
-        Load scenes from the configuration file.  Virtual scenes are defined
-        in software - they are links where the modem is the controller and
-        devices are the responders.  These are scenes we can trigger by a
-        command to the modem which will broadcast a message to update all the
-        edeives.
-
-        Args:
-          data:   Configuration dictionary for scenes.
-        """
-        # FUTURE: support scene loading
-        # Read scenes from the configuration file.  See if the scene has
-        # changed vs what we have in the device databases.  If it has, we
-        # need to update the device databases.
-        scenes = {}
-        return scenes
 
     #-----------------------------------------------------------------------
     def _db_update(self, local_group, is_controller, remote_addr, remote_group,
