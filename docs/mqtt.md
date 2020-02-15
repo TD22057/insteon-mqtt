@@ -44,8 +44,10 @@ be identified by it's address or the string "modem".
 
 When adding a new device or after performing a factory reset on a device it
 is necessary to perform a three step process to setup the device to work
-properly with insteon-mqtt.  The steps are 1) Join, 2) Pair, and 3) Sync (Not
-implemented yet).  These three commands can be re-run at anytime without harm.
+properly with insteon-mqtt.  The steps are 1) Join, 2) Pair, and 3) Sync
+(only if you have scenes defined for this device in a scenes.yaml file).  
+The Join and Pair commands can be re-run at anytime without harm.  You can also
+run sync in dry-run mode at any time to see what changes would be made.
 
 From the command line these actions can be performed as follows:
 
@@ -83,10 +85,16 @@ brackets [], then it's optional.  If a value can be one of many like
 true or false, then the possible values are separated by a slash /.
 
 The MQTT topic to publish management commands to is (aa.bb.cc is the
-device address or nice name from the config.yaml file):
+example device address):
 
    ```
    insteon/command/aa.bb.cc
+   ```
+
+Alternatively you can use the nice names from the config.yaml file too:
+
+   ```
+   insteon/command/NICE NAME
    ```
 
 ### Join a New Device to the Network
@@ -136,12 +144,89 @@ This command can also be run from the command line:
    ```
 
 
-### Sync Device Links (Placeholder)
+### Sync Device Links
 
 Supported: modem, device
 
-This command is not yet supported.
+This function will alter the device's link database to match the scenes
+defined in the scenes.yaml file.  This includes adding new links as well as
+deleting un-defined links.  Details can be found in [Scene Management](scenes.md)
 
+The command payload is below.  Setting the dry_run flag to true will cause the
+changes to be made to the device, the default false will only report what would
+happen:
+
+  ```
+  { "cmd" : "sync", ["dry_run" : true/false]}
+  ```
+
+  This command can also be run from the command line:
+
+   ```
+   insteon-mqtt config.yaml sync aa.bb.cc
+   ```
+
+### Sync All Device Links
+
+Supported: modem
+
+This function will perform the sync command on all devices.
+
+The command payload is as follows.  Setting the dry_run flag to true will cause
+the changes to be made to the device, the default false will only report what
+would happen:
+
+  ```
+  { "cmd" : "sync_all", ["dry_run" : true/false]}
+  ```
+
+ This command can also be run from the command line:
+
+  ```
+  insteon-mqtt config.yaml sync-all
+  ```
+
+### Import Device Links
+
+Supported: modem, device
+
+The 'import-scenes' function will take the links defined on each device and
+parse them into a scene which can be saved to the scenes.yaml file.  Please
+read the in [Scene Management](scenes.md)
+
+The command payload is below.  Setting the dry_run flag to true will cause the
+changes to be made to the file, the default false will only report what would
+happen:
+
+  ```
+  { "cmd" : "import_scenes", ["dry_run" : true/false]}
+  ```
+
+  This command can also be run from the command line:
+
+   ```
+   insteon-mqtt config.yaml import-scenes aa.bb.cc
+   ```
+
+### Sync All Device Links
+
+Supported: modem
+
+This function will perform the import-scenes command on all devices.
+
+The command payload is as follows.  Setting the dry_run flag to true will cause
+the changes to be made to the file, the default false will only report what
+would happen:
+
+  ```
+  { "cmd" : "import_scenes_all", ["dry_run" : true/false]}
+  ```
+
+ This command can also be run from the command line:
+
+  ```
+  insteon-mqtt config.yaml import-scenes-all
+  ```
 
 ### Activate all linking mode
 
@@ -389,6 +474,16 @@ will be passed through to the output state change payload.
 
    ```
    { "cmd": "scene", "group" : group, "is_on" : 0/1, ["reason" : "..."] }
+   ```
+
+   Supported: modem
+
+   The modem also allows the triggering of scenes from a name defined in a
+   [Scene Management](scenes.md) file as well. To access a scene by its name
+   simply drop the group attribute and add the name attribute such as.
+
+   ```
+   { "cmd": "scene", "name" : "test_scene", "is_on" : 0/1, ["reason" : "..."] }
    ```
 
 

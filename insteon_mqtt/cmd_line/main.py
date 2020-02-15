@@ -16,7 +16,7 @@ def parse_args(args):
     """
     # pylint: disable=too-many-statements
     p = argparse.ArgumentParser(prog="insteon-mqtt",
-                                description="Inseton<->MQTT tool")
+                                description="Insteon<->MQTT tool")
     p.add_argument("config", metavar="config.yaml", help="Configuration "
                    "file to use.")
     sub = p.add_subparsers(help="Command help")
@@ -42,6 +42,33 @@ def parse_args(args):
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
     sp.set_defaults(func=modem.refresh_all)
+
+    #---------------------------------------
+    # modem.sync_all command
+    sp = sub.add_parser("sync-all", help="Call sync on all the devices "
+                        "in the configuration.")
+    sp.add_argument("--run", action="store_true", default=False,
+                    help="Perform the actions altering the device db to bring "
+                    "it in sync.  If not specified, will perform a dry-run "
+                    "which only lists the changes to be made.")
+    sp.add_argument("--no-refresh", action="store_true", default=False,
+                    help="Don't refresh the db before syncing.  This can "
+                    "be dangerous if the device db is out of date.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=modem.sync_all)
+
+    #---------------------------------------
+    # modem.import_scenes_all command
+    sp = sub.add_parser("import-scenes-all", help="Call import-scenes on all "
+                        "the devices in the configuration.")
+    sp.add_argument("--run", action="store_true", default=False,
+                    help="Perform the actions altering the scenes config file "
+                    "to bring it in sync.  If not specified, will perform a "
+                    "dry-run which only lists the changes to be made.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=modem.import_scenes_all)
 
     #---------------------------------------
     # modem.factory_reset command
@@ -210,8 +237,11 @@ def parse_args(args):
                     help="Reason message to send with the command.  No "
                     "message with use 'scene'.")
     sp.add_argument("address", help="Device address or name.")
-    sp.add_argument("group", type=int, help="Group (button) number of the "
-                    "scene to trigger (use 1 for single buttons.")
+    sp.add_argument("group", help="Group (button) number of the "
+                    "scene to trigger (use 1 for single buttons.) "
+                    "For modem scenes the group can alternatively be the "
+                    "scene name as defined in a scenes.yaml file."
+                    )
     sp.add_argument("is_on", type=int, default=1, choices=[0, 1],
                     help="1 to turn the scene on, 0 to turn it off.")
     sp.set_defaults(func=device.scene)
@@ -312,6 +342,34 @@ def parse_args(args):
     sp = sub.add_parser("print-db", help="Print the current device database")
     sp.add_argument("address", help="Device address or name.")
     sp.set_defaults(func=device.print_db)
+
+    #---------------------------------------
+    # device.sync
+    sp = sub.add_parser("sync", help="Sync the defined scenes with device db")
+    sp.add_argument("address", help="Device address or name.")
+    sp.add_argument("--run", action="store_true", default=False,
+                    help="Perform the actions altering the device db to bring "
+                    "it in sync.  If not specified, will perform a dry-run "
+                    "which only lists the changes to be made.")
+    sp.add_argument("--no-refresh", action="store_true", default=False,
+                    help="Don't refresh the db before syncing.  This can "
+                    "be dangerous if the device db is out of date.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=device.sync)
+
+    #---------------------------------------
+    # device.import_scenes
+    sp = sub.add_parser("import-scenes", help="Import all of the scenes "
+                        "defined on the device into the scenes config file.")
+    sp.add_argument("address", help="Device address or name.")
+    sp.add_argument("--run", action="store_true", default=False,
+                    help="Perform the actions altering the scenes config file "
+                    " to bring it in sync.  If not specified, will perform a "
+                    "dry-run which only lists the changes to be made.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=device.import_scenes)
 
     return p.parse_args(args)
 

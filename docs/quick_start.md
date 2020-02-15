@@ -70,14 +70,13 @@ This package assumes that you:
    insteon-mqtt config.yaml start
    ```
 
-5) Join, Pair, and Sync each device in your network.  This can be accomplished
+5) Join, and Pair each device in your network.  This can be accomplished
    using mqtt messages as described in the [Required Device Initialization]
   (mqtt.md#required-device-initialization) section.
 
   ```
   insteon-mqtt config.yaml join aa.bb.cc
   insteon-mqtt config.yaml pair aa.bb.cc
-  insteon-mqtt config.yaml sync aa.bb.cc
   ```
 
 6) Download an Insteon device database for every device.  This may

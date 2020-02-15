@@ -12,6 +12,7 @@ from .. import on_off
 from ..Signal import Signal
 from .. import util
 from .Base import Base
+from . import Dimmer
 
 LOG = log.get_logger()
 
@@ -533,6 +534,115 @@ class KeypadLinc(Base):
                                      reason=reason)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def link_data(self, is_controller, group, data=None):
+        """Create default device 3 byte link data.
+
+        This is the 3 byte field (D1, D2, D3) stored in the device database
+        entry.  This overrides the defaults specified in base.py for
+        specific values used by dimming devices.
+
+        For controllers, the default fields are:
+           D1: number of retries (0x03)
+           D2: unknown (0x00)
+           D3: the group number on the local device (0x01)
+
+        For responders, the default fields are:
+           D1: on level for switches and dimmers (0xff)
+           D2: ramp rate (0x1f, or .1s)
+           D3: the group number on the local device (0x01)
+
+        Args:
+          is_controller (bool): True if the device is the controller, false
+                        if it's the responder.
+          group (int): The group number of the controller button or the
+                group number of the responding button.
+          data (bytes[3]): Optional 3 byte data entry.  If this is None,
+               defaults are returned.  Otherwise it must be a 3 element list.
+               Any element that is not None is replaced with the default.
+
+        Returns:
+          bytes[3]: Returns a list of 3 bytes to use as D1,D2,D3.
+        """
+        # Most of this is from looking through Misterhouse bug reports.
+        if is_controller:
+            defaults = [0x03, 0x00, group]
+
+        # Responder data is always link dependent.  Since nothing was given,
+        # assume the user wants to turn the device on (0xff).
+        else:
+            data_2 = 0x00
+            if self.is_dimmer:
+                data_2 = 0x1f
+            defaults = [0xff, data_2, group]
+
+        # For each field, use the input if not -1, else the default.
+        return util.resolve_data3(defaults, data)
+
+    #-----------------------------------------------------------------------
+    def link_data_to_pretty(self, is_controller, data):
+        """Converts Link Data1-3 to Human Readable Attributes
+
+        This takes a list of the data values 1-3 and returns a dict with
+        the human readable attibutes as keys and the human readable values
+        as values.
+
+        Args:
+          is_controller (bool): True if the device is the controller, false
+                        if it's the responder.
+          data (list[3]): List of three data values.
+
+        Returns:
+          list[3]:  list, containing a dict of the human readable values
+        """
+        ret = [{'data_1': data[0]}, {'data_2': data[1]}, {'group': data[2]}]
+        if not is_controller:
+            if self.is_dimmer:
+                ramp = 0x1f  # default
+                if data[1] in Dimmer.ramp_pretty:
+                    ramp = Dimmer.ramp_pretty[data[1]]
+                on_level = int((data[0] / .255) + .5) / 10
+                ret = [{'on_level': on_level},
+                       {'ramp_rate': ramp},
+                       {'group': data[2]}]
+        return ret
+
+    #-----------------------------------------------------------------------
+    def link_data_from_pretty(self, is_controller, data):
+        """Converts Link Data1-3 from Human Readable Attributes
+
+        This takes a dict of the human readable attributes as keys and their
+        associated values and returns a list of the data1-3 values.
+
+        Args:
+          is_controller (bool): True if the device is the controller, false
+                        if it's the responder.
+          data (dict[3]): Dict of three data values.
+
+        Returns:
+          list[3]: List of Data1-3 values
+        """
+        data_1 = None
+        if 'data_1' in data:
+            data_1 = data['data_1']
+        data_2 = None
+        if 'data_2' in data:
+            data_2 = data['data_2']
+        data_3 = None
+        if 'data_3' in data:
+            data_3 = data['data_3']
+        if 'group' in data:
+            data_3 = data['group']
+        if not is_controller and self.is_dimmer:
+            if 'ramp' in data:
+                data_2 = 0x1f
+                for ramp_key, ramp_value in Dimmer.ramp_pretty:
+                    if data['ramp'] >= ramp_value:
+                        data_2 = ramp_key
+            if 'on_level' in data:
+                data_1 = int(data['on_level'] * 2.55 + .5)
+        return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
     def set_load_attached(self, is_attached, on_done=None):

@@ -19,6 +19,31 @@ def refresh_all(args, config):
 
 
 #===========================================================================
+def sync_all(args, config):
+    topic = "%s/modem" % (args.topic)
+    payload = {
+        "cmd" : "sync_all",
+        "refresh" : not args.no_refresh,
+        "dry_run" : not args.run
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
+def import_scenes_all(args, config):
+    topic = "%s/modem" % (args.topic)
+    payload = {
+        "cmd" : "import_scenes_all",
+        "dry_run" : not args.run
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
 def factory_reset(args, config):
     topic = "%s/modem" % (args.topic)
     payload = {

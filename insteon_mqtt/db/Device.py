@@ -12,6 +12,7 @@ from .. import catalog
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .DeviceEntry import DeviceEntry
+from .DbDiff import DbDiff
 from .. import log
 from .. import message as Msg
 from .. import util
@@ -41,7 +42,7 @@ class Device:
     """
 
     @staticmethod
-    def from_json(data, path):
+    def from_json(data, path, device):
         """Read a Device database from a JSON input.
 
         The inverse of this is to_json().
@@ -50,12 +51,12 @@ class Device:
           data:   (dict) The data to read from.
           path:   (str) The file to save the database to when changes are
                   made.
-
+          device: (Device) The device object.
         Returns:
           Device: Returns the created Device object.
         """
         # Create the basic database object.
-        obj = Device(Address(data['address']), path)
+        obj = Device(Address(data['address']), path, device)
 
         # Extract the various files from the JSON data.
         obj.delta = data['delta']
@@ -93,7 +94,7 @@ class Device:
         return obj
 
     #-----------------------------------------------------------------------
-    def __init__(self, addr, path=None):
+    def __init__(self, addr, path=None, device=None):
         """Constructor
 
         Args:
@@ -101,6 +102,7 @@ class Device:
                  is for.
           path:  (str) The file to save the database to when changes are
                  made.
+          device: (Device) The device object.
         """
         self.addr = addr
         self.save_path = path
@@ -149,6 +151,9 @@ class Device:
         # Map of all link group number to DeviceEntry objects that respond to
         # that group command.
         self.groups = {}
+
+        # Link to the Modem device
+        self.device = device
 
     #-----------------------------------------------------------------------
     def is_current(self, delta):
@@ -514,6 +519,107 @@ class Device:
         return results
 
     #-----------------------------------------------------------------------
+    def diff(self, rhs):
+        """Compare this database with another Device database.
+
+        It's an error (logged and will return None) to use this on databases
+        for difference addresses.  The purpose of this method is to compare
+        two database for the same device and generate a list of commands that
+        will cause the input rhs database to be equal to the self database.
+
+        The return value is a db.DbDiff object that contains the
+        additions and deletions needed to update rhs to match self.
+
+        Args:
+           rhs:   (db.Device) The other device db to compare with.
+
+        Returns:
+           Returns the list changes needed in rhs to make it equal to this
+           object.
+        """
+        if self.addr != rhs.addr:
+            LOG.error("Error trying to compare device databases for %s vs"
+                      " %s.  Only the same device can be differenced.",
+                      self.addr, rhs.addr)
+            return None
+
+        # Copy the rhs entry dict of mem_loc->DeviceEntry.  For each match
+        # that we find, we'll remove that address from the dict.  The result
+        # will be the entries that need to be removed from rhs to make it
+        # match.
+        rhsRemove = {k : v for k, v in rhs.entries.items()}
+
+        delta = DbDiff(self.addr)
+        for entry in self.entries.values():
+            rhsEntry = rhs.find(entry.addr, entry.group, entry.is_controller)
+
+            # RHS is missing this entry or has different data bytes we need
+            # to update.
+            if rhsEntry is None or not entry.identical(rhsEntry):
+                # Ignore certain links created by 'join' or 'pair'
+                # See notes below.
+                if (entry.is_controller and
+                        entry.addr == self.device.modem.addr):
+                    # This is a link from the pair command
+                    pass
+                elif (not entry.is_controller and
+                      entry.group in (0x00, 0x01) and
+                      entry.addr == self.device.modem.addr):
+                    # This is a link from the join command
+                    pass
+                else:
+                    delta.add(entry)
+
+            # Otherwise this is match so we can note that by removing this
+            # address from the set, if it is there.  If there are duplicates
+            # on the left hand side, this address may already have been removed
+            elif rhsEntry and rhsEntry.mem_loc in rhsRemove:
+                del rhsRemove[rhsEntry.mem_loc]
+
+        # Ignore certain links created by 'join' or 'pair'
+        # #1 any controller link to the modem.  These are normally
+        # created by the 'pair' command.  There is currently no way to know the
+        # groups that should exist on a device.  So we ignore all, but in the
+        # future may want to add something to each device so that we can delete
+        # erroneous entries.
+        # #2 any responder links from the modem for groups 0x01 or 0x02,
+        # these are results from the 'join' command
+        for _addr in list(rhsRemove):
+            entry = rhsRemove[_addr]
+            if entry.is_controller and entry.addr == rhs.device.modem.addr:
+                del rhsRemove[_addr]
+            if (not entry.is_controller and entry.group in (0x00, 0x01) and
+                    entry.addr == rhs.device.modem.addr):
+                del rhsRemove[_addr]
+
+        # Add in remaining rhs entries that where not matches as entries that
+        # need to be removed.
+        for entry in rhsRemove.values():
+            delta.remove(entry)
+
+        return delta
+
+    #-----------------------------------------------------------------------
+    def apply_diff(self, device, diff, on_done=None):
+        """TODO: doc
+        """
+        assert self.addr == diff.addr
+
+        seq = CommandSeq(device, "Device database sync complete", on_done)
+
+        # Start by removing all the entries we don't need.  This way we free
+        # up memory locations to use for the add.
+        for entry in diff.del_entries:
+            seq.add(self.delete_on_device, entry)
+
+        # Add the missing entries.
+        for entry in diff.add_entries:
+            seq.add(self.add_on_device, device, entry.addr, entry.group,
+                    entry.is_controller, entry.data)
+
+        seq.run()
+
+    #-----------------------------------------------------------------------
     def to_json(self):
         """Convert the database to JSON format.
 
@@ -617,6 +723,35 @@ class Device:
         # Save the updated database.
         if save:
             self.save()
+
+    #-----------------------------------------------------------------------
+    def add_from_config(self, remote, local):
+        """Add an entry to the config database from the config file.
+
+        Is called by _load_scenes() on the modem.  Adds an entry to the next
+        available mem_loc from an entry specified in the config file.  This
+        should only be used to add an entry to a db_config database, which is
+        then compared with the actual database using diff().
+
+        Args:
+          remote (SceneDevice): The remote device to link to
+          local (SceneDevice): The local device link pair of this entry
+        """
+        # Get the mem_loc and move last entry down 1 position
+        mem_loc = self.last.mem_loc
+        self.last.mem_loc -= 0x08
+
+        # Generate the entry
+        db_flags = Msg.DbFlags(in_use=True, is_controller=local.is_controller,
+                               is_last_rec=False)
+        group = local.group
+        if remote.is_controller:
+            group = remote.group
+        entry = DeviceEntry(remote.addr, group, mem_loc, db_flags,
+                            local.link_data)
+
+        # Add the Entry to the DB
+        self.add_entry(entry, save=False)
 
     #-----------------------------------------------------------------------
     def _add_using_unused(self, device, addr, group, is_controller, data,
