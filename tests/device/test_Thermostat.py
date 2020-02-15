@@ -300,9 +300,13 @@ class MockModem:
 class MockProto:
     def __init__(self):
         self.msgs = []
+        self.wait = None
 
     def add_handler(self, *args):
         pass
 
     def send(self, msg, msg_handler, high_priority=False, after=None):
         self.msgs.append(msg)
+
+    def set_wait_time(self, time):
+        self.wait = time

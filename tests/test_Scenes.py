@@ -121,7 +121,8 @@ class Test_Scenes:
                                        "addr": "cc.bb.aa"})
         device = modem.find("aa.bb.cc")
         scenes.add_or_update(device, entry)
-        scenes._compress_scenes()
+        scenes.compress_controllers()
+        scenes.compress_responders()
         assert len(scenes.entries) == 1
 
     def test_populate_scenes(self):

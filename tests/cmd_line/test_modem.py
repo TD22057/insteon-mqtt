@@ -18,6 +18,7 @@ class Test_modem:
         assert call[1] == topic
         assert call[2]["cmd"] == cmd
         assert call[2]["force"] == args.force
+        assert call[2]["battery"] == args.battery
         assert call[3] == args.quiet
 
     #-----------------------------------------------------------------------
@@ -25,7 +26,7 @@ class Test_modem:
         mocker.patch('insteon_mqtt.cmd_line.util.send')
         IM.cmd_line.util.send.return_value = {"status" : 10}
 
-        args = Data(topic="cmd_topic", force=False, quiet=True)
+        args = Data(topic="cmd_topic", force=False, quiet=True, battery=True)
         config = Data(a=1, b=2)
 
         r = IM.cmd_line.modem.refresh_all(args, config)
