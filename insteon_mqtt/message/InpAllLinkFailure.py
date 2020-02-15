@@ -8,15 +8,16 @@ from .Base import Base
 
 
 class InpAllLinkFailure(Base):
-    """User pressed the PLM set button.
+    """All Link Failure Report
 
-    This is sent from the PLM modem to the host when all linking between the
-    modem and a device fails.
+    This is sent from the PLM modem to the host when all link command (scene
+    control) between the modem and a device fails.  Means that no ack or nak
+    was received from the device.
     """
     # pylint: disable=abstract-method
 
     msg_code = 0x56
-    fixed_msg_size = 7
+    fixed_msg_size = 6
 
     #-----------------------------------------------------------------------
     @classmethod
@@ -35,9 +36,8 @@ class InpAllLinkFailure(Base):
         assert len(raw) >= InpAllLinkFailure.fixed_msg_size
         assert raw[0] == 0x02 and raw[1] == InpAllLinkFailure.msg_code
 
-        assert raw[2] == 0x01
-        group = raw[3]
-        addr = Address.from_bytes(raw, 4)
+        group = raw[2]
+        addr = Address.from_bytes(raw, 3)
         return InpAllLinkFailure(group, addr)
 
     #-----------------------------------------------------------------------
