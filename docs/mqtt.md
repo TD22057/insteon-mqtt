@@ -432,7 +432,7 @@ Switch, KeypadLinc, and Dimmer all support the flags:
      off.  This is used to implement radio buttons.
    - signal_bits: 8 bit integer flags - 1 per button.  Only used for
      non-toggle buttons.  If a bit is 1, then the button only sends on
-     commands.  If a bit is 0, hten the button only sends off commands.
+     commands.  If a bit is 0, then the button only sends off commands.
    - nontoggle_bits: 8 bit integer flags - 1 per button.  If a bit is 1, then
      that button is a non-toggle button and will only send a signal per the
      signal_bits input.  If a bit is 0, then that button is a toggle button
@@ -445,7 +445,21 @@ IOLinc supports the flags:
    - trigger_reverse: 0/1 reverses the trigger command state
    - relay_linked: 0/1 links the relay to the sensor value
 
+Motion Sensors support the flags:
 
+   - led_on: 0/1 - Should led on the device flash on motion?
+
+   - night_only: 0/1 - Should motion only be reported at night?
+
+   - on_only: 0/1 - Should only on motions be reported with no off messages?
+
+   - timeout: seconds between state updates (30 second increments, 2842
+     models allow between 30 seconds to 4 hours, the 2844 models allow
+     between 30 seconds and 40 minutes).
+
+   - light_sensitivity: 1-255:  Amount of darkness required for night
+     to be triggered.  Affects night_only mode as well as the dawn/dusk
+     reporting
 
 ### Print the current all link database.
 
