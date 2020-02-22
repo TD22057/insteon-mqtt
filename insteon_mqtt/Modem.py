@@ -665,7 +665,7 @@ class Modem:
                 for entry in diff.add_entries:
                     seq.add(self._sync_add, entry, dry_run)
             else:
-                seq.add(LOG.ui, "  No changes necessary.")
+                LOG.ui("  No changes necessary.")
 
         if sequence is None:
             seq.run()
@@ -694,9 +694,7 @@ class Modem:
             on_done(True, None, None)
         else:
             LOG.ui("  Adding %s:", entry)
-            self.db.add_on_device(self.protocol, entry.addr, entry.group,
-                                  entry.is_controller, entry.data,
-                                  on_done=on_done)
+            self.db.add_on_device(self.protocol, entry, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def sync_all(self, dry_run=True, refresh=True, on_done=None):
