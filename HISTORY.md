@@ -1,5 +1,16 @@
 # Revision Change History
 
+## [0.7.1]
+
+### Fixes
+
+- Fixed a coding bug when running sync-all ([Issue #192][I192])
+  (thanks @krkeegan)
+
+- Fixed a coding bug when running sync on the modem ([Issue #193][I193])
+  (thanks @krkeegan)
+
+
 ## [0.7.0]
 
 ### Additions
@@ -342,3 +353,5 @@
 [I184]: https://github.com/TD22057/insteon-mqtt/issues/184
 [I185]: https://github.com/TD22057/insteon-mqtt/issues/185
 [I189]: https://github.com/TD22057/insteon-mqtt/issues/189
+[I192]: https://github.com/TD22057/insteon-mqtt/issues/192
+[I193]: https://github.com/TD22057/insteon-mqtt/issues/193

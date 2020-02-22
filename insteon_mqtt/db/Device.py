@@ -547,7 +547,7 @@ class Device:
         # that we find, we'll remove that address from the dict.  The result
         # will be the entries that need to be removed from rhs to make it
         # match.
-        rhsRemove = {k : v for k, v in rhs.entries.items()}
+        rhsRemove = rhs.entries.copy()
 
         delta = DbDiff(self.addr)
         for entry in self.entries.values():
