@@ -357,7 +357,8 @@ class Modem:
             if entries[i].is_controller == entry.is_controller:
                 erase_idx = i
                 break
-            elif not restore:
+
+            if not restore:
                 restore = entries[i]
 
         # Since the entry was passed in, it must exist.
