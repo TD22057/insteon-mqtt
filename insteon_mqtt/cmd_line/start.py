@@ -38,7 +38,7 @@ def start(args, cfg):
     # Add the clients to the event loop.
     loop.add(mqtt_link, connected=False)
     loop.add(plm_link, connected=False)
-    loop.add(stack_link, connected=True)
+    loop.add_poll(stack_link)
 
     # Create the insteon message protocol, modem, and MQTT handler and
     # link them together.
