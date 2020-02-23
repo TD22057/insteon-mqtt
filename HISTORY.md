@@ -1,5 +1,12 @@
 # Revision Change History
 
+## [0.7.2]
+
+### Fixes
+
+- Fixed an issue causing 100% cpu usage introduced in the scene sync code.
+  ([Issue #195)[I195])
+
 ## [0.7.1]
 
 ### Fixes
@@ -355,3 +362,4 @@
 [I189]: https://github.com/TD22057/insteon-mqtt/issues/189
 [I192]: https://github.com/TD22057/insteon-mqtt/issues/192
 [I193]: https://github.com/TD22057/insteon-mqtt/issues/193
+[I195]: https://github.com/TD22057/insteon-mqtt/issues/195
