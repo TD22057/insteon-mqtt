@@ -174,7 +174,11 @@ class Modem:
         """
         self.entries.remove(entry)
         if entry.is_controller:
-            del self.groups[entry.group]
+            responders = self.groups.setdefault(entry.group, [])
+            if entry in responders:
+                responders.remove(entry)
+            if not responders and entry.group in self.groups:
+                del self.groups[entry.group]
 
         self.save()
 
