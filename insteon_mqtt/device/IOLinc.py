@@ -4,11 +4,13 @@
 #
 #===========================================================================
 import functools
+import enum
 from .Base import Base
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg
+from .. import on_off
 from ..Signal import Signal
 from .. import util
 
@@ -131,6 +133,38 @@ class IOLinc(Base):
     """
     type_name = "io_linc"
 
+    # Map of operating flag values that can be directly set.  Details can
+    # be found in document titled 'IOLinc Datasheet'
+    class OperatingFlags(enum.IntEnum):
+        PROGRAM_LOCK_ON = 0x00
+        PROGRAM_LOCK_OFF = 0x01
+        LED_ON_DURING_TX = 0x02
+        LED_OFF_DURING_TX = 0x03
+        RELAY_FOLLOWS_INPUT_ON = 0x04
+        RELAY_FOLLOWS_INPUT_OFF = 0x05
+        MOMENTARY_A_ON = 0x06
+        MOMENTARY_A_OFF = 0x07
+        LED_OFF = 0x08
+        LED_ENABLED = 0x09
+        KEY_BEEP_ENABLED = 0x0a
+        KEY_BEEP_OFF = 0x0b
+        X10_TX_ON_WHEN_OFF = 0x0c
+        X10_TX_ON_WHEN_ON = 0x0d
+        INVERT_SENSOR_ON = 0x0e
+        INVERT_SENSOR_OFF = 0x0f
+        X10_RX_ON_IS_OFF = 0x10
+        X10_RX_ON_IS_ON = 0x11
+        MOMENTARY_B_ON = 0x12
+        MOMENTARY_B_OFF = 0x13
+        MOMENTARY_C_ON = 0x14
+        MOMENTARY_C_OFF = 0x15
+
+    class Modes(enum.IntEnum):
+        LATCHING = 0x00
+        MOMENTARY_A = 0x01
+        MOMENTARY_B = 0x02
+        MOMENTARY_C = 0x03
+
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
 
@@ -144,7 +178,9 @@ class IOLinc(Base):
         """
         super().__init__(protocol, modem, address, name)
 
-        self._is_on = False
+        # Used to track the state of sensor and relay
+        self._sensor_is_on = False
+        self._relay_is_on = False
 
         # Support on/off style signals for the sensor
         # API: func(Device, bool is_on)
@@ -167,6 +203,118 @@ class IOLinc(Base):
             'scene' : self.scene,
             'set_flags' : self.set_flags,
             })
+
+    #-----------------------------------------------------------------------
+    @property
+    def mode(self):
+        """Returns the mode from the saved metadata
+        """
+        meta = self.db.get_meta('IOLinc')
+        ret = IOLinc.Modes.LATCHING
+        if isinstance(meta, dict) and 'mode' in meta:
+            ret = meta['mode']
+        return ret
+
+    #-----------------------------------------------------------------------
+    @mode.setter
+    def mode(self, val):
+        """Saves mode to the database metadata
+
+        Args:
+          val:    (IOLinc.Modes)
+        """
+        if val in IOLinc.Modes:
+            meta = {'mode': val}
+            existing = self.db.get_meta('IOLinc')
+            if isinstance(existing, dict) and 'mode' in meta:
+                existing.update(meta)
+                self.db.set_meta('IOLinc', existing)
+            else:
+                self.db.set_meta('IOLinc', meta)
+        else:
+            LOG.error("Bad value %s, for mode on IOLinc %s.", val,
+                      self.addr)
+
+    #-----------------------------------------------------------------------
+    @property
+    def trigger_reverse(self):
+        """Returns the trigger_reverse state from the saved metadata
+        """
+        meta = self.db.get_meta('IOLinc')
+        ret = False
+        if isinstance(meta, dict) and 'trigger_reverse' in meta:
+            ret = meta['trigger_reverse']
+        return ret
+
+    #-----------------------------------------------------------------------
+    @trigger_reverse.setter
+    def trigger_reverse(self, val):
+        """Saves trigger_reverse state to the database metadata
+
+        Args:
+          val:    (bool)
+        """
+        meta = {'trigger_reverse': val}
+        existing = self.db.get_meta('IOLinc')
+        if isinstance(existing, dict) and 'trigger_reverse' in meta:
+            existing.update(meta)
+            self.db.set_meta('IOLinc', existing)
+        else:
+            self.db.set_meta('IOLinc', meta)
+
+    #-----------------------------------------------------------------------
+    @property
+    def relay_linked(self):
+        """Returns the relay_linked state from the saved metadata
+        """
+        meta = self.db.get_meta('IOLinc')
+        ret = False
+        if isinstance(meta, dict) and 'relay_linked' in meta:
+            ret = meta['relay_linked']
+        return ret
+
+    #-----------------------------------------------------------------------
+    @relay_linked.setter
+    def relay_linked(self, val):
+        """Saves relay_linked state to the database metadata
+
+        Args:
+          val:    (bool)
+        """
+        meta = {'relay_linked': val}
+        existing = self.db.get_meta('IOLinc')
+        if isinstance(existing, dict) and 'relay_linked' in meta:
+            existing.update(meta)
+            self.db.set_meta('IOLinc', existing)
+        else:
+            self.db.set_meta('IOLinc', meta)
+
+    #-----------------------------------------------------------------------
+    @property
+    def momentary_secs(self):
+        """Returns the momentary seconds from the saved metadata
+        """
+        meta = self.db.get_meta('IOLinc')
+        ret = False
+        if isinstance(meta, dict) and 'momentary_secs' in meta:
+            ret = meta['momentary_secs']
+        return ret
+
+    #-----------------------------------------------------------------------
+    @momentary_secs.setter
+    def momentary_secs(self, val):
+        """Saves momentary seconds to the database metadata
+
+        Args:
+          val:    (float) .1 - 6300.0
+        """
+        meta = {'momentary_secs': val}
+        existing = self.db.get_meta('IOLinc')
+        if isinstance(existing, dict) and 'momentary_secs' in meta:
+            existing.update(meta)
+            self.db.set_meta('IOLinc', existing)
+        else:
+            self.db.set_meta('IOLinc', meta)
 
     #-----------------------------------------------------------------------
     def pair(self, on_done=None):
@@ -224,6 +372,40 @@ class IOLinc(Base):
         seq.run()
 
     #-----------------------------------------------------------------------
+    def get_flags(self, on_done=None):
+
+        """Get the Insteon operational flags field from the device.
+
+        The flags will be passed to the on_done callback as the data field.
+        Derived types may do something with the flags by override the
+        handle_flags method.
+
+        Args:
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.info("IOLinc %s cmd: get operation flags", self.label)
+
+        seq = CommandSeq(self.protocol, "IOlinc get flags done", on_done)
+
+        # This sends a refresh ping which will respond w/ the current
+        # database delta field.  The handler checks that against the
+        # current value.  If it's different, it will send a database
+        # download command to the device to update the database.
+        msg = Msg.OutStandard.direct(self.addr, 0x1f, 0x00)
+        msg_handler = handler.StandardCmd(msg, self.handle_flags, on_done)
+        seq.add_msg(msg, msg_handler)
+
+        # Get the momentary time value
+        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00,
+                                     bytes([0x00] * 14))
+        msg_handler = handler.ExtendedCmdResponse(msg,
+                                                  self.handle_get_momentary)
+        seq.add_msg(msg, msg_handler)
+
+        seq.run()
+
+    #-----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):
         """Set internal device flags.
 
@@ -248,71 +430,111 @@ class IOLinc(Base):
 
         # Check the input flags to make sure only ones we can understand were
         # passed in.
-        flags = set(["mode", "trigger_reverse", "relay_linked"])
+        flags = set(["mode", "trigger_reverse", "relay_linked",
+                     "momentary_secs"])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown IOLinc flags input: %s.\n Valid flags "
                             "are: %s" % unknown, flags)
 
-        # We need the existing bit set before we change it.  So to insure
-        # that we are starting from the correct values, get the current bits
-        # and pass that to the callback which will update them to make the
-        # changes.
-        callback = functools.partial(self._change_flags, kwargs=kwargs,
-                                     on_done=util.make_callback(on_done))
-        self.get_flags(on_done=callback)
+        seq = CommandSeq(self.protocol, "Device flags set", on_done)
 
-        # FUTURE:momentary_time: extended set command: cmd: 0x2e 0x00
-        #    D3 = 0x06
-        #    D4 = momentary time in 0.10 sec: 0x02 -> 0xff
-        # FUTURE: led backlight
+        # Loop through flags, sending appropriate command for each flag
+        for flag in kwargs:
+            if flag == 'mode':
+                mode = IOLinc.Modes[kwargs[flag].upper()]
+                # Save this to the device metadata
+                self.mode = mode
+                if mode == IOLinc.Modes.LATCHING:
+                    type_a = IOLinc.OperatingFlags.MOMENTARY_A_OFF
+                    type_b = IOLinc.OperatingFlags.MOMENTARY_B_OFF
+                    type_c = IOLinc.OperatingFlags.MOMENTARY_C_OFF
+                elif mode == IOLinc.Modes.MOMENTARY_A:
+                    type_a = IOLinc.OperatingFlags.MOMENTARY_A_ON
+                    type_b = IOLinc.OperatingFlags.MOMENTARY_B_OFF
+                    type_c = IOLinc.OperatingFlags.MOMENTARY_C_OFF
+                elif mode == IOLinc.Modes.MOMENTARY_B:
+                    type_a = IOLinc.OperatingFlags.MOMENTARY_A_ON
+                    type_b = IOLinc.OperatingFlags.MOMENTARY_B_ON
+                    type_c = IOLinc.OperatingFlags.MOMENTARY_C_OFF
+                elif mode == IOLinc.Modes.MOMENTARY_C:
+                    type_a = IOLinc.OperatingFlags.MOMENTARY_A_ON
+                    type_b = IOLinc.OperatingFlags.MOMENTARY_B_ON
+                    type_c = IOLinc.OperatingFlags.MOMENTARY_C_ON
+                for cmd2 in (type_a, type_b, type_c):
+                    msg = Msg.OutExtended.direct(self.addr, 0x20, cmd2,
+                                                 bytes([0x00] * 14))
+                    msg_handler = handler.StandardCmd(msg,
+                                                      self.handle_set_flags)
+                    seq.add_msg(msg, msg_handler)
 
-    #-----------------------------------------------------------------------
-    def _change_flags(self, success, msg, bits, kwargs, on_done):
-        """Change the operating flags.
+            elif flag == 'trigger_reverse':
+                if util.input_bool(kwargs.copy(), "trigger_reverse"):
+                    # Save this to the device metadata
+                    self.trigger_reverse = True
+                    cmd2 = IOLinc.OperatingFlags.INVERT_SENSOR_ON
+                else:
+                    # Save this to the device metadata
+                    self.trigger_reverse = False
+                    cmd2 = IOLinc.OperatingFlags.INVERT_SENSOR_OFF
 
-        See the set_flags() code for details.
-        """
-        if not success:
-            on_done(success, msg, None)
-            return
+                msg = Msg.OutExtended.direct(self.addr, 0x20, cmd2,
+                                             bytes([0x00] * 14))
+                msg_handler = handler.StandardCmd(msg, self.handle_set_flags)
+                seq.add_msg(msg, msg_handler)
 
-        # Mode might be None in which case it wasn't input.
-        choices = ["latching", "momentary-a", "momentary-b", "momentary-c"]
-        mode = util.input_choice(kwargs, "mode", choices)
+            elif flag == 'relay_linked':
+                if util.input_bool(kwargs.copy(), "relay_linked"):
+                    # Save this to the device metadata
+                    self.relay_linked = True
+                    cmd2 = IOLinc.OperatingFlags.RELAY_FOLLOWS_INPUT_ON
+                else:
+                    # Save this to the device metadata
+                    self.relay_linked = False
+                    cmd2 = IOLinc.OperatingFlags.RELAY_FOLLOWS_INPUT_OFF
 
-        if mode == "latching":
-            bits = util.bit_set(bits, 3, 0)
-            bits = util.bit_set(bits, 4, 0)
-            bits = util.bit_set(bits, 7, 0)
-        elif mode == "momentary-a":
-            bits = util.bit_set(bits, 3, 1)
-            bits = util.bit_set(bits, 4, 0)
-            bits = util.bit_set(bits, 7, 0)
-        elif mode == "momentary-b":
-            bits = util.bit_set(bits, 3, 1)
-            bits = util.bit_set(bits, 4, 1)
-            bits = util.bit_set(bits, 7, 0)
-        elif mode == "momentary-c":
-            bits = util.bit_set(bits, 3, 1)
-            bits = util.bit_set(bits, 4, 1)
-            bits = util.bit_set(bits, 7, 1)
+                msg = Msg.OutExtended.direct(self.addr, 0x20, cmd2,
+                                             bytes([0x00] * 14))
+                msg_handler = handler.StandardCmd(msg, self.handle_set_flags)
+                seq.add_msg(msg, msg_handler)
 
-        trigger_reverse = util.input_bool(kwargs, "trigger_reverse")
-        if trigger_reverse is not None:
-            bits = util.bit_set(bits, 6, trigger_reverse)
+            elif flag == 'momentary_secs':
+                # IOLinc allows setting the momentary time between 0.1 and
+                # 6300 seconds.  At the low end with a resolution of .1 of a
+                # second.  To store the higher numbers, a multiplier is used
+                # the multiplier as used by the insteon app has discrete steps
+                # 1, 10, 100, 200, and 250.  No other steps are used.
+                dec_seconds = int(float(kwargs[flag]) * 10)
+                multiple = 0x01
+                if dec_seconds > 51000:
+                    multiple = 0xfa
+                elif dec_seconds > 25500:
+                    multiple = 0xc8
+                elif dec_seconds > 2550:
+                    multiple = 0x64
+                elif dec_seconds > 255:
+                    multiple = 0x0a
 
-        relay_linked = util.input_bool(kwargs, "relay_linked")
-        if relay_linked is not None:
-            bits = util.bit_set(bits, 2, trigger_reverse)
+                time_val = int(dec_seconds / multiple)
+                # Set the time value
+                msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00,
+                                             bytes([0x00, 0x06, time_val] +
+                                                   [0x00] * 11))
+                msg_handler = handler.StandardCmd(msg, self.handle_set_flags)
+                seq.add_msg(msg, msg_handler)
 
-        # This sends a refresh ping which will respond w/ the current
-        # database delta field.  The handler checks that against the current
-        # value.  If it's different, it will send a database download command
-        # to the device to update the database.
-        msg = Msg.OutStandard.direct(self.addr, 0x20, bits)
-        msg_handler = handler.StandardCmd(msg, self.handle_flags)
-        self.send(msg, msg_handler)
+                # set the multiple
+                msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00,
+                                             bytes([0x00, 0x07, multiple,] +
+                                                   [0x00] * 11))
+                msg_handler = handler.StandardCmd(msg, self.handle_set_flags)
+                seq.add_msg(msg, msg_handler)
+
+                # Save this to the device metadata
+                self.momentary_secs = (dec_seconds * multiple) / 10
+
+        # Run all the commands.
+        seq.run()
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
@@ -325,6 +547,8 @@ class IOLinc(Base):
 
         This will send out an updated signal for the current device status
         whenever possible (like dimmer levels).
+
+        This will update the state of both the sensor and the relay.
 
         Args:
           force (bool):  If true, will force a refresh of the device database
@@ -343,9 +567,17 @@ class IOLinc(Base):
         # database delta field.  The handler checks that against the current
         # value.  If it's different, it will send a database download command
         # to the device to update the database.
+        # This handles the relay state
+        msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
+        msg_handler = handler.DeviceRefresh(self, self.handle_refresh_relay,
+                                            force, on_done, num_retry=3)
+        seq.add_msg(msg, msg_handler)
+
+        # This Checks the sensor state, ignore force refresh here (we just did
+        # it above)
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
-        msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
-                                            on_done, num_retry=3)
+        msg_handler = handler.DeviceRefresh(self, self.handle_refresh_sensor,
+                                            False, on_done, num_retry=3)
         seq.add_msg(msg, msg_handler)
 
         # If model number is not known, or force true, run get_model
@@ -355,13 +587,20 @@ class IOLinc(Base):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def is_on(self):
-        """Return if the device is on or not.
+    def sensor_is_on(self):
+        """Return if the device sensor is on or not.
         """
-        return self._is_on
+        return self._sensor_is_on
 
     #-----------------------------------------------------------------------
-    def on(self, group=0x01, level=None, instant=False, on_done=None):
+    def relay_is_on(self):
+        """Return if the device relay is on or not.
+        """
+        return self._relay_is_on
+
+    #-----------------------------------------------------------------------
+    def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
+           on_done=None):
         """Turn the relay on.
 
         This turns the relay on no matter what.  It ignores the momentary
@@ -399,11 +638,12 @@ class IOLinc(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def off(self, group=0x01, instant=False, on_done=None):
+    def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
+            on_done=None):
         """Turn the relay off.
 
-        This turns the relay on no matter what.  It ignores the momentary
-        A/B/C settings and just turns the relay on.
+        This turns the relay off no matter what.  It ignores the momentary
+        A/B/C settings and just turns the relay off.
 
         NOTE: This does NOT simulate a button press on the device - it just
         changes the state of the device.  It will not trigger any responders
@@ -466,12 +706,12 @@ class IOLinc(Base):
             self.off(group, instant, on_done)
 
     #-----------------------------------------------------------------------
-    def scene(self, is_on, group=None, on_done=None):
+    def scene(self, is_on, group=None, reason="", on_done=None):
         """Trigger a scene on the device.
 
         Triggering a scene is the same as simulating a button press on the
-        device.  It will change the state of the device and notify responders
-        that are linked ot the device to be updated.
+        device.  It will change the state of the device relay and notify
+        responders that are linked to the device to be updated.
 
         Args:
           is_on (bool):  True for an on command, False for an off command.
@@ -510,7 +750,13 @@ class IOLinc(Base):
         """Handle broadcast messages from this device.
 
         The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update the
+        triggered.  These messages always indicate the state of the sensor.
+        With ONE EXCEPTION, if you manually press the set button on the device
+        it will toggle the relay and send this message.  This will cause the
+        sensor and relay states to be reported wrong.  Just don't use the set
+        button.  If you do, you can run refresh to fix the states.
+
+        The message has the group ID in it.  We'll update the
         device state and look up the group in the all link database.  For
         each device that is in the group (as a reponsder), we'll call
         handle_group_cmd() on that device to trigger it.  This way all the
@@ -528,12 +774,12 @@ class IOLinc(Base):
         # On command.  0x11: on
         elif msg.cmd1 == 0x11:
             LOG.info("IOLinc %s broadcast ON grp: %s", self.addr, msg.group)
-            self._set_is_on(True)
+            self._set_sensor_is_on(True)
 
         # Off command. 0x13: off
         elif msg.cmd1 == 0x13:
             LOG.info("IOLinc %s broadcast OFF grp: %s", self.addr, msg.group)
-            self._set_is_on(False)
+            self._set_sensor_is_on(False)
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
@@ -543,9 +789,9 @@ class IOLinc(Base):
 
     #-----------------------------------------------------------------------
     def handle_flags(self, msg, on_done):
-        """Callback for handling flag change responses.
+        """Callback for handling get flag responses.
 
-        This is called when we get a response to the set_flags command.
+        This is called when we get a response to the get_flags command.
 
         Args:
           msg (message.InpStandard):  The refresh message reply.  The current
@@ -579,15 +825,21 @@ class IOLinc(Base):
         LOG.ui("Program lock   : %d", util.bit_get(bits, 0))
         LOG.ui("Transmit LED   : %d", util.bit_get(bits, 1))
         LOG.ui("Relay linked   : %d", util.bit_get(bits, 2))
+        self.relay_linked = bool(util.bit_get(bits, 2))
         LOG.ui("Trigger reverse: %d", util.bit_get(bits, 6))
+        self.trigger_reverse = bool(util.bit_get(bits, 6))
         if not util.bit_get(bits, 3):
             mode = "latching"
         elif util.bit_get(bits, 7):
-            mode = "momentary C"
+            mode = "momentary_C"
         elif util.bit_get(bits, 4):
-            mode = "momentary B"
+            mode = "momentary_B"
         else:
-            mode = "momentary A"
+            mode = "momentary_A"
+
+        # Save mode to device metadata
+        self.mode = IOLinc.Modes[mode.upper()]
+
 
         # In the future, we should store this information and do something
         # with it.
@@ -595,23 +847,84 @@ class IOLinc(Base):
         on_done(True, "Operation complete", msg.cmd2)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
-        """Callback for handling refresh() responses.
+    def handle_get_momentary(self, msg, on_done):
+        """Callback for handling get momemtary time responses.
 
-        This is called when we get a response to the refresh() command.  The
-        refresh command reply will contain the current device state in cmd2
-        and this updates the device with that value.  It is called by
+        This is called when we get a response to the get_flags command.
+
+        Args:
+          msg (message.InpExtended):  The extended payload.  The time
+              data is in D4.
+        """
+        # Data Values are:
+        # If Data 2 = 1 Rx unit returned data with
+        # Data 3:Time multiple (1,10,100, or 250)
+        # Data 4:Closure time
+        # Data 5:X10 House code(20h = none) In
+        # Data 6: X10 Unit In
+        # Data 7:House Out
+        # Data 8: Unit Out
+        # Data 9: S/N
+
+        # Valid momentary times are between .1 and 6300 seconds.  There is
+        # finer resolution at the low end and not at much at the high end.
+
+        time = (msg.data[3] * msg.data[2]) / 10
+        self.momentary_secs = time
+        LOG.ui("Momentary Secs : %s", time)
+        on_done(True, "Operation complete", None)
+
+    #-----------------------------------------------------------------------
+    def handle_set_flags(self, msg, on_done):
+        """Callback for handling flag change responses.
+
+        This is called when we get a response to the set_flags command.
+
+        Args:
+          msg (message.InpStandard):  The refresh message reply.  The msg.cmd2
+          field represents the flag that was set.
+        """
+        # TODO decode flag that was set
+        LOG.info("IOLinc Set Flag=%s", msg.cmd2)
+        on_done(True, "Operation complete", msg.cmd2)
+
+    #-----------------------------------------------------------------------
+    def handle_refresh_relay(self, msg):
+        """Callback for handling refresh() responses for the relay
+
+        This is called when we get a response to the first refresh() command.
+        The refresh command reply will contain the current device relay state
+        in cmd2 and this updates the device with that value.  It is called by
         handler.DeviceRefresh when we can an ACK for the refresh command.
 
         Args:
           msg (message.InpStandard):  The refresh message reply.  The current
-              device state is in the msg.cmd2 field.
+              device relay state is in the msg.cmd2 field.
         """
-        LOG.ui("IOLinc %s refresh on=%s", self.label, msg.cmd2 > 0x00)
+        LOG.ui("IOLinc %s refresh relay on=%s", self.label, msg.cmd2 > 0x00)
 
         # Current on/off level is stored in cmd2 so update our level to
         # match.
-        self._set_is_on(msg.cmd2 > 0x00)
+        self._set_relay_is_on(msg.cmd2 > 0x00)
+
+    #-----------------------------------------------------------------------
+    def handle_refresh_sensor(self, msg):
+        """Callback for handling refresh() responses for the sensor.
+
+        This is called when we get a response to the second refresh() command.
+        The refresh command reply will contain the current device sensor state
+        in cmd2 and this updates the device with that value.  It is called by
+        handler.DeviceRefresh when we can an ACK for the refresh command.
+
+        Args:
+          msg (message.InpStandard):  The refresh message reply.  The current
+              device sensor state is in the msg.cmd2 field.
+        """
+        LOG.ui("IOLinc %s refresh sensor on=%s", self.label, msg.cmd2 > 0x00)
+
+        # Current on/off level is stored in cmd2 so update our level to
+        # match.
+        self._set_sensor_is_on(msg.cmd2 > 0x00)
 
     #-----------------------------------------------------------------------
     def handle_ack(self, msg, on_done):
@@ -622,17 +935,28 @@ class IOLinc(Base):
         so we'll update the internal state of the device and emit the signals
         to notify others of the state change.
 
+        These commands only affect the state of the relay.
+
         Args:
           msg (message.InpStandard):  The reply message from the device.
               The on/off level will be in the cmd2 field.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        # Note: don't update the state - the sensor does that.  This state is
-        # for the relay.
+        # This state is for the relay.
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
             LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
             on_done(True, "IOLinc command complete", None)
+
+            # On command.  0x11: on
+            if msg.cmd1 == 0x11:
+                LOG.info("IOLinc %s relay ON", self.addr)
+                self._set_relay_is_on(True)
+
+            # Off command. 0x13: off
+            elif msg.cmd1 == 0x13:
+                LOG.info("IOLinc %s relay OFF", self.addr)
+                self._set_relay_is_on(False)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("IOLinc %s NAK error: %s, Message: %s", self.addr,
@@ -690,25 +1014,45 @@ class IOLinc(Base):
                       msg.group, addr)
             return
 
-        # Nothing to do - there is no "state" to update since the state we
-        # care about is the sensor state and this command tells us that the
-        # relay state was tripped.
-        LOG.debug("IOLinc %s cmd %#04x", self.addr, msg.cmd1)
+        # This reflects a change in the relay state.
+        # Handle on/off commands codes.
+        if on_off.Mode.is_valid(msg.cmd1):
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
+            self._set_relay_is_on(is_on, on_off.REASON_SCENE)
+        else:
+            LOG.warning("IOLinc %s unknown group cmd %#04x", self.addr,
+                        msg.cmd1)
 
     #-----------------------------------------------------------------------
-    def _set_is_on(self, is_on):
-        """Update the device on/off state.
+    def _set_sensor_is_on(self, is_on, reason=""):
+        """Update the device sensor on/off state.
 
-        This will change the internal state and emit the state changed
-        signals.  It is called by whenever we're informed that the device has
-        changed state.
+        This will change the internal state of the sensor and emit the state
+        changed signals.  It is called by whenever we're informed that the
+        device has changed state.
+
+        Args:
+          is_on (bool):  True if the sensor is on, False if it isn't.
+        """
+        LOG.info("Setting device %s sensor on %s", self.label, is_on)
+        self._sensor_is_on = bool(is_on)
+
+        self.signal_on_off.emit(self, self._sensor_is_on, self._relay_is_on)
+
+    #-----------------------------------------------------------------------
+    def _set_relay_is_on(self, is_on, reason=""):
+        """Update the device relay on/off state.
+
+        This will change the internal state of the relay and emit the state
+        changed signals.  It is called by whenever we're informed that the
+        device has changed state.
 
         Args:
           is_on (bool):  True if the relay is on, False if it isn't.
         """
-        LOG.info("Setting device %s on %s", self.label, is_on)
-        self._is_on = bool(is_on)
+        LOG.info("Setting device %s relay on %s", self.label, is_on)
+        self._relay_is_on = bool(is_on)
 
-        self.signal_on_off.emit(self, self._is_on)
+        self.signal_on_off.emit(self, self._sensor_is_on, self._relay_is_on)
 
     #-----------------------------------------------------------------------

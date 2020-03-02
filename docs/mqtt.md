@@ -477,6 +477,11 @@ IOLinc supports the flags:
      change the relay mode (see the IOLinc user's guide for details)
    - trigger_reverse: 0/1 reverses the trigger command state
    - relay_linked: 0/1 links the relay to the sensor value
+   - momentary_secs: .1-6300 the number of seconds the relay stays closed in
+          momentary mode.  There is finer resolution at the low end. Higher
+          values will be rounded to the next valid value. Setting this to 0
+          will cause the IOLinc to change to latching mode. Setting this to
+          a non-zero value will cause the IOLinc to change to momentary mode.
 
 Motion Sensors support the flags:
 

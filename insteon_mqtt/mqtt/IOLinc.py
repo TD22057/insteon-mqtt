@@ -30,7 +30,7 @@ class IOLinc:
         # Output state change reporting template.
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state',
-            payload='{{on_str.lower()}}')
+            payload='{ "sensor" : "{{sensor_on_str.lower()}}"", relay" : {{relay_on_str.lower()}} }')
 
         # Input on/off command template.
         self.msg_on_off = MsgTemplate(
@@ -95,7 +95,7 @@ class IOLinc:
         link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
-    def template_data(self, is_on=None):
+    def template_data(self, sensor_is_on=None, relay_is_on=None):
         """Create the Jinja templating data variables for on/off messages.
 
         Args:
@@ -112,14 +112,17 @@ class IOLinc:
                      else self.device.addr.hex,
             }
 
-        if is_on is not None:
-            data["on"] = 1 if is_on else 0
-            data["on_str"] = "on" if is_on else "off"
+        if sensor_is_on is not None:
+            data["sensor_on"] = 1 if sensor_is_on else 0
+            data["sensor_on_str"] = "on" if sensor_is_on else "off"
+        if relay_is_on is not None:
+            data["relay_on"] = 1 if relay_is_on else 0
+            data["relay_on_str"] = "on" if relay_is_on else "off"
 
         return data
 
     #-----------------------------------------------------------------------
-    def _insteon_on_off(self, device, is_on):
+    def _insteon_on_off(self, device, sensor_is_on, relay_is_on):
         """Device active on/off callback.
 
         This is triggered via signal when the Insteon device goes active or
@@ -129,9 +132,10 @@ class IOLinc:
           device (device.IOLinc):   The Insteon device that changed.
           is_on (bool):   True for on, False for off.
         """
-        LOG.info("MQTT received active change %s = %s", device.label, is_on)
+        LOG.info("MQTT received active change %s, sensor = %s relay = %s",
+                 device.label, sensor_is_on, relay_is_on)
 
-        data = self.template_data(is_on)
+        data = self.template_data(sensor_is_on, relay_is_on)
         self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

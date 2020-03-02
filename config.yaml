@@ -52,7 +52,7 @@ insteon:
   startup_refresh: False
 
   # Path to Scenes Definition file (Optional)
-  # The path can be specified either as an absolute path or as a relative path 
+  # The path can be specified either as an absolute path or as a relative path
   # using the !rel_path directive.  Where the path is relative to the
   # config.yaml location
   #
@@ -845,7 +845,7 @@ mqtt:
     #   on = 0/1
     #   on_str = 'off'/'on'
     state_topic: 'insteon/{{address}}/state'
-    state_payload: '{{on_str.upper()}}'
+    state_payload: '{ "sensor" : "{{sensor_on_str.lower()}}"", relay" : {{relay_on_str.lower()}} }'
 
     # Input on/off command.  This forces the relay on/off and ignores the
     # momentary-C sensor setting.  Use this to force the relay to respond.
