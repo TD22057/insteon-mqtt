@@ -5,6 +5,7 @@
 #===========================================================================
 import functools
 import enum
+import time
 from .Base import Base
 from ..CommandSeq import CommandSeq
 from .. import handler
@@ -182,6 +183,10 @@ class IOLinc(Base):
         self._sensor_is_on = False
         self._relay_is_on = False
 
+        # Used to track the momentary_call that will automatically turn off
+        # the relay
+        self._momentary_call = None
+
         # Support on/off style signals for the sensor
         # API: func(Device, bool is_on)
         self.signal_on_off = Signal()
@@ -295,7 +300,7 @@ class IOLinc(Base):
         """Returns the momentary seconds from the saved metadata
         """
         meta = self.db.get_meta('IOLinc')
-        ret = False
+        ret = 2.0  # the default on the device is 2.0 seconds
         if isinstance(meta, dict) and 'momentary_secs' in meta:
             ret = meta['momentary_secs']
         return ret
@@ -705,6 +710,8 @@ class IOLinc(Base):
         else:
             self.off(group, instant, on_done)
 
+
+
     #-----------------------------------------------------------------------
     def scene(self, is_on, group=None, reason="", on_done=None):
         """Trigger a scene on the device.
@@ -775,11 +782,17 @@ class IOLinc(Base):
         elif msg.cmd1 == 0x11:
             LOG.info("IOLinc %s broadcast ON grp: %s", self.addr, msg.group)
             self._set_sensor_is_on(True)
+            if self.relay_linked:
+                # If relay_linked is enabled then the relay was triggered
+                self._set_relay_is_on(True)
 
         # Off command. 0x13: off
         elif msg.cmd1 == 0x13:
             LOG.info("IOLinc %s broadcast OFF grp: %s", self.addr, msg.group)
             self._set_sensor_is_on(False)
+            if self.relay_linked:
+                # If relay_linked is enabled then the relay was triggered
+                self._set_relay_is_on(False)
 
         # This will find all the devices we're the controller of for
         # this group and call their handle_group_cmd() methods to
@@ -930,12 +943,19 @@ class IOLinc(Base):
     def handle_ack(self, msg, on_done):
         """Callback for standard commanded messages.
 
-        This callback is run when we get a reply back from one of our
+        This callback is run when we get a reply back from one of our direct
         commands to the device.  If the command was ACK'ed, we know it worked
         so we'll update the internal state of the device and emit the signals
         to notify others of the state change.
 
-        These commands only affect the state of the relay.
+        These commands only affect the state of the relay.  They respect the
+        momentary_secs length.  However:
+
+        THESE COMMANDS DO NOT RESPECT THE A,B,C NATURE OF THE MOMENTARY MODE
+
+        An on command will always turn the relay on, and an off command
+        will always turn the relay off, regardless of the sensor state or how
+        the device was linked or the contents of the responder entry Data1
 
         Args:
           msg (message.InpStandard):  The reply message from the device.
@@ -964,7 +984,7 @@ class IOLinc(Base):
             on_done(False, "IOLinc command failed. " + msg.nak_str(), None)
 
     #-----------------------------------------------------------------------
-    def handle_scene(self, msg, on_done):
+    def handle_scene(self, msg, on_done, reason=''):
         """Callback for scene simulation commanded messages.
 
         This callback is run when we get a reply back from triggering a scene
@@ -1018,6 +1038,30 @@ class IOLinc(Base):
         # Handle on/off commands codes.
         if on_off.Mode.is_valid(msg.cmd1):
             is_on, mode = on_off.Mode.decode(msg.cmd1)
+            if self.mode == IOLinc.Modes.MOMENTARY_A:
+                # In Momentary A the relay only turns on if the cmd matches
+                # the responder link D1, else it always turns off.  Even if
+                # the momentary time has not elapsed.
+                if is_on == bool(entry.data[0]):
+                    is_on = True
+                else:
+                    is_on = False
+            elif self.mode == IOLinc.Modes.MOMENTARY_B:
+                # In Momentary B, either On or Off will turn on the Relay
+                is_on = True
+            elif self.mode == IOLinc.Modes.MOMENTARY_C:
+                # In Momentary C the relay turns on if the cmd is ON and
+                # sensor state matches the responder link D1,
+                # OR
+                # if the cmd is OFF and the sensor state does not match
+                # the responder link D1
+                # All other combinations are turn off
+                if is_on and bool(entry.data[0]) == self._sensor_is_on:
+                    is_on = True
+                elif not is_on and bool(entry.data[0]) != self._sensor_is_on:
+                    is_on = True
+                else:
+                    is_on = False
             self._set_relay_is_on(is_on, on_off.REASON_SCENE)
         else:
             LOG.warning("IOLinc %s unknown group cmd %#04x", self.addr,
@@ -1040,7 +1084,7 @@ class IOLinc(Base):
         self.signal_on_off.emit(self, self._sensor_is_on, self._relay_is_on)
 
     #-----------------------------------------------------------------------
-    def _set_relay_is_on(self, is_on, reason=""):
+    def _set_relay_is_on(self, is_on, reason="", momentary=False):
         """Update the device relay on/off state.
 
         This will change the internal state of the relay and emit the state
@@ -1049,10 +1093,36 @@ class IOLinc(Base):
 
         Args:
           is_on (bool):  True if the relay is on, False if it isn't.
+          reason (string): The reason for the state
+          momemtary (bool): Used to write message to log if this was called in
+                            response to a timed call
         """
-        LOG.info("Setting device %s relay on %s", self.label, is_on)
+        if momentary:
+            LOG.info("IOLinc %s automatic update relay on %s",
+                     self.label, is_on)
+        else:
+            LOG.info("IOLinc %s relay on %s", self.label, is_on)
         self._relay_is_on = bool(is_on)
 
         self.signal_on_off.emit(self, self._sensor_is_on, self._relay_is_on)
+
+        if is_on and self.mode is not IOLinc.Modes.LATCHING:
+            # First remove any pending call, we want to reset the clock
+            if self._momentary_call is not None:
+                self.modem.timed_call.remove(self._momentary_call)
+            # Set timer to turn relay off after momentary time
+            run_time = time.time() + self.momentary_secs
+            LOG.info("IOLinc %s delayed relay update in %s seconds",
+                     self.label, self.momentary_secs)
+            self._momentary_call = \
+                self.modem.timed_call.add(run_time, self._set_relay_is_on,
+                                          False, reason=reason, momentary=True)
+        elif not is_on and self._momentary_call:
+            if self.modem.timed_call.remove(self._momentary_call):
+                LOG.info("IOLinc %s relay off, removing delayed update",
+                         self.label)
+            self._momentary_call = None
+
+
 
     #-----------------------------------------------------------------------
