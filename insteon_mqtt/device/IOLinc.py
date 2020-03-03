@@ -191,21 +191,12 @@ class IOLinc(Base):
         # API: func(Device, bool is_on)
         self.signal_on_off = Signal()
 
-        # Group number of the virtual modem scene linked to this device.  We
-        # need this so we can trigger the device and have it respond using
-        # the correct mode information.  If we used a direct command, it will
-        # just turn on/off the relay and not use the various latching and
-        # momentary configurations.  So instead of sending a direct on/off,
-        # we'll trigger this virtual scene.
-        self.modem_scene = None
-
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
         self.cmd_map.update({
             'on' : self.on,
             'off' : self.off,
             'set' : self.set,
-            'scene' : self.scene,
             'set_flags' : self.set_flags,
             })
 
@@ -360,16 +351,6 @@ class IOLinc(Base):
         # state changes.
         seq.add(self.db_add_ctrl_of, 0x01, self.modem.addr, 0x01,
                 refresh=False)
-
-        # We need to create a virtual modem scene to trigger the IOLinc
-        # properly so find an unused group number.
-        group = self.modem.db.next_group()
-        if group is not None:
-            seq.add(self.db_add_resp_of, 0x01, self.modem.addr, group,
-                    refresh=False)
-        else:
-            LOG.error("Can't create IOLinc simulated scene - there are no "
-                      "unused modem scene numbers available")
 
         # Finally start the sequence running.  This will return so the
         # network event loop can process everything and the on_done callbacks
@@ -710,48 +691,6 @@ class IOLinc(Base):
         else:
             self.off(group, instant, on_done)
 
-
-
-    #-----------------------------------------------------------------------
-    def scene(self, is_on, group=None, reason="", on_done=None):
-        """Trigger a scene on the device.
-
-        Triggering a scene is the same as simulating a button press on the
-        device.  It will change the state of the device relay and notify
-        responders that are linked to the device to be updated.
-
-        Args:
-          is_on (bool):  True for an on command, False for an off command.
-          group (int):  The group on the device to simulate.  For this device,
-                this must be 1.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        on_done = util.make_callback(on_done)
-
-        # If we haven't found the virtual PLM scene yet, search for it now.
-        if self.modem_scene is None:
-            LOG.info("IOLinc %s finding correct modem scene to use",
-                     self.label)
-
-            entries = self.db.find_all(self.modem.addr, is_controller=False)
-            for e in entries:
-                if e.group != 0x01:
-                    self.modem_scene = e.group
-                    LOG.info("IOLinc %s found scene %s", self.label, e.group)
-                    break
-            else:
-                LOG.error("Can't trigger IOLinc scene - there is no responder "
-                          "from the modem in the IOLinc db")
-                on_done(False, "Failed to send scene command", None)
-                return
-
-        # Tell the modem to send it's virtual scene broadcast to the IOLinc
-        # device.
-        LOG.info("IOLinc %s triggering modem scene %s", self.label,
-                 self.modem_scene)
-        self.modem.scene(is_on, self.modem_scene, on_done=on_done)
-
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
         """Handle broadcast messages from this device.
@@ -982,33 +921,6 @@ class IOLinc(Base):
             LOG.error("IOLinc %s NAK error: %s, Message: %s", self.addr,
                       msg.nak_str(), msg)
             on_done(False, "IOLinc command failed. " + msg.nak_str(), None)
-
-    #-----------------------------------------------------------------------
-    def handle_scene(self, msg, on_done, reason=''):
-        """Callback for scene simulation commanded messages.
-
-        This callback is run when we get a reply back from triggering a scene
-        on the device.  If the command was ACK'ed, we know it worked.  The
-        device will then send out standard broadcast messages which will
-        trigger other updates for the scene devices.
-
-        Args:
-          msg (message.InpStandard): The reply message from the device.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        # Call the callback.  We don't change state here - the device will
-        # send a regular broadcast message which will run handle_broadcast
-        # which will then update the state.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
-            on_done(True, "Scene triggered", None)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("IOLinc %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Scene trigger failed failed. " + msg.nak_str(),
-                    None)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
