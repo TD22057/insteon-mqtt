@@ -826,10 +826,13 @@ mqtt:
   # then the on and off commands work like a normal switch.  The set-flags
   # command line command can be used to change the settings.
   #
-  # NOTE: the on/off payload forces the relay to on or off so it's most
-  # likely NOT the way you want to use this.  The scene payload is the same
-  # trigger the IOLinc as a responder which respects the sensors settings in
-  # momentary-C mode and is most likely the way you do want to use this.
+  # NOTE: the on/off payload forces the relay to on or off ignoring any special
+  # requirements associated with the Momentary_A,B,C functions or the
+  # relay_linked flag.  It can be used without issue for latching setups, but
+  # if you want to use this accurately for Momentary_A,B,C setups, you may need
+  # to have some logic upstream from this command to check the state of sensor
+  # and or the command to determine if setting the relay on or off is 
+  # appropriate .
   #
   # In Home Assistant use MQTT switch with a configuration like:
   #   switch:
@@ -838,17 +841,39 @@ mqtt:
   #       command_topic: 'insteon/aa.bb.cc/scene'
   io_linc:
     # Output state change topic and template.  This message is sent whenever
-    # the device sensor state changes.  Available variables for templating
-    # are:
+    # the device sensor or device relay state changes.  Available variables for
+    # templating are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
-    #   on = 0/1
-    #   on_str = 'off'/'on'
+    #   sensor_on = 0/1
+    #   relay_on = 0/1
+    #   sensor_on_str = 'off'/'on'
+    #   relay_on_str = 'off'/'on'
     state_topic: 'insteon/{{address}}/state'
     state_payload: '{ "sensor" : "{{sensor_on_str.lower()}}"", relay" : {{relay_on_str.lower()}} }'
 
+    # Output relay state change topic and template.  This message is sent
+    # whenever the device relay state changes.  Available variables for
+    # templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   relay_on = 0/1
+    #   relay_on_str = 'off'/'on'
+    relay_state_topic: 'insteon/{{address}}/relay'
+    relay_state_payload: '{{relay_on_str.lower()}}'
+
+    # Output sensor state change topic and template.  This message is sent
+    # whenever the device sensor state changes.  Available variables for
+    # templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   sensor_on = 0/1
+    #   sensor_on = 'off'/'on'
+    sensor_state_topic: 'insteon/{{address}}/sensor'
+    sensor_state_payload: '{{sensor_on_str.lower()}}'
+
     # Input on/off command.  This forces the relay on/off and ignores the
-    # momentary-C sensor setting.  Use this to force the relay to respond.
+    # momentary-A,B,C setting.  Use this to force the relay to respond.
     # If momentary mode is active, it will turn off after the delay.  The
     # output of passing the payload through the template must match the
     # following:
@@ -859,13 +884,6 @@ mqtt:
     #          a variable from a json payload.
     on_off_topic: 'insteon/{{address}}/set'
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
-
-    # Scene on/off command.  This triggers the IOLinc as if it were a
-    # responder to a scene command and is the "correct" way to trigger the
-    # IOLinc relay in that it respects the momentary settings.  The inputs
-    # are the same as those for the on_off topic and payload.
-    scene_topic: 'insteon/{{address}}/scene'
-    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
   #------------------------------------------------------------------------
   # On/off outlets
