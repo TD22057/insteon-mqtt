@@ -28,109 +28,57 @@ class IOLinc(Base):
     number of internal mode state which change how the device behaves (see
     below for details).
 
+    NOTE: DO NOT USE THE SET BUTTON ON THE DEVICE TO CONTROL THE DEVICE. This
+    will confuse the code and will cause the representation of the sensor
+    and relay states to get our of whack.  It will also cause devices which are
+    linked to the sensor to react when in fact the sensor has not tripped.
+    This can be fixed by running refresh which always updates both the sensor
+    and relay.
+
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_on_off( Device, bool is_on, on_off.Mode mode ):
+    - signal_on_off( Device, bool sensor_is_on, bool relay_is_on,
+                     on_off.Mode mode ):
       Sent whenever the sensor is turned on or off.
 
-    - signal_manual( Device, on_off.Manual mode ): Sent when the device
-      starts or stops manual mode (when a button is held down or released).
-
     NOTES:
-    Link the relay as responder to another device (controller).  Acttivate
-    the controller.  Relay updates but state update is NOT emitted.
+      - Broadcast messages from the device always* describe the state of the
+        device sensor.
+      - Commands sent to the device always affect the state of the relay.
+      - Using the On/Off/Set commands will always cause the relay to change
+        to the requested state.  The device will ignore any Momentary_A or
+        Momentary_C requirements about the type of command or the state of the
+        sensor.  Similarly the relay will still trip even if relay_linked is
+        enabled and the sensor has not tripped.  The momentary_secs length is
+        still respected and the relay will return to the off position after
+        the requisite length of time. The code will accururately track the
+        state of the relay and sensor following these commands.
+      - Controlling the IOLinc from another device or a modem scene works
+        as Insteon intended.
 
-    Latching mode:
-      - Click set button by hand.  Toggles relay on or off.  But it also
-        emits a status update for the relay, not the sensor.  [BAD]
+    Note about Momentary_C:
+        If the IOLinc is in Momentary_C mode and a command
+        is sent that does not match the requested sensor state, the relay will
+        not trigger.  The code handles this accurately, but a physical device
+        will not know the difference.  So, if you click a keypadlinc button, it
+        will toggle. The IOLinc may not do anything though - i.e. if the sensor
+        is already in that state, it won't fire.  But the keypad button has
+        toggled so now it's LED on/off is wrong.  Might be some way to "fix"
+        this but it's not obvious whether or not it's a good idea or not.
+        Might be nice to have an option to FORCE a controller of the IO linc
+        to always be in the correct state to show the door open or closed.
 
-      - Send on command.  Relay turns on.  No state update. [GOOD]
-      - Send off command.  Relay turns on.  No state update. [GOOD]
-
-      - Send scene simulation on command.  Relay turns on.  Status update
-        with ON payload sent.  [BAD]
-    - Send scene simulation Off command.  Relay turns off.  Status update
-        with OFF payload sent.  [BAD]
-
-      - Click controller button (or send modem scene) on.  Relay turns on.
-        No state update.  [GOOD]
-      - Click controller button (or send modem scene) off.  Relay turns
-        off. No state update.  [GOOD]
-
-    Momemtary A:
-      ON turns relay on, then off after delay.  OFF is ignored.  (this can be
-      reversed - depends on the state of the relay when paired - i.e D1 in
-      the link db responder line)
-
-      - Click set button by hand.  Relay turns on, then off.  Emits a state
-        ON update but no OFF update.  [BAD]
-
-      - Send on.  Relay turns on, then off after delay.  No state
-        update. [GOOD]
-      - Send off.  Relay does nothing.  No state update. [GOOD]
-
-      - Send scene simulation on command.  Relay turns on, then off after
-        delay.  Status update with ON payload sent. [BAD]
-      - Send scene simulation Off command.  Nothing happens.
-
-      - Click controller button (or send modem scene) on.  Relay turns on,
-        then off after delay.  No state update.  [GOOD]
-      - Click controller button (or send modem scene) off.  Nothing happens.
-
-    Momentary B:
-      ON or OFF turns relay on, then off after delay.
-
-      - Click set button by hand.  Relay turns on, then off after delay.
-        Emits a state ON update but no OFF update.  [BAD]
-
-      - Send on.  Relay turns on, then off after delay.  No state
-        update. [GOOD]
-      - Send off.  Relay does nothing.  No state update. [GOOD]
-
-      - Send scene simulation on command.  Relay turns on, then off after
-        delay.  Status update with ON payload sent. [BAD]
-      - Send scene simulation Off command.  Relay turns on, then off after
-        delay.  Status update with OFF payload sent.  [BAD]
-
-      - Click controller button (or send modem scene) on.  Relay turns on,
-        then off after delay.  No state update.  [GOOD]
-      - Click controller button (or send modem scene) off.  Relay turns on,
-        then off after delay.  No state update.  [GOOD]
-
-    Momentary C:
-      ON turns relay on only if sensor is in correct state (state of device
-      when linked - i.e. D1 in the link db responder line).
-
-      - Click set button by hand.  Relay turns on, then off after delay.
-        Emits a state ON update but no OFF update.  [BAD]
-
-      - Send on.  Relay turns on, then off after delay.  No state
-        update.  [GOOD] - But this ignores the sensor value [BAD?]
-      - Send off.  Relay does nothing.  No state update. [GOOD]
-
-      - Send scene simulation on command.  Relay turns on, then off after
-        delay.  Status update with ON payload sent.  Ignores sensor value
-        [BAD]
-      - Send scene simulation Off command.  Relay turns on, then off after
-        delay.  Status update with ON payload sent.  Ignores sensor value
-        [BAD]
-
-      - Click controller button (or send modem scene) on.  Relay turns on,
-        then off after delay.  No state update.  [GOOD]  Sensor value is
-        handled correctly.
-      - Click controller button (or send modem scene) off.  Relay turns on,
-        then off after delay.  No state update.  [GOOD]  Sensor value is
-        handled correctly.
-
-    Not about Momentary C: If you click a keypadlinc button, it will toggle.
-    The IOLinc may not do anything though - i.e. if the sensor is already in
-    that state, it won't fire.  But the keypad button has toggled so now it's
-    LED on/off is wrong.  Might be some way to "fix" this but it's not
-    obvious whether or not it's a good idea or not.  Might be nice to have an
-    option to FORCE a controller of the IO linc to always be in the correct
-    state to show the door open or closed.
+    * Gotchas:
+      - Clicking the set button on the device always causes the relay to trip
+        and sends a broadcast message containing the state of the relay.  From
+        the code, this will appear as a change in the sensor and will be
+        recorded as such.
+      - The simulated scene function causes basically the same result.  The
+        relay will respond to the command, but the device will also send out
+        a broadcast message that appears as though it is a change in the sensor
+        state.  As such, scene() is not enabled for this device.
     """
     type_name = "io_linc"
 
@@ -590,12 +538,11 @@ class IOLinc(Base):
         """Turn the relay on.
 
         This turns the relay on no matter what.  It ignores the momentary
-        A/B/C settings and just turns the relay on.
-
-        NOTE: This does NOT simulate a button press on the device - it just
-        changes the state of the device.  It will not trigger any responders
-        that are linked to this device.  To simulate a button press, call the
-        scene() method.
+        A/B/C settings and just turns the relay on. It will not trigger any
+        responders that are linked to this device.  If you want to control
+        the device where it respects the momentary settings and properly
+        updates responders, please define a scene for the device and use
+        that scene to control it.
 
         This will send the command to the device to update it's state.  When
         we get an ACK of the result, we'll change our internal state and emit
@@ -629,12 +576,11 @@ class IOLinc(Base):
         """Turn the relay off.
 
         This turns the relay off no matter what.  It ignores the momentary
-        A/B/C settings and just turns the relay off.
-
-        NOTE: This does NOT simulate a button press on the device - it just
-        changes the state of the device.  It will not trigger any responders
-        that are linked to this device.  To simulate a button press, call the
-        scene() method.
+        A/B/C settings and just turns the relay off. It will not trigger any
+        responders that are linked to this device.  If you want to control
+        the device where it respects the momentary settings and properly
+        updates responders, please define a scene for the device and use
+        that scene to control it.
 
         This will send the command to the device to update it's state.  When
         we get an ACK of the result, we'll change our internal state and emit
@@ -664,12 +610,11 @@ class IOLinc(Base):
         """Turn the relay on or off.  Level zero will be off.
 
         This turns the relay on or off no matter what.  It ignores the
-        momentary A/B/C settings and just turns the relay on.
-
-        NOTE: This does NOT simulate a button press on the device - it just
-        changes the state of the device.  It will not trigger any responders
-        that are linked to this device.  To simulate a button press, call the
-        scene() method.
+        momentary A/B/C settings and just turns the relay on. It will not
+        trigger any responders that are linked to this device.  If you want to
+        control the device where it respects the momentary settings and
+        properly updates responders, please define a scene for the device and
+        use that scene to control it.
 
         This will send the command to the device to update it's state.
         When we get an ACK of the result, we'll change our internal
@@ -792,9 +737,6 @@ class IOLinc(Base):
         # Save mode to device metadata
         self.mode = IOLinc.Modes[mode.upper()]
 
-
-        # In the future, we should store this information and do something
-        # with it.
         LOG.ui("Relay latching : %s", mode)
         on_done(True, "Operation complete", msg.cmd2)
 
@@ -821,9 +763,9 @@ class IOLinc(Base):
         # Valid momentary times are between .1 and 6300 seconds.  There is
         # finer resolution at the low end and not at much at the high end.
 
-        time = (msg.data[3] * msg.data[2]) / 10
-        self.momentary_secs = time
-        LOG.ui("Momentary Secs : %s", time)
+        seconds = (msg.data[3] * msg.data[2]) / 10
+        self.momentary_secs = seconds
+        LOG.ui("Momentary Secs : %s", seconds)
         on_done(True, "Operation complete", None)
 
     #-----------------------------------------------------------------------
@@ -836,7 +778,6 @@ class IOLinc(Base):
           msg (message.InpStandard):  The refresh message reply.  The msg.cmd2
           field represents the flag that was set.
         """
-        # TODO decode flag that was set
         LOG.info("IOLinc Set Flag=%s", msg.cmd2)
         on_done(True, "Operation complete", msg.cmd2)
 
