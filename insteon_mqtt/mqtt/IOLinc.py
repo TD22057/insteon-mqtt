@@ -30,8 +30,8 @@ class IOLinc:
         # Output state change reporting template.
         self.msg_state = MsgTemplate(
             topic='insteon/{{address}}/state',
-            payload='{ "sensor" : "{{sensor_on_str.lower()}}"",' +
-            ' relay" : {{relay_on_str.lower()}} }')
+            payload='{"sensor": "{{sensor_on_str.lower()}}",' +
+            ' "relay": "{{relay_on_str.lower()}}"}')
 
         # Output relay state change reporting template.
         self.msg_relay_state = MsgTemplate(

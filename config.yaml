@@ -831,7 +831,7 @@ mqtt:
   # relay_linked flag.  It can be used without issue for latching setups, but
   # if you want to use this accurately for Momentary_A,B,C setups, you may need
   # to have some logic upstream from this command to check the state of sensor
-  # and or the command to determine if setting the relay on or off is 
+  # and or the command to determine if setting the relay on or off is
   # appropriate .
   #
   # In Home Assistant use MQTT switch with a configuration like:
@@ -850,7 +850,7 @@ mqtt:
     #   sensor_on_str = 'off'/'on'
     #   relay_on_str = 'off'/'on'
     state_topic: 'insteon/{{address}}/state'
-    state_payload: '{ "sensor" : "{{sensor_on_str.lower()}}"", relay" : {{relay_on_str.lower()}} }'
+    state_payload: '{ "sensor" : "{{sensor_on_str.lower()}}", "relay" : {{relay_on_str.lower()}} }'
 
     # Output relay state change topic and template.  This message is sent
     # whenever the device relay state changes.  Available variables for

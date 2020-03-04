@@ -3,7 +3,6 @@
 # Insteon on/off device
 #
 #===========================================================================
-import functools
 import enum
 import time
 from .Base import Base
@@ -459,7 +458,7 @@ class IOLinc(Base):
 
                 # set the multiple
                 msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00,
-                                             bytes([0x00, 0x07, multiple,] +
+                                             bytes([0x00, 0x07, multiple, ] +
                                                    [0x00] * 11))
                 msg_handler = handler.StandardCmd(msg, self.handle_set_flags)
                 seq.add_msg(msg, msg_handler)
