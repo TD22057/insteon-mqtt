@@ -169,7 +169,7 @@ class IOLinc(Base):
         if val in IOLinc.Modes:
             meta = {'mode': val}
             existing = self.db.get_meta('IOLinc')
-            if isinstance(existing, dict) and 'mode' in meta:
+            if isinstance(existing, dict):
                 existing.update(meta)
                 self.db.set_meta('IOLinc', existing)
             else:
@@ -199,7 +199,7 @@ class IOLinc(Base):
         """
         meta = {'trigger_reverse': val}
         existing = self.db.get_meta('IOLinc')
-        if isinstance(existing, dict) and 'trigger_reverse' in meta:
+        if isinstance(existing, dict):
             existing.update(meta)
             self.db.set_meta('IOLinc', existing)
         else:
@@ -226,7 +226,7 @@ class IOLinc(Base):
         """
         meta = {'relay_linked': val}
         existing = self.db.get_meta('IOLinc')
-        if isinstance(existing, dict) and 'relay_linked' in meta:
+        if isinstance(existing, dict):
             existing.update(meta)
             self.db.set_meta('IOLinc', existing)
         else:
@@ -253,7 +253,7 @@ class IOLinc(Base):
         """
         meta = {'momentary_secs': val}
         existing = self.db.get_meta('IOLinc')
-        if isinstance(existing, dict) and 'momentary_secs' in meta:
+        if isinstance(existing, dict):
             existing.update(meta)
             self.db.set_meta('IOLinc', existing)
         else:
@@ -367,7 +367,7 @@ class IOLinc(Base):
                      "momentary_secs"])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
-            raise Exception("Unknown IOLinc flags input: %s.\n Valid flags "
+            raise Exception("Unknown IOLinc flags input: %s.\n Valid flags " +
                             "are: %s" % unknown, flags)
 
         seq = CommandSeq(self.protocol, "Device flags set", on_done)
@@ -518,18 +518,6 @@ class IOLinc(Base):
 
         # Run all the commands.
         seq.run()
-
-    #-----------------------------------------------------------------------
-    def sensor_is_on(self):
-        """Return if the device sensor is on or not.
-        """
-        return self._sensor_is_on
-
-    #-----------------------------------------------------------------------
-    def relay_is_on(self):
-        """Return if the device relay is on or not.
-        """
-        return self._relay_is_on
 
     #-----------------------------------------------------------------------
     def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
@@ -976,7 +964,6 @@ class IOLinc(Base):
             self._momentary_call = None
 
     #-----------------------------------------------------------------------
-    #-----------------------------------------------------------------------
     def link_data_to_pretty(self, is_controller, data):
         """Converts Link Data1-3 to Human Readable Attributes
 
@@ -1026,7 +1013,7 @@ class IOLinc(Base):
             data_3 = data['data_3']
         if not is_controller:
             if 'on_off' in data:
-                data_1 = 0xFF if data[on_off] else 0x00
+                data_1 = 0xFF if data['on_off'] else 0x00
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
