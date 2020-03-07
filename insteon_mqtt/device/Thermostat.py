@@ -184,7 +184,7 @@ class Thermostat(Base):
         # types.
         for group_map in Thermostat.Groups:
             group = group_map.value
-            seq.add(self.db_add_ctrl_of, group, self.modem.addr, group,
+            seq.add(self.db_add_ctrl_of, group, self.modem.addr, 0x01,
                     refresh=False)
 
         # Ask the device to enable the broadcast messages, otherwise the
