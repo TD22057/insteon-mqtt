@@ -20,6 +20,7 @@ for maximum robustness.
 
 from .Link import Link
 from .Serial import Serial
+from .Hub import Hub
 from .Stack import Stack
 from .Mqtt import Mqtt
 from .TimedCall import TimedCall

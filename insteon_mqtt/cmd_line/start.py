@@ -32,13 +32,20 @@ def start(args, cfg):
     # Create the network event loop and MQTT and serial modem clients.
     loop = network.Manager()
     mqtt_link = network.Mqtt()
-    plm_link = network.Serial()
+    use_hub = cfg['insteon'].get('use_hub', False)
+    if use_hub:
+        plm_link = network.Hub()
+    else:
+        plm_link = network.Serial()
     stack_link = network.Stack()
     timed_link = network.TimedCall()
 
     # Add the clients to the event loop.
     loop.add(mqtt_link, connected=False)
-    loop.add(plm_link, connected=False)
+    if use_hub:
+        loop.add_poll(plm_link)
+    else:
+        loop.add(plm_link, connected=False)
     loop.add_poll(stack_link)
     loop.add_poll(timed_link)
 
