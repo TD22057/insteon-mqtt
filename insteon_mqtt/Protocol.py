@@ -312,7 +312,7 @@ class Protocol:
                 break
 
             # Move the buffer to the start token.  Make sure we still have at
-            # lesat 2 bytes or wait for more to arrive.
+            # least 2 bytes or wait for more to arrive.
             if start != 0:
                 LOG.debug("0x02 found at byte %d - shifting", start)
                 self._buf = self._buf[start:]
@@ -325,7 +325,9 @@ class Protocol:
             msg_class = Msg.types.get(msg_type, None)
             if not msg_class:
                 LOG.info("Skipping unknown message type %#04x", msg_type)
-                self._buf = self._buf[2:]
+                # Only dropping the first byte (0x02), as the second byte could
+                # be 0x02. Let the find function to locate the next 0x02
+                self._buf = self._buf[1:]
                 continue
 
             # See if we have enough bytes to read the message.  If not, wait

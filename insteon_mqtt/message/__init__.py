@@ -38,6 +38,7 @@ from .InpAllLinkStatus import InpAllLinkStatus
 from .InpStandard import InpStandard, InpExtended
 from .InpUserReset import InpUserReset
 from .InpUserSetBtn import InpUserSetBtn
+from .Unreachable import Unreachable
 
 # Messages from the host to the PLM modem (codes < 0x06)
 from .OutAllLinkCancel import OutAllLinkCancel
@@ -48,6 +49,9 @@ from .OutModemLinking import OutModemLinking
 from .OutModemScene import OutModemScene
 from .OutResetModem import OutResetModem
 from .OutStandard import OutStandard, OutExtended
+
+# Hub Messages
+from .HubUnknown import HubRFUnknown
 
 # Message handler status fields.
 UNKNOWN = -1
@@ -65,6 +69,7 @@ types = {
     0x56 : InpAllLinkFailure,
     0x57 : InpAllLinkRec,
     0x58 : InpAllLinkStatus,
+    0x5c : Unreachable,
 
     # host -> modem messages
     0x61 : OutModemScene,
@@ -75,4 +80,7 @@ types = {
     0x69 : OutAllLinkGetFirst,
     0x6a : OutAllLinkGetNext,
     0x6f : OutAllLinkUpdate,
+
+    # Hub Messages
+    0x7f : HubRFUnknown,
     }
