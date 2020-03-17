@@ -20,20 +20,30 @@ LOG = log.get_logger(__name__)
 class Hub():
     """A HTTP Network Interface for using the Insteon Hub as the Modem
 
-    TODO
+    Works with the model 2245-222 Hub and likely others.  The Hubs only offer
+    an http interface, at least as currently known.  Therefore in order to
+    interface properly with the Hub, a HubClient is defined which runs in its
+    own thread for directly interfacing with the Hub.
+
+    This class is merely a bridge between what the PLM interface uses and the
+    HubClient.
     """
     read_buf_size = 4096
     max_write_queue = 500
 
     def __init__(self, ip=None, port='25105', user=None, password=None):
         """Constructor.  Mostly just defines some attributes that are expected
-        but un-needed.
+        but un-needed.  The HubClient is started in poll().
 
-        TODO
+        Args:
+          ip: (str) the ip address of the Hub.
+          port: (int) the port number of the Hub.
+          user: (str) the Hub username
+          password: (str) the Hub password
         """
         # Public signals to connect to for read/write notification.
-        self.signal_read = Signal()   # (Serial, bytes)
-        self.signal_wrote = Signal()  # (Serial, bytes)
+        self.signal_read = Signal()   # (Hub, bytes)
+        self.signal_wrote = Signal()  # (Hub, bytes)
         self.signal_connected = Signal()
         self.signal_closing = Signal()
 
@@ -56,10 +66,11 @@ class Hub():
 
         Configuration inputs will override any set in the constructor.
 
-        The input configuration dictionary can contain:
-        - port (str):  The serial device to connect to.
-        - baudrate (int):  Baudrate to use (optional)
-        - parity:  Parity to use (optional)
+        The input configuration dictionary may contain:
+        - hub_ip (str):  The Hub ip address (mandatory)
+        - hub_user (str):  The Hub username (mandatory)
+        - hub_password (str):  The Hub password (mandatory)
+        - hub_port (int): The Hub port (optional)
 
         Args:
           config (dict):  Configuration data to load.
@@ -73,9 +84,9 @@ class Hub():
     def write(self, data, after_time=None):
         """Schedule data for writing to the serial device.
 
-        This pushes the data into a queue for writing to the serial device.
-        Only after the network event loop flags the device for writing will
-        it actually be written.
+        This pushes the data into a queue for writing to the Hub device.
+        The data is pushed to the HubClient in poll() and written during
+        the next HubClient loop.
 
         Args:
           after_time (float):  Time in seconds past epoch after which to write
@@ -99,7 +110,10 @@ class Hub():
     def poll(self, t):
         """Periodic poll callback.
 
-        TODO
+        Pushes the messages to write to the HubClient and checks for incomming
+        messages from the HubClient.
+
+        Will spawn the HubClient on the first call.
 
         Args:
            t (float):  Current Unix clock time tag.
@@ -167,6 +181,14 @@ class Hub():
 
 class HubClient:
     def __init__(self, ip, port, user, password):
+        """Constructor.
+
+        Args:
+          ip: (str) the ip address of the Hub.
+          port: (int) the port number of the Hub.
+          user: (str) the Hub username
+          password: (str) the Hub password
+        """
         self.ip = ip
         self.port = port
         self.user = user
@@ -195,24 +217,38 @@ class HubClient:
         threading.Thread(target=self._thread).start()
 
     def close(self):
+        '''Terminates the HubClient thread on the next loop.
+        '''
         self._close = True
 
     def has_read_data(self):
+        '''Returns True if there is incoming data to be read.
+        '''
         if self._read_queue.empty():
             return False
         else:
             return True
 
     def read(self):
+        '''Returns the contents of the read queue as a bytearray.
+        '''
         ret = bytearray()
         while not self._read_queue.empty():
             ret.extend(self._read_queue.get())
         return ret
 
     def write(self, bytes):
+        '''Puts the bytes into the write queue.
+
+        Args:
+          bytes (bytearray): This should represent a complete message.
+        '''
         self._write_queue.put(bytes)
 
     def _thread(self):
+        '''This runs in its own thread.  It constantly loops until the main
+        thread is terminated or self.close() is called.
+        '''
         while threading.main_thread().is_alive() and not self._close:
             start_time = time.time()
 
@@ -251,7 +287,9 @@ class HubClient:
                             seconds)
 
     def _get_hub_buffer(self):
-        # Get Buffer Contents
+        '''
+        Performs the HTTP call to get the read buffer.
+        '''
         try:
             response = requests.get('http://%s:%s/buffstatus.xml' %
                                     (self.ip, self.port),
@@ -316,7 +354,7 @@ class HubClient:
                     ret = bytestring[-new_length:]
                 else:
                     LOG.error('Read buffer overflow on Hub %s, prev %s, verify %s',
-                            self.ip, self._prev_bytestring, verify_bytestring)
+                              self.ip, self._prev_bytestring, verify_bytestring)
 
         self._prev_bytestring = bytestring[-self.verify_length:]
         self._prev_byte_end = byte_end
