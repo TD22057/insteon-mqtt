@@ -79,6 +79,11 @@ class Hub():
         self._ip = config.get('hub_ip', self._ip)
         self._user = config.get('hub_user', self._user)
         self._password = config.get('hub_password', self._password)
+        # Go ahead and crash now, otherwise we will crash in a more confusing
+        # place
+        assert self._ip is not None
+        assert self._user is not None
+        assert self._password is not None
 
     #-----------------------------------------------------------------------
     def write(self, data, after_time=None):
@@ -283,7 +288,7 @@ class HubClient:
                 time.sleep(sleep_time)
             elif sleep_time < -2:
                 seconds = str(round(abs(sleep_time), 2))
-                LOG.warning('Hub %s lopp took %s to complete', self.ip,
+                LOG.warning('Hub %s loop took %s to complete', self.ip,
                             seconds)
 
     def _get_hub_buffer(self):
@@ -376,8 +381,7 @@ class HubClient:
                 # Since there are retries built in above this, we don't resend
                 # here on the chance that the message did get through
                 LOG.error('Unable to write to Hub %s', self.ip)
-                time.sleep(.1)
-                return
+            # When we write to the Hub, it empties and resets the read buffer
             if self.verify_length > 0:
                 empty = '0'
                 self._prev_bytestring = empty * self.verify_length
