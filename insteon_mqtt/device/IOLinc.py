@@ -155,7 +155,11 @@ class IOLinc(Base):
         meta = self.db.get_meta('IOLinc')
         ret = IOLinc.Modes.LATCHING
         if isinstance(meta, dict) and 'mode' in meta:
-            ret = meta['mode']
+            try:
+                ret = IOLinc.Modes(meta['mode'])
+            except ValueError:
+                # Somehow we saved a value that doesn't exist
+                pass
         return ret
 
     #-----------------------------------------------------------------------
@@ -167,7 +171,7 @@ class IOLinc(Base):
           val:    (IOLinc.Modes)
         """
         if val in IOLinc.Modes:
-            meta = {'mode': val}
+            meta = {'mode': IOLinc.Modes[val].value}
             existing = self.db.get_meta('IOLinc')
             if isinstance(existing, dict):
                 existing.update(meta)
