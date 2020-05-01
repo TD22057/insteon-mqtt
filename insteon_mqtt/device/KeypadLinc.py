@@ -224,7 +224,7 @@ class KeypadLinc(Base):
 
     #-----------------------------------------------------------------------
     def on(self, group=0, level=None, mode=on_off.Mode.NORMAL, reason="",
-           on_done=None):
+           transition=None, on_done=None):
         """Turn the device on.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -290,12 +290,17 @@ class KeypadLinc(Base):
 
         # Load group uses a direct command to set the level.
         else:
-            # For switches, on is always full level.
-            level = level if self.is_dimmer else 0xff
+            # For switches, on is always full level.  Also, no ramp/transition.
+            if not self.is_dimmer:
+                level = 0xff
+                transition = None
+                if mode == on_off.Mode.RAMP:
+                    mode = on_off.Mode.NORMAL
 
             # Send the correct on code.
             cmd1 = on_off.Mode.encode(True, mode)
-            msg = Msg.OutStandard.direct(self.addr, cmd1, level)
+            cmd2 = on_off.Mode.encode_cmd2(True, mode, level, transition)
+            msg = Msg.OutStandard.direct(self.addr, cmd1, cmd2)
 
             # Use the standard command handler which will notify us when the
             # command is ACK'ed.
@@ -304,7 +309,8 @@ class KeypadLinc(Base):
             self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def off(self, group=0, mode=on_off.Mode.NORMAL, reason="", on_done=None):
+    def off(self, group=0, mode=on_off.Mode.NORMAL, reason="",
+            transition=None, on_done=None):
         """Turn the device off.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -345,9 +351,16 @@ class KeypadLinc(Base):
 
         # Load group uses a direct command to set the level.
         else:
+            # No ramp/transition for switches
+            if not self.is_dimmer:
+                transition = None
+                if mode == on_off.Mode.RAMP:
+                    mode = on_off.Mode.NORMAL
+
             # Send an off or instant off command.
             cmd1 = on_off.Mode.encode(False, mode)
-            msg = Msg.OutStandard.direct(self.addr, cmd1, 0x00)
+            cmd2 = on_off.Mode.encode_cmd2(True, mode, 0, transition)
+            msg = Msg.OutStandard.direct(self.addr, cmd1, cmd2)
 
             # Use the standard command handler which will notify us when the
             # command is ACK'ed.
@@ -357,7 +370,7 @@ class KeypadLinc(Base):
 
     #-----------------------------------------------------------------------
     def set(self, level, group=0, mode=on_off.Mode.NORMAL, reason="",
-            on_done=None):
+            transition=None, on_done=None):
         """Turn the device on or off.  Level zero will be off.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -393,9 +406,9 @@ class KeypadLinc(Base):
             if level is True:
                 level = None
 
-            self.on(group, level, mode, reason, on_done)
+            self.on(group, level, mode, reason, transition, on_done)
         else:
-            self.off(group, mode, reason, on_done)
+            self.off(group, mode, reason, transition, on_done)
 
     #-----------------------------------------------------------------------
     def scene(self, is_on, group=0x01, reason="", on_done=None):
@@ -1536,9 +1549,10 @@ class KeypadLinc(Base):
         LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
 
         _is_on, mode = on_off.Mode.decode(msg.cmd1)
-        self._set_level(self._load_group, msg.cmd2, mode, reason)
+        level = on_off.Mode.decode_level(msg.cmd1, msg.cmd2)
+        self._set_level(self._load_group, level, mode, reason)
         on_done(True, "KeypadLinc state updated to %s" % self._level,
-                msg.cmd2)
+                level)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, msg, on_done, reason=""):

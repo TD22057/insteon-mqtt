@@ -91,7 +91,7 @@ class Dimmer(Base):
 
     #-----------------------------------------------------------------------
     def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
-           on_done=None):
+           transition=None, on_done=None):
         """Turn the device on.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -113,6 +113,7 @@ class Dimmer(Base):
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
                  when the state changes - nothing else is done with it.
+          transition (float): Ramp rate in seconds
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -137,7 +138,8 @@ class Dimmer(Base):
 
         # Send the requested on code value.
         cmd1 = on_off.Mode.encode(True, mode)
-        msg = Msg.OutStandard.direct(self.addr, cmd1, level)
+        cmd2 = on_off.Mode.encode_cmd2(True, mode, level, transition)
+        msg = Msg.OutStandard.direct(self.addr, cmd1, cmd2)
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
@@ -147,7 +149,7 @@ class Dimmer(Base):
 
     #-----------------------------------------------------------------------
     def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            on_done=None):
+            transition=None, on_done=None):
         """Turn the device off.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -167,6 +169,7 @@ class Dimmer(Base):
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
                  when the state changes - nothing else is done with it.
+          transition (float): Ramp rate in seconds
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -176,7 +179,8 @@ class Dimmer(Base):
 
         # Send an off or instant off command.
         cmd1 = on_off.Mode.encode(False, mode)
-        msg = Msg.OutStandard.direct(self.addr, cmd1, 0x00)
+        cmd2 = on_off.Mode.encode_cmd2(False, mode, 0, transition)
+        msg = Msg.OutStandard.direct(self.addr, cmd1, cmd2)
 
         # Use the standard command handler which will notify us when
         # the command is ACK'ed.
@@ -186,7 +190,7 @@ class Dimmer(Base):
 
     #-----------------------------------------------------------------------
     def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            on_done=None):
+            transition=None, on_done=None):
         """Turn the device on or off.  Level zero will be off.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -208,6 +212,7 @@ class Dimmer(Base):
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
                  when the state changes - nothing else is done with it.
+          transition (float): Ramp rate in seconds
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -217,9 +222,9 @@ class Dimmer(Base):
             if level is True:
                 level = None
 
-            self.on(group, level, mode, reason, on_done)
+            self.on(group, level, mode, reason, transition, on_done)
         else:
-            self.off(group, mode, reason, on_done)
+            self.off(group, mode, reason, transition, on_done)
 
     #-----------------------------------------------------------------------
     def scene(self, is_on, group=0x01, reason="", on_done=None):
@@ -830,10 +835,11 @@ class Dimmer(Base):
         LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
 
         _is_on, mode = on_off.Mode.decode(msg.cmd1)
+        level = on_off.Mode.decode_level(msg.cmd1, msg.cmd2)
         reason = reason if reason else on_off.REASON_COMMAND
-        self._set_level(msg.cmd2, mode, reason)
+        self._set_level(level, mode, reason)
         on_done(True, "Dimmer state updated to %s" % self._level,
-                msg.cmd2)
+                level)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, msg, on_done, reason=""):

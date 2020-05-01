@@ -35,7 +35,7 @@ def setup(mock_paho_mqtt, tmpdir):
     mdev = IM.mqtt.KeypadLinc(mqtt, dev)
 
     return H.Data(addr=addr, name=name, dev=dev, mdev=mdev, link=link,
-                  proto=proto)
+                  proto=proto, modem=modem)
 
 
 #===========================================================================
@@ -183,6 +183,265 @@ class Test_KeypadLinc_sw:
 
         # test error payload
         link.publish("foo/%s/1" % addr.hex, b'asdf', qos, False)
+
+
+    #-----------------------------------------------------------------------
+    def test_input_transition(self, setup):
+        mdev, dev, link, proto, modem = setup.getAll(
+                ['mdev', 'dev', 'link', 'proto', 'modem'])
+
+        qos = 2
+        config = {'keypad_linc' : {
+            'btn_state_topic' : 'insteon/{{address}}/state',
+            'btn_state_payload' : '{{on}} {{on_str.upper()}}',
+            'btn_on_off_topic' : 'insteon/{{address}}/set/{{button}}',
+            'btn_on_off_payload' : ('{ "cmd" : "{{json.state.lower()}}"'
+                                    '{% if json.fast is defined %}'
+                                        ', "fast" : {{json.fast}}'
+                                    '{% endif %}'
+                                    '{% if json.instant is defined %}'
+                                        ', "instant" : {{json.instant}}'
+                                    '{% endif %}'
+                                    '{% if json.mode is defined %}'
+                                        ', "mode" : "{{json.mode.lower()}}"'
+                                    '{% endif %}'
+                                    '{% if json.transition is defined %}'
+                                        ', "transition" : {{json.transition}}'
+                                    '{% endif %}'
+                                    ' }')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        stopic = "insteon/%s/state" % setup.addr.hex
+        otopic = link.client.sub[0].topic
+
+        # -----------------------
+        # Confirm that ramp mode / transition values are ignored for switches
+        # -----------------------
+
+        # -----------------------
+        # Light off in 32 seconds, mode explicitly specified
+        payload = b'{ "state" : "OFF", "mode" : "RAMP", "transition" : 32 }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert proto.sent[0].msg.cmd2 == 0x00
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x13, 0x00)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='0 OFF', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light on (full brightness) in 90 seconds, mode explicitly specified
+        payload = b'{ "state" : "ON", "mode" : "RAMP", "transition" : 90 }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x11
+        assert proto.sent[0].msg.cmd2 == 0xff
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x11, 0xff)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='1 ON', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light off in 500 seconds, mode implied
+        payload = b'{ "state" : "OFF", "transition" : 500 }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert proto.sent[0].msg.cmd2 == 0x00
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x13, 0x00)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='0 OFF', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light on (level 67) in 0.3 seconds, mode implied
+        payload = b'{ "state" : "ON", "level" : "67", "transition" : 0.3 }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x11
+        assert proto.sent[0].msg.cmd2 == 0xff
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x11, 0xff)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='1 ON', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light off, mode explicitly specified, transition omitted (2s implied)
+        payload = b'{ "state" : "OFF", "mode" : "RAMP" }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert proto.sent[0].msg.cmd2 == 0x00
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x13, 0x00)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='0 OFF', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light on, mode explicitly specified, transition omitted (2s implied)
+        payload = b'{ "state" : "ON", "mode" : "RAMP" }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x11
+        assert proto.sent[0].msg.cmd2 == 0xff
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x11, 0xff)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='1 ON', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Test that transition is ignored for fast/instant on/off
+        # -----------------------
+
+        # -----------------------
+        # Light off in 500 seconds, mode explicitly set to FAST
+        payload = b'{ "state" : "OFF", "mode" : "FAST", "transition" : 500 }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x14
+        assert proto.sent[0].msg.cmd2 == 0x00
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x14, 0x00)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='0 OFF', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light on (level 67) in 0.3 seconds, mode explicitly set to INSTANT
+        payload = (b'{ "state" : "ON", "level" : "67", "mode" : "INSTANT",'
+                   b'"transition" : 0.3 }')
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x21
+        assert proto.sent[0].msg.cmd2 == 0xff
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x21, 0xff)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='1 ON', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light off in 500 seconds, mode explicitly set to FAST
+        payload = b'{ "state" : "OFF", "fast" : 1, "transition" : 500 }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x14
+        assert proto.sent[0].msg.cmd2 == 0x00
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x14, 0x00)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='0 OFF', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light on (level 67) in 0.3 seconds, mode explicitly set to INSTANT
+        payload = (b'{ "state" : "ON", "level" : "67", "instant" : 1,'
+                   b'"transition" : 0.3 }')
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x21
+        assert proto.sent[0].msg.cmd2 == 0xff
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x21, 0xff)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='1 ON', qos=qos, retain=True)
+        link.client.clear()
 
     #-----------------------------------------------------------------------
     def test_input_scene(self, setup):

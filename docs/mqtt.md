@@ -762,11 +762,20 @@ The second is similar but also accepts the level argument to set the dimmer
 level.  The dimmer payload template must convert the input message into the
 format (LEVEL must be in the range 0->255).  The optional mode flag can be
 used to send a 'normal' (default)', 'fast', or 'instant' command to the
-device.
+device.  The optional transition flag can be used to specify a ramp rate.
+If 'ramp' mode is specified but no transition value, a ramp rate of 2 seconds
+is used.  If a transition value is specified but no mode, 'ramp' mode is
+implied.
 
    ```
-   { "cmd" : "on"/"off", "level" : LEVEL, ["mode" : 'normal'/'fast'/'instant'] }
+   { "cmd" : "on"/"off", "level" : LEVEL, ["mode" : 'normal'/'fast'/'instant'/'ramp'], "transition" : RATE }
    ```
+
+Note: RATE is specified as a number of seconds and is rounded down to the
+nearest supported Half Rate.  Note that not all devices support ramp rates
+and that specifying one will limit the precision of LEVEL.
+See http://www.madreporite.com/insteon/ramprate.htm for more details on the
+"Light ON at Ramp Rate" and "Light OFF at Ramp Rate" commands.
 
 Here is a sample configuration that accepts and publishes messages
 using a JSON format that contains the level using the tag
@@ -882,7 +891,7 @@ matching the Home Assistant MQTT fan configuration.
 The KeypadLinc is a wall mounted on/off or dimmer control and scene
 controller.  Basically it combines a on/off or dimmer switch and remote
 control.  Dimmers and on/off devices are listed under separate entries in the
-input confi file which controls the behavior of the group 1 switch.  The
+input config file which controls the behavior of the group 1 switch.  The
 other buttons are treated as on/off switches (see the switch documentation
 above) but have no load connected to them.  KeypadLincs are usually
 configured as 6 button or 8 button devices with the following button number
@@ -902,9 +911,10 @@ The button change defines the following variables for templates:
    - 'button' is 1...n for the button number.
    - 'on' is 1 if the button is on, 0 if it's off.
    - 'on_str' is 'on' if the button is on, 'off' if it's off.
-   - 'mode' is the on/off mode: 'normal', 'fast', or instant'
+   - 'mode' is the on/off mode: 'normal', 'fast', instant', or 'ramp'
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
+   - 'transition' is the ramp rate in seconds (dimmers only).
    - 'reason' is the reason for the change.  'device' if a button was pressed
      on the device.  'scene' if the device is responding to a scene trigger.
      'refresh' if the update is from a refresh'.  'command' if the device is

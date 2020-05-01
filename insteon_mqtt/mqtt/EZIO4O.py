@@ -199,7 +199,7 @@ class EZIO4O:
 
         try:
             # Tell the device to update it's state.
-            is_on, mode = util.parse_on_off(data)
+            is_on, mode, __ = util.parse_on_off(data)
             reason = data.get("reason", "")
             self.device.set(level=is_on, group=group, mode=mode, reason=reason)
         except:
