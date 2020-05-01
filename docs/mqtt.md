@@ -762,20 +762,11 @@ The second is similar but also accepts the level argument to set the dimmer
 level.  The dimmer payload template must convert the input message into the
 format (LEVEL must be in the range 0->255).  The optional mode flag can be
 used to send a 'normal' (default)', 'fast', or 'instant' command to the
-device.  The optional transition flag can be used to specify a ramp rate.
-If 'ramp' mode is specified but no transition value, a ramp rate of 2 seconds
-is used.  If a transition value is specified but no mode, 'ramp' mode is
-implied.
+device.
 
    ```
-   { "cmd" : "on"/"off", "level" : LEVEL, ["mode" : 'normal'/'fast'/'instant'/'ramp'], "transition" : RATE }
+   { "cmd" : "on"/"off", "level" : LEVEL, ["mode" : 'normal'/'fast'/'instant'] }
    ```
-
-Note: RATE is specified as a number of seconds and is rounded down to the
-nearest supported Half Rate.  Note that not all devices support ramp rates
-and that specifying one will limit the precision of LEVEL.
-See http://www.madreporite.com/insteon/ramprate.htm for more details on the
-"Light ON at Ramp Rate" and "Light OFF at Ramp Rate" commands.
 
 Here is a sample configuration that accepts and publishes messages
 using a JSON format that contains the level using the tag
@@ -920,6 +911,20 @@ The button change defines the following variables for templates:
      'refresh' if the update is from a refresh'.  'command' if the device is
      responding to an on/off command.  Or an arbitrary string if one was
      passed in via the scene or on/off style command inputs.
+
+The optional transition flag can be used to specify a ramp rate.  If 'ramp'
+mode is specified but no transition value, a ramp rate of 2 seconds is used.
+If a transition value is specified but no mode, 'ramp' mode is implied.
+
+   ```
+   { "cmd" : "on"/"off", "level" : LEVEL, ["mode" : 'normal'/'fast'/'instant'/'ramp'], "transition" : RATE }
+   ```
+
+Note: RATE is specified as a number of seconds and is rounded down to the
+nearest supported Half Rate.  Note that not all devices support ramp rates
+and that specifying one will limit the precision of LEVEL.
+See http://www.madreporite.com/insteon/ramprate.htm for more details on the
+"Light ON at Ramp Rate" and "Light OFF at Ramp Rate" commands.
 
 Manual state output is invoked when a button on the device is held down.
 Manual mode flags are UP or DOWN (when the on or off button is pressed and
