@@ -74,7 +74,7 @@ class EZIO4O(Base):
                      output.
     """
 
-    def __init__(self, protocol, modem, address, name=None, config=None):
+    def __init__(self, protocol, modem, address, name=None):
         """Constructor
 
         Args:
@@ -85,7 +85,7 @@ class EZIO4O(Base):
           address (Address):  The address of the device.
           name (str):  Nice alias name to use for the device.
         """
-        super().__init__(protocol, modem, address, name, config)
+        super().__init__(protocol, modem, address, name)
 
         self._is_on = [False, False, False, False]  # output state
 

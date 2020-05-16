@@ -113,7 +113,7 @@ class IOLinc(Base):
         MOMENTARY_B = 0x02
         MOMENTARY_C = 0x03
 
-    def __init__(self, protocol, modem, address, name=None, config=None):
+    def __init__(self, protocol, modem, address, name=None):
         """Constructor
 
         Args:
@@ -124,7 +124,7 @@ class IOLinc(Base):
           address:     (Address) The address of the device.
           name         (str) Nice alias name to use for the device.
         """
-        super().__init__(protocol, modem, address, name, config)
+        super().__init__(protocol, modem, address, name)
 
         # Used to track the state of sensor and relay
         self._sensor_is_on = False

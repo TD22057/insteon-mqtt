@@ -82,10 +82,8 @@ insteon:
       - 37.2d.20: 'deck'
 
     # Dimming devices (outlets, wall switches, lamp modules, etc).
-    # Note: on_off_ramp_supported is assumed false if not specified.
     dimmer:
       - 12.29.84: 'lamp2'
-        #on_off_ramp_supported: True
       - 48.3d.46
       - 48.b0.ad: 'dim1'
 
@@ -112,16 +110,12 @@ insteon:
       - 44.a3.79: 'smoke alarm'
 
     # FanLinc fan controller (dimmer+fan).
-    # Note: on_off_ramp_supported is assumed false if not specified.
     fan_linc:
      - 9a.a1.b3
-       #on_off_ramp_supported: True
 
     # KeypadLinc dimmers (dimmer+scene controller).
-    # Note: on_off_ramp_supported is assumed false if not specified.
     keypad_linc:
       - 46.7b.bc: 'porch'
-        #on_off_ramp_supported: False
 
     # KeypadLinc switches (on/off+scene controller).
     keypad_linc_sw:

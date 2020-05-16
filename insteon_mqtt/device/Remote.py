@@ -52,8 +52,7 @@ class Remote(BatterySensor):
     # I also tried to drain the battery of one of my devices
     BATTERY_VOLTAGE_LOW = 3.4
 
-    def __init__(self, protocol, modem, address, name, num_button,
-                 config=None):
+    def __init__(self, protocol, modem, address, name, num_button):
         """Constructor
 
         Args:
@@ -66,7 +65,7 @@ class Remote(BatterySensor):
           num_button (int):  Number of buttons on the remote.
         """
         assert num_button > 0
-        super().__init__(protocol, modem, address, name, config)
+        super().__init__(protocol, modem, address, name)
 
         self.num = num_button
         self.type_name = "mini_remote_%d" % self.num
