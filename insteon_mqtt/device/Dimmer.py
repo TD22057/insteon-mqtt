@@ -44,7 +44,7 @@ class Dimmer(Base):
                    0x15: 23.5, 0x16: 21.5, 0x17: 19, 0x18: 8.5, 0x19: 6.5,
                    0x1a: 4.5, 0x1b: 2, 0x1c: .5, 0x1d: .3, 0x1e: .2, 0x1f: .1}
 
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config=None):
         """Constructor
 
         Args:
@@ -55,7 +55,13 @@ class Dimmer(Base):
           address (Address): The address of the device.
           name (str): Nice alias name to use for the device.
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config)
+
+        if isinstance(config, dict):
+            self.on_off_ramp_supported = config.get("on_off_ramp_supported",
+                                                    False)
+        else:
+            self.on_off_ramp_supported = False
 
         # Current dimming level. 0x00 -> 0xff
         self._level = 0x00
@@ -136,6 +142,12 @@ class Dimmer(Base):
         assert group == 0x01
         assert isinstance(mode, on_off.Mode)
 
+        # Ignore RAMP mode / transition if command not supported
+        if not self.on_off_ramp_supported:
+            transition = None
+            if mode == on_off.Mode.RAMP:
+                mode = on_off.Mode.NORMAL
+
         # Send the requested on code value.
         cmd1 = on_off.Mode.encode(True, mode)
         cmd2 = on_off.Mode.encode_cmd2(True, mode, level, transition)
@@ -176,6 +188,12 @@ class Dimmer(Base):
         LOG.info("Dimmer %s cmd: off", self.addr)
         assert group == 0x01
         assert isinstance(mode, on_off.Mode)
+
+        # Ignore RAMP mode / transition if command not supported
+        if not self.on_off_ramp_supported:
+            transition = None
+            if mode == on_off.Mode.RAMP:
+                mode = on_off.Mode.NORMAL
 
         # Send an off or instant off command.
         cmd1 = on_off.Mode.encode(False, mode)

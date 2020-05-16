@@ -49,7 +49,8 @@ class KeypadLinc(Base):
     """
 
     #-----------------------------------------------------------------------
-    def __init__(self, protocol, modem, address, name, dimmer=True):
+    def __init__(self, protocol, modem, address, name, config=None,
+                 dimmer=True):
         """Constructor
 
         Args:
@@ -62,7 +63,13 @@ class KeypadLinc(Base):
           dimmer:      (bool) True if the device supports dimming - False if
                        it's a regular switch.
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config)
+
+        if isinstance(config, dict):
+            self.on_off_ramp_supported = config.get("on_off_ramp_supported",
+                                                    False)
+        else:
+            self.on_off_ramp_supported = False
 
         # Switch or dimmer type.
         self.is_dimmer = dimmer
@@ -290,9 +297,12 @@ class KeypadLinc(Base):
 
         # Load group uses a direct command to set the level.
         else:
-            # For switches, on is always full level.  Also, no ramp/transition.
+            # For switches, on is always full level.
             if not self.is_dimmer:
                 level = 0xff
+
+            # Ignore RAMP mode / transition if command not supported
+            if not self.on_off_ramp_supported or not self.is_dimmer:
                 transition = None
                 if mode == on_off.Mode.RAMP:
                     mode = on_off.Mode.NORMAL
@@ -351,8 +361,8 @@ class KeypadLinc(Base):
 
         # Load group uses a direct command to set the level.
         else:
-            # No ramp/transition for switches
-            if not self.is_dimmer:
+            # Ignore RAMP mode / transition if command not supported
+            if not self.on_off_ramp_supported or not self.is_dimmer:
                 transition = None
                 if mode == on_off.Mode.RAMP:
                     mode = on_off.Mode.NORMAL

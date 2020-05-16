@@ -777,6 +777,9 @@ and that specifying one will limit the precision of LEVEL.
 See http://www.madreporite.com/insteon/ramprate.htm for more details on the
 "Light ON at Ramp Rate" and "Light OFF at Ramp Rate" commands.
 
+Note: Transition requests are ignored unless "on_off_ramp_supported: True" is
+indicated in config.yaml for the device.
+
 Here is a sample configuration that accepts and publishes messages
 using a JSON format that contains the level using the tag
 "brightness".

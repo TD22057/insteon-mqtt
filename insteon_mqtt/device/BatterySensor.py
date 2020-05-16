@@ -48,7 +48,7 @@ class BatterySensor(Base):
     """
     type_name = "battery_sensor"
 
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config=None):
         """Constructor
 
         Args:
@@ -59,7 +59,7 @@ class BatterySensor(Base):
           address (Address):  The address of the device.
           name (str):  Nice alias name to use for the device.
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config)
 
         # Sensor on/off signal.  API: func( Device, bool is_on )
         self.signal_on_off = Signal()

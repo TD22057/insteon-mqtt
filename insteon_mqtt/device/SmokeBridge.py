@@ -48,7 +48,7 @@ class SmokeBridge(Base):
         ERROR = 0x07
         HEARTBEAT = 0x0A
 
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config=None):
         """Constructor
 
         Args:
@@ -59,7 +59,7 @@ class SmokeBridge(Base):
           address (Address):  The address of the device.
           name (str):  Nice alias name to use for the device.
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config)
 
         # State change notification signal.
         # API: func( Device, Type type, bool is_on )

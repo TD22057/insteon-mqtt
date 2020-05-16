@@ -85,7 +85,7 @@ class Thermostat(Base):
     FARENHEIT = 0
     CELSIUS = 1
 
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config=None):
         """Constructor
 
         Args:
@@ -99,7 +99,7 @@ class Thermostat(Base):
                        it's a regular switch.
         """
         # Set default values to attributes, may be overwritten by saved values
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config)
 
         self.cmd_map.update({
             'get_status' : self.get_status

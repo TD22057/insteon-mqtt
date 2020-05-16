@@ -33,7 +33,7 @@ class Switch(Base):
     - signal_manual( Device, on_off.Manual mode ): Sent when the device
       starts or stops manual mode (when a button is held down or released).
     """
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config=None):
         """Constructor
 
         Args:
@@ -44,7 +44,7 @@ class Switch(Base):
           address (Address):  The address of the device.
           name (str):  Nice alias name to use for the device.
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config)
 
         self._is_on = False
 

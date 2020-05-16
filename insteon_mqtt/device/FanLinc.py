@@ -50,7 +50,7 @@ class FanLinc(Dimmer):
         HIGH = 0xff
         ON = -0x01   # turn on at last known speed
 
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config=None):
         """Constructor
 
         Args:
@@ -61,7 +61,7 @@ class FanLinc(Dimmer):
           address (Address):  The address of the device.
           name (str):  Nice alias name to use for the device.
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config)
 
         # Current fan speed.  We also store the last speed so that a generic
         # "on" command will use the last non-off speed that was seen.  Note

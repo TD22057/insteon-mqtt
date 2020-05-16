@@ -59,7 +59,6 @@ class Base:
         for config in values:
             # If it's a dict, it's got a nice name set.
             if isinstance(config, dict):
-                assert len(config) == 1
                 addr, name = next(iter(config.items()))
                 if name:
                     name = name.lower()
@@ -73,13 +72,13 @@ class Base:
             # syntax so any extra keyword args don't have to be at the end of
             # the arg list.
             device = cls(protocol=protocol, modem=modem, address=addr,
-                         name=name, **kwargs)
+                         name=name, config=config, **kwargs)
             devices.append(device)
 
         return devices
 
     #-----------------------------------------------------------------------
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config=None):
         """Constructor
 
         This initializes common code for all the device types.  Derived types
