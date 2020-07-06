@@ -213,7 +213,7 @@ class Modem:
 
         Args:
           addr:           (Address) The address to match.
-n          group:          (int) The group to match.
+          group:          (int) The group to match.
           is_controller:  (bool) True for controller records.  False for
                           responder records.
 
