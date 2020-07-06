@@ -1,8 +1,8 @@
-#===========================================================================
+# ===========================================================================
 #
 # Insteon device classes
 #
-#===========================================================================
+# ===========================================================================
 # flake8: noqa
 
 __doc__ = """Insteon device classes.
@@ -24,11 +24,12 @@ to the PLM modem.  Devices must be paired as responders to the modem
 first (hold the modem set button, then the device.
 """
 
-#===========================================================================
+# ===========================================================================
 
 from .Base import Base
 from .BatterySensor import BatterySensor
 from .Dimmer import Dimmer
+from .EZIO4O import EZIO4O
 from .FanLinc import FanLinc
 from .IOLinc import IOLinc
 from .KeypadLinc import KeypadLinc

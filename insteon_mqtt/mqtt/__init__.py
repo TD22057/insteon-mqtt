@@ -1,8 +1,8 @@
-#===========================================================================
+# ===========================================================================
 #
 # MQTT input/output classes
 #
-#===========================================================================
+# ===========================================================================
 # flake8: noqa
 
 __doc__ = """MQTT input and output classes.
@@ -16,10 +16,11 @@ messages to function calls on the Insteon object and state changes to output
 MQTT messages.
 """
 
-#===========================================================================
+# ===========================================================================
 
 from .BatterySensor import BatterySensor
 from .Dimmer import Dimmer
+from .EZIO4O import EZIO4O
 from .FanLinc import FanLinc
 from .IOLinc import IOLinc
 from .KeypadLinc import KeypadLinc

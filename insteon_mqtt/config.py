@@ -1,13 +1,13 @@
-#===========================================================================
+# ===========================================================================
 #
-# Configuration file utiltiies.
+# Configuration file utilities.
 #
-#===========================================================================
+# ===========================================================================
 
-__doc__ = """Configuration file utilties
+__doc__ = """Configuration file utilities
 """
 
-#===========================================================================
+# ===========================================================================
 import os.path
 import yaml
 from . import device
@@ -16,25 +16,26 @@ from . import device
 devices = {
     # Key is config file input.  Value is tuple of (class, **kwargs) of the
     # class to use and any extra keyword args to pass to the constructor.
-    'dimmer' : (device.Dimmer, {}),
-    'battery_sensor' : (device.BatterySensor, {}),
-    'fan_linc' : (device.FanLinc, {}),
-    'io_linc' : (device.IOLinc, {}),
-    'keypad_linc' : (device.KeypadLinc, {'dimmer' : True}),
-    'keypad_linc_sw' : (device.KeypadLinc, {'dimmer' : False}),
-    'leak' : (device.Leak, {}),
-    'mini_remote1' : (device.Remote, {'num_button' : 1}),
-    'mini_remote4' : (device.Remote, {'num_button' : 4}),
-    'mini_remote8' : (device.Remote, {'num_button' : 8}),
-    'motion' : (device.Motion, {}),
-    'outlet' : (device.Outlet, {}),
-    'smoke_bridge' : (device.SmokeBridge, {}),
-    'switch' : (device.Switch, {}),
-    'thermostat' : (device.Thermostat, {}),
-    }
+    "dimmer": (device.Dimmer, {}),
+    "battery_sensor": (device.BatterySensor, {}),
+    "ezio4o": (device.EZIO4O, {}),
+    "fan_linc": (device.FanLinc, {}),
+    "io_linc": (device.IOLinc, {}),
+    "keypad_linc": (device.KeypadLinc, {"dimmer": True}),
+    "keypad_linc_sw": (device.KeypadLinc, {"dimmer": False}),
+    "leak": (device.Leak, {}),
+    "mini_remote1": (device.Remote, {"num_button": 1}),
+    "mini_remote4": (device.Remote, {"num_button": 4}),
+    "mini_remote8": (device.Remote, {"num_button": 8}),
+    "motion": (device.Motion, {}),
+    "outlet": (device.Outlet, {}),
+    "smoke_bridge": (device.SmokeBridge, {}),
+    "switch": (device.Switch, {}),
+    "thermostat": (device.Thermostat, {}),
+}
 
 
-#===========================================================================
+# ===========================================================================
 def load(path):
     """Load the configuration file.
 
@@ -48,7 +49,7 @@ def load(path):
         return yaml.load(f, Loader)
 
 
-#===========================================================================
+# ===========================================================================
 def apply(config, mqtt, modem):
     """Apply the configuration to the main MQTT and modem objects.
 
@@ -60,11 +61,11 @@ def apply(config, mqtt, modem):
     # We must load the MQTT config first - loading the insteon config
     # triggers device creation and we need the various MQTT config's set
     # before that.
-    mqtt.load_config(config['mqtt'])
-    modem.load_config(config['insteon'])
+    mqtt.load_config(config["mqtt"])
+    modem.load_config(config["insteon"])
 
 
-#===========================================================================
+# ===========================================================================
 def find(name):
     """Find a device class from a description.
 
@@ -82,13 +83,14 @@ def find(name):
     """
     dev = devices.get(name.lower(), None)
     if not dev:
-        raise Exception("Unknown device name '%s'.  Valid names are "
-                        "%s." % (name, devices.keys()))
+        raise Exception(
+            "Unknown device name '%s'.  Valid names are " "%s." % (name, devices.keys())
+        )
 
     return dev
 
 
-#===========================================================================
+# ===========================================================================
 # YAML multi-file loading helper.  Original code is from here:
 # https://davidchall.github.io/yaml-includes.html (with no license so I'm
 # assuming it's in the public domain).
@@ -99,13 +101,13 @@ class Loader(yaml.Loader):
         Args:
           file (file):  File like object to read from.
         """
-        yaml.Loader.add_constructor('!include', Loader.include)
-        yaml.Loader.add_constructor('!rel_path', Loader.rel_path)
+        yaml.Loader.add_constructor("!include", Loader.include)
+        yaml.Loader.add_constructor("!rel_path", Loader.rel_path)
 
         super().__init__(file)
         self._base_dir = os.path.split(file.name)[0]
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     def include(self, node):
         """!include file command.  Supports:
 
@@ -128,21 +130,20 @@ class Loader(yaml.Loader):
             return result
 
         else:
-            msg = ("Error: unrecognized node type in !include statement: %s"
-                   % str(node))
+            msg = "Error: unrecognized node type in !include statement: %s" % str(node)
             raise yaml.constructor.ConstructorError(msg)
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     def _load_file(self, filename):
         """Read the requested file.
         Args:
           filename (str):  The file name to load.
         """
         path = os.path.join(self._base_dir, filename)
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             return yaml.load(f, Loader)
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     def rel_path(self, node):
         """Handles !rel_path file command.  Supports:
 
@@ -160,8 +161,8 @@ class Loader(yaml.Loader):
             return os.path.join(self._base_dir, filename)
 
         else:
-            msg = ("Error: unrecognized node type in !rel_path statement: %s"
-                   % str(node))
+            msg = "Error: unrecognized node type in !rel_path statement: %s" % str(node)
             raise yaml.constructor.ConstructorError(msg)
 
-#===========================================================================
+
+# ===========================================================================

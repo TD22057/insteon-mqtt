@@ -21,7 +21,6 @@ logging:
 
   # Print messages to the screen.
   #screen: False
-
   # Print messages to a file.
   #file: /var/log/insteon_mqtt.log
 
@@ -33,7 +32,7 @@ logging:
 insteon:
   # Serial device:
   # USB PLM modem
-  port: '/dev/insteon'
+  port: "/dev/insteon"
   #baudrate: 19200
 
   # Network socket:
@@ -45,14 +44,14 @@ insteon:
 
   # Device database file storage location.
   #storage: '/var/lib/insteon-mqtt'
-  storage: 'data'
+  storage: "data"
 
   # Automatically refresh device states and databases (if needed) at
   # startup.  This may be slow depending on the number of devices.
   startup_refresh: False
 
   # Path to Scenes Definition file (Optional)
-  # The path can be specified either as an absolute path or as a relative path 
+  # The path can be specified either as an absolute path or as a relative path
   # using the !rel_path directive.  Where the path is relative to the
   # config.yaml location
   #
@@ -66,15 +65,15 @@ insteon:
   devices:
     # On/off switch devices (outlets, wall switches, appliance modules, etc).
     switch:
-      - 3a.29.84: 'xmas tree'
-      - 26.48.ff: 'xmas stairs'
-      - 37.2d.20: 'deck'
+      - 3a.29.84: "xmas tree"
+      - 26.48.ff: "xmas stairs"
+      - 37.2d.20: "deck"
 
     # Dimming devices (outlets, wall switches, lamp modules, etc).
     dimmer:
-      - 3a.29.84: 'lamp2'
+      - 3a.29.84: "lamp2"
       - 48.3d.46
-      - 48.b0.ad: 'dim1'
+      - 48.b0.ad: "dim1"
 
     # Battery powered sensors (door, hidden door, window).
     battery_sensor:
@@ -82,19 +81,19 @@ insteon:
 
     # Battery powered motion sensors.
     motion:
-      - 21.d6.d9: 'door'
+      - 21.d6.d9: "door"
 
     # Battery powered mini remotes.
-    mini_remote1:  # Single Button Remotes
+    mini_remote1: # Single Button Remotes
 
-    mini_remote4:  # Remotes with 4 Buttons
+    mini_remote4: # Remotes with 4 Buttons
 
-    mini_remote8:  # Remotes with 8 Buttons
-      - 3f.07.d4: 'remote1'
+    mini_remote8: # Remotes with 8 Buttons
+      - 3f.07.d4: "remote1"
 
     # Smoke bridge module.
     smoke_bridge:
-      - 44.a3.79: 'smoke alarm'
+      - 44.a3.79: "smoke alarm"
 
     # FanLinc fan controller (dimmer+fan).
     #fan_linc:
@@ -102,11 +101,11 @@ insteon:
 
     # KeypadLinc dimmers (dimmer+scene controller).
     keypad_linc:
-      - 46.7b.bc: 'porch'
+      - 46.7b.bc: "porch"
 
     # KeypadLinc switches (on/off+scene controller).
     keypad_linc_sw:
-      - 3c.42.9b: 'kp2'
+      - 3c.42.9b: "kp2"
 
     # Leak sensors.
     #leak:
@@ -114,11 +113,15 @@ insteon:
 
     # IOLinc relay controllers
     io_linc:
-      - 45.33.d4: 'garage'
+      - 45.33.d4: "garage"
 
-    # On/off ouetlets
+    # On/off outlets
     #outlet:
     #  - aa.bb.cc: 'outlet'
+
+    # EZIO4O 4 output relay modules
+    #ezio4o:
+    #  - aa.bb.cc: 'ezio4o'
 
     # Thermostatus
     thermostat:
@@ -152,8 +155,7 @@ mqtt:
   # Insteon devices, network, and scenes.  The address or name of the
   # device will follow the command topic (insteon/command/aa.bb.cc) to
   # send these low level commands.
-  cmd_topic: 'insteon/command'
-
+  cmd_topic: "insteon/command"
 
   # Trigger modem virtual scenes.  Modem scenes are where the modem is a
   # controller and emits a scene broadcast with the specified group number.
@@ -184,9 +186,8 @@ mqtt:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
-    scene_topic: 'insteon/modem/scene'
-    scene_payload: '{{value}}'
-
+    scene_topic: "insteon/modem/scene"
+    scene_payload: "{{value}}"
 
   # IMPORTANT: all devices must have the pair() command run one time to make
   # sure that the all the necessary controller/responder links are defined
@@ -215,8 +216,8 @@ mqtt:
     #   fast = 0/1
     #   instant = 0/1
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
-    state_topic: 'insteon/{{address}}/state'
-    state_payload: '{{on_str.upper()}}'
+    state_topic: "insteon/{{address}}/state"
+    state_payload: "{{on_str.upper()}}"
 
     # Manual mode (holding down a button) is triggered once when the button
     # is held and once when it's released.  Available variables for
@@ -237,13 +238,13 @@ mqtt:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
-    on_off_topic: 'insteon/{{address}}/set'
+    on_off_topic: "insteon/{{address}}/set"
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
     # Scene on/off command.  This triggers the scene broadcast on the switch
     # in the same way clicking the button would.  The inputs are the same as
     # those for the on_off topic and payload.
-    scene_topic: 'insteon/{{address}}/scene'
+    scene_topic: "insteon/{{address}}/scene"
     scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
   #------------------------------------------------------------------------
@@ -276,9 +277,9 @@ mqtt:
     #   fast = 0/1
     #   instant = 0/1
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
-    state_topic: 'insteon/{{address}}/state'
+    state_topic: "insteon/{{address}}/state"
     state_payload: >
-       { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
+      { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
 
     # Manual mode (holding down a button) is triggered once when the button
     # is held and once when it's released.  Available variables for
@@ -303,7 +304,7 @@ mqtt:
     #          a variable from a json payload.
     # NOTE: this isn't used by the HA example above - it's only useful when
     # treating the dimmer as an on/off switch and sending ON/OFF payloads
-    on_off_topic: 'insteon/{{address}}/set'
+    on_off_topic: "insteon/{{address}}/set"
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
     # Input dimming on/off command.  Similar functionality to the cmd_topic
@@ -322,22 +323,22 @@ mqtt:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
-    level_topic: 'insteon/{{address}}/level'
+    level_topic: "insteon/{{address}}/level"
     # NOTE: HASS JSON switch doesn't send brightness in some cases
     # when actuated so handle that here in the template code.  The
     # other HASS MQTT options also have this problem.
     level_payload: >
-       { "cmd" : "{{json.state.lower()}}",
-         "level" : {% if json.brightness is defined %}
-                      {{json.brightness}}
-                   {% else %}
-                      255
-                   {% endif %} }
+      { "cmd" : "{{json.state.lower()}}",
+        "level" : {% if json.brightness is defined %}
+                     {{json.brightness}}
+                  {% else %}
+                     255
+                  {% endif %} }
 
     # Scene on/off command.  This triggers the scene broadcast on the switch
     # in the same way clicking the button would.  The inputs are the same as
     # those for the on_off topic and payload.
-    scene_topic: 'insteon/{{address}}/scene'
+    scene_topic: "insteon/{{address}}/scene"
     scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
   #------------------------------------------------------------------------
@@ -362,8 +363,8 @@ mqtt:
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off'/'on'
-    state_topic: 'insteon/{{address}}/state'
-    state_payload: '{{on_str.upper()}}'
+    state_topic: "insteon/{{address}}/state"
+    state_payload: "{{on_str.upper()}}"
 
     # Output low battery topic and payload.  This message is sent
     # whenever the device detects a low battery. Available variables
@@ -372,8 +373,8 @@ mqtt:
     #   name = 'device name'
     #   is_low = 0/1
     #   is_low_str = 'off'/'on'
-    low_battery_topic: 'insteon/{{address}}/battery'
-    low_battery_payload: '{{is_low_str.upper()}}'
+    low_battery_topic: "insteon/{{address}}/battery"
+    low_battery_payload: "{{is_low_str.upper()}}"
 
   #------------------------------------------------------------------------
   # Motion sensors
@@ -400,8 +401,8 @@ mqtt:
     #   is_dusk = 0/1
     #   is_dusk_str = 'off'/'on'
     #   state = 'dawn'/'dusk'
-    dawn_dusk_topic: 'insteon/{{address}}/dawn'
-    dawn_dusk_payload: '{{is_dawn_str.upper()}}'
+    dawn_dusk_topic: "insteon/{{address}}/dawn"
+    dawn_dusk_payload: "{{is_dawn_str.upper()}}"
 
   #------------------------------------------------------------------------
   # Leak sensors
@@ -432,8 +433,8 @@ mqtt:
     #   is_dry = 0/1
     #   is_dry_str = 'off'/'on'
     #   state = 'wet'/'dry'
-    wet_dry_topic: 'insteon/{{address}}/wet'
-    wet_dry_payload: '{{is_wet_str.upper()}}'
+    wet_dry_topic: "insteon/{{address}}/wet"
+    wet_dry_payload: "{{is_wet_str.upper()}}"
 
     # Output heartbeat topic and payload.  This message is sent
     # every 24 hours. Available variables for templating are:
@@ -441,8 +442,8 @@ mqtt:
     #   name = 'device name'
     #   is_heartbeat = 0/1
     #   heartbeat_time = UNIX time float of the last heartbeat
-    heartbeat_topic: 'insteon/{{address}}/heartbeat'
-    heartbeat_payload: '{{heartbeat_time}}'
+    heartbeat_topic: "insteon/{{address}}/heartbeat"
+    heartbeat_payload: "{{heartbeat_time}}"
 
   #------------------------------------------------------------------------
   # Smoke Bridge
@@ -476,17 +477,17 @@ mqtt:
     #   on = 0/1
     #   on_str = 'off'/'on'
     #   type = 'smoke'/'co'/'low_battery'/'error'/'clear'
-    smoke_topic: 'insteon/{{address}}/smoke'
-    smoke_payload: '{{on_str.upper()}}'
+    smoke_topic: "insteon/{{address}}/smoke"
+    smoke_payload: "{{on_str.upper()}}"
 
-    co_topic: 'insteon/{{address}}/co'
-    co_payload: '{{on_str.upper()}}'
+    co_topic: "insteon/{{address}}/co"
+    co_payload: "{{on_str.upper()}}"
 
-    battery_topic: 'insteon/{{address}}/battery'
-    battery_payload: '{{on_str.upper()}}'
+    battery_topic: "insteon/{{address}}/battery"
+    battery_payload: "{{on_str.upper()}}"
 
-    error_topic: 'insteon/{{address}}/error'
-    error_payload: '{{on_str.upper()}}'
+    error_topic: "insteon/{{address}}/error"
+    error_payload: "{{on_str.upper()}}"
 
   #------------------------------------------------------------------------
   # Thermostat
@@ -521,40 +522,40 @@ mqtt:
     # directly below
     #   temp_c = temperature in celsius
     #   temp_f = temperature in farenheit
-    ambient_temp_topic: 'insteon/{{address}}/ambient_temp'
+    ambient_temp_topic: "insteon/{{address}}/ambient_temp"
     ambient_temp_payload: '{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}'
-    cool_sp_state_topic: 'insteon/{{address}}/cool_sp_state'
+    cool_sp_state_topic: "insteon/{{address}}/cool_sp_state"
     cool_sp_state_payload: '{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}'
-    heat_sp_state_topic: 'insteon/{{address}}/heat_sp_state'
+    heat_sp_state_topic: "insteon/{{address}}/heat_sp_state"
     heat_sp_state_payload: '{"temp_f" : {{temp_f}}, "temp_c" : {{temp_c}}}'
     #   fan_mode = "on", "off"
     #   is_fan_on = 0/1
-    fan_state_topic: 'insteon/{{address}}/fan_state'
-    fan_state_payload: '{{fan_mode.upper()}}'
+    fan_state_topic: "insteon/{{address}}/fan_state"
+    fan_state_payload: "{{fan_mode.upper()}}"
     #   mode = 'off', 'auto', 'heat', 'cool', 'program'
-    mode_state_topic: 'insteon/{{address}}/mode_state'
-    mode_state_payload: '{{mode.upper()}}'
+    mode_state_topic: "insteon/{{address}}/mode_state"
+    mode_state_payload: "{{mode.upper()}}"
     #   humid = humidity percentage
-    humid_state_topic: 'insteon/{{address}}/humid_state'
-    humid_state_payload: '{{humid}}'
+    humid_state_topic: "insteon/{{address}}/humid_state"
+    humid_state_payload: "{{humid}}"
     #   status = "off", "heating", "cooling"
     #   is_heating = 0/1
     #   is_cooling = 0/1
-    status_state_topic: 'insteon/{{address}}/status_state'
-    status_state_payload: '{{status.upper()}}'
+    status_state_topic: "insteon/{{address}}/status_state"
+    status_state_payload: "{{status.upper()}}"
     # Caution, there is no push update for the hold or energy state.  ie, if
     # you press hold on the physical device, you will not get any notice of
     # this unless you run get_status().  There is also no way to programatically
     # change the hold state or energy state
     #   hold_str = 'off', 'temp'
     #   is_hold = 0/1
-    hold_state_topic: 'insteon/{{address}}/hold_state'
-    hold_state_payload: '{{hold_str.upper()}}'
+    hold_state_topic: "insteon/{{address}}/hold_state"
+    hold_state_payload: "{{hold_str.upper()}}"
     # See caution in hold state above
     #   energy_str = 'off', 'on'
     #   is_energy = 0/1
-    energy_state_topic: 'insteon/{{address}}/energ_state'
-    energy_state_payload: '{{energy_str.upper()}}'
+    energy_state_topic: "insteon/{{address}}/energ_state"
+    energy_state_payload: "{{energy_str.upper()}}"
 
     # Command Topics
     # Available variables for templating all of these commands are:
@@ -567,19 +568,19 @@ mqtt:
     # Mode state command.  The output of passing the payload through the
     # template must match the following:
     #   { "cmd" : "auto"/"off"/"heat"/"cool","program" }
-    mode_command_topic: 'insteon/{{address}}/mode_command'
+    mode_command_topic: "insteon/{{address}}/mode_command"
     mode_command_payload: '{ "cmd" : "{{value.lower()}}" }'
     # Fan state command.  The output of passing the payload through the
     # template must match the following:
     #   { "cmd" : "auto"/"on" }
-    fan_command_topic: 'insteon/{{address}}/fan_command'
+    fan_command_topic: "insteon/{{address}}/fan_command"
     fan_command_payload: '{ "cmd" : "{{value.lower()}}" }'
     # Temp setpoint commands. The payloads should be in the form of {temp_c:
     # float, temp_f: float} Only one unit needs to be present.  If temp_c is
     # present it will be used regardless
-    heat_sp_command_topic: 'insteon/{{address}}/heat_sp_command'
+    heat_sp_command_topic: "insteon/{{address}}/heat_sp_command"
     heat_sp_payload: '{ "temp_f" : {{value}} }'
-    cool_sp_command_topic: 'insteon/{{address}}/cool_sp_command'
+    cool_sp_command_topic: "insteon/{{address}}/cool_sp_command"
     cool_sp_payload: '{ "temp_f" : {{value}} }'
 
   #------------------------------------------------------------------------
@@ -599,8 +600,8 @@ mqtt:
     #   mode = 'normal'/'fast'/'instant'
     #   fast = 0/1
     #   instant = 0/1
-    state_topic: 'insteon/{{address}}/state/{{button}}'
-    state_payload: '{{on_str.upper()}}'
+    state_topic: "insteon/{{address}}/state/{{button}}"
+    state_payload: "{{on_str.upper()}}"
 
     # Manual mode (holding down a button) is triggered once when the button
     # is held and once when it's released.  Available variables for
@@ -646,8 +647,8 @@ mqtt:
     #   level = 0/1/2/3
     #   level_str = 'off'/'low'/'medium'/'high'
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
-    fan_state_topic: 'insteon/{{address}}/fan/state'
-    fan_state_payload: '{{on_str.upper()}}'
+    fan_state_topic: "insteon/{{address}}/fan/state"
+    fan_state_payload: "{{on_str.upper()}}"
 
     # Fan on/off command.  Similar functionality to the cmd_topic but only
     # for turning the device on and off.  If reason is input, is will be
@@ -660,14 +661,14 @@ mqtt:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
-    fan_on_off_topic: 'insteon/{{address}}/fan/set'
+    fan_on_off_topic: "insteon/{{address}}/fan/set"
     fan_on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
     # Output fan speed state change topic and payload.  Set to empty
     # to turn off.  The same templating variables are available as
     # fan_state_topic agove.
-    fan_speed_topic: 'insteon/{{address}}/fan/speed/state'
-    fan_speed_payload: '{{level_str}}'
+    fan_speed_topic: "insteon/{{address}}/fan/speed/state"
+    fan_speed_payload: "{{level_str}}"
 
     # Fan speed change command.  Similar functionality to the cmd_topic but
     # only for turning the device on and off.  If reason is input, is will be
@@ -683,7 +684,7 @@ mqtt:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
-    fan_speed_set_topic: 'insteon/{{address}}/fan/speed/set'
+    fan_speed_set_topic: "insteon/{{address}}/fan/speed/set"
     fan_speed_set_payload: '{ "cmd" : "{{value.lower()}}" }'
 
   #------------------------------------------------------------------------
@@ -737,8 +738,8 @@ mqtt:
     #   fast = 0/1
     #   instant = 0/1
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
-    btn_state_topic: 'insteon/{{address}}/state/{{button}}'
-    btn_state_payload: '{{on_str.upper()}}'
+    btn_state_topic: "insteon/{{address}}/state/{{button}}"
+    btn_state_payload: "{{on_str.upper()}}"
 
     # Dimmer output state change topic and payload for button 1.  This
     # message is sent whenever the device dimmer state changes for any
@@ -753,9 +754,9 @@ mqtt:
     #   fast = 0/1
     #   instant = 0/1
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
-    dimmer_state_topic: 'insteon/{{address}}/state/1'
+    dimmer_state_topic: "insteon/{{address}}/state/1"
     dimmer_state_payload: >
-       { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
+      { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
 
     # Manual mode (holding down a button) is triggered once when the button
     # is held and once when it's released.  Available variables for
@@ -777,7 +778,7 @@ mqtt:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
-    btn_on_off_topic: 'insteon/{{address}}/set/{{button}}'
+    btn_on_off_topic: "insteon/{{address}}/set/{{button}}"
     btn_on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
     # Input dimming on/off command for button 1.  Similar functionality to
@@ -797,22 +798,22 @@ mqtt:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
-    dimmer_level_topic: 'insteon/{{address}}/set/1'
+    dimmer_level_topic: "insteon/{{address}}/set/1"
     # NOTE: HASS JSON switch doesn't send brightness in some cases
     # when actuated so handle that here in the template code.  The
     # other HASS MQTT options also have this problem.
     dimmer_level_payload: >
-       { "cmd" : "{{json.state.lower()}}",
-         "level" : {% if json.brightness is defined %}
-                      {{json.brightness}}
-                   {% else %}
-                      255
-                   {% endif %} }
+      { "cmd" : "{{json.state.lower()}}",
+        "level" : {% if json.brightness is defined %}
+                     {{json.brightness}}
+                  {% else %}
+                     255
+                  {% endif %} }
 
     # Scene on/off command.  This triggers the scene broadcast on the switch
     # in the same way clicking the button would.  The inputs are the same as
     # those for the btn_on_off topic and payload.
-    btn_scene_topic: 'insteon/{{address}}/scene/{{button}}'
+    btn_scene_topic: "insteon/{{address}}/scene/{{button}}"
     btn_scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
   #------------------------------------------------------------------------
@@ -844,8 +845,8 @@ mqtt:
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off'/'on'
-    state_topic: 'insteon/{{address}}/state'
-    state_payload: '{{on_str.upper()}}'
+    state_topic: "insteon/{{address}}/state"
+    state_payload: "{{on_str.upper()}}"
 
     # Input on/off command.  This forces the relay on/off and ignores the
     # momentary-C sensor setting.  Use this to force the relay to respond.
@@ -857,14 +858,14 @@ mqtt:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
-    on_off_topic: 'insteon/{{address}}/set'
+    on_off_topic: "insteon/{{address}}/set"
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
     # Scene on/off command.  This triggers the IOLinc as if it were a
     # responder to a scene command and is the "correct" way to trigger the
     # IOLinc relay in that it respects the momentary settings.  The inputs
     # are the same as those for the on_off topic and payload.
-    scene_topic: 'insteon/{{address}}/scene'
+    scene_topic: "insteon/{{address}}/scene"
     scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
   #------------------------------------------------------------------------
@@ -896,8 +897,8 @@ mqtt:
     #   fast = 0/1
     #   instant = 0/1
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
-    state_topic: 'insteon/{{address}}/state/{{button}}'
-    state_payload: '{{on_str.upper()}}'
+    state_topic: "insteon/{{address}}/state/{{button}}"
+    state_payload: "{{on_str.upper()}}"
 
     # Input on/off command.  Similar functionality to the cmd_topic but only
     # for turning the device on and off.  If reason is input, is will be
@@ -910,13 +911,63 @@ mqtt:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
-    on_off_topic: 'insteon/{{address}}/set/{{button}}'
+    on_off_topic: "insteon/{{address}}/set/{{button}}"
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
     # Scene on/off command.  This triggers the scene broadcast on the outlet
     # in the same way clicking the button would.  The inputs are the same as
     # those for the on_off topic and payload.
-    scene_topic: 'insteon/{{address}}/scene/{{button}}'
+    scene_topic: "insteon/{{address}}/scene/{{button}}"
     scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
+  #------------------------------------------------------------------------
+  # EZIO4O 4 relay output module
+  #------------------------------------------------------------------------
+  # EZIO4O is a 4 relay output wall plug module from Smartenit.
+  # Each relay has a normally open and a normally closed contact.
+  # Device relay 1 to 4 correspond to topics button 1 to 4.
+  # In Home Assistant use MQTT switch with a configuration like:
+  #   switch:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/state/1'
+  #       command_topic: 'insteon/aa.bb.cc/set/1'
+  #   switch:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/state/2'
+  #       command_topic: 'insteon/aa.bb.cc/set/2'
+  ezio4o:
+    # Output state change topic and template.  This message is sent
+    # whenever the device state changes for any reason.  Available
+    # variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   button = 1 to 4 (relay number)
+    #   on = 0/1
+    #   on_str = 'off'/'on'
+    #   mode = 'normal'/'fast'/'instant'
+    #   fast = 0/1
+    #   instant = 0/1
+    #   reason = 'device'/'scene'/'command'/'refresh'/'...'
+    state_topic: "insteon/{{address}}/state/{{button}}"
+    state_payload: "{{on_str.upper()}}"
+
+    # Input on/off command.  Similar functionality to the cmd_topic but only
+    # for turning the device on and off.  If reason is input, is will be
+    # passed through to the state_payload.  The output of passing the payload
+    # through the template must match the following:
+    #   { "cmd" : 'on'/'off', "button": button,
+    #             ["mode" : 'normal'/'fast'/'instant'],
+    #             ["fast" : 1/0], ["instant" : 1/0], ["reason" : "..."] }
+    # Available variables for templating are:
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
+    on_off_topic: "insteon/{{address}}/set/{{button}}"
+    on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+    # Scene on/off command.  This triggers the scene broadcast on the outlet
+    # in the same way clicking the button would.  The inputs are the same as
+    # those for the on_off topic and payload.
+    scene_topic: "insteon/{{address}}/scene/{{button}}"
+    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 #----------------------------------------------------------------

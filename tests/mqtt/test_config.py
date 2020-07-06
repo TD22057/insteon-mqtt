@@ -1,22 +1,33 @@
-#===========================================================================
+# ===========================================================================
 #
-# Tests for: insteont_mqtt/mqtt/config.py
+# Tests for: insteon_mqtt/mqtt/config.py
 #
-#===========================================================================
+# ===========================================================================
 import insteon_mqtt as IM
 import helpers as H
 
 
 class Test_config:
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     def test_find(self, tmpdir):
         proto = H.main.MockProtocol()
         modem = H.main.MockModem(tmpdir)
         addr = IM.Address(1, 2, 3)
 
-        types = ["BatterySensor", "Dimmer", "FanLinc", "IOLinc", "KeypadLinc",
-                 "Leak", "Motion", "Outlet", "SmokeBridge", "Switch",
-                 "Thermostat"]
+        types = [
+            "BatterySensor",
+            "Dimmer",
+            "EZIO4O",
+            "FanLinc",
+            "IOLinc",
+            "KeypadLinc",
+            "Leak",
+            "Motion",
+            "Outlet",
+            "SmokeBridge",
+            "Switch",
+            "Thermostat",
+        ]
         instances = []
         for t in types:
             dev = getattr(IM.device, t)
@@ -39,4 +50,5 @@ class Test_config:
             cdev = IM.mqtt.config.find(instances[i])
             assert cdev is mdev, "Finding device for type %s" % types[i]
 
-#===========================================================================
+
+# ===========================================================================
