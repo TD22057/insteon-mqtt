@@ -447,10 +447,10 @@ class Dimmer(Base):
         if 'data_3' in data:
             data_3 = data['data_3']
         if not is_controller:
-            if 'ramp' in data:
+            if 'ramp_rate' in data:
                 data_2 = 0x1f
                 for ramp_key, ramp_value in self.ramp_pretty.items():
-                    if data['ramp'] >= ramp_value:
+                    if data['ramp_rate'] >= ramp_value:
                         data_2 = ramp_key
                         break
             if 'on_level' in data:
