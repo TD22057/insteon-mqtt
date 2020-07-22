@@ -124,7 +124,7 @@ class SceneManager:
         controllers are merged.
 
         This is a companion to compress_responders and compress_n_way.  These
-        are seperate functions to that they can be called seperately using
+        are seperate functions so that they can be called seperately using
         Stacks.
 
         This function only processes the scenes in a single pass.  If it runs
@@ -164,7 +164,7 @@ class SceneManager:
         merged.
 
         This is a companion to compress_controllers and compress_n_way.
-        These are seperate functions to that they can be called seperately
+        These are seperate functions so that they can be called seperately
         using Stacks.
 
         This function only processes the scenes in a single pass.  If it runs
@@ -205,7 +205,7 @@ class SceneManager:
         definition..
 
         This is a companion to compress_responders and compress_controllers.
-        These are seperate functions to that they can be called seperately
+        These are seperate functions so that they can be called seperately
         using Stacks.
 
         This function only processes the scenes in a single pass.  If it runs
