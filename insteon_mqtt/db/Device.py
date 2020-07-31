@@ -338,7 +338,7 @@ class Device:
           group:         (int) The group the entry is for.
           is_controller: (bool) True if the device is a controller.
           data:          (bytes) 3 data bytes.  [0] is the on level, [1] is the
-                         ramp rate, [2] is the local group to control.
+                         ramp rate.
           on_done:       Optional callback which will be called when the
                          command completes.
         """

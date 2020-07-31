@@ -7,7 +7,6 @@
 #
 #===========================================================================
 import errno
-import itertools
 import select
 import time
 from .. import log
@@ -51,10 +50,8 @@ class Manager:
         self.write = []
         self.error = []
 
-        # Map of fileno to Link objects.
+        # Map of filno to Link objects.
         self.links = {}
-        # List of links to only call poll() on.
-        self.poll_links = []
 
         # List of unconnected link tuples (Link, time) where time is the time
         # is the next time to try reconnecting the linnk.
@@ -70,28 +67,7 @@ class Manager:
         return len(self.links) + len(self.unconnected)
 
     #-----------------------------------------------------------------------
-    def add_poll(self, link):
-        """Add a Link that is only polled.
-
-        The input link does not need a file descriptor and only has to
-        support the poll() method from the Link class.  The link closing
-        signal can be used to remove the link from the manager.
-
-        Args:
-          link (Link):  Link object to add to the manager.
-
-        """
-        LOG.debug("Polling link added: %s", link)
-        self.poll_links.append(link)
-
-        # Mirror the link signals from a regular link.  We may never use
-        # these but the symmetry might come in handy later.
-        link.signal_closing.connect(self.poll_link_closing)
-        link.signal_connected.emit(link, True)
-
-    #-----------------------------------------------------------------------
     def add(self, link, connected=True):
-
         """Add a Link to the manager.
 
         To remove a link, call link.close().
@@ -240,9 +216,8 @@ class Manager:
         # any kind.  There are some cases where the MQTT client poll can
         # trigger a close - I'm not sure exactly why but it's shown up in
         # user reports.  So copy the links before iterating since closing the
-        # link mods the dict which isn't allowed.  This isn't ideal but the
-        # number of links should be small so it probably doesn't matter.
-        for link in itertools.chain(list(self.links.values()), self.poll_links):
+        # link mods the dict which isn't allowed.
+        for link in list(self.links.values()):
             link.poll(t)
 
     #-----------------------------------------------------------------------
@@ -262,19 +237,6 @@ class Manager:
         if dt and dt > 0:
             data = (link, time.time() + dt)
             self.unconnected.append(data)
-
-        # Emit the connected signal to let anyone else know that the link is
-        # no longer connected.
-        link.signal_connected.emit(link, False)
-
-    #-----------------------------------------------------------------------
-    def poll_link_closing(self, link):
-        """Callback when a poll only link is closing.
-
-        Arg:
-          link (Link):  The link that is closing.
-        """
-        self.poll_links.remove(link)
 
         # Emit the connected signal to let anyone else know that the link is
         # no longer connected.

@@ -3,6 +3,7 @@
 # Stack class definition.
 #
 #===========================================================================
+import tempfile
 from ..Signal import Signal
 from .. import log
 
@@ -13,11 +14,7 @@ class Stack:
     """A Fake Network Interface for Queueing and 'Asynchronously' Running
     Functional Calls
 
-    This is a polling only network "link".  Unlike regular links that do read
-    and write operations when they report they are ready, this class is
-    designed to only be polled during the event loop.
-
-    This is like a network link for reading and writing but  that is handled
+    This class appears as though it is a read/write interface that is handled
     my the network manager.  But in reality it is just a wrapper for inserting
     function calls into the network loop.  This allows long functional calls
     to be broken up into multiple sub calls that can be called on seperate
@@ -38,14 +35,55 @@ class Stack:
         # Sent when the link is going down.  signature: (Link link)
         self.signal_closing = Signal()
 
+        # Sent when the link changes state on whether or not it has bytes
+        # that need to be written to the link.  signature: (Link link, bool
+        # write_active)
+        self.signal_needs_write = Signal()
+
         # The manager will emit this after the connection has been
         # established and everything is ready.  Links should usually not emit
         # this directly.  signature: (Link link, bool connected)
         self.signal_connected = Signal()
 
+        # Generate a fileno using a temp file.  We could just pass 0, which
+        # seems to work, but not sure if this could cause a subtle bug. It
+        # might be better to have this be an actual file
+        self.tempfile = tempfile.TemporaryFile()
+
         # The list of groups of functions to call.  Each item should be a
         # StackGroup
         self.groups = []
+
+    #-----------------------------------------------------------------------
+    def retry_connect_dt(self):
+        """Return a positive integer (seconds) if the link should reconnect.
+
+        If this returns None, the link will not be reconnected if it closes.
+        Otherwise this is the retry interval in seconds to try and reconnect
+        the link by calling connect().
+        """
+        return None
+
+    #-----------------------------------------------------------------------
+    def connect(self):
+        """Connect the link to the device.
+
+        This should connect to the socket, serial port, file, etc.
+
+        Returns:
+          bool:  Returns True if the connection was successful or False it
+          it failed.
+        """
+        return True
+
+    #-----------------------------------------------------------------------
+    def fileno(self):
+        """Return the file descriptor to watch for this link.
+
+        Returns:
+          int:  Returns the descriptor (obj.fileno() usually) to monitor.
+        """
+        return self.tempfile
 
     #-----------------------------------------------------------------------
     def poll(self, t):
@@ -100,17 +138,46 @@ class Stack:
         return new_stack
 
     #-----------------------------------------------------------------------
+    def read_from_link(self):
+        """Read data from the link.
+
+        This will be called by the manager when there is data available on
+        the file descriptor for reading.
+
+        Returns:
+           int:  Return -1 if the link had an error.  Or any other integer
+           to indicate success.
+        """
+        raise NotImplementedError("%s.read_from_link() not implemented" %
+                                  self.__class__)
+
+    #-----------------------------------------------------------------------
+    def write_to_link(self, t):
+        """Write data from the link.
+
+        This will be called by the manager when the file descriptor can be
+        written to.  It will only be called after the link as emitted the
+        signal_needs_write(True).  Once all the data has been written, the
+        link should call self.signal_needs_write.emit(False).
+
+        Args:
+           t (float):  The current time (time.time).
+        """
+        raise NotImplementedError("%s.write_to_link() not implemented" %
+                                  self.__class__)
+
+    #-----------------------------------------------------------------------
     def close(self):
         """Close the link.
 
         The link must call self.signal_closing.emit() after closing.
         """
-        self.signal_closing.emit()
+        raise NotImplementedError("%s.close() not implemented" %
+                                  self.__class__)
 
     #-----------------------------------------------------------------------
 
 
-#===========================================================================
 class StackGroup:
     """A Simple Class for Grouping Functional Calls
 
