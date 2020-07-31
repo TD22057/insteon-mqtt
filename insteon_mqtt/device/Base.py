@@ -539,7 +539,6 @@ class Base:
         else:
             on_done(True, "Sync Complete", None)
 
-    #-----------------------------------------------------------------------
     def _sync_del(self, entry, dry_run, on_done=None):
         '''Deletes a link on the device with a Log UI Message
 
@@ -552,7 +551,6 @@ class Base:
             LOG.ui("  Deleting %s:", entry)
             self.db.delete_on_device(self, entry, on_done=on_done)
 
-    #-----------------------------------------------------------------------
     def _sync_add(self, entry, dry_run, on_done=None):
         ''' Adds a link to the device with a Log UI Message
 
@@ -567,7 +565,6 @@ class Base:
                                   entry.is_controller, entry.data,
                                   on_done=on_done)
 
-    #-----------------------------------------------------------------------
     def import_scenes(self, dry_run=True, save=True, on_done=None):
         """Imports Scenes Defined on the Device into the Scenes Config.
 
