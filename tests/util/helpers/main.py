@@ -16,9 +16,25 @@ class MockModem:
         self.addr = IM.Address(0x20, 0x30, 0x40)
         self.save_path = str(save_path)
         self.scenes = []
+        self.devices = {}
+        self.device_names = {}
 
-    def scene(self, is_on, group, num_retry=3, on_done=None):
-        self.scenes.append((is_on, group))
+    def add(self, device):
+        self.devices[device.addr.id] = device
+        if device.name:
+            self.device_names[device.name] = device
+
+    def find(self, addr):
+        device = self.devices.get(addr.id, None)
+        return device
+
+    def remove(self, device):
+        self.devices.pop(device.addr.id, None)
+        if device.name:
+            self.device_names.pop(device.name, None)
+
+    def scene(self, is_on, group, num_retry=3, on_done=None, reason=""):
+        self.scenes.append((is_on, group, reason))
 
 
 #===========================================================================
