@@ -76,7 +76,8 @@ class Mqtt(Link):
         - broker (str):  The broker host to connect to.
         - port (int):  The broker port to connect to.
         - username (str):  Optional user name to log in with.
-        - passord (str):  Optional password to log in with.
+        - password (str):  Optional password to log in with.
+        - id (str): Optional MQTT client id (max 23 characters)
 
         Args:
           config (dict):  Configuration data to load.
@@ -86,6 +87,11 @@ class Mqtt(Link):
         self.host = config['broker']
         self.port = config['port']
         self.keep_alive = config.get("keep_alive", self.keep_alive)
+
+        id = config.get("id")
+        if id is not None:
+            self.id = id
+            self.client.reinitialise(client_id=self.id, clean_session=False)
 
         username = config.get('username', None)
         if username is not None:
