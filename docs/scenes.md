@@ -129,7 +129,7 @@ Links created by the 'pair' or 'join' command will not be deleted or added by
 the 'sync' command.
 
 You can run `insteon-mqtt config.yaml sync -h` for help from the command line.
-Help running [mqtt commands](docs/mqtt.md).
+Help running [mqtt commands](mqtt.md).
 
 #### Unexpected Sync Changes
 The prudent thing to do before performing a sync, is to perform a *dry-run*
@@ -155,4 +155,4 @@ The 'sync-all' function will perform the 'sync' function on all devices in the
 network.  The same caveats about 'sync' apply to this function as well.
 
 You can run `insteon-mqtt config.yaml sync-all -h` for help from the command
-line. Help running [mqtt commands](docs/mqtt.md).
+line. Help running [mqtt commands](mqtt.md).
