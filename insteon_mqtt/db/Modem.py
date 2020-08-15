@@ -173,8 +173,15 @@ class Modem:
                   or an exception is raised.
         """
         self.entries.remove(entry)
+
         if entry.is_controller:
-            del self.groups[entry.group]
+            responders = self.groups.get(entry.group)
+            if responders:
+                if entry in responders:
+                    responders.remove(entry)
+
+            elif entry.group in self.groups:
+                del self.groups[entry.group]
 
         self.save()
 

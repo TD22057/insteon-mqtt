@@ -7,6 +7,11 @@
 - Added MQTT broker ID optional config input to allow the user to input the
   MQTT broker ID the client will use (thanks @kpfleming) ([PR #220][P220])
 
+### Fixes
+
+- Fixed a bug in the modem database class when removing an entry (thanks
+  @krkeegan) ([PR#196][P196])
+
 
 ## [0.7.2]
 
@@ -372,4 +377,5 @@
 [I192]: https://github.com/TD22057/insteon-mqtt/issues/192
 [I193]: https://github.com/TD22057/insteon-mqtt/issues/193
 [I195]: https://github.com/TD22057/insteon-mqtt/issues/195
+[P196]: https://github.com/TD22057/insteon-mqtt/pull/196
 [P220]: https://github.com/TD22057/insteon-mqtt/pull/220
