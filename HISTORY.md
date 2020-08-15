@@ -12,6 +12,9 @@
 - Fixed a bug in the modem database class when removing an entry (thanks
   @krkeegan) ([PR#196][P196])
 
+- Changed the MQTT remote to never mark messages for retain so the broker
+  doesn't get out of sync with the device. ([Issue #I210][I210])
+
 
 ## [0.7.2]
 
@@ -378,4 +381,5 @@
 [I193]: https://github.com/TD22057/insteon-mqtt/issues/193
 [I195]: https://github.com/TD22057/insteon-mqtt/issues/195
 [P196]: https://github.com/TD22057/insteon-mqtt/pull/196
+[I210]: https://github.com/TD22057/insteon-mqtt/issues/210
 [P220]: https://github.com/TD22057/insteon-mqtt/pull/220
