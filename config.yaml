@@ -52,7 +52,7 @@ insteon:
   startup_refresh: False
 
   # Path to Scenes Definition file (Optional)
-  # The path can be specified either as an absolute path or as a relative path 
+  # The path can be specified either as an absolute path or as a relative path
   # using the !rel_path directive.  Where the path is relative to the
   # config.yaml location
   #
@@ -135,6 +135,8 @@ mqtt:
   # Optional broker login data.
   #username:
   #password:
+  # Optional broker client ID string (default is 'insteon-mqtt')
+  #id:
 
   # Keep alive time in seconds.  This should be smaller than the
   # server setting (which is usually ~60 seconds) to insure that

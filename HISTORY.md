@@ -1,11 +1,20 @@
 # Revision Change History
 
+## [0.7.3]
+
+### Additions
+
+- Added MQTT broker ID optional config input to allow the user to input the
+  MQTT broker ID the client will use (thanks @kpfleming) ([PR #220][P220])
+
+
 ## [0.7.2]
 
 ### Fixes
 
 - Fixed an issue causing 100% cpu usage introduced in the scene sync code.
   ([Issue #195)[I195])
+
 
 ## [0.7.1]
 
@@ -363,3 +372,4 @@
 [I192]: https://github.com/TD22057/insteon-mqtt/issues/192
 [I193]: https://github.com/TD22057/insteon-mqtt/issues/193
 [I195]: https://github.com/TD22057/insteon-mqtt/issues/195
+[P220]: https://github.com/TD22057/insteon-mqtt/pull/220
