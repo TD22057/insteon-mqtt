@@ -395,6 +395,77 @@ class Test_Scenes:
         # (Just checking # of scenes should be adequate for this test.)
         assert len(scenes.entries) == 2
 
+    def test_foreign_hub_group_0(self):
+        modem = MockModem()
+        device = modem.find(Address("aa.bb.cc"))
+        modem.devices[device.label] = device
+        scenes = Scenes.SceneManager(modem, None)
+        # We'll build the following via DeviceEntrys:
+        #scenes.data = [{'controllers': [{'aa.bb.cc': 0}],
+        #                'responders': ['cc.bb.22', 'cc.bb.aa']}]
+        scenes._init_scene_entries()
+        entry = DeviceEntry.from_json({"data": [3, 0, 239],
+                                       "mem_loc" : 8119,
+                                       "group": 0,
+                                       "db_flags": {"is_last_rec": False,
+                                                    "in_use": True,
+                                                    "is_controller": False},
+                                       "addr": "aa.bb.cc"})
+        device = modem.find("cc.bb.22")
+        scenes.add_or_update(device, entry)
+        device = modem.find("cc.bb.aa")
+        scenes.add_or_update(device, entry)
+        print(str(scenes.data))
+        # Check that group == 0
+        assert scenes.entries[0].controllers[0].group == 0
+        assert scenes.entries[0].controllers[0].style == 1
+        assert scenes.data[0]['controllers'][0]['dev - aa.bb.cc'] == 0
+
+    def test_foreign_hub_set_group_0(self):
+        modem = MockModem()
+        scenes = Scenes.SceneManager(modem, None)
+        scenes.data = [{'controllers': [{'a1.b1.c1': {'data_1': 0}}],
+                        'responders': ['cc.bb.22'],
+                        'name': 'test'}]
+        scenes._init_scene_entries()
+        scenes.entries[0].controllers[0].group = 0
+        print(str(scenes.data))
+        assert scenes.data[0]['controllers'][0]['dev - a1.b1.c1']['group'] == 0
+
+    def test_foreign_hub_group_0_and_1(self):
+        modem = MockModem()
+        device = modem.find(Address("aa.bb.cc"))
+        modem.devices[device.label] = device
+        scenes = Scenes.SceneManager(modem, None)
+        # We'll build the following via DeviceEntrys:
+        #scenes.data = [{'controllers': [{'aa.bb.cc': 0}, 'aa.bb.cc'],
+        #                'responders': ['cc.bb.aa']}]
+        scenes._init_scene_entries()
+        entry1 = DeviceEntry.from_json({"data": [3, 0, 239],
+                                        "mem_loc" : 8119,
+                                        "group": 1,
+                                        "db_flags": {"is_last_rec": False,
+                                                     "in_use": True,
+                                                     "is_controller": False},
+                                        "addr": "aa.bb.cc"})
+        device = modem.find("cc.bb.aa")
+        scenes.add_or_update(device, entry1)
+        entry2 = DeviceEntry.from_json({"data": [3, 0, 239],
+                                        "mem_loc" : 8119,
+                                        "group": 0,
+                                        "db_flags": {"is_last_rec": False,
+                                                     "in_use": True,
+                                                     "is_controller": False},
+                                        "addr": "aa.bb.cc"})
+        device = modem.find("cc.bb.aa")
+        scenes.add_or_update(device, entry2)
+        scenes.compress_controllers()
+        print(str(scenes.data))
+        # Check that we have two controller entries & 1 responder
+        assert len(scenes.entries) == 1
+        assert len(scenes.data[0]['controllers']) == 2
+        assert len(scenes.data[0]['responders']) == 1
+
 class MockModem():
     def __init__(self):
         self.save_path = ''
