@@ -11,6 +11,7 @@ import insteon_mqtt.Address as Address
 import insteon_mqtt.db.DeviceEntry as DeviceEntry
 import insteon_mqtt.db.Modem as ModemDB
 import insteon_mqtt.device.Base as Base
+import insteon_mqtt.device.Dimmer as Dimmer
 
 
 class Test_Scenes:
@@ -167,6 +168,80 @@ class Test_Scenes:
         scenes._init_scene_entries()
         scenes.entries[0].controllers[0].group = 2
         assert scenes.data[0]['controllers'][0]['dev - a1.b1.c1']['group'] == 2
+
+    def test_Dimmer_scenes_same_ramp_rate(self):
+        modem = MockModem()
+        dimmer = Dimmer(modem.protocol, modem, Address("11.22.33"), "Dimmer")
+        modem.devices[str(dimmer.addr)] = dimmer
+        device = modem.find(Address("aa.bb.cc"))
+        modem.devices[device.label] = device
+        scenes = Scenes.SceneManager(modem, None)
+        scenes.data = [{'controllers': [{'aa.bb.cc': {'group': 22}}],
+                        'responders': ['11.22.33']},
+                       {'controllers': [{'aa.bb.cc': {'group': 33}}],
+                        'responders': ['11.22.33']}]
+        scenes._init_scene_entries()
+        entry1 = DeviceEntry.from_json({"addr": "aa.bb.cc",
+                                        "group": 22,
+                                        "mem_loc" : 8119,
+                                        "db_flags": {"is_last_rec": False,
+                                                     "in_use": True,
+                                                     "is_controller": False},
+                                        "data": [255, 23, 0]})
+        scenes.add_or_update(dimmer, entry1)
+        entry2 = DeviceEntry.from_json({"addr": "aa.bb.cc",
+                                        "group": 33,
+                                        "mem_loc" : 8119,
+                                        "db_flags": {"is_last_rec": False,
+                                                     "in_use": True,
+                                                     "is_controller": False},
+                                        "data": [255, 23, 0]})
+        scenes.add_or_update(dimmer, entry2)
+        scenes.compress_controllers()
+        print(str(scenes.data))
+        # We should end up with a single scene with:
+        # - 2 controller entries: aa.bb.cc, group 22, group 23
+        # - 1 responder entry: 11.22.33, ramp_rate 19 seconds
+        assert len(scenes.entries) == 1
+        assert len(scenes.data[0]['controllers']) == 2
+        assert len(scenes.data[0]['responders']) == 1
+        assert scenes.data[0]['responders'][0]['Dimmer']['ramp_rate'] == 19
+
+    def test_Dimmer_scenes_different_ramp_rates(self):
+        modem = MockModem()
+        dimmer = Dimmer(modem.protocol, modem, Address("11.22.33"), "Dimmer")
+        modem.devices[str(dimmer.addr)] = dimmer
+        device = modem.find(Address("aa.bb.cc"))
+        modem.devices[device.label] = device
+        scenes = Scenes.SceneManager(modem, None)
+        scenes.data = [{'controllers': [{'aa.bb.cc': {'group': 22}}],
+                        'responders': ['11.22.33']},
+                       {'controllers': [{'aa.bb.cc': {'group': 33}}],
+                        'responders': ['11.22.33']}]
+        scenes._init_scene_entries()
+        entry1 = DeviceEntry.from_json({"addr": "aa.bb.cc",
+                                        "group": 22,
+                                        "mem_loc" : 8119,
+                                        "db_flags": {"is_last_rec": False,
+                                                     "in_use": True,
+                                                     "is_controller": False},
+                                        "data": [255, 23, 0]})
+        scenes.add_or_update(dimmer, entry1)
+        entry2 = DeviceEntry.from_json({"addr": "aa.bb.cc",
+                                        "group": 33,
+                                        "mem_loc" : 8119,
+                                        "db_flags": {"is_last_rec": False,
+                                                     "in_use": True,
+                                                     "is_controller": False},
+                                        "data": [255, 13, 0]})
+        scenes.add_or_update(dimmer, entry2)
+        scenes.compress_controllers()
+        print(str(scenes.data))
+        # We should end up with 2 scenes:
+        # - Controller aa.bb.cc, group 22 -> Dimmer w/ 19 second ramp_rate
+        # - Controller aa.bb.cc, group 33 -> Dimmer w/ 47 second ramp_rate
+        # (Just checking # of scenes should be adequate for this test.)
+        assert len(scenes.entries) == 2
 
 class MockModem():
     def __init__(self):
