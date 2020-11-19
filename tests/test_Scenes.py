@@ -14,6 +14,7 @@ import insteon_mqtt.device.Base as Base
 import insteon_mqtt.device.Dimmer as Dimmer
 import insteon_mqtt.device.FanLinc as FanLinc
 import insteon_mqtt.device.KeypadLinc as KeypadLinc
+import insteon_mqtt.device.Remote as Remote
 
 
 class Test_Scenes:
@@ -465,6 +466,70 @@ class Test_Scenes:
         assert len(scenes.entries) == 1
         assert len(scenes.data[0]['controllers']) == 2
         assert len(scenes.data[0]['responders']) == 1
+
+    def test_mini_remote_button_config_no_data3(self):
+        modem = MockModem()
+        remote = Remote(modem.protocol, modem, Address("11.22.33"), "Remote", 4)
+        modem.devices[str(remote.addr)] = remote
+        device = modem.find(Address("aa.bb.cc"))
+        modem.devices[device.label] = device
+        scenes = Scenes.SceneManager(modem, None)
+        # We'll build the following via DeviceEntrys:
+        #scenes.data = [{'controllers': [{'11.22.33': 2}],
+        #                'responders': ['aa.bb.cc']}]
+        scenes._init_scene_entries()
+        # The following data values are taken from an actual Mini Remote
+        entry = DeviceEntry.from_json({"addr": "aa.bb.cc",
+                                       "group": 2,
+                                       "mem_loc" : 8119,
+                                       "db_flags": {"is_last_rec": False,
+                                                    "in_use": True,
+                                                    "is_controller": True},
+                                       "data": [3, 0, 0]})
+        scenes.add_or_update(remote, entry)
+        print(str(scenes.data))
+        # We should end up with a single scene with:
+        # - 1 controller entry: 11.22.33, group 2 (no data_3 value)
+        # - 1 responder entry: aa.bb.cc
+        assert len(scenes.entries) == 1
+        assert len(scenes.data[0]['controllers']) == 1
+        assert len(scenes.data[0]['responders']) == 1
+        assert scenes.entries[0].controllers[0].group == 2
+        assert scenes.entries[0].controllers[0].link_data == [3, 0, 0]
+        assert scenes.entries[0].controllers[0].style == 1
+
+    def test_mini_remote_button_config_with_data3(self):
+        modem = MockModem()
+        remote = Remote(modem.protocol, modem, Address("11.22.33"), "Remote", 4)
+        modem.devices[str(remote.addr)] = remote
+        device = modem.find(Address("aa.bb.cc"))
+        modem.devices[device.label] = device
+        scenes = Scenes.SceneManager(modem, None)
+        # We'll build the following via DeviceEntrys:
+        #scenes.data = [{'controllers': [{'11.22.33': {group: 2, data_3: 2}],
+        #                'responders': ['aa.bb.cc']}]
+        scenes._init_scene_entries()
+        # Preserve data_3 values if present
+        entry = DeviceEntry.from_json({"addr": "aa.bb.cc",
+                                       "group": 2,
+                                       "mem_loc" : 8119,
+                                       "db_flags": {"is_last_rec": False,
+                                                    "in_use": True,
+                                                    "is_controller": True},
+                                       "data": [3, 0, 2]})
+        scenes.add_or_update(remote, entry)
+        print(str(scenes.data))
+        # We should end up with a single scene with:
+        # - 1 controller entry: 11.22.33, group 2, data_3 = 2
+        # - 1 responder entry: aa.bb.cc
+        assert len(scenes.entries) == 1
+        assert len(scenes.data[0]['controllers']) == 1
+        assert len(scenes.data[0]['responders']) == 1
+        assert scenes.entries[0].controllers[0].group == 2
+        assert scenes.entries[0].controllers[0].link_data == [3, 0, 2]
+        assert scenes.entries[0].controllers[0].style == 0
+        assert scenes.data[0]['controllers'][0]['Remote']['group'] == 2
+        assert scenes.data[0]['controllers'][0]['Remote']['data_3'] == 2
 
 class MockModem():
     def __init__(self):
