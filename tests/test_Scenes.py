@@ -8,6 +8,8 @@ import pytest
 import insteon_mqtt as IM
 import insteon_mqtt.Scenes as Scenes
 import insteon_mqtt.Address as Address
+import insteon_mqtt.CommandSeq as CommandSeq
+import insteon_mqtt.db.Device as Device
 import insteon_mqtt.db.DeviceEntry as DeviceEntry
 import insteon_mqtt.db.Modem as ModemDB
 import insteon_mqtt.device.Base as Base
@@ -530,6 +532,79 @@ class Test_Scenes:
         assert scenes.entries[0].controllers[0].style == 0
         assert scenes.data[0]['controllers'][0]['Remote']['group'] == 2
         assert scenes.data[0]['controllers'][0]['Remote']['data_3'] == 2
+
+    def test_foreign_hub_keypad_button_backlights_scene(self):
+        modem = MockModem()
+        keypad = KeypadLinc(modem.protocol, modem, Address("11.22.33"),
+                            "Keypad")
+        modem.devices[str(keypad.addr)] = keypad
+        device = modem.find(Address("aa.bb.cc"))
+        modem.devices[device.label] = device
+        scenes = Scenes.SceneManager(modem, None)
+        # Define multiple KeypadLinc scenes and matching DB entries
+        scenes.data = [
+            {'controllers': [{'aa.bb.cc': 19}],
+             'responders': [{'11.22.33': 3},
+                            {'11.22.33': {'group': 4, 'on_level': 0.0}},
+                            {'11.22.33': {'group': 5, 'on_level': 0.0}},
+                            {'11.22.33': {'group': 6, 'on_level': 0.0}}]}]
+        keypad_db = Device.from_json(
+                        { "address": "11.22.33",
+                          "delta": 0,
+                          "engine": None,
+                          "dev_cat": 1,
+                          "sub_cat": 66,
+                          "firmware": 69,
+                          "used":[
+                              {"addr": "aa.bb.cc",
+                               "group": 19,
+                               "mem_loc" : 8119,
+                               "db_flags": {"is_last_rec": False,
+                                            "in_use": True,
+                                            "is_controller": False},
+                               "data": [255, 0x1f, 3]},
+                              {"addr": "aa.bb.cc",
+                               "group": 19,
+                               "mem_loc" : 8219,
+                               "db_flags": {"is_last_rec": False,
+                                            "in_use": True,
+                                            "is_controller": False},
+                               "data": [0, 0x1f, 4]},
+                              {"addr": "aa.bb.cc",
+                               "group": 19,
+                               "mem_loc" : 8319,
+                               "db_flags": {"is_last_rec": False,
+                                            "in_use": True,
+                                            "is_controller": False},
+                               "data": [0, 0x1f, 5]},
+                              {"addr": "aa.bb.cc",
+                               "group": 19,
+                               "mem_loc" : 8419,
+                               "db_flags": {"is_last_rec": False,
+                                            "in_use": True,
+                                            "is_controller": False},
+                               "data": [0, 0x1f, 6]}],
+                          "unused": [],
+                          "last": {"addr": "00.00.00",
+                                   "group": 0,
+                                   "mem_loc": 8519,
+                                   "db_flags": {"is_last_rec": True,
+                                                "in_use": False,
+                                                "is_controller": False},
+                                   "data": [0, 0, 0]},
+                          "meta": {} }, None, keypad)
+        keypad.db = keypad_db
+        scenes._init_scene_entries()
+        scenes.populate_scenes()
+        print(str(scenes.data))
+        # Compute if any DB changes needed to implement scenes
+        seq = CommandSeq(modem.protocol, "Sync complete")
+        keypad.sync(dry_run=True, refresh=False, sequence=seq)
+        # Uncomment the next two lines to see what sequence would do:
+        #IM.log.initialize()
+        #seq.run()
+        # No changes to DB should be needed
+        assert len(seq.calls) == 0
 
 class MockModem():
     def __init__(self):
