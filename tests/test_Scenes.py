@@ -606,6 +606,56 @@ class Test_Scenes:
         # No changes to DB should be needed
         assert len(seq.calls) == 0
 
+    def test_fanlinc_dimmer_ramp_rate_scene(self):
+        modem = MockModem()
+        fanlinc = FanLinc(modem.protocol, modem, Address("11.22.33"), "FanLinc")
+        modem.devices[str(fanlinc.addr)] = fanlinc
+        device = modem.find(Address("aa.bb.cc"))
+        modem.devices[device.label] = device
+        scenes = Scenes.SceneManager(modem, None)
+        # Define a FanLinc scene with ramp rate and a matching DB entry
+        scenes.data = [
+            {'controllers': [{'aa.bb.cc': 22}],
+             'responders': [{'11.22.33': {'ramp_rate': 19, 'group': 1}}]}]
+        fanlinc_db = Device.from_json(
+                        { "address": "11.22.33",
+                          "delta": 0,
+                          "engine": None,
+                          "dev_cat": 1,
+                          "sub_cat": 46,
+                          "firmware": 69,
+                          "used":[
+                              {"addr": "aa.bb.cc",
+                               "group": 22,
+                               "mem_loc" : 8119,
+                               "db_flags": {"is_last_rec": False,
+                                            "in_use": True,
+                                            "is_controller": False},
+                               "data": [255, 23, 1]}],
+                          "unused": [],
+                          "last": {"addr": "00.00.00",
+                                   "group": 0,
+                                   "mem_loc": 8519,
+                                   "db_flags": {"is_last_rec": True,
+                                                "in_use": False,
+                                                "is_controller": False},
+                                   "data": [0, 0, 0]},
+                          "meta": {} }, None, fanlinc)
+        fanlinc.db = fanlinc_db
+        scenes._init_scene_entries()
+        scenes.populate_scenes()
+        print(str(scenes.data))
+        # Make sure link data matches scene config & DB entry:
+        assert scenes.entries[0].responders[0].link_data == [255, 23, 1]
+        # Compute if any DB changes needed to implement scenes
+        seq = CommandSeq(modem.protocol, "Sync complete")
+        fanlinc.sync(dry_run=True, refresh=False, sequence=seq)
+        # Uncomment the next two lines to see what sequence would do:
+        #IM.log.initialize()
+        #seq.run()
+        # No changes to DB should be needed
+        assert len(seq.calls) == 0
+
 class MockModem():
     def __init__(self):
         self.save_path = ''
