@@ -29,7 +29,7 @@ class DeviceDbModify(Base):
                     added to the handler.  Signature is:
                     on_done(success, msg, entry)
         """
-        super().__init__(on_done)
+        super().__init__(on_done, num_retry)
 
         self.db = device_db
         self.entry = entry
