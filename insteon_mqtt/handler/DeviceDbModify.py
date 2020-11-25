@@ -76,10 +76,16 @@ class DeviceDbModify(Base):
                                  self.entry)
 
                 elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-                    LOG.error("%s db mod NAK: %s, Message: %s", self.db.addr,
-                              msg.nak_str(), msg)
-                    self.on_done(False, "Device database update failed. " +
-                                 msg.nak_str(), None)
+                    if msg.cmd2 == 0xFC:
+                        # This is a "Pre NAK in case database search takes
+                        # too long".  This happens when the device database is
+                        # large.  Just ignore it, add more wait time and wait.
+                        return Msg.CONTINUE
+                    else:
+                        LOG.error("%s db mod NAK: %s, Message: %s", self.db.addr,
+                                  msg.nak_str(), msg)
+                        self.on_done(False, "Device database update failed. " +
+                                     msg.nak_str(), None)
 
                 else:
                     LOG.error("%s db mod unexpected msg type: %s",
