@@ -22,7 +22,7 @@ class DeviceDbGet(Base):
     Each reply is passed to the callback function set in the constructor
     which is usually a method on the device to update it's database.
     """
-    def __init__(self, device_db, on_done, num_retry=0):
+    def __init__(self, device_db, on_done, num_retry=3):
         """Constructor
 
         The on_done callback has the signature on_done(success, msg, entry)

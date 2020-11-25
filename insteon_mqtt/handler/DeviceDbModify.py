@@ -18,7 +18,7 @@ class DeviceDbModify(Base):
     modifications to the device's all link database class to reflect what
     happened on the physical device.
     """
-    def __init__(self, device_db, entry, on_done=None):
+    def __init__(self, device_db, entry, on_done=None, num_retry=3):
         """Constructor
 
         Args:
