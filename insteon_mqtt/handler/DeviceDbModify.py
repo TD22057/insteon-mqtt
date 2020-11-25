@@ -80,6 +80,8 @@ class DeviceDbModify(Base):
                         # This is a "Pre NAK in case database search takes
                         # too long".  This happens when the device database is
                         # large.  Just ignore it, add more wait time and wait.
+                        LOG.warning("%s Pre-NAK: %s, Message: %s", self.db.addr,
+                                    msg.nak_str(), msg)
                         return Msg.CONTINUE
                     else:
                         LOG.error("%s db mod NAK: %s, Message: %s", self.db.addr,
