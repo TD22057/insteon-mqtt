@@ -82,9 +82,17 @@ class BroadcastCmdResponse(Base):
                 return Msg.CONTINUE
 
             elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-                LOG.error("%s device NAK error: %s", msg.from_addr, msg)
-                self.on_done(False, "Device command NAK", None)
-                return Msg.FINISHED
+                if msg.cmd2 == 0xFC:
+                    # This is a "Pre NAK in case database search takes
+                    # too long".  This happens when the device database is
+                    # large.  Just ignore it, add more wait time and wait.
+                    LOG.warning("%s Pre-NAK: %s, Message: %s", msg.from_addr,
+                                msg.nak_str(), msg)
+                    return Msg.CONTINUE
+                else:
+                    LOG.error("%s device NAK error: %s", msg.from_addr, msg)
+                    self.on_done(False, "Device command NAK", None)
+                    return Msg.FINISHED
 
             else:
                 LOG.warning("%s device unexpected msg: %s", msg.from_addr, msg)
