@@ -638,7 +638,7 @@ class Dimmer(Base):
     def handle_ramp_rate(self, msg, on_done):
         """Callback for handling set_ramp_rate() responses.
 
-        This is called when we get a response to the set_on_level() command.
+        This is called when we get a response to the set_ramp_rate() command.
         We don't need to do anything - just call the on_done callback with
         the status.
 
