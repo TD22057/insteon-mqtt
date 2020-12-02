@@ -871,6 +871,36 @@ class KeypadLinc(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
+    def set_ramp_rate(self, rate, on_done=None):
+        """Set the device default on level.
+
+        This changes the dimmer default ramp rate of how quickly the it
+        will turn on or off. This rate can be between .1 seconds and up
+        to 9 minutes.
+
+        Args:
+          rate (int): The default ramp rate in the range [0,31]
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.info("Dimmer %s setting ramp rate to %s", self.label, rate)
+
+        # Extended message data - see Insteon dev guide p156.
+        data = bytes([
+            0x01,   # D1 must be group 0x01
+            0x05,   # D2 set ramp rate when button is pressed
+            rate,  # D3 rate
+            ] + [0x00] * 11)
+
+        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
+
+        # Use the standard command handler which will notify us when the
+        # command is ACK'ed.
+        callback = functools.partial(self.handle_ack, task="Button ramp rate")
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):
         """Set internal device flags.
 
@@ -895,6 +925,7 @@ class KeypadLinc(Base):
         FLAG_BACKLIGHT = "backlight"
         FLAG_GROUP = "group"
         FLAG_ON_LEVEL = "on_level"
+        FLAG_RAMP_RATE = "ramp_rate"
         FLAG_LOAD_ATTACH = "load_attached"
         FLAG_FOLLOW_MASK = "follow_mask"
         FLAG_OFF_MASK = "off_mask"
@@ -902,7 +933,7 @@ class KeypadLinc(Base):
         FLAG_NONTOGGLE_BITS = "nontoggle_bits"
         flags = set([FLAG_BACKLIGHT, FLAG_LOAD_ATTACH, FLAG_FOLLOW_MASK,
                      FLAG_SIGNAL_BITS, FLAG_NONTOGGLE_BITS, FLAG_OFF_MASK,
-                     FLAG_GROUP, FLAG_ON_LEVEL])
+                     FLAG_GROUP, FLAG_ON_LEVEL, FLAG_RAMP_RATE])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown KeypadLinc flags input: %s.\n Valid "
@@ -926,6 +957,10 @@ class KeypadLinc(Base):
         if FLAG_ON_LEVEL in kwargs:
             on_level = util.input_byte(kwargs, FLAG_ON_LEVEL)
             seq.add(self.set_on_level, on_level)
+
+        if FLAG_RAMP_RATE in kwargs:
+            rate = util.input_byte(kwargs, FLAG_RAMP_RATE)
+            seq.add(self.set_ramp_rate, rate)
 
         if FLAG_FOLLOW_MASK in kwargs:
             if group is None:
