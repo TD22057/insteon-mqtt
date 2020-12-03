@@ -22,7 +22,7 @@ class DeviceDbGet(Base):
     Each reply is passed to the callback function set in the constructor
     which is usually a method on the device to update it's database.
     """
-    def __init__(self, device_db, on_done, num_retry=3):
+    def __init__(self, device_db, on_done, num_retry=0, time_out=10):
         """Constructor
 
         The on_done callback has the signature on_done(success, msg, entry)
@@ -38,8 +38,18 @@ class DeviceDbGet(Base):
                     handler times out without returning Msg.FINISHED.
                     This count does include the initial sending so a
                     retry of 3 will send once and then retry 2 more times.
+                    Retries should be 0 for this handler.  This is because the
+                    only message sent out is the initial request for a dump of
+                    the database.  If the handler times out, there is no way
+                    to recover, besides starting the request over again.
+          time_out (int): Timeout in seconds.  The default for this handler
+                          is double the default rate.  This is because the
+                          communication is almost entirely one-sided coming
+                          from the device.  There is nothing we can do from
+                          this end if a message fails to arrive, so we keep
+                          the network as quiet as possible.
         """
-        super().__init__(on_done, num_retry)
+        super().__init__(on_done, num_retry, time_out)
         self.db = device_db
 
     #-----------------------------------------------------------------------
