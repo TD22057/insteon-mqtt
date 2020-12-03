@@ -883,6 +883,11 @@ class KeypadLinc(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+        if not self.is_dimmer:
+          LOG.error("KeypadLinc %s switch doesn't support setting ramp_rate",
+                      self.addr)
+          return
+
         LOG.info("Dimmer %s setting ramp rate to %s", self.label, rate)
 
         # Extended message data - see Insteon dev guide p156.
