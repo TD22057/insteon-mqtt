@@ -96,8 +96,8 @@ class DeviceDbGet(Base):
                 else:
                     LOG.error("%s device NAK error: %s, Message: %s",
                               msg.from_addr, msg.nak_str(), msg)
-                    self.on_done(False, "Database command NAK. " + msg.nak_str(),
-                                 None)
+                    self.on_done(False, "Database command NAK. " +
+                                 msg.nak_str(), None)
                     return Msg.FINISHED
 
             else:
