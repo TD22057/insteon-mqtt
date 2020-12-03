@@ -226,7 +226,7 @@ class KeypadLinc(Base):
         seq.add_msg(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def on(self, group=0, level=0xff, mode=on_off.Mode.NORMAL, reason="",
+    def on(self, group=0, level=None, mode=on_off.Mode.NORMAL, reason="",
            on_done=None):
         """Turn the device on.
 
@@ -249,7 +249,7 @@ class KeypadLinc(Base):
                 specific button.
           level (int):  If non zero, turn the device on.  Should be in the
                 range 0 to 255.  For non-dimmer groups, it will only look at
-                level=0 or level>0.
+                level=0 or level>0.  If None, use default on-level.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
@@ -264,6 +264,24 @@ class KeypadLinc(Base):
         group = self._load_group if group == 0 else group
 
         LOG.debug("load group= %s group= %s", self._load_group, group)
+
+        if level is None:
+            # Not specified - choose brightness as pressing the button would do
+            if group != self._load_group:
+                # Only load group can be a dimmer, use full-on for others
+                level = 0xff
+            if mode == on_off.Mode.FAST:
+                # Fast-ON command.  Use full-brightness.
+                level = 0xff
+            else:
+                # Normal/instant ON command.  Use default on-level.
+                # Check if we saved the default on-level in the device
+                # database when setting it.
+                level = self.get_on_level()
+                if self._level == level:
+                    # Just like with button presses, if already at default on
+                    # level, go to full brightness.
+                    level = 0xff
 
         assert 1 <= group <= 9
         assert 0 <= level <= 0xff
@@ -360,7 +378,7 @@ class KeypadLinc(Base):
         Args:
           level (int):  If non zero, turn the device on.  Should be in the
                 range 0 to 255.  For non-dimmer groups, it will only look at
-                level=0 or level>0.
+                level=0 or level>0.  If None, use default on-level.
           group (int): The group to send the command to.  If the group is 0,
                 it will always be the load (whether it's attached or not).
                 Otherwise it must be in the range [1,8] and controls the
@@ -372,7 +390,12 @@ class KeypadLinc(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        if level:
+        if (level is None) or level:
+            # None/True == use default on-level.  Since true is integer 1,
+            # do an explicit check here to catch that input.
+            if level is True:
+                level = None
+
             self.on(group, level, mode, reason, on_done)
         else:
             self.off(group, mode, reason, on_done)

@@ -90,7 +90,7 @@ class Dimmer(Base):
         self.group_map.update({0x01: self.handle_on_off})
 
     #-----------------------------------------------------------------------
-    def on(self, group=0x01, level=0xff, mode=on_off.Mode.NORMAL, reason="",
+    def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
            on_done=None):
         """Turn the device on.
 
@@ -108,7 +108,7 @@ class Dimmer(Base):
                 this must be 1.  Allowing a group here gives us a consistent
                 API to the on command across devices.
           level (int): If non zero, turn the device on.  Should be in the
-                range 0 to 255.
+                range 0 to 255.  If None, use default on-level.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
@@ -117,6 +117,20 @@ class Dimmer(Base):
                    completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Dimmer %s cmd: on %s", self.addr, level)
+        if level is None:
+            # Not specified - choose brightness as pressing the button would do
+            if mode == on_off.Mode.FAST:
+                # Fast-ON command.  Use full-brightness.
+                level = 0xff
+            else:
+                # Normal/instant ON command.  Use default on-level.
+                # Check if we saved the default on-level in the device
+                # database when setting it.
+                level = self.get_on_level()
+                if self._level == level:
+                    # Just like with button presses, if already at default on
+                    # level, go to full brightness.
+                    level = 0xff
         assert level >= 0 and level <= 0xff
         assert group == 0x01
         assert isinstance(mode, on_off.Mode)
@@ -186,7 +200,7 @@ class Dimmer(Base):
 
         Args:
           level (int): If non zero, turn the device on.  Should be in the
-                range 0 to 255.
+                range 0 to 255.  If None, use default on-level.
           group (int): The group to send the command to.  For this device,
                 this must be 1.  Allowing a group here gives us a consistent
                 API to the on command across devices.
@@ -197,11 +211,11 @@ class Dimmer(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        if level:
-            # True == full on.  Since true is integer 1, do an explicit check
-            # here to catch that input.
+        if (level is None) or level:
+            # None/True == use default on-level.  Since true is integer 1,
+            # do an explicit check here to catch that input.
             if level is True:
-                level = 0xff
+                level = None
 
             self.on(group, level, mode, reason, on_done)
         else:
