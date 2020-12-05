@@ -9,4 +9,4 @@ if [ ! -f /config/insteon-mqtt/config.yaml ]; then
     /bin/cp /opt/insteon-mqtt/config.yaml /config/insteon-mqtt/config.yaml
 fi
 
-python /opt/insteon-mqtt/hassio/start.py /config/insteon-mqtt/config.yaml start
+python3 /opt/insteon-mqtt/hassio/start.py /config/insteon-mqtt/config.yaml start

@@ -5,13 +5,12 @@ from shlex import split
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 
-
 cli = sys.modules['flask.cli']
 cli.show_server_banner = lambda *x: None
 app = Flask(__name__, template_folder=".")
 app.config['worker'] = None
 app.config['cmd'] = []
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 class Worker():
     '''
