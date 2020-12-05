@@ -9,9 +9,48 @@ from flask_socketio import SocketIO, emit
 cli = sys.modules['flask.cli']
 cli.show_server_banner = lambda *x: None
 app = Flask(__name__, template_folder=".")
-app.config['output'] = None
+app.config['worker'] = None
 app.config['cmd'] = []
 socketio = SocketIO(app)
+
+class Worker():
+    '''
+    This starts and stops the subprocess
+    '''
+
+    def __init__(self, sio, flask_app):
+        """
+        assign socketio object to emit
+        """
+        self.socketio = sio
+        self.app = flask_app
+        self.run = True
+
+    def do_work(self):
+        """
+        do work and emit message
+        """
+        while self.run:
+            if len(app.config['cmd']):
+                command = self.app.config['cmd'].pop()
+                socketio.emit('message', "\n\n>>>" + " ".join(command) + "\n")
+                output = subprocess.Popen(command,
+                                          text=True,
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.STDOUT)
+                line = output.stdout.readline()
+                while line:
+                    socketio.emit('message', line)
+                    line = output.stdout.readline()
+            else:
+                time.sleep(.1)
+
+    def stop(self):
+        """
+        stop the loop
+        """
+        self.run = False
+
 
 @app.route('/')
 def index():
@@ -36,6 +75,10 @@ def handle_message(message):
         emit('message', "!!!!!!! Error, the command prefix 'insteon-mqtt " +
              "config.yaml is automatically added to all commands.'\n")
     else:
+        # If already defined, then skip
+        if app.config["worker"] is None:
+            app.config["worker"] = Worker(socketio, app)
+            socketio.start_background_task(target=app.config["worker"].do_work)
         command = ['../../insteon-mqtt', '../../config.yaml']
         command.extend(user_cmd)
         app.config['cmd'].append(command)
@@ -43,25 +86,21 @@ def handle_message(message):
 @socketio.on('connect')
 def test_connect():
     # If already defined, then skip
-    if app.config["output"]:
+    if app.config["worker"]:
         return
-    socketio.start_background_task(target=insteon_mqtt_webcli)
+    app.config["worker"] = Worker(socketio, app)
+    socketio.start_background_task(target=app.config["worker"].do_work)
 
-def insteon_mqtt_webcli():
-    while True:
-        if len(app.config['cmd']):
-            command = app.config['cmd'].pop()
-            socketio.emit('message', "-->" + " ".join(command) + "\n")
-            app.config["output"] = subprocess.Popen(command,
-                                                    text=True,
-                                                    stdout=subprocess.PIPE,
-                                                    stderr=subprocess.STDOUT)
-            line = app.config["output"].stdout.readline()
-            while line:
-                socketio.emit('message', line)
-                line = app.config["output"].stdout.readline()
-        else:
-            time.sleep(.1)
+@socketio.on('estop')
+def handle_estop(message):
+    '''
+    An emergency estop in case the process starts running away for some
+    reason.  Stop the worker thread and reset the config states.
+    '''
+    if app.config["worker"]:
+        app.config["worker"].stop()
+        app.config["worker"] = None
+        app.config['cmd'] = []
 
 if __name__ == '__main__':
     # host='172.30.32.2' for hass ingest

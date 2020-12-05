@@ -26,6 +26,13 @@
           For help, try typing '-h', this also works for many of the commands
           as well such as 'db-add -h'.
         </p>
+        <p>
+          There are some guardrails to help avoid causing damage, but it may
+          still be possible to cause issues.  If it seems like the process is
+          stuck, you can click the Stop Process button and it should end the
+          process.  If all else fails, you can restart Insteon-Mqtt from the
+          Home Assistant Supervisor.
+        </p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -50,6 +57,9 @@
         <div class="input-group-append">
           <button class="btn btn-outline-primary" type="button" id="input_button">Execute</button>
         </div>
+        <div class="input-group-append">
+          <button class="btn btn-outline-danger" type="button" id="estop_button">Stop Process</button>
+        </div>
       </div>
     </div>
   </div>
@@ -61,6 +71,9 @@
 <script type="text/javascript" charset="utf-8">
     $(document).ready(function() {
       $("#instructions").modal('show');
+      $('#instructions').on('hidden.bs.modal', function (e) {
+        $("#input").focus();
+      })
       var socket = io();
       $('#input_button').click(function(e) {
             socket.emit('message', $('#input').val());
@@ -75,6 +88,9 @@
       socket.on('message', function(msg){
         $('#output').append(msg);
         $('#output').scrollTop($('#output')[0].scrollHeight);
+      });
+      $('#estop_button').click(function(e) {
+            socket.emit('estop', 'STOP');
       });
     });
 </script>
