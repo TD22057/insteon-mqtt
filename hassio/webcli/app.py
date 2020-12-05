@@ -79,7 +79,7 @@ def handle_message(message):
         if app.config["worker"] is None:
             app.config["worker"] = Worker(socketio, app)
             socketio.start_background_task(target=app.config["worker"].do_work)
-        command = ['../../insteon-mqtt', '../../config.yaml']
+        command = ['insteon-mqtt', '/config/insteon-mqtt/config.yaml']
         command.extend(user_cmd)
         app.config['cmd'].append(command)
 
@@ -102,6 +102,5 @@ def handle_estop(message):
         app.config["worker"] = None
         app.config['cmd'] = []
 
-if __name__ == '__main__':
-    # host='172.30.32.2' for hass ingest
-    socketio.run(app, host='127.0.0.1', port='8099')
+def start_webcli():
+    socketio.run(app, host='172.30.32.2', port='8099')
