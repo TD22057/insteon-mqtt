@@ -2,7 +2,7 @@ import sys
 import time
 import subprocess
 from shlex import split
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 
 
@@ -51,6 +51,12 @@ class Worker():
         """
         self.run = False
 
+
+@app.before_request
+def before_request_func():
+    if request.remote_addr != "172.30.32.2":
+        return 'Unauthorized'
+    return
 
 @app.route('/')
 def index():
@@ -103,4 +109,4 @@ def handle_estop(message):
         app.config['cmd'] = []
 
 def start_webcli():
-    socketio.run(app, host='172.30.32.2', port='8099')
+    socketio.run(app, host='0.0.0.0', port='8099')
