@@ -24,6 +24,7 @@ class Worker():
         self.socketio = sio
         self.app = flask_app
         self.run = True
+        self.proc = None
 
     def do_work(self):
         """
@@ -33,14 +34,14 @@ class Worker():
             if len(app.config['cmd']):
                 input = self.app.config['cmd'].pop()
                 socketio.emit('message', "\n\n>>>" + input['user_text'] + "\n")
-                output = subprocess.Popen(input['command'],
-                                          text=True,
-                                          stdout=subprocess.PIPE,
-                                          stderr=subprocess.STDOUT)
-                line = output.stdout.readline()
-                while line:
+                self.proc = subprocess.Popen(input['command'],
+                                             text=True,
+                                             stdout=subprocess.PIPE,
+                                             stderr=subprocess.STDOUT)
+                line = self.proc.stdout.readline()
+                while line and self.run:
                     socketio.emit('message', line)
-                    line = output.stdout.readline()
+                    line = self.proc.stdout.readline()
             else:
                 time.sleep(.1)
 
@@ -48,6 +49,7 @@ class Worker():
         """
         stop the loop
         """
+        self.proc.kill()
         self.run = False
 
 
