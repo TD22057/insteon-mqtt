@@ -31,9 +31,9 @@ class Worker():
         """
         while self.run:
             if len(app.config['cmd']):
-                command = self.app.config['cmd'].pop()
-                socketio.emit('message', "\n\n>>>" + " ".join(command) + "\n")
-                output = subprocess.Popen(command,
+                input = self.app.config['cmd'].pop()
+                socketio.emit('message', "\n\n>>>" + input['user_text'] + "\n")
+                output = subprocess.Popen(input['command'],
                                           text=True,
                                           stdout=subprocess.PIPE,
                                           stderr=subprocess.STDOUT)
@@ -84,9 +84,13 @@ def handle_message(message):
         if app.config["worker"] is None:
             app.config["worker"] = Worker(socketio, app)
             socketio.start_background_task(target=app.config["worker"].do_work)
-        command = ['insteon-mqtt', '/config/insteon-mqtt/config.yaml']
+        # We run it this way to disable buffering
+        command = ['python3', '-u', '/opt/insteon-mqtt/scripts/insteon-mqtt',
+                   '/config/insteon-mqtt/config.yaml']
         command.extend(user_cmd)
-        app.config['cmd'].append(command)
+        # Save the user inputed text so we can display it back to the user
+        user_text = 'insteon-mqtt config.yaml ' + message
+        app.config['cmd'].append({'command': command, 'user_text': user_text})
 
 @socketio.on('connect')
 def test_connect():
