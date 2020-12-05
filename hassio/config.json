@@ -11,5 +11,6 @@
     "options": {},
     "schema": {},
     "image": "td22057/{arch}-insteon-mqtt",
-    "ingress": true
+    "ingress": true,
+    "ingress_port": 8099
 }
