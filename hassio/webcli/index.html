@@ -1,0 +1,82 @@
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Insteon-MQTT WebCLI</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+<body>
+<div class="modal" tabindex="-1" role="dialog" id='instructions'>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Insten-MQTT WebCLI</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>This is a very rudimentary web client to the insteon-MQTT
+        command line interface.</p>
+        <p>
+          The prefix of the basic command 'insteon-mqtt config.yaml' will
+          automatically be added for you.
+        </p>
+        <p>
+          For help, try typing '-h', this also works for many of the commands
+          as well such as 'db-add -h'.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="container">
+<div class="d-flex min-vh-100 flex-column">
+  <div class="row bg-dark flex-fill d-flex">
+    <div class="col" >
+      <pre id="output" class="pre-scrollable text-light" style="white-space: pre-wrap; max-height: 85vh;"></pre>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <div class="input-group mb-3">
+        <div class="input-group-prepend">
+          <span class="input-group-text">insteon-mqtt config.yaml</span>
+        </div>
+        <input type="text" class="form-control" id="input">
+        <div class="input-group-append">
+          <button class="btn btn-outline-primary" type="button" id="input_button">Execute</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+<script type="text/javascript" charset="utf-8">
+    $(document).ready(function() {
+      $("#instructions").modal('show');
+      var socket = io();
+      $('#input_button').click(function(e) {
+            socket.emit('message', $('#input').val());
+            $('#input').val('');
+      });
+      $('#input').on('keypress',function(e) {
+        if(e.which == 13) {
+          socket.emit('message', $('#input').val());
+          $('#input').val('');
+        }
+      });
+      socket.on('message', function(msg){
+        $('#output').append(msg);
+        $('#output').scrollTop($('#output')[0].scrollHeight);
+      });
+    });
+</script>
+</body>
+</html>
