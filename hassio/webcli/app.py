@@ -19,9 +19,26 @@ def index():
 
 @socketio.on('message')
 def handle_message(message):
-    command = ['../../insteon-mqtt', '../../config.yaml']
-    command.extend(split(message))
-    app.config['cmd'].append(command)
+    user_cmd = split(message)
+
+    # Attempt to add some guardrails to prevent users from doing things
+    # that would cause issues.
+    if 'insteon-mqtt' in user_cmd[0].lower():
+        emit('message', "!!!!!!! Error, the command prefix 'insteon-mqtt " +
+             "config.yaml is automatically added to all commands.'\n")
+    elif 'start' in user_cmd[0].lower():
+        emit('message', "!!!!!!! Error, do not attempt to run the start " +
+             "command from here, bad things would happen.'\n")
+    elif 'stop' in user_cmd[0].lower():
+        emit('message', "!!!!!!! Error, do not attempt to run the start " +
+             "command from here, bad things would happen.'\n")
+    elif 'config.yaml' in user_cmd[0].lower():
+        emit('message', "!!!!!!! Error, the command prefix 'insteon-mqtt " +
+             "config.yaml is automatically added to all commands.'\n")
+    else:
+        command = ['../../insteon-mqtt', '../../config.yaml']
+        command.extend(user_cmd)
+        app.config['cmd'].append(command)
 
 @socketio.on('connect')
 def test_connect():
