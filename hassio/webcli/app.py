@@ -65,10 +65,6 @@ def index():
 
 @socketio.on('message')
 def handle_message(message):
-    if app.config["worker"] is None:
-        app.config["worker"] = Worker(socketio, app)
-        socketio.start_background_task(target=app.config["worker"].do_work)
-
     user_cmd = split(message)
 
     # Attempt to add some guardrails to prevent users from doing things
