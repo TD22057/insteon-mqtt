@@ -74,7 +74,8 @@
       $('#instructions').on('hidden.bs.modal', function (e) {
         $("#input").focus();
       })
-      var socket = io();
+      var pathname = window.location.pathname + 'socket.io';
+      var socket = io({path: pathname});
       $('#input_button').click(function(e) {
             socket.emit('message', $('#input').val());
             $('#input').val('');
