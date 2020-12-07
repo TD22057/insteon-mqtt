@@ -76,7 +76,7 @@ def handle_message(message):
         emit('message', "!!!!!!! Error, do not attempt to run the start " +
              "command from here, bad things would happen.'\n")
     elif 'stop' in user_cmd[0].lower():
-        emit('message', "!!!!!!! Error, do not attempt to run the start " +
+        emit('message', "!!!!!!! Error, do not attempt to run the stop " +
              "command from here, bad things would happen.'\n")
     elif 'config.yaml' in user_cmd[0].lower():
         emit('message', "!!!!!!! Error, the command prefix 'insteon-mqtt " +
