@@ -40,7 +40,7 @@ class DeviceEntry:
     """
 
     @staticmethod
-    def from_json(data):
+    def from_json(data, db=None):
         """Read a DeviceEntry from a JSON input.
 
         The inverse of this is to_json().
@@ -50,16 +50,18 @@ class DeviceEntry:
 
         Returns:
           DeviceEntry: Returns the created DeviceEntry object.
+          db: (db.Device) The parent database which contains this entry
         """
         return DeviceEntry(Address.from_json(data['addr']),
                            data['group'],
                            data['mem_loc'],
                            Msg.DbFlags.from_json(data['db_flags']),
-                           bytes(data['data']))
+                           bytes(data['data']),
+                           db=db)
 
     #-----------------------------------------------------------------------
     @staticmethod
-    def from_bytes(data):
+    def from_bytes(data, db=None):
         """Read a DeviceEntry from a byte array.
 
         This is used to read an entry from an InpExtended insteon message
@@ -67,6 +69,7 @@ class DeviceEntry:
 
         Args:
           data:  (bytes) The data 14 byte array from an InpExtended message.
+          db:    (db.device) The parent database containing this entry
 
         Returns:
           DeviceEntry: Returns the created DeviceEntry object.
@@ -81,11 +84,12 @@ class DeviceEntry:
         link_addr = Address.from_bytes(data, 7)
         link_data = data[10:13]
 
-        return DeviceEntry(link_addr, group, mem_loc, db_flags, link_data)
+        return DeviceEntry(link_addr, group, mem_loc, db_flags,
+                           link_data, db=db)
 
     #-----------------------------------------------------------------------
     @staticmethod
-    def from_i1_bytes(data):
+    def from_i1_bytes(data, db=None):
         """Read a DeviceEntry from an i1 device byte array.
 
         This is used to read an entry from the DeviceScanManagerI1 handler for
@@ -95,6 +99,7 @@ class DeviceEntry:
         Args:
           data:      (bytes) The 8 byte record, preceeded by the 2 byte
                      location.
+          db:        (db.device) The parent database containing this entry
 
         Returns:
           DeviceEntry: Returns the created DeviceEntry object.
@@ -105,10 +110,11 @@ class DeviceEntry:
         link_addr = Address.from_bytes(data, 4)
         link_data = data[7:10]
 
-        return DeviceEntry(link_addr, group, mem_loc, db_flags, link_data)
+        return DeviceEntry(link_addr, group, mem_loc, db_flags,
+                           link_data, db=db)
 
     #-----------------------------------------------------------------------
-    def __init__(self, addr, group, mem_loc, db_flags, data):
+    def __init__(self, addr, group, mem_loc, db_flags, data, db=None):
         """Constructor
 
         Args:
@@ -118,6 +124,7 @@ class DeviceEntry:
           db_flags: (message.DbFlags) The db controler record flags.
           data:     (bytes) 3 data bytes.  [0] is the on level, [1] is the
                     ramp rate.
+          db:       (db.device) The parent database containing this entry
         """
         # Accept either bytes, list of ints, or None for the data input.
         if data is not None:
@@ -132,6 +139,7 @@ class DeviceEntry:
         self.db_flags = db_flags
         self.is_controller = db_flags.is_controller
         self.data = data
+        self.db = db
 
     #-----------------------------------------------------------------------
     def copy(self):
@@ -141,7 +149,7 @@ class DeviceEntry:
            Returns a copy of the DeviceEntry object.
         """
         return DeviceEntry(self.addr, self.group, self.mem_loc,
-                           self.db_flags.copy(), self.data[:])
+                           self.db_flags.copy(), self.data[:], db=self.db)
 
     #-----------------------------------------------------------------------
     def update_from(self, addr, group, is_controller, data):

@@ -14,7 +14,7 @@ class Test_DeviceEntry:
         ctrl = Msg.DbFlags(in_use=True, is_controller=True, is_last_rec=False)
         data = bytes([0x01, 0x02, 0x03])
         mem_loc = (0xfe << 8) + 0x10
-        obj = IM.db.DeviceEntry(addr, 0x03, mem_loc, ctrl, data)
+        obj = IM.db.DeviceEntry(addr, 0x03, mem_loc, ctrl, data, db=None)
 
         assert obj.addr == addr
         assert obj.group == 0x03
@@ -26,7 +26,7 @@ class Test_DeviceEntry:
         assert obj.mem_bytes() == bytes([0xfe, 0x10])
 
         d = obj.to_json()
-        obj2 = IM.db.DeviceEntry.from_json(d)
+        obj2 = IM.db.DeviceEntry.from_json(d, db=None)
         assert obj2.addr == obj.addr
         assert obj2.group == obj.group
         assert obj2.mem_loc == obj.mem_loc
@@ -42,7 +42,7 @@ class Test_DeviceEntry:
                       addr.ids[0], addr.ids[1], addr.ids[2],
                       data[0], data[1], data[2]])
 
-        obj3 = IM.db.DeviceEntry.from_bytes(data)
+        obj3 = IM.db.DeviceEntry.from_bytes(data, db=None)
         assert obj3.addr == obj.addr
         assert obj3.group == obj.group
         assert obj3.mem_loc == obj.mem_loc
