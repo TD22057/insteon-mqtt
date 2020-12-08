@@ -525,7 +525,7 @@ class Modem:
 
         o.write("GroupMap\n")
         for grp, elem in self.groups.items():
-            o.write("  %s -> %-25s\n" % (grp, [i.label[:25] for i in elem]))
+            o.write("  %s -> %s\n" % (grp, [i.label for i in elem]))
 
         return o.getvalue()
 
