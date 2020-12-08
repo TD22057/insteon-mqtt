@@ -302,7 +302,7 @@ class DeviceEntry:
         unused = " (UNUSED)" if not self.db_flags.in_use else ""
 
         return ("%04x: %-25s grp: %3s type: %s data: %#04x %#04x %#04x%s%s" %
-                (self.mem_loc, self.label, self.group,
+                (self.mem_loc, self.label[:24], self.group,
                  util.ctrl_str(self.db_flags.is_controller),
                  self.data[0], self.data[1], self.data[2], unused, last))
 
