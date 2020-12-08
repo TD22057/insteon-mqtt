@@ -1147,7 +1147,7 @@ class Modem:
         # Create a new database entry for the modem and send it to the modem
         # for updating.
         entry = db.ModemEntry(remote_addr, local_group, is_controller,
-                              local_data)
+                              local_data, db=self.db)
         seq.add(self.db.add_on_device, self.protocol, entry)
 
         # For two way commands, insert a callback so that when the modem

@@ -53,7 +53,7 @@ class Modem:
         """
         obj = Modem(path, device)
         for d in data['entries']:
-            obj.add_entry(ModemEntry.from_json(d), save=False)
+            obj.add_entry(ModemEntry.from_json(d, db=obj), save=False)
 
         # pylint: disable=protected-access
         obj._meta = data.get('meta', {})
@@ -577,7 +577,7 @@ class Modem:
         if remote.is_controller:
             group = remote.group
         entry = ModemEntry(remote.addr, group, local.is_controller,
-                           local.link_data)
+                           local.link_data, db=self)
 
         # Add the Entry to the DB
         self.add_entry(entry, save=False)
