@@ -81,6 +81,22 @@ class ModemEntry:
             }
 
     #-----------------------------------------------------------------------
+    @property
+    def label(self):
+        """Returns the label of the device that the address in this entry is
+        associated with or the address if the device cannot be found.
+
+        Returns:
+          (str) A label or address for the entry
+        """
+        # We allow for no db to be set
+        if self.db is not None and self.db.device is not None:
+            device = self.db.device.find(self.addr)
+            if device is not None:
+                return device.label
+        return str(self.addr)
+
+    #-----------------------------------------------------------------------
     def __eq__(self, rhs):
         """Check for equality.
 
@@ -104,8 +120,8 @@ class ModemEntry:
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return ("ID: %s  grp: %s  type: %s  data: %#04x %#04x %#04x" %
-                (self.addr.hex, self.group, util.ctrl_str(self.is_controller),
+        return ("ID: %25s  grp: %3s type: %s  data: %#04x %#04x %#04x" %
+                (self.label, self.group, util.ctrl_str(self.is_controller),
                  self.data[0], self.data[1], self.data[2]))
 
     #-----------------------------------------------------------------------

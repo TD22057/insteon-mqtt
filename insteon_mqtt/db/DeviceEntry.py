@@ -142,6 +142,22 @@ class DeviceEntry:
         self.db = db
 
     #-----------------------------------------------------------------------
+    @property
+    def label(self):
+        """Returns the label of the device that the address in this entry is
+        associated with or the address if the device cannot be found.
+
+        Returns:
+          (str) A label or address for the entry
+        """
+        # We allow for no db to be set
+        if self.db is not None and self.db.device is not None:
+            device = self.db.device.modem.find(self.addr)
+            if device is not None:
+                return device.label
+        return str(self.addr)
+
+    #-----------------------------------------------------------------------
     def copy(self):
         """Make a copy of the DeviceEntry.
 
@@ -285,8 +301,8 @@ class DeviceEntry:
         last = " (LAST)" if self.db_flags.is_last_rec else ""
         unused = " (UNUSED)" if not self.db_flags.in_use else ""
 
-        return ("%04x: %s grp: %3s type: %s data: %#04x %#04x %#04x%s%s" %
-                (self.mem_loc, self.addr.hex, self.group,
+        return ("%04x: %25s grp: %3s type: %s data: %#04x %#04x %#04x%s%s" %
+                (self.mem_loc, self.label, self.group,
                  util.ctrl_str(self.db_flags.is_controller),
                  self.data[0], self.data[1], self.data[2], unused, last))
 
