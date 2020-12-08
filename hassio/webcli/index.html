@@ -83,7 +83,7 @@
       var socket = io({path: pathname});
       $('#input_button').click(function(e) {
         var prev_cmds = $('#input').data("prev_cmd");
-        prev_cmds.push($('#input').val())
+        prev_cmds.unshift($('#input').val())
         $('#input').data("prev_cmd", prev_cmds);
         $('#input').data("next_prev_cmd_index", 0);
         socket.emit('message', $('#input').val());
@@ -92,7 +92,7 @@
       $('#input').on('keypress',function(e) {
         if(e.which == 13) { // Enter
           var prev_cmds = $('#input').data("prev_cmd");
-          prev_cmds.push($('#input').val())
+          prev_cmds.unshift($('#input').val())
           $('#input').data("prev_cmd", prev_cmds);
           $('#input').data("next_prev_cmd_index", 0);
           socket.emit('message', $('#input').val());
