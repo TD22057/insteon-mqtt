@@ -498,7 +498,7 @@ class FanLinc(Dimmer):
         if not is_controller:
             if 'group' in data:
                 data_3 = data['group']
-            if 'ramp_rate' in data and (data_3 is None or data_3 == 0x01):
+            if 'ramp_rate' in data and (data_3 is None or data_3 <= 0x01):
                 data_2 = 0x1f
                 for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
                     if data['ramp_rate'] >= ramp_value:
