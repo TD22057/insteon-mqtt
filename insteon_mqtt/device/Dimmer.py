@@ -525,8 +525,9 @@ class Dimmer(Base):
     def set_ramp_rate(self, rate, on_done=None):
         """Set the device default ramp rate.
 
-        This changes the dimmer default ramp rate of how quickly the it
-        to 9 minutes.
+        This changes the dimmer default ramp rate of how quickly it will 
+        turn on or off. This rate can be between 0.1 seconds and up to 9 
+        minutes.
 
         Args:
           rate (float): Ramp rate in in the range [0.1, 540] seconds
