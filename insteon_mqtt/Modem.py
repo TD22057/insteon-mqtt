@@ -336,7 +336,7 @@ class Modem:
         """
         # Set the error stop to false so a failed refresh doesn't stop the
         # sequence from trying to refresh other devices.
-        seq = CommandSeq(self.protocol, "Refresh all complete", on_done,
+        seq = CommandSeq(self, "Refresh all complete", on_done,
                          error_stop=False)
 
         # Reload the modem database.
@@ -371,7 +371,7 @@ class Modem:
         """
         # Set the error stop to false so a failed refresh doesn't stop the
         # sequence from trying to refresh other devices.
-        seq = CommandSeq(self.protocol, "Get Engine all complete", on_done,
+        seq = CommandSeq(self, "Get Engine all complete", on_done,
                          error_stop=False)
 
         # Reload all the device databases.
@@ -611,6 +611,26 @@ class Modem:
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
+    def send(self, msg, msg_handler, high_priority=False, after=None):
+        """Send a message to the modem.
+
+        This simply forwards to Protocol.Send() but is here to provide
+        consistency with devices.
+
+        Args:
+          msg (Message):  Output message to write.  This should be an
+              instance of a message in the message directory that that starts
+              with 'Out'.
+          msg_handler (MsgHander): Message handler instance to use when
+                      replies to the message are received.  Any message
+                      received after we write out the msg are passed to this
+                      handler until the handler returns the message.FINISHED
+                      flags.
+        """
+
+        self.protocol.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
     def sync(self, dry_run=True, refresh=True, sequence=None, on_done=None):
         """Syncs the links on the device.
 
@@ -647,7 +667,7 @@ class Modem:
         if sequence is not None:
             seq = sequence
         else:
-            seq = CommandSeq(self.protocol, "Sync complete", on_done,
+            seq = CommandSeq(self, "Sync complete", on_done,
                              error_stop=False)
 
         if refresh:
@@ -712,7 +732,7 @@ class Modem:
         """
         # Set the error stop to false so a failed refresh doesn't stop the
         # sequence from trying to refresh other devices.
-        seq = CommandSeq(self.protocol, "Sync All complete", on_done,
+        seq = CommandSeq(self, "Sync All complete", on_done,
                          error_stop=False)
 
         # First the modem database.
@@ -1142,7 +1162,7 @@ class Modem:
         # discussion.
         local_data = self.link_data(is_controller, local_group, local_data)
 
-        seq = CommandSeq(self.protocol, "Device db update complete", on_done)
+        seq = CommandSeq(self, "Device db update complete", on_done)
 
         # Create a new database entry for the modem and send it to the modem
         # for updating.
@@ -1200,7 +1220,7 @@ class Modem:
             return
 
         # Add the function delete call to the sequence.
-        seq = CommandSeq(self.protocol, "Delete complete", on_done)
+        seq = CommandSeq(self, "Delete complete", on_done)
         seq.add(self.db.delete_on_device, self.protocol, entry)
 
         # For two way commands, insert a callback so that when the modem

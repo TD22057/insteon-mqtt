@@ -189,7 +189,7 @@ class IOLinc(Base):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq(self.protocol, "IOLinc paired", on_done)
+        seq = CommandSeq(self, "IOLinc paired", on_done)
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -337,7 +337,7 @@ class IOLinc(Base):
 
         # NOTE: IOLinc cmd1=0x00 will report the relay state.  cmd2=0x01
         # reports the sensor state which is what we want.
-        seq = CommandSeq(self.protocol, "Device refreshed", on_done)
+        seq = CommandSeq(self, "Device refreshed", on_done)
 
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the current
