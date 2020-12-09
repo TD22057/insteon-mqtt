@@ -486,24 +486,6 @@ class Modem:
         return delta
 
     #-----------------------------------------------------------------------
-    def apply_diff(self, device, diff, on_done=None):
-        """TODO: doc
-        """
-        assert diff.addr is None  # Modem db doesn't have address
-
-        seq = CommandSeq(device, "Modem database sync complete", on_done)
-
-        # Start by removing all the entries we don't need.
-        for entry in diff.del_entries:
-            seq.add(self.delete_on_device, device.protocol, entry)
-
-        # Add the missing entries.
-        for entry in diff.add_entries:
-            seq.add(self.add_on_device, device.protocol, entry)
-
-        seq.run()
-
-    #-----------------------------------------------------------------------
     def to_json(self):
         """Convert the database to JSON format.
 

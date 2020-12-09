@@ -607,26 +607,6 @@ class Device:
         return delta
 
     #-----------------------------------------------------------------------
-    def apply_diff(self, device, diff, on_done=None):
-        """TODO: doc
-        """
-        assert self.addr == diff.addr
-
-        seq = CommandSeq(device, "Device database sync complete", on_done)
-
-        # Start by removing all the entries we don't need.  This way we free
-        # up memory locations to use for the add.
-        for entry in diff.del_entries:
-            seq.add(self.delete_on_device, entry)
-
-        # Add the missing entries.
-        for entry in diff.add_entries:
-            seq.add(self.add_on_device, device, entry.addr, entry.group,
-                    entry.is_controller, entry.data)
-
-        seq.run()
-
-    #-----------------------------------------------------------------------
     def to_json(self):
         """Convert the database to JSON format.
 
