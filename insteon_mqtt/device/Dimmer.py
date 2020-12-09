@@ -526,21 +526,26 @@ class Dimmer(Base):
         """Set the device default ramp rate.
 
         This changes the dimmer default ramp rate of how quickly the it
-        will turn on or off. This rate can be between .1 seconds and up
         to 9 minutes.
 
         Args:
-          rate (int): The default ramp rate in the range [0,31]
+          rate (float): Ramp rate in in the range [0.1, 540] seconds
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Dimmer %s setting ramp rate to %s", self.label, rate)
 
+        data_3 = 0x1c #the default ramp rate is .5
+        for ramp_key, ramp_value in self.ramp_pretty.items():
+            if rate >= ramp_value:
+                data_3 = ramp_key
+                break
+
         # Extended message data - see Insteon dev guide p156.
         data = bytes([
             0x01,   # D1 must be group 0x01
             0x05,   # D2 set ramp rate when button is pressed
-            rate,  # D3 rate
+            data_3,  # D3 rate
             ] + [0x00] * 11)
 
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
@@ -593,7 +598,7 @@ class Dimmer(Base):
             seq.add(self.set_on_level, on_level)
 
         if FLAG_RAMP_RATE in kwargs:
-            rate = util.input_byte(kwargs, FLAG_RAMP_RATE)
+            rate = util.input_float(kwargs, FLAG_RAMP_RATE)
             seq.add(self.set_ramp_rate, rate)
 
         seq.run()
