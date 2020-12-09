@@ -474,7 +474,7 @@ Switch, KeypadLinc, and Dimmer all support the flags:
 
   KeypadLinc and Dimmer support the flags:
    
-   - ramp_rate: integer in the range of 0x00-0x1f which sets the default ramp
+   - ramp_rate: float in the range of 0.5 to 540 seconds which sets the default ramp
      rate that will be used when the button is pressed
 
 IOLinc supports the flags:
