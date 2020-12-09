@@ -702,7 +702,7 @@ class Modem:
             on_done(True, None, None)
         else:
             LOG.ui("  Deleting %s:", entry)
-            self.db.delete_on_device(self.protocol, entry, on_done=on_done)
+            self.db.delete_on_device(entry, on_done=on_done)
 
     def _sync_add(self, entry, dry_run, on_done=None):
         ''' Adds a link to the device with a Log UI Message
@@ -714,7 +714,7 @@ class Modem:
             on_done(True, None, None)
         else:
             LOG.ui("  Adding %s:", entry)
-            self.db.add_on_device(self.protocol, entry, on_done=on_done)
+            self.db.add_on_device(entry, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def sync_all(self, dry_run=True, refresh=True, on_done=None):
@@ -1168,7 +1168,7 @@ class Modem:
         # for updating.
         entry = db.ModemEntry(remote_addr, local_group, is_controller,
                               local_data)
-        seq.add(self.db.add_on_device, self.protocol, entry)
+        seq.add(self.db.add_on_device, entry)
 
         # For two way commands, insert a callback so that when the modem
         # command finishes, it will send the next command to the device.
@@ -1221,7 +1221,7 @@ class Modem:
 
         # Add the function delete call to the sequence.
         seq = CommandSeq(self, "Delete complete", on_done)
-        seq.add(self.db.delete_on_device, self.protocol, entry)
+        seq.add(self.db.delete_on_device, entry)
 
         # For two way commands, insert a callback so that when the modem
         # command finishes, it will send the next command to the device.

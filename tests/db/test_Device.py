@@ -128,8 +128,7 @@ class Test_Device:
         remote_addr = IM.Address(0x50, 0x51, 0x52)
         remote_group = 0x30
 
-        db.add_on_device(device, remote_addr, remote_group, is_controller,
-                         data)
+        db.add_on_device(remote_addr, remote_group, is_controller, data)
         assert len(device.sent) == 2
         assert len(db.entries) == 1
         val0 = list(db.entries.values())[0]
@@ -141,8 +140,7 @@ class Test_Device:
 
         # Add again w/ a different local group
         data2 = bytes([0x50, 0x00, 0x02])
-        db.add_on_device(device, remote_addr, remote_group, is_controller,
-                         data2)
+        db.add_on_device(remote_addr, remote_group, is_controller, data2)
         assert len(db.entries) == 2
 
         val1 = list(db.entries.values())[1]

@@ -550,7 +550,7 @@ class Base:
             on_done(True, None, None)
         else:
             LOG.ui("  Deleting %s:", entry)
-            self.db.delete_on_device(self, entry, on_done=on_done)
+            self.db.delete_on_device(entry, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def _sync_add(self, entry, dry_run, on_done=None):
@@ -563,7 +563,7 @@ class Base:
             on_done(True, None, None)
         else:
             LOG.ui("  Adding %s:", entry)
-            self.db.add_on_device(self, entry.addr, entry.group,
+            self.db.add_on_device(entry.addr, entry.group,
                                   entry.is_controller, entry.data,
                                   on_done=on_done)
 
@@ -1135,7 +1135,7 @@ class Base:
             db_group = remote_group
 
         # Create a new database entry for the device and send it.
-        seq.add(self.db.add_on_device, self, remote_addr, db_group,
+        seq.add(self.db.add_on_device, remote_addr, db_group,
                 is_controller, local_data)
 
         # For two way commands, insert a callback so that when the modem
@@ -1188,7 +1188,7 @@ class Base:
         if refresh:
             seq.add(self.refresh)
 
-        seq.add(self.db.delete_on_device, self, entry)
+        seq.add(self.db.delete_on_device, entry)
 
         # For two way commands, insert a callback so that when the modem
         # command finishes, it will send the next command to the device.
