@@ -13,7 +13,6 @@ from .. import message as Msg
 from .. import util
 from .ModemEntry import ModemEntry
 from .DbDiff import DbDiff
-from ..CommandSeq import CommandSeq
 
 LOG = log.get_logger()
 

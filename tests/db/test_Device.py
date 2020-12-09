@@ -120,7 +120,7 @@ class Test_Device:
         device = MockDevice()
 
         local_addr = IM.Address(0x01, 0x02, 0x03)
-        db = IM.db.Device(local_addr)
+        db = IM.db.Device(local_addr, device=device)
 
         # Add local group 1 as responder of scene 30 on remote.
         data = bytes([0xff, 0x00, 0x01])

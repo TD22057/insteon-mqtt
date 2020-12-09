@@ -192,7 +192,7 @@ class Modem:
         # request each next record as the records arrive.
         msg = Msg.OutAllLinkGetFirst()
         msg_handler = handler.ModemDbGet(self.db, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def db_path(self):
@@ -608,7 +608,7 @@ class Modem:
         LOG.warning("Modem being reset.  All data will be lost")
         msg = Msg.OutResetModem()
         msg_handler = handler.ModemReset(self, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def send(self, msg, msg_handler, high_priority=False, after=None):
@@ -857,7 +857,7 @@ class Modem:
         # nothing happens.  See the handler for details.
         msg = Msg.OutModemLinking(Msg.OutModemLinking.Cmd.EITHER, group)
         msg_handler = handler.ModemLinkStart(on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):
@@ -984,7 +984,7 @@ class Modem:
         cmd1 = 0x11 if is_on else 0x13
         msg = Msg.OutModemScene(group, cmd1, 0x00)
         msg_handler = handler.ModemScene(self, msg, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def handle_received(self, msg):

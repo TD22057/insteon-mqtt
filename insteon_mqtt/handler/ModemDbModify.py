@@ -121,7 +121,7 @@ class ModemDbModify(Base):
         if self.next:
             LOG.info("Sending next modem db update")
             msg, self.entry = self.next.pop(0)
-            protocol.send(msg, self)
+            self.db.device.send(msg, self)
 
         # Only run the callback if this is the last message in the chain.
         else:
