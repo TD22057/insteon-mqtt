@@ -171,7 +171,7 @@ class IOLinc(Base):
           val:    (IOLinc.Modes)
         """
         if val in IOLinc.Modes:
-            meta = {'mode': IOLinc.Modes[val].value}
+            meta = {'mode': val.value}
             existing = self.db.get_meta('IOLinc')
             if isinstance(existing, dict):
                 existing.update(meta)
@@ -379,7 +379,10 @@ class IOLinc(Base):
         # Loop through flags, sending appropriate command for each flag
         for flag in kwargs:
             if flag == 'mode':
-                mode = IOLinc.Modes[kwargs[flag].upper()]
+                try:
+                    mode = IOLinc.Modes[kwargs[flag].upper()]
+                except KeyError:
+                    mode = IOLinc.Modes.LATCHING
                 # Save this to the device metadata
                 self.mode = mode
                 if mode == IOLinc.Modes.LATCHING:
