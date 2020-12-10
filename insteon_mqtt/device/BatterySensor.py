@@ -105,6 +105,7 @@ class BatterySensor(Base):
                 is not guaranteed - the message will be send no earlier than
                 this.
         """
+        LOG.info("BatterySensor %s - queueing msg until awake", self.label)
         self._send_queue.append([msg, msg_handler, high_priority, after])
 
     #-----------------------------------------------------------------------
@@ -203,14 +204,8 @@ class BatterySensor(Base):
             # (without sending anything out).
             super().handle_broadcast(msg)
 
-        # If we have any messages in the _send_queue, now is the time to send
-        # them while the device is awake, unless a message for this device is
-        # already pending in the protocol write queue
-        if (self._send_queue and
-                not self.protocol.is_addr_in_write_queue(self.addr)):
-            LOG.info("BatterySensor %s awake - sending msg", self.label)
-            args = self._send_queue.pop()
-            self.protocol.send(*args)
+        # Pop messages from _send_queue if necessary
+        self._pop_send_queue()
 
     #-----------------------------------------------------------------------
     def handle_on_off(self, msg):
@@ -283,5 +278,27 @@ class BatterySensor(Base):
         LOG.info("Setting device %s on:%s", self.label, is_on)
         self._is_on = is_on
         self.signal_on_off.emit(self, self._is_on)
+
+    #-----------------------------------------------------------------------
+    def _pop_send_queue(self):
+        """Pops a messages off the _send_queue if necessary
+
+        If we have any messages in the _send_queue, now is the time to send
+        them while the device is awake, unless a message for this device is
+        already pending in the protocol write queue
+        """
+        if (self._send_queue and
+                not self.protocol.is_addr_in_write_queue(self.addr)):
+            LOG.info("BatterySensor %s awake - sending msg", self.label)
+            args = self._send_queue.pop()
+            orig_on_done = args[1].on_done
+            # Inject a callback to this function in every handler
+            def on_done(success, message, data):
+                if success:
+                    self._pop_send_queue()
+                # now call original on_done
+                orig_on_done(success, message, data)
+            args[1].on_done = on_done
+            self.protocol.send(*args)
 
     #-----------------------------------------------------------------------
