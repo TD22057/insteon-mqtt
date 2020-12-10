@@ -3,6 +3,7 @@
 # Insteon battery powered motion sensor
 #
 #===========================================================================
+import time
 from .Base import Base
 from ..CommandSeq import CommandSeq
 from .. import log
@@ -79,6 +80,10 @@ class BatterySensor(Base):
 
         self._is_on = False
         self._send_queue = []
+        self.cmd_map.update({
+            'awake' : self.awake
+            })
+        self._awake_time = False
 
     #-----------------------------------------------------------------------
     def send(self, msg, msg_handler, high_priority=False, after=None):
@@ -105,8 +110,13 @@ class BatterySensor(Base):
                 is not guaranteed - the message will be send no earlier than
                 this.
         """
-        LOG.info("BatterySensor %s - queueing msg until awake", self.label)
-        self._send_queue.append([msg, msg_handler, high_priority, after])
+        # It seems like pressing the set button seems to keep them awake for
+        # about 3 minutes
+        if self._awake_time >= (time.time() - 180):
+            self.protocol.send(msg, msg_handler, high_priority, after)
+        else:
+            LOG.ui("BatterySensor %s - queueing msg until awake", self.label)
+            self._send_queue.append([msg, msg_handler, high_priority, after])
 
     #-----------------------------------------------------------------------
     def pair(self, on_done=None):
@@ -264,6 +274,31 @@ class BatterySensor(Base):
         # Current on/off level is stored in cmd2 so update our state
         # to match.
         self._set_is_on(msg.cmd2 != 0x00)
+
+    #-----------------------------------------------------------------------
+    def awake(self, on_done):
+        """Set the device as awake.
+
+        This will mark the device as awake and ready to receive commands.
+        Normally battery devices are deaf only only listen for commands
+        briefly after they wake up.  But you can manually wake them up by
+        holding down their set button and putting them into linking mode.
+        They will generally remain awake for about 3 minutes.
+
+        on_done: Finished callback.  This is called when the command has
+                 completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.ui("BatterySensor %s marked as awake", self.label)
+
+        # Update the awake time to be now
+        self._awake_time = time.time()
+
+        # Dump all messages in the queue to Protocol
+        for args in self._send_queue:
+            self.protocol.send(*args)
+        #Empty the queue
+        self._send_queue = []
+        on_done(True, "Complete", None)
 
     #-----------------------------------------------------------------------
     def _set_is_on(self, is_on):

@@ -534,6 +534,28 @@ will be passed through to the output state change payload.
    ```
 
 
+### Mark a battery device as awake.
+
+Supported: battery devices only
+
+Normally battery devices are sleeping and will not respond to commands.  So
+normally, the program queues messages for these devices and attempts to send
+them when the device is awake.  Usually this happens for a short period of time
+after the device sends a message.  But some battery devices do not even respond
+to commands during this time.
+
+You can manually wake a battery device by up by holding in their set buttons
+until their light flashes.  At this point they will stay awake for
+approximately 3 minutes.
+
+If you manually wake up a device using this method, then call this command
+so that the program knows that it can send messages to the device for the
+next three minutes.
+
+  ```
+  { "cmd": "awake" }
+  ```
+
 ---
 
 # State change commands
