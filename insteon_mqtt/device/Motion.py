@@ -55,6 +55,8 @@ class Motion(BatterySensor):
       the light level (dusk/dawn) has changed.  Not all motion sensors support
       this.
     """
+    type_name = "motion_sensor"
+
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
 

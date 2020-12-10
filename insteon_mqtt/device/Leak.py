@@ -3,7 +3,7 @@
 # Insteon leak sensor
 #
 #===========================================================================
-from .Base import Base
+from .BatterySensor import BatterySensor
 from ..CommandSeq import CommandSeq
 from .. import log
 from ..Signal import Signal
@@ -11,7 +11,7 @@ from ..Signal import Signal
 LOG = log.get_logger()
 
 
-class Leak(Base):
+class Leak(BatterySensor):
     """Insteon battery powered water leak sensor.
 
     A leak sensor is basically an on/off sensor except that it's batter
@@ -42,6 +42,8 @@ class Leak(Base):
     - signal_heartbeat( Device, True ): Sent when the device has broadcast a
       heartbeat signal.
     """
+    type_name = "leak_sensor"
+
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
 
@@ -119,56 +121,6 @@ class Leak(Base):
         # network event loop can process everything and the on_done callbacks
         # will chain everything together.
         seq.run()
-
-    #-----------------------------------------------------------------------
-    def handle_broadcast(self, msg):
-        """Handle broadcast messages from this device.
-
-        A broadcast message is sent from the device when any activity is
-        triggered.
-
-        This callback will process the broadcast and emit the signals that
-        correspond the events.
-
-        Then the base class handle_broadcast() is called.  That will loop
-        over every device that is linked to this device in the database and
-        call handle_group_cmd() on those devices.  That insures that the
-        devices that are linked to this device get updated to their correct
-        states (Insteon devices don't send out a state change when the
-        respond to a broadcast).
-
-        Args:
-          msg (InpStandard):  Broadcast message from the device.
-        """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == 0x06:
-            LOG.info("LeakSensor %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-
-        # On (0x11) and off (0x13) commands.
-        elif msg.cmd1 == 0x11 or msg.cmd1 == 0x13:
-            LOG.info("LeakSensor %s broadcast cmd %s grp: %s", self.addr,
-                     msg.cmd1, msg.group)
-
-            # Find the callback for this group and run that.
-            handler = self.group_map.get(msg.group, None)
-            if handler:
-                handler(msg)
-            else:
-                LOG.error("LeakSensor no handler for group %s", msg.group)
-
-            # This will find all the devices we're the controller of for this
-            # group and call their handle_group_cmd() methods to update their
-            # states since they will have seen the group broadcast and updated
-            # (without sending anything out).
-            super().handle_broadcast(msg)
-
-        # If we haven't downloaded the device db yet, use this opportunity to
-        # get the device db since we know the sensor is awake.  This doesn't
-        # always seem to work, but it works often enough to be useful to try.
-        if len(self.db) == 0:
-            LOG.info("LeakSensor %s awake - requesting database", self.addr)
-            self.refresh(force=True)
 
     #-----------------------------------------------------------------------
     def handle_dry(self, msg):

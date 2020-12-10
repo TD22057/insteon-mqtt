@@ -7,6 +7,7 @@ import time
 from .Base import Base
 from ..CommandSeq import CommandSeq
 from .. import log
+from .. import on_off
 from ..Signal import Signal
 
 LOG = log.get_logger()
@@ -18,7 +19,8 @@ class BatterySensor(Base):
     Battery powered sensors send basic on/off commands, low battery warnings,
     and hearbeat messages (some devices).  This includes things like door
     sensors, hidden door sensors, and window sensors.  This class also serves
-    as the base class for other battery sensors like motion sensors.
+    as the base class for other battery sensors like motion sensors, leak
+    sensors, remotes, and in the future others.
 
     The issue with a battery powered sensor is that we can't download the
     link database without the sensor being on.  You can trigger the sensor
@@ -196,8 +198,9 @@ class BatterySensor(Base):
             LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
                      msg.group)
 
-        # On (0x11) and off (0x13) commands.
-        elif msg.cmd1 == 0x11 or msg.cmd1 == 0x13:
+        # Valid command
+        elif (on_off.Mode.is_valid(msg.cmd1) or
+              on_off.Manual.is_valid(msg.cmd1)):
             LOG.info("BatterySensor %s broadcast cmd %s grp: %s", self.addr,
                      msg.cmd1, msg.group)
 
