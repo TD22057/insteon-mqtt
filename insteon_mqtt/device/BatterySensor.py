@@ -113,7 +113,7 @@ class BatterySensor(Base):
         # It seems like pressing the set button seems to keep them awake for
         # about 3 minutes
         if self._awake_time >= (time.time() - 180):
-            self.protocol.send(msg, msg_handler, high_priority, after)
+            super().send(msg, msg_handler, high_priority, after)
         else:
             LOG.ui("BatterySensor %s - queueing msg until awake", self.label)
             self._send_queue.append([msg, msg_handler, high_priority, after])
@@ -293,9 +293,9 @@ class BatterySensor(Base):
         # Update the awake time to be now
         self._awake_time = time.time()
 
-        # Dump all messages in the queue to Protocol
+        # Dump all messages in the queue
         for args in self._send_queue:
-            self.protocol.send(*args)
+            super().send(*args)
         #Empty the queue
         self._send_queue = []
         on_done(True, "Complete", None)
@@ -334,6 +334,6 @@ class BatterySensor(Base):
                 # now call original on_done
                 orig_on_done(success, message, data)
             args[1].on_done = on_done
-            self.protocol.send(*args)
+            super().send(*args)
 
     #-----------------------------------------------------------------------
