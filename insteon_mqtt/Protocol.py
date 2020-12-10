@@ -88,6 +88,11 @@ class Protocol:
         # Message received signal.  Every read message is passed to this.
         self.signal_received = Signal()  # (Message)
 
+        # Message finished signal.  Every write message that completes with
+        # Msg.FINISHED, will be emitted here.  Notably happens AFTER msg has
+        # been removed from the _write_queue
+        self.signal_msg_finished = Signal()  # (Message)
+
         # Inbound message buffer.
         self._buf = bytearray()
 
@@ -435,6 +440,8 @@ class Protocol:
             if status == Msg.FINISHED:
                 LOG.debug("Write handler finished")
                 self._write_finished()
+                # Notify any listeners that msg FINISHED
+                self.signal_msg_finished.emit(msg)
                 return
 
             # If this message was understood by the write handler, don't look

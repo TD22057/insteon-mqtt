@@ -8,6 +8,7 @@ from .Base import Base
 from ..CommandSeq import CommandSeq
 from .. import log
 from .. import on_off
+from .. import message as Msg
 from ..Signal import Signal
 
 LOG = log.get_logger()
@@ -68,6 +69,10 @@ class BatterySensor(Base):
         self.signal_low_battery = Signal()
         # Sensor heartbeat signal.  API: func( Device, True )
         self.signal_heartbeat = Signal()
+
+        # Capture write messages as they FINISHED so we can pop the next
+        # message off the _send_queue
+        self.protocol.signal_msg_finished.connect(self.handle_finished)
 
         # Derived classes can override these or add to them.  Maps Insteon
         # groups to message type for this sensor.
@@ -169,6 +174,29 @@ class BatterySensor(Base):
         """Return if sensor has been tripped.
         """
         return self._is_on
+
+    #-----------------------------------------------------------------------
+    def handle_finished(self, msg):
+        """Handle write messages that are marked FINISHED
+
+        All FINISHED msgs are emitted here are, NOT just those from this
+        device.
+
+        This is used to pop a message off the _send_queue when the prior
+        message FINISHES.  Notably messages that expire do not appear here
+        but NAK messages will still appear here (which is fine, NAK means
+        it is still awake).
+
+        Args:
+          msg (msg):  A write message that was marked msg.FINISHED
+        """
+        # Ignore modem messages, broadcast messages, only look for
+        # communications from the device
+        if isinstance(msg, (Msg.InpStandard, Msg.InpExtended)):
+            # Is this a message from this device?
+            if msg.from_addr == self.addr:
+                # Pop messages from _send_queue if necessary
+                self._pop_send_queue()
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -329,14 +357,6 @@ class BatterySensor(Base):
                 not self.protocol.is_addr_in_write_queue(self.addr)):
             LOG.info("BatterySensor %s awake - sending msg", self.label)
             args = self._send_queue.pop()
-            orig_on_done = args[1].on_done
-            # Inject a callback to this function in every handler
-            def on_done(success, message, data):
-                if success:
-                    self._pop_send_queue()
-                # now call original on_done
-                orig_on_done(success, message, data)
-            args[1].on_done = on_done
             super().send(*args)
 
     #-----------------------------------------------------------------------

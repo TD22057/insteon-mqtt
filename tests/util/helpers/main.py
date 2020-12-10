@@ -27,6 +27,7 @@ class MockProtocol:
     """
     def __init__(self):
         self.signal_received = IM.Signal()
+        self.signal_msg_finished = IM.Signal()
         self.sent = []
 
     def clear(self):
