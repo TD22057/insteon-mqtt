@@ -233,6 +233,20 @@ class Protocol:
         self._next_write_time = wait_time
 
     #-----------------------------------------------------------------------
+    def is_addr_in_write_queue(self, addr):
+        """Checks whether a message to the specified address already exists
+        in the _write_queue
+
+        Args:
+          addr (Address): The address to search for.
+        """
+        for out in self._write_queue:
+            if isinstance(out.msg, (Msg.OutExtended, Msg.OutStandard)):
+                if out.msg.to_addr == addr:
+                    return True
+        return False
+
+    #-----------------------------------------------------------------------
     def _poll(self, t):
         """Periodic polling function.
 
