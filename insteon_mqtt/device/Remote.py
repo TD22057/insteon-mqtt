@@ -278,7 +278,7 @@ class Remote(BatterySensor):
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
-    def get_extended_flags(self):
+    def get_extended_flags(self, on_done):
         """Requests the Extended Flags from the Device
 
         Notably, these flags contain the battery voltage.
@@ -286,7 +286,8 @@ class Remote(BatterySensor):
         data = bytes([0x01] + [0x00] * 13)
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
         msg_handler = handler.ExtendedCmdResponse(msg,
-                                                  self.handle_extended_flags)
+                                                  self.handle_extended_flags,
+                                                  on_done=on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
