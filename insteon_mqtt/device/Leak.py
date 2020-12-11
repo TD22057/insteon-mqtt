@@ -59,8 +59,6 @@ class Leak(BatterySensor):
 
         # Wet/dry signal.  API: func( Device, bool is_wet )
         self.signal_wet = Signal()
-        # Sensor heartbeat signal.  API: func( Device, True )
-        self.signal_heartbeat = Signal()  # (Device, bool)
 
         # Maps Insteon groups to message type for this sensor.
         self.group_map = {
