@@ -324,4 +324,14 @@ def awake(args, config):
 
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]
+
+#===========================================================================
+def get_battery_voltage(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "get_battery_voltage",
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 #===========================================================================

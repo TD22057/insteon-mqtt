@@ -7,6 +7,8 @@ from .BatterySensor import BatterySensor
 from ..CommandSeq import CommandSeq
 from .. import log
 from .. import on_off
+from .. import message as Msg
+from .. import handler
 from ..Signal import Signal
 from .. import util
 
@@ -70,6 +72,36 @@ class Remote(BatterySensor):
         # API: func(Device, int group, on_off.Manual mode)
         self.signal_manual = Signal()
 
+        self.cmd_map.update({
+            'get_battery_voltage' : self.get_extended_flags,
+            })
+
+    #-----------------------------------------------------------------------
+    @property
+    def battery_voltage(self):
+        """Returns the battery voltage from the saved metadata
+        """
+        meta = self.db.get_meta('Remote')
+        ret = 3.7  # the full battery voltage is 3.7v
+        if isinstance(meta, dict) and 'battery_voltage' in meta:
+            ret = meta['battery_voltage']
+        return ret
+
+    #-----------------------------------------------------------------------
+    @battery_voltage.setter
+    def battery_voltage(self, val):
+        """Saves battery voltage to the database metadata
+        Args:
+          val:    (float) 0-3.7
+        """
+        meta = {'battery_voltage': val}
+        existing = self.db.get_meta('Remote')
+        if isinstance(existing, dict):
+            existing.update(meta)
+            self.db.set_meta('Remote', existing)
+        else:
+            self.db.set_meta('Remote', meta)
+
     #-----------------------------------------------------------------------
     def pair(self, on_done=None):
         """Pair the device with the modem.
@@ -118,6 +150,16 @@ class Remote(BatterySensor):
         # network event loop can process everything and the on_done callbacks
         # will chain everything together.
         seq.run()
+
+    def handle_extended_flags(self, msg, on_done):
+        """Receives the extended flags payload from the device
+
+        Primarily this is used to get the battery voltage
+        """
+        self.battery_voltage = msg.data[10] / 50
+        LOG.info("Remote %s battery voltage is %s", self.label,
+                 self.battery_voltage)
+        on_done(True, "Operation complete", msg.data[10])
 
     #-----------------------------------------------------------------------
     def handle_button(self, msg):
@@ -234,5 +276,17 @@ class Remote(BatterySensor):
         if 'group' in data:
             data_3 = data['group']
         return [data_1, data_2, data_3]
+
+    #-----------------------------------------------------------------------
+    def get_extended_flags(self):
+        """Requests the Extended Flags from the Device
+
+        Notably, these flags contain the battery voltage.
+        """
+        data = bytes([0x01] + [0x00] * 13)
+        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
+        msg_handler = handler.ExtendedCmdResponse(msg,
+                                                  self.handle_extended_flags)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
