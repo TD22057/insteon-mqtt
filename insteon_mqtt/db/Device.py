@@ -66,7 +66,7 @@ class Device:
         dev_cat = data.get('dev_cat', None)
         sub_cat = data.get('sub_cat', None)
         obj.desc = None
-        if dev_cat:
+        if dev_cat is not None:
             obj.desc = catalog.find(dev_cat, sub_cat)
 
         obj.firmware = data.get('firmware', None)
