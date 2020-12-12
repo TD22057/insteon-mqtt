@@ -28,7 +28,7 @@ class Modem:
     input).  This allows devices to be looked up by address to send commands
     to those devices.
     """
-    def __init__(self, protocol, stack):
+    def __init__(self, protocol, stack, timed_call):
         """Constructor
 
         Actual modem definitions must be loaded from a configuration file via
@@ -36,9 +36,12 @@ class Modem:
 
         Args:
           protocol (Protocol):  Insteon message handling protocol object.
+          stack (Stack): The link to the Stack handling object
+          timed_call (TimedCall): The link to the TimedCall handling object
         """
         self.protocol = protocol
         self.stack = stack
+        self.timed_call = timed_call
 
         self.addr = None
         self.name = "modem"

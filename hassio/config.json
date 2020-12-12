@@ -2,7 +2,7 @@
     "name": "Insteon MQTT",
     "description": "Python Insteon PLM <-> MQTT bridge",
     "slug": "insteon-mqtt",
-    "version": "0.7.2",
+    "version": "0.7.3",
     "startup": "services",
     "arch": ["amd64","armhf","aarch64","i386"],
     "boot": "auto",
