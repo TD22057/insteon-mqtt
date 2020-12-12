@@ -88,6 +88,11 @@ class Protocol:
         # Message received signal.  Every read message is passed to this.
         self.signal_received = Signal()  # (Message)
 
+        # Message finished signal.  Every write message that completes with
+        # Msg.FINISHED, will be emitted here.  Notably happens AFTER msg has
+        # been removed from the _write_queue
+        self.signal_msg_finished = Signal()  # (Message)
+
         # Inbound message buffer.
         self._buf = bytearray()
 
@@ -231,6 +236,20 @@ class Protocol:
           wait_time (epoch Seconds): The next time a message can be sent
         """
         self._next_write_time = wait_time
+
+    #-----------------------------------------------------------------------
+    def is_addr_in_write_queue(self, addr):
+        """Checks whether a message to the specified address already exists
+        in the _write_queue
+
+        Args:
+          addr (Address): The address to search for.
+        """
+        for out in self._write_queue:
+            if isinstance(out.msg, (Msg.OutExtended, Msg.OutStandard)):
+                if out.msg.to_addr == addr:
+                    return True
+        return False
 
     #-----------------------------------------------------------------------
     def _poll(self, t):
@@ -421,6 +440,8 @@ class Protocol:
             if status == Msg.FINISHED:
                 LOG.debug("Write handler finished")
                 self._write_finished()
+                # Notify any listeners that msg FINISHED
+                self.signal_msg_finished.emit(msg)
                 return
 
             # If this message was understood by the write handler, don't look
