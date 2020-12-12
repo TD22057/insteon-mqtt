@@ -184,6 +184,7 @@ class Device:
         """
         self.delta = delta
         if delta is not None:
+            self.delta = self.delta % 256  # Roll over db if it goes past 256
             self.save()
 
     #-----------------------------------------------------------------------

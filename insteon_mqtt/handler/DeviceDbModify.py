@@ -72,6 +72,8 @@ class DeviceDbModify(Base):
                     # entry, or an marked unused (deletion).
                     LOG.info("Updating entry: %s", self.entry)
                     self.db.add_entry(self.entry)
+                    # Increment the delta 1
+                    self.db.set_delta(self.db.delta + 1)
                     self.on_done(True, "Device database update complete",
                                  self.entry)
 
