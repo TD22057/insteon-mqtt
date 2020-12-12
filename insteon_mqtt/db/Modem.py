@@ -13,7 +13,6 @@ from .. import message as Msg
 from .. import util
 from .ModemEntry import ModemEntry
 from .DbDiff import DbDiff
-from ..CommandSeq import CommandSeq
 
 LOG = log.get_logger()
 
@@ -268,7 +267,7 @@ class Modem:
         return results
 
     #-----------------------------------------------------------------------
-    def add_on_device(self, protocol, entry, on_done=None):
+    def add_on_device(self, entry, on_done=None):
         """Add an entry and push the entry to the Insteon modem.
 
         This sends the input record to the Insteon modem.  If that command
@@ -283,8 +282,6 @@ class Modem:
         If the entry already exists, nothing will be done.
 
         Args:
-          protocol:      (Protocol) The Insteon protocol object to use for
-                         sending messages.
           entry:         (ModemEntry) The entry to add.
           on_done:       Optional callback which will be called when the
                          command completes.
@@ -318,10 +315,10 @@ class Modem:
         msg_handler = handler.ModemDbModify(self, entry, exists, on_done)
 
         # Send the message.
-        protocol.send(msg, msg_handler)
+        self.device.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def delete_on_device(self, protocol, entry, on_done=None):
+    def delete_on_device(self, entry, on_done=None):
         """Delete a series of entries on the device.
 
         This will delete ALL the entries for an address and group.  The modem
@@ -336,8 +333,6 @@ class Modem:
           on_done( success, message, ModemEntry )
 
         Args:
-          protocol:      (Protocol) The Insteon protocol object to use for
-                         sending messages.
           addr:          (Address) The address to delete.
           group:         (int) The group to delete.
           on_done:       Optional callback which will be called when the
@@ -404,7 +399,7 @@ class Modem:
 
         # Send the first message.  If it ACK's, it will keep sending more
         # deletes - one per entry.
-        protocol.send(msg, msg_handler)
+        self.device.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def diff(self, rhs):
@@ -484,24 +479,6 @@ class Modem:
             delta.remove(entry)
 
         return delta
-
-    #-----------------------------------------------------------------------
-    def apply_diff(self, device, diff, on_done=None):
-        """TODO: doc
-        """
-        assert diff.addr is None  # Modem db doesn't have address
-
-        seq = CommandSeq(device, "Modem database sync complete", on_done)
-
-        # Start by removing all the entries we don't need.
-        for entry in diff.del_entries:
-            seq.add(self.delete_on_device, device.protocol, entry)
-
-        # Add the missing entries.
-        for entry in diff.add_entries:
-            seq.add(self.add_on_device, device.protocol, entry)
-
-        seq.run()
 
     #-----------------------------------------------------------------------
     def to_json(self):

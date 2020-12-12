@@ -97,7 +97,7 @@ class Outlet(Base):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq(self.protocol, "Outlet paired", on_done)
+        seq = CommandSeq(self, "Outlet paired", on_done)
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -145,7 +145,7 @@ class Outlet(Base):
         """
         LOG.info("Outlet %s cmd: status refresh", self.label)
 
-        seq = CommandSeq(self.protocol, "Device refreshed", on_done)
+        seq = CommandSeq(self, "Device refreshed", on_done)
 
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the current
@@ -414,7 +414,7 @@ class Outlet(Base):
                             "are: %s" % unknown, flags)
 
         # Start a command sequence so we can call the flag methods in series.
-        seq = CommandSeq(self.protocol, "Outlet set_flags complete", on_done)
+        seq = CommandSeq(self, "Outlet set_flags complete", on_done)
 
         if FLAG_BACKLIGHT in kwargs:
             backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)

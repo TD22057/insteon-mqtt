@@ -3,17 +3,17 @@
 # Remote module
 #
 #===========================================================================
+from .BatterySensor import BatterySensor
 from ..CommandSeq import CommandSeq
 from .. import log
 from .. import on_off
 from ..Signal import Signal
-from .Base import Base
 from .. import util
 
 LOG = log.get_logger()
 
 
-class Remote(Base):
+class Remote(BatterySensor):
     """Insteon multi-button battery powered mini-remote device.
 
     This class can be used for 1, 4, 6 or 8 (really any number) of battery
@@ -56,6 +56,12 @@ class Remote(Base):
         self.num = num_button
         self.type_name = "mini_remote_%d" % self.num
 
+        # Even though all buttons use the same callback this creats
+        # symmetry with the rest of the codebase
+        self.group_map = {}
+        for i in range(1, self.num + 1):
+            self.group_map[i] = self.handle_button
+
         # Button pressed signal.
         # API: func(Device, int group, bool on, on_off.Mode mode)
         self.signal_pressed = Signal()
@@ -89,7 +95,7 @@ class Remote(Base):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq(self.protocol, "Remote paired", on_done)
+        seq = CommandSeq(self, "Remote paired", on_done)
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -114,30 +120,17 @@ class Remote(Base):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def handle_broadcast(self, msg):
-        """Handle broadcast messages from this device.
+    def handle_button(self, msg):
+        """Handle button presses and hold downs
 
-        This is called automatically by the system (via handle.Broadcast)
-        when we receive a message from the device.
-
-        The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update the
-        device state and look up the group in the all link database.  For
-        each device that is in the group (as a reponsder), we'll call
-        handle_group_cmd() on that device to trigger it.  This way all the
-        devices in the group are updated to the correct values when we see
-        the broadcast message.
+        This is called by the device when a group broadcast is
+        sent out by the sensor.
 
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == 0x06:
-            LOG.info("Remote %s broadcast ACK grp: %s", self.addr, msg.group)
-            return
-
         # On/off command codes.
-        elif on_off.Mode.is_valid(msg.cmd1):
+        if on_off.Mode.is_valid(msg.cmd1):
             is_on, mode = on_off.Mode.decode(msg.cmd1)
             LOG.info("Remote %s broadcast grp: %s on: %s mode: %s", self.addr,
                      msg.group, is_on, mode)
@@ -152,19 +145,6 @@ class Remote(Base):
                      msg.group, manual)
 
             self.signal_manual.emit(self, msg.group, manual)
-
-        # This will find all the devices we're the controller of for this
-        # group and call their handle_group_cmd() methods to update their
-        # states since they will have seen the group broadcast and updated
-        # (without sending anything out).
-        super().handle_broadcast(msg)
-
-        # If we haven't downloaded the device db yet, use this opportunity to
-        # get the device db since we know the sensor is awake.  This doesn't
-        # always seem to work, but it works often enough to be useful to try.
-        if len(self.db) == 0:
-            LOG.info("Remote %s awake - requesting database", self.addr)
-            self.refresh(force=True)
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):

@@ -55,6 +55,8 @@ class Motion(BatterySensor):
       the light level (dusk/dawn) has changed.  Not all motion sensors support
       this.
     """
+    type_name = "motion_sensor"
+
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
 
@@ -141,7 +143,7 @@ class Motion(BatterySensor):
             raise Exception("Unknown Motion flags input: %s.\n Valid flags "
                             "are: %s" % (unknown, flags))
 
-        seq = CommandSeq(self.protocol, "Motion Set Flags Success", on_done)
+        seq = CommandSeq(self, "Motion Set Flags Success", on_done)
 
         # For some flags we need to know the existing bit before we change it.
         # So to insure that we are starting from the correct values, get the
