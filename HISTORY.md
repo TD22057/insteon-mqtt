@@ -16,6 +16,14 @@
   - [MQTT Doc](https://github.com/TD22057/insteon-mqtt/blob/master/docs/mqtt.md) -
     note the new set_flags options for IOLinc and the IOLinc section
 
+ - A new queueing system for battery devices ([PR240][P240]):
+   - Messages sent to the device will be queued until the device is awake
+   - When the device sends a message, the modem will attempt to immediately
+     send the oldest outgoing message.  This only works for some devices.
+   - Added an 'awake' command, to identify when a battery device has been
+     manually awaken via holding the set button.  This will cause all queued
+     and future messages to be sent to the device for up to three minutes
+
 ### Fixes
 
 ## [0.7.3]
@@ -420,3 +428,4 @@ will add new features.
 [P227]: https://github.com/TD22057/insteon-mqtt/pull/227
 [P237]: https://github.com/TD22057/insteon-mqtt/pull/227
 [P197]: https://github.com/TD22057/insteon-mqtt/pull/197
+[P240]: https://github.com/TD22057/insteon-mqtt/pull/240
