@@ -38,6 +38,7 @@ be identified by it's address or the string "modem".
    - [Remotes](#remote-controls)
    - [Smoke Bridge](#smoke-bridge)
    - [Switches](#switches)
+   - [Thermostat](#thermostat)
 
 
 ## Required Device Initialization
@@ -477,6 +478,11 @@ IOLinc supports the flags:
      change the relay mode (see the IOLinc user's guide for details)
    - trigger_reverse: 0/1 reverses the trigger command state
    - relay_linked: 0/1 links the relay to the sensor value
+   - momentary_secs: .1-6300 the number of seconds the relay stays closed in
+          momentary mode.  There is finer resolution at the low end. Higher
+          values will be rounded to the next valid value. Setting this to 0
+          will cause the IOLinc to change to latching mode. Setting this to
+          a non-zero value will cause the IOLinc to change to momentary mode.
 
 Motion Sensors support the flags:
 
@@ -928,6 +934,18 @@ templates:
    - 'is_low' is 1 for a low battery, 0 for normal.
    - 'is_low_str' is 'on' for a low battery, 'off' for normal.
 
+Some battery sensors also issues a heartbeat every 24 hours that can be used
+to confirm that they are still working.  Presently, only the Leak sensor is
+known to use heartbeat messages. The following variables can be used for
+templates:
+
+   - "is_heartbeat" is 1 whenever a heartbeat occurs
+   - "is_heartbeat_str" is "on" whenever a heartbeat occurs
+   - "heartbeat_time" is the Unix timestamp of when the heartbeat occurred
+
+The Battery Sensor class is also the base for other battery devices that
+have additional features, namely Motion Sensors, Leak Sensors, and Remotes.
+
 A sample battery sensor topic and payload configuration is:
 
    ```
@@ -939,6 +957,10 @@ A sample battery sensor topic and payload configuration is:
      # Low battery warning
      low_battery_topic: 'insteon/{{address}}/battery'
      low_battery_payload: '{{is_low_str.upper()}}'
+
+     # Heartbeats
+     heartbeat_topic: 'insteon/{{address}}/heartbeat'
+     heartbeat_payload: '{{heartbeat_time}}'
    ```
 
 ---
@@ -990,8 +1012,6 @@ A sample leak sensor topic and payload configuration is:
    leak:
      wet_dry_topic: 'insteon/{{address}}/wet'
      wet_dry_payload: '{{state.upper()}}'
-     heartbeat_topic: 'insteon/{{address}}/heartbeat'
-     heartbeat_payload: '{{heartbeat_time}}'
    ```
 
 ---
@@ -1287,4 +1307,92 @@ Payload:
   ```
   { "cmd" : "get_status"}
   ```
+---
+
+## IOLinc
+
+The IOLinc is both a switch (momentary or latching on/off) and a sensor
+that can be on or off.  There is a state topic which returns the state of both
+objects, as well as individual relay and sensor topics that only return the
+state of those objects.
+
+The set-flags command line command can be used to change the mode settings.
+
+There is also a set topic similar to other devices.  This obviously can only
+be used to set the state of the relay.  However it may not work as you expect:
+
+- In Latching mode, the set function works like any other switch. Turning the
+relay on and off accordingly.
+- If you configure the IOLinc to be momentary, then the ON command will trigger
+the relay to turn on for the duration that is configured then off.  An OFF the
+command will only cause the relay to turn off, it it is still on because the
+momentary duration has not fully elapsed yet.
+- The on/off payload forces the relay to on or off IGNORING any special
+requirements associated with the Momentary_A,B,C functions or the
+relay_linked flag.
+
+If you want a command that respects the Momentary_A,B,C requirements, you want
+to create a modem scene and to issue the commands to that scene.  See
+[Scene triggering](#scene triggering) for a description for how to issue
+commands to a scene.  And see [Scene Management](scenes.md) for a description
+of how to make a scene and the scenes.yaml file for examples of an IOLinc
+scene.
+
+In Home Assistant use MQTT switch with a configuration like:
+  switch:
+    - platform: mqtt
+      state_topic: 'insteon/aa.bb.cc/relay'
+      command_topic: 'insteon/aa.bb.cc/set'
+  binary_sensor:
+    - platform: mqtt
+      state_topic: 'insteon/aa.bb.cc/sensor'
+
+Alternatively, to use a modem scene to control the IOLinc
+  switch:
+    - platform: mqtt
+      state_topic: 'insteon/aa.bb.cc/relay'
+      command_topic: "insteon/command/modem"
+      payload_off: '{ "cmd": "scene", "name" : "<<NAME>>", "is_on" : 0}'
+      payload_on: '{ "cmd": "scene", "name" : "<<NAME>>", "is_on" : 1}'
+
+State Topic:
+  ```
+  'insteon/{{address}}/state'
+  ```
+
+State Topic Payload:
+  ```
+  '{ "sensor" : "{{sensor_on_str.lower()}}"", relay" : {{relay_on_str.lower()}} }'
+  ```
+
+Relay State Topic:
+  ```
+  'insteon/{{address}}/relay'
+  ```
+
+Payload:
+  ```
+  '{{relay_on_str.lower()}}'
+  ```
+
+Sensor State Topic:
+  ```
+  'insteon/{{address}}/sensor'
+  ```
+
+Payload:
+  ```
+  '{{sensor_on_str.lower()}}'
+  ```
+
+Set Command Topic:
+  ```
+  'insteon/{{address}}/set'
+  ```
+
+Payload:
+  ```
+  '{ "cmd" : "{{value.lower()}}" }'
+  ```
+
 ---
