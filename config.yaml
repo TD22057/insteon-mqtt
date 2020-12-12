@@ -377,6 +377,17 @@ mqtt:
     low_battery_topic: 'insteon/{{address}}/battery'
     low_battery_payload: '{{is_low_str.upper()}}'
 
+    # Output heartbeat topic and payload.  This message is sent
+    # every 24 hours. Available variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   is_heartbeat = 0/1
+    #   heartbeat_time = UNIX time float of the last heartbeat
+    # Not every battery device currently sends this data.  Currently only
+    # the leak sensor is known to provide this data
+    heartbeat_topic: 'insteon/{{address}}/heartbeat'
+    heartbeat_payload: '{{heartbeat_time}}'
+
   #------------------------------------------------------------------------
   # Motion sensors
   #------------------------------------------------------------------------
@@ -409,6 +420,9 @@ mqtt:
   # Leak sensors
   #------------------------------------------------------------------------
 
+  # Leak sensors will use the heartbeat configuration
+  # inputs from battery_sensor.
+  #
   # Leak sensors will report the dry/wet status and a heartbeat every 24
   # hours. The leak sensors does not support low battery signal like other
   # battery operated devices.
@@ -437,14 +451,38 @@ mqtt:
     wet_dry_topic: 'insteon/{{address}}/wet'
     wet_dry_payload: '{{is_wet_str.upper()}}'
 
-    # Output heartbeat topic and payload.  This message is sent
-    # every 24 hours. Available variables for templating are:
+  #------------------------------------------------------------------------
+  # Mini remotes
+  #------------------------------------------------------------------------
+
+  # Battery powered remotes (usually 4 or 8 buttons).  A message is
+  # sent whenever one of the buttons is pressed.
+  #
+  # The Remote will use the low_battery configuration
+  # inputs from battery_sensor.
+  remote:
+    # Output state change topic and template.  This message is sent
+    # whenever a button is pressed.  Available variables for templating are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
-    #   is_heartbeat = 0/1
-    #   heartbeat_time = UNIX time float of the last heartbeat
-    heartbeat_topic: 'insteon/{{address}}/heartbeat'
-    heartbeat_payload: '{{heartbeat_time}}'
+    #   button = 1...n  (button number 1-8 depending on configuration)
+    #   on = 0/1
+    #   on_str = 'off'/'on'
+    #   mode = 'normal'/'fast'/'instant'
+    #   fast = 0/1
+    #   instant = 0/1
+    state_topic: 'insteon/{{address}}/state/{{button}}'
+    state_payload: '{{on_str.upper()}}'
+
+    # Manual mode (holding down a button) is triggered once when the button
+    # is held and once when it's released.  Available variables for
+    # templating are address (see above), name (see above), button (see
+    # above), and:
+    #   manual_str = 'up'/'off'/'down'
+    #   manual = 1/0/-1
+    #   manual_openhab = 2/1/0
+    #manual_state_topic: 'insteon/{{address}}/manual_state'
+    #manual_state_payload: '{{manual_str.upper()}}'
 
   #------------------------------------------------------------------------
   # Smoke Bridge
@@ -583,36 +621,6 @@ mqtt:
     heat_sp_payload: '{ "temp_f" : {{value}} }'
     cool_sp_command_topic: 'insteon/{{address}}/cool_sp_command'
     cool_sp_payload: '{ "temp_f" : {{value}} }'
-
-  #------------------------------------------------------------------------
-  # Mini remotes
-  #------------------------------------------------------------------------
-
-  # Battery powered remotes (usually 4 or 8 buttons).  A message is
-  # sent whenever one of the buttons is pressed.
-  remote:
-    # Output state change topic and template.  This message is sent
-    # whenever a button is pressed.  Available variables for templating are:
-    #   address = 'aa.bb.cc'
-    #   name = 'device name'
-    #   button = 1...n  (button number 1-8 depending on configuration)
-    #   on = 0/1
-    #   on_str = 'off'/'on'
-    #   mode = 'normal'/'fast'/'instant'
-    #   fast = 0/1
-    #   instant = 0/1
-    state_topic: 'insteon/{{address}}/state/{{button}}'
-    state_payload: '{{on_str.upper()}}'
-
-    # Manual mode (holding down a button) is triggered once when the button
-    # is held and once when it's released.  Available variables for
-    # templating are address (see above), name (see above), button (see
-    # above), and:
-    #   manual_str = 'up'/'off'/'down'
-    #   manual = 1/0/-1
-    #   manual_openhab = 2/1/0
-    #manual_state_topic: 'insteon/{{address}}/manual_state'
-    #manual_state_payload: '{{manual_str.upper()}}'
 
   #------------------------------------------------------------------------
   # Fan Linc

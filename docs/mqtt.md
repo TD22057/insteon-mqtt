@@ -540,6 +540,28 @@ will be passed through to the output state change payload.
    ```
 
 
+### Mark a battery device as awake.
+
+Supported: battery devices only
+
+Normally battery devices are sleeping and will not respond to commands.  So
+normally, the program queues messages for these devices and attempts to send
+them when the device is awake.  Usually this happens for a short period of time
+after the device sends a message.  But some battery devices do not even respond
+to commands during this time.
+
+You can manually wake a battery device by up by holding in their set buttons
+until their light flashes.  At this point they will stay awake for
+approximately 3 minutes.
+
+If you manually wake up a device using this method, then call this command
+so that the program knows that it can send messages to the device for the
+next three minutes.
+
+  ```
+  { "cmd": "awake" }
+  ```
+
 ---
 
 # State change commands
@@ -912,6 +934,18 @@ templates:
    - 'is_low' is 1 for a low battery, 0 for normal.
    - 'is_low_str' is 'on' for a low battery, 'off' for normal.
 
+Some battery sensors also issues a heartbeat every 24 hours that can be used
+to confirm that they are still working.  Presently, only the Leak sensor is
+known to use heartbeat messages. The following variables can be used for
+templates:
+
+   - "is_heartbeat" is 1 whenever a heartbeat occurs
+   - "is_heartbeat_str" is "on" whenever a heartbeat occurs
+   - "heartbeat_time" is the Unix timestamp of when the heartbeat occurred
+
+The Battery Sensor class is also the base for other battery devices that
+have additional features, namely Motion Sensors, Leak Sensors, and Remotes.
+
 A sample battery sensor topic and payload configuration is:
 
    ```
@@ -923,6 +957,10 @@ A sample battery sensor topic and payload configuration is:
      # Low battery warning
      low_battery_topic: 'insteon/{{address}}/battery'
      low_battery_payload: '{{is_low_str.upper()}}'
+
+     # Heartbeats
+     heartbeat_topic: 'insteon/{{address}}/heartbeat'
+     heartbeat_payload: '{{heartbeat_time}}'
    ```
 
 ---
@@ -974,8 +1012,6 @@ A sample leak sensor topic and payload configuration is:
    leak:
      wet_dry_topic: 'insteon/{{address}}/wet'
      wet_dry_payload: '{{state.upper()}}'
-     heartbeat_topic: 'insteon/{{address}}/heartbeat'
-     heartbeat_payload: '{{heartbeat_time}}'
    ```
 
 ---

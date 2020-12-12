@@ -3,9 +3,12 @@
 # Insteon battery powered motion sensor
 #
 #===========================================================================
+import time
 from .Base import Base
 from ..CommandSeq import CommandSeq
 from .. import log
+from .. import on_off
+from .. import message as Msg
 from ..Signal import Signal
 
 LOG = log.get_logger()
@@ -17,7 +20,8 @@ class BatterySensor(Base):
     Battery powered sensors send basic on/off commands, low battery warnings,
     and hearbeat messages (some devices).  This includes things like door
     sensors, hidden door sensors, and window sensors.  This class also serves
-    as the base class for other battery sensors like motion sensors.
+    as the base class for other battery sensors like motion sensors, leak
+    sensors, remotes, and in the future others.
 
     The issue with a battery powered sensor is that we can't download the
     link database without the sensor being on.  You can trigger the sensor
@@ -66,6 +70,10 @@ class BatterySensor(Base):
         # Sensor heartbeat signal.  API: func( Device, True )
         self.signal_heartbeat = Signal()
 
+        # Capture write messages as they FINISHED so we can pop the next
+        # message off the _send_queue
+        self.protocol.signal_msg_finished.connect(self.handle_finished)
+
         # Derived classes can override these or add to them.  Maps Insteon
         # groups to message type for this sensor.
         self.group_map = {
@@ -78,6 +86,44 @@ class BatterySensor(Base):
             }
 
         self._is_on = False
+        self._send_queue = []
+        self.cmd_map.update({
+            'awake' : self.awake
+            })
+        self._awake_time = False
+
+    #-----------------------------------------------------------------------
+    def send(self, msg, msg_handler, high_priority=False, after=None):
+        """Send a message to the device.
+
+        This captures and queues messages so that they can be sent when the
+        device is awake.  Battery powered sensors listen for messages
+        for a brief period after sending messages.
+
+        Args:
+          msg (Message):  Output message to write.  This should be an
+              instance of a message in the message directory that that starts
+              with 'Out'.
+          msg_handler (MsgHander): Message handler instance to use when
+                      replies to the message are received.  Any message
+                      received after we write out the msg are passed to this
+                      handler until the handler returns the message.FINISHED
+                      flags.
+          high_priority (bool):  False to add the message at the end of the
+                        queue.  True to insert this message at the start of
+                        the queue.
+          after (float):  Unix clock time tag to send the message after.
+                If None, the message is sent as soon as possible.  Exact time
+                is not guaranteed - the message will be send no earlier than
+                this.
+        """
+        # It seems like pressing the set button seems to keep them awake for
+        # about 3 minutes
+        if self._awake_time >= (time.time() - 180):
+            super().send(msg, msg_handler, high_priority, after)
+        else:
+            LOG.ui("BatterySensor %s - queueing msg until awake", self.label)
+            self._send_queue.append([msg, msg_handler, high_priority, after])
 
     #-----------------------------------------------------------------------
     def pair(self, on_done=None):
@@ -100,7 +146,7 @@ class BatterySensor(Base):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq(self.protocol, "BatterySensor paired", on_done)
+        seq = CommandSeq(self, "BatterySensor paired", on_done)
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -130,6 +176,29 @@ class BatterySensor(Base):
         return self._is_on
 
     #-----------------------------------------------------------------------
+    def handle_finished(self, msg):
+        """Handle write messages that are marked FINISHED
+
+        All FINISHED msgs are emitted here are, NOT just those from this
+        device.
+
+        This is used to pop a message off the _send_queue when the prior
+        message FINISHES.  Notably messages that expire do not appear here
+        but NAK messages will still appear here (which is fine, NAK means
+        it is still awake).
+
+        Args:
+          msg (msg):  A write message that was marked msg.FINISHED
+        """
+        # Ignore modem messages, broadcast messages, only look for
+        # communications from the device
+        if isinstance(msg, (Msg.InpStandard, Msg.InpExtended)):
+            # Is this a message from this device?
+            if msg.from_addr == self.addr:
+                # Pop messages from _send_queue if necessary
+                self._pop_send_queue()
+
+    #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
         """Handle broadcast messages from this device.
 
@@ -146,6 +215,9 @@ class BatterySensor(Base):
         states (Insteon devices don't send out a state change when the
         respond to a broadcast).
 
+        Finally, if any messages are in self._send_queue, pop a message and
+        send it while the device is still awake.
+
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
@@ -154,8 +226,9 @@ class BatterySensor(Base):
             LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
                      msg.group)
 
-        # On (0x11) and off (0x13) commands.
-        elif msg.cmd1 == 0x11 or msg.cmd1 == 0x13:
+        # Valid command
+        elif (on_off.Mode.is_valid(msg.cmd1) or
+              on_off.Manual.is_valid(msg.cmd1)):
             LOG.info("BatterySensor %s broadcast cmd %s grp: %s", self.addr,
                      msg.cmd1, msg.group)
 
@@ -172,12 +245,8 @@ class BatterySensor(Base):
             # (without sending anything out).
             super().handle_broadcast(msg)
 
-        # If we haven't downloaded the device db yet, use this opportunity to
-        # get the device db since we know the sensor is awake.  This doesn't
-        # always seem to work, but it works often enough to be useful to try.
-        if len(self.db) == 0:
-            LOG.info("BatterySensor %s awake - requesting database", self.addr)
-            self.refresh(force=True)
+        # Pop messages from _send_queue if necessary
+        self._pop_send_queue()
 
     #-----------------------------------------------------------------------
     def handle_on_off(self, msg):
@@ -238,6 +307,31 @@ class BatterySensor(Base):
         self._set_is_on(msg.cmd2 != 0x00)
 
     #-----------------------------------------------------------------------
+    def awake(self, on_done):
+        """Set the device as awake.
+
+        This will mark the device as awake and ready to receive commands.
+        Normally battery devices are deaf only only listen for commands
+        briefly after they wake up.  But you can manually wake them up by
+        holding down their set button and putting them into linking mode.
+        They will generally remain awake for about 3 minutes.
+
+        on_done: Finished callback.  This is called when the command has
+                 completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.ui("BatterySensor %s marked as awake", self.label)
+
+        # Update the awake time to be now
+        self._awake_time = time.time()
+
+        # Dump all messages in the queue
+        for args in self._send_queue:
+            super().send(*args)
+        #Empty the queue
+        self._send_queue = []
+        on_done(True, "Complete", None)
+
+    #-----------------------------------------------------------------------
     def _set_is_on(self, is_on):
         """Set the device on/off state.
 
@@ -250,5 +344,19 @@ class BatterySensor(Base):
         LOG.info("Setting device %s on:%s", self.label, is_on)
         self._is_on = is_on
         self.signal_on_off.emit(self, self._is_on)
+
+    #-----------------------------------------------------------------------
+    def _pop_send_queue(self):
+        """Pops a messages off the _send_queue if necessary
+
+        If we have any messages in the _send_queue, now is the time to send
+        them while the device is awake, unless a message for this device is
+        already pending in the protocol write queue
+        """
+        if (self._send_queue and
+                not self.protocol.is_addr_in_write_queue(self.addr)):
+            LOG.info("BatterySensor %s awake - sending msg", self.label)
+            args = self._send_queue.pop()
+            super().send(*args)
 
     #-----------------------------------------------------------------------
