@@ -91,9 +91,9 @@ class Test_Remote:
         dev.signal_pressed.emit(dev, 4, False)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
-            topic='%s/state/2' % topic, payload='on', qos=0, retain=True)
+            topic='%s/state/2' % topic, payload='on', qos=0, retain=False)
         assert link.client.pub[1] == dict(
-            topic='%s/state/4' % topic, payload='off', qos=0, retain=True)
+            topic='%s/state/4' % topic, payload='off', qos=0, retain=False)
         link.client.clear()
 
         # Send a manual mode signal - should do nothing w/ the default config.
@@ -121,9 +121,9 @@ class Test_Remote:
         dev.signal_pressed.emit(dev, 4, False)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
-            topic="%s/2" % stopic, payload='1 ON', qos=qos, retain=True)
+            topic="%s/2" % stopic, payload='1 ON', qos=qos, retain=False)
         assert link.client.pub[1] == dict(
-            topic="%s/4" % stopic, payload='0 OFF', qos=qos, retain=True)
+            topic="%s/4" % stopic, payload='0 OFF', qos=qos, retain=False)
         link.client.clear()
 
         # Send a manual signal

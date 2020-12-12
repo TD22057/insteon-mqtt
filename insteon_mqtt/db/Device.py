@@ -352,11 +352,12 @@ class Device:
         # See if we can fill in an unused entry in the db.
         add_unused = len(self.unused) > 0
 
-        # See if the entry already exists.
-        entry = self.find(addr, group, is_controller)
+        # See if the entry already exists.  Pass data[2] so we only match
+        # entries with the same local group.
+        entry = self.find(addr, group, is_controller, local_group=data[2])
 
         # If the entry exists, but has different data, pretend it's unused so
-        # we'll overwrite that memory location.
+        # we'll overwrite that memory location to update data[0] and data[1].
         if entry and entry.data != data:
             add_unused = True
 
@@ -449,14 +450,17 @@ class Device:
         return entries
 
     #-----------------------------------------------------------------------
-    def find(self, addr, group, is_controller):
+    def find(self, addr, group, is_controller, local_group=None):
         """Find an entry
 
         Args:
-          addr:           (Address) The address to match.
-          group:          (int) The group to match.
+          addr:  (Address) The address to match.
+          group: (int) The scene group to match.
           is_controller:  (bool) True for controller records.  False for
                           responder records.
+          local_group: (int) Local group to find.  If this is None, it's
+                       ignored.  If it's set, then only entries with this
+                       group in data[2] are found.
 
         Returns:
           (DeviceEntry): Returns the entry that matches or None if it
@@ -468,8 +472,11 @@ class Device:
         group = int(group)
 
         for e in self.entries.values():
+            # Address, group, and is_controller must match.  group has to
+            # match data[2] if it was input.
             if (e.addr == addr and e.group == group and
-                    e.is_controller == is_controller):
+                    e.is_controller == is_controller and
+                    (local_group is None or local_group == e.data[2])):
                 return e
 
         return None

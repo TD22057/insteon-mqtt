@@ -6,7 +6,7 @@
 #===========================================================================
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
-
+import helpers as H
 
 class Test_Device:
     #-----------------------------------------------------------------------
@@ -114,3 +114,58 @@ class Test_Device:
         assert len(obj2.entries) == 0
         assert len(obj2.unused) == 0
         assert len(obj2.groups) == 0
+
+    #-----------------------------------------------------------------------
+    def test_add_multi_group(self):
+        device = MockDevice()
+
+        local_addr = IM.Address(0x01, 0x02, 0x03)
+        db = IM.db.Device(local_addr)
+
+        # Add local group 1 as responder of scene 30 on remote.
+        data = bytes([0xff, 0x00, 0x01])
+        is_controller = False
+        remote_addr = IM.Address(0x50, 0x51, 0x52)
+        remote_group = 0x30
+
+        db.add_on_device(device, remote_addr, remote_group, is_controller,
+                         data)
+        assert len(device.sent) == 2
+        assert len(db.entries) == 1
+        val0 = list(db.entries.values())[0]
+
+        db_flags = IM.message.DbFlags(True, False, True)
+        right0 = IM.db.DeviceEntry(remote_addr, remote_group, val0.mem_loc,
+                                   db_flags, data)
+        assert right0 == val0
+
+        # Add again w/ a different local group
+        data2 = bytes([0x50, 0x00, 0x02])
+        db.add_on_device(device, remote_addr, remote_group, is_controller,
+                         data2)
+        assert len(db.entries) == 2
+
+        val1 = list(db.entries.values())[1]
+
+        db_flags = IM.message.DbFlags(True, False, True)
+        right1 = IM.db.DeviceEntry(remote_addr, remote_group, val1.mem_loc,
+                                   db_flags, data2)
+        assert right1 == val1
+
+
+#===========================================================================
+class MockDevice:
+    """Mock insteon_mqtt/Device class
+    """
+    def __init__(self):
+        self.sent = []
+
+    def send(self, msg, handler, priority=None, after=None):
+        self.sent.append(H.Data(msg=msg, handler=handler))
+
+        # This is basically what the db modify is doing when it get's a ACK
+        # of the db add message.  So we're just short circuiting that and
+        # pretending the message came back.
+        if isinstance(handler, IM.handler.DeviceDbModify):
+            handler.db.add_entry(handler.entry)
+            handler.on_done(True, "update", handler.entry)
