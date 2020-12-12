@@ -1,5 +1,23 @@
 # Revision Change History
 
+## [0.7.4]
+
+### Additions
+
+- Major improvements to the IOLinc support.  In short all functions of the
+  device should now be supported.  Including momentary modes in which the
+  relay opens for a defined period of time before closing again.  Specific
+  topics have been added for the relay and the sensor so they can both be
+  tracked individually. ([PR 197][P197])  BREAKING CHANGE - the scene_topic
+  has been elimited, please see the notes below for replacement functionality.
+  Please see notes in:
+  - [config.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/config.yaml) -
+    specifically the IOLinc sections in both the device and mqtt sections
+  - [MQTT Doc](https://github.com/TD22057/insteon-mqtt/blob/master/docs/mqtt.md) -
+    note the new set_flags options for IOLinc and the IOLinc section
+
+### Fixes
+
 ## [0.7.3]
 
 Fixing a number of small bugs in preparation for upcoming releases which
@@ -401,3 +419,4 @@ will add new features.
 [I154]: https://github.com/TD22057/insteon-mqtt/issues/154
 [P227]: https://github.com/TD22057/insteon-mqtt/pull/227
 [P237]: https://github.com/TD22057/insteon-mqtt/pull/227
+[P197]: https://github.com/TD22057/insteon-mqtt/pull/197
