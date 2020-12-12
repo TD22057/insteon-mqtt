@@ -136,9 +136,13 @@ class Remote:
         LOG.info("MQTT received button press %s = btn %s on %s %s",
                  device.label, button, is_on, mode)
 
-        # For manual mode messages, don't retain them because they don't
-        # represent persistent state - they're momentary events.
-        retain = False if mode == on_off.Mode.MANUAL else None
+        # For the remote control, there is no way to know it's state on start
+        # up so we don't want to retain those messages.  If we did, then a
+        # remote that got out of sync (because of the device changing state
+        # and the remote not knowing about it) would cause problems when HA
+        # is restarted because the remotes retain message would still be in
+        # the broker.
+        retain = False
 
         data = self.template_data(button, is_on, mode)
         self.msg_state.publish(self.mqtt, data, retain=retain)

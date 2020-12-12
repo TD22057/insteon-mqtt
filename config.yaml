@@ -135,6 +135,8 @@ mqtt:
   # Optional broker login data.
   #username:
   #password:
+  # Optional broker client ID string (default is 'insteon-mqtt')
+  #id:
 
   # Keep alive time in seconds.  This should be smaller than the
   # server setting (which is usually ~60 seconds) to insure that
