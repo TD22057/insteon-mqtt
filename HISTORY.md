@@ -2,6 +2,9 @@
 
 ## [0.7.3]
 
+Fixing a number of small bugs in preparation for upcoming releases which
+will add new features.
+
 ### Additions
 
 - Added MQTT broker ID optional config input to allow the user to input the
@@ -9,10 +12,21 @@
 
 ### Fixes
 
+- Increase timeout for DB Refresh and allow retry for initial request.
+  ([PR #237][P237])
+
+- Detect disconnections during poll() calls (thanks @kpfleming) ([PR 227][P227])
+
+- Modem Responder Group from Thermostat Should be 0x01 ([PR #198][P198])
+  ([Issue 154][I154])
+
+- Fixed device db find command to check the local group so multiple responsders
+  can be created. ([Issue #181][I181])
+
 - Fixed a bug in the modem database class when removing an entry (thanks
   @krkeegan) ([PR#196][P196])
 
-- Changed the MQTT remote to never mark messages for retain so the broker
+- Changed the MQTT Remote to never mark messages for retain so the broker
   doesn't get out of sync with the device. ([Issue #I210][I210])
 
 
@@ -383,3 +397,7 @@
 [P196]: https://github.com/TD22057/insteon-mqtt/pull/196
 [I210]: https://github.com/TD22057/insteon-mqtt/issues/210
 [P220]: https://github.com/TD22057/insteon-mqtt/pull/220
+[I181]: https://github.com/TD22057/insteon-mqtt/issues/181
+[I154]: https://github.com/TD22057/insteon-mqtt/issues/154
+[P227]: https://github.com/TD22057/insteon-mqtt/pull/227
+[P237]: https://github.com/TD22057/insteon-mqtt/pull/227
