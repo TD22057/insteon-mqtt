@@ -14,9 +14,9 @@ class Test_config:
         modem = H.main.MockModem(tmpdir)
         addr = IM.Address(1, 2, 3)
 
-        types = ["BatterySensor", "Dimmer", "FanLinc", "IOLinc", "KeypadLinc",
-                 "Leak", "Motion", "Outlet", "SmokeBridge", "Switch",
-                 "Thermostat"]
+        types = ["BatterySensor", "Dimmer", "EZIO4O", "FanLinc", "IOLinc",
+                "KeypadLinc","Leak", "Motion", "Outlet", "SmokeBridge", 
+                "Switch","Thermostat"]
         instances = []
         for t in types:
             dev = getattr(IM.device, t)
