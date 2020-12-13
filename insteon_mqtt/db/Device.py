@@ -349,7 +349,7 @@ class Device:
         on_done = util.make_callback(on_done)
 
         # See if we can fill in an unused entry in the db.
-        add_unused = len(self.unused) > 0
+        add_unused = len(self.unused) > 1
 
         # See if the entry already exists.  Pass data[2] so we only match
         # entries with the same local group.
@@ -665,6 +665,11 @@ class Device:
         Args:
           entry:  (DeviceEntry) The entry to add.
         """
+
+        # Entry is a new last record to use
+        if entry.db_flags.is_last_rec:
+            self.last = entry
+
         # Entry is an active entry.
         if entry.db_flags.in_use:
             # NOTE: this relies on no-one keeping a handle to this entry
@@ -680,10 +685,6 @@ class Device:
                 responders = self.groups.setdefault(entry.group, [])
                 if entry not in responders:
                     responders.append(entry)
-
-        # Entry is not in use and is a new last record to use
-        elif entry.db_flags.is_last_rec:
-            self.last = entry
 
         # Entry is a normal record but is not in use.
         else:
@@ -779,40 +780,40 @@ class Device:
         """
         # pylint: disable=too-many-locals
 
-        # Start by moving the current last record down 8 bytes.  Write out
-        # the new last record and then create a new record with the input
-        # data at the location of the old last record.
-        LOG.info("Device %s appending new record at mem %#06x", self.addr,
-                 self.last.mem_loc)
-
         seq = CommandSeq(self.device, "Device database update complete", on_done)
 
-        # Write the new last entry as all 00 which is how it appears on
-        # factory reset
-        flags = Msg.DbFlags(in_use=False, is_controller=False,
-                            is_last_rec=True)
-        last = DeviceEntry(Address(0, 0, 0), 0, self.last.mem_loc, flags,
-                           None, db=self)
-        last.mem_loc -= 0x08
+        last_mem_loc = self.last.mem_loc
 
-        # Start by writing the last record - that way if it fails, we don't
-        # try and update w/ the new data record.
-        if self.engine == 0:
-            # on_done is passed by the sequence manager inside seq.add()
-            modify_manager = DeviceModifyManagerI1(self.device, self,
-                                                   last, on_done=None,
-                                                   num_retry=3)
-            seq.add(modify_manager.start_modify)
-        else:
-            ext_data = last.to_bytes()
-            msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-            msg_handler = handler.DeviceDbModify(self, last)
-            seq.add_msg(msg, msg_handler)
+        if self.last.db_flags.in_use:
+            # We don't and insteon does not use the last mem_loc.  The last loc
+            # is always all 0x00s. However ISY appears to use the last loc.
+            # So we need to fix that by first changing the last location flag
+            # on the current last entry.
+            flags = Msg.DbFlags(in_use=False, is_controller=False,
+                                is_last_rec=False)
+            last = self.last
+            last.db_flags = flags
+
+            # Update the last record
+            if self.engine == 0:
+                # on_done is passed by the sequence manager inside seq.add()
+                modify_manager = DeviceModifyManagerI1(self.device, self,
+                                                       last, on_done=None,
+                                                       num_retry=3)
+                seq.add(modify_manager.start_modify)
+            else:
+                ext_data = last.to_bytes()
+                msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
+                msg_handler = handler.DeviceDbModify(self, last)
+                seq.add_msg(msg, msg_handler)
+
+            # Update the last mem_loc to use
+            last_mem_loc = last_mem_loc - 0x08
 
         # Create the new entry at the current last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=is_controller,
                                is_last_rec=False)
-        entry = DeviceEntry(addr, group, self.last.mem_loc, db_flags, data,
+        entry = DeviceEntry(addr, group, last_mem_loc, db_flags, data,
                             db=self)
 
         if self.engine == 0:
@@ -826,6 +827,26 @@ class Device:
             ext_data = entry.to_bytes()
             msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
             msg_handler = handler.DeviceDbModify(self, entry)
+            seq.add_msg(msg, msg_handler)
+
+        # Finally write the new last entry as all 00 which is how it appears on
+        # factory reset, to the address just below the current last_loc
+        # just in case something was actually here
+        flags = Msg.DbFlags(in_use=False, is_controller=False,
+                            is_last_rec=True)
+        last = DeviceEntry(Address(0, 0, 0), 0, last_mem_loc - 0x08, flags,
+                           None, db=self)
+
+        if self.engine == 0:
+            # on_done is passed by the sequence manager inside seq.add()
+            modify_manager = DeviceModifyManagerI1(self.device, self,
+                                                   last, on_done=None,
+                                                   num_retry=3)
+            seq.add(modify_manager.start_modify)
+        else:
+            ext_data = last.to_bytes()
+            msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
+            msg_handler = handler.DeviceDbModify(self, last)
             seq.add_msg(msg, msg_handler)
 
         seq.run()
