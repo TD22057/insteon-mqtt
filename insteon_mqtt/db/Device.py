@@ -787,9 +787,12 @@ class Device:
 
         seq = CommandSeq(self.device, "Device database update complete", on_done)
 
-        # Shift the current last record down 8 bytes.  Make a copy - we'll
-        # only update our member var if the write works.
-        last = self.last.copy()
+        # Write the new last entry as all 00 which is how it appears on
+        # factory reset
+        flags = Msg.DbFlags(in_use=False, is_controller=False,
+                            is_last_rec=True)
+        last = DeviceEntry(Address(0, 0, 0), 0, self.last.mem_loc, flags,
+                           None, db=self)
         last.mem_loc -= 0x08
 
         # Start by writing the last record - that way if it fails, we don't
