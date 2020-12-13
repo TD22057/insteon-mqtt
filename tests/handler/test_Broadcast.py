@@ -16,13 +16,14 @@ class Test_Broadcast:
         modem.save_path = str(tmpdir)
 
         addr = IM.Address('0a.12.34')
+        broadcast_to_addr = IM.Address('00.00.01')
         handler = IM.handler.Broadcast(modem)
 
         r = handler.msg_received(proto, "dummy")
         assert r == Msg.UNKNOWN
 
         flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
-        msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
+        msg = Msg.InpStandard(addr, broadcast_to_addr, flags, 0x11, 0x01)
 
         # no device
         r = handler.msg_received(proto, msg)
