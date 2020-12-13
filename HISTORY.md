@@ -24,6 +24,9 @@
      manually awaken via holding the set button.  This will cause all queued
      and future messages to be sent to the device for up to three minutes
 
+- Added support for Smartenit EZIO4O 4 relay output module (thanks @embak)
+  ([PR 219][P219])
+
 ### Fixes
 
 - Database delta is updated on database writes.  This eliminates a number of
@@ -434,3 +437,4 @@ will add new features.
 [P197]: https://github.com/TD22057/insteon-mqtt/pull/197
 [P240]: https://github.com/TD22057/insteon-mqtt/pull/240
 [P248]: https://github.com/TD22057/insteon-mqtt/pull/248
+[P219]: https://github.com/TD22057/insteon-mqtt/pull/219
