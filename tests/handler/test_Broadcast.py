@@ -57,6 +57,25 @@ class Test_Broadcast:
         r = handler.msg_received(proto, msg)
         assert r == Msg.UNKNOWN
 
+        # Success Report Broadcast
+        flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+        success_report_to_addr = IM.Address(0x11, 1, 0x1)
+        msg = Msg.InpStandard(addr, addr, flags, 0x06, 0x00)
+        r = handler.msg_received(proto, msg)
+
+        assert r == Msg.CONTINUE
+        assert len(calls) == 3
+
+        # Pretend that a new broadcast message dropped / not received by PLM
+
+        # Cleanup should be handled since corresponding broadcast was missed
+        flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_CLEANUP, False)
+        msg = Msg.InpStandard(addr, addr, flags, 0x13, 0x01)
+        r = handler.msg_received(proto, msg)
+
+        assert r == Msg.CONTINUE
+        assert len(calls) == 4
+
     #-----------------------------------------------------------------------
 
 #===========================================================================
