@@ -139,7 +139,7 @@ class DeviceScanManagerI1:
 
             # Convert the message to a database device entry.
             entry = DeviceEntry.from_i1_bytes(bytes([self.msb, self.lsb] +
-                                                    self.record))
+                                                    self.record), db=self.db)
             LOG.ui("Entry: %s", entry)
             self.db.add_entry(entry)
 

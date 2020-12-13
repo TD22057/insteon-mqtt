@@ -30,7 +30,7 @@ class Test_Scenes:
                                        "db_flags": {"is_last_rec": False,
                                                     "in_use": False,
                                                     "is_controller": True},
-                                       "addr": "cc.bb.aa"})
+                                       "addr": "cc.bb.aa"}, db=None)
         device = modem.find("aa.bb.cc")
         scenes.add_or_update(device, entry)
         assert len(scenes.entries) == 1
@@ -46,7 +46,7 @@ class Test_Scenes:
                                        "db_flags": {"is_last_rec": False,
                                                     "in_use": False,
                                                     "is_controller": False},
-                                       "addr": "cc.bb.aa"})
+                                       "addr": "cc.bb.aa"}, db=None)
         device = modem.find("aa.bb.cc")
         scenes.add_or_update(device, entry)
         assert len(scenes.entries) == 1
@@ -62,7 +62,7 @@ class Test_Scenes:
                                        "db_flags": {"is_last_rec": False,
                                                     "in_use": False,
                                                     "is_controller": False},
-                                       "addr": "ff.ff.ff"})
+                                       "addr": "ff.ff.ff"}, db=None)
         device = modem.find("aa.bb.cc")
         scenes.add_or_update(device, entry)
         assert len(scenes.entries) == 2
@@ -78,7 +78,7 @@ class Test_Scenes:
                                        "db_flags": {"is_last_rec": False,
                                                     "in_use": False,
                                                     "is_controller": False},
-                                       "addr": "cc.bb.aa"})
+                                       "addr": "cc.bb.aa"}, db=None)
         device = modem.find("aa.bb.cc")
         scenes.add_or_update(device, entry)
         assert len(scenes.entries) == 1
@@ -94,7 +94,7 @@ class Test_Scenes:
                                        "db_flags": {"is_last_rec": False,
                                                     "in_use": False,
                                                     "is_controller": False},
-                                       "addr": "cc.bb.aa"})
+                                       "addr": "cc.bb.aa"}, db=None)
         device = modem.find("aa.bb.cc")
         scenes.add_or_update(device, entry)
         assert len(scenes.entries) == 2
@@ -118,7 +118,7 @@ class Test_Scenes:
                                        "db_flags": {"is_last_rec": False,
                                                     "in_use": False,
                                                     "is_controller": True},
-                                       "addr": "cc.bb.aa"})
+                                       "addr": "cc.bb.aa"}, db=None)
         device = modem.find("aa.bb.cc")
         scenes.add_or_update(device, entry)
         scenes.compress_controllers()

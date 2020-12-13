@@ -74,13 +74,13 @@ class Device:
         obj._meta = data.get('meta', {})
 
         for d in data['used']:
-            obj.add_entry(DeviceEntry.from_json(d), save=False)
+            obj.add_entry(DeviceEntry.from_json(d, db=obj), save=False)
 
         for d in data['unused']:
-            obj.add_entry(DeviceEntry.from_json(d), save=False)
+            obj.add_entry(DeviceEntry.from_json(d, db=obj), save=False)
 
         if "last" in data:
-            obj.last = DeviceEntry.from_json(data["last"])
+            obj.last = DeviceEntry.from_json(data["last"], db=obj)
 
         # When loading db's <= ver 0.6, no last field was saved to create
         # one at the correct location.
@@ -146,7 +146,7 @@ class Device:
         flags = Msg.DbFlags(in_use=False, is_controller=False,
                             is_last_rec=True)
         self.last = DeviceEntry(Address(0, 0, 0), 0, START_MEM_LOC, flags,
-                                None)
+                                None, db=self)
 
         # Map of all link group number to DeviceEntry objects that respond to
         # that group command.
@@ -651,7 +651,7 @@ class Device:
 
         o.write("GroupMap\n")
         for grp, elem in self.groups.items():
-            o.write("  %s -> %s\n" % (grp, [i.addr.hex for i in elem]))
+            o.write("  %s -> %s\n" % (grp, [i.label for i in elem]))
 
         return o.getvalue()
 
@@ -731,7 +731,7 @@ class Device:
         if remote.is_controller:
             group = remote.group
         entry = DeviceEntry(remote.addr, group, mem_loc, db_flags,
-                            local.link_data)
+                            local.link_data, db=self)
 
         # Add the Entry to the DB
         self.add_entry(entry, save=False)
@@ -809,7 +809,8 @@ class Device:
         # Create the new entry at the current last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=is_controller,
                                is_last_rec=False)
-        entry = DeviceEntry(addr, group, self.last.mem_loc, db_flags, data)
+        entry = DeviceEntry(addr, group, self.last.mem_loc, db_flags, data,
+                            db=self)
 
         if self.engine == 0:
             # on_done is passed by the sequence manager inside seq.add()

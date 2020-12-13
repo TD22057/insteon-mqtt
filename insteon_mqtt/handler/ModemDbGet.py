@@ -81,7 +81,8 @@ class ModemDbGet(Base):
                 # Create a modem database entry from the message data and
                 # write it into the database.
                 entry = db.ModemEntry(msg.addr, msg.group,
-                                      msg.db_flags.is_controller, msg.data)
+                                      msg.db_flags.is_controller, msg.data,
+                                      db=self.db)
                 self.db.add_entry(entry)
                 LOG.ui("Entry: %s", entry)
 
