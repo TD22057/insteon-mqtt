@@ -27,6 +27,9 @@
 - Added support for Smartenit EZIO4O 4 relay output module (thanks @embak)
   ([PR 219][P219])
 
+- Device names are now printed when printing the database.  This makes reading
+  the database output much easier.  ([PR 239][P239])
+
 ### Fixes
 
 - Database delta is updated on database writes.  This eliminates a number of
@@ -438,3 +441,4 @@ will add new features.
 [P240]: https://github.com/TD22057/insteon-mqtt/pull/240
 [P248]: https://github.com/TD22057/insteon-mqtt/pull/248
 [P219]: https://github.com/TD22057/insteon-mqtt/pull/219
+[P239]: https://github.com/TD22057/insteon-mqtt/pull/239
