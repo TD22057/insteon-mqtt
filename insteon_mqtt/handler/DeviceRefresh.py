@@ -78,60 +78,65 @@ class DeviceRefresh(Base):
 
         # See if this is the standard message ack/nak we're expecting.
         elif isinstance(msg, Msg.InpStandard) and msg.from_addr == self.addr:
-            # Since we got the message we expected, turn off retries.
-            self.stop_retry()
+            if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+                # All link database delta is stored in cmd1 so we if we have
+                # the latest version.  If not, schedule an update.
+                need_refresh = True
+                if self.skip_db:
+                    need_refresh = False
+                elif not self.force and self.device.db.is_current(msg.cmd1):
+                    LOG.ui("Device database is current at delta %s", msg.cmd1)
+                    need_refresh = False
 
-            # All link database delta is stored in cmd1 so we if we have the
-            # latest version.  If not, schedule an update.
-            need_refresh = True
-            if self.skip_db:
-                need_refresh = False
-            elif not self.force and self.device.db.is_current(msg.cmd1):
-                LOG.ui("Device database is current at delta %s", msg.cmd1)
-                need_refresh = False
+                # Call the device refresh handler.  This sets the current
+                # device state which is usually stored in cmd2.
+                self.callback(msg)
 
-            # Call the device refresh handler.  This sets the current device
-            # state which is usually stored in cmd2.
-            self.callback(msg)
-
-            if not need_refresh:
-                self.on_done(True, "Refresh complete", None)
-            else:
-                LOG.ui("Device %s db out of date (got %s vs %s), refreshing",
-                       self.addr, msg.cmd1, self.device.db.delta)
-
-                # Clear the current database values.
-                self.device.db.clear()
-
-                # When the update message below ends, update the db delta w/
-                # the current value and save the database.
-                def on_done(success, message, data):
-                    if success:
-                        self.device.db.set_delta(msg.cmd1)
-                        LOG.ui("%s database download complete\n%s",
-                               self.addr, self.device.db)
-                    self.on_done(success, message, data)
-
-                # Request that the device send us all of it's database
-                # records.  These will be streamed as fast as possible to us
-                # and the handler will update the database.  We need a retry
-                # count here because battery powered devices don't always
-                # respond right away.
-                if self.device.db.engine == 0:
-                    scan_manager = db.DeviceScanManagerI1(self.device,
-                                                          self.device.db,
-                                                          on_done=on_done,
-                                                          num_retry=3)
-                    scan_manager.start_scan()
+                if not need_refresh:
+                    self.on_done(True, "Refresh complete", None)
                 else:
-                    db_msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00,
-                                                    bytes(14))
-                    msg_handler = DeviceDbGet(self.device.db, on_done,
-                                              num_retry=3)
-                    self.device.send(db_msg, msg_handler)
+                    LOG.ui("Device %s db out of date (got %s vs %s), " +
+                           "refreshing", self.addr, msg.cmd1,
+                           self.device.db.delta)
 
-            # Either way - this transaction is complete.
-            return Msg.FINISHED
+                    # Clear the current database values.
+                    self.device.db.clear()
+
+                    # When the update message below ends, update the db delta
+                    # w/ the current value and save the database.
+                    def on_done(success, message, data):
+                        if success:
+                            self.device.db.set_delta(msg.cmd1)
+                            LOG.ui("%s database download complete\n%s",
+                                   self.addr, self.device.db)
+                        self.on_done(success, message, data)
+
+                    # Request that the device send us all of it's database
+                    # records.  These will be streamed as fast as possible to
+                    # us and the handler will update the database.  We need a
+                    # retry count here because battery powered devices don't
+                    # always respond right away.
+                    if self.device.db.engine == 0:
+                        scan_manager = db.DeviceScanManagerI1(self.device,
+                                                              self.device.db,
+                                                              on_done=on_done,
+                                                              num_retry=3)
+                        scan_manager.start_scan()
+                    else:
+                        db_msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00,
+                                                        bytes(14))
+                        msg_handler = DeviceDbGet(self.device.db, on_done,
+                                                  num_retry=3)
+                        self.device.send(db_msg, msg_handler)
+                # Either way - this transaction is complete.
+                return Msg.FINISHED
+
+            elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+                LOG.error("Device %s refresh NAK: %s, Message: %s",
+                          self.device.label, msg.nak_str(), msg)
+                self.on_done(False, "Device refresh failed. " +
+                             msg.nak_str(), None)
+                return Msg.FINISHED
 
         # Unknown message - not for us.
         return Msg.UNKNOWN

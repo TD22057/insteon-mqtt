@@ -55,25 +55,26 @@ class Test_Remote:
     def test_template(self, setup):
         mdev, addr, name = setup.getAll(['mdev', 'addr', 'name'])
 
-        data = mdev.template_data(3)
+        data = mdev.template_data_remote(3)
         right = {"address" : addr.hex, "name" : name, "button" : 3}
         assert data == right
 
-        data = mdev.template_data(4, is_on=True, mode=IM.on_off.Mode.FAST,
-                                  manual=IM.on_off.Manual.STOP)
+        data = mdev.template_data_remote(4, is_on=True,
+                                         mode=IM.on_off.Mode.FAST,
+                                         manual=IM.on_off.Manual.STOP)
         right = {"address" : addr.hex, "name" : name, "button" : 4,
                  "on" : 1, "on_str" : "on",
                  "mode" : "fast", "fast" : 1, "instant" : 0,
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
         assert data == right
 
-        data = mdev.template_data(4, is_on=False)
+        data = mdev.template_data_remote(4, is_on=False)
         right = {"address" : addr.hex, "name" : name, "button"  : 4,
                  "on" : 0, "on_str" : "off",
                  "mode" : "normal", "fast" : 0, "instant" : 0}
         assert data == right
 
-        data = mdev.template_data(5, manual=IM.on_off.Manual.UP)
+        data = mdev.template_data_remote(5, manual=IM.on_off.Manual.UP)
         right = {"address" : addr.hex, "name" : name, "button" : 5,
                  "manual_str" : "up", "manual" : 1, "manual_openhab" : 2}
         assert data == right

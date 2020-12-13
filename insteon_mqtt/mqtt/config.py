@@ -15,6 +15,7 @@ from .. import device
 from ..Modem import Modem
 from .BatterySensor import BatterySensor
 from .Dimmer import Dimmer
+from .EZIO4O import EZIO4O
 from .FanLinc import FanLinc
 from .IOLinc import IOLinc
 from .KeypadLinc import KeypadLinc
@@ -32,6 +33,7 @@ devices = {
     Modem : MqttModem,
     device.BatterySensor : BatterySensor,
     device.Dimmer : Dimmer,
+    device.EZIO4O : EZIO4O,
     device.FanLinc : FanLinc,
     device.IOLinc : IOLinc,
     device.KeypadLinc : KeypadLinc,

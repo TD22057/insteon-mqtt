@@ -28,7 +28,7 @@ class Modem:
     input).  This allows devices to be looked up by address to send commands
     to those devices.
     """
-    def __init__(self, protocol, stack):
+    def __init__(self, protocol, stack, timed_call):
         """Constructor
 
         Actual modem definitions must be loaded from a configuration file via
@@ -36,9 +36,12 @@ class Modem:
 
         Args:
           protocol (Protocol):  Insteon message handling protocol object.
+          stack (Stack): The link to the Stack handling object
+          timed_call (TimedCall): The link to the TimedCall handling object
         """
         self.protocol = protocol
         self.stack = stack
+        self.timed_call = timed_call
 
         self.addr = None
         self.name = "modem"
@@ -192,7 +195,7 @@ class Modem:
         # request each next record as the records arrive.
         msg = Msg.OutAllLinkGetFirst()
         msg_handler = handler.ModemDbGet(self.db, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def db_path(self):
@@ -336,7 +339,7 @@ class Modem:
         """
         # Set the error stop to false so a failed refresh doesn't stop the
         # sequence from trying to refresh other devices.
-        seq = CommandSeq(self.protocol, "Refresh all complete", on_done,
+        seq = CommandSeq(self, "Refresh all complete", on_done,
                          error_stop=False)
 
         # Reload the modem database.
@@ -371,7 +374,7 @@ class Modem:
         """
         # Set the error stop to false so a failed refresh doesn't stop the
         # sequence from trying to refresh other devices.
-        seq = CommandSeq(self.protocol, "Get Engine all complete", on_done,
+        seq = CommandSeq(self, "Get Engine all complete", on_done,
                          error_stop=False)
 
         # Reload all the device databases.
@@ -608,6 +611,26 @@ class Modem:
         LOG.warning("Modem being reset.  All data will be lost")
         msg = Msg.OutResetModem()
         msg_handler = handler.ModemReset(self, on_done)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def send(self, msg, msg_handler, high_priority=False, after=None):
+        """Send a message to the modem.
+
+        This simply forwards to Protocol.Send() but is here to provide
+        consistency with devices.
+
+        Args:
+          msg (Message):  Output message to write.  This should be an
+              instance of a message in the message directory that that starts
+              with 'Out'.
+          msg_handler (MsgHander): Message handler instance to use when
+                      replies to the message are received.  Any message
+                      received after we write out the msg are passed to this
+                      handler until the handler returns the message.FINISHED
+                      flags.
+        """
+
         self.protocol.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -647,7 +670,7 @@ class Modem:
         if sequence is not None:
             seq = sequence
         else:
-            seq = CommandSeq(self.protocol, "Sync complete", on_done,
+            seq = CommandSeq(self, "Sync complete", on_done,
                              error_stop=False)
 
         if refresh:
@@ -682,7 +705,7 @@ class Modem:
             on_done(True, None, None)
         else:
             LOG.ui("  Deleting %s:", entry)
-            self.db.delete_on_device(self.protocol, entry, on_done=on_done)
+            self.db.delete_on_device(entry, on_done=on_done)
 
     def _sync_add(self, entry, dry_run, on_done=None):
         ''' Adds a link to the device with a Log UI Message
@@ -694,7 +717,7 @@ class Modem:
             on_done(True, None, None)
         else:
             LOG.ui("  Adding %s:", entry)
-            self.db.add_on_device(self.protocol, entry, on_done=on_done)
+            self.db.add_on_device(entry, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def sync_all(self, dry_run=True, refresh=True, on_done=None):
@@ -712,7 +735,7 @@ class Modem:
         """
         # Set the error stop to false so a failed refresh doesn't stop the
         # sequence from trying to refresh other devices.
-        seq = CommandSeq(self.protocol, "Sync All complete", on_done,
+        seq = CommandSeq(self, "Sync All complete", on_done,
                          error_stop=False)
 
         # First the modem database.
@@ -837,7 +860,7 @@ class Modem:
         # nothing happens.  See the handler for details.
         msg = Msg.OutModemLinking(Msg.OutModemLinking.Cmd.EITHER, group)
         msg_handler = handler.ModemLinkStart(on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):
@@ -964,7 +987,7 @@ class Modem:
         cmd1 = 0x11 if is_on else 0x13
         msg = Msg.OutModemScene(group, cmd1, 0x00)
         msg_handler = handler.ModemScene(self, msg, on_done)
-        self.protocol.send(msg, msg_handler)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def handle_received(self, msg):
@@ -1142,13 +1165,13 @@ class Modem:
         # discussion.
         local_data = self.link_data(is_controller, local_group, local_data)
 
-        seq = CommandSeq(self.protocol, "Device db update complete", on_done)
+        seq = CommandSeq(self, "Device db update complete", on_done)
 
         # Create a new database entry for the modem and send it to the modem
         # for updating.
         entry = db.ModemEntry(remote_addr, local_group, is_controller,
-                              local_data, db=self.db)
-        seq.add(self.db.add_on_device, self.protocol, entry)
+                              local_data)
+        seq.add(self.db.add_on_device, entry)
 
         # For two way commands, insert a callback so that when the modem
         # command finishes, it will send the next command to the device.
@@ -1200,8 +1223,8 @@ class Modem:
             return
 
         # Add the function delete call to the sequence.
-        seq = CommandSeq(self.protocol, "Delete complete", on_done)
-        seq.add(self.db.delete_on_device, self.protocol, entry)
+        seq = CommandSeq(self, "Delete complete", on_done)
+        seq.add(self.db.delete_on_device, entry)
 
         # For two way commands, insert a callback so that when the modem
         # command finishes, it will send the next command to the device.

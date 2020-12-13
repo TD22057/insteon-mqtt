@@ -118,3 +118,42 @@
     - master fan
   controllers:
     - master remote
+
+# IOLinc examples
+# The following are some examples of scenes which could be used to setup an
+# IOlinc.  The details describe what commands sent to the scene would do.
+
+# Latching
+#   On and off commands to the scene will turn the relay on and off
+# Momentary_A  
+#   Only on commands will turn the relay on.
+# Momentary_B
+#   Either on or off will turn on the relay.
+# Momentary_C
+#   On commands will turn the relay on if the sensor is also on.
+#   Off commands will turn the relay on if the sensor is also off.
+#   All other commands would be ignored
+
+- name: 'iolinc_command'
+  controllers:
+    - modem
+  responders:
+    - iolinc
+
+# Latching
+#   On and off commands to the scene will turn the relay on and off
+# Momentary_A  
+#   Only off commands will turn the relay on.
+# Momentary_B
+#   Either on or off will turn on the relay.
+# Momentary_C
+#   On commands will turn the relay on if the sensor is off.
+#   Off commands will turn the relay on if the sensor is on.
+#   All other commands would be ignored
+
+- name: 'iolinc_command'
+  controllers:
+    - modem
+  responders:
+    - iolinc:
+        on_off: 0

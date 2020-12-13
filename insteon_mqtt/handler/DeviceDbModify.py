@@ -18,7 +18,7 @@ class DeviceDbModify(Base):
     modifications to the device's all link database class to reflect what
     happened on the physical device.
     """
-    def __init__(self, device_db, entry, on_done=None):
+    def __init__(self, device_db, entry, on_done=None, num_retry=3):
         """Constructor
 
         Args:
@@ -29,7 +29,7 @@ class DeviceDbModify(Base):
                     added to the handler.  Signature is:
                     on_done(success, msg, entry)
         """
-        super().__init__(on_done)
+        super().__init__(on_done, num_retry)
 
         self.db = device_db
         self.entry = entry
@@ -72,6 +72,8 @@ class DeviceDbModify(Base):
                     # entry, or an marked unused (deletion).
                     LOG.info("Updating entry: %s", self.entry)
                     self.db.add_entry(self.entry)
+                    # Increment the delta 1
+                    self.db.set_delta(self.db.delta + 1)
                     self.on_done(True, "Device database update complete",
                                  self.entry)
 
