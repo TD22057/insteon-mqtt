@@ -86,14 +86,20 @@ class StandardCmd(Base):
             # If this message matches our address and command, it's probably
             # the ACK we're expecting.
             if msg.from_addr == self.addr and msg.cmd1 == self.cmd:
-                if (msg.flags.type == Msg.Flags.Type.DIRECT_NAK and
-                        msg.cmd2 == 0xFC):
-                    # This is a "Pre NAK in case database search takes
-                    # too long".  This happens when the device database is
-                    # large.  Just ignore it, add more wait time and wait.
-                    LOG.warning("%s Pre-NAK: %s, Message: %s", msg.from_addr,
-                                msg.nak_str(), msg)
-                    return Msg.CONTINUE
+                if msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
+                    if msg.cmd2 == msg.NakType.PRE_NAK:
+                        # This is a "Pre NAK in case database search takes
+                        # too long".  This happens when the device database is
+                        # large.  Just ignore it, add more wait time and wait.
+                        LOG.warning("%s Pre-NAK: %s, Message: %s",
+                                    msg.from_addr, msg.nak_str(), msg)
+                        return Msg.CONTINUE
+                    else:
+                        LOG.error("%s device NAK error: %s, Message: %s",
+                                  msg.from_addr, msg.nak_str(), msg)
+                        self.on_done(False, "Command failed. " +
+                                     msg.nak_str(), None)
+                        return Msg.FINISHED
 
                 # Run the callback - it's up to the callback to check if this
                 # is really the ACK or not.
