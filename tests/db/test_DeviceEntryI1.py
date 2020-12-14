@@ -16,7 +16,7 @@ class Test_DeviceEntryI1:
         data = bytes([0xFE, 0x1F, 0x00])
         entry = IM.db.DeviceEntry.from_i1_bytes(bytes([0x0F, 0xFF, 0xE2, 0x01,
                                                        0x20, 0xC4, 0xBA, 0xFE,
-                                                       0x1F, 0x00]))
+                                                       0x1F, 0x00]), db=None)
 
         assert entry.addr == addr
         assert entry.group == 0x01

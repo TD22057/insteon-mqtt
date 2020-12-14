@@ -11,7 +11,7 @@ class Test_ModemEntry:
     def test_ctrl(self):
         addr = IM.Address('12.34.ab')
         data = bytes([0x01, 0x02, 0x03])
-        obj = IM.db.ModemEntry(addr, 0x03, True, data)
+        obj = IM.db.ModemEntry(addr, 0x03, True, data, db=None)
 
         assert obj.addr == addr
         assert obj.group == 0x03
@@ -19,7 +19,7 @@ class Test_ModemEntry:
         assert obj.data == data
 
         d = obj.to_json()
-        obj2 = IM.db.ModemEntry.from_json(d)
+        obj2 = IM.db.ModemEntry.from_json(d, db=None)
         assert obj2.addr == obj.addr
         assert obj2.group == obj.group
         assert obj2.is_controller == obj.is_controller
@@ -43,7 +43,7 @@ class Test_ModemEntry:
     def test_resp(self):
         addr = IM.Address('12.34.ab')
         data = bytes([0x01, 0x02, 0x03])
-        obj = IM.db.ModemEntry(addr, 0x03, False, data)
+        obj = IM.db.ModemEntry(addr, 0x03, False, data, db=None)
 
         assert obj.addr == addr
         assert obj.group == 0x03
@@ -51,7 +51,7 @@ class Test_ModemEntry:
         assert obj.data == data
 
         d = obj.to_json()
-        obj2 = IM.db.ModemEntry.from_json(d)
+        obj2 = IM.db.ModemEntry.from_json(d, db=None)
         assert obj2.addr == obj.addr
         assert obj2.group == obj.group
         assert obj2.is_controller == obj.is_controller
@@ -64,6 +64,45 @@ class Test_ModemEntry:
         str(obj)
 
     #-----------------------------------------------------------------------
+    def test_label(self):
+        addr = IM.Address('12.34.ab')
+        data = bytes([0x01, 0x02, 0x03])
+        obj = IM.db.ModemEntry(addr, 0x03, False, data, db=None)
+
+        assert obj.label == str(addr)
+
+        protocol = MockProto()
+        modem = MockModem()
+        db = MockDB(modem)
+        addr = IM.Address(0x03, 0x04, 0x05)
+        obj = IM.db.ModemEntry(addr, 0x03, False, data, db=db)
+        device = IM.device.Base(protocol, modem, addr, name="Awesomesauce")
+        modem.set_linked_device(device)
+
+        assert obj.label == "03.04.05 (Awesomesauce)"
+
+    #-----------------------------------------------------------------------
 
 
 #===========================================================================
+class MockProto:
+    def __init__(self):
+        self.msgs = []
+
+    def send(self, msg, handler, high_priority=False, after=None):
+        self.msgs.append(msg)
+
+class MockModem():
+    def __init__(self):
+        self.save_path = ''
+        self.linked_device = None
+
+    def set_linked_device(self, device):
+        self.linked_device = device
+
+    def find(self, *args, **kwargs):
+        return self.linked_device
+
+class MockDB():
+    def __init__(self, modem):
+        self.device = modem

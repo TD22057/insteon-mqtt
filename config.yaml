@@ -124,6 +124,10 @@ insteon:
     thermostat:
     #  - aa.bb.cc: 'downstairs'
 
+    # EZIO4O 4 output relay modules
+    #ezio4o:
+    #  - aa.bb.cc: 'relays'
+
 #==========================================================================
 #
 # MQTT configuration
@@ -945,6 +949,57 @@ mqtt:
     # in the same way clicking the button would.  The inputs are the same as
     # those for the on_off topic and payload.
     scene_topic: 'insteon/{{address}}/scene/{{button}}'
+    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+  #------------------------------------------------------------------------
+  # EZIO4O 4 relay output module
+  #------------------------------------------------------------------------
+  # EZIO4O is a 4 relay output wall plug module from Smartenit.
+  # Each relay has a normally open and a normally closed contact.
+  # Device relay 1 to 4 correspond to topics button 1 to 4.
+  # In Home Assistant use MQTT switch with a configuration like:
+  #   switch:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/state/1'
+  #       command_topic: 'insteon/aa.bb.cc/set/1'
+  #   switch:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/state/2'
+  #       command_topic: 'insteon/aa.bb.cc/set/2'
+  ezio4o:
+    # Output state change topic and template.  This message is sent
+    # whenever the device state changes for any reason.  Available
+    # variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   button = 1 to 4 (relay number)
+    #   on = 0/1
+    #   on_str = 'off'/'on'
+    #   mode = 'normal'/'fast'/'instant'
+    #   fast = 0/1
+    #   instant = 0/1
+    #   reason = 'device'/'scene'/'command'/'refresh'/'...'
+    state_topic: "insteon/{{address}}/state/{{button}}"
+    state_payload: "{{on_str.upper()}}"
+
+    # Input on/off command.  Similar functionality to the cmd_topic but only
+    # for turning the device on and off.  If reason is input, is will be
+    # passed through to the state_payload.  The output of passing the payload
+    # through the template must match the following:
+    #   { "cmd" : 'on'/'off', "button": button,
+    #             ["mode" : 'normal'/'fast'/'instant'],
+    #             ["fast" : 1/0], ["instant" : 1/0], ["reason" : "..."] }
+    # Available variables for templating are:
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
+    on_off_topic: "insteon/{{address}}/set/{{button}}"
+    on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+    # Scene on/off command.  This triggers the scene broadcast on the outlet
+    # in the same way clicking the button would.  The inputs are the same as
+    # those for the on_off topic and payload.
+    scene_topic: "insteon/{{address}}/scene/{{button}}"
     scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
 #----------------------------------------------------------------

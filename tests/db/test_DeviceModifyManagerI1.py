@@ -20,7 +20,7 @@ class Test_Device:
         db_flags = Msg.DbFlags(in_use=True, is_controller=True,
                                is_last_rec=False)
         i1_entry = IM.db.DeviceEntry(addr, 0x01, device.db.last.mem_loc,
-                                     db_flags, None)
+                                     db_flags, None, db=device.db)
 
         manager = IM.db.DeviceModifyManagerI1(device,
                                               device.db,
@@ -43,7 +43,7 @@ class Test_Device:
         db_flags = Msg.DbFlags(in_use=True, is_controller=True,
                                is_last_rec=False)
         i1_entry = IM.db.DeviceEntry(addr, 0x01, device.db.last.mem_loc,
-                                     db_flags, None)
+                                     db_flags, None, db=device.db)
 
         manager = IM.db.DeviceModifyManagerI1(device,
                                               device.db,
@@ -75,7 +75,7 @@ class Test_Device:
         db_flags = Msg.DbFlags(in_use=True, is_controller=True,
                                is_last_rec=False)
         i1_entry = IM.db.DeviceEntry(addr, 0x01, device.db.last.mem_loc,
-                                     db_flags, None)
+                                     db_flags, None, db=device.db)
 
         manager = IM.db.DeviceModifyManagerI1(device,
                                               device.db,
@@ -110,7 +110,7 @@ class Test_Device:
         db_flags = Msg.DbFlags(in_use=False, is_controller=True,
                                is_last_rec=False)
         i1_entry = IM.db.DeviceEntry(addr, 0x01, device.db.last.mem_loc,
-                                     db_flags, None)
+                                     db_flags, None, db=device.db)
 
         manager = IM.db.DeviceModifyManagerI1(device,
                                               device.db,
