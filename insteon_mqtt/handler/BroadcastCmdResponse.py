@@ -82,7 +82,7 @@ class BroadcastCmdResponse(Base):
                 return Msg.CONTINUE
 
             elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-                if msg.cmd2 == 0xFC:
+                if msg.cmd2 == msg.NakType.PRE_NAK:
                     # This is a "Pre NAK in case database search takes
                     # too long".  This happens when the device database is
                     # large.  Just ignore it, add more wait time and wait.

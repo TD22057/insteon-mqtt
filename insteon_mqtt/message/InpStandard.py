@@ -3,6 +3,7 @@
 # Input insteon standard and extended message.
 #
 #===========================================================================
+import enum
 import io
 import time
 from ..Address import Address
@@ -22,6 +23,14 @@ class InpStandard(Base):
 
     msg_code = 0x50
     fixed_msg_size = 11
+
+    # NAK types
+    class NakType(enum.IntEnum):
+        SENDER_NOT_IN_DB = 0xFF
+        NO_LOAD = 0xFE
+        BAD_CHECKSUM = 0xFD
+        PRE_NAK = 0xFC
+        ILLEGAL_VALUE = 0xFB
 
     #-----------------------------------------------------------------------
     @classmethod
