@@ -101,8 +101,7 @@ class StandardCmd(Base):
                                      msg.nak_str(), None)
                         return Msg.FINISHED
 
-                # Run the callback - it's up to the callback to check if this
-                # is really the ACK or not.
+                # Run the callback
                 self.callback(msg, on_done=self.on_done)
 
                 # Indicate no more messages are expected.

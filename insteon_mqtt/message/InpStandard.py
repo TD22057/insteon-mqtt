@@ -113,7 +113,7 @@ class InpStandard(Base):
         """
         ret = ""
         naks = {
-            0xFF: "Senders ID not in responders db. Try linking again.",
+            0xFF: "Senders ID not in responders db. Try running 'join' again.",
             0xFE: "Load sense detects no load",
             0xFD: "Checksum is incorrect",
             0xFC: "Pre NAK in case database search takes too long",

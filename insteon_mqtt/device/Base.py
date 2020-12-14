@@ -454,7 +454,7 @@ class Base:
 
         # Send the get_engine_version request.
         msg = Msg.OutStandard.direct(self.addr, 0x0D, 0x00)
-        msg_handler = handler.StandardCmd(msg, self.handle_engine, on_done)
+        msg_handler = handler.StandardCmdNAK(msg, self.handle_engine, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -1092,11 +1092,7 @@ class Base:
                    completed.  Signature is: on_done(success, msg, data)
         """
         on_done = util.make_callback(on_done)
-
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            on_done(True, "Entered linking mode", None)
-        else:
-            on_done(False, "Linking mode failed", None)
+        on_done(True, "Entered linking mode", None)
 
     #-----------------------------------------------------------------------
     def _db_update(self, local_group, is_controller, remote_addr, remote_group,
