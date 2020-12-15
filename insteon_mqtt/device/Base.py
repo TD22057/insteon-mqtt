@@ -268,7 +268,7 @@ class Base:
         LOG.info("Join Device %s", self.addr)
 
         # Using a sequence so we can pass the on_done function through.
-        seq = CommandSeq(self, "Operation Complete", on_done)
+        seq = CommandSeq(self, "Device joined.", on_done)
 
         # First get the engine version.  This process only works and is
         # necessary on I2CS devices.
