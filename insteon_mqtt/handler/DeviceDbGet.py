@@ -83,7 +83,7 @@ class DeviceDbGet(Base):
         if isinstance(msg, (Msg.OutExtended, Msg.OutStandard)):
             if msg.to_addr == self.db.addr and msg.cmd1 == 0x2f:
                 if not msg.is_ack:
-                    LOG.error("%s NAK response", self.db.addr)
+                    LOG.warning("%s PLM NAK response", self.db.addr)
                 return Msg.CONTINUE
 
             return Msg.UNKNOWN

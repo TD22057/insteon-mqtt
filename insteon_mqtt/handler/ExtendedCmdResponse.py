@@ -71,7 +71,7 @@ class ExtendedCmdResponse(Base):
         if isinstance(msg, (Msg.OutExtended, Msg.OutStandard)):
             if msg.to_addr == self.addr and msg.cmd1 == self.cmd:
                 if not msg.is_ack:
-                    LOG.error("%s NAK response", self.addr)
+                    LOG.warning("%s PLM NAK response", self.addr)
                 return Msg.CONTINUE
 
             return Msg.UNKNOWN

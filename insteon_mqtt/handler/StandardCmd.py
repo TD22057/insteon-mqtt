@@ -72,9 +72,9 @@ class StandardCmd(Base):
             # waiting for a reply.
             if msg.to_addr == self.addr and msg.cmd1 == self.cmd:
                 if not msg.is_ack:
-                    LOG.error("%s NAK response", self.addr)
+                    LOG.warning("%s PLM NAK response", self.addr)
                 else:
-                    LOG.debug("%s got msg ACK", self.addr)
+                    LOG.debug("%s got PLM ACK", self.addr)
                 return Msg.CONTINUE
 
             # Message didn't match the expected addr/cmd.
