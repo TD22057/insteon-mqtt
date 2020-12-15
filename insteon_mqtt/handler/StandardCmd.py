@@ -101,15 +101,16 @@ class StandardCmd(Base):
                                      msg.nak_str(), None)
                         return Msg.FINISHED
 
-                # Run the callback
-                self.callback(msg, on_done=self.on_done)
+                elif msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
+                    # Run the callback
+                    self.callback(msg, on_done=self.on_done)
+                    # Indicate no more messages are expected.
+                    return Msg.FINISHED
 
-                # Indicate no more messages are expected.
-                return Msg.FINISHED
-            else:
-                LOG.info("Possible unexpected message from %s cmd %#04x but "
-                         "expected %s cmd %#04x", msg.from_addr, msg.cmd1,
-                         self.addr, self.cmd)
+            # Only make it here if this is a bad msg.
+            LOG.info("Possible unexpected message from %s cmd %#04x but "
+                     "expected %s cmd %#04x", msg.from_addr, msg.cmd1,
+                     self.addr, self.cmd)
 
         return Msg.UNKNOWN
 
