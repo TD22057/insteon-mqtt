@@ -878,7 +878,7 @@ class IOLinc(Base):
         # This reflects a change in the relay state.
         # Handle on/off commands codes.
         if on_off.Mode.is_valid(msg.cmd1):
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
+            is_on = on_off.Mode.decode(msg.cmd1)[0]
             if self.mode == IOLinc.Modes.MOMENTARY_A:
                 # In Momentary A the relay only turns on if the cmd matches
                 # the responder link D1, else it always turns off.  Even if
