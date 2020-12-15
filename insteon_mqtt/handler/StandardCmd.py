@@ -24,7 +24,7 @@ class StandardCmd(Base):
 
     When we get the InptStandard message we expect to see, it will be passed
     to the callback set in the constructor which is usually a method on the
-    device to handle the result (or the ACK that the command went through).
+    device to handle the ACK (or the ACK that the command went through).
     """
     def __init__(self, msg, callback, on_done=None, num_retry=3):
         """Constructor
@@ -34,7 +34,7 @@ class StandardCmd(Base):
               reply must match the address and msg.cmd1 field to be
               processed by this handler.
           callback:  The message handler callback. This is called when a
-                     matching message is read.  Calling signature:
+                     matching ACK is read.  Calling signature:
                      callback( msg, on_done )
           on_done: The finished callback.  Calling signature:
                    on_done( bool success, str message, data )
