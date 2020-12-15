@@ -44,6 +44,8 @@
   unnecessary refresh requirements, particularly around pairing.  
   ([PR 248][P248])
 
+- Minor fix to the calculation of hops on resent messages.  ([PR 259][P259])
+
 ## [0.7.3]
 
 Fixing a number of small bugs in preparation for upcoming releases which
@@ -452,3 +454,4 @@ will add new features.
 [P239]: https://github.com/TD22057/insteon-mqtt/pull/239
 [P244]: https://github.com/TD22057/insteon-mqtt/pull/244
 [P235]: https://github.com/TD22057/insteon-mqtt/pull/235
+[P259]: https://github.com/TD22057/insteon-mqtt/pull/259
