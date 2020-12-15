@@ -795,17 +795,7 @@ class Device:
             last.db_flags = flags
 
             # Update the last record
-            if self.engine == 0:
-                # on_done is passed by the sequence manager inside seq.add()
-                modify_manager = DeviceModifyManagerI1(self.device, self,
-                                                       last, on_done=None,
-                                                       num_retry=3)
-                seq.add(modify_manager.start_modify)
-            else:
-                ext_data = last.to_bytes()
-                msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-                msg_handler = handler.DeviceDbModify(self, last)
-                seq.add_msg(msg, msg_handler)
+            self._add_entry_seq(seq, last)
 
             # Update the last mem_loc to use
             last_mem_loc = last_mem_loc - 0x08
@@ -815,19 +805,7 @@ class Device:
                                is_last_rec=False)
         entry = DeviceEntry(addr, group, last_mem_loc, db_flags, data,
                             db=self)
-
-        if self.engine == 0:
-            # on_done is passed by the sequence manager inside seq.add()
-            modify_manager = DeviceModifyManagerI1(self.device, self,
-                                                   entry, on_done=None,
-                                                   num_retry=3)
-            seq.add(modify_manager.start_modify)
-        else:
-            # Add the call to update the data record.
-            ext_data = entry.to_bytes()
-            msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-            msg_handler = handler.DeviceDbModify(self, entry)
-            seq.add_msg(msg, msg_handler)
+        self._add_entry_seq(seq, entry)
 
         # Finally write the new last entry as all 00 which is how it appears on
         # factory reset, to the address just below the current last_loc
@@ -836,19 +814,29 @@ class Device:
                             is_last_rec=True)
         last = DeviceEntry(Address(0, 0, 0), 0, last_mem_loc - 0x08, flags,
                            None, db=self)
+        self._add_entry_seq(seq, last)
 
+        seq.run()
+
+    def _add_entry_seq(self, seq, entry):
+        """Appends the Appropriate Modify Handler for the entry to the
+        sequence.
+
+        Args:
+          seq: (CommandSeq)The sequence to append the action to
+          entry: (DeviceEntry) The entry to modify
+        """
+        # Update the last record
         if self.engine == 0:
             # on_done is passed by the sequence manager inside seq.add()
             modify_manager = DeviceModifyManagerI1(self.device, self,
-                                                   last, on_done=None,
+                                                   entry, on_done=None,
                                                    num_retry=3)
             seq.add(modify_manager.start_modify)
         else:
-            ext_data = last.to_bytes()
+            ext_data = entry.to_bytes()
             msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00, ext_data)
-            msg_handler = handler.DeviceDbModify(self, last)
+            msg_handler = handler.DeviceDbModify(self, entry)
             seq.add_msg(msg, msg_handler)
-
-        seq.run()
 
     #-----------------------------------------------------------------------
