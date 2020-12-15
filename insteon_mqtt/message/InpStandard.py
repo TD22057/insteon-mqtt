@@ -113,11 +113,13 @@ class InpStandard(Base):
         """
         ret = ""
         naks = {
-            0xFF: "Senders ID not in responders db. Try running 'join' again.",
-            0xFE: "Load sense detects no load",
-            0xFD: "Checksum is incorrect",
-            0xFC: "Pre NAK in case database search takes too long",
-            0xFB: "Illegal value in command"
+            self.NakType.SENDER_NOT_IN_DB:
+                "Senders ID not in responders db. Try running 'join' again.",
+            self.NakType.NO_LOAD: "Load sense detects no load",
+            self.NakType.BAD_CHECKSUM: "Checksum is incorrect",
+            self.NakType.PRE_NAK:
+                "Pre NAK in case database search takes too long",
+            self.NakType.ILLEGAL_VALUE: "Illegal value in command"
         }
         if (self.flags.type == Flags.Type.DIRECT_NAK and
                 self.cmd2 in naks.keys()):
