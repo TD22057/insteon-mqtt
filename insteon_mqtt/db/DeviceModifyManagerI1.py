@@ -165,7 +165,7 @@ class DeviceModifyManagerI1:
         """
         # Increment the delta 1
         self.db.set_delta(self.db.delta + 1)
-        self.handle_lsb_response(self, msg, on_done)
+        self.handle_lsb_response(msg, on_done)
 
     #-------------------------------------------------------------------
     def write_lsb_byte(self, on_done):
