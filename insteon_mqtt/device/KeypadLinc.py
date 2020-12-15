@@ -636,11 +636,12 @@ class KeypadLinc(Base):
         if 'group' in data:
             data_3 = data['group']
         if not is_controller and self.is_dimmer:
-            if 'ramp' in data:
+            if 'ramp_rate' in data:
                 data_2 = 0x1f
-                for ramp_key, ramp_value in Dimmer.ramp_pretty:
-                    if data['ramp'] >= ramp_value:
+                for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
+                    if data['ramp_rate'] >= ramp_value:
                         data_2 = ramp_key
+                        break
             if 'on_level' in data:
                 data_1 = int(data['on_level'] * 2.55 + .5)
         return [data_1, data_2, data_3]

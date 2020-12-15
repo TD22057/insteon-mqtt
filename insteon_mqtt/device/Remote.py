@@ -242,9 +242,8 @@ class Remote(BatterySensor):
         Returns:
           bytes[3]: Returns a list of 3 bytes to use as D1,D2,D3.
         """
-        # Most of this is from looking through Misterhouse bug reports.
         if is_controller:
-            defaults = [0x03, 0x00, group]
+            defaults = [0x03, 0x00, 0x00]
 
         # Responder data is always link dependent.  Since nothing was given,
         # assume the user wants to turn the device on (0xff).
@@ -270,7 +269,7 @@ class Remote(BatterySensor):
         Returns:
           list[3]:  list, containing a dict of the human readable values
         """
-        ret = [{'data_1': data[0]}, {'data_2': data[1]}, {'group': data[2]}]
+        ret = [{'data_1': data[0]}, {'data_2': data[1]}, {'data_3': data[2]}]
         return ret
 
     #-----------------------------------------------------------------------
@@ -297,8 +296,6 @@ class Remote(BatterySensor):
         data_3 = None
         if 'data_3' in data:
             data_3 = data['data_3']
-        if 'group' in data:
-            data_3 = data['group']
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
