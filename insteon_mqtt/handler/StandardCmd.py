@@ -24,7 +24,7 @@ class StandardCmd(Base):
 
     When we get the InptStandard message we expect to see, it will be passed
     to the callback set in the constructor which is usually a method on the
-    device to handle the ACK (or the ACK that the command went through).
+    device to handle the ACK.
     """
     def __init__(self, msg, callback, on_done=None, num_retry=3):
         """Constructor
