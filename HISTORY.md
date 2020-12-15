@@ -24,11 +24,19 @@
      manually awaken via holding the set button.  This will cause all queued
      and future messages to be sent to the device for up to three minutes
 
+- Added support for querying the battery on a mini-remote.  The battery state
+  will be automatically queried when the device wakes up if is has been 4 days
+  since the last battery check and will emit messages on the low_battery
+  topic. ([PR 244][P244])
+
 - Added support for Smartenit EZIO4O 4 relay output module (thanks @embak)
   ([PR 219][P219])
 
 - Device names are now printed when printing the database.  This makes reading
   the database output much easier.  ([PR 239][P239])
+
+- Added ability to set the default ramp rate of a dimmer using the ramp_rate
+  flag.  (thanks @jordanrounds)([PR 235][P235])
 
 ### Fixes
 
@@ -442,3 +450,5 @@ will add new features.
 [P248]: https://github.com/TD22057/insteon-mqtt/pull/248
 [P219]: https://github.com/TD22057/insteon-mqtt/pull/219
 [P239]: https://github.com/TD22057/insteon-mqtt/pull/239
+[P244]: https://github.com/TD22057/insteon-mqtt/pull/244
+[P235]: https://github.com/TD22057/insteon-mqtt/pull/235
