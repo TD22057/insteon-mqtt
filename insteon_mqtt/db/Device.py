@@ -79,8 +79,11 @@ class Device:
         for d in data['unused']:
             obj.add_entry(DeviceEntry.from_json(d, db=obj), save=False)
 
+        # This isn't needed anymore, but here for compatibility with pre
+        # 0.7.4.  The last entry appears in either the used or unused array
         if "last" in data:
-            obj.last = DeviceEntry.from_json(data["last"], db=obj)
+            obj.add_entry(DeviceEntry.from_json(data["last"], db=obj),
+                          save=False)
 
         # When loading db's <= ver 0.6, no last field was saved to create
         # one at the correct location.
@@ -620,7 +623,6 @@ class Device:
             'firmware' : self.firmware,
             'used' : used,
             'unused' : unused,
-            'last' : self.last.to_json(),
             'meta' : self._meta
             }
         if self.desc:
@@ -789,10 +791,8 @@ class Device:
             # is always all 0x00s. However ISY appears to use the last loc.
             # So we need to fix that by first changing the last location flag
             # on the current last entry.
-            flags = Msg.DbFlags(in_use=False, is_controller=False,
-                                is_last_rec=False)
-            last = self.last
-            last.db_flags = flags
+            last = self.last.copy()
+            last.db_flags.is_last_rec = False
 
             # Update the last record
             self._add_entry_seq(seq, last)
@@ -800,7 +800,7 @@ class Device:
             # Update the last mem_loc to use
             last_mem_loc = last_mem_loc - 0x08
 
-        # Create the new entry at the current last memory location.
+        # Create the new entry at the last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=is_controller,
                                is_last_rec=False)
         entry = DeviceEntry(addr, group, last_mem_loc, db_flags, data,
