@@ -694,8 +694,13 @@ class MockModem():
 class MockProto:
     def __init__(self):
         self.msgs = []
+        self.signal_msg_finished = MockSignal()
 
     def send(self, msg, handler, high_priority=False, after=None):
         self.msgs.append(msg)
+
+class MockSignal:
+    def connect(self, *args, **kwargs):
+        pass
 
 #===========================================================================
