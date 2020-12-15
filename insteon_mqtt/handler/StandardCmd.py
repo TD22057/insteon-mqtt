@@ -107,10 +107,10 @@ class StandardCmd(Base):
                     # Indicate no more messages are expected.
                     return Msg.FINISHED
 
-            # Only make it here if this is a bad msg.
-            LOG.info("Possible unexpected message from %s cmd %#04x but "
-                     "expected %s cmd %#04x", msg.from_addr, msg.cmd1,
-                     self.addr, self.cmd)
+                # Only make it here if this is a bad msg.
+                LOG.info("Possible unexpected message from %s cmd %#04x but "
+                         "expected %s cmd %#04x", msg.from_addr, msg.cmd1,
+                         self.addr, self.cmd)
 
         return Msg.UNKNOWN
 
