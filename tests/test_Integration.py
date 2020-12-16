@@ -26,51 +26,8 @@ import insteon_mqtt as IM
 published_topics = {}
 subscribed_topics = {}
 written_msgs = []
-plm_link = None
-insteon = None
-
-def patch_insteon_mqtt(args, cfg):
-    """A lightly modified start command
-
-    Mainly removes the loop of loop.select()
-    Also signals a connection of the mqtt client
-    """
-    global plm_link, insteon
-
-    # Always log to the screen if a file isn't active.
-    if not args.log:
-        args.log_screen = True
-
-    # Initialize the logging system either using the command line
-    # inputs or the config file.  If these vars are None, then the
-    # config file logging data is used.
-    IM.log.initialize(args.level, args.log_screen, args.log, config=cfg)
-
-    # Create the network event loop and MQTT and serial modem clients.
-    loop = IM.network.Manager()
-    mqtt_link = IM.network.Mqtt()
-    plm_link = IM.network.Serial()
-    stack_link = IM.network.Stack()
-    timed_link = IM.network.TimedCall()
-
-    # Add the clients to the event loop.
-    loop.add(mqtt_link, connected=False)
-    loop.add(plm_link, connected=False)
-    loop.add_poll(stack_link)
-    loop.add_poll(timed_link)
-
-    # Create the insteon message protocol, modem, and MQTT handler and
-    # link them together.
-    insteon = IM.Protocol(plm_link)
-    modem = IM.Modem(insteon, stack_link, timed_link)
-    mqtt_handler = IM.mqtt.Mqtt(mqtt_link, modem)
-
-    # Load the configuration data into the objects.
-    IM.config.apply(cfg, mqtt_handler, modem)
-
-    # Signal the mqtt link as connected
-    # Ths causes the device mqtt objects to subscribe to topics
-    mqtt_link.signal_connected.emit(mqtt_link, True)
+mqtt_obj = None
+modem_obj = None
 
 def serial_write(self, msg_bytes, next_write_time):
     # This captures the messages sent out to the PLM
@@ -84,7 +41,19 @@ def mqtt_publish(self, topic, payload, qos=0, retain=False):
     published_topics[topic] = payload
 
 def serial_read(data):
-    plm_link.signal_read.emit(plm_link, data)
+    modem_obj.protocol.link.signal_read.emit(modem_obj.protocol.link, data)
+
+def loop_active(self):
+    # Prevent the network loop from running
+    return False
+
+def config_apply(config, mqtt, modem):
+    # Copy the function so we can capture the modem and mqtt links
+    global mqtt_obj, modem_obj
+    mqtt_obj = mqtt
+    modem_obj = modem
+    mqtt.load_config(config['mqtt'])
+    modem.load_config(config['insteon'])
 
 class mqtt_msg():
     # Used to simulate mqtt messages
@@ -100,10 +69,11 @@ def patch_all(f):
     Use the @path_all decorator to call them
     """
     @patch('sys.argv', ["", "config.yaml", "start"])
-    @patch('insteon_mqtt.cmd_line.start.start', patch_insteon_mqtt)
     @patch('insteon_mqtt.network.Mqtt.subscribe', mqtt_subscribe)
     @patch('insteon_mqtt.network.Mqtt.publish', mqtt_publish)
     @patch('insteon_mqtt.network.Serial.write', serial_write)
+    @patch('insteon_mqtt.network.Manager.active', loop_active)
+    @patch('insteon_mqtt.config.apply', config_apply)
     @functools.wraps(f)
     def functor(*args, **kwargs):
         return f(*args, **kwargs)
@@ -111,6 +81,11 @@ def patch_all(f):
 
 def start_insteon_mqtt():
     IM.cmd_line.main()
+
+    # Signal the mqtt link as connected
+    # Ths causes the device mqtt objects to subscribe to topics
+    mqtt_obj.link.signal_connected.emit(mqtt_obj.link, True)
+
 
 @patch_all
 def test_set_on_roundtrip():
