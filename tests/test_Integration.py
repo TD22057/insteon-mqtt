@@ -31,7 +31,7 @@ def test_set_on_roundtrip(stack):
     # Send on using the set topic
     stack.publish_to_mqtt('insteon/3a.29.84/set', 'on')
     # Test resulting PLM message
-    assert stack.written_msgs[0].hex() == '02623a29840f11ff'
+    assert stack.written_msgs[0] == '02623a29840f11ff'
     # Return PLM ACK
     stack.write_to_modem('02623a29840f11ff06')
     # Return the device ACK
@@ -47,7 +47,8 @@ def stack():
 
 class Patch_Stack():
     def __init__(self):
-        # Contains an array of all messages sent by the modem
+        # Contains an array of all messages sent by the modem messages are
+        # stored as strings with hexadecimal characters
         self.written_msgs = []
         # Contains a dictionary of the most recent messages sent to each
         # topic, wherein the keys are the topic names
@@ -97,7 +98,7 @@ class Patch_Stack():
 
     def _modem_out(self, msg_bytes, next_write_time):
         # This captures the messages sent out to the PLM
-        self.written_msgs.append(msg_bytes)
+        self.written_msgs.append(msg_bytes.hex())
 
     def write_to_modem(self, data):
         """Simulate the modem receiving a message
