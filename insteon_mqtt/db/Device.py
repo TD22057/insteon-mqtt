@@ -370,8 +370,8 @@ class Device:
             on_done(True, "Entry already exists", entry)
             return
 
-        LOG.info("Device %s adding db: %s grp %s %s %s", self.addr, addr,
-                 group, util.ctrl_str(is_controller), data)
+        LOG.info("Device %s adding db: %s grp %s %s D: %s", self.addr, addr,
+                 group, util.ctrl_str(is_controller), data.hex())
 
         # If there are entries in the db that are mark unused, we can re-use
         # those memory addresses and just update them w/ the correct
