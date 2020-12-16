@@ -15,6 +15,12 @@ messages sent to the mqtt server or modem.
 
 Tests can be performed on stack.written_msgs and stack.published_topics
 
+Each test function will create and tear down a full stack fixture.  So use
+sparingly to decrease testing times.
+
+The test devices are created from the sample config.yaml file included in the
+base directory
+
 """
 from unittest.mock import patch
 import pytest
