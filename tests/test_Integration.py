@@ -4,103 +4,114 @@
 #
 # pylint: disable=attribute-defined-outside-init
 #===========================================================================
-# This enables testing of the vast majority of the stack.
-# In order to work, this does not call the loop.select loop.  So anything
-# inside that loop will not be tested.  Similarly the management of the
-# network links is also not tested, such as connection issues.  Links will
-# not be polled unless you do that yourself.
-#
-# However, you can simulate an mqtt command and test the resulting message
-# that would be written to the PLM.  You can also simulate a write to the PLM
-# and test what mqtt messages would be emitted, or what PLM messages are
-# sent in response
+"""This enables integration testing of Insteon-Mqtt
 
-import time
-# from unittest import mock
-# from unittest.mock import call
+This is not a replacement for unit testing.  It is useful for testing the
+interactions between the entire stack.
+
+To use, simply pass the stack fixture as an argument to any test.  Then use
+the stack.publish_to_mqtt() and stack.write_to_modem() methods to simulate
+messages sent to the mqtt server or modem.
+
+Tests can be performed on stack.written_msgs and stack.published_topics
+
+"""
 from unittest.mock import patch
-# import pytest
-import functools
+import pytest
 import insteon_mqtt as IM
 
-published_topics = {}
-subscribed_topics = {}
-written_msgs = []
-mqtt_obj = None
-modem_obj = None
 
-def serial_write(self, msg_bytes, next_write_time):
-    # This captures the messages sent out to the PLM
-    written_msgs.append(msg_bytes)
-
-def mqtt_subscribe(self, topic, qos=0, callback=None):
-    # This captures the calls to subscribe to topics
-    subscribed_topics[topic] = callback
-
-def mqtt_publish(self, topic, payload, qos=0, retain=False):
-    published_topics[topic] = payload
-
-def serial_read(data):
-    modem_obj.protocol.link.signal_read.emit(modem_obj.protocol.link, data)
-
-def loop_active(self):
-    # Prevent the network loop from running
-    return False
-
-def config_apply(config, mqtt, modem):
-    # Copy the function so we can capture the modem and mqtt links
-    global mqtt_obj, modem_obj
-    mqtt_obj = mqtt
-    modem_obj = modem
-    mqtt.load_config(config['mqtt'])
-    modem.load_config(config['insteon'])
-
-class mqtt_msg():
-    # Used to simulate mqtt messages
-    def __init__(self, topic, payload):
-        self.topic = topic
-        self.payload = payload.encode(encoding='UTF-8')
-        self.qos = 0
-        self.retain = False
-
-def patch_all(f):
-    """Gathers all of our patches to make them easily reusable
-
-    Use the @path_all decorator to call them
-    """
-    @patch('sys.argv', ["", "config.yaml", "start"])
-    @patch('insteon_mqtt.network.Mqtt.subscribe', mqtt_subscribe)
-    @patch('insteon_mqtt.network.Mqtt.publish', mqtt_publish)
-    @patch('insteon_mqtt.network.Serial.write', serial_write)
-    @patch('insteon_mqtt.network.Manager.active', loop_active)
-    @patch('insteon_mqtt.config.apply', config_apply)
-    @functools.wraps(f)
-    def functor(*args, **kwargs):
-        return f(*args, **kwargs)
-    return functor
-
-def start_insteon_mqtt():
-    IM.cmd_line.main()
-
-    # Signal the mqtt link as connected
-    # Ths causes the device mqtt objects to subscribe to topics
-    mqtt_obj.link.signal_connected.emit(mqtt_obj.link, True)
-
-
-@patch_all
-def test_set_on_roundtrip():
-    start_insteon_mqtt()
+def test_set_on_roundtrip(stack):
     # Send on using the set topic
-    msg = mqtt_msg('insteon/3a.29.84/set', 'on')
-    subscribed_topics['insteon/3a.29.84/set'](None, None, msg)
+    stack.publish_to_mqtt('insteon/3a.29.84/set', 'on')
     # Test resulting PLM message
-    assert written_msgs[0].hex() == '02623a29840f11ff'
+    assert stack.written_msgs[0].hex() == '02623a29840f11ff'
     # Return PLM ACK
-    serial_read(bytes.fromhex('02623a29840f11ff06'))
+    stack.write_to_modem('02623a29840f11ff06')
     # Return the device ACK
-    serial_read(bytes.fromhex('02503a298441eee62b11ff'))
-    assert published_topics['insteon/3a.29.84/state'] == '{ "state" : "ON", "brightness" : 255 }'
+    stack.write_to_modem('02503a298441eee62b11ff')
+    assert (stack.published_topics['insteon/3a.29.84/state'] ==
+            '{ "state" : "ON", "brightness" : 255 }')
 
 
-        # Test PLM Busy
-        # serial_read(bytes.fromhex('15'))
+# ===============================================================
+@pytest.fixture
+def stack():
+    return Patch_Stack()
+
+class Patch_Stack():
+    def __init__(self):
+        # Contains an array of all messages sent by the modem
+        self.written_msgs = []
+        # Contains a dictionary of the most recent messages sent to each
+        # topic, wherein the keys are the topic names
+        self.published_topics = {}
+        self._subscribed_topics = {}
+        self.mqtt_obj = None
+        self.modem_obj = None
+
+        @patch('insteon_mqtt.network.Mqtt.subscribe', self._mqtt_subscribe)
+        @patch('insteon_mqtt.config.apply', self._config_apply)
+        @patch('sys.argv', ["", "config.yaml", "start"])
+        @patch.object(IM.network.Manager, 'active', return_value=False)
+        def start(*args):
+            IM.cmd_line.main()
+            # Signal the mqtt link as connected
+            # Ths causes the device mqtt objects to subscribe to topics
+            self.mqtt_obj.link.signal_connected.emit(self.mqtt_obj.link, True)
+
+        start()
+
+    @property
+    def plm_link(self):
+        return self.modem_obj.protocol.link
+
+    def _mqtt_subscribe(self, topic, qos=0, callback=None):
+        # This captures the calls to subscribe to topics that occur in
+        # __init__.start
+        self._subscribed_topics[topic] = callback
+
+    def _config_apply(self, config, mqtt, modem):
+        # Copy the function so we can capture the modem and mqtt links
+        self.mqtt_obj = mqtt
+        self.modem_obj = modem
+        mqtt.load_config(config['mqtt'])
+        modem.load_config(config['insteon'])
+
+    def publish_to_mqtt(self, topic, payload):
+        """Simulate sending an mqtt message
+
+        Args:
+          topic:   (str) the mqtt topic to write to
+          payload: (str) the payload sent to the topic
+        """
+        msg_obj = self.mqtt_msg(topic, payload)
+        with patch('insteon_mqtt.network.Serial.write', self._modem_out):
+            self._subscribed_topics[topic](None, None, msg_obj)
+
+    def _modem_out(self, msg_bytes, next_write_time):
+        # This captures the messages sent out to the PLM
+        self.written_msgs.append(msg_bytes)
+
+    def write_to_modem(self, data):
+        """Simulate the modem receiving a message
+
+        Args:
+          data: (str) a string of hexadecimal characters that the modem will
+                receive
+        """
+        data = bytes.fromhex(data)
+        with patch('insteon_mqtt.network.Mqtt.publish', self._mqtt_publish):
+            self.plm_link.signal_read.emit(self.plm_link, data)
+
+    def _mqtt_publish(self, topic, payload, qos=0, retain=False):
+        # This captures mqtt messages emitted
+        self.published_topics[topic] = payload
+
+    class mqtt_msg():
+        # Used to simulate mqtt messages
+        def __init__(self, topic, payload):
+            self.topic = topic
+            self.payload = payload.encode(encoding='UTF-8')
+            self.qos = 0
+            self.retain = False
