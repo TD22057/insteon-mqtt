@@ -8,10 +8,7 @@ import threading
 import requests
 import pytest
 from pprint import pprint
-try:
-    import mock
-except ImportError:
-    from unittest import mock
+from unittest import mock
 from unittest.mock import call
 from requests.models import Response
 
@@ -29,7 +26,7 @@ def test_hub():
     return hub
 
 @pytest.fixture
-def test_hubclient(mock):
+def test_hubclient():
     '''
     Returns a generically configured Hub for testing
     '''
@@ -64,7 +61,7 @@ class Test_Hub:
         assert len(test_hub._write_buf) == 500
 
     #-----------------------------------------------------------------------
-    def test_poll(self, test_hub, mock):
+    def test_poll(self, test_hub):
         mock.patch.object(threading, 'Thread')
         assert test_hub.client is None
         test_hub.poll(time.time())
@@ -75,7 +72,7 @@ class Test_Hub:
         (None, None, 0),
         (bytes([0x01]), bytes([0x01]), 1)
     ])
-    def test_read(self, test_hub, mock, read, expected, calls):
+    def test_read(self, test_hub, read, expected, calls):
         # necessary to stop client from running
         mock.patch.object(threading, 'Thread')
         mock.patch.object(test_hub.signal_read, 'emit')
@@ -94,7 +91,7 @@ class Test_Hub:
         (bytes([0x00]), None, bytes([0x00]), 0, 1),
         (bytes([0x00]), time.time() + 10, None, 1, 0),
     ])
-    def test_write(self, test_hub, mock, write, t, expected, buffer, calls):
+    def test_write(self, test_hub, write, t, expected, buffer, calls):
         # necessary to stop client from running
         mock.patch.object(threading, 'Thread')
         mock.patch.object(test_hub.signal_wrote, 'emit')
@@ -110,7 +107,7 @@ class Test_Hub:
             assert args_list[0][0][1] == expected
 
     #-----------------------------------------------------------------------
-    def test_close(self, test_hub, mock):
+    def test_close(self, test_hub):
         # necessary to stop client from running
         mock.patch.object(threading, 'Thread')
         mock.patch.object(test_hub.signal_closing, 'emit')
@@ -129,7 +126,7 @@ class Test_Hub:
 class Test_HubClient:
     # I don't see a good way to test the _thread() function.  So I tried
     # to move all of the processing into seperate functions
-    def test_get_buffer(self, test_hubclient, mock):
+    def test_get_buffer(self, test_hubclient):
         test_response = Response()
         test_response.status_code = 200
         test_response._content = BUFFSTATUS
@@ -137,7 +134,7 @@ class Test_HubClient:
         response = test_hubclient._get_hub_buffer()
         assert response
 
-    def test_get_buffer_timeout(self, test_hubclient, mock):
+    def test_get_buffer_timeout(self, test_hubclient):
         test_response = Response()
         test_response.status_code = 200
         test_response._content = BUFFSTATUS
@@ -146,7 +143,7 @@ class Test_HubClient:
         assert test_hubclient.read_timeout_count == 1
         assert not response
 
-    def test_get_buffer_repeated_timeout(self, test_hubclient, mock):
+    def test_get_buffer_repeated_timeout(self, test_hubclient):
         test_response = Response()
         test_response.status_code = 200
         test_response._content = BUFFSTATUS
@@ -174,14 +171,14 @@ class Test_HubClient:
         ret = test_hubclient._parse_bytes(bytestring, byte_end)
         assert ret == expected
 
-    def test_perform_write(self, test_hubclient, mock):
+    def test_perform_write(self, test_hubclient):
         mock.patch.object(requests, 'get')
         test_hubclient.write(bytes([0x02,0x06]))
         test_hubclient._perform_write()
         args = requests.get.call_args
         assert args[0][0] == 'http://192.168.1.1:25105/3?0206=I=3'
 
-    def test_perform_write_timeout(self, test_hubclient, mock):
+    def test_perform_write_timeout(self, test_hubclient):
         mock.patch.object(requests, 'get', side_effect=requests.exceptions.Timeout)
         test_hubclient.write(bytes([0x02,0x06]))
         test_hubclient._perform_write()
