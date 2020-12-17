@@ -786,7 +786,8 @@ class Device:
         LOG.info("Device %s appending new record at mem %#06x", self.addr,
                  self.last.mem_loc)
 
-        seq = CommandSeq(self.device, "Device database update complete", on_done)
+        seq = CommandSeq(self.device, "Device database update complete",
+                         on_done)
 
         # Shift the current last record down 8 bytes.  Make a copy - we'll
         # only update our member var if the write works.
