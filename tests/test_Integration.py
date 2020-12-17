@@ -24,11 +24,14 @@ base directory
 """
 from unittest.mock import patch
 import pytest
+import json
 import insteon_mqtt as IM
 
 
-def test_set_on_roundtrip(stack):
-    # Send on using the set topic
+def test_set_on_functions(stack):
+    #-----------------------
+    # Test the on command
+    # Send on using the set topic, 3a.29.84 is a switch
     stack.publish_to_mqtt('insteon/3a.29.84/set', 'on')
     # Test resulting PLM message
     assert stack.written_msgs[0] == '02623a29840f11ff'
@@ -36,8 +39,20 @@ def test_set_on_roundtrip(stack):
     stack.write_to_modem('02623a29840f11ff06')
     # Return the device ACK
     stack.write_to_modem('02503a298441eee62b11ff')
-    assert (stack.published_topics['insteon/3a.29.84/state'] ==
-            '{ "state" : "ON", "brightness" : 255 }')
+    assert stack.published_topics['insteon/3a.29.84/state'] == 'ON'
+
+    #-----------------------
+    # Test the level command
+    payload = json.dumps({"state" : 'ON', "brightness" : 127})
+    stack.publish_to_mqtt('insteon/12.29.84/level', payload)
+    # Test resulting PLM message
+    assert stack.written_msgs[1] == '02621229840f117f'
+    # Return PLM ACK
+    stack.write_to_modem('02621229840f117f06')
+    # Return the device ACK   1229840f117f06
+    stack.write_to_modem('025012298441eee62b117f')
+    assert (stack.published_topics['insteon/12.29.84/state'] ==
+            '{ "state" : "ON", "brightness" : 127 }')
 
 
 # ===============================================================
