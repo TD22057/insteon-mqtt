@@ -851,8 +851,13 @@ mqtt:
   # In Home Assistant use MQTT switch with a configuration like:
   #   switch:
   #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/state'
-  #       command_topic: 'insteon/aa.bb.cc/scene'
+  #       state_topic: 'insteon/aa.bb.cc/relay'
+  #       command_topic: 'insteon/aa.bb.cc/set'
+  #
+  # To monitor the sensor, use an MQTT binary_sensor with a configuration like:
+  #   binary_sensor:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/sensor'
   io_linc:
     # Output state change topic and template.  This message is sent whenever
     # the device sensor or device relay state changes.  Available variables for
@@ -864,7 +869,7 @@ mqtt:
     #   sensor_on_str = 'off'/'on'
     #   relay_on_str = 'off'/'on'
     state_topic: 'insteon/{{address}}/state'
-    state_payload: '{ "sensor" : "{{sensor_on_str.lower()}}", "relay" : {{relay_on_str.lower()}} }'
+    state_payload: '{ "sensor" : "{{sensor_on_str.upper()}}", "relay" : {{relay_on_str.upper()}} }'
 
     # Output relay state change topic and template.  This message is sent
     # whenever the device relay state changes.  Available variables for
@@ -874,7 +879,7 @@ mqtt:
     #   relay_on = 0/1
     #   relay_on_str = 'off'/'on'
     relay_state_topic: 'insteon/{{address}}/relay'
-    relay_state_payload: '{{relay_on_str.lower()}}'
+    relay_state_payload: '{{relay_on_str.upper()}}'
 
     # Output sensor state change topic and template.  This message is sent
     # whenever the device sensor state changes.  Available variables for
@@ -884,7 +889,7 @@ mqtt:
     #   sensor_on = 0/1
     #   sensor_on = 'off'/'on'
     sensor_state_topic: 'insteon/{{address}}/sensor'
-    sensor_state_payload: '{{sensor_on_str.lower()}}'
+    sensor_state_payload: '{{sensor_on_str.upper()}}'
 
     # Input on/off command.  This forces the relay on/off and ignores the
     # momentary-A,B,C setting.  Use this to force the relay to respond.
