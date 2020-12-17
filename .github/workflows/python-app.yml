@@ -33,7 +33,7 @@ jobs:
       uses: TrueBrain/actions-flake8@v1.4.1
       with:
         path: insteon_mqtt
-        ignore: E265, E203, E123, E722, E127, E131, E731, W504
+        ignore: E265,E203,E123,E722,E127,E131,E731,W504
         max_line_length: 79
         only_warn: 1
     - name: Test with pytest
