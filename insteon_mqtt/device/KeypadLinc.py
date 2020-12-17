@@ -891,7 +891,7 @@ class KeypadLinc(Base):
 
         LOG.info("Dimmer %s setting ramp rate to %s", self.label, rate)
 
-        data_3 = 0x1c #the default ramp rate is .5
+        data_3 = 0x1c  # the default ramp rate is .5
         for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
             if rate >= ramp_value:
                 data_3 = ramp_key
@@ -971,7 +971,7 @@ class KeypadLinc(Base):
             seq.add(self.set_on_level, on_level)
 
         if FLAG_RAMP_RATE in kwargs:
-            rate = util.input_float(kwargs,FLAG_RAMP_RATE)
+            rate = util.input_float(kwargs, FLAG_RAMP_RATE)
             seq.add(self.set_ramp_rate, rate)
 
         if FLAG_FOLLOW_MASK in kwargs:

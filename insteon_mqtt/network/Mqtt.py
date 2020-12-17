@@ -179,7 +179,8 @@ class Mqtt(Link):
             passed in so that all clients receive the same "current" time
             instead of each calling time.time() and getting a different value.
         """
-        # This is required to handle keepalive messages and detect disconnections.
+        # This is required to handle keepalive messages and detect
+        # disconnections.
         rc = self.client.loop_misc()
         if rc == paho.MQTT_ERR_NO_CONN:
             self._on_disconnect(self.client, None, rc)

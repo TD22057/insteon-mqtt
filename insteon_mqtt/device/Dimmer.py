@@ -46,7 +46,7 @@ class Dimmer(Base):
 
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
-        
+
         Args:
           protocol (Protocol): The Protocol object used to communicate
                    with the Insteon network.  This is needed to allow the
@@ -525,8 +525,8 @@ class Dimmer(Base):
     def set_ramp_rate(self, rate, on_done=None):
         """Set the device default ramp rate.
 
-        This changes the dimmer default ramp rate of how quickly it will 
-        turn on or off. This rate can be between 0.1 seconds and up to 9 
+        This changes the dimmer default ramp rate of how quickly it will
+        turn on or off. This rate can be between 0.1 seconds and up to 9
         minutes.
 
         Args:
@@ -536,7 +536,7 @@ class Dimmer(Base):
         """
         LOG.info("Dimmer %s setting ramp rate to %s", self.label, rate)
 
-        data_3 = 0x1c #the default ramp rate is .5
+        data_3 = 0x1c  # the default ramp rate is .5
         for ramp_key, ramp_value in self.ramp_pretty.items():
             if rate >= ramp_value:
                 data_3 = ramp_key
