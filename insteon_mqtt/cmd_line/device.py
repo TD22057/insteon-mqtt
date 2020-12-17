@@ -206,7 +206,7 @@ def pair(args, config):
     if reply["status"]:
         print("Pairing may fail if the modem db is out of date.  Try running")
         print("the following and then re-try the pair command.")
-        print("   insteont-mqtt config.py refresh modem")
+        print("   insteon-mqtt config.py refresh modem")
 
     return reply["status"]
 
