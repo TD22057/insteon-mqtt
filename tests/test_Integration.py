@@ -25,6 +25,7 @@ base directory
 from unittest.mock import patch
 import pytest
 import json
+from insteon_mqtt import log
 import insteon_mqtt as IM
 
 
@@ -76,6 +77,7 @@ class Patch_Stack():
         @patch('insteon_mqtt.config.apply', self._config_apply)
         @patch('sys.argv', ["", "config.yaml", "start"])
         @patch.object(IM.network.Manager, 'active', return_value=False)
+        @patch.object(log, 'initialize')
         def start(*args):
             IM.cmd_line.main()
             # Signal the mqtt link as connected
