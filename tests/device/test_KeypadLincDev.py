@@ -8,7 +8,6 @@ import pytest
 from unittest import mock
 from unittest.mock import call
 import insteon_mqtt as IM
-import insteon_mqtt.device.Base as Base
 import insteon_mqtt.message as Msg
 import insteon_mqtt.util as util
 import helpers as H
