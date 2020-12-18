@@ -281,6 +281,7 @@ def input_byte(inputs, field):
         msg = "Invalid %s input.  Valid inputs are 0-255" % input
         raise ValueError(msg)
 
+
 #===========================================================================
 def input_float(inputs, field):
     """Convert an input field to an float.

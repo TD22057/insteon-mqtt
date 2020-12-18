@@ -16,13 +16,14 @@ class Test_Broadcast:
         modem.save_path = str(tmpdir)
 
         addr = IM.Address('0a.12.34')
+        broadcast_to_addr = IM.Address('00.00.01')
         handler = IM.handler.Broadcast(modem)
 
         r = handler.msg_received(proto, "dummy")
         assert r == Msg.UNKNOWN
 
         flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
-        msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
+        msg = Msg.InpStandard(addr, broadcast_to_addr, flags, 0x11, 0x01)
 
         # no device
         r = handler.msg_received(proto, msg)
@@ -55,6 +56,25 @@ class Test_Broadcast:
         msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
         r = handler.msg_received(proto, msg)
         assert r == Msg.UNKNOWN
+
+        # Success Report Broadcast
+        flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+        success_report_to_addr = IM.Address(0x11, 1, 0x1)
+        msg = Msg.InpStandard(addr, addr, flags, 0x06, 0x00)
+        r = handler.msg_received(proto, msg)
+
+        assert r == Msg.CONTINUE
+        assert len(calls) == 3
+
+        # Pretend that a new broadcast message dropped / not received by PLM
+
+        # Cleanup should be handled since corresponding broadcast was missed
+        flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_CLEANUP, False)
+        msg = Msg.InpStandard(addr, addr, flags, 0x13, 0x01)
+        r = handler.msg_received(proto, msg)
+
+        assert r == Msg.CONTINUE
+        assert len(calls) == 4
 
     #-----------------------------------------------------------------------
 

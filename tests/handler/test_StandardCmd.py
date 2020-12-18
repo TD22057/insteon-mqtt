@@ -41,6 +41,12 @@ class Test_StandardCmd:
         r = handler.msg_received(proto, out)
         assert r == Msg.UNKNOWN
 
+        # direct Pre NAK
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_NAK, False)
+        msg = Msg.InpStandard(addr, addr, flags, 0x11, 0xFC)
+        r = handler.msg_received(proto, msg)
+        assert r == Msg.CONTINUE
+
         # Now pass in the input message.
 
         # expected input meesage

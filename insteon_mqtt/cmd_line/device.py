@@ -206,7 +206,7 @@ def pair(args, config):
     if reply["status"]:
         print("Pairing may fail if the modem db is out of date.  Try running")
         print("the following and then re-try the pair command.")
-        print("   insteont-mqtt config.py refresh modem")
+        print("   insteon-mqtt config.py refresh modem")
 
     return reply["status"]
 
@@ -315,6 +315,7 @@ def import_scenes(args, config):
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]
 
+
 #===========================================================================
 def awake(args, config):
     topic = "%s/%s" % (args.topic, args.address)
@@ -324,6 +325,7 @@ def awake(args, config):
 
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]
+
 
 #===========================================================================
 def get_battery_voltage(args, config):

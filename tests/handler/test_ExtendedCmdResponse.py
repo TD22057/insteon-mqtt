@@ -69,6 +69,12 @@ class Test_ExtendedCmdResponse:
         r = handler.msg_received(proto, msg)
         assert r == Msg.FINISHED
 
+        # direct Pre NAK
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_NAK, False)
+        msg = Msg.InpStandard(addr, addr, flags, 0x2e, 0xFC)
+        r = handler.msg_received(proto, msg)
+        assert r == Msg.CONTINUE
+
         # unexpected
         flags = Msg.Flags(Msg.Flags.Type.BROADCAST, False)
         msg = Msg.InpStandard(addr, addr, flags, 0x2e, 0x00)
