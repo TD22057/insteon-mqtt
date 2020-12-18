@@ -290,8 +290,8 @@ class Modem:
         if exists:
             if exists.data == entry.data:
                 LOG.info("Modem add db already exists for %s grp %s %s",
-                            entry.addr, entry.group,
-                            util.ctrl_str(entry.is_controller))
+                         entry.addr, entry.group,
+                         util.ctrl_str(entry.is_controller))
                 if on_done:
                     on_done(True, "Entry already exists", exists)
                 return
