@@ -211,7 +211,7 @@ def test_set_backlight(test_device):
         args_list = IM.CommandSeq.add.call_args_list
         assert IM.CommandSeq.add.call_count == 1
         # Check the first call
-        assert args_list[0][0][1] == True
+        assert args_list[0][0][1]
 
 def test_set_ramp_rate(test_device):
     # set_ramp_rate(self, rate, on_done=None)
