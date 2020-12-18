@@ -143,7 +143,8 @@ class EZIO4O(Base):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq(self.protocol, "EZIO4O paired", on_done)
+        seq = CommandSeq(self.protocol, "EZIO4O paired", on_done,
+                         name="DevPair")
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -189,7 +190,8 @@ class EZIO4O(Base):
         LOG.info("EZIO4O %s cmd: status refresh", self.label)
 
         # NOTE: EZIO4O cmd1=0x4F cmd2=0x02 will report the output state.
-        seq = CommandSeq(self.protocol, "Device refreshed", on_done)
+        seq = CommandSeq(self.protocol, "Device refreshed", on_done,
+                         name="DevRefresh")
 
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the current

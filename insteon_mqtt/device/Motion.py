@@ -143,7 +143,8 @@ class Motion(BatterySensor):
             raise Exception("Unknown Motion flags input: %s.\n Valid flags "
                             "are: %s" % (unknown, flags))
 
-        seq = CommandSeq(self, "Motion Set Flags Success", on_done)
+        seq = CommandSeq(self, "Motion Set Flags Success", on_done,
+                         name="SetFlags")
 
         # For some flags we need to know the existing bit before we change it.
         # So to insure that we are starting from the correct values, get the

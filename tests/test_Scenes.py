@@ -648,7 +648,7 @@ class Test_Scenes:
         # Make sure link data matches scene config & DB entry:
         assert scenes.entries[0].responders[0].link_data == [255, 23, 1]
         # Compute if any DB changes needed to implement scenes
-        seq = CommandSeq(modem.protocol, "Sync complete")
+        seq = CommandSeq(modem.protocol, "Sync complete", name="test")
         fanlinc.sync(dry_run=True, refresh=False, sequence=seq)
         # Uncomment the next two lines to see what sequence would do:
         #IM.log.initialize()

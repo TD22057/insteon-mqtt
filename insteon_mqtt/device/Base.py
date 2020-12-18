@@ -268,7 +268,7 @@ class Base:
         LOG.info("Join Device %s", self.addr)
 
         # Using a sequence so we can pass the on_done function through.
-        seq = CommandSeq(self, "Device joined.", on_done)
+        seq = CommandSeq(self, "Device joined.", on_done, name="JoinSequence")
 
         # First get the engine version.  This process only works and is
         # necessary on I2CS devices.
@@ -299,7 +299,7 @@ class Base:
             return
         else:
             # Build a sequence of calls to do the link.
-            seq = CommandSeq(self, "Operation Complete", on_done)
+            seq = CommandSeq(self, "Join Complete", on_done, name="JoinDevice")
 
             # Put Modem in linking mode first
             seq.add(self.modem.linking)
@@ -377,7 +377,8 @@ class Base:
         LOG.info("Device %s cmd: status refresh", self.label)
 
         # Use a sequence
-        seq = CommandSeq(self, "Device refreshed", on_done)
+        seq = CommandSeq(self, "Device refreshed", on_done,
+                         name="DeviceRefresh")
 
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the
@@ -515,7 +516,7 @@ class Base:
             seq = sequence
         else:
             seq = CommandSeq(self, "Sync complete", on_done,
-                             error_stop=False)
+                             error_stop=False, name="DeviceSync")
 
         if refresh:
             LOG.ui("Performing DB Refresh of %s device", self.label)
@@ -1112,7 +1113,8 @@ class Base:
                    "Link will be only one direction",
                    util.ctrl_str(is_controller), remote_addr)
 
-        seq = CommandSeq(self, "Device db update complete", on_done)
+        seq = CommandSeq(self, "Device db update complete", on_done,
+                         name="DeviceDBUpdate")
 
         # Check for a db update - otherwise we could be out of date and not
         # know it in which case the memory addresses to add the record in
@@ -1176,7 +1178,7 @@ class Base:
             on_done(False, "Entry doesn't exist", None)
             return
 
-        seq = CommandSeq(self, "Delete complete", on_done)
+        seq = CommandSeq(self, "Delete complete", on_done, name="DeviceDBDel")
 
         # Check for a db update - otherwise we could be out of date and not
         # know it in which case the memory addresses to add the record in

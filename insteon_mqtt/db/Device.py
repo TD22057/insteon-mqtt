@@ -784,7 +784,7 @@ class Device:
         # pylint: disable=too-many-locals
 
         seq = CommandSeq(self.device, "Device database update complete",
-                         on_done)
+                         on_done, name="DbAddNew")
 
         last_mem_loc = self.last.mem_loc
 

@@ -340,7 +340,7 @@ class Modem:
         # Set the error stop to false so a failed refresh doesn't stop the
         # sequence from trying to refresh other devices.
         seq = CommandSeq(self, "Refresh all complete", on_done,
-                         error_stop=False)
+                         error_stop=False, name="RefreshAll")
 
         # Reload the modem database.
         seq.add(self.refresh, force)
@@ -375,7 +375,7 @@ class Modem:
         # Set the error stop to false so a failed refresh doesn't stop the
         # sequence from trying to refresh other devices.
         seq = CommandSeq(self, "Get Engine all complete", on_done,
-                         error_stop=False)
+                         error_stop=False, name="EngineAll")
 
         # Reload all the device databases.
         for device in self.devices.values():
@@ -671,7 +671,7 @@ class Modem:
             seq = sequence
         else:
             seq = CommandSeq(self, "Sync complete", on_done,
-                             error_stop=False)
+                             error_stop=False, name="ModemSync")
 
         if refresh:
             LOG.ui("Performing DB Refresh of %s device", self.label)
@@ -736,7 +736,7 @@ class Modem:
         # Set the error stop to false so a failed refresh doesn't stop the
         # sequence from trying to refresh other devices.
         seq = CommandSeq(self, "Sync All complete", on_done,
-                         error_stop=False)
+                         error_stop=False, name="SyncAll")
 
         # First the modem database.
         seq.add(self.sync, dry_run=dry_run, refresh=refresh)
@@ -1165,7 +1165,8 @@ class Modem:
         # discussion.
         local_data = self.link_data(is_controller, local_group, local_data)
 
-        seq = CommandSeq(self, "Device db update complete", on_done)
+        seq = CommandSeq(self, "Device db update complete", on_done,
+                         name="ModemDBUpd")
 
         # Create a new database entry for the modem and send it to the modem
         # for updating.
@@ -1223,7 +1224,7 @@ class Modem:
             return
 
         # Add the function delete call to the sequence.
-        seq = CommandSeq(self, "Delete complete", on_done)
+        seq = CommandSeq(self, "Delete complete", on_done, name="ModemDBDel")
         seq.add(self.db.delete_on_device, entry)
 
         # For two way commands, insert a callback so that when the modem
