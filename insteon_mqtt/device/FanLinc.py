@@ -293,7 +293,7 @@ class FanLinc(Dimmer):
         # message.  That's for actuators (switches, motion sensors, etc) to
         # trigger other things to occur.  Since the fan linc is just a
         # responder to other commands, that shouldn't occur.
-        LOG.error("FanLinc unexpected handle_broadcast called: %s", msg)
+        LOG.waring("FanLinc unexpected handle_broadcast called: %s", msg)
         super.handle_broadcast(msg)
 
     #-----------------------------------------------------------------------

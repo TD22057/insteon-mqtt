@@ -478,8 +478,9 @@ class Protocol:
         # No handler was found for the message.  Shift pass the ID code and
         # look for more messages.  This might be better by having a lookup by
         # msg ID->msg size and use that to skip the whole message.
-        LOG.warning("No read handler found for message type %#04x: %s",
-                    msg.msg_code, msg)
+        # This was likely a dublicate message
+        LOG.info("No read handler found for message type %#04x: %s",
+                 msg.msg_code, msg)
 
     #-----------------------------------------------------------------------
     def _write_finished(self):

@@ -107,8 +107,8 @@ class Base:
 
         # If we've exhausted the number of sends, end the handler.
         elif not self._msg or self._num_sent > self._num_retry:
-            LOG.warning("Handler timed out - no more retries (%s sent)",
-                        self._num_sent - 1)
+            LOG.error("Handler timed out - no more retries (%s sent)",
+                      self._num_sent - 1)
             self.handle_timeout(protocol)
             return True
 

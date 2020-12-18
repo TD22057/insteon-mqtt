@@ -289,9 +289,9 @@ class Modem:
         exists = self.find(entry.addr, entry.group, entry.is_controller)
         if exists:
             if exists.data == entry.data:
-                LOG.warning("Modem add db already exists for %s grp %s %s",
-                            entry.addr, entry.group,
-                            util.ctrl_str(entry.is_controller))
+                LOG.info("Modem add db already exists for %s grp %s %s",
+                         entry.addr, entry.group,
+                         util.ctrl_str(entry.is_controller))
                 if on_done:
                     on_done(True, "Entry already exists", exists)
                 return
