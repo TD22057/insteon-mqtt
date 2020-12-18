@@ -25,7 +25,8 @@
 
 - Catch and delay on PLM reporting busy. ([PR 261][P261])
 
-- Tweak some of the logging to be more clear for users. ([PR 272][P272])
+- Tweak some of the logging to be more clear for users. ([PR 272][P272] &
+  [PR 275][P275])
 
 ## [0.7.4]
 
@@ -494,3 +495,4 @@ will add new features.
 [P268]: https://github.com/TD22057/insteon-mqtt/pull/268
 [P272]: https://github.com/TD22057/insteon-mqtt/pull/272
 [P201]: https://github.com/TD22057/insteon-mqtt/pull/201
+[P275]: https://github.com/TD22057/insteon-mqtt/pull/275
