@@ -78,7 +78,8 @@ class ModemLinkComplete(Base):
                 else:
                     data = self.modem.link_data(msg.group, is_ctrl)
 
-                entry = db.ModemEntry(msg.addr, msg.group, is_ctrl, data)
+                entry = db.ModemEntry(msg.addr, msg.group, is_ctrl, data,
+                                      db=self.modem.db)
                 self.modem.db.add_entry(entry)
 
             return Msg.FINISHED

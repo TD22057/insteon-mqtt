@@ -128,7 +128,7 @@ class DeviceDbGet(Base):
                 return Msg.UNKNOWN
 
             # Convert the message to a database device entry.
-            entry = db.DeviceEntry.from_bytes(msg.data)
+            entry = db.DeviceEntry.from_bytes(msg.data, db=self.db)
             LOG.ui("Entry: %s", entry)
 
             # Skip entries w/ a null memory location.

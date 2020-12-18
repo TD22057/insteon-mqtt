@@ -117,7 +117,7 @@ class Base:
 
         # Increase the hop count if we can.
         if isinstance(self._msg, Msg.OutStandard):  # also handles OutExtended
-            num_hops = max(3, self._msg.flags.max_hops)
+            num_hops = min(3, self._msg.flags.max_hops + 1)
             LOG.debug("Increasing max_hops to %d", num_hops)
             self._msg.flags.set_hops(num_hops)
 

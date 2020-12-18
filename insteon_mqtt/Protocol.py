@@ -523,7 +523,7 @@ class Protocol:
         msg_bytes = out.msg.to_bytes()
 
         LOG.info("Write message to modem: %s", out.msg)
-        LOG.debug("Write bytes to modem: %s", msg_bytes)
+        LOG.debug("Write bytes to modem: %s", msg_bytes.hex())
 
         # Write the message to the PLM modem.  The message will only be sent
         # when the current time is after the next write time as tracked by

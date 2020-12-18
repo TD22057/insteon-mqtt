@@ -14,7 +14,7 @@ class Test_DeviceEntry:
         ctrl = Msg.DbFlags(in_use=True, is_controller=True, is_last_rec=False)
         data = bytes([0x01, 0x02, 0x03])
         mem_loc = (0xfe << 8) + 0x10
-        obj = IM.db.DeviceEntry(addr, 0x03, mem_loc, ctrl, data)
+        obj = IM.db.DeviceEntry(addr, 0x03, mem_loc, ctrl, data, db=None)
 
         assert obj.addr == addr
         assert obj.group == 0x03
@@ -26,7 +26,7 @@ class Test_DeviceEntry:
         assert obj.mem_bytes() == bytes([0xfe, 0x10])
 
         d = obj.to_json()
-        obj2 = IM.db.DeviceEntry.from_json(d)
+        obj2 = IM.db.DeviceEntry.from_json(d, db=None)
         assert obj2.addr == obj.addr
         assert obj2.group == obj.group
         assert obj2.mem_loc == obj.mem_loc
@@ -42,7 +42,7 @@ class Test_DeviceEntry:
                       addr.ids[0], addr.ids[1], addr.ids[2],
                       data[0], data[1], data[2]])
 
-        obj3 = IM.db.DeviceEntry.from_bytes(data)
+        obj3 = IM.db.DeviceEntry.from_bytes(data, db=None)
         assert obj3.addr == obj.addr
         assert obj3.group == obj.group
         assert obj3.mem_loc == obj.mem_loc
@@ -62,3 +62,43 @@ class Test_DeviceEntry:
         str(obj)
 
     #-----------------------------------------------------------------------
+    def test_label(self):
+        addr = IM.Address('12.34.ab')
+        ctrl = Msg.DbFlags(in_use=True, is_controller=True, is_last_rec=False)
+        data = bytes([0x01, 0x02, 0x03])
+        mem_loc = (0xfe << 8) + 0x10
+        obj = IM.db.DeviceEntry(addr, 0x03, mem_loc, ctrl, data, db=None)
+
+        assert obj.label == str(addr)
+
+        protocol = MockProto()
+        modem = MockModem()
+        addr1 = IM.Address(0x03, 0x04, 0x05)
+        addr = IM.Address('12.34.ab')
+        device1 = IM.device.Base(protocol, modem, addr1)
+        obj = IM.db.DeviceEntry(addr, 0x03, mem_loc, ctrl, data, db=device1.db)
+        device = IM.device.Base(protocol, modem, addr, name="Awesomesauce")
+        modem.set_linked_device(device)
+
+        assert obj.label == "12.34.ab (Awesomesauce)"
+
+    #-----------------------------------------------------------------------
+
+#===========================================================================
+class MockProto:
+    def __init__(self):
+        self.msgs = []
+
+    def send(self, msg, handler, high_priority=False, after=None):
+        self.msgs.append(msg)
+
+class MockModem():
+    def __init__(self):
+        self.save_path = ''
+        self.linked_device = None
+
+    def set_linked_device(self, device):
+        self.linked_device = device
+
+    def find(self, *args, **kwargs):
+        return self.linked_device

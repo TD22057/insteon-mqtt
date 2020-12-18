@@ -56,7 +56,8 @@ class Test_ModemDbGet:
                    0x01, 0x0e, 0x43])  # data
         msg = Msg.InpAllLinkRec.from_bytes(b)
         test_entry = IM.db.ModemEntry(msg.addr, msg.group,
-                                      msg.db_flags.is_controller, msg.data)
+                                      msg.db_flags.is_controller, msg.data,
+                                      db=None)
         r = handler.msg_received(proto, msg)
         assert r == Msg.FINISHED
         assert isinstance(db.device.sent[0]['msg'], Msg.OutAllLinkGetNext)

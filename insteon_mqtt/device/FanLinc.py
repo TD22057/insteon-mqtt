@@ -491,11 +491,12 @@ class FanLinc(Dimmer):
         if not is_controller:
             if 'group' in data:
                 data_3 = data['group']
-                if 'ramp' in data and data['group'] <= 0x01:
-                    data_2 = 0x1f
-                    for ramp_key, ramp_value in Dimmer.ramp_pretty:
-                        if data['ramp'] >= ramp_value:
-                            data_2 = ramp_key
+            if 'ramp_rate' in data and (data_3 is None or data_3 <= 0x01):
+                data_2 = 0x1f
+                for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
+                    if data['ramp_rate'] >= ramp_value:
+                        data_2 = ramp_key
+                        break
             if 'on_level' in data:
                 data_1 = int(data['on_level'] * 2.55 + .5)
         return [data_1, data_2, data_3]

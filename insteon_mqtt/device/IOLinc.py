@@ -883,10 +883,7 @@ class IOLinc(Base):
                 # In Momentary A the relay only turns on if the cmd matches
                 # the responder link D1, else it always turns off.  Even if
                 # the momentary time has not elapsed.
-                if is_on == bool(entry.data[0]):
-                    is_on = True
-                else:
-                    is_on = False
+                is_on = is_on == bool(entry.data[0])
             elif self.mode == IOLinc.Modes.MOMENTARY_B:
                 # In Momentary B, either On or Off will turn on the Relay
                 is_on = True

@@ -472,6 +472,11 @@ Switch, KeypadLinc, and Dimmer all support the flags:
      signal_bits input.  If a bit is 0, then that button is a toggle button
      and will alternate on an doff signals
 
+  KeypadLinc and Dimmer support the flags:
+   
+   - ramp_rate: float in the range of 0.5 to 540 seconds which sets the default ramp
+     rate that will be used when the button is pressed
+
 IOLinc supports the flags:
 
    - mode: "latching" / "momentary-a" / "momentary-b" / "momentary-c" to
