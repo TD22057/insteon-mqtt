@@ -10,9 +10,7 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python 3.8
@@ -38,11 +36,10 @@ jobs:
         only_warn: 1
     - name: Test with pytest
       run: |
-        pytest tests
-    - name: Build coverage file
-      run: |
-        # This skips priting files with 100% coverage
-        pytest --cache-clear --cov-report term:skip-covered --cov=insteon_mqtt tests/ > pytest-coverage.txt
+        # Skips creating coverage stats for covered items
+        pytest --cache-clear --cov-report term:skip-covered --cov=insteon_mqtt tests/ | tee pytest-coverage.txt
     - name: Comment coverage
       uses: coroo/pytest-coverage-commentator@v1.0.2
+      with:
+        pytest-coverage: pytest-coverage.txt
 
