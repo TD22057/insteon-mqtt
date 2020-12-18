@@ -31,16 +31,27 @@ logging:
 #
 #==========================================================================
 insteon:
-  # Serial device:
-  # USB PLM modem
+  ###### Modem
+  # You can use either a PLM Modem or an Insteon Hub, but not both.
+
+  # PLM Modem option (Serial or USB)
   port: '/dev/insteon'
   #baudrate: 19200
 
-  # Network socket:
-  # Insteon HUB PLM network
-  #port: 'socket://192.168.1.5:9761'
+  # Insteon Hub option
+  # See https://github.com/TD22057/insteon-mqtt/blob/master/docs/hub.md
+  # for a discussion of the details of using a Hub as your modem.
+  # If set to true, will use the Hub settings below and ignore the Serial
+  # settings above
+  use_hub: False
+  hub_ip: 192.168.1.1
+  #hub_port: 25105
+  hub_user: username  # Can be found on the underside of your hub
+  hub_password: password  # Can be found on the underside of your hub
 
-  # PLM modem Insteon hex address
+  ######
+
+  # modem Insteon hex address
   address: 44.85.11
 
   # Device database file storage location.
