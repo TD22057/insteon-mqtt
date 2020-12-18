@@ -39,3 +39,10 @@ jobs:
     - name: Test with pytest
       run: |
         pytest tests
+    - name: Build coverage file
+      run: |
+        # This skips priting files with 100% coverage
+        pytest --cache-clear --cov-report term:skip-covered --cov=insteon_mqtt tests/ > pytest-coverage.txt
+    - name: Comment coverage
+      uses: coroo/pytest-coverage-commentator@v1.0.2
+
