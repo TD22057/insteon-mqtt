@@ -38,8 +38,8 @@ jobs:
       run: |
         # Skips creating coverage stats for covered items
         pytest --cache-clear --cov-report term:skip-covered --cov=insteon_mqtt tests/ | tee pytest-coverage.txt
-    - name: Comment coverage
-      uses: coroo/pytest-coverage-commentator@v1.0.2
-      with:
-        pytest-coverage: pytest-coverage.txt
+#     - name: Comment coverage
+#       uses: coroo/pytest-coverage-commentator@v1.0.2
+#       with:
+#         pytest-coverage: pytest-coverage.txt
 
