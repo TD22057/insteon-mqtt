@@ -14,7 +14,9 @@
 
 - Don't treat broadcast messages from different groups as duplicate.  Fixes
   a bug where sequential presses of a button on a keypadlinc may not emit
-  mqtt messages as they should.  ([PR 256][P256])
+  mqtt messages as they should.  (thanks @tstabrawa)([PR 256][P256])
+
+- Catch and delay on PLM reporting busy. ([PR 261][P261])
 
 ## [0.7.4]
 
@@ -478,3 +480,4 @@ will add new features.
 [P236]: https://github.com/TD22057/insteon-mqtt/pull/236
 [P255]: https://github.com/TD22057/insteon-mqtt/pull/255
 [P256]: https://github.com/TD22057/insteon-mqtt/pull/256
+[P261]: https://github.com/TD22057/insteon-mqtt/pull/261
