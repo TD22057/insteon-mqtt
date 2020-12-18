@@ -44,5 +44,6 @@ from .ModemLinkStart import ModemLinkStart
 from .ModemReset import ModemReset
 from .ModemScene import ModemScene
 from .StandardCmd import StandardCmd
+from .StandardCmdNAK import StandardCmdNAK
 from .ThermostatCmd import ThermostatCmd
 from .BroadcastCmdResponse import BroadcastCmdResponse

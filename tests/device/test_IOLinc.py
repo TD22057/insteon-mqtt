@@ -28,6 +28,9 @@ def test_iolinc(tmpdir):
 
 
 class Test_IOLinc_Simple():
+    def test_type(self, test_iolinc):
+        assert test_iolinc.type() == "io_linc"
+
     def test_pair(self, test_iolinc):
         with mock.patch.object(IM.CommandSeq, 'add'):
             test_iolinc.pair()
@@ -278,7 +281,6 @@ class Test_Handles():
     @pytest.mark.parametrize("cmd1, type, expected", [
         (0x11, IM.message.Flags.Type.DIRECT_ACK, True),
         (0X13, IM.message.Flags.Type.DIRECT_ACK, False),
-        (0X11, IM.message.Flags.Type.DIRECT_NAK, None),
     ])
     def test_handle_ack(self, test_iolinc, cmd1, type, expected):
         with mock.patch.object(IM.Signal, 'emit'):
@@ -288,11 +290,8 @@ class Test_Handles():
             msg = IM.message.InpStandard(from_addr, to_addr, flags, cmd1, 0x01)
             test_iolinc.handle_ack(msg, lambda success, msg, cmd: True)
             calls = IM.Signal.emit.call_args_list
-            if expected is not None:
-                assert calls[0][0][2] == expected
-                assert IM.Signal.emit.call_count == 1
-            else:
-                assert IM.Signal.emit.call_count == 0
+            assert calls[0][0][2] == expected
+            assert IM.Signal.emit.call_count == 1
 
     @pytest.mark.parametrize("cmd1, entry_d1, mode, sensor, expected", [
         (0x11, None, IM.device.IOLinc.Modes.LATCHING, False, None),

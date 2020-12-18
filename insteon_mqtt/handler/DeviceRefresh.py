@@ -69,12 +69,11 @@ class DeviceRefresh(Base):
         # Probably an echo back of our sent message.
         if isinstance(msg, Msg.OutStandard) and msg.to_addr == self.addr:
             if msg.is_ack:
-                LOG.debug("%s ACK response", self.addr)
+                LOG.debug("%s PLM ACK response", self.addr)
                 return Msg.CONTINUE
             else:
-                LOG.error("%s NAK response", self.addr)
-                self.on_done(False, "NAK response", None)
-                return Msg.FINISHED
+                LOG.warning("%s PLM NAK response", self.addr)
+                return Msg.CONTINUE
 
         # See if this is the standard message ack/nak we're expecting.
         elif isinstance(msg, Msg.InpStandard) and msg.from_addr == self.addr:
