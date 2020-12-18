@@ -284,7 +284,7 @@ class IOLinc(Base):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq(self, "IOLinc paired", on_done)
+        seq = CommandSeq(self, "IOLinc paired", on_done, name="DevPair")
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -323,7 +323,8 @@ class IOLinc(Base):
         """
         LOG.info("IOLinc %s cmd: get operation flags", self.label)
 
-        seq = CommandSeq(self.protocol, "IOlinc get flags done", on_done)
+        seq = CommandSeq(self.protocol, "IOlinc get flags done", on_done,
+                         name="GetFlags")
 
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the
@@ -374,7 +375,8 @@ class IOLinc(Base):
             raise Exception("Unknown IOLinc flags input: %s.\n Valid flags " +
                             "are: %s" % unknown, flags)
 
-        seq = CommandSeq(self.protocol, "Device flags set", on_done)
+        seq = CommandSeq(self.protocol, "Device flags set", on_done,
+                         name="SetFLags")
 
         # Loop through flags, sending appropriate command for each flag
         for flag in kwargs:
@@ -501,7 +503,7 @@ class IOLinc(Base):
 
         # NOTE: IOLinc cmd1=0x00 will report the relay state.  cmd2=0x01
         # reports the sensor state which is what we want.
-        seq = CommandSeq(self, "Device refreshed", on_done)
+        seq = CommandSeq(self, "Device refreshed", on_done, name="DevRefresh")
 
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the current

@@ -147,7 +147,7 @@ class KeypadLinc(Base):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq(self, "KeypadLinc paired", on_done)
+        seq = CommandSeq(self, "KeypadLinc paired", on_done, name="DevPair")
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -206,7 +206,7 @@ class KeypadLinc(Base):
         # Send a 0x19 0x01 command to get the LED light on/off flags.
         LOG.info("KeypadLinc %s cmd: keypad status refresh", self.addr)
 
-        seq = CommandSeq(self, "Refresh complete", on_done)
+        seq = CommandSeq(self, "Refresh complete", on_done, name="DevRefresh")
 
         # TODO: change this to 0x2e get extended which reads on mask, off
         # mask, on level, led brightness, non-toggle mask, led bit mask (led
@@ -791,7 +791,8 @@ class KeypadLinc(Base):
 
         # Otherwise use the level changing command.
         else:
-            seq = CommandSeq(self, "Backlight level", on_done)
+            seq = CommandSeq(self, "Backlight level", on_done,
+                             name="SetBacklight")
 
             # Bound to 0x11 <= level <= 0x7f per page 157 of insteon dev guide.
             level = max(0x11, min(level, 0x7f))
@@ -953,7 +954,7 @@ class KeypadLinc(Base):
 
         # Start a command sequence so we can call the flag methods in series.
         seq = CommandSeq(self, "KeypadLinc set_flags complete",
-                         on_done)
+                         on_done, name="SetFlags")
 
         # Get the group if it was set.
         group = util.input_integer(kwargs, FLAG_GROUP)

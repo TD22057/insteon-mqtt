@@ -93,7 +93,7 @@ class Leak(BatterySensor):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq(self, "LeakSensor paired", on_done)
+        seq = CommandSeq(self, "LeakSensor paired", on_done, name="DevPair")
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
