@@ -3,6 +3,7 @@
 # MQTT battery sensor device
 #
 #===========================================================================
+import time
 from .. import log
 from .MsgTemplate import MsgTemplate
 
@@ -36,11 +37,15 @@ class BatterySensor:
         self.msg_battery = MsgTemplate(
             topic='insteon/{{address}}/low_battery',
             payload='{{is_low_str.lower()}}')
+        self.msg_heartbeat = MsgTemplate(
+            topic='insteon/{{address}}/heartbeat',
+            payload='{{heartbeat_time}}')
 
         # Connect the signals from the insteon device so we get notified of
         # changes.
         device.signal_on_off.connect(self._insteon_on_off)
         device.signal_low_battery.connect(self._insteon_low_battery)
+        device.signal_heartbeat.connect(self._insteon_heartbeat)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -58,6 +63,8 @@ class BatterySensor:
         self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
         self.msg_battery.load_config(data, 'low_battery_topic',
                                      'low_battery_payload', qos)
+        self.msg_heartbeat.load_config(data, 'heartbeat_topic',
+                                       'heartbeat_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -84,7 +91,7 @@ class BatterySensor:
         pass
 
     #-----------------------------------------------------------------------
-    def template_data(self, is_on=None, is_low=None):
+    def template_data(self, is_on=None, is_low=None, is_heartbeat=None):
         """Create the Jinja templating data variables.
 
         Args:
@@ -110,6 +117,11 @@ class BatterySensor:
         if is_low is not None:
             data["is_low"] = 1 if is_low else 0
             data["is_low_str"] = "on" if is_low else "off"
+
+        if is_heartbeat is not None:
+            data["is_heartbeat"] = 1 if is_heartbeat else 0
+            data["is_heartbeat_str"] = "on" if is_heartbeat else "off"
+            data["heartbeat_time"] = time.time() if is_heartbeat else 0
 
         return data
 
@@ -144,5 +156,22 @@ class BatterySensor:
 
         data = self.template_data(is_low=is_low)
         self.msg_battery.publish(self.mqtt, data)
+
+    #-----------------------------------------------------------------------
+    def _insteon_heartbeat(self, device, is_heartbeat):
+        """Device heartbeat on/off callback.
+
+        This is triggered via signal when the Insteon device receive a
+        heartbeat. It will publish an MQTT message with the new date.
+
+        Args:
+          device (device.Leak):  The Insteon device that changed.
+          is_heartbeat (bool):  True for heartbeat, False for not.
+        """
+        LOG.info("MQTT received heartbeat %s = %s", device.label,
+                 is_heartbeat)
+
+        data = self.template_data(is_heartbeat=is_heartbeat)
+        self.msg_heartbeat.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------

@@ -5,6 +5,7 @@
 #===========================================================================
 from unittest import mock
 import insteon_mqtt as IM
+import insteon_mqtt.message as Msg
 
 
 class Test_Timed:
@@ -20,8 +21,8 @@ class Test_Timed:
     #-----------------------------------------------------------------------
     def test_send(self):
         t0 = 1000
-        msg = mock.Mock()
-        msg.to_bytes.return_value = "123"
+        addr = IM.Address(0x48, 0x3d, 0x46)
+        msg = Msg.OutStandard.direct(addr, 0x11, 0x25)
         handler = mock.Mock()
         obj = IM.message.Timed(msg, handler, False, t0)
 
@@ -31,7 +32,7 @@ class Test_Timed:
         obj.send(protocol)
 
         last = link.mock_calls[-1]
-        assert last == mock.call.write("123", 0)
+        assert last == mock.call.write(msg.to_bytes(), 0)
 
     #-----------------------------------------------------------------------
 

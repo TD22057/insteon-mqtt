@@ -117,12 +117,14 @@ class Base:
 
         # Increase the hop count if we can.
         if isinstance(self._msg, Msg.OutStandard):  # also handles OutExtended
-            num_hops = max(3, self._msg.flags.max_hops)
+            num_hops = min(3, self._msg.flags.max_hops + 1)
             LOG.debug("Increasing max_hops to %d", num_hops)
             self._msg.flags.set_hops(num_hops)
 
         # Otherwise we should try and resend the message with ourselves as
         # the handler again so we don't lose the count.
+        # This calls protocol rather then device so that the hops count is
+        # correcly set, also since we don't have the Device object here
         protocol.send(self._msg, self)
 
         # Tell the protocol that we're expired.  This will end this handler

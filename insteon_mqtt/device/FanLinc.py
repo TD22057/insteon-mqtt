@@ -101,7 +101,7 @@ class FanLinc(Dimmer):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq(self.protocol, "FanLinc paired", on_done)
+        seq = CommandSeq(self, "FanLinc paired", on_done)
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -147,7 +147,7 @@ class FanLinc(Dimmer):
         """
         LOG.info("Device %s cmd: fan status refresh", self.addr)
 
-        seq = CommandSeq(self.protocol, "Refresh complete", on_done)
+        seq = CommandSeq(self, "Refresh complete", on_done)
 
         # Send a 0x19 0x03 command to get the fan speed level.  This sends a
         # refresh ping which will respond w/ the fan level and current
@@ -498,11 +498,12 @@ class FanLinc(Dimmer):
         if not is_controller:
             if 'group' in data:
                 data_3 = data['group']
-                if 'ramp' in data and data['group'] <= 0x01:
-                    data_2 = 0x1f
-                    for ramp_key, ramp_value in Dimmer.ramp_pretty:
-                        if data['ramp'] >= ramp_value:
-                            data_2 = ramp_key
+            if 'ramp_rate' in data and (data_3 is None or data_3 <= 0x01):
+                data_2 = 0x1f
+                for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
+                    if data['ramp_rate'] >= ramp_value:
+                        data_2 = ramp_key
+                        break
             if 'on_level' in data:
                 data_1 = int(data['on_level'] * 2.55 + .5)
         return [data_1, data_2, data_3]

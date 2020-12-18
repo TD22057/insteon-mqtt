@@ -147,7 +147,7 @@ class KeypadLinc(Base):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq(self.protocol, "KeypadLinc paired", on_done)
+        seq = CommandSeq(self, "KeypadLinc paired", on_done)
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -206,7 +206,7 @@ class KeypadLinc(Base):
         # Send a 0x19 0x01 command to get the LED light on/off flags.
         LOG.info("KeypadLinc %s cmd: keypad status refresh", self.addr)
 
-        seq = CommandSeq(self.protocol, "Refresh complete", on_done)
+        seq = CommandSeq(self, "Refresh complete", on_done)
 
         # TODO: change this to 0x2e get extended which reads on mask, off
         # mask, on level, led brightness, non-toggle mask, led bit mask (led
@@ -636,11 +636,12 @@ class KeypadLinc(Base):
         if 'group' in data:
             data_3 = data['group']
         if not is_controller and self.is_dimmer:
-            if 'ramp' in data:
+            if 'ramp_rate' in data:
                 data_2 = 0x1f
-                for ramp_key, ramp_value in Dimmer.ramp_pretty:
-                    if data['ramp'] >= ramp_value:
+                for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
+                    if data['ramp_rate'] >= ramp_value:
                         data_2 = ramp_key
+                        break
             if 'on_level' in data:
                 data_1 = int(data['on_level'] * 2.55 + .5)
         return [data_1, data_2, data_3]
@@ -790,7 +791,7 @@ class KeypadLinc(Base):
 
         # Otherwise use the level changing command.
         else:
-            seq = CommandSeq(self.protocol, "Backlight level", on_done)
+            seq = CommandSeq(self, "Backlight level", on_done)
 
             # Bound to 0x11 <= level <= 0x7f per page 157 of insteon dev guide.
             level = max(0x11, min(level, 0x7f))
@@ -871,6 +872,47 @@ class KeypadLinc(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
+    def set_ramp_rate(self, rate, on_done=None):
+        """Set the device default ramp rate.
+
+        This changes the dimmer default ramp rate of how quickly the it
+        will turn on or off. This rate can be between 0.1 seconds and up
+        to 9 minutes.
+
+        Args:
+          rate (float): Ramp rate in in the range [0.1, 540] seconds
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        if not self.is_dimmer:
+            LOG.error("KeypadLinc %s switch doesn't support setting ramp_rate",
+                      self.addr)
+            return
+
+        LOG.info("Dimmer %s setting ramp rate to %s", self.label, rate)
+
+        data_3 = 0x1c  # the default ramp rate is .5
+        for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
+            if rate >= ramp_value:
+                data_3 = ramp_key
+                break
+
+        # Extended message data - see Insteon dev guide p156.
+        data = bytes([
+            0x01,   # D1 must be group 0x01
+            0x05,   # D2 set ramp rate when button is pressed
+            data_3,  # D3 rate
+            ] + [0x00] * 11)
+
+        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
+
+        # Use the standard command handler which will notify us when the
+        # command is ACK'ed.
+        callback = functools.partial(self.handle_ack, task="Button ramp rate")
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):
         """Set internal device flags.
 
@@ -895,6 +937,7 @@ class KeypadLinc(Base):
         FLAG_BACKLIGHT = "backlight"
         FLAG_GROUP = "group"
         FLAG_ON_LEVEL = "on_level"
+        FLAG_RAMP_RATE = "ramp_rate"
         FLAG_LOAD_ATTACH = "load_attached"
         FLAG_FOLLOW_MASK = "follow_mask"
         FLAG_OFF_MASK = "off_mask"
@@ -902,14 +945,14 @@ class KeypadLinc(Base):
         FLAG_NONTOGGLE_BITS = "nontoggle_bits"
         flags = set([FLAG_BACKLIGHT, FLAG_LOAD_ATTACH, FLAG_FOLLOW_MASK,
                      FLAG_SIGNAL_BITS, FLAG_NONTOGGLE_BITS, FLAG_OFF_MASK,
-                     FLAG_GROUP, FLAG_ON_LEVEL])
+                     FLAG_GROUP, FLAG_ON_LEVEL, FLAG_RAMP_RATE])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown KeypadLinc flags input: %s.\n Valid "
                             "flags are: %s" % (unknown, flags))
 
         # Start a command sequence so we can call the flag methods in series.
-        seq = CommandSeq(self.protocol, "KeypadLinc set_flags complete",
+        seq = CommandSeq(self, "KeypadLinc set_flags complete",
                          on_done)
 
         # Get the group if it was set.
@@ -926,6 +969,10 @@ class KeypadLinc(Base):
         if FLAG_ON_LEVEL in kwargs:
             on_level = util.input_byte(kwargs, FLAG_ON_LEVEL)
             seq.add(self.set_on_level, on_level)
+
+        if FLAG_RAMP_RATE in kwargs:
+            rate = util.input_float(kwargs, FLAG_RAMP_RATE)
+            seq.add(self.set_ramp_rate, rate)
 
         if FLAG_FOLLOW_MASK in kwargs:
             if group is None:

@@ -14,17 +14,17 @@ class Test_Modem:
 
         addr = IM.Address('12.34.ab')
         data = bytes([0xff, 0x00, 0x00])
-        e = IM.db.ModemEntry(addr, 0x01, True, data)
+        e = IM.db.ModemEntry(addr, 0x01, True, data, db=obj)
         obj.add_entry(e)
 
         addr = IM.Address('12.34.ac')
         data = bytes([0xff, 0x00, 0x00])
-        e = IM.db.ModemEntry(addr, 0x01, True, data)
+        e = IM.db.ModemEntry(addr, 0x01, True, data, db=obj)
         obj.add_entry(e)
 
         addr = IM.Address('12.34.ad')
         data = bytes([0xff, 0x00, 0x00])
-        e = IM.db.ModemEntry(addr, 0x02, True, data)
+        e = IM.db.ModemEntry(addr, 0x02, True, data, db=obj)
         obj.add_entry(e)
 
         assert len(obj) == 3

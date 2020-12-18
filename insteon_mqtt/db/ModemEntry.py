@@ -20,13 +20,14 @@ class ModemEntry:
     """
 
     @staticmethod
-    def from_json(data):
+    def from_json(data, db=None):
         """Read a ModemEntry from a JSON input.
 
         The inverse of this is to_json().
 
         Args:
           data:    (dict): The data to read from.
+          db:      (db.Modem): The Modem database which this entry belongs
 
         Returns:
           ModemEntry: Returns the created ModemEntry object.
@@ -34,10 +35,11 @@ class ModemEntry:
         return ModemEntry(Address.from_json(data['addr']),
                           data['group'],
                           data['is_controller'],
-                          bytes(data['data']))
+                          bytes(data['data']),
+                          db=db)
 
     #-----------------------------------------------------------------------
-    def __init__(self, addr, group, is_controller, data=None):
+    def __init__(self, addr, group, is_controller, data=None, db=None):
         """Constructor
 
         Args:
@@ -47,6 +49,8 @@ class ModemEntry:
                            False if this device is a responder of addr.
           data:            (bytes) 3 data bytes.  [0] is the on level, [1]
                            is the ramp rate.
+          db:              (db.Modem): The Modem database which this entry
+                           belongs
         """
         # Accept either bytes, list of ints, or None for the data input.
         if data is not None:
@@ -60,6 +64,7 @@ class ModemEntry:
         self.group = int(group)
         self.is_controller = is_controller
         self.data = data
+        self.db = db
 
     #-----------------------------------------------------------------------
     def to_json(self):
@@ -74,6 +79,22 @@ class ModemEntry:
             'is_controller' : self.is_controller,
             'data' : list(self.data)
             }
+
+    #-----------------------------------------------------------------------
+    @property
+    def label(self):
+        """Returns the label of the device that the address in this entry is
+        associated with or the address if the device cannot be found.
+
+        Returns:
+          (str) A label or address for the entry
+        """
+        # We allow for no db to be set
+        if self.db is not None and self.db.device is not None:
+            device = self.db.device.find(self.addr)
+            if device is not None:
+                return device.label
+        return str(self.addr)
 
     #-----------------------------------------------------------------------
     def __eq__(self, rhs):
@@ -99,8 +120,9 @@ class ModemEntry:
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return ("ID: %s  grp: %s  type: %s  data: %#04x %#04x %#04x" %
-                (self.addr.hex, self.group, util.ctrl_str(self.is_controller),
+        return ("ID: %-25s grp: %3s type: %s  data: %#04x %#04x %#04x" %
+                (self.label[:25], self.group,
+                 util.ctrl_str(self.is_controller),
                  self.data[0], self.data[1], self.data[2]))
 
     #-----------------------------------------------------------------------

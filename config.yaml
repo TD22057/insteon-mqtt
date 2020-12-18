@@ -124,6 +124,10 @@ insteon:
     thermostat:
     #  - aa.bb.cc: 'downstairs'
 
+    # EZIO4O 4 output relay modules
+    #ezio4o:
+    #  - aa.bb.cc: 'relays'
+
 #==========================================================================
 #
 # MQTT configuration
@@ -377,6 +381,17 @@ mqtt:
     low_battery_topic: 'insteon/{{address}}/battery'
     low_battery_payload: '{{is_low_str.upper()}}'
 
+    # Output heartbeat topic and payload.  This message is sent
+    # every 24 hours. Available variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   is_heartbeat = 0/1
+    #   heartbeat_time = UNIX time float of the last heartbeat
+    # Not every battery device currently sends this data.  Currently only
+    # the leak sensor is known to provide this data
+    heartbeat_topic: 'insteon/{{address}}/heartbeat'
+    heartbeat_payload: '{{heartbeat_time}}'
+
   #------------------------------------------------------------------------
   # Motion sensors
   #------------------------------------------------------------------------
@@ -409,6 +424,9 @@ mqtt:
   # Leak sensors
   #------------------------------------------------------------------------
 
+  # Leak sensors will use the heartbeat configuration
+  # inputs from battery_sensor.
+  #
   # Leak sensors will report the dry/wet status and a heartbeat every 24
   # hours. The leak sensors does not support low battery signal like other
   # battery operated devices.
@@ -437,14 +455,38 @@ mqtt:
     wet_dry_topic: 'insteon/{{address}}/wet'
     wet_dry_payload: '{{is_wet_str.upper()}}'
 
-    # Output heartbeat topic and payload.  This message is sent
-    # every 24 hours. Available variables for templating are:
+  #------------------------------------------------------------------------
+  # Mini remotes
+  #------------------------------------------------------------------------
+
+  # Battery powered remotes (usually 4 or 8 buttons).  A message is
+  # sent whenever one of the buttons is pressed.
+  #
+  # The Remote will use the low_battery configuration
+  # inputs from battery_sensor.
+  remote:
+    # Output state change topic and template.  This message is sent
+    # whenever a button is pressed.  Available variables for templating are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
-    #   is_heartbeat = 0/1
-    #   heartbeat_time = UNIX time float of the last heartbeat
-    heartbeat_topic: 'insteon/{{address}}/heartbeat'
-    heartbeat_payload: '{{heartbeat_time}}'
+    #   button = 1...n  (button number 1-8 depending on configuration)
+    #   on = 0/1
+    #   on_str = 'off'/'on'
+    #   mode = 'normal'/'fast'/'instant'
+    #   fast = 0/1
+    #   instant = 0/1
+    state_topic: 'insteon/{{address}}/state/{{button}}'
+    state_payload: '{{on_str.upper()}}'
+
+    # Manual mode (holding down a button) is triggered once when the button
+    # is held and once when it's released.  Available variables for
+    # templating are address (see above), name (see above), button (see
+    # above), and:
+    #   manual_str = 'up'/'off'/'down'
+    #   manual = 1/0/-1
+    #   manual_openhab = 2/1/0
+    #manual_state_topic: 'insteon/{{address}}/manual_state'
+    #manual_state_payload: '{{manual_str.upper()}}'
 
   #------------------------------------------------------------------------
   # Smoke Bridge
@@ -583,36 +625,6 @@ mqtt:
     heat_sp_payload: '{ "temp_f" : {{value}} }'
     cool_sp_command_topic: 'insteon/{{address}}/cool_sp_command'
     cool_sp_payload: '{ "temp_f" : {{value}} }'
-
-  #------------------------------------------------------------------------
-  # Mini remotes
-  #------------------------------------------------------------------------
-
-  # Battery powered remotes (usually 4 or 8 buttons).  A message is
-  # sent whenever one of the buttons is pressed.
-  remote:
-    # Output state change topic and template.  This message is sent
-    # whenever a button is pressed.  Available variables for templating are:
-    #   address = 'aa.bb.cc'
-    #   name = 'device name'
-    #   button = 1...n  (button number 1-8 depending on configuration)
-    #   on = 0/1
-    #   on_str = 'off'/'on'
-    #   mode = 'normal'/'fast'/'instant'
-    #   fast = 0/1
-    #   instant = 0/1
-    state_topic: 'insteon/{{address}}/state/{{button}}'
-    state_payload: '{{on_str.upper()}}'
-
-    # Manual mode (holding down a button) is triggered once when the button
-    # is held and once when it's released.  Available variables for
-    # templating are address (see above), name (see above), button (see
-    # above), and:
-    #   manual_str = 'up'/'off'/'down'
-    #   manual = 1/0/-1
-    #   manual_openhab = 2/1/0
-    #manual_state_topic: 'insteon/{{address}}/manual_state'
-    #manual_state_payload: '{{manual_str.upper()}}'
 
   #------------------------------------------------------------------------
   # Fan Linc
@@ -828,29 +840,59 @@ mqtt:
   # then the on and off commands work like a normal switch.  The set-flags
   # command line command can be used to change the settings.
   #
-  # NOTE: the on/off payload forces the relay to on or off so it's most
-  # likely NOT the way you want to use this.  The scene payload is the same
-  # trigger the IOLinc as a responder which respects the sensors settings in
-  # momentary-C mode and is most likely the way you do want to use this.
+  # NOTE: the on/off payload forces the relay to on or off ignoring any special
+  # requirements associated with the Momentary_A,B,C functions or the
+  # relay_linked flag.  It can be used without issue for latching setups, but
+  # if you want to use this accurately for Momentary_A,B,C setups, you may need
+  # to have some logic upstream from this command to check the state of sensor
+  # and or the command to determine if setting the relay on or off is
+  # appropriate .
   #
   # In Home Assistant use MQTT switch with a configuration like:
   #   switch:
   #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/state'
-  #       command_topic: 'insteon/aa.bb.cc/scene'
+  #       state_topic: 'insteon/aa.bb.cc/relay'
+  #       command_topic: 'insteon/aa.bb.cc/set'
+  #
+  # To monitor the sensor, use an MQTT binary_sensor with a configuration like:
+  #   binary_sensor:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/sensor'
   io_linc:
     # Output state change topic and template.  This message is sent whenever
-    # the device sensor state changes.  Available variables for templating
-    # are:
+    # the device sensor or device relay state changes.  Available variables for
+    # templating are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
-    #   on = 0/1
-    #   on_str = 'off'/'on'
+    #   sensor_on = 0/1
+    #   relay_on = 0/1
+    #   sensor_on_str = 'off'/'on'
+    #   relay_on_str = 'off'/'on'
     state_topic: 'insteon/{{address}}/state'
-    state_payload: '{{on_str.upper()}}'
+    state_payload: '{ "sensor" : "{{sensor_on_str.upper()}}", "relay" : {{relay_on_str.upper()}} }'
+
+    # Output relay state change topic and template.  This message is sent
+    # whenever the device relay state changes.  Available variables for
+    # templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   relay_on = 0/1
+    #   relay_on_str = 'off'/'on'
+    relay_state_topic: 'insteon/{{address}}/relay'
+    relay_state_payload: '{{relay_on_str.upper()}}'
+
+    # Output sensor state change topic and template.  This message is sent
+    # whenever the device sensor state changes.  Available variables for
+    # templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   sensor_on = 0/1
+    #   sensor_on = 'off'/'on'
+    sensor_state_topic: 'insteon/{{address}}/sensor'
+    sensor_state_payload: '{{sensor_on_str.upper()}}'
 
     # Input on/off command.  This forces the relay on/off and ignores the
-    # momentary-C sensor setting.  Use this to force the relay to respond.
+    # momentary-A,B,C setting.  Use this to force the relay to respond.
     # If momentary mode is active, it will turn off after the delay.  The
     # output of passing the payload through the template must match the
     # following:
@@ -861,13 +903,6 @@ mqtt:
     #          a variable from a json payload.
     on_off_topic: 'insteon/{{address}}/set'
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
-
-    # Scene on/off command.  This triggers the IOLinc as if it were a
-    # responder to a scene command and is the "correct" way to trigger the
-    # IOLinc relay in that it respects the momentary settings.  The inputs
-    # are the same as those for the on_off topic and payload.
-    scene_topic: 'insteon/{{address}}/scene'
-    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
   #------------------------------------------------------------------------
   # On/off outlets
@@ -919,6 +954,57 @@ mqtt:
     # in the same way clicking the button would.  The inputs are the same as
     # those for the on_off topic and payload.
     scene_topic: 'insteon/{{address}}/scene/{{button}}'
+    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+  #------------------------------------------------------------------------
+  # EZIO4O 4 relay output module
+  #------------------------------------------------------------------------
+  # EZIO4O is a 4 relay output wall plug module from Smartenit.
+  # Each relay has a normally open and a normally closed contact.
+  # Device relay 1 to 4 correspond to topics button 1 to 4.
+  # In Home Assistant use MQTT switch with a configuration like:
+  #   switch:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/state/1'
+  #       command_topic: 'insteon/aa.bb.cc/set/1'
+  #   switch:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc/state/2'
+  #       command_topic: 'insteon/aa.bb.cc/set/2'
+  ezio4o:
+    # Output state change topic and template.  This message is sent
+    # whenever the device state changes for any reason.  Available
+    # variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   button = 1 to 4 (relay number)
+    #   on = 0/1
+    #   on_str = 'off'/'on'
+    #   mode = 'normal'/'fast'/'instant'
+    #   fast = 0/1
+    #   instant = 0/1
+    #   reason = 'device'/'scene'/'command'/'refresh'/'...'
+    state_topic: "insteon/{{address}}/state/{{button}}"
+    state_payload: "{{on_str.upper()}}"
+
+    # Input on/off command.  Similar functionality to the cmd_topic but only
+    # for turning the device on and off.  If reason is input, is will be
+    # passed through to the state_payload.  The output of passing the payload
+    # through the template must match the following:
+    #   { "cmd" : 'on'/'off', "button": button,
+    #             ["mode" : 'normal'/'fast'/'instant'],
+    #             ["fast" : 1/0], ["instant" : 1/0], ["reason" : "..."] }
+    # Available variables for templating are:
+    #   value = the input payload
+    #   json = the input payload converted to json.  Use json.VAR to extract
+    #          a variable from a json payload.
+    on_off_topic: "insteon/{{address}}/set/{{button}}"
+    on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+    # Scene on/off command.  This triggers the scene broadcast on the outlet
+    # in the same way clicking the button would.  The inputs are the same as
+    # those for the on_off topic and payload.
+    scene_topic: "insteon/{{address}}/scene/{{button}}"
     scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
 #----------------------------------------------------------------

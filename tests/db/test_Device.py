@@ -43,14 +43,14 @@ class Test_Device:
                addr.ids[0], addr.ids[1], addr.ids[2],
                data[0], data[1], data[2], 0x06]
         msg = Msg.InpExtended(addr, addr, flags, 0x00, 0x00, bytes(raw))
-        entry = IM.db.DeviceEntry.from_bytes(msg.data)
+        entry = IM.db.DeviceEntry.from_bytes(msg.data, db=obj)
         obj.add_entry(entry)
 
         # add same addr w/ different group
         raw[6] = 0x02
         raw[3] = 0x11  # have to change memory location
         msg.data = raw
-        entry = IM.db.DeviceEntry.from_bytes(msg.data)
+        entry = IM.db.DeviceEntry.from_bytes(msg.data, db=obj)
         obj.add_entry(entry)
 
         # new addr, same group
@@ -58,7 +58,7 @@ class Test_Device:
         raw[9] = 0x1d
         raw[3] = 0x12  # have to change memory location
         msg.data = raw
-        entry = IM.db.DeviceEntry.from_bytes(msg.data)
+        entry = IM.db.DeviceEntry.from_bytes(msg.data, db=obj)
         obj.add_entry(entry)
 
         # responder - not in a group
@@ -67,7 +67,7 @@ class Test_Device:
         raw[5] = db_flags.to_bytes()[0]
         raw[3] = 0x13  # have to change memory location
         msg.data = raw
-        entry = IM.db.DeviceEntry.from_bytes(msg.data)
+        entry = IM.db.DeviceEntry.from_bytes(msg.data, db=obj)
         obj.add_entry(entry)
 
         # in use = False
@@ -76,7 +76,7 @@ class Test_Device:
         raw[5] = db_flags.to_bytes()[0]
         raw[3] = 0x14  # have to change memory location
         msg.data = raw
-        entry = IM.db.DeviceEntry.from_bytes(msg.data)
+        entry = IM.db.DeviceEntry.from_bytes(msg.data, db=obj)
         obj.add_entry(entry)
 
         assert len(obj.entries) == 4
@@ -120,7 +120,7 @@ class Test_Device:
         device = MockDevice()
 
         local_addr = IM.Address(0x01, 0x02, 0x03)
-        db = IM.db.Device(local_addr)
+        db = IM.db.Device(local_addr, device=device)
 
         # Add local group 1 as responder of scene 30 on remote.
         data = bytes([0xff, 0x00, 0x01])
@@ -128,28 +128,26 @@ class Test_Device:
         remote_addr = IM.Address(0x50, 0x51, 0x52)
         remote_group = 0x30
 
-        db.add_on_device(device, remote_addr, remote_group, is_controller,
-                         data)
+        db.add_on_device(remote_addr, remote_group, is_controller, data)
         assert len(device.sent) == 2
         assert len(db.entries) == 1
         val0 = list(db.entries.values())[0]
 
         db_flags = IM.message.DbFlags(True, False, True)
         right0 = IM.db.DeviceEntry(remote_addr, remote_group, val0.mem_loc,
-                                   db_flags, data)
+                                   db_flags, data, db=db)
         assert right0 == val0
 
         # Add again w/ a different local group
         data2 = bytes([0x50, 0x00, 0x02])
-        db.add_on_device(device, remote_addr, remote_group, is_controller,
-                         data2)
+        db.add_on_device(remote_addr, remote_group, is_controller, data2)
         assert len(db.entries) == 2
 
         val1 = list(db.entries.values())[1]
 
         db_flags = IM.message.DbFlags(True, False, True)
         right1 = IM.db.DeviceEntry(remote_addr, remote_group, val1.mem_loc,
-                                   db_flags, data2)
+                                   db_flags, data2, db=None)
         assert right1 == val1
 
 

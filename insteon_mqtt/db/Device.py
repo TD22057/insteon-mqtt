@@ -66,7 +66,7 @@ class Device:
         dev_cat = data.get('dev_cat', None)
         sub_cat = data.get('sub_cat', None)
         obj.desc = None
-        if dev_cat:
+        if dev_cat is not None:
             obj.desc = catalog.find(dev_cat, sub_cat)
 
         obj.firmware = data.get('firmware', None)
@@ -74,13 +74,13 @@ class Device:
         obj._meta = data.get('meta', {})
 
         for d in data['used']:
-            obj.add_entry(DeviceEntry.from_json(d), save=False)
+            obj.add_entry(DeviceEntry.from_json(d, db=obj), save=False)
 
         for d in data['unused']:
-            obj.add_entry(DeviceEntry.from_json(d), save=False)
+            obj.add_entry(DeviceEntry.from_json(d, db=obj), save=False)
 
         if "last" in data:
-            obj.last = DeviceEntry.from_json(data["last"])
+            obj.last = DeviceEntry.from_json(data["last"], db=obj)
 
         # When loading db's <= ver 0.6, no last field was saved to create
         # one at the correct location.
@@ -146,7 +146,7 @@ class Device:
         flags = Msg.DbFlags(in_use=False, is_controller=False,
                             is_last_rec=True)
         self.last = DeviceEntry(Address(0, 0, 0), 0, START_MEM_LOC, flags,
-                                None)
+                                None, db=self)
 
         # Map of all link group number to DeviceEntry objects that respond to
         # that group command.
@@ -184,6 +184,7 @@ class Device:
         """
         self.delta = delta
         if delta is not None:
+            self.delta = self.delta % 256  # Roll over db if it goes past 256
             self.save()
 
     #-----------------------------------------------------------------------
@@ -314,7 +315,7 @@ class Device:
         return len(self.entries)
 
     #-----------------------------------------------------------------------
-    def add_on_device(self, device, addr, group, is_controller, data,
+    def add_on_device(self, addr, group, is_controller, data,
                       on_done=None):
         """Add an entry and push the entry to the Insteon device.
 
@@ -332,8 +333,6 @@ class Device:
            on_done( success, message, DeviceEntry )
 
         Args:
-          device:        (device.Base) The Insteon device object to use for
-                         sending messages.
           addr:          (Address) The address of the device in the database.
           group:         (int) The group the entry is for.
           is_controller: (bool) True if the device is a controller.
@@ -375,7 +374,7 @@ class Device:
         # those memory addresses and just update them w/ the correct
         # information and mark them as used.
         if add_unused:
-            self._add_using_unused(device, addr, group, is_controller, data,
+            self._add_using_unused(addr, group, is_controller, data,
                                    on_done, entry)
 
         # If there no unused entries, we need to append one.  Write a new
@@ -385,11 +384,10 @@ class Device:
         # last entry anymore.  This order is important since if either
         # operation fails, the db is still in a valid order.
         else:
-            self._add_using_new(device, addr, group, is_controller, data,
-                                on_done)
+            self._add_using_new(addr, group, is_controller, data, on_done)
 
     #-----------------------------------------------------------------------
-    def delete_on_device(self, device, entry, on_done=None):
+    def delete_on_device(self, entry, on_done=None):
         """Delete an entry on the Insteon device.
 
         This sends the deletes the input record from the Insteon device.  If
@@ -406,8 +404,6 @@ class Device:
            on_done( success, message, DeviceEntry )
 
         Args:
-          device:        (device.Base) The Insteon device object to use for
-                         sending messages.
           entry:         (DeviceEntry) The entry to remove.
           on_done:       Optional callback which will be called when the
                          command completes.
@@ -420,7 +416,7 @@ class Device:
         new_entry.db_flags.in_use = False
 
         if self.engine == 0:
-            modify_manager = DeviceModifyManagerI1(device, self,
+            modify_manager = DeviceModifyManagerI1(self.device, self,
                                                    new_entry, on_done=on_done,
                                                    num_retry=3)
             modify_manager.start_modify()
@@ -433,7 +429,7 @@ class Device:
             msg_handler = handler.DeviceDbModify(self, new_entry, on_done)
 
             # Send the message.
-            device.send(msg, msg_handler)
+            self.device.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def find_group(self, group):
@@ -558,7 +554,8 @@ class Device:
 
         delta = DbDiff(self.addr)
         for entry in self.entries.values():
-            rhsEntry = rhs.find(entry.addr, entry.group, entry.is_controller)
+            rhsEntry = rhs.find(entry.addr, entry.group, entry.is_controller,
+                                entry.data[2])
 
             # RHS is missing this entry or has different data bytes we need
             # to update.
@@ -605,26 +602,6 @@ class Device:
             delta.remove(entry)
 
         return delta
-
-    #-----------------------------------------------------------------------
-    def apply_diff(self, device, diff, on_done=None):
-        """TODO: doc
-        """
-        assert self.addr == diff.addr
-
-        seq = CommandSeq(device, "Device database sync complete", on_done)
-
-        # Start by removing all the entries we don't need.  This way we free
-        # up memory locations to use for the add.
-        for entry in diff.del_entries:
-            seq.add(self.delete_on_device, entry)
-
-        # Add the missing entries.
-        for entry in diff.add_entries:
-            seq.add(self.add_on_device, device, entry.addr, entry.group,
-                    entry.is_controller, entry.data)
-
-        seq.run()
 
     #-----------------------------------------------------------------------
     def to_json(self):
@@ -675,7 +652,7 @@ class Device:
 
         o.write("GroupMap\n")
         for grp, elem in self.groups.items():
-            o.write("  %s -> %s\n" % (grp, [i.addr.hex for i in elem]))
+            o.write("  %s -> %s\n" % (grp, [i.label for i in elem]))
 
         return o.getvalue()
 
@@ -755,13 +732,13 @@ class Device:
         if remote.is_controller:
             group = remote.group
         entry = DeviceEntry(remote.addr, group, mem_loc, db_flags,
-                            local.link_data)
+                            local.link_data, db=self)
 
         # Add the Entry to the DB
         self.add_entry(entry, save=False)
 
     #-----------------------------------------------------------------------
-    def _add_using_unused(self, device, addr, group, is_controller, data,
+    def _add_using_unused(self, addr, group, is_controller, data,
                           on_done, entry=None):
         """Add an entry using an existing, unused entry.
 
@@ -778,7 +755,7 @@ class Device:
         entry.update_from(addr, group, is_controller, data)
 
         if self.engine == 0:
-            modify_manager = DeviceModifyManagerI1(device, self,
+            modify_manager = DeviceModifyManagerI1(self.device, self,
                                                    entry, on_done=on_done,
                                                    num_retry=3)
             modify_manager.start_modify()
@@ -790,10 +767,10 @@ class Device:
             msg_handler = handler.DeviceDbModify(self, entry, on_done)
 
             # Send the message and handler.
-            device.send(msg, msg_handler)
+            self.device.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def _add_using_new(self, device, addr, group, is_controller, data,
+    def _add_using_new(self, addr, group, is_controller, data,
                        on_done):
         """Add a anew entry at the end of the database.
 
@@ -809,7 +786,8 @@ class Device:
         LOG.info("Device %s appending new record at mem %#06x", self.addr,
                  self.last.mem_loc)
 
-        seq = CommandSeq(device, "Device database update complete", on_done)
+        seq = CommandSeq(self.device, "Device database update complete",
+                         on_done)
 
         # Shift the current last record down 8 bytes.  Make a copy - we'll
         # only update our member var if the write works.
@@ -820,7 +798,7 @@ class Device:
         # try and update w/ the new data record.
         if self.engine == 0:
             # on_done is passed by the sequence manager inside seq.add()
-            modify_manager = DeviceModifyManagerI1(device, self,
+            modify_manager = DeviceModifyManagerI1(self.device, self,
                                                    last, on_done=None,
                                                    num_retry=3)
             seq.add(modify_manager.start_modify)
@@ -833,11 +811,12 @@ class Device:
         # Create the new entry at the current last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=is_controller,
                                is_last_rec=False)
-        entry = DeviceEntry(addr, group, self.last.mem_loc, db_flags, data)
+        entry = DeviceEntry(addr, group, self.last.mem_loc, db_flags, data,
+                            db=self)
 
         if self.engine == 0:
             # on_done is passed by the sequence manager inside seq.add()
-            modify_manager = DeviceModifyManagerI1(device, self,
+            modify_manager = DeviceModifyManagerI1(self.device, self,
                                                    entry, on_done=None,
                                                    num_retry=3)
             seq.add(modify_manager.start_modify)
