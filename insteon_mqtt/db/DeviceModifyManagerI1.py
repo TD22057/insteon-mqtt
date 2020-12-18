@@ -152,6 +152,22 @@ class DeviceModifyManagerI1:
             self.advance_lsb(on_done)
 
     #-------------------------------------------------------------------
+    def handle_lsb_write_response(self, msg, on_done):
+        """Handle Write of LSB
+
+        This is only used to increment the delta for this device.
+
+        Args:
+          msg:     (message.InpStandard) The lsb message reply.  The lsb data
+                   is in the msg.cmd2 field.
+          on_done: (callback) a callback that is passed around and run on the
+                   completion of the modification
+        """
+        # Increment the delta 1
+        self.db.set_delta(self.db.delta + 1)
+        self.handle_lsb_response(msg, on_done)
+
+    #-------------------------------------------------------------------
     def write_lsb_byte(self, on_done):
         """Writes the next byte in the record to the device.
 
@@ -165,7 +181,7 @@ class DeviceModifyManagerI1:
         db_msg = Msg.OutStandard.direct(self.db.addr, 0x29,
                                         self.record[self.record_index])
         msg_handler = handler.StandardCmd(db_msg,
-                                          self.handle_lsb_response,
+                                          self.handle_lsb_write_response,
                                           on_done=on_done,
                                           num_retry=self._num_retry)
         self.device.send(db_msg, msg_handler)

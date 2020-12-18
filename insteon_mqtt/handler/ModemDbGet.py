@@ -81,14 +81,15 @@ class ModemDbGet(Base):
                 # Create a modem database entry from the message data and
                 # write it into the database.
                 entry = db.ModemEntry(msg.addr, msg.group,
-                                      msg.db_flags.is_controller, msg.data)
+                                      msg.db_flags.is_controller, msg.data,
+                                      db=self.db)
                 self.db.add_entry(entry)
                 LOG.ui("Entry: %s", entry)
 
             # Request the next record in the PLM database.
             LOG.info("Modem requesting next db record")
             msg = Msg.OutAllLinkGetNext()
-            protocol.send(msg, self)
+            self.db.device.send(msg, self)
 
             # Return finished - this way the getnext message will go out.
             # We'll be used as the handler for that as well which repeats

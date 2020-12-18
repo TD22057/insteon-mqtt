@@ -83,7 +83,7 @@ class Broadcast(Base):
             self._last_broadcast = None
             return Msg.CONTINUE
 
-        # Different message flags than we exepcted.
+        # Different message flags than we expected.
         return Msg.UNKNOWN
 
     #-----------------------------------------------------------------------
@@ -125,9 +125,11 @@ class Broadcast(Base):
         if not self._last_broadcast:
             return True
 
-        # If we just got a broadcast from the same device, don't process the
-        # cleanup.
-        if self._last_broadcast.from_addr == msg.from_addr:
+        # Don't process the cleanup if we just got the corresponding broadcast
+        # message from the same device.
+        if (self._last_broadcast.from_addr == msg.from_addr and
+                self._last_broadcast.group == msg.group and
+                self._last_broadcast.cmd1 == msg.cmd1):
             return False
 
         return True

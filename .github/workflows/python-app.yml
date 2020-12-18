@@ -1,0 +1,45 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Linting and Pytest
+
+on:
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
+    - name: Lint with flake8 exit on errors
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 insteon_mqtt --count --select=E9,F63,F7,F82 --show-source --statistics
+    - name: Lint with flake8 warnings annotation
+      uses: TrueBrain/actions-flake8@v1.4.1
+      with:
+        path: insteon_mqtt
+        ignore: E265,E203,E123,E722,E127,E131,E731,W504
+        max_line_length: 79
+        only_warn: 1
+    - name: Test with pytest
+      run: |
+        # Skips creating coverage stats for covered items
+        pytest --cache-clear --cov-report term:skip-covered --cov=insteon_mqtt tests/ | tee pytest-coverage.txt
+#     - name: Comment coverage
+#       uses: coroo/pytest-coverage-commentator@v1.0.2
+#       with:
+#         pytest-coverage: pytest-coverage.txt
+

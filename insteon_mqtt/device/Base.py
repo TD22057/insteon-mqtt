@@ -268,7 +268,7 @@ class Base:
         LOG.info("Join Device %s", self.addr)
 
         # Using a sequence so we can pass the on_done function through.
-        seq = CommandSeq(self.protocol, "Operation Complete", on_done)
+        seq = CommandSeq(self, "Device joined.", on_done)
 
         # First get the engine version.  This process only works and is
         # necessary on I2CS devices.
@@ -299,7 +299,7 @@ class Base:
             return
         else:
             # Build a sequence of calls to do the link.
-            seq = CommandSeq(self.protocol, "Operation Complete", on_done)
+            seq = CommandSeq(self, "Operation Complete", on_done)
 
             # Put Modem in linking mode first
             seq.add(self.modem.linking)
@@ -377,7 +377,7 @@ class Base:
         LOG.info("Device %s cmd: status refresh", self.label)
 
         # Use a sequence
-        seq = CommandSeq(self.protocol, "Device refreshed", on_done)
+        seq = CommandSeq(self, "Device refreshed", on_done)
 
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the
@@ -454,7 +454,7 @@ class Base:
 
         # Send the get_engine_version request.
         msg = Msg.OutStandard.direct(self.addr, 0x0D, 0x00)
-        msg_handler = handler.StandardCmd(msg, self.handle_engine, on_done)
+        msg_handler = handler.StandardCmdNAK(msg, self.handle_engine, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -514,7 +514,7 @@ class Base:
         if sequence is not None:
             seq = sequence
         else:
-            seq = CommandSeq(self.protocol, "Sync complete", on_done,
+            seq = CommandSeq(self, "Sync complete", on_done,
                              error_stop=False)
 
         if refresh:
@@ -550,7 +550,7 @@ class Base:
             on_done(True, None, None)
         else:
             LOG.ui("  Deleting %s:", entry)
-            self.db.delete_on_device(self, entry, on_done=on_done)
+            self.db.delete_on_device(entry, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def _sync_add(self, entry, dry_run, on_done=None):
@@ -563,7 +563,7 @@ class Base:
             on_done(True, None, None)
         else:
             LOG.ui("  Adding %s:", entry)
-            self.db.add_on_device(self, entry.addr, entry.group,
+            self.db.add_on_device(entry.addr, entry.group,
                                   entry.is_controller, entry.data,
                                   on_done=on_done)
 
@@ -1059,8 +1059,8 @@ class Base:
                          device.addr, group)
                 device.handle_group_cmd(self.addr, msg)
             else:
-                LOG.warning("%s broadcast - device %s not found", self.label,
-                            elem.addr)
+                LOG.info("%s broadcast - device %s is not in config.",
+                         self.label, elem.addr)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
@@ -1092,11 +1092,7 @@ class Base:
                    completed.  Signature is: on_done(success, msg, data)
         """
         on_done = util.make_callback(on_done)
-
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            on_done(True, "Entered linking mode", None)
-        else:
-            on_done(False, "Linking mode failed", None)
+        on_done(True, "Entered linking mode", None)
 
     #-----------------------------------------------------------------------
     def _db_update(self, local_group, is_controller, remote_addr, remote_group,
@@ -1116,7 +1112,7 @@ class Base:
                    "Link will be only one direction",
                    util.ctrl_str(is_controller), remote_addr)
 
-        seq = CommandSeq(self.protocol, "Device db update complete", on_done)
+        seq = CommandSeq(self, "Device db update complete", on_done)
 
         # Check for a db update - otherwise we could be out of date and not
         # know it in which case the memory addresses to add the record in
@@ -1135,7 +1131,7 @@ class Base:
             db_group = remote_group
 
         # Create a new database entry for the device and send it.
-        seq.add(self.db.add_on_device, self, remote_addr, db_group,
+        seq.add(self.db.add_on_device, remote_addr, db_group,
                 is_controller, local_data)
 
         # For two way commands, insert a callback so that when the modem
@@ -1180,7 +1176,7 @@ class Base:
             on_done(False, "Entry doesn't exist", None)
             return
 
-        seq = CommandSeq(self.protocol, "Delete complete", on_done)
+        seq = CommandSeq(self, "Delete complete", on_done)
 
         # Check for a db update - otherwise we could be out of date and not
         # know it in which case the memory addresses to add the record in
@@ -1188,7 +1184,7 @@ class Base:
         if refresh:
             seq.add(self.refresh)
 
-        seq.add(self.db.delete_on_device, self, entry)
+        seq.add(self.db.delete_on_device, entry)
 
         # For two way commands, insert a callback so that when the modem
         # command finishes, it will send the next command to the device.

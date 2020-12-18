@@ -85,7 +85,8 @@ class ModemDbModify(Base):
         # If we get a NAK message, signal an error and stop.
         if not msg.is_ack:
             LOG.error("Modem db updated failed: %s", msg)
-            self.on_done(False, "Modem database update failed", self.entry)
+            self.on_done(False, "Write to Modem db failed, try running " +
+                         "`refresh modem`", self.entry)
             return Msg.FINISHED
 
         # ACK of a message to delete an existing entry
@@ -121,7 +122,7 @@ class ModemDbModify(Base):
         if self.next:
             LOG.info("Sending next modem db update")
             msg, self.entry = self.next.pop(0)
-            protocol.send(msg, self)
+            self.db.device.send(msg, self)
 
         # Only run the callback if this is the last message in the chain.
         else:

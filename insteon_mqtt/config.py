@@ -18,6 +18,7 @@ devices = {
     # class to use and any extra keyword args to pass to the constructor.
     'dimmer' : (device.Dimmer, {}),
     'battery_sensor' : (device.BatterySensor, {}),
+    "ezio4o": (device.EZIO4O, {}),
     'fan_linc' : (device.FanLinc, {}),
     'io_linc' : (device.IOLinc, {}),
     'keypad_linc' : (device.KeypadLinc, {'dimmer' : True}),

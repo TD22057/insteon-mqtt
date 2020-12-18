@@ -384,6 +384,28 @@ def parse_args(args):
                     help="Don't print any command results to the screen.")
     sp.set_defaults(func=device.import_scenes)
 
+    #---------------------------------------
+    # device.awake
+    # Only works on battery devices
+    sp = sub.add_parser("awake", help="Mark a battery device as being awake."
+                        "Hold the set button on the device until the light "
+                        "blinks to force the device awake for 3 minutes.")
+    sp.add_argument("address", help="Device address or name.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=device.awake)
+
+    #---------------------------------------
+    # device.get_battery_voltage
+    # Only works on some battery devices
+    sp = sub.add_parser("get-battery-voltage", help="Check the battery "
+                        "voltage.  Will request the value the nex time the "
+                        "device is awake.")
+    sp.add_argument("address", help="Device address or name.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=device.get_battery_voltage)
+
     return p.parse_args(args)
 
 

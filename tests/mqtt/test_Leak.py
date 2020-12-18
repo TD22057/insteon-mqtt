@@ -60,16 +60,14 @@ class Test_Leak:
         assert data == right
 
         t0 = time.time()
-        data = mdev.template_data(is_wet=True, is_heartbeat=True)
+        data = mdev.template_data(is_heartbeat=True)
         right = {"address" : addr.hex, "name" : name,
-                 "is_wet" : 1, "is_wet_str" : "on", "state" : "wet",
-                 "is_dry" : 0, "is_dry_str" : "off",
                  "is_heartbeat" : 1, "is_heartbeat_str" : "on"}
         hb = data.pop('heartbeat_time')
         assert data == right
         pytest.approx(t0, hb, 5)
 
-        data = mdev.template_data(is_wet=False)
+        data = mdev.template_data_leak(is_wet=False)
         right = {"address" : addr.hex, "name" : name,
                  "is_wet" : 0, "is_wet_str" : "off", "state" : "dry",
                  "is_dry" : 1, "is_dry_str" : "on"}

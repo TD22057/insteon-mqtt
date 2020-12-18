@@ -106,7 +106,7 @@ class Dimmer(Base):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq(self.protocol, "Dimmer paired", on_done)
+        seq = CommandSeq(self, "Dimmer paired", on_done)
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -447,10 +447,10 @@ class Dimmer(Base):
         if 'data_3' in data:
             data_3 = data['data_3']
         if not is_controller:
-            if 'ramp' in data:
+            if 'ramp_rate' in data:
                 data_2 = 0x1f
                 for ramp_key, ramp_value in self.ramp_pretty.items():
-                    if data['ramp'] >= ramp_value:
+                    if data['ramp_rate'] >= ramp_value:
                         data_2 = ramp_key
                         break
             if 'on_level' in data:
@@ -522,6 +522,41 @@ class Dimmer(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
+    def set_ramp_rate(self, rate, on_done=None):
+        """Set the device default ramp rate.
+
+        This changes the dimmer default ramp rate of how quickly it will
+        turn on or off. This rate can be between 0.1 seconds and up to 9
+        minutes.
+
+        Args:
+          rate (float): Ramp rate in in the range [0.1, 540] seconds
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.info("Dimmer %s setting ramp rate to %s", self.label, rate)
+
+        data_3 = 0x1c  # the default ramp rate is .5
+        for ramp_key, ramp_value in self.ramp_pretty.items():
+            if rate >= ramp_value:
+                data_3 = ramp_key
+                break
+
+        # Extended message data - see Insteon dev guide p156.
+        data = bytes([
+            0x01,   # D1 must be group 0x01
+            0x05,   # D2 set ramp rate when button is pressed
+            data_3,  # D3 rate
+            ] + [0x00] * 11)
+
+        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
+
+        # Use the standard command handler which will notify us when the
+        # command is ACK'ed.
+        msg_handler = handler.StandardCmd(msg, self.handle_ramp_rate, on_done)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):
         """Set internal device flags.
 
@@ -545,14 +580,15 @@ class Dimmer(Base):
         # passed in.
         FLAG_BACKLIGHT = "backlight"
         FLAG_ON_LEVEL = "on_level"
-        flags = set([FLAG_BACKLIGHT, FLAG_ON_LEVEL])
+        FLAG_RAMP_RATE = "ramp_rate"
+        flags = set([FLAG_BACKLIGHT, FLAG_ON_LEVEL, FLAG_RAMP_RATE])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown Dimmer flags input: %s.\n Valid flags "
                             "are: %s" % unknown, flags)
 
         # Start a command sequence so we can call the flag methods in series.
-        seq = CommandSeq(self.protocol, "Dimmer set_flags complete", on_done)
+        seq = CommandSeq(self, "Dimmer set_flags complete", on_done)
 
         if FLAG_BACKLIGHT in kwargs:
             backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
@@ -561,6 +597,10 @@ class Dimmer(Base):
         if FLAG_ON_LEVEL in kwargs:
             on_level = util.input_byte(kwargs, FLAG_ON_LEVEL)
             seq.add(self.set_on_level, on_level)
+
+        if FLAG_RAMP_RATE in kwargs:
+            rate = util.input_float(kwargs, FLAG_RAMP_RATE)
+            seq.add(self.set_ramp_rate, rate)
 
         seq.run()
 
@@ -577,10 +617,7 @@ class Dimmer(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            on_done(True, "Backlight level updated", None)
-        else:
-            on_done(False, "Backlight level failed", None)
+        on_done(True, "Backlight level updated", None)
 
     #-----------------------------------------------------------------------
     def handle_on_level(self, msg, on_done):
@@ -595,10 +632,25 @@ class Dimmer(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+        on_done(True, "Button on level updated", None)
+
+    #-----------------------------------------------------------------------
+    def handle_ramp_rate(self, msg, on_done):
+        """Callback for handling set_ramp_rate() responses.
+
+        This is called when we get a response to the set_ramp_rate() command.
+        We don't need to do anything - just call the on_done callback with
+        the status.
+
+        Args:
+          msg (InpStandard): The response message from the command.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
         if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            on_done(True, "Button on level updated", None)
+            on_done(True, "Button ramp rate updated", None)
         else:
-            on_done(False, "Button on level failed", None)
+            on_done(False, "Button ramp rate failed", None)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -706,20 +758,13 @@ class Dimmer(Base):
         """
         # If this it the ACK we're expecting, update the internal state and
         # emit our signals.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
+        LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
 
-            _is_on, mode = on_off.Mode.decode(msg.cmd1)
-            reason = reason if reason else on_off.REASON_COMMAND
-            self._set_level(msg.cmd2, mode, reason)
-            on_done(True, "Dimmer state updated to %s" % self._level,
-                    msg.cmd2)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Dimmer %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Dimmer state update failed. " + msg.nak_str(),
-                    None)
+        _is_on, mode = on_off.Mode.decode(msg.cmd1)
+        reason = reason if reason else on_off.REASON_COMMAND
+        self._set_level(msg.cmd2, mode, reason)
+        on_done(True, "Dimmer state updated to %s" % self._level,
+                msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, msg, on_done, reason=""):
@@ -741,21 +786,14 @@ class Dimmer(Base):
         # Call the callback.  We don't change state here - the device will
         # send a regular broadcast message which will run handle_broadcast
         # which will then update the state.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
+        LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
 
-            # Reason is device because we're simulating a button press.  We
-            # can't really pass this around because we just get a broadcast
-            # message later from the device.  So we set a temporary variable
-            # here and use it in handle_broadcast() to output the reason.
-            self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
-            on_done(True, "Scene triggered", None)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Dimmer %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Scene trigger failed failed. " + msg.nak_str(),
-                    None)
+        # Reason is device because we're simulating a button press.  We
+        # can't really pass this around because we just get a broadcast
+        # message later from the device.  So we set a temporary variable
+        # here and use it in handle_broadcast() to output the reason.
+        self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
+        on_done(True, "Scene triggered", None)
 
     #-----------------------------------------------------------------------
     def handle_increment(self, msg, on_done, delta, reason=""):
@@ -777,22 +815,15 @@ class Dimmer(Base):
         """
         # If this it the ACK we're expecting, update the internal state and
         # emit our signals.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
+        LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
 
-            # Add the delta and bound at [0, 255]
-            level = min(self._level + delta, 255)
-            level = max(level, 0)
-            self._set_level(level, reason=reason)
+        # Add the delta and bound at [0, 255]
+        level = min(self._level + delta, 255)
+        level = max(level, 0)
+        self._set_level(level, reason=reason)
 
-            s = "Dimmer %s state updated to %s" % (self.addr, self._level)
-            on_done(True, s, msg.cmd2)
-
-        elif msg.flags.Dimmer == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Dimmer %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Dimmer %s state update failed. " + msg.nak_str(),
-                    None)
+        s = "Dimmer %s state updated to %s" % (self.addr, self._level)
+        on_done(True, s, msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

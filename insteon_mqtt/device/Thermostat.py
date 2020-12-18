@@ -167,7 +167,7 @@ class Thermostat(Base):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq(self.protocol, "Thermostat paired", on_done)
+        seq = CommandSeq(self, "Thermostat paired", on_done)
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -223,7 +223,7 @@ class Thermostat(Base):
         """
         LOG.info("Device %s cmd: fan status refresh", self.addr)
 
-        seq = CommandSeq(self.protocol, "Refresh complete", on_done)
+        seq = CommandSeq(self, "Refresh complete", on_done)
 
         # Send a 0x19 0x03 command to get the fan speed level.  This sends a
         # refresh ping which will respond w/ the fan level and current
@@ -454,14 +454,8 @@ class Thermostat(Base):
         """
         on_done = util.make_callback(on_done)
 
-        if msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("%s NAK: %s, Message: %s", self.db.addr, msg.nak_str(),
-                      msg)
-            on_done(False, "Thermostat command NAK. " + msg.nak_str(), None)
-
-        else:
-            LOG.debug("Thermostat %s generic ack recevied", self.addr)
-            on_done(True, "Thermostat generic ack recevied", None)
+        LOG.debug("Thermostat %s generic ack recevied", self.addr)
+        on_done(True, "Thermostat generic ack recevied", None)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -538,13 +532,7 @@ class Thermostat(Base):
         """
         on_done = util.make_callback(on_done)
 
-        if msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("%s mode command NAK: %s, Message: %s", self.db.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Thermostat mode command NAK. " + msg.nak_str(),
-                    None)
-
-        elif msg.cmd1 == 0x6b:
+        if msg.cmd1 == 0x6b:
             self.signal_mode_change.emit(self,
                                          Thermostat.ModeCommands(msg.cmd2))
             on_done(True, "Thermostat recevied mode command", None)
@@ -586,13 +574,7 @@ class Thermostat(Base):
         """
         on_done = util.make_callback(on_done)
 
-        if msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("%s fan command NAK: %s, Message: %s", self.db.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Thermostat fan command NAK. " + msg.nak_str(),
-                    None)
-
-        elif msg.cmd1 == 0x6b:
+        if msg.cmd1 == 0x6b:
             self.signal_fan_mode_change.emit(self,
                                              Thermostat.FanCommands(msg.cmd2))
             on_done(True, "Thermostat recevied fan mode command", None)

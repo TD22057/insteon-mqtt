@@ -6,6 +6,7 @@
 #===========================================================================
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
+import helpers as H
 
 
 class Test_ModemDbGet:
@@ -44,6 +45,7 @@ class Test_ModemDbGet:
             calls.append(msg)
 
         db = Mockdb()
+        db.device = MockDevice()
         handler = IM.handler.ModemDbGet(db, callback)
         proto = MockProtocol()
 
@@ -54,11 +56,12 @@ class Test_ModemDbGet:
                    0x01, 0x0e, 0x43])  # data
         msg = Msg.InpAllLinkRec.from_bytes(b)
         test_entry = IM.db.ModemEntry(msg.addr, msg.group,
-                                      msg.db_flags.is_controller, msg.data)
+                                      msg.db_flags.is_controller, msg.data,
+                                      db=None)
         r = handler.msg_received(proto, msg)
         assert r == Msg.FINISHED
-        assert isinstance(proto.sent, Msg.OutAllLinkGetNext)
-        assert proto.handler == handler
+        assert isinstance(db.device.sent[0]['msg'], Msg.OutAllLinkGetNext)
+        assert db.device.sent[0]['handler'] == handler
         assert db.entry == test_entry
 
 #===========================================================================
@@ -76,3 +79,12 @@ class Mockdb:
 
     def add_entry(self, entry):
         self.entry = entry
+
+class MockDevice:
+    """Mock insteon_mqtt/Device class
+    """
+    def __init__(self):
+        self.sent = []
+
+    def send(self, msg, handler, priority=None, after=None):
+        self.sent.append(H.Data(msg=msg, handler=handler))

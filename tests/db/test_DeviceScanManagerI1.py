@@ -139,7 +139,7 @@ class Test_Device:
                0x01,  # group
                0x3a, 0x29, 0x84,
                0x01, 0x0E, 0x43, 0x06]
-        entry = IM.db.DeviceEntry.from_bytes(bytes(raw))
+        entry = IM.db.DeviceEntry.from_bytes(bytes(raw), db=device_db)
 
         assert len(device_db.entries) == 1
         assert len(device_db.unused) == 0

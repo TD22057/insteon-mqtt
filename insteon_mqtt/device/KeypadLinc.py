@@ -147,7 +147,7 @@ class KeypadLinc(Base):
         # call finishes and works before calling the next one.  We have to do
         # this for device db manipulation because we need to know the memory
         # layout on the device before making changes.
-        seq = CommandSeq(self.protocol, "KeypadLinc paired", on_done)
+        seq = CommandSeq(self, "KeypadLinc paired", on_done)
 
         # Start with a refresh command - since we're changing the db, it must
         # be up to date or bad things will happen.
@@ -206,7 +206,7 @@ class KeypadLinc(Base):
         # Send a 0x19 0x01 command to get the LED light on/off flags.
         LOG.info("KeypadLinc %s cmd: keypad status refresh", self.addr)
 
-        seq = CommandSeq(self.protocol, "Refresh complete", on_done)
+        seq = CommandSeq(self, "Refresh complete", on_done)
 
         # TODO: change this to 0x2e get extended which reads on mask, off
         # mask, on level, led brightness, non-toggle mask, led bit mask (led
@@ -636,11 +636,12 @@ class KeypadLinc(Base):
         if 'group' in data:
             data_3 = data['group']
         if not is_controller and self.is_dimmer:
-            if 'ramp' in data:
+            if 'ramp_rate' in data:
                 data_2 = 0x1f
-                for ramp_key, ramp_value in Dimmer.ramp_pretty:
-                    if data['ramp'] >= ramp_value:
+                for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
+                    if data['ramp_rate'] >= ramp_value:
                         data_2 = ramp_key
+                        break
             if 'on_level' in data:
                 data_1 = int(data['on_level'] * 2.55 + .5)
         return [data_1, data_2, data_3]
@@ -790,7 +791,7 @@ class KeypadLinc(Base):
 
         # Otherwise use the level changing command.
         else:
-            seq = CommandSeq(self.protocol, "Backlight level", on_done)
+            seq = CommandSeq(self, "Backlight level", on_done)
 
             # Bound to 0x11 <= level <= 0x7f per page 157 of insteon dev guide.
             level = max(0x11, min(level, 0x7f))
@@ -871,6 +872,47 @@ class KeypadLinc(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
+    def set_ramp_rate(self, rate, on_done=None):
+        """Set the device default ramp rate.
+
+        This changes the dimmer default ramp rate of how quickly the it
+        will turn on or off. This rate can be between 0.1 seconds and up
+        to 9 minutes.
+
+        Args:
+          rate (float): Ramp rate in in the range [0.1, 540] seconds
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        if not self.is_dimmer:
+            LOG.error("KeypadLinc %s switch doesn't support setting ramp_rate",
+                      self.addr)
+            return
+
+        LOG.info("Dimmer %s setting ramp rate to %s", self.label, rate)
+
+        data_3 = 0x1c  # the default ramp rate is .5
+        for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
+            if rate >= ramp_value:
+                data_3 = ramp_key
+                break
+
+        # Extended message data - see Insteon dev guide p156.
+        data = bytes([
+            0x01,   # D1 must be group 0x01
+            0x05,   # D2 set ramp rate when button is pressed
+            data_3,  # D3 rate
+            ] + [0x00] * 11)
+
+        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
+
+        # Use the standard command handler which will notify us when the
+        # command is ACK'ed.
+        callback = functools.partial(self.handle_ack, task="Button ramp rate")
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):
         """Set internal device flags.
 
@@ -895,6 +937,7 @@ class KeypadLinc(Base):
         FLAG_BACKLIGHT = "backlight"
         FLAG_GROUP = "group"
         FLAG_ON_LEVEL = "on_level"
+        FLAG_RAMP_RATE = "ramp_rate"
         FLAG_LOAD_ATTACH = "load_attached"
         FLAG_FOLLOW_MASK = "follow_mask"
         FLAG_OFF_MASK = "off_mask"
@@ -902,14 +945,14 @@ class KeypadLinc(Base):
         FLAG_NONTOGGLE_BITS = "nontoggle_bits"
         flags = set([FLAG_BACKLIGHT, FLAG_LOAD_ATTACH, FLAG_FOLLOW_MASK,
                      FLAG_SIGNAL_BITS, FLAG_NONTOGGLE_BITS, FLAG_OFF_MASK,
-                     FLAG_GROUP, FLAG_ON_LEVEL])
+                     FLAG_GROUP, FLAG_ON_LEVEL, FLAG_RAMP_RATE])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown KeypadLinc flags input: %s.\n Valid "
                             "flags are: %s" % (unknown, flags))
 
         # Start a command sequence so we can call the flag methods in series.
-        seq = CommandSeq(self.protocol, "KeypadLinc set_flags complete",
+        seq = CommandSeq(self, "KeypadLinc set_flags complete",
                          on_done)
 
         # Get the group if it was set.
@@ -926,6 +969,10 @@ class KeypadLinc(Base):
         if FLAG_ON_LEVEL in kwargs:
             on_level = util.input_byte(kwargs, FLAG_ON_LEVEL)
             seq.add(self.set_on_level, on_level)
+
+        if FLAG_RAMP_RATE in kwargs:
+            rate = util.input_float(kwargs, FLAG_RAMP_RATE)
+            seq.add(self.set_ramp_rate, rate)
 
         if FLAG_FOLLOW_MASK in kwargs:
             if group is None:
@@ -1150,10 +1197,7 @@ class KeypadLinc(Base):
                    completed.  Signature is: on_done(success, msg, data)
           task (str):  The message to report.
         """
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            on_done(True, "%s updated" % task, None)
-        else:
-            on_done(False, "%s failed" % task, None)
+        on_done(True, "%s updated" % task, None)
 
     #-----------------------------------------------------------------------
     def handle_backlight_on(self, msg, on_done, is_on):
@@ -1166,11 +1210,8 @@ class KeypadLinc(Base):
           is_on (bool): True if the backlight is being turned on, False for
                 off.
         """
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            on_done(True, "backlight set to %s" % is_on, None)
-            self._backlight = is_on
-        else:
-            on_done(False, "backlight set failed", None)
+        on_done(True, "backlight set to %s" % is_on, None)
+        self._backlight = is_on
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
@@ -1218,27 +1259,20 @@ class KeypadLinc(Base):
         """
         # If this is the ACK we're expecting, update the internal state and
         # emit our signals.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("KeypadLinc LED %s group %s ACK: %s", self.addr, group,
-                      msg)
+        LOG.debug("KeypadLinc LED %s group %s ACK: %s", self.addr, group,
+                  msg)
 
-            # Update the LED bit for the updated group.
-            self._led_bits = led_bits
-            LOG.ui("KeypadLinc %s LED's changed to %s", self.addr,
-                   "{:08b}".format(self._led_bits))
+        # Update the LED bit for the updated group.
+        self._led_bits = led_bits
+        LOG.ui("KeypadLinc %s LED's changed to %s", self.addr,
+               "{:08b}".format(self._led_bits))
 
-            # Change the level and emit the active signal.
-            self._set_level(group, 0xff if is_on else 0x00, reason=reason)
+        # Change the level and emit the active signal.
+        self._set_level(group, 0xff if is_on else 0x00, reason=reason)
 
-            msg = "KeypadLinc %s LED group %s updated to %s" % \
-                  (self.addr, group, is_on)
-            on_done(True, msg, is_on)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("KeypadLinc LED %s NAK error: %s, Message: %s",
-                      self.addr, msg.nak_str(), msg)
-            on_done(False, "KeypadLinc %s LED update failed. " + msg.nak_str(),
-                    None)
+        msg = "KeypadLinc %s LED group %s updated to %s" % \
+              (self.addr, group, is_on)
+        on_done(True, msg, is_on)
 
     #-----------------------------------------------------------------------
     def handle_load_attach(self, msg, on_done, is_attached):
@@ -1252,20 +1286,15 @@ class KeypadLinc(Base):
         """
         # If this it the ACK we're expecting, update the internal state and
         # emit our signals.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
-            if is_attached:
-                self._load_group = 1
-            else:
-                self._load_group = 9
+        LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
+        if is_attached:
+            self._load_group = 1
+        else:
+            self._load_group = 9
 
-            LOG.ui("Keypadlinc %s, setting load to group %s", self.addr,
-                   self._load_group)
-            on_done(True, "Load set to group: %s" % self._load_group, None)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("KeypadLinc %s NAK error: %s", self.addr, msg)
-            on_done(False, "Changing the load group failed", None)
+        LOG.ui("Keypadlinc %s, setting load to group %s", self.addr,
+               self._load_group)
+        on_done(True, "Load set to group: %s" % self._load_group, None)
 
     #-----------------------------------------------------------------------
     def handle_refresh_led(self, msg):
@@ -1458,17 +1487,12 @@ class KeypadLinc(Base):
         """
         # If this is the ACK we're expecting, update the internal state and
         # emit our signals.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
+        LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
 
-            _is_on, mode = on_off.Mode.decode(msg.cmd1)
-            self._set_level(self._load_group, msg.cmd2, mode, reason)
-            on_done(True, "KeypadLinc state updated to %s" % self._level,
-                    msg.cmd2)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("KeypadLinc %s NAK error: %s", self.addr, msg)
-            on_done(False, "KeypadLinc state update failed", None)
+        _is_on, mode = on_off.Mode.decode(msg.cmd1)
+        self._set_level(self._load_group, msg.cmd2, mode, reason)
+        on_done(True, "KeypadLinc state updated to %s" % self._level,
+                msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, msg, on_done, reason=""):
@@ -1490,19 +1514,14 @@ class KeypadLinc(Base):
         # Call the callback.  We don't change state here - the device will
         # send a regular broadcast message which will run handle_broadcast
         # which will then update the state.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
+        LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
 
-            # Reason is device because we're simulating a button press.  We
-            # can't really pass this around because we just get a broadcast
-            # message later from the device.  So we set a temporary variable
-            # here and use it in handle_broadcast() to output the reason.
-            self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
-            on_done(True, "Scene triggered", None)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("KeypadLinc %s NAK error: %s", self.addr, msg)
-            on_done(False, "Scene trigger failed failed", None)
+        # Reason is device because we're simulating a button press.  We
+        # can't really pass this around because we just get a broadcast
+        # message later from the device.  So we set a temporary variable
+        # here and use it in handle_broadcast() to output the reason.
+        self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
+        on_done(True, "Scene triggered", None)
 
     #-----------------------------------------------------------------------
     def handle_increment(self, msg, on_done, delta, reason=""):
@@ -1523,20 +1542,15 @@ class KeypadLinc(Base):
         """
         # If this it the ACK we're expecting, update the internal state and
         # emit our signals.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
+        LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
 
-            # Add the delta and bound at [0, 255]
-            level = min(self._level + delta, 255)
-            level = max(level, 0)
-            self._set_level(self._load_group, level, reason=reason)
+        # Add the delta and bound at [0, 255]
+        level = min(self._level + delta, 255)
+        level = max(level, 0)
+        self._set_level(self._load_group, level, reason=reason)
 
-            s = "KeypadLinc %s state updated to %s" % (self.addr, self._level)
-            on_done(True, s, msg.cmd2)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("KeypadLinc %s NAK error: %s", self.addr, msg)
-            on_done(False, "KeypadLinc %s state update failed", None)
+        s = "KeypadLinc %s state updated to %s" % (self.addr, self._level)
+        on_done(True, s, msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
