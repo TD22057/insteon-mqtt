@@ -4,6 +4,8 @@
 
 ### Additions
 
+- More pyTests, up to 66% coverage now. ([PR 262][P262] & [PR 268][P268])
+
 ### Fixes
 
 - Allow for used last entries in DB.  Improve compatibility with devices
@@ -481,3 +483,5 @@ will add new features.
 [P255]: https://github.com/TD22057/insteon-mqtt/pull/255
 [P256]: https://github.com/TD22057/insteon-mqtt/pull/256
 [P261]: https://github.com/TD22057/insteon-mqtt/pull/261
+[P262]: https://github.com/TD22057/insteon-mqtt/pull/262
+[P268]: https://github.com/TD22057/insteon-mqtt/pull/268

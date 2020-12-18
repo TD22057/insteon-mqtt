@@ -72,7 +72,7 @@ insteon:
 
     # Dimming devices (outlets, wall switches, lamp modules, etc).
     dimmer:
-      - 3a.29.84: 'lamp2'
+      - 12.29.84: 'lamp2'
       - 48.3d.46
       - 48.b0.ad: 'dim1'
 
@@ -86,8 +86,10 @@ insteon:
 
     # Battery powered mini remotes.
     mini_remote1:  # Single Button Remotes
+      - 12.34.56: 'remote switch'
 
     mini_remote4:  # Remotes with 4 Buttons
+      - 3f.12.d4: 'remote4'
 
     mini_remote8:  # Remotes with 8 Buttons
       - 3f.07.d4: 'remote1'
@@ -97,8 +99,8 @@ insteon:
       - 44.a3.79: 'smoke alarm'
 
     # FanLinc fan controller (dimmer+fan).
-    #fan_linc:
-    #  - 9a.a1.b3
+    fan_linc:
+     - 9a.a1.b3
 
     # KeypadLinc dimmers (dimmer+scene controller).
     keypad_linc:
@@ -109,24 +111,24 @@ insteon:
       - 3c.42.9b: 'kp2'
 
     # Leak sensors.
-    #leak:
-    #  - 21.d6.d9: 'bathroom'
+    leak:
+     - 21.d8.d9: 'bathroom'
 
     # IOLinc relay controllers
     io_linc:
       - 45.33.d4: 'garage'
 
     # On/off ouetlets
-    #outlet:
-    #  - aa.bb.cc: 'outlet'
+    outlet:
+     - aa.11.cc: 'outlet'
 
     # Thermostatus
     thermostat:
-    #  - aa.bb.cc: 'downstairs'
+     - aa.bb.cc: 'downstairs'
 
     # EZIO4O 4 output relay modules
-    #ezio4o:
-    #  - aa.bb.cc: 'relays'
+    ezio4o:
+     - 22.bb.cc: 'relays'
 
 #==========================================================================
 #
