@@ -3,6 +3,7 @@
 # Input insteon standard and extended message.
 #
 #===========================================================================
+import enum
 import io
 import time
 from ..Address import Address
@@ -22,6 +23,14 @@ class InpStandard(Base):
 
     msg_code = 0x50
     fixed_msg_size = 11
+
+    # NAK types
+    class NakType(enum.IntEnum):
+        SENDER_NOT_IN_DB = 0xFF
+        NO_LOAD = 0xFE
+        BAD_CHECKSUM = 0xFD
+        PRE_NAK = 0xFC
+        ILLEGAL_VALUE = 0xFB
 
     #-----------------------------------------------------------------------
     @classmethod
@@ -104,11 +113,13 @@ class InpStandard(Base):
         """
         ret = ""
         naks = {
-            0xFF: "Senders ID not in responders db. Try linking again.",
-            0xFE: "Load sense detects no load",
-            0xFD: "Checksum is incorrect",
-            0xFC: "Pre NAK in case database search takes too long",
-            0xFB: "Illegal value in command"
+            self.NakType.SENDER_NOT_IN_DB:
+                "Senders ID not in responders db. Try running 'join' again.",
+            self.NakType.NO_LOAD: "Load sense detects no load",
+            self.NakType.BAD_CHECKSUM: "Checksum is incorrect",
+            self.NakType.PRE_NAK:
+                "Pre NAK in case database search takes too long",
+            self.NakType.ILLEGAL_VALUE: "Illegal value in command"
         }
         if (self.flags.type == Flags.Type.DIRECT_NAK and
                 self.cmd2 in naks.keys()):

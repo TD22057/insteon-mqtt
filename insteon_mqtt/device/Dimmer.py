@@ -46,7 +46,7 @@ class Dimmer(Base):
 
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
-        
+
         Args:
           protocol (Protocol): The Protocol object used to communicate
                    with the Insteon network.  This is needed to allow the
@@ -525,8 +525,8 @@ class Dimmer(Base):
     def set_ramp_rate(self, rate, on_done=None):
         """Set the device default ramp rate.
 
-        This changes the dimmer default ramp rate of how quickly it will 
-        turn on or off. This rate can be between 0.1 seconds and up to 9 
+        This changes the dimmer default ramp rate of how quickly it will
+        turn on or off. This rate can be between 0.1 seconds and up to 9
         minutes.
 
         Args:
@@ -536,7 +536,7 @@ class Dimmer(Base):
         """
         LOG.info("Dimmer %s setting ramp rate to %s", self.label, rate)
 
-        data_3 = 0x1c #the default ramp rate is .5
+        data_3 = 0x1c  # the default ramp rate is .5
         for ramp_key, ramp_value in self.ramp_pretty.items():
             if rate >= ramp_value:
                 data_3 = ramp_key
@@ -617,10 +617,7 @@ class Dimmer(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            on_done(True, "Backlight level updated", None)
-        else:
-            on_done(False, "Backlight level failed", None)
+        on_done(True, "Backlight level updated", None)
 
     #-----------------------------------------------------------------------
     def handle_on_level(self, msg, on_done):
@@ -635,10 +632,7 @@ class Dimmer(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            on_done(True, "Button on level updated", None)
-        else:
-            on_done(False, "Button on level failed", None)
+        on_done(True, "Button on level updated", None)
 
     #-----------------------------------------------------------------------
     def handle_ramp_rate(self, msg, on_done):
@@ -764,20 +758,13 @@ class Dimmer(Base):
         """
         # If this it the ACK we're expecting, update the internal state and
         # emit our signals.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
+        LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
 
-            _is_on, mode = on_off.Mode.decode(msg.cmd1)
-            reason = reason if reason else on_off.REASON_COMMAND
-            self._set_level(msg.cmd2, mode, reason)
-            on_done(True, "Dimmer state updated to %s" % self._level,
-                    msg.cmd2)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Dimmer %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Dimmer state update failed. " + msg.nak_str(),
-                    None)
+        _is_on, mode = on_off.Mode.decode(msg.cmd1)
+        reason = reason if reason else on_off.REASON_COMMAND
+        self._set_level(msg.cmd2, mode, reason)
+        on_done(True, "Dimmer state updated to %s" % self._level,
+                msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, msg, on_done, reason=""):
@@ -799,21 +786,14 @@ class Dimmer(Base):
         # Call the callback.  We don't change state here - the device will
         # send a regular broadcast message which will run handle_broadcast
         # which will then update the state.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
+        LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
 
-            # Reason is device because we're simulating a button press.  We
-            # can't really pass this around because we just get a broadcast
-            # message later from the device.  So we set a temporary variable
-            # here and use it in handle_broadcast() to output the reason.
-            self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
-            on_done(True, "Scene triggered", None)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Dimmer %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Scene trigger failed failed. " + msg.nak_str(),
-                    None)
+        # Reason is device because we're simulating a button press.  We
+        # can't really pass this around because we just get a broadcast
+        # message later from the device.  So we set a temporary variable
+        # here and use it in handle_broadcast() to output the reason.
+        self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
+        on_done(True, "Scene triggered", None)
 
     #-----------------------------------------------------------------------
     def handle_increment(self, msg, on_done, delta, reason=""):
@@ -835,22 +815,15 @@ class Dimmer(Base):
         """
         # If this it the ACK we're expecting, update the internal state and
         # emit our signals.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
+        LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
 
-            # Add the delta and bound at [0, 255]
-            level = min(self._level + delta, 255)
-            level = max(level, 0)
-            self._set_level(level, reason=reason)
+        # Add the delta and bound at [0, 255]
+        level = min(self._level + delta, 255)
+        level = max(level, 0)
+        self._set_level(level, reason=reason)
 
-            s = "Dimmer %s state updated to %s" % (self.addr, self._level)
-            on_done(True, s, msg.cmd2)
-
-        elif msg.flags.Dimmer == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Dimmer %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Dimmer %s state update failed. " + msg.nak_str(),
-                    None)
+        s = "Dimmer %s state updated to %s" % (self.addr, self._level)
+        on_done(True, s, msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

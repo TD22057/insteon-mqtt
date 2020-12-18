@@ -19,7 +19,8 @@ LOG = log.get_logger()
 # EZIOxx Flags settings definition
 EZIO4xx_flags = {
     "analog-input": {
-        "options": {"none": 0b00000000, "command": 0b00000001, "interval": 0b00000011},
+        "options": {"none": 0b00000000, "command": 0b00000001,
+                    "interval": 0b00000011},
         "mask": 0b00000011,
         "default": "none",
     },
@@ -207,9 +208,8 @@ class EZIO4O(Base):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def on(
-        self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="", on_done=None
-    ):
+    def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
+           on_done=None):
         """Turn the device on.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -222,8 +222,8 @@ class EZIO4O(Base):
         the state changed signals.
 
         Args:
-          group (int):  The group to send the command to.  Group 1 to 4 matching
-                output 1 to 4.
+          group (int):  The group to send the command to.  Group 1 to 4
+                matching output 1 to 4.
           level (int):  If non zero, turn the device on.  Should be in the
                 range 0 to 255.  Only dimmers use the intermediate values, all
                 other devices look at level=0 or level>0.
@@ -239,7 +239,8 @@ class EZIO4O(Base):
         assert level >= 0 and level <= 0xFF
         assert isinstance(mode, on_off.Mode)
 
-        # Use a standard message to send "output on" (0x45) command for the output
+        # Use a standard message to send "output on" (0x45) command for the
+        # output
         msg = Msg.OutStandard.direct(self.addr, 0x45, group - 1)
 
         # Use the standard command handler which will notify us when
@@ -254,7 +255,8 @@ class EZIO4O(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="", on_done=None):
+    def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
+            on_done=None):
         """Turn the device off.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -267,8 +269,8 @@ class EZIO4O(Base):
         the state changed signals.
 
         Args:
-          group (int):  The group to send the command to.  Group 1 to 4 matching
-                output 1 to 4.
+          group (int):  The group to send the command to.  Group 1 to 4
+                        matching output 1 to 4.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
@@ -280,7 +282,8 @@ class EZIO4O(Base):
         assert 1 <= group <= 4
         assert isinstance(mode, on_off.Mode)
 
-        # Use a standard message to send "output off" (0x46) command for the output
+        # Use a standard message to send "output off" (0x46) command for the
+        # output
         msg = Msg.OutStandard.direct(self.addr, 0x46, group - 1)
 
         # Use the standard command handler which will notify us when the
@@ -295,7 +298,8 @@ class EZIO4O(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, reason="", on_done=None):
+    def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, reason="",
+            on_done=None):
         """Turn the device on or off.  Level zero will be off.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -311,8 +315,8 @@ class EZIO4O(Base):
           level (int):  If non zero, turn the device on.  Should be in the
                 range 0 to 255.  Only dimmers use the intermediate values, all
                 other devices look at level=0 or level>0.
-          group (int):  The group to send the command to.  Group 1 to 4 matching
-                output 1 to 4.
+          group (int):  The group to send the command to.  Group 1 to 4
+                        matching output 1 to 4.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
@@ -441,9 +445,11 @@ class EZIO4O(Base):
           list[3]:  list, containing a dict of the human readable values
         """
         if is_controller:
-            ret = [{"data_1": data[0]}, {"data_2": data[1]}, {"group": data[2]}]
+            ret = [{"data_1": data[0]}, {"data_2": data[1]},
+                   {"group": data[2]}]
         else:
-            ret = [{"data_1": data[0]}, {"data_2": data[1]}, {"group": data[2] + 1}]
+            ret = [{"data_1": data[0]}, {"data_2": data[1]},
+                   {"group": data[2] + 1}]
         return ret
 
     #-----------------------------------------------------------------------
@@ -516,10 +522,12 @@ class EZIO4O(Base):
         LOG.info("EZIO4O %s cmd: set flags", self.label)
 
         # TODO initialize flags on first run
-        # Initialise flag value by reading the device Configuration Port settings
+        # Initialise flag value by reading the device Configuration Port
+        # settings
         if self._flag_value is None:
             LOG.info(
-                "EZIO4O %s cmd: flags not initialized - run get-flags first", self.label
+                "EZIO4O %s cmd: flags not initialized - run get-flags first",
+                self.label
             )
             return
 
@@ -557,7 +565,8 @@ class EZIO4O(Base):
                     % (option, field, EZIO4xx_flags[field]["options"].keys())
                 )
 
-        # Use a standard message to send "write configuration to port" (0x4D) command
+        # Use a standard message to send "write configuration to port" (0x4D)
+        # command
         msg = Msg.OutStandard.direct(self.addr, 0x4D, new_flag_value)
 
         # Use the standard command handler which will notify us when the
@@ -585,7 +594,8 @@ class EZIO4O(Base):
         # Check the input flags to make sure only ones we can understand were
         # passed in.
 
-        # Use a standard message to send "read configuration to port" (0x4E) command
+        # Use a standard message to send "read configuration to port" (0x4E)
+        # command
         msg = Msg.OutStandard.direct(self.addr, 0x4E, 0x00)
 
         # Use the standard command handler which will notify us when the
@@ -600,9 +610,9 @@ class EZIO4O(Base):
     def handle_flags(self, msg, on_done):
         """Callback for flags settings commanded messages.
 
-        This callback is run when we get a reply back from set or read flags commands.
-        If the command was ACK'ed, we know it worked so we'll update the internal
-        state of flags.
+        This callback is run when we get a reply back from set or read flags
+        commands. If the command was ACK'ed, we know it worked so we'll update
+        the internal state of flags.
 
         Args:
           msg (message.InpStandard):  The reply message from the device.
@@ -621,12 +631,14 @@ class EZIO4O(Base):
             LOG.debug("EZIO4O %s Flag ACK: %s", self.label, msg)
             bits = msg.cmd2
             self._flag_value = bits
-            LOG.ui("EZIO4O %s operating flags: %s", self.label, "{:08b}".format(bits))
+            LOG.ui("EZIO4O %s operating flags: %s", self.label,
+                   "{:08b}".format(bits))
 
             for field in EZIO4xx_flags:
                 flag_bits = bits & EZIO4xx_flags[field]["mask"]
                 option = "unknown"
-                for flag_option, option_bits in EZIO4xx_flags[field]["options"].items():
+                flags_opts = EZIO4xx_flags[field]["options"].items()
+                for flag_option, option_bits in flags_opts:
                     if flag_bits == option_bits:
                         option = flag_option
                 LOG.ui("%s : %s", field, option)
@@ -696,10 +708,7 @@ class EZIO4O(Base):
 
         if 0x00 <= msg.cmd2 <= 0x0F:
             for i in range(4):
-                if util.bit_get(msg.cmd2, i):
-                    is_on = True
-                else:
-                    is_on = False
+                is_on = bool(util.bit_get(msg.cmd2, i))
 
                 # State change for output
                 if is_on != self._is_on[i]:
@@ -734,7 +743,8 @@ class EZIO4O(Base):
         # us which output it was so we have to track it here.  See __init__
         # code comments for more info.
         if not self._which_output:
-            LOG.error("EZIO4O %s ACK error.  No output ID's were saved", self.label)
+            LOG.error("EZIO4O %s ACK error.  No output ID's were saved",
+                      self.label)
             on_done(False, "EZIO4O update failed - no ID's saved", None)
             return
 
@@ -746,17 +756,13 @@ class EZIO4O(Base):
             LOG.debug("EZIO4O %s ACK: %s", self.label, msg)
 
             for i in range(4):
-                if util.bit_get(msg.cmd2, i):
-                    is_on = True
-                else:
-                    is_on = False
+                is_on = bool(util.bit_get(msg.cmd2, i))
 
                 # State change for the output and all outputs with state change
                 if is_on != self._is_on[i] or i == group - 1:
                     self._set_is_on(i + 1, is_on, reason=on_off.REASON_REFRESH)
-                    on_done(
-                        True, "EZIO4O state %s updated to: %s" % (i + 1, is_on), None
-                    )
+                    on_done(True, "EZIO4O state %s updated to: %s" %
+                            (i + 1, is_on), None)
 
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("EZIO4O %s NAK error: %s", self.label, msg)
@@ -818,7 +824,8 @@ class EZIO4O(Base):
         entry = self.db.find(addr, msg.group, is_controller=False)
         if not entry:
             LOG.error(
-                "EZIO4O %s has no group %s entry from %s", self.label, msg.group, addr
+                "EZIO4O %s has no group %s entry from %s",
+                self.label, msg.group, addr
             )
             return
 
@@ -831,7 +838,8 @@ class EZIO4O(Base):
             self._set_is_on(localGroup, is_on, mode, on_off.REASON_SCENE)
 
         else:
-            LOG.warning("EZIO4O %s unknown group cmd %#04x", self.label, msg.cmd1)
+            LOG.warning("EZIO4O %s unknown group cmd %#04x", self.label,
+                        msg.cmd1)
 
     #-----------------------------------------------------------------------
     def _set_is_on(self, group, is_on, mode=on_off.Mode.NORMAL, reason=""):
