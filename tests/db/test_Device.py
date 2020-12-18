@@ -150,6 +150,111 @@ class Test_Device:
                                    db_flags, data2, db=None)
         assert right1 == val1
 
+    #-----------------------------------------------------------------------
+    def test_last_entry_used(self):
+        # tests _add_using_new
+        # This writing to a db where the last entry is used.  It seems that
+        # ISY devices might do this
+        device = MockDevice()
+
+        local_addr = IM.Address(0x01, 0x02, 0x03)
+        db = IM.db.Device(local_addr, device=device)
+
+        # Initial database is empty.  So add a record that is used and last
+        flags = Msg.DbFlags(in_use=True, is_controller=False,
+                            is_last_rec=True)
+        orig_last = IM.db.DeviceEntry(IM.Address(0x12, 0x34, 0x56), 0x01,
+                                      0x0fff, flags, None, db=db)
+        db.add_entry(orig_last, save=False)
+
+        # Test that entry is there
+        assert db.last == orig_last
+        assert len(db.entries) == 1
+
+        # Now Add a new entry to the deivce
+        data = bytes([0xff, 0x00, 0x01])
+        is_controller = False
+        remote_addr = IM.Address(0x50, 0x51, 0x52)
+        remote_group = 0x30
+        flags = Msg.DbFlags(in_use=True, is_controller=is_controller,
+                            is_last_rec=False)
+        new_entry = IM.db.DeviceEntry(remote_addr, remote_group, 0x0ff7,
+                                      flags, data, db=db)
+
+        db.add_on_device(remote_addr, remote_group, is_controller, data)
+
+        # 3 messages
+        assert len(device.sent) == 3
+        # First message updates orig last to be marked not last
+        fix_old = orig_last.copy()
+        fix_old.db_flags = Msg.DbFlags(in_use=True,
+                                       is_controller=fix_old.is_controller,
+                                       is_last_rec=False)
+        assert device.sent[0].msg.data == fix_old.to_bytes()
+        # Second message adds the new entry
+        assert device.sent[1].msg.data == new_entry.to_bytes()
+        # Third message should be a new blank last entry
+        flags = Msg.DbFlags(in_use=False, is_controller=False,
+                            is_last_rec=True)
+        last = IM.db.DeviceEntry(IM.Address(0, 0, 0), 0, 0x0fef, flags, None,
+                                 db=db)
+        assert device.sent[2].msg.data == last.to_bytes()
+
+        # Check that our cache matches what we expect
+        assert db.last == last
+        assert len(db.unused) == 1
+        assert db.find_mem_loc(0x0fff) == fix_old
+        assert db.find_mem_loc(0x0ff7) == new_entry
+
+    #-----------------------------------------------------------------------
+    def test_last_entry_unused(self):
+        # tests _add_using_new
+        # This writing to a db where the last entry is unused, what we expect
+        device = MockDevice()
+
+        local_addr = IM.Address(0x01, 0x02, 0x03)
+        db = IM.db.Device(local_addr, device=device)
+
+        # Initial database is empty.  So add a record that is used
+        flags = Msg.DbFlags(in_use=False, is_controller=False,
+                            is_last_rec=False)
+        orig_entry = IM.db.DeviceEntry(IM.Address(0x12, 0x34, 0x56), 0x01,
+                                       0x0fff, flags, None, db=db)
+        db.add_entry(orig_entry, save=False)
+
+        # add a record that is empty and last
+        flags = Msg.DbFlags(in_use=False, is_controller=False,
+                            is_last_rec=True)
+        orig_last = IM.db.DeviceEntry(IM.Address(0x00, 0x00, 0x00), 0x00,
+                                      0x0ff7, flags, None, db=db)
+        db.add_entry(orig_last, save=False)
+
+        # Test that entry is there
+        assert db.last == orig_last
+        assert len(db.entries) == 0
+        assert len(db.unused) == 2
+
+        # Now Add a new entry to the deivce
+        data = bytes([0xff, 0x00, 0x01])
+        is_controller = False
+        remote_addr = IM.Address(0x50, 0x51, 0x52)
+        remote_group = 0x30
+        flags = Msg.DbFlags(in_use=True, is_controller=is_controller,
+                            is_last_rec=False)
+        new_entry = IM.db.DeviceEntry(remote_addr, remote_group, 0x0fff,
+                                      flags, data, db=db)
+
+        db.add_on_device(remote_addr, remote_group, is_controller, data)
+
+        # 1 messages
+        assert len(device.sent) == 1
+        # First message adds the new entry
+        assert device.sent[0].msg.data == new_entry.to_bytes()
+
+        # Check that our cache matches what we expect
+        assert db.last == orig_last
+        assert len(db.unused) == 1
+        assert db.find_mem_loc(0x0fff) == new_entry
 
 #===========================================================================
 class MockDevice:
@@ -157,6 +262,7 @@ class MockDevice:
     """
     def __init__(self):
         self.sent = []
+        self.modem = H.main.MockModem("")
 
     def send(self, msg, handler, priority=None, after=None):
         self.sent.append(H.Data(msg=msg, handler=handler))

@@ -435,10 +435,7 @@ class Outlet(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            on_done(True, "Backlight level updated", None)
-        else:
-            on_done(False, "Backlight level failed", None)
+        on_done(True, "Backlight level updated", None)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -563,18 +560,13 @@ class Outlet(Base):
 
         # If this it the ACK we're expecting, update the internal
         # state and emit our signals.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("Outlet %s grp: %s ACK: %s", self.addr, group, msg)
+        LOG.debug("Outlet %s grp: %s ACK: %s", self.addr, group, msg)
 
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
-            reason = reason if reason else on_off.REASON_COMMAND
-            self._set_is_on(group, is_on, mode, reason)
-            on_done(True, "Outlet state updated to on=%s" % self._is_on,
-                    self._is_on)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Outlet %s NAK error: %s", self.addr, msg)
-            on_done(False, "Outlet state update failed", None)
+        is_on, mode = on_off.Mode.decode(msg.cmd1)
+        reason = reason if reason else on_off.REASON_COMMAND
+        self._set_is_on(group, is_on, mode, reason)
+        on_done(True, "Outlet state updated to on=%s" % self._is_on,
+                self._is_on)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, msg, on_done, reason=""):
@@ -596,20 +588,14 @@ class Outlet(Base):
         # Call the callback.  We don't change state here - the device will
         # send a regular broadcast message which will run handle_broadcast
         # which will then update the state.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("Outlet %s ACK: %s", self.addr, msg)
+        LOG.debug("Outlet %s ACK: %s", self.addr, msg)
 
-            # Reason is device because we're simulating a button press.  We
-            # can't really pass this around because we just get a broadcast
-            # message later from the device.  So we set a temporary variable
-            # here and use it in handle_broadcast() to output the reason.
-            self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
-            on_done(True, "Scene triggered", None)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Outlet %s NAK error: %s", self.addr, msg)
-            self.broadcast_reason = None
-            on_done(False, "Scene trigger failed failed", None)
+        # Reason is device because we're simulating a button press.  We
+        # can't really pass this around because we just get a broadcast
+        # message later from the device.  So we set a temporary variable
+        # here and use it in handle_broadcast() to output the reason.
+        self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
+        on_done(True, "Scene triggered", None)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

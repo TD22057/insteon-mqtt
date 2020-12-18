@@ -20,8 +20,8 @@ class EZIO4O:
     allow input MQTT messages to change the state of the device.
 
     EZIO4O will report their state (state/output) and can be commanded to turn
-    on and off (set/output topic) or trigger a device scene with which the modem
-    is a responder (scene/output topic).
+    on and off (set/output topic) or trigger a device scene with which the
+    modem is a responder (scene/output topic).
     """
 
     def __init__(self, mqtt, device):
@@ -36,7 +36,8 @@ class EZIO4O:
 
         # Output state change reporting template.
         self.msg_state = MsgTemplate(
-            topic="insteon/{{address}}/state/{{button}}", payload="{{on_str.lower()}}"
+            topic="insteon/{{address}}/state/{{button}}",
+            payload="{{on_str.lower()}}"
         )
 
         # Input on/off command template.
@@ -58,7 +59,7 @@ class EZIO4O:
         """Load values from a configuration data object.
 
         Args:
-          config (dict:  The configuration dictionary to load from.  The object
+          config (dict:  The configuration dictionary to load from. The object
                  config is stored in config['ezio4o'].
           qos (int):  The default quality of service level to use.
         """
@@ -67,7 +68,8 @@ class EZIO4O:
             return
 
         self.msg_state.load_config(data, "state_topic", "state_payload", qos)
-        self.msg_on_off.load_config(data, "on_off_topic", "on_off_payload", qos)
+        self.msg_on_off.load_config(data, "on_off_topic",
+                                    "on_off_payload", qos)
         self.msg_scene.load_config(data, "scene_topic", "scene_payload", qos)
 
     #-----------------------------------------------------------------------
@@ -112,9 +114,8 @@ class EZIO4O:
             link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
-    def template_data(
-        self, is_on=None, button=None, mode=on_off.Mode.NORMAL, reason=None
-    ):
+    def template_data(self, is_on=None, button=None, mode=on_off.Mode.NORMAL,
+                      reason=None):
         """Create the Jinja templating data variables for on/off messages.
 
         Args:
@@ -129,10 +130,8 @@ class EZIO4O:
         Returns:
           dict:  Returns a dict with the variables available for templating.
         """
-        data = {
-            "address": self.device.addr.hex,
-            "name": self.device.name if self.device.name else self.device.addr.hex,
-        }
+        name = self.device.name if self.device.name else self.device.addr.hex
+        data = {"address": self.device.addr.hex, "name": name}
 
         if button is not None:
             data["button"] = button
@@ -148,7 +147,8 @@ class EZIO4O:
         return data
 
     #-----------------------------------------------------------------------
-    def _insteon_on_off(self, device, group, is_on, mode=on_off.Mode.NORMAL, reason=""):
+    def _insteon_on_off(self, device, group, is_on,
+                        mode=on_off.Mode.NORMAL, reason=""):
         """Device active on/off callback.
 
         This is triggered via signal when the Insteon device turns on or off.
@@ -189,7 +189,8 @@ class EZIO4O:
           message:  MQTT message - has attrs: topic, payload, qos, retain.
         """
         LOG.debug(
-            "EZIO4O output %s message %s %s", group, message.topic, message.payload
+            "EZIO4O output %s message %s %s", group, message.topic,
+            message.payload
         )
 
         # Parse the input MQTT message.
@@ -218,7 +219,8 @@ class EZIO4O:
           message:  MQTT message - has attrs: topic, payload, qos, retain.
         """
         LOG.debug(
-            "EZIO4O output %s message %s %s", group, message.topic, message.payload
+            "EZIO4O output %s message %s %s", group, message.topic,
+            message.payload
         )
 
         # Parse the input MQTT message.
