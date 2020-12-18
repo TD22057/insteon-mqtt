@@ -28,6 +28,9 @@ def test_iolinc(tmpdir):
 
 
 class Test_IOLinc_Simple():
+    def test_type(self, test_iolinc):
+        assert test_iolinc.type() == "io_linc"
+
     def test_pair(self, test_iolinc):
         with mock.patch.object(IM.CommandSeq, 'add'):
             test_iolinc.pair()
