@@ -299,6 +299,17 @@ class Protocol:
             #LOG.debug("Searching message (len %d): %s... ",
             #               len(self._buf), util.to_hex(self._buf,20))
 
+            # Look for PLM slow down messages
+            start = self._buf.find(0x15)
+            if start == 0:
+                LOG.info("PLM is busy, pausing briefly")
+                # Pause for 1/3 of a second if we are not already waiting
+                # longer
+                if self._next_write_time + .3 < time.time():
+                    self._next_write_time = time.time() + .3
+                self._buf = self._buf[1:]
+                continue
+
             # Find a message start token.  Note that this token could also
             # appear in the middle of a message so we can't be totally sure
             # it's a message until we try to parse it.  If there is no
@@ -469,8 +480,9 @@ class Protocol:
         # No handler was found for the message.  Shift pass the ID code and
         # look for more messages.  This might be better by having a lookup by
         # msg ID->msg size and use that to skip the whole message.
-        LOG.warning("No read handler found for message type %#04x: %s",
-                    msg.msg_code, msg)
+        # This was likely a dublicate message
+        LOG.info("No read handler found for message type %#04x: %s",
+                 msg.msg_code, msg)
 
     #-----------------------------------------------------------------------
     def _write_finished(self):

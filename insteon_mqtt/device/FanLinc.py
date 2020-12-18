@@ -293,7 +293,7 @@ class FanLinc(Dimmer):
         # message.  That's for actuators (switches, motion sensors, etc) to
         # trigger other things to occur.  Since the fan linc is just a
         # responder to other commands, that shouldn't occur.
-        LOG.error("FanLinc unexpected handle_broadcast called: %s", msg)
+        LOG.waring("FanLinc unexpected handle_broadcast called: %s", msg)
         super.handle_broadcast(msg)
 
     #-----------------------------------------------------------------------
@@ -338,19 +338,12 @@ class FanLinc(Dimmer):
 
         # If this it the ACK we're expecting, update the internal state and
         # emit our signals.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("FanLinc fan %s ACK: %s", self.addr, msg)
+        LOG.debug("FanLinc fan %s ACK: %s", self.addr, msg)
 
-            reason = reason if reason else on_off.REASON_COMMAND
-            self._set_fan_speed(msg.cmd2, reason)
-            on_done(True, "Fan %s state updated to %s" %
-                    (self.addr, self._fan_speed), msg.cmd2)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("FanLinc fan %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Fan %s state update failed. " + msg.nak_str(),
-                    None)
+        reason = reason if reason else on_off.REASON_COMMAND
+        self._set_fan_speed(msg.cmd2, reason)
+        on_done(True, "Fan %s state updated to %s" %
+                (self.addr, self._fan_speed), msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

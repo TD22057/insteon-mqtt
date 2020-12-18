@@ -36,6 +36,12 @@ class Test_DeviceDbGet:
         r = handler.msg_received(proto, std_ack)
         assert r == Msg.UNKNOWN
 
+        # direct Pre NAK
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_NAK, False)
+        msg = Msg.InpStandard(addr, addr, flags, 0x2f, 0xFC)
+        r = handler.msg_received(proto, msg)
+        assert r == Msg.CONTINUE
+
         # Try w/ an extended msg.
         ext_data = bytes(14)
         ext_ack = Msg.OutExtended.direct(addr, 0x2f, 0x00, ext_data)

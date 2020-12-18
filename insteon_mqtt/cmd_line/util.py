@@ -12,7 +12,7 @@ from ..mqtt import Reply
 # Time between messages before we decide that the something went wrong and
 # stop.  Currently the server should send enough messages to avoid this but
 # there is no pure right answer for what this should be.
-TIME_OUT = 10
+TIME_OUT = 30
 
 
 #===========================================================================
@@ -70,7 +70,8 @@ def send(config, topic, payload, quiet=False):
         client.loop(timeout=0.5)
 
     if not session["done"]:
-        print("Reply timed out")
+        print("Command line timed out waiting for a reply, the command may " +
+              "still be running.")
 
     client.disconnect()
     return session

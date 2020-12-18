@@ -237,7 +237,7 @@ class BatterySensor(Base):
             if handler:
                 handler(msg)
             else:
-                LOG.error("BatterySensor no handler for group %s", msg.group)
+                LOG.warning("BatterySensor no handler for group %s", msg.group)
 
             # This will find all the devices we're the controller of for this
             # group and call their handle_group_cmd() methods to update their

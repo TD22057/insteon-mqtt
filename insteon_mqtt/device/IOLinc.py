@@ -838,24 +838,18 @@ class IOLinc(Base):
                    completed.  Signature is: on_done(success, msg, data)
         """
         # This state is for the relay.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
-            on_done(True, "IOLinc command complete", None)
+        LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
+        on_done(True, "IOLinc command complete", None)
 
-            # On command.  0x11: on
-            if msg.cmd1 == 0x11:
-                LOG.info("IOLinc %s relay ON", self.addr)
-                self._set_relay_is_on(True)
+        # On command.  0x11: on
+        if msg.cmd1 == 0x11:
+            LOG.info("IOLinc %s relay ON", self.addr)
+            self._set_relay_is_on(True)
 
-            # Off command. 0x13: off
-            elif msg.cmd1 == 0x13:
-                LOG.info("IOLinc %s relay OFF", self.addr)
-                self._set_relay_is_on(False)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("IOLinc %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "IOLinc command failed. " + msg.nak_str(), None)
+        # Off command. 0x13: off
+        elif msg.cmd1 == 0x13:
+            LOG.info("IOLinc %s relay OFF", self.addr)
+            self._set_relay_is_on(False)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
@@ -884,15 +878,12 @@ class IOLinc(Base):
         # This reflects a change in the relay state.
         # Handle on/off commands codes.
         if on_off.Mode.is_valid(msg.cmd1):
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
+            is_on = on_off.Mode.decode(msg.cmd1)[0]
             if self.mode == IOLinc.Modes.MOMENTARY_A:
                 # In Momentary A the relay only turns on if the cmd matches
                 # the responder link D1, else it always turns off.  Even if
                 # the momentary time has not elapsed.
-                if is_on == bool(entry.data[0]):
-                    is_on = True
-                else:
-                    is_on = False
+                is_on = is_on == bool(entry.data[0])
             elif self.mode == IOLinc.Modes.MOMENTARY_B:
                 # In Momentary B, either On or Off will turn on the Relay
                 is_on = True
