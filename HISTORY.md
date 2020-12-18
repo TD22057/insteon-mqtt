@@ -6,6 +6,9 @@
 
 ### Fixes
 
+- Allow for used last entries in DB.  Improve compatibility with devices
+  setup by ISY.  ([PR 255][P255])
+
 - Improved message handling and processing of Pre_NAK messages.
   ([PR 236][P236])
 
@@ -469,3 +472,4 @@ will add new features.
 [P259]: https://github.com/TD22057/insteon-mqtt/pull/259
 [P234]: https://github.com/TD22057/insteon-mqtt/pull/234
 [P236]: https://github.com/TD22057/insteon-mqtt/pull/236
+[P255]: https://github.com/TD22057/insteon-mqtt/pull/255
