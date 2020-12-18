@@ -1036,8 +1036,8 @@ class Modem:
                          device.addr, group)
                 device.handle_group_cmd(self.addr, msg)
             else:
-                LOG.warning("%s broadcast - device %s not found", self.label,
-                            elem.addr)
+                LOG.info("%s broadcast - device %s not found in config",
+                         self.label, elem.addr)
 
     #-----------------------------------------------------------------------
     def run_command(self, **kwargs):

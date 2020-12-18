@@ -1059,8 +1059,8 @@ class Base:
                          device.addr, group)
                 device.handle_group_cmd(self.addr, msg)
             else:
-                LOG.warning("%s broadcast - device %s not found", self.label,
-                            elem.addr)
+                LOG.info("%s broadcast - device %s is not in config.",
+                         self.label, elem.addr)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
