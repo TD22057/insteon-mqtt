@@ -4,7 +4,12 @@
 
 ### Additions
 
-- More pyTests, up to 66% coverage now. ([PR 262][P262] & [PR 268][P268])
+- Support for using an Insteon Hub as a modem.  It comes with some caveats
+  but it works well, please see
+  [Hub Instructions](https://github.com/TD22057/insteon-mqtt/blob/dev/docs/hub.md)
+  ([PR 201][P201])
+
+- More pyTests, up to 71% coverage now. ([PR 262][P262] & [PR 268][P268])
 
 ### Fixes
 
@@ -488,3 +493,4 @@ will add new features.
 [P262]: https://github.com/TD22057/insteon-mqtt/pull/262
 [P268]: https://github.com/TD22057/insteon-mqtt/pull/268
 [P272]: https://github.com/TD22057/insteon-mqtt/pull/272
+[P201]: https://github.com/TD22057/insteon-mqtt/pull/201
