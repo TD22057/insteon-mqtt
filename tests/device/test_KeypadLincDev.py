@@ -278,3 +278,12 @@ def test_set_flags(test_device):
             assert IM.CommandSeq.add.call_count == 1
             assert args_list[0][0][0] == params[1]
             assert args_list[0][0][1] == params[2]
+
+def test_handle_refresh_state(test_device):
+    # handle_refresh_state(self, msg, on_done):
+    def on_done(success, *args):
+        assert success == True
+    msg = Msg.OutStandard(IM.Address(12,14,15),
+                          Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False),
+                          0x2e, 0x00, is_ack=True)
+    test_device.handle_refresh_state(msg, on_done)
