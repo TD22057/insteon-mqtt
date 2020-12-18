@@ -12,6 +12,10 @@
 - Improved message handling and processing of Pre_NAK messages.
   ([PR 236][P236])
 
+- Don't treat broadcast messages from different groups as duplicate.  Fixes
+  a bug where sequential presses of a button on a keypadlinc may not emit
+  mqtt messages as they should.  ([PR 256][P256])
+
 ## [0.7.4]
 
 ### Additions
@@ -473,3 +477,4 @@ will add new features.
 [P234]: https://github.com/TD22057/insteon-mqtt/pull/234
 [P236]: https://github.com/TD22057/insteon-mqtt/pull/236
 [P255]: https://github.com/TD22057/insteon-mqtt/pull/255
+[P256]: https://github.com/TD22057/insteon-mqtt/pull/256
