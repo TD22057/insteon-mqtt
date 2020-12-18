@@ -9,7 +9,7 @@ import requests
 import pytest
 from pprint import pprint
 from unittest import mock
-from unittest.mock import call
+from unittest.mock import call, patch
 from requests.models import Response
 
 import insteon_mqtt as IM
@@ -31,8 +31,8 @@ def test_hubclient():
     Returns a generically configured Hub for testing
     '''
     # necessary to stop client from running
-    mock.patch.object(threading, 'Thread')
-    return HubClient("192.168.1.1", 25105, "user", "password")
+    with patch.object(threading, 'Thread'):
+        return HubClient("192.168.1.1", 25105, "user", "password")
 
 BUFFSTATUS = b"""
 <response>
@@ -62,10 +62,10 @@ class Test_Hub:
 
     #-----------------------------------------------------------------------
     def test_poll(self, test_hub):
-        mock.patch.object(threading, 'Thread')
         assert test_hub.client is None
-        test_hub.poll(time.time())
-        assert test_hub.client is not None
+        with patch.object(threading, 'Thread'):
+            test_hub.poll(time.time())
+            assert test_hub.client is not None
 
     #-----------------------------------------------------------------------
     @pytest.mark.parametrize("read,expected,calls", [
@@ -74,16 +74,16 @@ class Test_Hub:
     ])
     def test_read(self, test_hub, read, expected, calls):
         # necessary to stop client from running
-        mock.patch.object(threading, 'Thread')
-        mock.patch.object(test_hub.signal_read, 'emit')
-        test_hub.poll(time.time())
-        if read is not None:
-            test_hub.client._read_queue.put(read)
-        test_hub._read_from_hub()
-        args_list = test_hub.signal_read.emit.call_args_list
-        assert test_hub.signal_read.emit.call_count == calls
-        if expected is not None:
-            assert args_list[0][0][1] == expected
+        threading.Thread = mock.Mock()
+        with patch.object(test_hub.signal_read, 'emit'):
+            test_hub.poll(time.time())
+            if read is not None:
+                test_hub.client._read_queue.put(read)
+            test_hub._read_from_hub()
+            args_list = test_hub.signal_read.emit.call_args_list
+            assert test_hub.signal_read.emit.call_count == calls
+            if expected is not None:
+                assert args_list[0][0][1] == expected
 
     #-----------------------------------------------------------------------
     @pytest.mark.parametrize("write,t,expected,buffer,calls", [
@@ -93,31 +93,31 @@ class Test_Hub:
     ])
     def test_write(self, test_hub, write, t, expected, buffer, calls):
         # necessary to stop client from running
-        mock.patch.object(threading, 'Thread')
-        mock.patch.object(test_hub.signal_wrote, 'emit')
-        test_hub.poll(time.time())
-        mock.patch.object(test_hub.client, 'write')
-        if write is not None:
-            test_hub.write(write, after_time=t)
-        test_hub._write_to_hub(time.time())
-        args_list = test_hub.signal_wrote.emit.call_args_list
-        assert test_hub.signal_wrote.emit.call_count == calls
-        assert len(test_hub._write_buf) == buffer
-        if expected is not None:
-            assert args_list[0][0][1] == expected
+        threading.Thread = mock.Mock()
+        with mock.patch.object(test_hub.signal_wrote, 'emit'):
+            test_hub.poll(time.time())
+            mock.patch.object(test_hub.client, 'write')
+            if write is not None:
+                test_hub.write(write, after_time=t)
+            test_hub._write_to_hub(time.time())
+            args_list = test_hub.signal_wrote.emit.call_args_list
+            assert test_hub.signal_wrote.emit.call_count == calls
+            assert len(test_hub._write_buf) == buffer
+            if expected is not None:
+                assert args_list[0][0][1] == expected
 
     #-----------------------------------------------------------------------
     def test_close(self, test_hub):
         # necessary to stop client from running
-        mock.patch.object(threading, 'Thread')
-        mock.patch.object(test_hub.signal_closing, 'emit')
-        # Starts the HubClient
-        test_hub.poll(time.time())
-        self._write_buf = [bytes([0x00])]
-        test_hub.close()
-        assert len(test_hub._write_buf) == 0
-        assert test_hub.client._close == True
-        assert test_hub.signal_closing.emit.call_count == 1
+        threading.Thread = mock.Mock()
+        with mock.patch.object(test_hub.signal_closing, 'emit'):
+            # Starts the HubClient
+            test_hub.poll(time.time())
+            self._write_buf = [bytes([0x00])]
+            test_hub.close()
+            assert len(test_hub._write_buf) == 0
+            assert test_hub.client._close == True
+            assert test_hub.signal_closing.emit.call_count == 1
 
     #-----------------------------------------------------------------------
     def test_str(self, test_hub):
@@ -130,27 +130,27 @@ class Test_HubClient:
         test_response = Response()
         test_response.status_code = 200
         test_response._content = BUFFSTATUS
-        mock.patch.object(requests, 'get', return_value=test_response)
-        response = test_hubclient._get_hub_buffer()
-        assert response
+        with patch.object(requests, 'get', return_value=test_response):
+            response = test_hubclient._get_hub_buffer()
+            assert response
 
     def test_get_buffer_timeout(self, test_hubclient):
         test_response = Response()
         test_response.status_code = 200
         test_response._content = BUFFSTATUS
-        mock.patch.object(requests, 'get', side_effect=requests.exceptions.Timeout)
-        response = test_hubclient._get_hub_buffer()
-        assert test_hubclient.read_timeout_count == 1
-        assert not response
+        with patch.object(requests, 'get', side_effect=requests.exceptions.Timeout):
+            response = test_hubclient._get_hub_buffer()
+            assert test_hubclient.read_timeout_count == 1
+            assert not response
 
     def test_get_buffer_repeated_timeout(self, test_hubclient):
         test_response = Response()
         test_response.status_code = 200
         test_response._content = BUFFSTATUS
         test_hubclient.read_timeout_count = 6
-        mock.patch.object(requests, 'get', side_effect=requests.exceptions.Timeout)
-        response = test_hubclient._get_hub_buffer()
-        assert test_hubclient.read_timeout_count == 0
+        with patch.object(requests, 'get', side_effect=requests.exceptions.Timeout):
+            response = test_hubclient._get_hub_buffer()
+            assert test_hubclient.read_timeout_count == 0
 
     def test_parse_buffer(self, test_hubclient):
         test_response = Response()
@@ -172,15 +172,15 @@ class Test_HubClient:
         assert ret == expected
 
     def test_perform_write(self, test_hubclient):
-        mock.patch.object(requests, 'get')
-        test_hubclient.write(bytes([0x02,0x06]))
-        test_hubclient._perform_write()
-        args = requests.get.call_args
-        assert args[0][0] == 'http://192.168.1.1:25105/3?0206=I=3'
+        with patch.object(requests, 'get'):
+            test_hubclient.write(bytes([0x02,0x06]))
+            test_hubclient._perform_write()
+            args = requests.get.call_args
+            assert args[0][0] == 'http://192.168.1.1:25105/3?0206=I=3'
 
     def test_perform_write_timeout(self, test_hubclient):
-        mock.patch.object(requests, 'get', side_effect=requests.exceptions.Timeout)
-        test_hubclient.write(bytes([0x02,0x06]))
-        test_hubclient._perform_write()
-        args = requests.get.call_args
-        assert args[0][0] == 'http://192.168.1.1:25105/3?0206=I=3'
+        with patch.object(requests, 'get', side_effect=requests.exceptions.Timeout):
+            test_hubclient.write(bytes([0x02,0x06]))
+            test_hubclient._perform_write()
+            args = requests.get.call_args
+            assert args[0][0] == 'http://192.168.1.1:25105/3?0206=I=3'
