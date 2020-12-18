@@ -838,24 +838,18 @@ class IOLinc(Base):
                    completed.  Signature is: on_done(success, msg, data)
         """
         # This state is for the relay.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
-            on_done(True, "IOLinc command complete", None)
+        LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
+        on_done(True, "IOLinc command complete", None)
 
-            # On command.  0x11: on
-            if msg.cmd1 == 0x11:
-                LOG.info("IOLinc %s relay ON", self.addr)
-                self._set_relay_is_on(True)
+        # On command.  0x11: on
+        if msg.cmd1 == 0x11:
+            LOG.info("IOLinc %s relay ON", self.addr)
+            self._set_relay_is_on(True)
 
-            # Off command. 0x13: off
-            elif msg.cmd1 == 0x13:
-                LOG.info("IOLinc %s relay OFF", self.addr)
-                self._set_relay_is_on(False)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("IOLinc %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "IOLinc command failed. " + msg.nak_str(), None)
+        # Off command. 0x13: off
+        elif msg.cmd1 == 0x13:
+            LOG.info("IOLinc %s relay OFF", self.addr)
+            self._set_relay_is_on(False)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

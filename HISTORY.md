@@ -1,5 +1,14 @@
 # Revision Change History
 
+## [0.7.5]
+
+### Additions
+
+### Fixes
+
+- Improved message handling and processing of Pre_NAK messages.
+  ([PR 236][P236])
+
 ## [0.7.4]
 
 ### Additions
@@ -459,3 +468,4 @@ will add new features.
 [P235]: https://github.com/TD22057/insteon-mqtt/pull/235
 [P259]: https://github.com/TD22057/insteon-mqtt/pull/259
 [P234]: https://github.com/TD22057/insteon-mqtt/pull/234
+[P236]: https://github.com/TD22057/insteon-mqtt/pull/236
