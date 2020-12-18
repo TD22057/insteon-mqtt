@@ -156,10 +156,28 @@ def test_set_button_led(test_device):
     test_device.set_button_led(group, True)
     assert len(test_device.protocol.sent) == 0
 
-    ## GROUP 1 not currently enabled
     group = 0x01
     test_device.set_button_led(group, True)
     assert len(test_device.protocol.sent) == 0
+
+    test_device._load_group = 1
+    group = 0x01
+    test_device.set_button_led(group, True)
+    assert len(test_device.protocol.sent) == 0
+
+    def group_bytes(group):
+        data = bytes([
+            0x01,
+            0x09,
+            group,
+            ] + [0x00] * 11)
+        return data
+    for params in ([2, True, 0x02], [5, True, 0x10], [2, False, 0x00]):
+        test_device.set_button_led(params[0], params[1])
+        assert len(test_device.protocol.sent) == 1
+        assert test_device.protocol.sent[0].msg.cmd1 == 0x2e
+        assert test_device.protocol.sent[0].msg.data == group_bytes(params[2])
+        test_device.protocol.clear()
 
 def test_set_backlight(test_device):
     # set_backlight(self, level, on_done=None)
@@ -202,7 +220,6 @@ def test_set_ramp_rate(test_device):
     test_device.set_ramp_rate(5)
     assert len(test_device.protocol.sent) == 0
 
-
     # Test dimmer
     test_device.is_dimmer = True
     def level_bytes(level):
@@ -218,3 +235,46 @@ def test_set_ramp_rate(test_device):
         assert test_device.protocol.sent[0].msg.cmd1 == 0x2e
         assert test_device.protocol.sent[0].msg.data == level_bytes(params[1])
         test_device.protocol.clear()
+
+def test_set_on_level(test_device):
+    # set_on_level(self, level, on_done=None)
+    # Test switch
+    test_device.is_dimmer = False
+    test_device.set_on_level(5)
+    assert len(test_device.protocol.sent) == 0
+
+    # Test dimmer
+    test_device.is_dimmer = True
+    def level_bytes(level):
+        data = bytes([
+            0x01,
+            0x06,
+            level,
+            ] + [0x00] * 11)
+        return data
+    for params in ([1, 0x01], [127, 127], [255, 0xFF]):
+        test_device.set_on_level(params[0])
+        assert len(test_device.protocol.sent) == 1
+        assert test_device.protocol.sent[0].msg.cmd1 == 0x2e
+        assert test_device.protocol.sent[0].msg.data == level_bytes(params[1])
+        test_device.protocol.clear()
+
+def test_set_flags(test_device):
+    # set_flags(self, on_done, **kwargs)
+    for params in ([{'backlight': 1}, test_device.set_backlight, 0x01],
+                   [{'load_attached': 1}, test_device.set_load_attached, 0x01],
+                   [{'on_level': 127}, test_device.set_on_level, 0x7F],
+                   [{'ramp_rate': .1}, test_device.set_ramp_rate, .1],
+                   [{'follow_mask': 1, "group": 4},
+                    test_device.set_led_follow_mask, 4],
+                   [{'off_mask': 1, "group": 4},
+                    test_device.set_led_off_mask, 4],
+                   [{'signal_bits': 1}, test_device.set_signal_bits, 0x01],
+                   [{'nontoggle_bits': 1}, test_device.set_nontoggle_bits, 0x01],
+                  ):
+        with mock.patch.object(IM.CommandSeq, 'add'):
+            test_device.set_flags(None, **params[0])
+            args_list = IM.CommandSeq.add.call_args_list
+            assert IM.CommandSeq.add.call_count == 1
+            assert args_list[0][0][0] == params[1]
+            assert args_list[0][0][1] == params[2]
