@@ -71,21 +71,21 @@ def test_refresh(test_device):
 def test_link_data(test_device):
     # is_controller, group, data=None
     data = test_device.link_data(True, 0x01, data=None)
-    assert data == bytes([0x03,0x00,0x01])
+    assert data == bytes([0x03, 0x00, 0x01])
     data = test_device.link_data(True, 0x02, data=None)
-    assert data == bytes([0x03,0x00,0x02])
+    assert data == bytes([0x03, 0x00, 0x02])
     data = test_device.link_data(False, 0x02, data=None)
-    assert data == bytes([0xff,0x1f,0x02])
+    assert data == bytes([0xff, 0x1f, 0x02])
 
 def test_link_data_pretty(test_device):
     # is_controller, data
-    data = test_device.link_data_to_pretty(True, data=[0x00,0x00,0x00])
+    data = test_device.link_data_to_pretty(True, data=[0x00, 0x00, 0x00])
     assert data == [{'data_1': 0}, {'data_2': 0}, {'group': 0}]
-    data = test_device.link_data_to_pretty(True, data=[0x01,0x00,0x00])
+    data = test_device.link_data_to_pretty(True, data=[0x01, 0x00, 0x00])
     assert data == [{'data_1': 1}, {'data_2': 0}, {'group': 0}]
-    data = test_device.link_data_to_pretty(False, data=[0xff,0x00,0x00])
+    data = test_device.link_data_to_pretty(False, data=[0xff, 0x00, 0x00])
     assert data == [{'on_level': 100.0}, {'ramp_rate': 540}, {'group': 0}]
-    data = test_device.link_data_to_pretty(False, data=[0xff,0x1f,0x05])
+    data = test_device.link_data_to_pretty(False, data=[0xff, 0x1f, 0x05])
     assert data == [{'on_level': 100.0}, {'ramp_rate': .1}, {'group': 5}]
 
 def test_link_data_from_pretty(test_device):
@@ -106,3 +106,115 @@ def test_link_data_from_pretty(test_device):
                                                          'data_2': 0x02,
                                                          'data_3': 0x03})
     assert data == [0x01, 0x02, 0x03]
+
+def test_increment_up(test_device):
+    # increment_up(self, reason="", on_done=None)
+    # Switch shouldn't do anything
+    test_device.is_dimmer = False
+    test_device.increment_up()
+    assert len(test_device.protocol.sent) == 0
+
+    # dimmer
+    test_device.is_dimmer = True
+    test_device.increment_up()
+    assert len(test_device.protocol.sent) == 1
+    assert test_device.protocol.sent[0].msg.cmd1 == 0x15
+
+def test_increment_down(test_device):
+    # increment_up(self, reason="", on_done=None)
+    # Switch shouldn't do anything
+    test_device.is_dimmer = False
+    test_device.increment_down()
+    assert len(test_device.protocol.sent) == 0
+
+    # dimmer
+    test_device.is_dimmer = True
+    test_device.increment_down()
+    assert len(test_device.protocol.sent) == 1
+    assert test_device.protocol.sent[0].msg.cmd1 == 0x16
+
+def test_set_load_attached(test_device):
+    # set_load_attached(self, is_attached, on_done=None):
+    test_device.set_load_attached(True)
+    assert len(test_device.protocol.sent) == 1
+    assert test_device.protocol.sent[0].msg.cmd1 == 0x20
+    assert test_device.protocol.sent[0].msg.cmd2 == 0x1a
+
+    test_device.protocol.clear()
+    test_device.set_load_attached(False)
+    assert len(test_device.protocol.sent) == 1
+    assert test_device.protocol.sent[0].msg.cmd1 == 0x20
+    assert test_device.protocol.sent[0].msg.cmd2 == 0x1b
+
+def test_set_button_led(test_device):
+    # set_button_led(self, group, is_on, reason="", on_done=None)
+    group = 0x09
+    test_device.set_button_led(group, True)
+    assert len(test_device.protocol.sent) == 0
+
+    group = 0x00
+    test_device.set_button_led(group, True)
+    assert len(test_device.protocol.sent) == 0
+
+    ## GROUP 1 not currently enabled
+    group = 0x01
+    test_device.set_button_led(group, True)
+    assert len(test_device.protocol.sent) == 0
+
+def test_set_backlight(test_device):
+    # set_backlight(self, level, on_done=None)
+    test_device.set_backlight(0)
+    assert len(test_device.protocol.sent) == 1
+    assert test_device.protocol.sent[0].msg.cmd1 == 0x20
+    assert test_device.protocol.sent[0].msg.cmd2 == 0x08
+    test_device.protocol.clear()
+
+    def level_bytes(level):
+        data = bytes([
+            0x01,   # D1 must be group 0x01
+            0x07,   # D2 set global led brightness
+            level,  # D3 brightness level
+            ] + [0x00] * 11)
+        return data
+
+    for params in ([1, 0x11], [255, 0x7F], [127, 127]):
+        with mock.patch.object(IM.CommandSeq, 'add_msg'):
+            test_device.set_backlight(params[0])
+            args_list = IM.CommandSeq.add_msg.call_args_list
+            assert IM.CommandSeq.add_msg.call_count == 1
+            # Check the first call
+            assert args_list[0][0][0].cmd1 == 0x2e
+            assert args_list[0][0][0].data == level_bytes(params[1])
+
+    with mock.patch.object(IM.CommandSeq, 'add'):
+        # test backlight off
+        test_device._backlight = False
+        test_device.set_backlight(1)
+        args_list = IM.CommandSeq.add.call_args_list
+        assert IM.CommandSeq.add.call_count == 1
+        # Check the first call
+        assert args_list[0][0][1] == True
+
+def test_set_ramp_rate(test_device):
+    # set_ramp_rate(self, rate, on_done=None)
+    # Test switch
+    test_device.is_dimmer = False
+    test_device.set_ramp_rate(5)
+    assert len(test_device.protocol.sent) == 0
+
+
+    # Test dimmer
+    test_device.is_dimmer = True
+    def level_bytes(level):
+        data = bytes([
+            0x01,   # D1 must be group 0x01
+            0x05,   # D2 set global led brightness
+            level,  # D3 brightness level
+            ] + [0x00] * 11)
+        return data
+    for params in ([.1, 0x1f], [540, 0x00], [600, 0x00], [.0001, 0x1c]):
+        test_device.set_ramp_rate(params[0])
+        assert len(test_device.protocol.sent) == 1
+        assert test_device.protocol.sent[0].msg.cmd1 == 0x2e
+        assert test_device.protocol.sent[0].msg.data == level_bytes(params[1])
+        test_device.protocol.clear()
