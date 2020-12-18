@@ -557,7 +557,8 @@ class Device:
 
         delta = DbDiff(self.addr)
         for entry in self.entries.values():
-            rhsEntry = rhs.find(entry.addr, entry.group, entry.is_controller)
+            rhsEntry = rhs.find(entry.addr, entry.group, entry.is_controller,
+                                entry.data[2])
 
             # RHS is missing this entry or has different data bytes we need
             # to update.
@@ -782,7 +783,8 @@ class Device:
         """
         # pylint: disable=too-many-locals
 
-        seq = CommandSeq(self.device, "Device database update complete", on_done)
+        seq = CommandSeq(self.device, "Device database update complete",
+                         on_done)
 
         last_mem_loc = self.last.mem_loc
 

@@ -1,5 +1,14 @@
 # Revision Change History
 
+## [0.7.5]
+
+### Additions
+
+### Fixes
+
+- Improved message handling and processing of Pre_NAK messages.
+  ([PR 236][P236])
+
 ## [0.7.4]
 
 ### Additions
@@ -40,9 +49,14 @@
 
 ### Fixes
 
+- Major fixes to a number of bugs in the Scenes management functions.
+  (thanks @tstabrawa)([PR 234][P234])
+
 - Database delta is updated on database writes.  This eliminates a number of
   unnecessary refresh requirements, particularly around pairing.  
   ([PR 248][P248])
+
+- Minor fix to the calculation of hops on resent messages.  ([PR 259][P259])
 
 ## [0.7.3]
 
@@ -452,3 +466,6 @@ will add new features.
 [P239]: https://github.com/TD22057/insteon-mqtt/pull/239
 [P244]: https://github.com/TD22057/insteon-mqtt/pull/244
 [P235]: https://github.com/TD22057/insteon-mqtt/pull/235
+[P259]: https://github.com/TD22057/insteon-mqtt/pull/259
+[P234]: https://github.com/TD22057/insteon-mqtt/pull/234
+[P236]: https://github.com/TD22057/insteon-mqtt/pull/236

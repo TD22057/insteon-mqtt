@@ -3,7 +3,6 @@
 # MQTT leak sensor device
 #
 #===========================================================================
-import time
 from .. import log
 from .BatterySensor import BatterySensor
 from .MsgTemplate import MsgTemplate

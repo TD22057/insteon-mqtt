@@ -454,14 +454,8 @@ class Thermostat(Base):
         """
         on_done = util.make_callback(on_done)
 
-        if msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("%s NAK: %s, Message: %s", self.db.addr, msg.nak_str(),
-                      msg)
-            on_done(False, "Thermostat command NAK. " + msg.nak_str(), None)
-
-        else:
-            LOG.debug("Thermostat %s generic ack recevied", self.addr)
-            on_done(True, "Thermostat generic ack recevied", None)
+        LOG.debug("Thermostat %s generic ack recevied", self.addr)
+        on_done(True, "Thermostat generic ack recevied", None)
 
     #-----------------------------------------------------------------------
     def handle_broadcast(self, msg):
@@ -538,13 +532,7 @@ class Thermostat(Base):
         """
         on_done = util.make_callback(on_done)
 
-        if msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("%s mode command NAK: %s, Message: %s", self.db.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Thermostat mode command NAK. " + msg.nak_str(),
-                    None)
-
-        elif msg.cmd1 == 0x6b:
+        if msg.cmd1 == 0x6b:
             self.signal_mode_change.emit(self,
                                          Thermostat.ModeCommands(msg.cmd2))
             on_done(True, "Thermostat recevied mode command", None)
@@ -586,13 +574,7 @@ class Thermostat(Base):
         """
         on_done = util.make_callback(on_done)
 
-        if msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("%s fan command NAK: %s, Message: %s", self.db.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Thermostat fan command NAK. " + msg.nak_str(),
-                    None)
-
-        elif msg.cmd1 == 0x6b:
+        if msg.cmd1 == 0x6b:
             self.signal_fan_mode_change.emit(self,
                                              Thermostat.FanCommands(msg.cmd2))
             on_done(True, "Thermostat recevied fan mode command", None)

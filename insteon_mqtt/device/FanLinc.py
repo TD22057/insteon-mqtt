@@ -338,19 +338,12 @@ class FanLinc(Dimmer):
 
         # If this it the ACK we're expecting, update the internal state and
         # emit our signals.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("FanLinc fan %s ACK: %s", self.addr, msg)
+        LOG.debug("FanLinc fan %s ACK: %s", self.addr, msg)
 
-            reason = reason if reason else on_off.REASON_COMMAND
-            self._set_fan_speed(msg.cmd2, reason)
-            on_done(True, "Fan %s state updated to %s" %
-                    (self.addr, self._fan_speed), msg.cmd2)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("FanLinc fan %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Fan %s state update failed. " + msg.nak_str(),
-                    None)
+        reason = reason if reason else on_off.REASON_COMMAND
+        self._set_fan_speed(msg.cmd2, reason)
+        on_done(True, "Fan %s state updated to %s" %
+                (self.addr, self._fan_speed), msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
@@ -498,11 +491,12 @@ class FanLinc(Dimmer):
         if not is_controller:
             if 'group' in data:
                 data_3 = data['group']
-                if 'ramp' in data and data['group'] <= 0x01:
-                    data_2 = 0x1f
-                    for ramp_key, ramp_value in Dimmer.ramp_pretty:
-                        if data['ramp'] >= ramp_value:
-                            data_2 = ramp_key
+            if 'ramp_rate' in data and (data_3 is None or data_3 <= 0x01):
+                data_2 = 0x1f
+                for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
+                    if data['ramp_rate'] >= ramp_value:
+                        data_2 = ramp_key
+                        break
             if 'on_level' in data:
                 data_1 = int(data['on_level'] * 2.55 + .5)
         return [data_1, data_2, data_3]

@@ -162,8 +162,8 @@ class Manager:
         # items from that dict when the callbacks happen.  So copy the value
         # and iterate over that.
         links = list(self.links.values())
-        for l in links:
-            l.close()
+        for link in links:
+            link.close()
 
     #-----------------------------------------------------------------------
     def select(self, time_out=None):
@@ -247,7 +247,8 @@ class Manager:
         # user reports.  So copy the links before iterating since closing the
         # link mods the dict which isn't allowed.  This isn't ideal but the
         # number of links should be small so it probably doesn't matter.
-        for link in itertools.chain(list(self.links.values()), self.poll_links):
+        for link in itertools.chain(list(self.links.values()),
+                                    self.poll_links):
             link.poll(t)
 
     #-----------------------------------------------------------------------
