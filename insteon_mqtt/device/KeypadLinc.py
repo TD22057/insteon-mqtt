@@ -130,8 +130,6 @@ class KeypadLinc(Base):
         # for broadcast messages from this group
         # We don't configure for the distinction between 6 and 8 keypads
         # pairing extra groups doesn't do any harm.
-        # Not sure we need to pair group 0x09, this is the detached load, I
-        # do not believe it can act as a controller
         self.group_map.update({0x01: self.handle_on_off,
                                0x02: self.handle_on_off,
                                0x03: self.handle_on_off,
@@ -139,8 +137,7 @@ class KeypadLinc(Base):
                                0x05: self.handle_on_off,
                                0x06: self.handle_on_off,
                                0x07: self.handle_on_off,
-                               0x08: self.handle_on_off,
-                               0x09: self.handle_on_off})
+                               0x08: self.handle_on_off})
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):

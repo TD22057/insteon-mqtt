@@ -28,28 +28,25 @@ def test_pair(test_device):
         test_device.pair()
         calls = [
             call(test_device.refresh),
-            call(test_device.db_add_resp_of, 0x01, test_device.modem.addr, 0x01,
-                 refresh=False),
             call(test_device.db_add_ctrl_of, 0x01, test_device.modem.addr, 0x01,
                  refresh=False),
-            call(test_device.db_add_ctrl_of, 0x02, test_device.modem.addr, 0x02,
+            call(test_device.db_add_ctrl_of, 0x02, test_device.modem.addr, 0x01,
                  refresh=False),
-            call(test_device.db_add_ctrl_of, 0x03, test_device.modem.addr, 0x03,
+            call(test_device.db_add_ctrl_of, 0x03, test_device.modem.addr, 0x01,
                  refresh=False),
-            call(test_device.db_add_ctrl_of, 0x04, test_device.modem.addr, 0x04,
+            call(test_device.db_add_ctrl_of, 0x04, test_device.modem.addr, 0x01,
                  refresh=False),
-            call(test_device.db_add_ctrl_of, 0x05, test_device.modem.addr, 0x05,
+            call(test_device.db_add_ctrl_of, 0x05, test_device.modem.addr, 0x01,
                  refresh=False),
-            call(test_device.db_add_ctrl_of, 0x06, test_device.modem.addr, 0x06,
+            call(test_device.db_add_ctrl_of, 0x06, test_device.modem.addr, 0x01,
                  refresh=False),
-            call(test_device.db_add_ctrl_of, 0x07, test_device.modem.addr, 0x07,
+            call(test_device.db_add_ctrl_of, 0x07, test_device.modem.addr, 0x01,
                  refresh=False),
-            call(test_device.db_add_ctrl_of, 0x08, test_device.modem.addr, 0x08,
+            call(test_device.db_add_ctrl_of, 0x08, test_device.modem.addr, 0x01,
                  refresh=False)
-
         ]
         IM.CommandSeq.add.assert_has_calls(calls)
-        assert IM.CommandSeq.add.call_count == 11
+        assert IM.CommandSeq.add.call_count == 9
 
 def test_refresh(test_device):
     with mock.patch.object(IM.CommandSeq, 'add_msg'):

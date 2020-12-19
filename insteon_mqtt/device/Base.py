@@ -1069,7 +1069,6 @@ class Base:
         if msg_handler:
             msg_handler(msg)
         else:
-            print(self.group_map)
             LOG.warning("Device %s has no handler for broadcast group %s",
                         self.label, msg.group)
 
