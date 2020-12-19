@@ -74,7 +74,7 @@ class Motion(BatterySensor):
 
         # Insert the dawn/dusk callback on group 02.  Base class already
         # handles the other groups.
-        self.group_map[0x02] = self.handle_dawn
+        self.group_map.update({0x02: self.handle_dawn})
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.

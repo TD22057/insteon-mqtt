@@ -72,7 +72,7 @@ class FanLinc(Dimmer):
         # Support fan speed signals.  API: func(Device, Speed, str reason)
         self.signal_fan_speed = Signal()
 
-        # Remote (mqtt) commands mapped to methods calls.  Add to the base
+        # Remote (mqtt) commands to methods calls.  Add to the base
         # class defined commands.
         self.cmd_map.update({
             'fan_on' : self.fan_on,
@@ -83,7 +83,8 @@ class FanLinc(Dimmer):
         # Update the group map with the groups to be paired and the handler
         # for broadcast messages from this group
         # The fanlinc does not have any controllers it is only a responder
-        # self.group_map.update()
+        # This is necessary to override the dimmer group_map of 0x01
+        self.group_map = {}
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
