@@ -47,6 +47,7 @@ def start(args, cfg):
         loop.add_poll(plm_link)
     else:
         plm_link = network.Serial()
+        loop.add(plm_link, connected=False)
 
     # Add Stack and timed
     stack_link = network.Stack()
