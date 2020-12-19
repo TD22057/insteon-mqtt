@@ -139,6 +139,7 @@ class OutStandard(Base):
         self.to_addr = to_addr
         self.flags = flags
         self.cmd1 = cmd1
+        self.cmd_type = self.CmdType(cmd1)
         self.cmd2 = cmd2
         self.is_ack = is_ack
 
