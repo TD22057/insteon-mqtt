@@ -9,6 +9,10 @@ __doc__ = """Insteon Command Types
 
 These are used in InpStandard, InpExtended, OutStandard, and OutExtended.
 Most of the are unique, but a few commands numbers do have multiple meanings.
+Because of this, do not rely on the conversion of a value to a name to be
+a one to one relationship, you may end up with a different name that you
+expect, so maybe don't use in logging.  However, becuase of enums, logical
+comarisions will still work correctly.
 
 There are likely additional commands that are not in this list.
 """

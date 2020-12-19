@@ -121,52 +121,11 @@ class EZIO4O(Base):
         # we can pop it off and know which output was commanded.
         self._which_output = []
 
-    #-----------------------------------------------------------------------
-    def pair(self, on_done=None):
-        """Pair the device with the modem.
-
-        This only needs to be called one time.  It will set the device
-        as a controller and the modem as a responder so the modem will
-        see group broadcasts and report them to us.
-
-        The device must already be a responder to the modem (push set
-        on the modem, then set on the device) so we can update it's
-        database.
-
-        Args:
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("EZIO4O %s pairing", self.label)
-
-        # Build a sequence of calls to the do the pairing.  This insures each
-        # call finishes and works before calling the next one.  We have to do
-        # this for device db manipulation because we need to know the memory
-        # layout on the device before making changes.
-        seq = CommandSeq(self.protocol, "EZIO4O paired", on_done,
-                         name="DevPair")
-
-        # Start with a refresh command - since we're changing the db, it must
-        # be up to date or bad things will happen.
-        seq.add(self.refresh)
-
-        # Add the device as a responder to the modem on group 1.  This is
-        # probably already there - and maybe needs to be there before we can
-        # even issue any commands but this check insures that the link is
-        # present on the device and the modem.
-        seq.add(
-            self.db_add_resp_of,
-            0x01,
-            self.modem.addr,
-            0x01,
-            refresh=False,
-            local_data=[0x0, 0x0, 0x00],
-        )
-
-        # Start the sequence running.  This will return so the
-        # network event loop can process everything and the on_done callbacks
-        # will chain everything together.
-        seq.run()
+        # Update the group map with the groups to be paired and the handler
+        # for broadcast messages from this group
+        # The EZIO4O has no inputs and so has no groups to pair to or
+        # broadcast messages to process
+        # self.group_map.update({})
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
@@ -650,48 +609,6 @@ class EZIO4O(Base):
         elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
             LOG.error("EZIO4O %s flags NAK error: %s", self.label, msg)
             on_done(False, "EZIO4O %s flags update failed" % self.label, None)
-
-    #-----------------------------------------------------------------------
-    def handle_broadcast(self, msg):
-        """Handle broadcast messages from this device.
-
-        This is called automatically by the system (via handle.Broadcast)
-        when we receive a message from the device.
-
-        The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update the
-        device state and look up the group in the all link database.  For
-        each device that is in the group (as a responder), we'll call
-        handle_group_cmd() on that device to trigger it.  This way all the
-        devices in the group are updated to the correct values when we see
-        the broadcast message.
-
-        Args:
-          msg (InpStandard):  Broadcast message from the device.
-        """
-
-        # ACK of the broadcast.
-        if msg.cmd1 == 0x06:
-            LOG.info("EZIO4O %s broadcast ACK grp: %s", self.label, msg.group)
-            if self.broadcast_done:
-                self.broadcast_done()
-            self.broadcast_done = None
-            return
-
-        # unknown broadcast
-        else:
-            LOG.info(
-                "EZIO4O %s unknown broadcast grp: %s, msg: %s",
-                self.label,
-                msg.group,
-                msg,
-            )
-
-        # This will find all the devices we're the controller of for
-        # this group and call their handle_group_cmd() methods to
-        # update their states since they will have seen the group
-        # broadcast and updated (without sending anything out).
-        super().handle_broadcast(msg)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):

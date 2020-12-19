@@ -85,50 +85,9 @@ class Dimmer(Base):
         self.broadcast_done = None
         self.broadcast_reason = ""
 
-    #-----------------------------------------------------------------------
-    def pair(self, on_done=None):
-        """Pair the device with the modem.
-
-        This only needs to be called one time.  It will set the device as a
-        controller and the modem as a responder so the modem will see group
-        broadcasts and report them to us.
-
-        The device must already be a responder to the modem (push set on the
-        modem, then set on the device) so we can update it's database.
-
-        Args:
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Dimmer %s pairing", self.addr)
-
-        # Build a sequence of calls to the do the pairing.  This insures each
-        # call finishes and works before calling the next one.  We have to do
-        # this for device db manipulation because we need to know the memory
-        # layout on the device before making changes.
-        seq = CommandSeq(self, "Dimmer paired", on_done, name="DevPair")
-
-        # Start with a refresh command - since we're changing the db, it must
-        # be up to date or bad things will happen.
-        seq.add(self.refresh)
-
-        # Add the device as a responder to the modem on group 1.  This is
-        # probably already there - and maybe needs to be there before we can
-        # even issue any commands but this check insures that the link is
-        # present on the device and the modem.
-        seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
-                refresh=False)
-
-        # Now add the device as the controller of the modem for group 1.
-        # This lets the modem receive updates about the button presses and
-        # state changes.
-        seq.add(self.db_add_ctrl_of, 0x01, self.modem.addr, 0x01,
-                refresh=False)
-
-        # Finally start the sequence running.  This will return so the
-        # network event loop can process everything and the on_done callbacks
-        # will chain everything together.
-        seq.run()
+        # Update the group map with the groups to be paired and the handler
+        # for broadcast messages from this group
+        self.group_map.update({0x01: self.handle_on_off})
 
     #-----------------------------------------------------------------------
     def on(self, group=0x01, level=0xff, mode=on_off.Mode.NORMAL, reason="",
@@ -654,19 +613,10 @@ class Dimmer(Base):
             on_done(False, "Button ramp rate failed", None)
 
     #-----------------------------------------------------------------------
-    def handle_broadcast(self, msg):
+    def handle_on_off(self, msg):
         """Handle broadcast messages from this device.
 
-        This is called automatically by the system (via handle.Broadcast)
-        when we receive a message from the device.
-
-        The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update the
-        device state and look up the group in the all link database.  For
-        each device that is in the group (as a reponsder), we'll call
-        handle_group_cmd() on that device to trigger it.  This way all the
-        devices in the group are updated to the correct values when we see
-        the broadcast message.
+        This is called from base.handle_broadcast using the group_cmd map.
 
         Args:
           msg (InpStandard): Broadcast message from the device.
@@ -680,7 +630,7 @@ class Dimmer(Base):
         # ACK of the broadcast.  Ignore this unless we sent a simulated off
         # scene in which case run the broadcast done handler.  This is a
         # weird special case - see scene() for details.
-        if msg.cmd1 == 0x06:
+        if msg.cmd_type == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("Dimmer %s broadcast ACK grp: %s", self.addr, msg.group)
             if self.broadcast_done:
                 self.broadcast_done()
@@ -719,7 +669,7 @@ class Dimmer(Base):
         # group and call their handle_group_cmd() methods to update their
         # states since they will have seen the group broadcast and updated
         # (without sending anything out).
-        super().handle_broadcast(msg)
+        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
