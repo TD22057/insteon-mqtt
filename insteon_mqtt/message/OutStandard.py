@@ -5,9 +5,11 @@
 #===========================================================================
 import io
 import itertools
+from . import CmdType
 from ..Address import Address
 from .Base import Base
 from .Flags import Flags
+from .CmdType import CmdType
 
 
 class OutStandard(Base):
@@ -139,7 +141,10 @@ class OutStandard(Base):
         self.to_addr = to_addr
         self.flags = flags
         self.cmd1 = cmd1
-        self.cmd_type = self.CmdType(cmd1)
+        try:
+            self.cmd_type = CmdType(cmd1)
+        except ValueError:
+            pass
         self.cmd2 = cmd2
         self.is_ack = is_ack
 

@@ -3,7 +3,6 @@
 # Base message class
 #
 #===========================================================================
-import enum
 
 class Base:
     """Base message class
@@ -17,39 +16,6 @@ class Base:
     # Read message size (including ack/nak byte).  Derived types should set
     # this if the message has fixed size otherwise implement msg_size().
     fixed_msg_size = None
-
-    # Cmd types used in InpStandard OutStandard
-    # Used to make reading the code easier. I am not sure that the insteon
-    # specification is always consistent so be careful using these
-    class CmdType(enum.IntEnum):
-        ASSIGN_TO_GROUP = 0x01
-        DELETE_FROM_GROUP = 0x02
-        LINK_CLEANUP_REPORT = 0x06
-        LINKING_MODE = 0x09
-        UNLINKING_MODE = 0x0A
-        GET_ENGINE_VERSION = 0x0D
-        PING = 0x0F
-        ID_REQUEST = 0x10
-        ON_FAST = 0x12
-        OFF_FAST = 0x14
-        START_MANUAL_CHANGE = 0x17
-        STOP_MANUAL_CHANGE = 0x18
-        STATUS_REQUEST = 0x19
-        GET_OPERATING_FLAGS = 0x1f
-        SET_OPERATING_FLAGS = 0x20
-        DO_READ_EE = 0x24
-        REMOTE_SET_BUTTON_TAP = 0x25
-        SET_LED_STATUS = 0x27
-        SET_ADDRESS_MSB = 0x28
-        POKE = 0x29
-        POKE_EXTENDED = 0x2a
-        PEEK = 0x2b
-        PEEK_INTERNAL = 0x2c
-        POKE_INTERNAL = 0x2d
-        EXTENDED_SET_GET = 0x2e
-        READ_WRITE_ALDB = 0x2f
-        IMETER_RESET = 0x80
-        IMETER_QUERY = 0x82
 
     #-----------------------------------------------------------------------
     @classmethod

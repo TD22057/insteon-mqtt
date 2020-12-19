@@ -9,6 +9,7 @@ import time
 from ..Address import Address
 from .Base import Base
 from .Flags import Flags
+from .CmdType import CmdType
 
 
 class InpStandard(Base):
@@ -77,7 +78,11 @@ class InpStandard(Base):
         self.to_addr = to_addr
         self.flags = flags
         self.cmd1 = cmd1
-        self.cmd_type = self.CmdType(cmd1)
+        self.cmd_type = None
+        try:
+            self.cmd_type = CmdType(cmd1)
+        except ValueError:
+            pass
         self.cmd2 = cmd2
         self.group = None
         if self.flags.is_broadcast:
@@ -221,7 +226,10 @@ class InpExtended(Base):
         self.to_addr = to_addr
         self.flags = flags
         self.cmd1 = cmd1
-        self.cmd_type = self.CmdType(cmd1)
+        try:
+            self.cmd_type = CmdType(cmd1)
+        except ValueError:
+            pass
         self.cmd2 = cmd2
         self.data = data
         self.group = None
