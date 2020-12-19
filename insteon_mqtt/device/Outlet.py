@@ -399,7 +399,7 @@ class Outlet(Base):
     def handle_on_off(self, msg):
         """Handle broadcast on_off messages from this device.
 
-        This is called via the handle_broadcast and the mapping in group_cmd.
+        This is called via the handle_broadcast and the mapping in group_map.
 
         Args:
           msg (InpStandard):  Broadcast message from the device.

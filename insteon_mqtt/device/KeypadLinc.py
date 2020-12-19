@@ -1346,7 +1346,7 @@ class KeypadLinc(Base):
     def handle_on_off(self, msg):
         """Handle on_off broadcast messages from this device.
 
-        This is called from base.handle_broadcast using the group_cmd map.
+        This is called from base.handle_broadcast using the group_map map.
 
         Args:
           msg (InpStandard):  Broadcast message from the device.

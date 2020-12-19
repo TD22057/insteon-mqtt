@@ -1055,7 +1055,7 @@ class Base:
 
         The broadcast message from a device is sent when the device is
         triggered.  The message has the group ID in it, this uses the class
-        attribute group_cmd to map the group to the handler that should process
+        attribute group_map to map the group to the handler that should process
         the message.  This handler should be prepared to receive both broadcast
         messages and CmdType.LINK_CLEANUP_REPORT messages as well. The handler
         should likely pass all valid broadcast commands to
@@ -1069,6 +1069,7 @@ class Base:
         if msg_handler:
             msg_handler(msg)
         else:
+            print(self.group_map)
             LOG.warning("Device %s has no handler for broadcast group %s",
                         self.label, msg.group)
 

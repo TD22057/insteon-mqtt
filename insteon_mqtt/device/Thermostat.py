@@ -120,7 +120,7 @@ class Thermostat(Base):
         protocol.add_handler(handler.ThermostatCmd(self))
 
         # Defined controller groups and the handlers for them
-        self.group_cmd = {
+        self.group_map = {
             self.Groups.COOLING.value: self.handle_message,
             self.Groups.HEATING.value: self.handle_message,
             self.Groups.HUMID_HIGH.value: self.handle_message,

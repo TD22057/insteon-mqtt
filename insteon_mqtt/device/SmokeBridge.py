@@ -114,7 +114,7 @@ class SmokeBridge(Base):
     def handle_message(self, msg):
         """Handle broadcast messages from this device.
 
-        This is called by Base.handle_broadcast using the group_cmd map.
+        This is called by Base.handle_broadcast using the group_map map.
 
         Args:
           msg (InpStandard):  Broadcast message from the device.
