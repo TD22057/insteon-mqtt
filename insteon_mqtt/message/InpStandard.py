@@ -77,6 +77,7 @@ class InpStandard(Base):
         self.to_addr = to_addr
         self.flags = flags
         self.cmd1 = cmd1
+        self.cmd_type = self.CmdType(cmd1)
         self.cmd2 = cmd2
         self.group = None
         if self.flags.is_broadcast:
