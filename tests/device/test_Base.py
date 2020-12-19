@@ -5,11 +5,8 @@
 #===========================================================================
 import pytest
 # from pprint import pprint
-# try:
-#     import mock
-# except ImportError:
-#     from unittest import mock
-# from unittest.mock import call
+from unittest import mock
+from unittest.mock import call
 import insteon_mqtt as IM
 import insteon_mqtt.device.Base as Base
 # import insteon_mqtt.message as Msg
@@ -55,6 +52,15 @@ class Test_Base_Config():
         # This just prints an output just make sure we don't crash
         test_device.print_db(util.make_callback(None))
         assert True
+
+    def test_pair(self, test_device):
+        with mock.patch.object(IM.CommandSeq, 'add'):
+            test_device.pair()
+            calls = [
+                call(test_device.refresh),
+            ]
+            IM.CommandSeq.add.assert_has_calls(calls)
+            assert IM.CommandSeq.add.call_count == 1
 
 
 class MockModem:
