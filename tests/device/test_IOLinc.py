@@ -36,13 +36,11 @@ class Test_IOLinc_Simple():
             test_iolinc.pair()
             calls = [
                 call(test_iolinc.refresh),
-                call(test_iolinc.db_add_resp_of, 0x01, test_iolinc.modem.addr, 0x01,
-                     refresh=False),
                 call(test_iolinc.db_add_ctrl_of, 0x01, test_iolinc.modem.addr, 0x01,
                      refresh=False)
             ]
             IM.CommandSeq.add.assert_has_calls(calls)
-            assert IM.CommandSeq.add.call_count  == 3
+            assert IM.CommandSeq.add.call_count  == 2
 
     def test_get_flags(self, test_iolinc):
         with mock.patch.object(IM.CommandSeq, 'add_msg'):
@@ -187,9 +185,10 @@ class Test_Handles():
                               relay):
         with mock.patch.object(IM.Signal, 'emit'):
             test_iolinc.relay_linked = linked
-            to_addr = test_iolinc.addr
+            to_addr = IM.Address(0x00, 0x00, 0x01)
             from_addr = IM.Address(0x04, 0x05, 0x06)
-            flags = IM.message.Flags(IM.message.Flags.Type.BROADCAST, False)
+            flags = IM.message.Flags(IM.message.Flags.Type.ALL_LINK_BROADCAST,
+                                     False)
             cmd2 = 0x00
             msg = IM.message.InpStandard(from_addr, to_addr, flags, cmd1, cmd2)
             test_iolinc.handle_broadcast(msg)
