@@ -9,7 +9,7 @@
   [Hub Instructions](https://github.com/TD22057/insteon-mqtt/blob/dev/docs/hub.md)
   ([PR 201][P201])
 
-- More pyTests, up to 71% coverage now. ([PR 262][P262] & [PR 268][P268])
+- More pyTests, up to 74% coverage now. ([PR 262][P262] & [PR 268][P268])
 
 ### Fixes
 
@@ -27,6 +27,9 @@
 
 - Tweak some of the logging to be more clear for users. ([PR 272][P272] &
   [PR 275][P275])
+
+- Refactor code around Pair().  Add significant amount of unit tests.
+  ([PR 277][P277])
 
 ## [0.7.4]
 
@@ -496,3 +499,4 @@ will add new features.
 [P272]: https://github.com/TD22057/insteon-mqtt/pull/272
 [P201]: https://github.com/TD22057/insteon-mqtt/pull/201
 [P275]: https://github.com/TD22057/insteon-mqtt/pull/275
+[P277]: https://github.com/TD22057/insteon-mqtt/pull/277
