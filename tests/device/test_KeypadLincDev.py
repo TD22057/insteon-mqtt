@@ -286,7 +286,7 @@ class Test_KPL():
         test_device.handle_refresh_state(msg, on_done)
 
 
-    @pytest.mark.parametrize("group_num,cmd_type,cmd2,expected", [
+    @pytest.mark.parametrize("group_num,cmd1,cmd2,expected", [
         (0x01,Msg.CmdType.ON, 0x00,[255,IM.on_off.Mode.NORMAL, 'device']),
         (0x01,Msg.CmdType.OFF, 0x00, [0,IM.on_off.Mode.NORMAL, 'device']),
         (0x01,Msg.CmdType.ON_FAST, 0x00,[255,IM.on_off.Mode.FAST, 'device']),
@@ -303,12 +303,12 @@ class Test_KPL():
         (0x07,Msg.CmdType.ON, 0x00,[255,IM.on_off.Mode.NORMAL, 'device']),
         (0x08,Msg.CmdType.ON, 0x00,[255,IM.on_off.Mode.NORMAL, 'device']),
     ])
-    def test_handle_on_off(self, test_device, group_num, cmd_type, cmd2, expected):
+    def test_handle_on_off(self, test_device, group_num, cmd1, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:
             flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
             group = IM.Address(0x00, 0x00, group_num)
             addr = IM.Address(0x01, 0x02, 0x03)
-            msg = Msg.InpStandard(addr, group, flags, cmd_type, cmd2)
+            msg = Msg.InpStandard(addr, group, flags, cmd1, cmd2)
             test_device.handle_broadcast(msg)
             if expected is not None:
                 mocked.assert_called_once_with(test_device, group_num, *expected)

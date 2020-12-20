@@ -454,11 +454,11 @@ class Thermostat(Base):
         Args:
           msg (InpStandard): Broadcast message from the device.
         """
-        if msg.cmd_type == Msg.CmdType.LINK_CLEANUP_REPORT:
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("Thermostat %s broadcast ACK grp: %s", self.addr,
                      msg.group)
             return
-        elif msg.cmd_type in [Msg.CmdType.ON, Msg.CmdType.OFF]:
+        elif msg.cmd1 in [Msg.CmdType.ON, Msg.CmdType.OFF]:
             LOG.info("Thermostat %s broadcast %s grp: %s", self.addr, msg.cmd1,
                      msg.group)
 

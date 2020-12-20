@@ -178,13 +178,13 @@ class BatterySensor(Base):
           msg (InpStandard):  Broadcast message from the device.
         """
         # ACK of the broadcast - ignore this.
-        if msg.cmd_type == Msg.CmdType.LINK_CLEANUP_REPORT:
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
                      msg.group)
         else:
             LOG.info("BatterySensor %s on_off broadcast cmd: %s", self.addr,
                      msg.cmd1)
-            self._set_is_on(msg.cmd_type == Msg.CmdType.ON)
+            self._set_is_on(msg.cmd1 == Msg.CmdType.ON)
             self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
@@ -199,14 +199,14 @@ class BatterySensor(Base):
               stored in msg.cmd1.
         """
         # ACK of the broadcast - ignore this.
-        if msg.cmd_type == Msg.CmdType.LINK_CLEANUP_REPORT:
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
                      msg.group)
         else:
             LOG.info("BatterySensor %s low battery broadcast cmd: %s",
                      self.addr, msg.cmd1)
             # Send True for low battery, False for regular.
-            self.signal_low_battery.emit(self, msg.cmd_type == Msg.CmdType.ON)
+            self.signal_low_battery.emit(self, msg.cmd1 == Msg.CmdType.ON)
             self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
@@ -220,7 +220,7 @@ class BatterySensor(Base):
           msg (InpStandard):  Broadcast message from the device.
         """
         # ACK of the broadcast - ignore this.
-        if msg.cmd_type == Msg.CmdType.LINK_CLEANUP_REPORT:
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
                      msg.group)
         else:

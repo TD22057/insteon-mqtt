@@ -83,7 +83,7 @@ class Leak(BatterySensor):
           msg (InpStandard):  Broadcast message from the device.
         """
         # ACK of the broadcast - ignore this.
-        if msg.cmd_type == Msg.CmdType.LINK_CLEANUP_REPORT:
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("LeakSensor %s broadcast ACK grp: %s", self.addr,
                      msg.group)
         else:
@@ -102,7 +102,7 @@ class Leak(BatterySensor):
           msg (InpStandard):  Broadcast message from the device.
         """
         # ACK of the broadcast - ignore this.
-        if msg.cmd_type == Msg.CmdType.LINK_CLEANUP_REPORT:
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("LeakSensor %s broadcast ACK grp: %s", self.addr,
                      msg.group)
         else:
@@ -124,7 +124,7 @@ class Leak(BatterySensor):
           msg (InpStandard):  Broadcast message from the device.
         """
         # ACK of the broadcast - ignore this.
-        if msg.cmd_type == Msg.CmdType.LINK_CLEANUP_REPORT:
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("LeakSensor %s broadcast ACK grp: %s", self.addr,
                      msg.group)
         else:

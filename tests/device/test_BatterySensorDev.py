@@ -41,51 +41,51 @@ class Test_Base_Config():
             IM.CommandSeq.add.assert_has_calls(calls)
             assert IM.CommandSeq.add.call_count == 4
 
-    @pytest.mark.parametrize("cmd_type,expected", [
+    @pytest.mark.parametrize("cmd1,expected", [
         (Msg.CmdType.ON, True),
         (Msg.CmdType.OFF, False),
         (Msg.CmdType.LINK_CLEANUP_REPORT, None),
     ])
-    def test_broadcast_1(self, test_device, cmd_type, expected):
+    def test_broadcast_1(self, test_device, cmd1, expected):
         with mock.patch.object(BatterySensor, '_set_is_on') as mocked:
             flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
             group = IM.Address(0x00, 0x00, 0x01)
             addr = IM.Address(0x01, 0x02, 0x03)
-            msg = Msg.InpStandard(addr, group, flags, cmd_type, 0x00)
+            msg = Msg.InpStandard(addr, group, flags, cmd1, 0x00)
             test_device.handle_broadcast(msg)
             if expected is not None:
                 mocked.assert_called_once_with(expected)
             else:
                 mocked.assert_not_called()
 
-    @pytest.mark.parametrize("cmd_type,expected", [
+    @pytest.mark.parametrize("cmd1,expected", [
         (Msg.CmdType.ON, True),
         (Msg.CmdType.OFF, False),
         (Msg.CmdType.LINK_CLEANUP_REPORT, None),
     ])
-    def test_broadcast_3(self, test_device, cmd_type, expected):
+    def test_broadcast_3(self, test_device, cmd1, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:
             flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
             group = IM.Address(0x00, 0x00, 0x03)
             addr = IM.Address(0x01, 0x02, 0x03)
-            msg = Msg.InpStandard(addr, group, flags, cmd_type, 0x00)
+            msg = Msg.InpStandard(addr, group, flags, cmd1, 0x00)
             test_device.handle_broadcast(msg)
             if expected is not None:
                 mocked.assert_called_once_with(test_device, expected)
             else:
                 mocked.assert_not_called()
 
-    @pytest.mark.parametrize("cmd_type,expected", [
+    @pytest.mark.parametrize("cmd1,expected", [
         (Msg.CmdType.ON, True),
         (Msg.CmdType.OFF, True),
         (Msg.CmdType.LINK_CLEANUP_REPORT, None),
     ])
-    def test_broadcast_4(self, test_device, cmd_type, expected):
+    def test_broadcast_4(self, test_device, cmd1, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:
             flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
             group = IM.Address(0x00, 0x00, 0x04)
             addr = IM.Address(0x01, 0x02, 0x03)
-            msg = Msg.InpStandard(addr, group, flags, cmd_type, 0x00)
+            msg = Msg.InpStandard(addr, group, flags, cmd1, 0x00)
             test_device.handle_broadcast(msg)
             if expected is not None:
                 mocked.assert_called_once_with(test_device, expected)

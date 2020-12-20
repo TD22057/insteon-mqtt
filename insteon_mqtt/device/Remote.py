@@ -147,7 +147,7 @@ class Remote(BatterySensor):
           msg (InpStandard):  Broadcast message from the device.
         """
         # ACK of the broadcast - ignore this.
-        if msg.cmd_type == Msg.CmdType.LINK_CLEANUP_REPORT:
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
                      msg.group)
         else:

@@ -613,12 +613,12 @@ class IOLinc(Base):
           msg (InpStandard):  Broadcast message from the device.
         """
         # ACK of the broadcast - ignore this.
-        if msg.cmd_type == Msg.CmdType.LINK_CLEANUP_REPORT:
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("IOLinc %s broadcast ACK grp: %s", self.addr, msg.group)
             return
 
         # On command.  0x11: on
-        elif msg.cmd_type == Msg.CmdType.ON:
+        elif msg.cmd1 == Msg.CmdType.ON:
             LOG.info("IOLinc %s broadcast ON grp: %s", self.addr, msg.group)
             self._set_sensor_is_on(True)
             if self.relay_linked:
@@ -626,7 +626,7 @@ class IOLinc(Base):
                 self._set_relay_is_on(True)
 
         # Off command. 0x13: off
-        elif msg.cmd_type == Msg.CmdType.OFF:
+        elif msg.cmd1 == Msg.CmdType.OFF:
             LOG.info("IOLinc %s broadcast OFF grp: %s", self.addr, msg.group)
             self._set_sensor_is_on(False)
             if self.relay_linked:

@@ -9,7 +9,7 @@ from unittest import mock
 from unittest.mock import call
 import insteon_mqtt as IM
 import insteon_mqtt.device.EZIO4O as EZIO4O
-# import insteon_mqtt.message as Msg
+import insteon_mqtt.message as Msg
 import insteon_mqtt.util as util
 import helpers as H
 
@@ -34,3 +34,12 @@ class Test_Base_Config():
             ]
             IM.CommandSeq.add.assert_has_calls(calls)
             assert IM.CommandSeq.add.call_count == 1
+
+    def test_broadcast(self, test_device, caplog):
+        # test broadcast Messages, EZIO doesn't handle any
+        flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+        group = IM.Address(0x00, 0x00, 0x01)
+        addr = IM.Address(0x01, 0x02, 0x03)
+        msg = Msg.InpStandard(addr, group, flags, 0x11, 0x00)
+        test_device.handle_broadcast(msg)
+        assert "has no handler for broadcast" in caplog.text
