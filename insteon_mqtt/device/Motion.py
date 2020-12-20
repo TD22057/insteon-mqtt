@@ -74,7 +74,7 @@ class Motion(BatterySensor):
 
         # Insert the dawn/dusk callback on group 02.  Base class already
         # handles the other groups.
-        self.group_map[0x02] = self.handle_dawn
+        self.group_map.update({0x02: self.handle_dawn})
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
@@ -100,8 +100,15 @@ class Motion(BatterySensor):
           msg (InpStandard):  Broadcast message from the device.
 
         """
-        # Send True for dawn, False for dusk.
-        self.signal_dawn.emit(self, msg.cmd1 == 0x11)
+        # ACK of the broadcast - ignore this.
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
+            LOG.info("Motion %s broadcast ACK grp: %s", self.addr,
+                     msg.group)
+        else:
+            # Send True for dawn, False for dusk.
+            LOG.info("Motion %s broadcast grp: %s cmd %s", self.addr,
+                     msg.group, msg.cmd1)
+            self.signal_dawn.emit(self, msg.cmd1 == Msg.CmdType.ON)
 
     #-----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):

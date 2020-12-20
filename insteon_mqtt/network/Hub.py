@@ -358,8 +358,9 @@ class HubClient:
                 if self._prev_bytestring == verify_bytestring:
                     ret = bytestring[-new_length:]
                 else:
-                    LOG.error('Read buffer overflow on Hub %s, prev %s, verify %s',
-                              self.ip, self._prev_bytestring, verify_bytestring)
+                    LOG.error('Read buff overflow Hub %s, prev %s, verify %s',
+                              self.ip, self._prev_bytestring,
+                              verify_bytestring)
 
         self._prev_bytestring = bytestring[-self.verify_length:]
         self._prev_byte_end = byte_end

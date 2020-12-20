@@ -4,9 +4,9 @@
 #
 #===========================================================================
 from .BatterySensor import BatterySensor
-from ..CommandSeq import CommandSeq
 from .. import log
 from ..Signal import Signal
+from .. import message as Msg
 
 LOG = log.get_logger()
 
@@ -73,54 +73,6 @@ class Leak(BatterySensor):
         self._is_wet = False
 
     #-----------------------------------------------------------------------
-    def pair(self, on_done=None):
-        """Pair the device with the modem.
-
-        This only needs to be called one time.  It will set the device as a
-        controller and the modem as a responder for all of the groups that
-        the device can alert on.
-
-        The device must already be a responder to the modem (push set on the
-        modem, then set on the device) so we can update it's database.
-
-        Args:
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("LeakSensor %s pairing", self.addr)
-
-        # Build a sequence of calls to the do the pairing.  This insures each
-        # call finishes and works before calling the next one.  We have to do
-        # this for device db manipulation because we need to know the memory
-        # layout on the device before making changes.
-        seq = CommandSeq(self, "LeakSensor paired", on_done, name="DevPair")
-
-        # Start with a refresh command - since we're changing the db, it must
-        # be up to date or bad things will happen.
-        seq.add(self.refresh)
-
-        # Add the device as a responder to the modem on group 1.  This is
-        # probably already there - and maybe needs to be there before we can
-        # even issue any commands but this check insures that the link is
-        # present on the device and the modem.
-        # This link handle the dry event
-        seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
-                refresh=False)
-
-        # This link handle the wet event
-        seq.add(self.db_add_ctrl_of, 0x02, self.modem.addr, 0x02,
-                refresh=False)
-
-        # This link handle the heartbeat event
-        seq.add(self.db_add_ctrl_of, 0x04, self.modem.addr, 0x04,
-                refresh=False)
-
-        # Finally start the sequence running.  This will return so the
-        # network event loop can process everything and the on_done callbacks
-        # will chain everything together.
-        seq.run()
-
-    #-----------------------------------------------------------------------
     def handle_dry(self, msg):
         """Handle a dry message.
 
@@ -130,8 +82,14 @@ class Leak(BatterySensor):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        LOG.info("LeakSensor received is-dry message")
-        self._set_is_wet(False)
+        # ACK of the broadcast - ignore this.
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
+            LOG.info("LeakSensor %s broadcast ACK grp: %s", self.addr,
+                     msg.group)
+        else:
+            LOG.info("LeakSensor %s received is-dry message", self.label)
+            self._set_is_wet(False)
+            self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_wet(self, msg):
@@ -143,8 +101,14 @@ class Leak(BatterySensor):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        LOG.info("LeakSensor received is-wet message")
-        self._set_is_wet(True)
+        # ACK of the broadcast - ignore this.
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
+            LOG.info("LeakSensor %s broadcast ACK grp: %s", self.addr,
+                     msg.group)
+        else:
+            LOG.info("LeakSensor %s received is-wet message", self.label)
+            self._set_is_wet(True)
+            self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_heartbeat(self, msg):
@@ -159,13 +123,20 @@ class Leak(BatterySensor):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # Update the wet/dry state using the heartbeat if needed.
-        is_wet = msg.cmd1 == 0x13
-        if self._is_wet != is_wet:
-            self._set_is_wet(is_wet)
+        # ACK of the broadcast - ignore this.
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
+            LOG.info("LeakSensor %s broadcast ACK grp: %s", self.addr,
+                     msg.group)
+        else:
+            LOG.info("LeakSensor %s received heartbeat", self.label)
+            # Update the wet/dry state using the heartbeat if needed.
+            is_wet = msg.cmd1 == 0x13
+            if self._is_wet != is_wet:
+                self._set_is_wet(is_wet)
 
-        # Send True for any heart beat message
-        self.signal_heartbeat.emit(self, True)
+            # Send True for any heart beat message
+            self.signal_heartbeat.emit(self, True)
+            self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):

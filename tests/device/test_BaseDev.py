@@ -5,23 +5,21 @@
 #===========================================================================
 import pytest
 # from pprint import pprint
-# try:
-#     import mock
-# except ImportError:
-#     from unittest import mock
-# from unittest.mock import call
+from unittest import mock
+from unittest.mock import call
 import insteon_mqtt as IM
 import insteon_mqtt.device.Base as Base
-# import insteon_mqtt.message as Msg
+import insteon_mqtt.message as Msg
 import insteon_mqtt.util as util
+import helpers as H
 
 @pytest.fixture
 def test_device(tmpdir):
     '''
     Returns a generically configured iolinc for testing
     '''
-    protocol = MockProto()
-    modem = MockModem(tmpdir)
+    protocol = H.main.MockProtocol()
+    modem = H.main.MockModem(tmpdir)
     addr = IM.Address(0x01, 0x02, 0x03)
     device = Base(protocol, modem, addr)
     return device
@@ -56,31 +54,20 @@ class Test_Base_Config():
         test_device.print_db(util.make_callback(None))
         assert True
 
+    def test_pair(self, test_device):
+        with mock.patch.object(IM.CommandSeq, 'add'):
+            test_device.pair()
+            calls = [
+                call(test_device.refresh),
+            ]
+            IM.CommandSeq.add.assert_has_calls(calls)
+            assert IM.CommandSeq.add.call_count == 1
 
-class MockModem:
-    def __init__(self, path):
-        self.save_path = str(path)
-        self.addr = IM.Address(0x0A, 0x0B, 0x0C)
-        self.timed_call = MockTimedCall()
-
-
-class MockTimedCall:
-    def add(self, *args, **kwargs):
-        pass
-
-    def remove(self, *args, **kwargs):
-        pass
-
-class MockProto:
-    def __init__(self):
-        self.msgs = []
-        self.wait = None
-
-    def add_handler(self, *args):
-        pass
-
-    def send(self, msg, msg_handler, high_priority=False, after=None):
-        self.msgs.append(msg)
-
-    def set_wait_time(self, time):
-        self.wait = time
+    def test_broadcast(self, test_device, caplog):
+        # test broadcast Messages, Base doesn't handle any
+        flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+        group = IM.Address(0x00, 0x00, 0x01)
+        addr = IM.Address(0x01, 0x02, 0x03)
+        msg = Msg.InpStandard(addr, group, flags, 0x11, 0x00)
+        test_device.handle_broadcast(msg)
+        assert "has no handler for broadcast" in caplog.text

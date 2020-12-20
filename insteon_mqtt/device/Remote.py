@@ -5,7 +5,6 @@
 #===========================================================================
 import time
 from .BatterySensor import BatterySensor
-from ..CommandSeq import CommandSeq
 from .. import log
 from .. import on_off
 from .. import message as Msg
@@ -122,54 +121,6 @@ class Remote(BatterySensor):
             self.db.set_meta('Remote', meta)
 
     #-----------------------------------------------------------------------
-    def pair(self, on_done=None):
-        """Pair the device with the modem.
-
-        This only needs to be called one time.  It will set the device
-        as a controller and the modem as a responder so the modem will
-        see group broadcasts and report them to us.
-
-        The device must already be a responder to the modem (push set
-        on the modem, then set on the device) so we can update it's
-        database.
-
-        NOTE: The remote code assumes the remote buttons are using groups
-        1...num (as set in the constructor).
-
-        Args:
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Remote %s pairing", self.addr)
-
-        # Build a sequence of calls to the do the pairing.  This insures each
-        # call finishes and works before calling the next one.  We have to do
-        # this for device db manipulation because we need to know the memory
-        # layout on the device before making changes.
-        seq = CommandSeq(self, "Remote paired", on_done, name="DevPair")
-
-        # Start with a refresh command - since we're changing the db, it must
-        # be up to date or bad things will happen.
-        seq.add(self.refresh)
-
-        # Add the device as a responder to the modem on group 1.  This is
-        # probably already there - and maybe needs to be there before we can
-        # even issue any commands but this check insures that the link is
-        # present on the device and the modem.
-        seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
-                refresh=False)
-
-        # Now add the device as the controller of the modem for all the
-        # remote buttons.
-        for group in range(1, self.num + 1):
-            seq.add(self.db_add_ctrl_of, group, self.modem.addr, group,
-                    refresh=False)
-
-        # Finally start the sequence running.  This will return so the
-        # network event loop can process everything and the on_done callbacks
-        # will chain everything together.
-        seq.run()
-
     def handle_extended_flags(self, msg, on_done):
         """Receives the extended flags payload from the device
 
@@ -195,22 +146,29 @@ class Remote(BatterySensor):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # On/off command codes.
-        if on_off.Mode.is_valid(msg.cmd1):
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
-            LOG.info("Remote %s broadcast grp: %s on: %s mode: %s", self.addr,
-                     msg.group, is_on, mode)
+        # ACK of the broadcast - ignore this.
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
+            LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
+                     msg.group)
+        else:
+            # On/off command codes.
+            if on_off.Mode.is_valid(msg.cmd1):
+                is_on, mode = on_off.Mode.decode(msg.cmd1)
+                LOG.info("Remote %s broadcast grp: %s on: %s mode: %s",
+                         self.addr, msg.group, is_on, mode)
 
-            # Notify others that the button was pressed.
-            self.signal_pressed.emit(self, msg.group, is_on, mode)
+                # Notify others that the button was pressed.
+                self.signal_pressed.emit(self, msg.group, is_on, mode)
+                self.update_linked_devices(msg)
 
-        # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
-        elif on_off.Manual.is_valid(msg.cmd1):
-            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-            LOG.info("Remote %s manual change group: %s %s", self.addr,
-                     msg.group, manual)
+            # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
+            elif on_off.Manual.is_valid(msg.cmd1):
+                manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
+                LOG.info("Remote %s manual change group: %s %s", self.addr,
+                         msg.group, manual)
 
-            self.signal_manual.emit(self, msg.group, manual)
+                self.signal_manual.emit(self, msg.group, manual)
+                self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):
