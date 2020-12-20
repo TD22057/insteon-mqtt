@@ -5,7 +5,6 @@
 #===========================================================================
 import io
 import itertools
-from . import CmdType
 from ..Address import Address
 from .Base import Base
 from .Flags import Flags

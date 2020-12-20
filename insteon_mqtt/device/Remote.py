@@ -5,7 +5,6 @@
 #===========================================================================
 import time
 from .BatterySensor import BatterySensor
-from ..CommandSeq import CommandSeq
 from .. import log
 from .. import on_off
 from .. import message as Msg
@@ -155,8 +154,8 @@ class Remote(BatterySensor):
             # On/off command codes.
             if on_off.Mode.is_valid(msg.cmd1):
                 is_on, mode = on_off.Mode.decode(msg.cmd1)
-                LOG.info("Remote %s broadcast grp: %s on: %s mode: %s", self.addr,
-                         msg.group, is_on, mode)
+                LOG.info("Remote %s broadcast grp: %s on: %s mode: %s",
+                         self.addr, msg.group, is_on, mode)
 
                 # Notify others that the button was pressed.
                 self.signal_pressed.emit(self, msg.group, is_on, mode)

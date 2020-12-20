@@ -5,9 +5,7 @@
 #===========================================================================
 import time
 from .Base import Base
-from ..CommandSeq import CommandSeq
 from .. import log
-from .. import on_off
 from .. import message as Msg
 from ..Signal import Signal
 

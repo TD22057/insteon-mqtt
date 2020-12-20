@@ -110,7 +110,6 @@ class Leak(BatterySensor):
             self._set_is_wet(True)
             self.update_linked_devices(msg)
 
-
     #-----------------------------------------------------------------------
     def handle_heartbeat(self, msg):
         """Handle a heartbeat message.

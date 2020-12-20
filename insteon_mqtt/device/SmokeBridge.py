@@ -71,7 +71,8 @@ class SmokeBridge(Base):
                                self.Type.CO.value: self.handle_message,
                                self.Type.TEST.value: self.handle_message,
                                self.Type.CLEAR.value: self.handle_message,
-                               self.Type.LOW_BATTERY.value: self.handle_message,
+                               self.Type.LOW_BATTERY.value:
+                               self.handle_message,
                                self.Type.ERROR.value: self.handle_message,
                                self.Type.HEARTBEAT.value: self.handle_message,
                                })
