@@ -55,5 +55,8 @@ class MockProtocol:
     def add_handler(self, handler):
         pass
 
+    def set_wait_time(self, seconds):
+        pass
+
 
 #===========================================================================
