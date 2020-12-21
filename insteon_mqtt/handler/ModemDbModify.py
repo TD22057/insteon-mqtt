@@ -97,7 +97,7 @@ class ModemDbModify(Base):
         # ACK of an Update an existing entry w/ new data fields.
         elif msg.cmd == Msg.OutAllLinkUpdate.Cmd.UPDATE:
             LOG.info("Updating modem db record for %s grp: %s data: %s",
-                     msg.addr, msg.group, msg.data)
+                     msg.addr, msg.group, msg.data.hex())
 
             assert self.existing_entry
 
@@ -113,7 +113,7 @@ class ModemDbModify(Base):
               msg.cmd == Msg.OutAllLinkUpdate.Cmd.ADD_RESPONDER):
             LOG.info("Adding modem db record for %s type: %s grp: %s data: %s",
                      msg.addr, util.ctrl_str(msg.db_flags.is_controller),
-                     msg.group, msg.data)
+                     msg.group, msg.data.hex())
 
             # This will also save the database.
             self.db.add_entry(self.entry)

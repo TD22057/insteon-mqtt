@@ -1218,10 +1218,10 @@ class Modem:
         # Find teh database entry being deleted.
         entry = self.db.find(addr, group, is_controller)
         if not entry:
-            LOG.warning("Device %s delete no match for %s grp %s %s",
-                        self.addr, addr, group, util.ctrl_str(is_controller))
-            on_done(False, "Entry doesn't exist", None)
-            return
+            # Entry not in cache, but Modem can handle out of sync db
+            LOG.info("Device %s delete no match for %s grp %s %s",
+                     self.addr, addr, group, util.ctrl_str(is_controller))
+            entry = db.ModemEntry(addr, group, is_controller)
 
         # Add the function delete call to the sequence.
         seq = CommandSeq(self, "Delete complete", on_done, name="ModemDBDel")

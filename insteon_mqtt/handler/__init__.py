@@ -38,6 +38,7 @@ from .DeviceDbGet import DeviceDbGet
 from .DeviceRefresh import DeviceRefresh
 from .ExtendedCmdResponse import ExtendedCmdResponse
 from .ModemDbGet import ModemDbGet
+from .ModemDbSearch import ModemDbSearch
 from .ModemDbModify import ModemDbModify
 from .ModemLinkComplete import ModemLinkComplete
 from .ModemLinkStart import ModemLinkStart

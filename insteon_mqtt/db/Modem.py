@@ -11,8 +11,10 @@ from .. import handler
 from .. import log
 from .. import message as Msg
 from .. import util
+from ..CommandSeq import CommandSeq
 from .ModemEntry import ModemEntry
 from .DbDiff import DbDiff
+
 
 LOG = log.get_logger()
 
@@ -319,18 +321,64 @@ class Modem:
 
     #-----------------------------------------------------------------------
     def delete_on_device(self, entry, on_done=None):
-        """Delete a series of entries on the device.
+        """Delete an entry on the device.
 
         This will delete ALL the entries for an address and group.  The modem
         doesn't support deleting a specific controller or responder entry -
         it just deletes the first one that matches the address and group.  To
-        avoid confusion about this, this method delete all the entries
-        (controller and responder) that match the inputs.
+        avoid confusion about this, this method clears all relevant entries
+        from our local cache, then it searches the modem for only these
+        relevant entries and adds them back to our cache (this ensures that
+        our cache is correct as to these entries), then it deletes all of the
+        relevant entries on the modem, and finally it restores all related
+        entries that were not marked for deletion.
+
+        This complex process means that it no longer matters if the modem
+        database cache is accurate.  And, while sounding complex, this only
+        takes a second or two to perform.
 
         The on_done callback will be passed a success flag (True/False), a
         string message about what happened, and the DeviceEntry that was
         created (if success=True).
           on_done( success, message, ModemEntry )
+
+        Args:
+          addr:          (Address) The address to delete.
+          group:         (int) The group to delete.
+          on_done:       Optional callback which will be called when the
+                         command completes.
+        """
+        on_done = util.make_callback(on_done)
+
+        seq = CommandSeq(self.device, "Modem db delete complete", on_done,
+                         name="ModemDBDel")
+
+        # Find all the entries that match the addr and group inputs.
+        for del_entry in self.find_all(entry.addr, entry.group):
+            self.delete_entry(del_entry)
+
+        # db_flags = Msg.DbFlags.from_bytes(bytes(1))
+        db_flags = Msg.DbFlags(in_use=True, is_controller=entry.is_controller,
+                               is_last_rec=False)
+        msg = Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.EXISTS, db_flags,
+                                   entry.group, entry.addr, bytes(3))
+        msg_handler = handler.ModemDbSearch(self, entry, on_done=on_done)
+
+        # Queue the search message
+        seq.add_msg(msg, msg_handler)
+
+        # Queue the post search function.
+        seq.add(self._delete_on_device_post_search, entry)
+
+        # Run the sequence
+        seq.run()
+
+    #-----------------------------------------------------------------------
+    def _delete_on_device_post_search(self, entry, on_done=None):
+        """Delete a series of entries on the device.
+
+        This is performed as part of the delete_on_device() function, after
+        the search has been performed of the device.
 
         Args:
           addr:          (Address) The address to delete.
@@ -363,10 +411,12 @@ class Modem:
             if not restore:
                 restore = entries[i]
 
-        # Since the entry was passed in, it must exist.
-        assert erase_idx is not None
+        if erase_idx is None:
+            LOG.warning("Modem db Delete: Entry was not on modem.")
+            on_done(True, "Entry not on modem", None)
+            return
 
-        LOG.debug("Modem delete idx %d of [0,%d) entries", erase_idx,
+        LOG.debug("Modem delete %d of %d entries", erase_idx + 1,
                   len(entries))
 
         # Build the first delete message.  The Handler will remove the
