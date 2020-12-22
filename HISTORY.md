@@ -9,7 +9,14 @@
   [Hub Instructions](https://github.com/TD22057/insteon-mqtt/blob/dev/docs/hub.md)
   ([PR 201][P201])
 
-- More pyTests, up to 74% coverage now. ([PR 262][P262] & [PR 268][P268])
+- More pyTests, up to 75% coverage now. ([PR 262][P262] & [PR 268][P268])
+
+- Significant improvement to the Modem database handling.  There is no longer
+  a requirement to perform the command `refresh modem` for anything with the
+  exception, that if you want to use `sync` to delete extra links off the
+  modem, you will need to perform a `refresh` so that the extraneous links
+  can be identified.  Commands will no longer fail because the modem database
+  is out of date. ([PR 279][P279])
 
 ### Fixes
 
@@ -500,3 +507,4 @@ will add new features.
 [P201]: https://github.com/TD22057/insteon-mqtt/pull/201
 [P275]: https://github.com/TD22057/insteon-mqtt/pull/275
 [P277]: https://github.com/TD22057/insteon-mqtt/pull/277
+[P279]: https://github.com/TD22057/insteon-mqtt/pull/279
