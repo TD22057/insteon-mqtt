@@ -354,7 +354,7 @@ class Modem:
                                is_last_rec=False)
         msg = Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.EXISTS, db_flags,
                                    entry.group, entry.addr, bytes(3))
-        msg_handler = handler.ModemDbSearch(self, entry, on_done=on_done)
+        msg_handler = handler.ModemDbSearch(self, on_done=on_done)
 
         # Queue the search message
         seq.add_msg(msg, msg_handler)

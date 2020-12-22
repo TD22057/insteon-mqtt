@@ -26,7 +26,7 @@ class ModemDbSearch(Base):
     After an ack, the entry will be returned in a seperate message. Each entry
     is added to the end of the modem class's database records.
     """
-    def __init__(self, modem_db, entry, on_done=None):
+    def __init__(self, modem_db, on_done=None):
         """Constructor
 
         Args
@@ -63,7 +63,9 @@ class ModemDbSearch(Base):
         from .. import db    # pylint: disable=import-outside-toplevel
 
         # Message is an ACK/NAK of the record request.
-        if isinstance(msg, (Msg.OutAllLinkUpdate)):
+        if (isinstance(msg, (Msg.OutAllLinkUpdate)) and
+                msg.cmd in (Msg.OutAllLinkUpdate.Cmd.EXISTS,
+                            Msg.OutAllLinkUpdate.Cmd.SEARCH)):
             # If we get a NAK, then there are no more db records.
             if not msg.is_ack:
                 LOG.info("Modem database search complete.")
@@ -81,14 +83,14 @@ class ModemDbSearch(Base):
         if isinstance(msg, Msg.InpAllLinkRec):
             LOG.info("Adding modem db record for %s grp: %s", msg.addr,
                      msg.group)
+            # Create a modem database entry from the message data
+            entry = db.ModemEntry(msg.addr, msg.group,
+                                  msg.db_flags.is_controller, msg.data,
+                                  db=self.db)
             if not msg.db_flags.in_use:
+                # I don't think the modem will ever report unused entries
                 LOG.info("Ignoring modem db record in_use = False")
             else:
-                # Create a modem database entry from the message data and
-                # write it into the database.
-                entry = db.ModemEntry(msg.addr, msg.group,
-                                      msg.db_flags.is_controller, msg.data,
-                                      db=self.db)
                 self.db.add_entry(entry)
                 LOG.info("Entry: %s", entry)
 
