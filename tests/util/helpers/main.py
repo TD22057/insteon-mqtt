@@ -58,5 +58,18 @@ class MockProtocol:
     def set_wait_time(self, seconds):
         pass
 
+#===========================================================================
+class MockDevice:
+    """Mock insteon_mqtt/Device class
+    """
+    #-----------------------------------------------------------------------
+    def __init__(self, protocol, modem, address, name=None):
+        self.protocol = protocol
+        self.modem = modem
+        self.addr = IM.Address(address)
+        self.name = name
+
+    def send(self, msg, msg_handler, high_priority=False, after=None):
+        self.protocol.send(msg, msg_handler, high_priority, after)
 
 #===========================================================================

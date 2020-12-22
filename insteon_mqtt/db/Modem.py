@@ -435,6 +435,9 @@ class Modem:
             else:
                 cmd = Msg.OutAllLinkUpdate.Cmd.ADD_RESPONDER
 
+            db_flags = Msg.DbFlags(in_use=True,
+                                   is_controller=restore.is_controller,
+                                   is_last_rec=False)
             msg2 = Msg.OutAllLinkUpdate(cmd, db_flags, restore.group,
                                         restore.addr, restore.data)
             msg_handler.add_update(msg2, restore)
