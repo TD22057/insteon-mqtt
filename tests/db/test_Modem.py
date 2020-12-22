@@ -2,13 +2,14 @@
 #
 # Tests for: insteont_mqtt/db/Modem.py
 #
+# pylint: disable=W0621,W0212
 #===========================================================================
+from unittest import mock
+from unittest.mock import call
 import pytest
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
 import helpers as H
-from unittest import mock
-from unittest.mock import call
 
 
 @pytest.fixture
@@ -146,7 +147,7 @@ class Test_Modem:
 
     #-----------------------------------------------------------------------
     def test_delete_post_one(self, test_device, test_entry_dev1_ctrl,
-                               caplog):
+                             caplog):
         # add_on_device(self, entry, on_done=None)
         # test delete of a single entry
         test_device.add_entry(test_entry_dev1_ctrl)
@@ -156,9 +157,9 @@ class Test_Modem:
         db_flags = Msg.DbFlags.from_bytes(bytes(1))
         assert (test_device.device.protocol.sent[0].msg.to_bytes() ==
                 Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.DELETE, db_flags,
-                                                   test_entry_dev1_ctrl.group,
-                                                   test_entry_dev1_ctrl.addr,
-                                                   bytes(3)).to_bytes())
+                                     test_entry_dev1_ctrl.group,
+                                     test_entry_dev1_ctrl.addr,
+                                     bytes(3)).to_bytes())
 
     #-----------------------------------------------------------------------
     def test_delete_post_two_first(self, test_device, test_entry_dev1_ctrl,
@@ -174,9 +175,9 @@ class Test_Modem:
         sent = test_device.device.protocol.sent[0]
         assert (sent.msg.to_bytes() ==
                 Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.DELETE, db_flags,
-                                                   test_entry_dev1_ctrl.group,
-                                                   test_entry_dev1_ctrl.addr,
-                                                   bytes(3)).to_bytes())
+                                     test_entry_dev1_ctrl.group,
+                                     test_entry_dev1_ctrl.addr,
+                                     bytes(3)).to_bytes())
         assert len(sent.handler.next) == 0
 
     #-----------------------------------------------------------------------
@@ -193,23 +194,22 @@ class Test_Modem:
         sent = test_device.device.protocol.sent[0]
         assert (sent.msg.to_bytes() ==
                 Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.DELETE, db_flags,
-                                                   test_entry_dev1_resp.group,
-                                                   test_entry_dev1_resp.addr,
-                                                   bytes(3)).to_bytes())
+                                     test_entry_dev1_resp.group,
+                                     test_entry_dev1_resp.addr,
+                                     bytes(3)).to_bytes())
         assert len(sent.handler.next) == 2
         assert (sent.handler.next[0][0].to_bytes() ==
                 Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.DELETE, db_flags,
-                                                   test_entry_dev1_resp.group,
-                                                   test_entry_dev1_resp.addr,
-                                                   bytes(3)).to_bytes())
+                                     test_entry_dev1_resp.group,
+                                     test_entry_dev1_resp.addr,
+                                     bytes(3)).to_bytes())
         db_flags = Msg.DbFlags(in_use=True,
                                is_controller=test_entry_dev1_ctrl.is_controller,
                                is_last_rec=False)
         assert (sent.handler.next[1][0].to_bytes() ==
                 Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.ADD_CONTROLLER,
-                                                   db_flags,
-                                                   test_entry_dev1_ctrl.group,
-                                                   test_entry_dev1_ctrl.addr,
-                                                   test_entry_dev1_ctrl.data).to_bytes())
+                                     db_flags, test_entry_dev1_ctrl.group,
+                                     test_entry_dev1_ctrl.addr,
+                                     test_entry_dev1_ctrl.data).to_bytes())
 
     #-----------------------------------------------------------------------
