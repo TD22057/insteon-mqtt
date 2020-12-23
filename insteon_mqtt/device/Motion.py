@@ -172,7 +172,7 @@ class Motion(BatterySensor):
             self.battery_low_voltage = voltage
             on_done(True, "Low voltage set.", None)
         else:
-            LOG.warning("Motion %s set_low_voltage cmd requires volage key.",
+            LOG.warning("Motion %s set_low_voltage cmd requires voltage key.",
                         self.label)
             on_done(False, "Low voltage not specified.", None)
 
@@ -340,7 +340,7 @@ class Motion(BatterySensor):
 
         # D12 voltage, but remember starts at 0
         batt_volt = msg.data[11] / 10
-        LOG.info("Remote %s battery voltage is %s", self.label,
+        LOG.info("Motion %s battery voltage is %s", self.label,
                  batt_volt)
         self.battery_voltage_time = time.time()
         # Signal low battery
@@ -438,7 +438,7 @@ class Motion(BatterySensor):
             if (last_checked + self.BATTERY_TIME <= time.time() and
                     self._battery_request_time + 300 <= time.time()):
                 self._battery_request_time = time.time()
-                LOG.info("Remote %s: Auto requesting battery voltage",
+                LOG.info("Motion %s: Auto requesting battery voltage",
                          self.label)
                 self._get_ext_flags(None)
 
