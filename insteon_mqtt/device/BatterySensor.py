@@ -295,11 +295,20 @@ class BatterySensor(Base):
         If we have any messages in the _send_queue, now is the time to send
         them while the device is awake, unless a message for this device is
         already pending in the protocol write queue
+
+        Set to no retry. Normally, the device is only briefly awake, so
+        it is only worth trying to send a message once.  The device will be
+        asleep before the second attempt.
+
+        But if the device is marked awake, the awake function pop the queue
+        in its function and 0 retry will not apply.  Similarly messages queued
+        while awake will just be sent and not queued.
         """
         if (self._send_queue and
                 not self.protocol.is_addr_in_write_queue(self.addr)):
             LOG.info("BatterySensor %s awake - sending msg", self.label)
-            args = self._send_queue.pop()
-            super().send(*args)
+            msg, handler, high_priority, after = self._send_queue.pop()
+            handler.set_retry_num(0)
+            super().send(msg, handler, high_priority, after)
 
     #-----------------------------------------------------------------------

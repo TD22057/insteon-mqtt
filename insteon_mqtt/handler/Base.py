@@ -57,6 +57,19 @@ class Base:
         self._msg = None
 
     #-----------------------------------------------------------------------
+    def set_retry_num(self, retry_num):
+        """Used to set the number of retrie
+
+        The number of times to retry the message if the handler times out
+        without returning Msg.FINISHED. This count does not include the initial
+        sending so a retry of 3 will send once and then retry 3 more times.
+
+        Args:
+           retry_num (int):  The number of retries
+        """
+        self._num_retry = retry_num
+
+    #-----------------------------------------------------------------------
     def sending_message(self, msg):
         """Messaging being sent callback.
 
