@@ -330,4 +330,16 @@ def get_battery_voltage(args, config):
 
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]
+
+
+#===========================================================================
+def set_low_battery_voltage(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "set_low_battery_voltage",
+        "voltage" : args.voltage
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 #===========================================================================

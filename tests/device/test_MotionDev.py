@@ -2,15 +2,16 @@
 #
 # Tests for: insteont_mqtt/device/Motion.py
 #
+# pylint: disable=W0621,W0201,W0212
 #===========================================================================
-import pytest
-# from pprint import pprint
 from unittest import mock
 from unittest.mock import call
+import pytest
+# from pprint import pprint
 import insteon_mqtt as IM
 import insteon_mqtt.device.Motion as Motion
 import insteon_mqtt.message as Msg
-import insteon_mqtt.util as util
+# import insteon_mqtt.util as util
 import helpers as H
 
 @pytest.fixture
@@ -69,3 +70,103 @@ class Test_Base_Config():
                 mocked.assert_called_once_with(test_device, *expected)
             else:
                 mocked.assert_not_called()
+
+    def test_voltage_time(self, test_device):
+        assert test_device.battery_voltage_time == 0
+        test_device.battery_voltage_time = 100
+        assert test_device.battery_voltage_time == 100
+        test_device.battery_voltage_time = 200
+        assert test_device.battery_voltage_time == 200
+
+    def test_low_voltage(self, test_device):
+        assert test_device.battery_low_voltage == 7.0
+        test_device.battery_low_voltage = 100
+        assert test_device.battery_low_voltage == 100
+        test_device.battery_low_voltage = 200
+        assert test_device.battery_low_voltage == 200
+
+    def test_set_low_voltage(self, test_device, caplog):
+        def on_done(success, *args):
+            assert not success
+        test_device.set_low_battery_voltage(on_done)
+        assert "requires voltage key" in caplog.text
+        def on_done2(success, *args):
+            assert success
+        test_device.set_low_battery_voltage(on_done2, voltage=8.0)
+        assert test_device.battery_low_voltage == 8.0
+
+    def test_handle_ext_flags(self, test_device):
+        # Captured data from my own motion detector
+        # 00 01 03 00 ff 0e 00 ff 0e 01 18 4f 00 d2
+        modem_addr = IM.Address(0x01, 0xAA, 0xFF)
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT, True)
+        msg = Msg.InpExtended(test_device.addr, modem_addr, flags,
+                              0x2e, 0x00,
+                              bytes([0x00, 0x01, 0x03, 0x00, 0xff, 0x0e, 0x00,
+                                     0xff, 0x0e, 0x01, 0x18, 0x4f, 0x00, 0xd2])
+                             )
+        def on_done(success, *args):
+            assert success
+        with mock.patch.object(IM.Signal, 'emit') as mocked:
+            test_device.handle_ext_flags(msg, on_done)
+            assert test_device.led_on
+            assert test_device.night_only
+            assert test_device.on_only
+            assert test_device.battery_voltage_time > 0
+            assert mocked.call_count == 1
+            # the emit call should be false
+            assert not mocked.call_args.args[1]
+
+    def test_handle_ext_flags2(self, test_device):
+        # This should trigger low battery
+        test_device.battery_low_voltage = 8.0
+        modem_addr = IM.Address(0x01, 0xAA, 0xFF)
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT, True)
+        msg = Msg.InpExtended(test_device.addr, modem_addr, flags,
+                              0x2e, 0x00,
+                              bytes([0x00, 0x01, 0x03, 0x00, 0xff, 0x0e, 0x00,
+                                     0xff, 0x0e, 0x01, 0x18, 0x4f, 0x00, 0xd2])
+                             )
+        def on_done(success, *args):
+            assert success
+        with mock.patch.object(IM.Signal, 'emit') as mocked:
+            test_device.handle_ext_flags(msg, on_done)
+            assert test_device.led_on
+            assert test_device.night_only
+            assert test_device.on_only
+            assert test_device.battery_voltage_time > 0
+            assert mocked.call_count == 1
+            # the emit call should be true
+            assert mocked.call_args.args[1]
+
+    def test_awake(self, test_device):
+        with mock.patch.object(test_device, 'auto_check_battery') as mocked:
+            def on_done(*args):
+                pass
+            test_device.awake(on_done)
+            mocked.assert_called_once()
+
+    def test_pop_queue(self, test_device):
+        with mock.patch.object(test_device, 'auto_check_battery') as mocked:
+            test_device._pop_send_queue()
+            mocked.assert_called_once()
+
+    def test_auto_check_battery(self, test_device):
+        # set as a 2842 model
+        test_device.db.set_info(0x10, 0x01, 0x00)
+        def on_done(*args):
+            pass
+        # Mark awake so messages get sent to protocol
+        test_device.awake(on_done)
+        # Run without any prior data
+        test_device.auto_check_battery()
+        sent = test_device.protocol.sent
+        assert len(sent) == 1
+        assert sent[0].msg.cmd1 == Msg.CmdType.EXTENDED_SET_GET
+        assert sent[0].msg.data == bytes(14)
+        assert test_device._battery_request_time > 0
+        # Try again, we should get nothing
+        test_device.protocol.clear()
+        test_device.auto_check_battery()
+        sent = test_device.protocol.sent
+        assert len(sent) == 0

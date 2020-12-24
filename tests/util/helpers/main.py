@@ -45,6 +45,7 @@ class MockProtocol:
         self.signal_received = IM.Signal()
         self.signal_msg_finished = IM.Signal()
         self.sent = []
+        self.addr_in_queue = False
 
     def clear(self):
         self.sent = []
@@ -57,6 +58,9 @@ class MockProtocol:
 
     def set_wait_time(self, seconds):
         pass
+
+    def is_addr_in_write_queue(self, *args):
+        return self.addr_in_queue
 
 #===========================================================================
 class MockDevice:

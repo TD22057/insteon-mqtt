@@ -371,7 +371,7 @@ mqtt:
   #       device_class: 'motion'
   #
   #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/low_battery'
+  #       state_topic: 'insteon/aa.bb.cc/battery'
   #       device_class: 'battery'
   battery_sensor:
     # Output state change topic and payload.  This message is sent

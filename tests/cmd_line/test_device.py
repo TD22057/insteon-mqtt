@@ -55,3 +55,58 @@ class Test_device:
         self.check_call(IM.cmd_line.util.send, args, config, topic, payload)
 
     #-----------------------------------------------------------------------
+    def test_awake(self, mocker):
+        mocker.patch('insteon_mqtt.cmd_line.util.send')
+        IM.cmd_line.util.send.return_value = {"status" : 10}
+
+        args = helpers.Data(topic="cmd_topic", force=False, quiet=True,
+                            address="aa.bb.cc")
+        config = helpers.Data(a=1, b=2)
+
+        r = IM.cmd_line.device.awake(args, config)
+        assert r == 10
+
+        topic = "%s/%s" % (args.topic, args.address)
+        payload = {
+            "cmd" : "awake",
+            }
+        self.check_call(IM.cmd_line.util.send, args, config, topic, payload)
+
+    #-----------------------------------------------------------------------
+    def test_get_battery_voltage(self, mocker):
+        mocker.patch('insteon_mqtt.cmd_line.util.send')
+        IM.cmd_line.util.send.return_value = {"status" : 10}
+
+        args = helpers.Data(topic="cmd_topic", force=False, quiet=True,
+                            address="aa.bb.cc")
+        config = helpers.Data(a=1, b=2)
+
+        r = IM.cmd_line.device.get_battery_voltage(args, config)
+        assert r == 10
+
+        topic = "%s/%s" % (args.topic, args.address)
+        payload = {
+            "cmd" : "get_battery_voltage",
+            }
+        self.check_call(IM.cmd_line.util.send, args, config, topic, payload)
+
+    #-----------------------------------------------------------------------
+    def test_set_low_battery_voltage(self, mocker):
+        mocker.patch('insteon_mqtt.cmd_line.util.send')
+        IM.cmd_line.util.send.return_value = {"status" : 10}
+
+        args = helpers.Data(topic="cmd_topic", force=False, quiet=True,
+                            address="aa.bb.cc", voltage="5.5")
+        config = helpers.Data(a=1, b=2)
+
+        r = IM.cmd_line.device.set_low_battery_voltage(args, config)
+        assert r == 10
+
+        topic = "%s/%s" % (args.topic, args.address)
+        payload = {
+            "cmd" : "set_low_battery_voltage",
+            "voltage" : args.voltage,
+            }
+        self.check_call(IM.cmd_line.util.send, args, config, topic, payload)
+
+    #-----------------------------------------------------------------------
