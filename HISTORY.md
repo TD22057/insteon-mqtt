@@ -18,6 +18,10 @@
   can be identified.  Commands will no longer fail because the modem database
   is out of date. ([PR 279][P279])
 
+- Enable querying the battery on 2842 Motion sensors.  Helpful if using
+  batteries with voltages other than those expected from alkaline batteries.
+  ([PR 282][P282])
+
 ### Fixes
 
 - Allow for used last entries in DB.  Improve compatibility with devices
@@ -64,7 +68,7 @@
 
 - Added support for querying the battery on a mini-remote.  The battery state
   will be automatically queried when the device wakes up if is has been 4 days
-  since the last battery check and will emit messages on the low_battery
+  since the last battery check and will emit messages on the battery
   topic. ([PR 244][P244])
 
 - Added support for Smartenit EZIO4O 4 relay output module (thanks @embak)
@@ -508,3 +512,4 @@ will add new features.
 [P275]: https://github.com/TD22057/insteon-mqtt/pull/275
 [P277]: https://github.com/TD22057/insteon-mqtt/pull/277
 [P279]: https://github.com/TD22057/insteon-mqtt/pull/279
+[P282]: https://github.com/TD22057/insteon-mqtt/pull/282
