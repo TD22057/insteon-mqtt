@@ -24,6 +24,11 @@ class Broadcast(Base):
     message gets ignored).  So if we get the broadcast, the cleanup is
     ignored.
 
+    Finally a broadcast LINK_CLEANUP_REPORT is sent.  This message indicates
+    if the device received ACKs from all linked devices or not.  This message
+    indicates that the device is finished sending messages.  However, as
+    broadcast message, it is not guaranteed to be received.
+
     This handler will call device.handle_broadcast(msg) for the device that
     sends the message.
 

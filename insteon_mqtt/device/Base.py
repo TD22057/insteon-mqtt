@@ -1102,7 +1102,9 @@ class Base:
         # misterhouse.  Each device causes a cleanup and an ack.  Assuminng
         # a max of three hops in each direction that is 6 * .087 or .522 per
         # device.
-        self.protocol.set_wait_time(time.time() + .5 + (len(responders) * .5))
+        wait_time = .5 + (len(responders) * .5)
+        LOG.debug("Pausing sending for %s seconds.", wait_time)
+        self.protocol.set_wait_time(time.time() + wait_time)
 
         # For each device that we're the controller of call it's handler for
         # the broadcast message.
