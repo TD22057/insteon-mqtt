@@ -46,7 +46,7 @@ class Test_Broadcast:
         assert len(calls) == 1
 
         # If broadcast wasn't found, cleanup should be handled.
-        handler._handled = False
+        handler._last_broadcast = None
         r = handler.msg_received(proto, msg)
 
         assert r == Msg.CONTINUE
@@ -86,4 +86,7 @@ class MockProto:
         self.signal_received = IM.Signal()
 
     def add_handler(self, *args):
+        pass
+
+    def set_wait_time(self, *args):
         pass

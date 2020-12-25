@@ -230,12 +230,16 @@ class Protocol:
     def set_wait_time(self, wait_time):
         """Set the Next Time that a Message Can be Sent to Avoid Collision.
 
-        Next time that a message can be written.
+        Next time that a message can be written.  If the wait time is set to
+        zero, it will cancel all pending wait time.  If the wait time is
+        less than the current pending wait time, it will be ignored.
 
         Args:
           wait_time (epoch Seconds): The next time a message can be sent
         """
-        self._next_write_time = wait_time
+        if wait_time == 0 or wait_time > self._next_write_time:
+            self._next_write_time = wait_time
+            LOG.debug("Setting next write time: %f", self._next_write_time)
 
     #-----------------------------------------------------------------------
     def is_addr_in_write_queue(self, addr):
@@ -303,10 +307,7 @@ class Protocol:
             start = self._buf.find(0x15)
             if start == 0:
                 LOG.info("PLM is busy, pausing briefly")
-                # Pause for 1/3 of a second if we are not already waiting
-                # longer
-                if self._next_write_time + .3 < time.time():
-                    self._next_write_time = time.time() + .3
+                self.set_wait_time(time.time() + .3)
                 self._buf = self._buf[1:]
                 continue
 
@@ -393,8 +394,7 @@ class Protocol:
 
         # Update the next allowed write time based on the number of hops that
         # are remaining on the inbound message.
-        self._next_write_time = msg.expire_time
-        LOG.debug("Setting next write time: %f", self._next_write_time)
+        self.set_wait_time(msg.expire_time)
 
         # See if we have a duplicate message.
         if msg in self._read_history:
