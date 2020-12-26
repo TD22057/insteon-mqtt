@@ -6,6 +6,7 @@
 import collections
 import enum
 import time
+import datetime
 from . import log
 from . import message as Msg
 from .Signal import Signal
@@ -239,7 +240,8 @@ class Protocol:
         """
         if wait_time == 0 or wait_time > self._next_write_time:
             self._next_write_time = wait_time
-            LOG.debug("Setting next write time: %f", self._next_write_time)
+            time = datetime.datetime.fromtimestamp(self._next_write_time).strftime('%H:%M:%S.%f')[:-3]
+            LOG.debug("Setting next write time: %s", time)
 
     #-----------------------------------------------------------------------
     def is_addr_in_write_queue(self, addr):
