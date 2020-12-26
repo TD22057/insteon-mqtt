@@ -4,7 +4,6 @@
 #
 #===========================================================================
 import json
-import time
 import os.path
 from .MsgHistory import MsgHistory
 from ..Address import Address
