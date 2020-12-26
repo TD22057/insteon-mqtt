@@ -77,7 +77,7 @@ class Broadcast(Base):
         # A device broadcast will be followed up a series of cleanup messages
         # between the devices and sent to the modem.  Don't send anything
         # during this time to avoid causing a collision.  Time is equal to .5
-        # second of overhead, plus .5 seconds per responer device.  This is
+        # second of overhead, plus .522 seconds per responer device.  This is
         # based off the same 87 msec empircal testing performed when designing
         # misterhouse.  Each device causes a cleanup and an ack.  Assuminng
         # a max of three hops in each direction that is 6 * .087 or .522 per
@@ -86,32 +86,27 @@ class Broadcast(Base):
         wait_time = 0
         if device:
             responders = device.db.find_group(msg.group)
-            wait_time = .5 + (len(responders) * .5)
+            wait_time = .5 + (len(responders) * .522)
 
         # Process the all link broadcast.
         if msg.flags.type == Msg.Flags.Type.ALL_LINK_BROADCAST:
             if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-                if self._last_broadcast is None:
-                    # We have no record of the initial broadcast or direct
-                    # cleanup, this is almost certainly an echo of the
-                    # cleanup_report
-                    return Msg.CONTINUE
+                # This is the final broadcast signalling completion.
+                # All of these messages will be forwarded to the device
+                # potentially even duplicates
+                # Re-enable sending
+                # First clear wait time
+                protocol.set_wait_time(0)
+                # Then set as expire time of this message
+                protocol.set_wait_time(msg.expire_time)
+                # cmd2 identifies the number of failed devices
+                if msg.cmd2 == 0x00:
+                    LOG.debug("Cleanup report for %s, grp %s success.",
+                              msg.from_addr, msg.group)
                 else:
-                    # This is the final broadcast signalling completion.
-                    # Clear duplicate tracking and re-enable sending
-                    self._last_broadcast = None
-                    # First clear wait time
-                    protocol.set_wait_time(0)
-                    # Then set as expire time of this message
-                    protocol.set_wait_time(msg.expire_time)
-                    # cmd2 identifies the number of failed devices
-                    if msg.cmd2 == 0x00:
-                        LOG.debug("Cleanup report for %s, grp %s success.",
-                                  msg.from_addr, msg.group)
-                    else:
-                        text = "Cleanup report for %s, grp %s had %d fails."
-                        LOG.warning(text, msg.from_addr, msg.group, msg.cmd2)
-                    return self._process(msg, protocol, wait_time)
+                    text = "Cleanup report for %s, grp %s had %d fails."
+                    LOG.warning(text, msg.from_addr, msg.group, msg.cmd2)
+                return self._process(msg, protocol, wait_time)
             else:
                 # This is the initial broadcast or an echo of it.
                 if self._should_process(msg, wait_time):
@@ -157,7 +152,6 @@ class Broadcast(Base):
         self._last_broadcast = msg
 
         # Delay sending, see above
-        LOG.debug("Pausing sending for %s seconds.", wait_time)
         protocol.set_wait_time(time.time() + wait_time)
 
         # Tell the device about it.  This will look up all the responders for
