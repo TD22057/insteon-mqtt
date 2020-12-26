@@ -239,6 +239,7 @@ class Protocol:
           wait_time (epoch Seconds): The next time a message can be sent
         """
         if wait_time == 0 or wait_time > self._next_write_time:
+            wait_time = time.time() if wait_time == 0
             self._next_write_time = wait_time
             time = datetime.datetime.fromtimestamp(self._next_write_time).strftime('%H:%M:%S.%f')[:-3]
             LOG.debug("Setting next write time: %s", time)
