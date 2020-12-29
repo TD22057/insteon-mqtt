@@ -366,7 +366,7 @@ class Device:
         # Otherwise, we don't need to do anything - the entry exists.
         elif entry:
             LOG.info("Device %s add db already exists for %s grp %s %s",
-                        self.addr, addr, group, util.ctrl_str(is_controller))
+                     self.addr, addr, group, util.ctrl_str(is_controller))
             on_done(True, "Entry already exists", entry)
             return
 
