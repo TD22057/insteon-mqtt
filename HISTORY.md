@@ -18,9 +18,10 @@
   can be identified.  Commands will no longer fail because the modem database
   is out of date. ([PR 279][P279])
 
-- Enable querying the battery on 2842 Motion sensors.  Helpful if using
-  batteries with voltages other than those expected from alkaline batteries.
-  ([PR 282][P282])
+- Enable querying the battery on 2842 & 2844 Motion sensors.  Helpful if using
+  battery chemistry that varies from the OEM batteries.  Voltage will be
+  queried no more frequently than every 4 days.
+  ([PR 282][P282] & [PR 288][P288])
 
 ### Fixes
 
@@ -513,3 +514,4 @@ will add new features.
 [P277]: https://github.com/TD22057/insteon-mqtt/pull/277
 [P279]: https://github.com/TD22057/insteon-mqtt/pull/279
 [P282]: https://github.com/TD22057/insteon-mqtt/pull/282
+[P288]: https://github.com/TD22057/insteon-mqtt/pull/288
