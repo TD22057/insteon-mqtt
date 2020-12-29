@@ -9,7 +9,7 @@
   [Hub Instructions](https://github.com/TD22057/insteon-mqtt/blob/dev/docs/hub.md)
   ([PR 201][P201])
 
-- More pyTests, up to 75% coverage now. ([PR 262][P262] & [PR 268][P268])
+- More pyTests, up to 76% coverage now. ([PR 262][P262] & [PR 268][P268])
 
 - Significant improvement to the Modem database handling.  There is no longer
   a requirement to perform the command `refresh modem` for anything with the
@@ -42,6 +42,9 @@
 
 - Refactor code around Pair().  Add significant amount of unit tests.
   ([PR 277][P277])
+
+- Improved message timing after receiving a broadcast command from a device.
+  ([PR 284][P284])
 
 ## [0.7.4]
 
@@ -515,3 +518,4 @@ will add new features.
 [P279]: https://github.com/TD22057/insteon-mqtt/pull/279
 [P282]: https://github.com/TD22057/insteon-mqtt/pull/282
 [P288]: https://github.com/TD22057/insteon-mqtt/pull/288
+[P284]: https://github.com/TD22057/insteon-mqtt/pull/284
