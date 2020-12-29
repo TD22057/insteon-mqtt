@@ -859,7 +859,7 @@ class KeypadLinc(Base):
 
         Extended message payload is:
           D8 = on-level
-          D9 = ramp-rate
+          D7 = ramp-rate
 
         Args:
           msg (message.InpExtended):  The message reply.
@@ -868,7 +868,7 @@ class KeypadLinc(Base):
         """
         on_level = msg.data[7]
         self.db.set_meta('on_level', on_level)
-        ramp_rate = msg.data[8]
+        ramp_rate = msg.data[6]
         for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
             if ramp_rate <= ramp_key:
                 ramp_rate = ramp_value
