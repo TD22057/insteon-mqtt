@@ -39,6 +39,10 @@ class Motion(BatterySensor):
       group 03 = low battery (0x11) / good battery (0x13)
       group 04 = heartbeat (0x11)
 
+    Note: the newer 2844 model only seems to use group 01.  Dusk dawn does
+    not appear to be supported.  Also, the low_battery data is only available
+    on request.
+
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
@@ -132,10 +136,16 @@ class Motion(BatterySensor):
     @property
     def battery_low_voltage(self):
         """Returns the voltage below which the battery will be deemed to be
-        low.  The default value is 7.0 volts.
+        low.  The default value is 7.0 volts for 2842 models and 1.85 for
+        2844 models.
         """
         meta = self.db.get_meta('Motion')
-        ret = 7.0
+        if (self.db.desc is not None and
+                self.db.desc.model.split("-")[0] == "2842"):
+            ret = 7.0
+        else:
+            ret = 1.85
+
         if isinstance(meta, dict) and 'battery_low_voltage' in meta:
             ret = meta['battery_low_voltage']
         return ret
@@ -338,8 +348,14 @@ class Motion(BatterySensor):
 
         # D11 has the light level, not doing anything with that now.
 
-        # D12 voltage, but remember starts at 0
-        batt_volt = msg.data[11] / 10
+        # D12 voltage
+        if (self.db.desc is not None and
+                self.db.desc.model.split("-")[0] == "2842"):
+            batt_volt = msg.data[11] / 10
+        else:
+            # by default assume 2844 model
+            batt_volt = round(msg.data[11] / 72, 2)
+
         LOG.info("Motion %s battery voltage is %s", self.label,
                  batt_volt)
         self.battery_voltage_time = time.time()
@@ -430,7 +446,8 @@ class Motion(BatterySensor):
         elapsed, queue a battery request.
         """
         if (self.db.desc is not None and
-                self.db.desc.model.split("-")[0] == "2842"):
+                (self.db.desc.model.split("-")[0] == "2842" or
+                 self.db.desc.model.split("-")[0] == "2844")):
             # This is a device that supports battery requests
             last_checked = self.battery_voltage_time
             # Don't send this message more than once every 5 minutes no
