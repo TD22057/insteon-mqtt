@@ -118,3 +118,27 @@ class Test_Base_Config():
                     mocked.assert_called_once_with(test_device, *expected)
                 else:
                     mocked.assert_not_called()
+
+    def test_get_flags(self, test_device):
+        # This should hijack get flags and should insert a call to
+        # EXTENDED_SET_GET
+        with mock.patch.object(IM.CommandSeq, 'add'):
+            test_device.get_flags()
+            calls = [
+                # can't figure out how to define the call to super().get_flags
+                call(test_device._get_ext_flags),
+            ]
+            IM.CommandSeq.add.assert_has_calls(calls)
+            assert IM.CommandSeq.add.call_count == 2
+
+    def test_handle_ext_flags(self, test_device):
+        from_addr = IM.Address(0x01, 0x02, 0x05)
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT, True)
+        data = bytes([0x01, 0x01, 0x00, 0x00, 0x20, 0x20, 0x1c, 0x1c, 0x1f,
+                      0x00, 0x01, 0x00, 0x00, 0x00])
+        msg = Msg.InpExtended(from_addr, test_device.addr, flags,
+                              Msg.CmdType.EXTENDED_SET_GET, 0x00, data)
+        def on_done(success, *args):
+            assert success
+        test_device.handle_ext_flags(msg, on_done)
+        assert test_device.get_on_level() == 0x1C
