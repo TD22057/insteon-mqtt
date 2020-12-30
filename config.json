@@ -1,6 +1,6 @@
 {
     "name": "Insteon MQTT",
-    "description": "Python Insteon PLM <-> MQTT bridge",
+    "description": "Creates an MQTT interface to the Insteon protocol.",
     "slug": "insteon-mqtt",
     "version": "0.7.4",
     "startup": "services",
