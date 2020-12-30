@@ -2,10 +2,10 @@
 
 ## First time installation
 
-This package assumes that you:
+These instructions assume that you:
 
-- Have a hass.io installation up and running with either SSH access or a
-  network share.
+- Have a Home Assistant installation with Home Assistant Supervisor up and
+  running.
 
 - Have a working MQTT broker up and running.  If not, do that first
   ([Mosquitto](https://mosquitto.org/) is good choice, and has [an addon for
