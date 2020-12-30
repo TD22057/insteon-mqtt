@@ -1,36 +1,39 @@
 # Insteon-MQTT Bridge Quick Start for Hass.io users
 
-## First time installation
+## Prerequisites
 
 These instructions assume that you:
 
 - Have a Home Assistant installation with Home Assistant Supervisor up and
-  running.
+  running.  Installing using the instructions in the Home Assistant
+  [Getting Started Guide](https://www.home-assistant.io/getting-started/)
+  or the slightly more advanced
+  [Recommened Installation Methods](https://www.home-assistant.io/docs/installation/#recommended)
+  will work.  The advanced
+  [Home Assistant Supervised](https://github.com/home-assistant/supervised-installer)
+  installation should also work as well.
 
-- Have a working MQTT broker up and running.  If not, do that first
-  ([Mosquitto](https://mosquitto.org/) is good choice, and has [an addon for
-  hass.io](https://www.home-assistant.io/addons/mosquitto/)).
+- Have a working MQTT broker up and running.
+  [Mosquitto](https://mosquitto.org/) is good choice, and there is [an add-on
+  for Home Assistant](https://www.home-assistant.io/addons/mosquitto/) that
+  makes installation simple.
 
-- Have an Insteon PLM modem (serial or USB) or one of the older hubs that
-  supports a PML port (usually 9761) on a fixed IP address.
+- Have an Insteon PLM modem (serial or USB) or an Insteon HUB on a fixed IP
+  address.
 
-- Have hass.io connected to your mqtt broker.
+## Installation
 
-1) Create a directory for insteon-mqtt in your /addons folder:
-   `mkdir /addons/insteon-mqtt`
-
-2) Copy the `hassio/config.json` from this repository into
-   `/addons/insteon-mqtt/config.json` on your hass.io device.
-
-3) Install the Local Insteon MQTT addon through the hass.io addon store.
-  * If you do not see the 'Local Add-ons' repository or the Insteon MQTT
-    add-on, click the refresh button in the top right corner on the Hass.io
-    Add-ons page, and it should show up.
-
-4) Start the addon. This will setup the default config files under
-   `/config/insteon-mqtt/config.yaml`.
-
-5) Edit `/config/insteon-mqtt/config.yaml` as appropriate.
+1. Navigate in Home Assistant frontend to __Supervisor -> Add-on Store__
+2. Select the menu in the top right and click __Repositories__
+3. Paste the following URL into the __Add Repository__ field:
+   `https://github.com/TD22057/insteon-mqtt`
+4. Click __ADD__
+5. Scroll to find the __Insteon MQTT Repository__
+6. Click on the __Insteon MQTT__ Add on
+7. Click __Install__
+8. Click __Start__ to start the Add-on, this will create your initial config
+   files.
+9. Edit `/config/insteon-mqtt/config.yaml` as appropriate.
 
    - Set the Insteon port to be the USB port or address of the PLM modem.
    - Set the modem Insteon hex address (printed on the back of the modem).
@@ -42,55 +45,38 @@ These instructions assume that you:
      is designed for integration with Home Assistant but you can change it
      to use whatever style of messages you want.
 
-6) Restart the insteon-mqtt addon to pick up the changes.
+10. Restart the insteon-mqtt addon to pick up the changes.
 
-7) Join, Pair, and Sync each device in your network.  This can be accomplished
-   using mqtt messages as described in the
-   [Required Device Initialization](mqtt.md#required-device-initialization)
-   section.
+11. Join and Pair each device in your network.  This can be accomplished
+    using the Web Command Line interface, which is accessible from the Add-on
+    page via the __Open Web UI__ button.
 
-8) Download an Insteon device database for every device.  This may
-   take awhile and battery operated devices (motion sensors, remotes,
-   etc) will fail because they aren't awake. Publish the following command
-   to `insteon/command/modem`
+    - Type `-h` to get a list of commands.
+    - You do not need to type the `insteon-mqtt config.yaml` portion, that will
+    be added for you.
+    - For example to join a device named `hallway light` you would type
+    `join 'hallway light'` and hit enter.  To pair the same device you would
+    type `pair 'hallway light'`.
+    - Do this for all of your devices.
 
-   ```
-   { "cmd": "refresh_all", "force": false }
-   ```
+12. Edit your Home Assistant configuration to add your devices as MQTT devices
+    to Home Assistant.
 
-   Once that finishes, you should wake up each battery powered device
-   (by activating it or pressing the set button - it may depend on the
-   device) and then quickly send a command to the Insteon hex address
-   of that device to download the database (hopefully this will be
-   automatic in the future). Publish the following command to
-   `insteon/command/aa.bb.cc`
-
-   ```
-   { "cmd": "refresh", "force": false }
-   ```
-
-   If you haven't linked the device as a controller of the modem
-   (press set on the device, then set on the modem), you'll also need
-   to tell the device to pair with the modem.  This step is also
-   needed for complicated devices like the smoke bridge which require
-   multiple Insteon groups to be configured.
-
-   IMPORTANT: If you do not call pair for each device one time (it only needs
-   to be done once) means that the correct controller/responder links from
-   the device to the PLM modem may not exist and the functionality of the
-   device with the Insteon-MQTT system may not work until pair() is called.
-
-   Publish the following command to `insteon/command/aa.bb.cc`
-   ```
-   { "cmd": "pair" }
-   ```
-
-   Downloading the device database and pairing only needs to be done
-   one time.  The refresh command only needs to be sent again if you
-   make changes to the Insteon links (scenes) manually without using
-   the server.
+13. See the [command documentation](mqtt.md) for additional commands.
 
 ## Updating
 
-To update, replace your `/addons/insteon-mqtt/config.json` with the most
-recent `hassio/config.json
+Check the supervisor page periodically for updates to Insteon-MQTT
+
+## Questions
+
+If you have questions, please look on the
+[Discussions](https://github.com/TD22057/insteon-mqtt/discussions) page
+to see if it has been asked and answered before.  If not, feel free to ask.
+
+## Issues
+
+If you have found a bug, or wish to request a new feature, please look on the
+[Issues](https://github.com/TD22057/insteon-mqtt/issues) page to see if the
+issue or feature request has been already identified.  If not, feel free to
+add it.
