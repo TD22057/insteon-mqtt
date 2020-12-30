@@ -72,7 +72,7 @@ class FanLinc(Dimmer):
         # Support fan speed signals.  API: func(Device, Speed, str reason)
         self.signal_fan_speed = Signal()
 
-        # Remote (mqtt) commands mapped to methods calls.  Add to the base
+        # Remote (mqtt) commands to methods calls.  Add to the base
         # class defined commands.
         self.cmd_map.update({
             'fan_on' : self.fan_on,
@@ -80,51 +80,11 @@ class FanLinc(Dimmer):
             'fan_set' : self.fan_set,
             })
 
-    #-----------------------------------------------------------------------
-    def pair(self, on_done=None):
-        """Pair the device with the modem.
-
-        This only needs to be called one time.  It will set the device as a
-        controller and the modem as a responder so the modem will see group
-        broadcasts and report them to us.
-
-        The device must already be a responder to the modem (push set on the
-        modem, then set on the device) so we can update it's database.
-
-        Args:
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("FanLinc %s pairing", self.addr)
-
-        # Build a sequence of calls to the do the pairing.  This insures each
-        # call finishes and works before calling the next one.  We have to do
-        # this for device db manipulation because we need to know the memory
-        # layout on the device before making changes.
-        seq = CommandSeq(self, "FanLinc paired", on_done)
-
-        # Start with a refresh command - since we're changing the db, it must
-        # be up to date or bad things will happen.
-        seq.add(self.refresh)
-
-        # Add the device as a responder to the modem on group 1.  This is
-        # probably already there - and maybe needs to be there before we can
-        # even issue any commands but this check insures that the link is
-        # present on the device and the modem.
-        seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
-                refresh=False)
-
-        # Now add the device as the controller of the modem for groups 1
-        # (dimmer) and 2 (fan).
-        seq.add(self.db_add_ctrl_of, 0x01, self.modem.addr, 0x01,
-                refresh=False)
-        seq.add(self.db_add_ctrl_of, 0x02, self.modem.addr, 0x02,
-                refresh=False)
-
-        # Finally start the sequence running.  This will return so the
-        # network event loop can process everything and the on_done callbacks
-        # will chain everything together.
-        seq.run()
+        # Update the group map with the groups to be paired and the handler
+        # for broadcast messages from this group
+        # The fanlinc does not have any controllers it is only a responder
+        # This is necessary to override the dimmer group_map of 0x01
+        self.group_map = {}
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
@@ -147,7 +107,7 @@ class FanLinc(Dimmer):
         """
         LOG.info("Device %s cmd: fan status refresh", self.addr)
 
-        seq = CommandSeq(self, "Refresh complete", on_done)
+        seq = CommandSeq(self, "Refresh complete", on_done, name="DevRefresh")
 
         # Send a 0x19 0x03 command to get the fan speed level.  This sends a
         # refresh ping which will respond w/ the fan level and current
@@ -273,28 +233,6 @@ class FanLinc(Dimmer):
             self.fan_on(speed, reason, on_done)
         else:
             self.fan_off(reason, on_done)
-
-    #-----------------------------------------------------------------------
-    def handle_broadcast(self, msg):
-        """Handle broadcast messages from this device.
-
-        The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update the
-        device state and look up the group in the all link database.  For
-        each device that is in the group (as a reponsder), we'll call
-        handle_group_cmd() on that device to trigger it.  This way all the
-        devices in the group are updated to the correct values when we see
-        the broadcast message.
-
-        Args:
-          msg (InpStandard):  Broadcast message from the device.
-        """
-        # NOTE: the fan linc shouldn't be able to initialize a broadcast
-        # message.  That's for actuators (switches, motion sensors, etc) to
-        # trigger other things to occur.  Since the fan linc is just a
-        # responder to other commands, that shouldn't occur.
-        LOG.waring("FanLinc unexpected handle_broadcast called: %s", msg)
-        super.handle_broadcast(msg)
 
     #-----------------------------------------------------------------------
     def handle_refresh_fan(self, msg):

@@ -473,7 +473,7 @@ Switch, KeypadLinc, and Dimmer all support the flags:
      and will alternate on an doff signals
 
   KeypadLinc and Dimmer support the flags:
-   
+
    - ramp_rate: float in the range of 0.5 to 540 seconds which sets the default ramp
      rate that will be used when the button is pressed
 
@@ -566,6 +566,39 @@ next three minutes.
   ```
   { "cmd": "awake" }
   ```
+
+
+### Force a Battery Voltage Check
+
+Supported: Remote and Motion only
+
+The next time the device is awake, this will send a request for the battery
+voltage.  If it is low, it will trigger an event on the low_voltage topic.
+
+  ```
+  { "cmd": "get_battery_voltage" }
+    ```
+
+
+### Set the Low Battery Voltage
+
+Supported: Motion only
+
+Sets the value at which the battery in the device will be determined to be
+low.  Only used on devices that support battery voltage checks and have
+removable batteries.  Which is currently only the Motion sensor.  The default
+low battery voltage for the motion sensor is 7.0.  The normal low voltage
+message would have been sent on group 3 when this voltage is reached anyways.
+
+This is useful for those of us using Li-Ion batteries in the motion sensors
+which have an initial voltage of 7.8 at best, and a low voltage well below
+that of a normal alkaline battery.  When using these batteries, the low
+voltage message on group 3 is likely never sent, because the battery is always
+below the expected value
+
+  ```
+  { "cmd": "set_low_battery_voltage", "voltage": 7.0 }
+    ```
 
 ---
 

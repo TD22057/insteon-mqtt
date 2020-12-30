@@ -65,52 +65,17 @@ class SmokeBridge(Base):
         # API: func( Device, Type type, bool is_on )
         self.signal_on_off = Signal()
 
-    #-----------------------------------------------------------------------
-    def pair(self, on_done=None):
-        """Pair the device with the modem.
-
-        This only needs to be called one time.  It will set the device
-        as a controller and the modem as a responder so the modem will
-        see group broadcasts and report them to us.
-
-        The device must already be a responder to the modem (push set
-        on the modem, then set on the device) so we can update it's
-        database.
-
-        Args:
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Smoke bridge %s pairing", self.addr)
-
-        # Build a sequence of calls to the do the pairing.  This insures each
-        # call finishes and works before calling the next one.  We have to do
-        # this for device db manipulation because we need to know the memory
-        # layout on the device before making changes.
-        seq = CommandSeq(self, "SmokeBridge paired", on_done)
-
-        # Start with a refresh command - since we're changing the db, it must
-        # be up to date or bad things will happen.
-        seq.add(self.refresh)
-
-        # Add the device as a responder to the modem on group 1.  This is
-        # probably already there - and maybe needs to be there before we can
-        # even issue any commands but this check insures that the link is
-        # present on the device and the modem.
-        seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
-                refresh=False)
-
-        # Now add the device as the controller of the modem for all the smoke
-        # types.
-        for type in SmokeBridge.Type:
-            group = type.value
-            seq.add(self.db_add_ctrl_of, group, self.modem.addr, group,
-                    refresh=False)
-
-        # Finally start the sequence running.  This will return so the
-        # network event loop can process everything and the on_done callbacks
-        # will chain everything together.
-        seq.run()
+        # Update the group map with the groups to be paired and the handler
+        # for broadcast messages from this group
+        self.group_map.update({self.Type.SMOKE.value: self.handle_message,
+                               self.Type.CO.value: self.handle_message,
+                               self.Type.TEST.value: self.handle_message,
+                               self.Type.CLEAR.value: self.handle_message,
+                               self.Type.LOW_BATTERY.value:
+                               self.handle_message,
+                               self.Type.ERROR.value: self.handle_message,
+                               self.Type.HEARTBEAT.value: self.handle_message,
+                               })
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
@@ -130,7 +95,7 @@ class SmokeBridge(Base):
         """
         LOG.info("Smoke bridge %s cmd: status refresh", self.addr)
 
-        seq = CommandSeq(self, "Device refreshed", on_done)
+        seq = CommandSeq(self, "Device refreshed", on_done, name="DevRefresh")
 
         # There is no way to get the current device status but we can request
         # the all link database delta so get that.  See smoke bridge dev
@@ -147,32 +112,23 @@ class SmokeBridge(Base):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def handle_broadcast(self, msg):
+    def handle_message(self, msg):
         """Handle broadcast messages from this device.
 
-        This is called automatically by the system (via handle.Broadcast)
-        when we receive a message from the device.
-
-        The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update the
-        device state and look up the group in the all link database.  For
-        each device that is in the group (as a reponsder), we'll call
-        handle_group_cmd() on that device to trigger it.  This way all the
-        devices in the group are updated to the correct values when we see
-        the broadcast message.
+        This is called by Base.handle_broadcast using the group_map map.
 
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
         # ACK of the broadcast - ignore this.
-        if msg.cmd1 == 0x06:
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("Smoke bridge %s broadcast ACK grp: %s", self.addr,
                      msg.group)
 
         # 0x11 ON command for the smoke bridge means the error is active.
         # NOTE: there is no off command - that seems to be handled by the
         # bridge sending the CLEAR condition group.
-        elif msg.cmd1 == 0x11:
+        elif msg.cmd1 == Msg.CmdType.ON:
             LOG.info("Smoke bridge %s broadcast ON grp: %s", self.addr,
                      msg.group)
 
@@ -198,6 +154,6 @@ class SmokeBridge(Base):
 
             # As long as there is no errors (which return above), call
             # handle_broadcast for any device that we're the controller of.
-            super().handle_broadcast(msg)
+            self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------

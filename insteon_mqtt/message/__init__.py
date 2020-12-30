@@ -30,6 +30,9 @@ from .Timed import Timed
 from .DbFlags import DbFlags
 from .Flags import Flags
 
+# Message Types
+from .CmdType import CmdType
+
 # Messages from PLM modem to the host (codes >= 0x60)
 from .InpAllLinkComplete import InpAllLinkComplete
 from .InpAllLinkFailure import InpAllLinkFailure

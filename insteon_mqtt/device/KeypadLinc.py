@@ -126,63 +126,18 @@ class KeypadLinc(Base):
         # Backlight on/off.  See set_backlight for details.
         self._backlight = True
 
-    #-----------------------------------------------------------------------
-    def pair(self, on_done=None):
-        """Pair the device with the modem.
-
-        This only needs to be called one time.  It will set the device as a
-        controller and the modem as a responder so the modem will see group
-        broadcasts and report them to us.
-
-        The device must already be a responder to the modem (push set on the
-        modem, then set on the device) so we can update it's database.
-
-        Args:
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("KeypadLinc %s pairing", self.addr)
-
-        # Build a sequence of calls to the do the pairing.  This insures each
-        # call finishes and works before calling the next one.  We have to do
-        # this for device db manipulation because we need to know the memory
-        # layout on the device before making changes.
-        seq = CommandSeq(self, "KeypadLinc paired", on_done)
-
-        # Start with a refresh command - since we're changing the db, it must
-        # be up to date or bad things will happen.
-        seq.add(self.refresh)
-
-        # Add the device as a responder to the modem on group 1.  This is
-        # probably already there - and maybe needs to be there before we can
-        # even issue any commands but this check insures that the link is
-        # present on the device and the modem.
-        seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
-                refresh=False)
-
-        # Now add the device as the controller of the modem for all 8
-        # buttons.  If this is a 6 button keypad, the extras will go unused
-        # but won't hurt anything.  This lets the modem receive updates about
-        # the button presses and state changes.  Group 9 is used when the
-        # laod is detached so include that as well.
-        for group in range(1, 10):
-            seq.add(self.db_add_ctrl_of, group, self.modem.addr, group,
-                    refresh=False)
-
-        # Note: originally modem was set as the controller for each button.
-        # I don't think that's actually necessary - I think the group 1 link
-        # above is enough for the modem to control the device.
-
-        # Also add the modem as a controller for the buttons - this lets the
-        # modem issue simulated scene commands to those buttons.
-        #for group in range(1, 10):
-        #    seq.add(self.db_add_resp_of, group, self.modem.addr, group,
-        #            refresh=False)
-
-        # Finally start the sequence running.  This will return so the
-        # network event loop can process everything and the on_done callbacks
-        # will chain everything together.
-        seq.run()
+        # Update the group map with the groups to be paired and the handler
+        # for broadcast messages from this group
+        # We don't configure for the distinction between 6 and 8 keypads
+        # pairing extra groups doesn't do any harm.
+        self.group_map.update({0x01: self.handle_on_off,
+                               0x02: self.handle_on_off,
+                               0x03: self.handle_on_off,
+                               0x04: self.handle_on_off,
+                               0x05: self.handle_on_off,
+                               0x06: self.handle_on_off,
+                               0x07: self.handle_on_off,
+                               0x08: self.handle_on_off})
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
@@ -206,7 +161,7 @@ class KeypadLinc(Base):
         # Send a 0x19 0x01 command to get the LED light on/off flags.
         LOG.info("KeypadLinc %s cmd: keypad status refresh", self.addr)
 
-        seq = CommandSeq(self, "Refresh complete", on_done)
+        seq = CommandSeq(self, "Refresh complete", on_done, name="DevRefresh")
 
         # TODO: change this to 0x2e get extended which reads on mask, off
         # mask, on level, led brightness, non-toggle mask, led bit mask (led
@@ -791,7 +746,8 @@ class KeypadLinc(Base):
 
         # Otherwise use the level changing command.
         else:
-            seq = CommandSeq(self, "Backlight level", on_done)
+            seq = CommandSeq(self, "Backlight level", on_done,
+                             name="SetBacklight")
 
             # Bound to 0x11 <= level <= 0x7f per page 157 of insteon dev guide.
             level = max(0x11, min(level, 0x7f))
@@ -953,7 +909,7 @@ class KeypadLinc(Base):
 
         # Start a command sequence so we can call the flag methods in series.
         seq = CommandSeq(self, "KeypadLinc set_flags complete",
-                         on_done)
+                         on_done, name="SetFlags")
 
         # Get the group if it was set.
         group = util.input_integer(kwargs, FLAG_GROUP)
@@ -1384,16 +1340,10 @@ class KeypadLinc(Base):
         on_done(True, "Refresh complete", None)
 
     #-----------------------------------------------------------------------
-    def handle_broadcast(self, msg):
-        """Handle broadcast messages from this device.
+    def handle_on_off(self, msg):
+        """Handle on_off broadcast messages from this device.
 
-        The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update the
-        device state and look up the group in the all link database.  For
-        each device that is in the group (as a reponsder), we'll call
-        handle_group_cmd() on that device to trigger it.  This way all the
-        devices in the group are updated to the correct values when we see
-        the broadcast message.
+        This is called from base.handle_broadcast using the group_map map.
 
         Args:
           msg (InpStandard):  Broadcast message from the device.
@@ -1413,7 +1363,7 @@ class KeypadLinc(Base):
         # ACK of the broadcast.  Ignore this unless we sent a simulated off
         # scene in which case run the broadcast done handler.  This is a
         # weird special case - see scene() for details.
-        if msg.cmd1 == 0x06:
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("KeypadLinc %s broadcast ACK grp: %s", self.addr,
                      msg.group)
             if self.broadcast_done:
@@ -1462,11 +1412,7 @@ class KeypadLinc(Base):
                 elif manual == on_off.Manual.STOP:
                     self.refresh()
 
-        # Call the base class handler.  This will find all the devices we're
-        # the controller of for this group and call their handle_group_cmd()
-        # methods to update their states since they will have seen the group
-        # broadcast and updated (without sending anything out).
-        Base.handle_broadcast(self, msg)
+        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_set_load(self, msg, on_done, reason=""):

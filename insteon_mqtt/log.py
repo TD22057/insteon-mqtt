@@ -71,7 +71,7 @@ def initialize(level=None, screen=None, file=None, config=None):
     log_obj.setLevel(level)
 
     # Add handlers for the optional screen and file output.
-    fmt = '%(asctime)s %(levelname)s %(module)s: %(message)s'
+    fmt = '%(asctime)s.%(msecs)03d %(levelname)s %(module)s: %(message)s'
     datefmt = '%Y-%m-%d %H:%M:%S'
     formatter = logging.Formatter(fmt, datefmt)
 

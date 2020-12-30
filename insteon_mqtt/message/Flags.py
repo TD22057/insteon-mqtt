@@ -115,6 +115,8 @@ class Flags:
 
     #-----------------------------------------------------------------------
     def __str__(self):
-        return "%s%s" % (self.type, '' if not self.is_ext else ' ext')
+        return "%s%s mh:%s hl:%s" % (self.type,
+                                     '' if not self.is_ext else ' ext',
+                                     self.max_hops, self.hops_left)
 
     #-----------------------------------------------------------------------

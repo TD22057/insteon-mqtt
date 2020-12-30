@@ -75,54 +75,11 @@ class Outlet(Base):
         # we can pop it off and know which outlet was being commanded.
         self._which_outlet = []
 
-    #-----------------------------------------------------------------------
-    def pair(self, on_done=None):
-        """Pair the device with the modem.
-
-        This only needs to be called one time.  It will set the device
-        as a controller and the modem as a responder so the modem will
-        see group broadcasts and report them to us.
-
-        The device must already be a responder to the modem (push set
-        on the modem, then set on the device) so we can update it's
-        database.
-
-        Args:
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Outlet %s pairing", self.addr)
-
-        # Build a sequence of calls to the do the pairing.  This insures each
-        # call finishes and works before calling the next one.  We have to do
-        # this for device db manipulation because we need to know the memory
-        # layout on the device before making changes.
-        seq = CommandSeq(self, "Outlet paired", on_done)
-
-        # Start with a refresh command - since we're changing the db, it must
-        # be up to date or bad things will happen.
-        seq.add(self.refresh)
-
-        # Add the device as a responder to the modem for group 1 and 2.  This
-        # is probably already there - and maybe needs to be there before we
-        # can even issue any commands but this check insures that the link is
-        # present on the device and the modem.  Group 2 is required to
-        # control the outlet
-        for group in [1, 2]:
-            seq.add(self.db_add_resp_of, group, self.modem.addr, 0x01,
-                    refresh=False)
-
-        # Now add the device as the controller of the modem for group 1 and
-        # 2.  This lets the modem receive updates about the button presses
-        # and state changes.
-        for group in [1, 2]:
-            seq.add(self.db_add_ctrl_of, group, self.modem.addr, group,
-                    refresh=False)
-
-        # Finally start the sequence running.  This will return so the
-        # network event loop can process everything and the on_done callbacks
-        # will chain everything together.
-        seq.run()
+        # Update the group map with the groups to be paired and the handler
+        # for broadcast messages from this group
+        # Can the outlet really act as a controller?
+        self.group_map.update({0x01: self.handle_on_off,
+                               0x02: self.handle_on_off})
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
@@ -145,7 +102,7 @@ class Outlet(Base):
         """
         LOG.info("Outlet %s cmd: status refresh", self.label)
 
-        seq = CommandSeq(self, "Device refreshed", on_done)
+        seq = CommandSeq(self, "Device refreshed", on_done, name="DevRefresh")
 
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the current
@@ -414,7 +371,8 @@ class Outlet(Base):
                             "are: %s" % unknown, flags)
 
         # Start a command sequence so we can call the flag methods in series.
-        seq = CommandSeq(self, "Outlet set_flags complete", on_done)
+        seq = CommandSeq(self, "Outlet set_flags complete", on_done,
+                         name="DevSetFlags")
 
         if FLAG_BACKLIGHT in kwargs:
             backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
@@ -438,19 +396,10 @@ class Outlet(Base):
         on_done(True, "Backlight level updated", None)
 
     #-----------------------------------------------------------------------
-    def handle_broadcast(self, msg):
-        """Handle broadcast messages from this device.
+    def handle_on_off(self, msg):
+        """Handle broadcast on_off messages from this device.
 
-        This is called automatically by the system (via handle.Broadcast)
-        when we receive a message from the device.
-
-        The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update the
-        device state and look up the group in the all link database.  For
-        each device that is in the group (as a reponsder), we'll call
-        handle_group_cmd() on that device to trigger it.  This way all the
-        devices in the group are updated to the correct values when we see
-        the broadcast message.
+        This is called via the handle_broadcast and the mapping in group_map.
 
         Args:
           msg (InpStandard):  Broadcast message from the device.
@@ -464,7 +413,7 @@ class Outlet(Base):
         # ACK of the broadcast.  Ignore this unless we sent a simulated off
         # scene in which case run the broadcast done handler.  This is a
         # weird special case - see scene() for details.
-        if msg.cmd1 == 0x06:
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("Outlet %s broadcast ACK grp: %s", self.addr, msg.group)
 
             if self.broadcast_done:
@@ -487,11 +436,7 @@ class Outlet(Base):
             elif not self.broadcast_done:
                 self._set_is_on(msg.group, False, mode, reason)
 
-            # This will find all the devices we're the controller of for this
-            # group and call their handle_group_cmd() methods to update their
-            # states since they will have seen the group broadcast and
-            # updated (without sending anything out).
-            super().handle_broadcast(msg)
+            self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):

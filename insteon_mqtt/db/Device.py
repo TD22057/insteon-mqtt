@@ -366,7 +366,7 @@ class Device:
         # Otherwise, we don't need to do anything - the entry exists.
         elif entry:
             LOG.info("Device %s add db already exists for %s grp %s %s",
-                        self.addr, addr, group, util.ctrl_str(is_controller))
+                     self.addr, addr, group, util.ctrl_str(is_controller))
             on_done(True, "Entry already exists", entry)
             return
 
@@ -784,7 +784,7 @@ class Device:
         # pylint: disable=too-many-locals
 
         seq = CommandSeq(self.device, "Device database update complete",
-                         on_done)
+                         on_done, name="DbAddNew")
 
         last_mem_loc = self.last.mem_loc
 

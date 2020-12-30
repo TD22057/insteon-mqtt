@@ -20,6 +20,38 @@ class OutAllLinkUpdate(Base):
     msg_code = 0x6f
     fixed_msg_size = 12
 
+    # The modem developers guide is wrong regarding much of this.  There are
+    # no alternative commands such as 'add or modify' as stated in the
+    # document. All commands do one function only.  Additionally, the entry
+    # matching includes the ctrl/resp status except on Delete(which requires
+    # the db_flags to be 0x00).
+    #
+    # The following is what each control code does based on testing.
+    # 0x00 - FIND FIRST - Searches for an entry matching addr, group, but not
+    #        ctrl/resp, the db_flags can be set, but will be ignored.  Will
+    #        produce an ACK if a matching entry is found, followed by a
+    #        InpAllLinkRec containing the entry.
+    # 0x01 - FIND NEXT - Searches for the next entry matching the addr,
+    #        group, but not ctrl/resp, previously searched by the 0x00 FIND
+    #        FIRST command above. The db_flags can be set, but will be ignored.
+    #        Will produce an ACK if a matching entry is found, followed by a
+    #        InpAllLinkRec containing the entry.
+    # 0x20 - UPDATE - Searches for an entry matching addr, group, AND ctrl/resp
+    #        and updates the Data1-3 values for this entry based on what was
+    #        passed.  Will return NACK if no matching entry is found
+    # 0x40 - ADD_CONTROLLER - Adds the controller record included in the cmd.
+    #        Will produce a NACK if a controller record matching the addr,
+    #        group, AND ctrl/resp already exists.Will also nack if the entry
+    #        in the command is not a controller entry.
+    # 0x41 - ADD_RESPONDER - Adds the responder record included in the cmd.
+    #        Will produce a NACK if a responder record matching the addr,
+    #        group, AND ctrl/resp already exists.  Will also nack if the entry
+    #        in the command is not a responder entry.
+    # 0x80 - DELETE - Searches for an entry matching addr, group, but not
+    #        ctrl/resp, indeed the db_flags need to be 0x00 otherwise the
+    #        search will NACK.  The first matching entry (ctrl or resp) will
+    #        be deleted. If no entry can be found a NACK will be returned.
+
     # Valid command codes
     class Cmd(enum.IntEnum):
         EXISTS = 0x00
@@ -93,7 +125,9 @@ class OutAllLinkUpdate(Base):
         """
         o = io.BytesIO()
         o.write(bytes([0x02, self.msg_code, self.cmd.value]))
-        o.write(self.db_flags.to_bytes(self.cmd == self.Cmd.DELETE))
+        # db_flags must be 0x00 for a modem delete
+        o.write(self.db_flags.to_bytes(
+            modem_delete=self.cmd == self.Cmd.DELETE))
         o.write(bytes([self.group]))
         o.write(self.addr.to_bytes())
         o.write(self.data)

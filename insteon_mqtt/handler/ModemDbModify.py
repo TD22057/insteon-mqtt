@@ -43,6 +43,9 @@ class ModemDbModify(Base):
         self.entry = entry
         self.existing_entry = existing_entry
 
+        # Is this a retry of an ADD or UPDATE?  This prevents endless loops
+        self.is_retry = False
+
         # Tuple of (msg, entry) to send next.  If the first calls ACK's,
         # we'll update self.entry and send the next msg and continue until
         # this is empty.
@@ -84,9 +87,69 @@ class ModemDbModify(Base):
 
         # If we get a NAK message, signal an error and stop.
         if not msg.is_ack:
-            LOG.error("Modem db updated failed: %s", msg)
-            self.on_done(False, "Write to Modem db failed, try running " +
-                         "`refresh modem`", self.entry)
+            if msg.cmd == Msg.OutAllLinkUpdate.Cmd.DELETE or self.is_retry:
+                # We should never fail on a DELETE.  If this is a retry then
+                # the matching add/update already failed, which also should not
+                # happen.
+                LOG.error("Modem db update failed: %s", msg)
+                self.on_done(False, "Write to Modem db failed, try running " +
+                             "`refresh modem`", self.entry)
+
+            elif msg.cmd == Msg.OutAllLinkUpdate.Cmd.UPDATE:
+                LOG.info("DB record didn't exist, adding %s grp: %s data: %s",
+                         msg.addr, msg.group, msg.data.hex())
+                # There is no entry matching this on the device.  Create one
+                # instead.  There is no need to delete the wrong cached entry
+                # it will be replaced on when this record is added by the
+                # deduplication in add_entry
+                cmd = Msg.OutAllLinkUpdate.Cmd.ADD_RESPONDER
+                if self.entry.is_controller:
+                    cmd = Msg.OutAllLinkUpdate.Cmd.ADD_CONTROLLER
+
+                # Create the flags for the entry.
+                db_flags = Msg.DbFlags(in_use=True,
+                                       is_controller=self.entry.is_controller,
+                                       is_last_rec=False)
+
+                # Build the modem database add message.
+                msg = Msg.OutAllLinkUpdate(cmd, db_flags, self.entry.group,
+                                           self.entry.addr, self.entry.data)
+
+                # Set retry to prevent infinite loops
+                self.is_retry = True
+
+                # Send the message.
+                self.db.device.send(msg, self)
+
+            elif (msg.cmd == Msg.OutAllLinkUpdate.Cmd.ADD_RESPONDER or
+                  msg.cmd == Msg.OutAllLinkUpdate.Cmd.ADD_CONTROLLER):
+                LOG.info("DB record exists, updating %s grp: %s data: %s",
+                         msg.addr, msg.group, msg.data.hex())
+                # There is an entry matching this on the device already.
+                # So save it to the database.  And mark as the existing
+                # entry for after the update.
+                self.db.add_entry(self.entry)
+                self.existing_entry = self.entry
+
+                # Do an update
+                cmd = Msg.OutAllLinkUpdate.Cmd.UPDATE
+
+                # Create the flags for the entry.
+                db_flags = Msg.DbFlags(in_use=True,
+                                       is_controller=self.entry.is_controller,
+                                       is_last_rec=False)
+
+                # Build the modem database update message.
+                msg = Msg.OutAllLinkUpdate(cmd, db_flags, self.entry.group,
+                                           self.entry.addr, self.entry.data)
+
+                # Set retry to prevent infinite loops
+                self.is_retry = True
+
+                # Send the message.
+                self.db.device.send(msg, self)
+
+            # No matter what, all these messages are finished.
             return Msg.FINISHED
 
         # ACK of a message to delete an existing entry
@@ -97,7 +160,7 @@ class ModemDbModify(Base):
         # ACK of an Update an existing entry w/ new data fields.
         elif msg.cmd == Msg.OutAllLinkUpdate.Cmd.UPDATE:
             LOG.info("Updating modem db record for %s grp: %s data: %s",
-                     msg.addr, msg.group, msg.data)
+                     msg.addr, msg.group, msg.data.hex())
 
             assert self.existing_entry
 
@@ -113,7 +176,7 @@ class ModemDbModify(Base):
               msg.cmd == Msg.OutAllLinkUpdate.Cmd.ADD_RESPONDER):
             LOG.info("Adding modem db record for %s type: %s grp: %s data: %s",
                      msg.addr, util.ctrl_str(msg.db_flags.is_controller),
-                     msg.group, msg.data)
+                     msg.group, msg.data.hex())
 
             # This will also save the database.
             self.db.add_entry(self.entry)

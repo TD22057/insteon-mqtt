@@ -5,9 +5,7 @@
 #===========================================================================
 import time
 from .Base import Base
-from ..CommandSeq import CommandSeq
 from .. import log
-from .. import on_off
 from .. import message as Msg
 from ..Signal import Signal
 
@@ -76,14 +74,14 @@ class BatterySensor(Base):
 
         # Derived classes can override these or add to them.  Maps Insteon
         # groups to message type for this sensor.
-        self.group_map = {
+        self.group_map.update({
             # Sensor on/off activity on group 1.
             0x01 : self.handle_on_off,
             # Low battery is on group 3
             0x03 : self.handle_low_battery,
             # Heartbeat is on group 4
             0x04 : self.handle_heartbeat,
-            }
+            })
 
         self._is_on = False
         self._send_queue = []
@@ -126,50 +124,6 @@ class BatterySensor(Base):
             self._send_queue.append([msg, msg_handler, high_priority, after])
 
     #-----------------------------------------------------------------------
-    def pair(self, on_done=None):
-        """Pair the device with the modem.
-
-        This only needs to be called one time.  It will set the device as a
-        controller and the modem as a responder for all of the groups that
-        the device can alert on.
-
-        The device must already be a responder to the modem (push set on the
-        modem, then set on the device) so we can update it's database.
-
-        Args:
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("BatterySensor %s pairing", self.addr)
-
-        # Build a sequence of calls to the do the pairing.  This insures each
-        # call finishes and works before calling the next one.  We have to do
-        # this for device db manipulation because we need to know the memory
-        # layout on the device before making changes.
-        seq = CommandSeq(self, "BatterySensor paired", on_done)
-
-        # Start with a refresh command - since we're changing the db, it must
-        # be up to date or bad things will happen.
-        seq.add(self.refresh)
-
-        # Add the device as a responder to the modem on group 1.  This is
-        # probably already there - and maybe needs to be there before we can
-        # even issue any commands but this check insures that the link is
-        # present on the device and the modem.
-        seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
-                refresh=False)
-
-        # Now add the device as the controller of the modem for groups 1-3.
-        for group in range(1, 4):
-            seq.add(self.db_add_ctrl_of, group, self.modem.addr, group,
-                    refresh=False)
-
-        # Finally start the sequence running.  This will return so the
-        # network event loop can process everything and the on_done callbacks
-        # will chain everything together.
-        seq.run()
-
-    #-----------------------------------------------------------------------
     def is_on(self):
         """Return if sensor has been tripped.
         """
@@ -202,48 +156,13 @@ class BatterySensor(Base):
     def handle_broadcast(self, msg):
         """Handle broadcast messages from this device.
 
-        A broadcast message is sent from the device when any activity is
-        triggered.  This could be motion, low battery, etc.
-
-        This callback will process the broadcast and emit the signals that
-        correspond the events.
-
-        Then the base class handle_broadcast() is called.  That will loop
-        over every device that is linked to this device in the database and
-        call handle_group_cmd() on those devices.  That insures that the
-        devices that are linked to this device get updated to their correct
-        states (Insteon devices don't send out a state change when the
-        respond to a broadcast).
-
-        Finally, if any messages are in self._send_queue, pop a message and
-        send it while the device is still awake.
+        This is generally handled by the function in Base.  The function here
+        merely pops a message off the send queue since the device is awake.
 
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == 0x06:
-            LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-
-        # Valid command
-        elif (on_off.Mode.is_valid(msg.cmd1) or
-              on_off.Manual.is_valid(msg.cmd1)):
-            LOG.info("BatterySensor %s broadcast cmd %s grp: %s", self.addr,
-                     msg.cmd1, msg.group)
-
-            # Find the callback for this group and run that.
-            handler = self.group_map.get(msg.group, None)
-            if handler:
-                handler(msg)
-            else:
-                LOG.warning("BatterySensor no handler for group %s", msg.group)
-
-            # This will find all the devices we're the controller of for this
-            # group and call their handle_group_cmd() methods to update their
-            # states since they will have seen the group broadcast and updated
-            # (without sending anything out).
-            super().handle_broadcast(msg)
+        super().handle_broadcast(msg)
 
         # Pop messages from _send_queue if necessary
         self._pop_send_queue()
@@ -258,7 +177,15 @@ class BatterySensor(Base):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        self._set_is_on(msg.cmd1 == 0x11)
+        # ACK of the broadcast - ignore this.
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
+            LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
+                     msg.group)
+        else:
+            LOG.info("BatterySensor %s on_off broadcast cmd: %s", self.addr,
+                     msg.cmd1)
+            self._set_is_on(msg.cmd1 == Msg.CmdType.ON)
+            self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_low_battery(self, msg):
@@ -271,8 +198,16 @@ class BatterySensor(Base):
           msg (InpStandard):  Broadcast message from the device.  On/off is
               stored in msg.cmd1.
         """
-        # Send True for low battery, False for regular.
-        self.signal_low_battery.emit(self, msg.cmd1 == 0x11)
+        # ACK of the broadcast - ignore this.
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
+            LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
+                     msg.group)
+        else:
+            LOG.info("BatterySensor %s low battery broadcast cmd: %s",
+                     self.addr, msg.cmd1)
+            # Send True for low battery, False for regular.
+            self.signal_low_battery.emit(self, msg.cmd1 == Msg.CmdType.ON)
+            self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_heartbeat(self, msg):
@@ -284,8 +219,16 @@ class BatterySensor(Base):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # Send True for any heart beat message
-        self.signal_heartbeat.emit(self, True)
+        # ACK of the broadcast - ignore this.
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
+            LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
+                     msg.group)
+        else:
+            LOG.info("BatterySensor %s heartbeat broadcast cmd: %s", self.addr,
+                     msg.cmd1)
+            # Send True for any heart beat message
+            self.signal_heartbeat.emit(self, True)
+            self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
@@ -352,11 +295,20 @@ class BatterySensor(Base):
         If we have any messages in the _send_queue, now is the time to send
         them while the device is awake, unless a message for this device is
         already pending in the protocol write queue
+
+        Set to no retry. Normally, the device is only briefly awake, so
+        it is only worth trying to send a message once.  The device will be
+        asleep before the second attempt.
+
+        But if the device is marked awake, the awake function pop the queue
+        in its function and 0 retry will not apply.  Similarly messages queued
+        while awake will just be sent and not queued.
         """
         if (self._send_queue and
                 not self.protocol.is_addr_in_write_queue(self.addr)):
             LOG.info("BatterySensor %s awake - sending msg", self.label)
-            args = self._send_queue.pop()
-            super().send(*args)
+            msg, handler, high_priority, after = self._send_queue.pop()
+            handler.set_retry_num(0)
+            super().send(msg, handler, high_priority, after)
 
     #-----------------------------------------------------------------------
