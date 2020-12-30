@@ -1,4 +1,4 @@
-# Insteon-MQTT Bridge Quick Start for Hass.io users
+# Insteon-MQTT Quick Start for Home Assistant users
 
 ## Prerequisites
 
