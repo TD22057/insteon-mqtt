@@ -57,6 +57,9 @@ the program.
 - Improved message timing after receiving a broadcast command from a device.
   ([PR 284][P284])
 
+- Fixed a few rare errors with the Serial interface.  (thanks @MrGibbage)
+  ([I 292][I292])
+
 ## [0.7.4]
 
 ### Additions
@@ -532,3 +535,4 @@ will add new features.
 [P284]: https://github.com/TD22057/insteon-mqtt/pull/284
 [P290]: https://github.com/TD22057/insteon-mqtt/pull/290
 [P238]: https://github.com/TD22057/insteon-mqtt/pull/238
+[I292]: https://github.com/TD22057/insteon-mqtt/issues/292
