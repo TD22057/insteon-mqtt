@@ -105,7 +105,7 @@ class DeviceRefresh(Base):
                     # w/ the current value and save the database.
                     def on_done(success, message, data):
                         if success:
-                            self.device.db.set_delta(msg.cmd1)
+                            self.device.db.delta = msg.cmd1
                             LOG.ui("%s database download complete\n%s",
                                    self.addr, self.device.db)
                         self.on_done(success, message, data)

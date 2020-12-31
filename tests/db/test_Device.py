@@ -17,8 +17,13 @@ class Test_Device:
         assert obj.is_current(0) is False
         obj.delta = 1
         assert obj.is_current(1) is True
-        obj.set_delta(None)
+        obj.increment_delta()
         assert obj.is_current(1) is False
+        assert obj.is_current(2) is True
+        # test roll over at 256
+        obj.delta = 255
+        obj.increment_delta()
+        assert obj.is_current(0) is True
 
         assert obj.engine is None
         obj.set_engine(1)
@@ -109,11 +114,15 @@ class Test_Device:
         assert len(obj2.unused) == 1
         assert len(obj2.groups) == 2
 
+        obj2.set_meta('test', 2)
         obj2.clear()
         assert len(obj2) == 0
         assert len(obj2.entries) == 0
         assert len(obj2.unused) == 0
         assert len(obj2.groups) == 0
+        assert len(obj2._meta) == 1
+        assert obj2.get_meta('test') == 2
+
 
     #-----------------------------------------------------------------------
     def test_add_multi_group(self):

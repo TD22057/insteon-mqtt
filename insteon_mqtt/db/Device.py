@@ -176,17 +176,14 @@ class Device:
         return delta == self.delta
 
     #-----------------------------------------------------------------------
-    def set_delta(self, delta):
-        """Set the current database delta.
+    def increment_delta(self):
+        """Increments the current database delta by 1
 
-        This records the input delta as the current value.  If the input
-        isn't None, the database is also saved to record this value.
-
-        Args:
-          delta:  (int) The database delta.  None to clear the delta.
+        Bumps up the delta by one, rolling it over to 0 if necessary.  Will
+        ignore a delta which is None.
         """
-        self.delta = delta
-        if delta is not None:
+        if self.delta is not None:
+            self.delta += 1
             self.delta = self.delta % 256  # Roll over db if it goes past 256
             self.save()
 
@@ -275,19 +272,18 @@ class Device:
 
     #-----------------------------------------------------------------------
     def clear(self):
-        """Clear the complete database of entries.
+        """Clear the cached database of entries
 
-        This also removes the saved file if it exists.  It does NOT modify
-        the database on the device.
+        This also saves the empty database to file.  It does NOT modify
+        the database on the device.  Nor does it clear the meta entries in
+        the database file.
         """
         self.delta = None
         self.entries.clear()
         self.unused.clear()
         self.groups.clear()
         self.last.mem_loc = START_MEM_LOC
-
-        if self.save_path and os.path.exists(self.save_path):
-            os.remove(self.save_path)
+        self.save()
 
     #-----------------------------------------------------------------------
     def set_path(self, path):

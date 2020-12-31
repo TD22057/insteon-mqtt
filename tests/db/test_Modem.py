@@ -78,6 +78,37 @@ class Test_Modem:
         assert obj2.entries[2] == obj.entries[2]
 
     #-----------------------------------------------------------------------
+    def test_clear(self):
+        obj = IM.db.Modem()
+        assert len(obj) == 0
+
+        addr = IM.Address('12.34.ab')
+        data = bytes([0xff, 0x00, 0x00])
+        e = IM.db.ModemEntry(addr, 0x01, True, data, db=obj)
+        obj.add_entry(e)
+
+        addr = IM.Address('12.34.ac')
+        data = bytes([0xff, 0x00, 0x00])
+        e = IM.db.ModemEntry(addr, 0x01, True, data, db=obj)
+        obj.add_entry(e)
+
+        addr = IM.Address('12.34.ad')
+        data = bytes([0xff, 0x00, 0x00])
+        e = IM.db.ModemEntry(addr, 0x02, True, data, db=obj)
+        obj.add_entry(e)
+
+        assert len(obj) == 3
+
+        obj.set_meta('test', 2)
+        obj.clear()
+        assert len(obj) == 0
+        assert len(obj.entries) == 0
+        assert len(obj.groups) == 0
+        assert len(obj.aliases) == 0
+        assert len(obj._meta) == 1
+        assert obj.get_meta('test') == 2
+
+    #-----------------------------------------------------------------------
     def test_add_on_device_empty_ctrl(self, test_device, test_entry_dev1_ctrl):
         # add_on_device(self, entry, on_done=None)
         # test adding to an entry db with ctrl

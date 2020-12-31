@@ -73,7 +73,7 @@ class DeviceDbModify(Base):
                     LOG.info("Updating entry: %s", self.entry)
                     self.db.add_entry(self.entry)
                     # Increment the delta 1
-                    self.db.set_delta(self.db.delta + 1)
+                    self.db.increment_delta()
                     self.on_done(True, "Device database update complete",
                                  self.entry)
 
