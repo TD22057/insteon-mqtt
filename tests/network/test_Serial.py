@@ -72,3 +72,13 @@ class Test_Serial():
                 needs_emit.assert_called_once_with(test_device, False)
                 wrote_emit.assert_called_once_with(test_device, bytes(4))
                 assert len(test_device._write_buf) == 0
+
+    def test_write_to_link_exception(self, test_device, caplog):
+        def write(data):
+            raise Exception("Fake Serial", "Broken", "Test")
+        test_device.client.write = write
+        msg_time = time.time()
+        test_device._write_buf.append((bytes(8), msg_time))
+        t = time.time()
+        test_device.write_to_link(t)
+        assert "Serial write error" in caplog.text
