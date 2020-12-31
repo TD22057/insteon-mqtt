@@ -196,10 +196,7 @@ class Modem:
         self.entries = []
         self.groups = {}
         self.aliases = {}
-        self._meta = {}
-
-        if self.save_path and os.path.exists(self.save_path):
-            os.remove(self.save_path)
+        self.save()
 
     #-----------------------------------------------------------------------
     def find_group(self, group):
