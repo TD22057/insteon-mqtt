@@ -367,7 +367,7 @@ class Test_KPL():
         with mock.patch.object(IM.CommandSeq, 'add'):
             test_device.get_flags()
             calls = [
-                # can't figure out how to define the call to super().get_flags
+                # TODO: figure out how to define the call to super().get_flags
                 call(test_device._get_ext_flags),
             ]
             IM.CommandSeq.add.assert_has_calls(calls)

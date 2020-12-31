@@ -844,7 +844,8 @@ class KeypadLinc(Base):
         """
         LOG.info("Dimmer %s cmd: get extended operation flags", self.label)
 
-        # Requesting data d1 = 0x01
+        # D1 = group (0x01), D2 = 0x00 == Data Request, others ignored,
+        # per Insteon Dev Guide
         data = bytes([0x01] + [0x00] * 13)
 
         msg = Msg.OutExtended.direct(self.addr, Msg.CmdType.EXTENDED_SET_GET,
@@ -873,8 +874,8 @@ class KeypadLinc(Base):
             if ramp_rate <= ramp_key:
                 ramp_rate = ramp_value
                 break
-        LOG.ui("Dimmer %s on_level: %s%% ramp rate: %ss", self.label,
-               on_level / 2.55, ramp_rate)
+        LOG.ui("Dimmer %s on_level: %s (%.2f%%) ramp rate: %ss", self.label,
+               on_level, on_level / 2.55, ramp_rate)
         on_done(True, "Operation complete", msg.data[5])
 
     #-----------------------------------------------------------------------
