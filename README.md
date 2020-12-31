@@ -9,7 +9,7 @@ My initial intent with this package is better integrate Insteon into
 Home Assistant and make it easier and more understandable to add new
 features and devices.
 
-Version: 0.7.4  ([History](HISTORY.md))
+Version: 0.7.4  ([History](CHANGELOG.md))
 
 ### Recent Breaking Changes
 
@@ -25,8 +25,8 @@ Version: 0.7.4  ([History](HISTORY.md))
 Blah, blah, blah, too much reading, how do I use it?  [Read the quick
 start guide](docs/quick_start.md)
 
-Using hassio? [Read the hass.io quick start guide](docs/hassio_quick_start.md)
-
+Using Home Assistant Supervisor?
+[Install Insteon-MQTT as an Add-on](docs/HA_Addon_Instructions.md)
 
 # Overview
 
