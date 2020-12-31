@@ -242,6 +242,8 @@ class Test_KPL():
 
         # Test dimmer
         test_device.is_dimmer = True
+        assert(test_device.get_on_level() == 255)
+
         def level_bytes(level):
             data = bytes([
                 0x01,
@@ -253,8 +255,52 @@ class Test_KPL():
             test_device.set_on_level(params[0])
             assert len(test_device.protocol.sent) == 1
             assert test_device.protocol.sent[0].msg.cmd1 == 0x2e
-            assert test_device.protocol.sent[0].msg.data == level_bytes(params[1])
+            assert (test_device.protocol.sent[0].msg.data ==
+                    level_bytes(params[1]))
             test_device.protocol.clear()
+
+        test_device.set_on_level(64)
+
+        # Fake having completed the set_on_level(64) request
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(test_device.addr.hex,
+                                     test_device.modem.addr.hex,
+                                     flags, 0x2e, 0x00)
+        test_device.handle_on_level(ack, IM.util.make_callback(None), 64)
+        assert(test_device.get_on_level() == 64)
+        test_device.protocol.clear()
+
+        # Try multiple button presses in a row; confirm that level goes to
+        # default on-level then to full brightness, as expected.
+        # Fast-on should always go to full brightness.
+        params = [
+            (Msg.CmdType.ON, 0x00, [64, IM.on_off.Mode.NORMAL, 'device']),
+            (Msg.CmdType.ON, 0x00, [255, IM.on_off.Mode.NORMAL, 'device']),
+            (Msg.CmdType.ON, 0x00, [64, IM.on_off.Mode.NORMAL, 'device']),
+            (Msg.CmdType.OFF, 0x00, [0, IM.on_off.Mode.NORMAL, 'device']),
+            (Msg.CmdType.ON_FAST, 0x00, [255, IM.on_off.Mode.FAST, 'device']),
+            (Msg.CmdType.ON_FAST, 0x00, [255, IM.on_off.Mode.FAST, 'device']),
+            (Msg.CmdType.OFF_FAST, 0x00, [0, IM.on_off.Mode.FAST, 'device']),
+            (Msg.CmdType.ON_INSTANT, 0x00,
+                [64, IM.on_off.Mode.INSTANT, 'device']),
+            (Msg.CmdType.ON_INSTANT, 0x00,
+                [255, IM.on_off.Mode.INSTANT, 'device']),
+            (Msg.CmdType.ON_INSTANT, 0x00,
+                [64, IM.on_off.Mode.INSTANT, 'device'])]
+        for cmd1, cmd2, expected in params:
+            with mock.patch.object(IM.Signal, 'emit') as mocked:
+                print("Trying:", "[%x, %x]" % (cmd1, cmd2))
+                flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+                group_num = 0x01
+                group = IM.Address(0x00, 0x00, group_num)
+                addr = IM.Address(0x01, 0x02, 0x03)
+                msg = Msg.InpStandard(addr, group, flags, cmd1, cmd2)
+                test_device.handle_broadcast(msg)
+                if expected is not None:
+                    mocked.assert_called_once_with(test_device, group_num,
+                                                   *expected)
+                else:
+                    mocked.assert_not_called()
 
     def test_set_flags(self, test_device):
         # set_flags(self, on_done, **kwargs)
@@ -314,3 +360,27 @@ class Test_KPL():
                 mocked.assert_called_once_with(test_device, group_num, *expected)
             else:
                 mocked.assert_not_called()
+
+    def test_get_flags(self, test_device):
+        # This should hijack get flags and should insert a call to
+        # EXTENDED_SET_GET
+        with mock.patch.object(IM.CommandSeq, 'add'):
+            test_device.get_flags()
+            calls = [
+                # TODO: figure out how to define the call to super().get_flags
+                call(test_device._get_ext_flags),
+            ]
+            IM.CommandSeq.add.assert_has_calls(calls)
+            assert IM.CommandSeq.add.call_count == 2
+
+    def test_handle_ext_flags(self, test_device):
+        from_addr = IM.Address(0x01, 0x02, 0x05)
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT, True)
+        data = bytes([0x01, 0x01, 0x00, 0x00, 0x20, 0x20, 0x1c, 0x1c, 0x1f,
+                      0x00, 0x01, 0x00, 0x00, 0x00])
+        msg = Msg.InpExtended(from_addr, test_device.addr, flags,
+                              Msg.CmdType.EXTENDED_SET_GET, 0x00, data)
+        def on_done(success, *args):
+            assert success
+        test_device.handle_ext_flags(msg, on_done)
+        assert test_device.get_on_level() == 0x1C

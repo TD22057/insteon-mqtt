@@ -90,7 +90,7 @@ class Dimmer(Base):
         self.group_map.update({0x01: self.handle_on_off})
 
     #-----------------------------------------------------------------------
-    def on(self, group=0x01, level=0xff, mode=on_off.Mode.NORMAL, reason="",
+    def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
            on_done=None):
         """Turn the device on.
 
@@ -108,7 +108,7 @@ class Dimmer(Base):
                 this must be 1.  Allowing a group here gives us a consistent
                 API to the on command across devices.
           level (int): If non zero, turn the device on.  Should be in the
-                range 0 to 255.
+                range 0 to 255.  If None, use default on-level.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
@@ -117,6 +117,20 @@ class Dimmer(Base):
                    completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Dimmer %s cmd: on %s", self.addr, level)
+        if level is None:
+            # Not specified - choose brightness as pressing the button would do
+            if mode == on_off.Mode.FAST:
+                # Fast-ON command.  Use full-brightness.
+                level = 0xff
+            else:
+                # Normal/instant ON command.  Use default on-level.
+                # Check if we saved the default on-level in the device
+                # database when setting it.
+                level = self.get_on_level()
+                if self._level == level:
+                    # Just like with button presses, if already at default on
+                    # level, go to full brightness.
+                    level = 0xff
         assert level >= 0 and level <= 0xff
         assert group == 0x01
         assert isinstance(mode, on_off.Mode)
@@ -186,7 +200,7 @@ class Dimmer(Base):
 
         Args:
           level (int): If non zero, turn the device on.  Should be in the
-                range 0 to 255.
+                range 0 to 255.  If None, use default on-level.
           group (int): The group to send the command to.  For this device,
                 this must be 1.  Allowing a group here gives us a consistent
                 API to the on command across devices.
@@ -197,11 +211,11 @@ class Dimmer(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        if level:
-            # True == full on.  Since true is integer 1, do an explicit check
-            # here to catch that input.
+        if (level is None) or level:
+            # None/True == use default on-level.  Since true is integer 1,
+            # do an explicit check here to catch that input.
             if level is True:
-                level = 0xff
+                level = None
 
             self.on(group, level, mode, reason, on_done)
         else:
@@ -452,6 +466,70 @@ class Dimmer(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
+    def get_flags(self, on_done=None):
+        """Hijack base get_flags to inject extended flags request.
+
+        The flags will be passed to the on_done callback as the data field.
+        Derived types may do something with the flags by override the
+        handle_flags method.
+
+        Args:
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        seq = CommandSeq(self, "Dimmer get_flags complete", on_done,
+                         name="GetFlags")
+        seq.add(super().get_flags)
+        seq.add(self._get_ext_flags)
+        seq.run()
+
+    #-----------------------------------------------------------------------
+    def _get_ext_flags(self, on_done=None):
+        """Get the Insteon operational extended flags field from the device.
+
+        For the dimmer device, the flags include on-level and ramp-rate.
+
+        Args:
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.info("Dimmer %s cmd: get extended operation flags", self.label)
+
+        # D1 = group (0x01), D2 = 0x00 == Data Request, others ignored,
+        # per Insteon Dev Guide
+        data = bytes([0x01] + [0x00] * 13)
+
+        msg = Msg.OutExtended.direct(self.addr, Msg.CmdType.EXTENDED_SET_GET,
+                                     0x00, data)
+        msg_handler = handler.ExtendedCmdResponse(msg, self.handle_ext_flags,
+                                                  on_done)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def handle_ext_flags(self, msg, on_done):
+        """Handle replies to the _get_ext_flags command.
+
+        Extended message payload is:
+          D8 = on-level
+          D7 = ramp-rate
+
+        Args:
+          msg (message.InpExtended):  The message reply.
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+        """
+        on_level = msg.data[7]
+        self.db.set_meta('on_level', on_level)
+        ramp_rate = msg.data[6]
+        for ramp_key, ramp_value in self.ramp_pretty.items():
+            if ramp_rate <= ramp_key:
+                ramp_rate = ramp_value
+                break
+        LOG.ui("Dimmer %s on_level: %s (%.2f%%) ramp rate: %ss", self.label,
+               on_level, on_level / 2.55, ramp_rate)
+        on_done(True, "Operation complete", msg.data[5])
+
+    #-----------------------------------------------------------------------
     def set_on_level(self, level, on_done=None):
         """Set the device default on level.
 
@@ -477,7 +555,8 @@ class Dimmer(Base):
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_on_level, on_done)
+        callback = functools.partial(self.handle_on_level, level=level)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -580,11 +659,11 @@ class Dimmer(Base):
         on_done(True, "Backlight level updated", None)
 
     #-----------------------------------------------------------------------
-    def handle_on_level(self, msg, on_done):
+    def handle_on_level(self, msg, on_done, level):
         """Callback for handling set_on_level() responses.
 
         This is called when we get a response to the set_on_level() command.
-        We don't need to do anything - just call the on_done callback with
+        Update stored on-level in device DB and call the on_done callback with
         the status.
 
         Args:
@@ -592,6 +671,7 @@ class Dimmer(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+        self.db.set_meta('on_level', level)
         on_done(True, "Button on level updated", None)
 
     #-----------------------------------------------------------------------
@@ -611,6 +691,20 @@ class Dimmer(Base):
             on_done(True, "Button ramp rate updated", None)
         else:
             on_done(False, "Button ramp rate failed", None)
+
+    #-----------------------------------------------------------------------
+    def get_on_level(self):
+        """Look up previously-set on-level in device database, if present
+
+        This is called when we need to look up what is the default on-level
+        (such as when getting an ON broadcast message from the device).
+
+        If on_level is not found in the DB, assumes on-level is full-on.
+        """
+        on_level = self.db.get_meta('on_level')
+        if on_level is None:
+            on_level = 0xff
+        return on_level
 
     #-----------------------------------------------------------------------
     def handle_on_off(self, msg):
@@ -637,8 +731,7 @@ class Dimmer(Base):
             self.broadcast_done = None
             return
 
-        # On/off commands.  How do we tell the level?  It's not in the
-        # message anywhere.
+        # On/off commands.
         elif on_off.Mode.is_valid(msg.cmd1):
             is_on, mode = on_off.Mode.decode(msg.cmd1)
             LOG.info("Dimmer %s broadcast grp: %s on: %s mode: %s", self.addr,
@@ -646,11 +739,25 @@ class Dimmer(Base):
 
             # For an on command, we can update directly.
             if is_on:
-                self._set_level(0xff, mode, reason)
+                # Level isn't provided in the broadcast msg.
+                # What to use depends on which command was received.
+                if mode == on_off.Mode.FAST:
+                    # Fast-ON command.  Use full-brightness.
+                    level = 0xff
+                else:
+                    # Normal/instant ON command.  Use default on-level.
+                    # Check if we saved the default on-level in the device
+                    # database when setting it.
+                    level = self.get_on_level()
+                    if self._level == level:
+                        # Pressing on again when already at the default on
+                        # level causes the device to go to full-brightness.
+                        level = 0xff
+                self._set_level(level, mode, reason)
 
             # For an off command, we need to see if broadcast_done is active.
             # This is a generated broadcast and we need to manually turn the
-            # device off so don't update it's state until that occurs.
+            # device off so don't update its state until that occurs.
             elif not self.broadcast_done:
                 self._set_level(0x00, mode, reason)
 

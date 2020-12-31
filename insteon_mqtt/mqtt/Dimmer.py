@@ -230,9 +230,9 @@ class Dimmer:
         data = self.msg_on_off.to_json(message.payload)
         LOG.info("Dimmer input command: %s", data)
         try:
-            # Tell the device to update it's state.
+            # Tell the device to update its state.
             is_on, mode = util.parse_on_off(data)
-            level = 0 if not is_on else 0xff
+            level = 0 if not is_on else None
             reason = data.get("reason", "")
             self.device.set(level=level, mode=mode, reason=reason)
         except:
@@ -257,10 +257,12 @@ class Dimmer:
         LOG.info("Dimmer input command: %s", data)
         try:
             is_on, mode = util.parse_on_off(data)
-            level = 0 if not is_on else int(data.get('level'))
+            level = '0' if not is_on else data.get('level')
+            if level is not None:
+                level = int(level)
             reason = data.get("reason", "")
 
-            # Tell the device to change it's level.
+            # Tell the device to change its level.
             self.device.set(level=level, mode=mode, reason=reason)
         except:
             LOG.exception("Invalid dimmer command: %s", data)

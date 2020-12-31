@@ -330,7 +330,7 @@ mqtt:
     # reason is input, is will be passed through to the state_payload.  The
     # output of passing the payload through the template must match the
     # following:
-    #   { "cmd" : "on"/"off", "level" : LEVEL,
+    #   { "cmd" : "on"/"off", ["level" : LEVEL],
     #                         ["mode" : 'normal'/'fast'/'instant'],
     #                         ["fast" : 1/0], ["instant" : 1/0] }
     # where:
@@ -345,13 +345,16 @@ mqtt:
     # NOTE: HASS JSON switch doesn't send brightness in some cases
     # when actuated so handle that here in the template code.  The
     # other HASS MQTT options also have this problem.
+    # This example will use device's configured default on-level if brightness
+    # is not specified.  To use full-brightness instead, add the following to
+    # the json.brightness check below:
+    #    {% else %}
+    #        , "level" : 255
     level_payload: >
-       { "cmd" : "{{json.state.lower()}}",
-         "level" : {% if json.brightness is defined %}
-                      {{json.brightness}}
-                   {% else %}
-                      255
-                   {% endif %} }
+       { "cmd" : "{{json.state.lower()}}"
+         {% if json.brightness is defined %}
+             , "level" : {{json.brightness}}
+         {% endif %} }       
 
     # Scene on/off command.  This triggers the scene broadcast on the switch
     # in the same way clicking the button would.  The inputs are the same as
@@ -813,7 +816,7 @@ mqtt:
     # case either command format is valid.   If reason is input, is will be
     # passed through to the state_payload.  The output of passing the
     # payload through the template must match the following:
-    #   { "cmd" : "on"/"off", "level" : LEVEL,
+    #   { "cmd" : "on"/"off", ["level" : LEVEL],
     #             ["mode" : 'normal'/'fast'/'instant'],
     #             ["fast" : 1/0], ["instant" : 1/0], ["reason" : "..."] }
     # where:
@@ -828,13 +831,16 @@ mqtt:
     # NOTE: HASS JSON switch doesn't send brightness in some cases
     # when actuated so handle that here in the template code.  The
     # other HASS MQTT options also have this problem.
+    # This example will use device's configured default on-level if brightness
+    # is not specified.  To use full-brightness instead, add the following to
+    # the json.brightness check below:
+    #    {% else %}
+    #        , "level" : 255
     dimmer_level_payload: >
-       { "cmd" : "{{json.state.lower()}}",
-         "level" : {% if json.brightness is defined %}
-                      {{json.brightness}}
-                   {% else %}
-                      255
-                   {% endif %} }
+       { "cmd" : "{{json.state.lower()}}"
+         {% if json.brightness is defined %}
+             , "level" : {{json.brightness}}
+         {% endif %} }       
 
     # Scene on/off command.  This triggers the scene broadcast on the switch
     # in the same way clicking the button would.  The inputs are the same as

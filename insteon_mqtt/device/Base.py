@@ -445,7 +445,6 @@ class Base:
 
     #-----------------------------------------------------------------------
     def get_flags(self, on_done=None):
-
         """Get the Insteon operational flags field from the device.
 
         The flags will be passed to the on_done callback as the data field.
