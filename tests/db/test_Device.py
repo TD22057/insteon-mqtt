@@ -14,9 +14,16 @@ class Test_Device:
         obj = IM.db.Device(IM.Address(0x01, 0x02, 0x03))
         assert len(obj) == 0
 
+        # test that increment delta handles None properly
+        assert obj.delta == None
+        obj.increment_delta()
+        assert obj.delta == None
+        # test that None != 0
         assert obj.is_current(0) is False
+        # test that is_current works as expected
         obj.delta = 1
         assert obj.is_current(1) is True
+        # test that increment works as expected
         obj.increment_delta()
         assert obj.is_current(1) is False
         assert obj.is_current(2) is True
