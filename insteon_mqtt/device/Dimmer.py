@@ -473,10 +473,10 @@ class Dimmer(Base):
         """
         LOG.info("Dimmer %s setting backlight to %s", self.label, level)
 
-        # Bound to 0x11 <= level <= 0xff per page 157 of insteon dev guide.
-        # 0x00 is used to disable the backlight so allow that explicitly.
+        # Bound to 0x11 <= level <= 0x7f per page 157 of insteon dev guide.
+        # However in practice backlight can be incremented from 0x00 to 0x7f
         if level:
-            level = max(0x11, min(level, 0xff))
+            level = min(level, 0x7f)
 
         # Extended message data - see Insteon dev guide p156.
         data = bytes([
