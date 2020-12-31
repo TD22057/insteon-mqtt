@@ -34,6 +34,10 @@ the program.
   queried no more frequently than every 4 days.
   ([PR 282][P282] & [PR 288][P288])
 
+- Better handling of local device on_levels.  If known, on_level is now
+  accurately reported when the device turns on.  Local on_level is retrieved
+  with get_flags or set with set_flags.  (thanks @tstabrawa)([PR 285][P285])
+
 ### Fixes
 
 - Allow for used last entries in DB.  Improve compatibility with devices
@@ -536,3 +540,4 @@ will add new features.
 [P290]: https://github.com/TD22057/insteon-mqtt/pull/290
 [P238]: https://github.com/TD22057/insteon-mqtt/pull/238
 [I292]: https://github.com/TD22057/insteon-mqtt/issues/292
+[P285]: https://github.com/TD22057/insteon-mqtt/pull/285
