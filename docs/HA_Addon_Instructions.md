@@ -35,18 +35,13 @@ These instructions assume that you:
    files.
 9. Edit `/config/insteon-mqtt/config.yaml` as appropriate.
 
-   - Set the Insteon port to be the USB port or address of the PLM modem.
+   - Set the Insteon port to be the USB port or address of the PLM modem OR
+     if using an Insteon Hub set its address, username, and password.
    - Set the modem Insteon hex address (printed on the back of the modem).
    - Edit the Insteon device section and enter the hex addresses of all
      the devices you have.
-   - Edit the storage location.  Each device will save it's database in
-     this directory.
-   - Edit the MQTT topics and payload section.  The sample config.yaml file
-     is designed for integration with Home Assistant but you can change it
-     to use whatever style of messages you want.
 
 10. Restart the insteon-mqtt addon to pick up the changes.
-
 11. Join and Pair each device in your network.  This can be accomplished
     using the Web Command Line interface, which is accessible from the Add-on
     page via the __Open Web UI__ button.
@@ -58,11 +53,19 @@ These instructions assume that you:
     `join 'hallway light'` and hit enter.  To pair the same device you would
     type `pair 'hallway light'`.
     - Do this for all of your devices.
-
 12. Edit your Home Assistant configuration to add your devices as MQTT devices
-    to Home Assistant.
-
+    to Home Assistant.  In the __mqtt__ section of the initial config.yaml
+    file, there are examples of Home Assistant configurations for each device
+    type.
 13. See the [command documentation](mqtt.md) for additional commands.
+
+## Backing up your Data
+
+The default settings in the config.yaml file will save all user data to the
+`/config/insteon-mqtt` directory.  So you only need to backup and save this
+data, you do not need to make a snapshot of the Insteon-MQTT add-on.  This
+directory may also contain a log file if you have enabled logging,
+be careful, this can get quite large.
 
 ## Updating
 
