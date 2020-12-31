@@ -511,7 +511,7 @@ class Dimmer(Base):
 
         Extended message payload is:
           D8 = on-level
-          D9 = ramp-rate
+          D7 = ramp-rate
 
         Args:
           msg (message.InpExtended):  The message reply.
