@@ -230,7 +230,7 @@ class Serial(Link):
             elif num:
                 # Still data to write - remove the written data from the
                 # buffer.
-                self._write_buf[0] = data[num:]
+                self._write_buf[0] = (data[num:], after_time)
 
         except:
             LOG.exception("Serial write error from %s", self.client.port)
