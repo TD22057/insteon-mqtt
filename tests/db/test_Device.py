@@ -14,11 +14,23 @@ class Test_Device:
         obj = IM.db.Device(IM.Address(0x01, 0x02, 0x03))
         assert len(obj) == 0
 
+        # test that increment delta handles None properly
+        assert obj.delta == None
+        obj.increment_delta()
+        assert obj.delta == None
+        # test that None != 0
         assert obj.is_current(0) is False
+        # test that is_current works as expected
         obj.delta = 1
         assert obj.is_current(1) is True
-        obj.set_delta(None)
+        # test that increment works as expected
+        obj.increment_delta()
         assert obj.is_current(1) is False
+        assert obj.is_current(2) is True
+        # test roll over at 256
+        obj.delta = 255
+        obj.increment_delta()
+        assert obj.is_current(0) is True
 
         assert obj.engine is None
         obj.set_engine(1)
@@ -109,11 +121,15 @@ class Test_Device:
         assert len(obj2.unused) == 1
         assert len(obj2.groups) == 2
 
+        obj2.set_meta('test', 2)
         obj2.clear()
         assert len(obj2) == 0
         assert len(obj2.entries) == 0
         assert len(obj2.unused) == 0
         assert len(obj2.groups) == 0
+        assert len(obj2._meta) == 1
+        assert obj2.get_meta('test') == 2
+
 
     #-----------------------------------------------------------------------
     def test_add_multi_group(self):
