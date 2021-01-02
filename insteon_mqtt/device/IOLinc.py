@@ -147,6 +147,10 @@ class IOLinc(Base):
             'set_flags' : self.set_flags,
             })
 
+        # Update the group map with the groups to be paired and the handler
+        # for broadcast messages from this group
+        self.group_map.update({0x01: self.handle_on_off})
+
     #-----------------------------------------------------------------------
     @property
     def mode(self):
@@ -264,51 +268,6 @@ class IOLinc(Base):
             self.db.set_meta('IOLinc', meta)
 
     #-----------------------------------------------------------------------
-    def pair(self, on_done=None):
-        """Pair the device with the modem.
-
-        This only needs to be called one time.  It will set the device as a
-        controller and the modem as a responder so the modem will see group
-        broadcasts and report them to us.
-
-        The device must already be a responder to the modem (push set on the
-        modem, then set on the device) so we can update it's database.
-
-        Args:
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("IOLinc %s pairing", self.addr)
-
-        # Build a sequence of calls to the do the pairing.  This insures each
-        # call finishes and works before calling the next one.  We have to do
-        # this for device db manipulation because we need to know the memory
-        # layout on the device before making changes.
-        seq = CommandSeq(self, "IOLinc paired", on_done)
-
-        # Start with a refresh command - since we're changing the db, it must
-        # be up to date or bad things will happen.
-        seq.add(self.refresh)
-
-        # Add the device as a responder to the modem on group 1.  This is
-        # probably already there - and maybe needs to be there before we can
-        # even issue any commands but this check insures that the link is
-        # present on the device and the modem.
-        seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
-                refresh=False)
-
-        # Now add the device as the controller of the modem for group 1.
-        # This lets the modem receive updates about the button presses and
-        # state changes.
-        seq.add(self.db_add_ctrl_of, 0x01, self.modem.addr, 0x01,
-                refresh=False)
-
-        # Finally start the sequence running.  This will return so the
-        # network event loop can process everything and the on_done callbacks
-        # will chain everything together.
-        seq.run()
-
-    #-----------------------------------------------------------------------
     def get_flags(self, on_done=None):
 
         """Get the Insteon operational flags field from the device.
@@ -323,7 +282,8 @@ class IOLinc(Base):
         """
         LOG.info("IOLinc %s cmd: get operation flags", self.label)
 
-        seq = CommandSeq(self.protocol, "IOlinc get flags done", on_done)
+        seq = CommandSeq(self.protocol, "IOlinc get flags done", on_done,
+                         name="GetFlags")
 
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the
@@ -374,7 +334,8 @@ class IOLinc(Base):
             raise Exception("Unknown IOLinc flags input: %s.\n Valid flags " +
                             "are: %s" % unknown, flags)
 
-        seq = CommandSeq(self.protocol, "Device flags set", on_done)
+        seq = CommandSeq(self.protocol, "Device flags set", on_done,
+                         name="SetFLags")
 
         # Loop through flags, sending appropriate command for each flag
         for flag in kwargs:
@@ -501,7 +462,7 @@ class IOLinc(Base):
 
         # NOTE: IOLinc cmd1=0x00 will report the relay state.  cmd2=0x01
         # reports the sensor state which is what we want.
-        seq = CommandSeq(self, "Device refreshed", on_done)
+        seq = CommandSeq(self, "Device refreshed", on_done, name="DevRefresh")
 
         # This sends a refresh ping which will respond w/ the current
         # database delta field.  The handler checks that against the current
@@ -631,7 +592,7 @@ class IOLinc(Base):
             self.off(group, instant, on_done)
 
     #-----------------------------------------------------------------------
-    def handle_broadcast(self, msg):
+    def handle_on_off(self, msg):
         """Handle broadcast messages from this device.
 
         The broadcast message from a device is sent when the device is
@@ -652,12 +613,12 @@ class IOLinc(Base):
           msg (InpStandard):  Broadcast message from the device.
         """
         # ACK of the broadcast - ignore this.
-        if msg.cmd1 == 0x06:
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("IOLinc %s broadcast ACK grp: %s", self.addr, msg.group)
             return
 
         # On command.  0x11: on
-        elif msg.cmd1 == 0x11:
+        elif msg.cmd1 == Msg.CmdType.ON:
             LOG.info("IOLinc %s broadcast ON grp: %s", self.addr, msg.group)
             self._set_sensor_is_on(True)
             if self.relay_linked:
@@ -665,18 +626,14 @@ class IOLinc(Base):
                 self._set_relay_is_on(True)
 
         # Off command. 0x13: off
-        elif msg.cmd1 == 0x13:
+        elif msg.cmd1 == Msg.CmdType.OFF:
             LOG.info("IOLinc %s broadcast OFF grp: %s", self.addr, msg.group)
             self._set_sensor_is_on(False)
             if self.relay_linked:
                 # If relay_linked is enabled then the relay was triggered
                 self._set_relay_is_on(False)
 
-        # This will find all the devices we're the controller of for
-        # this group and call their handle_group_cmd() methods to
-        # update their states since they will have seen the group
-        # broadcast and updated (without sending anything out).
-        super().handle_broadcast(msg)
+        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_flags(self, msg, on_done):
@@ -838,24 +795,18 @@ class IOLinc(Base):
                    completed.  Signature is: on_done(success, msg, data)
         """
         # This state is for the relay.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
-            on_done(True, "IOLinc command complete", None)
+        LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
+        on_done(True, "IOLinc command complete", None)
 
-            # On command.  0x11: on
-            if msg.cmd1 == 0x11:
-                LOG.info("IOLinc %s relay ON", self.addr)
-                self._set_relay_is_on(True)
+        # On command.  0x11: on
+        if msg.cmd1 == 0x11:
+            LOG.info("IOLinc %s relay ON", self.addr)
+            self._set_relay_is_on(True)
 
-            # Off command. 0x13: off
-            elif msg.cmd1 == 0x13:
-                LOG.info("IOLinc %s relay OFF", self.addr)
-                self._set_relay_is_on(False)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("IOLinc %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "IOLinc command failed. " + msg.nak_str(), None)
+        # Off command. 0x13: off
+        elif msg.cmd1 == 0x13:
+            LOG.info("IOLinc %s relay OFF", self.addr)
+            self._set_relay_is_on(False)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

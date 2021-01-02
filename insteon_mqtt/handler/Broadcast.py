@@ -3,6 +3,7 @@
 # Broadcast message handler.
 #
 #===========================================================================
+import time
 from .. import log
 from .. import message as Msg
 from .Base import Base
@@ -23,6 +24,11 @@ class Broadcast(Base):
     can be used to trigger the scene but we'll only do that once (so the 2nd
     message gets ignored).  So if we get the broadcast, the cleanup is
     ignored.
+
+    Finally a broadcast LINK_CLEANUP_REPORT is sent.  This message indicates
+    if the device received ACKs from all linked devices or not.  This message
+    indicates that the device is finished sending messages.  However, as
+    broadcast message, it is not guaranteed to be received.
 
     This handler will call device.handle_broadcast(msg) for the device that
     sends the message.
@@ -67,27 +73,62 @@ class Broadcast(Base):
         if not isinstance(msg, Msg.InpStandard):
             return Msg.UNKNOWN
 
+        # Calculate the total time this process could take
+        # A device broadcast will be followed up a series of cleanup messages
+        # between the devices and sent to the modem.  Don't send anything
+        # during this time to avoid causing a collision.  Time is equal to .5
+        # second of overhead, plus .522 seconds per responer device.  This is
+        # based off the same 87 msec empircal testing performed when designing
+        # misterhouse.  Each device causes a cleanup and an ack.  Assuminng
+        # a max of three hops in each direction that is 6 * .087 or .522 per
+        # device.
+        device = self.modem.find(msg.from_addr)
+        wait_time = 0
+        if device:
+            responders = device.db.find_group(msg.group)
+            wait_time = .5 + (len(responders) * .522)
+
         # Process the all link broadcast.
         if msg.flags.type == Msg.Flags.Type.ALL_LINK_BROADCAST:
-            self._last_broadcast = msg
-            return self._process(msg)
+            if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
+                # This is the final broadcast signalling completion.
+                # All of these messages will be forwarded to the device
+                # potentially even duplicates
+                # Re-enable sending
+                # First clear wait time
+                protocol.set_wait_time(0)
+                # Then set as expire time of this message
+                protocol.set_wait_time(msg.expire_time)
+                # cmd2 identifies the number of failed devices
+                if msg.cmd2 == 0x00:
+                    LOG.debug("Cleanup report for %s, grp %s success.",
+                              msg.from_addr, msg.group)
+                else:
+                    text = "Cleanup report for %s, grp %s had %d fails."
+                    LOG.warning(text, msg.from_addr, msg.group, msg.cmd2)
+                return self._process(msg, protocol, wait_time)
+            else:
+                # This is the initial broadcast or an echo of it.
+                if self._should_process(msg, wait_time):
+                    return self._process(msg, protocol, wait_time)
+                else:
+                    return Msg.CONTINUE
 
         # Clean up message is basically the same data but addressed to the
         # modem.  If we saw the broadcast, we don't need to handle this.  But
         # if we missed the broadcast, this gives us a second chance to
         # trigger the scene.
         elif msg.flags.type == Msg.Flags.Type.ALL_LINK_CLEANUP:
-            if self._should_process(msg):
-                return self._process(msg)
+            if self._should_process(msg, wait_time):
+                return self._process(msg, protocol, wait_time)
+            else:
+                return Msg.CONTINUE
 
-            self._last_broadcast = None
-            return Msg.CONTINUE
-
-        # Different message flags than we exepcted.
+        # Different message flags than we expected.
         return Msg.UNKNOWN
 
     #-----------------------------------------------------------------------
-    def _process(self, msg):
+    def _process(self, msg, protocol, wait_time):
         """Process the all link broadcast message.
 
         Args:
@@ -107,17 +148,27 @@ class Broadcast(Base):
         LOG.info("Handling all link broadcast for %s '%s'", device.addr,
                  device.name)
 
+        # Save for deduplication detection
+        self._last_broadcast = msg
+
+        # Delay sending, see above
+        protocol.set_wait_time(time.time() + wait_time)
+
         # Tell the device about it.  This will look up all the responders for
         # this group and tell them that the scene has been activated.
         device.handle_broadcast(msg)
         return Msg.CONTINUE
 
     #-----------------------------------------------------------------------
-    def _should_process(self, msg):
+    def _should_process(self, msg, wait_time):
         """Should we process a cleanup message?
+
+        Checks if this is a duplicate of a message we have already seen.
 
         Args:
           msg (Msg.InpStandard):  Cleanup message to handle.
+          wait_time (float):      The number of seconds this process could
+                                  take to complate.  Used to find duplicates
 
         Returns:
           bool:  True if the message should be procssed, False otherwise.
@@ -125,9 +176,14 @@ class Broadcast(Base):
         if not self._last_broadcast:
             return True
 
-        # If we just got a broadcast from the same device, don't process the
-        # cleanup.
-        if self._last_broadcast.from_addr == msg.from_addr:
+        # Don't process the message if we just got a corresponding broadcast
+        # message from the same device.  Wait time plus expire time is used
+        # to ignore old messages.  Expire_time adds more time then we need
+        # but the timings don't have to be perfect
+        if (self._last_broadcast.from_addr == msg.from_addr and
+                self._last_broadcast.group == msg.group and
+                self._last_broadcast.cmd1 == msg.cmd1 and
+                self._last_broadcast.expire_time + wait_time > time.time()):
             return False
 
         return True

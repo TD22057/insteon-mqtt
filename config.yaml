@@ -31,16 +31,27 @@ logging:
 #
 #==========================================================================
 insteon:
-  # Serial device:
-  # USB PLM modem
+  ###### Modem
+  # You can use either a PLM Modem or an Insteon Hub, but not both.
+
+  # PLM Modem option (Serial or USB)
   port: '/dev/insteon'
   #baudrate: 19200
 
-  # Network socket:
-  # Insteon HUB PLM network
-  #port: 'socket://192.168.1.5:9761'
+  # Insteon Hub option
+  # See https://github.com/TD22057/insteon-mqtt/blob/master/docs/hub.md
+  # for a discussion of the details of using a Hub as your modem.
+  # If set to true, will use the Hub settings below and ignore the Serial
+  # settings above
+  use_hub: False
+  hub_ip: 192.168.1.1
+  #hub_port: 25105
+  hub_user: username  # Can be found on the underside of your hub
+  hub_password: password  # Can be found on the underside of your hub
 
-  # PLM modem Insteon hex address
+  ######
+
+  # modem Insteon hex address
   address: 44.85.11
 
   # Device database file storage location.
@@ -72,7 +83,7 @@ insteon:
 
     # Dimming devices (outlets, wall switches, lamp modules, etc).
     dimmer:
-      - 3a.29.84: 'lamp2'
+      - 12.29.84: 'lamp2'
       - 48.3d.46
       - 48.b0.ad: 'dim1'
 
@@ -86,8 +97,10 @@ insteon:
 
     # Battery powered mini remotes.
     mini_remote1:  # Single Button Remotes
+      - 12.34.56: 'remote switch'
 
     mini_remote4:  # Remotes with 4 Buttons
+      - 3f.12.d4: 'remote4'
 
     mini_remote8:  # Remotes with 8 Buttons
       - 3f.07.d4: 'remote1'
@@ -97,8 +110,8 @@ insteon:
       - 44.a3.79: 'smoke alarm'
 
     # FanLinc fan controller (dimmer+fan).
-    #fan_linc:
-    #  - 9a.a1.b3
+    fan_linc:
+     - 9a.a1.b3
 
     # KeypadLinc dimmers (dimmer+scene controller).
     keypad_linc:
@@ -109,24 +122,24 @@ insteon:
       - 3c.42.9b: 'kp2'
 
     # Leak sensors.
-    #leak:
-    #  - 21.d6.d9: 'bathroom'
+    leak:
+     - 21.d8.d9: 'bathroom'
 
     # IOLinc relay controllers
     io_linc:
       - 45.33.d4: 'garage'
 
     # On/off ouetlets
-    #outlet:
-    #  - aa.bb.cc: 'outlet'
+    outlet:
+     - aa.11.cc: 'outlet'
 
     # Thermostatus
     thermostat:
-    #  - aa.bb.cc: 'downstairs'
+     - aa.bb.cc: 'downstairs'
 
     # EZIO4O 4 output relay modules
-    #ezio4o:
-    #  - aa.bb.cc: 'relays'
+    ezio4o:
+     - 22.bb.cc: 'relays'
 
 #==========================================================================
 #
@@ -317,7 +330,7 @@ mqtt:
     # reason is input, is will be passed through to the state_payload.  The
     # output of passing the payload through the template must match the
     # following:
-    #   { "cmd" : "on"/"off", "level" : LEVEL,
+    #   { "cmd" : "on"/"off", ["level" : LEVEL],
     #                         ["mode" : 'normal'/'fast'/'instant'],
     #                         ["fast" : 1/0], ["instant" : 1/0] }
     # where:
@@ -332,13 +345,16 @@ mqtt:
     # NOTE: HASS JSON switch doesn't send brightness in some cases
     # when actuated so handle that here in the template code.  The
     # other HASS MQTT options also have this problem.
+    # This example will use device's configured default on-level if brightness
+    # is not specified.  To use full-brightness instead, add the following to
+    # the json.brightness check below:
+    #    {% else %}
+    #        , "level" : 255
     level_payload: >
-       { "cmd" : "{{json.state.lower()}}",
-         "level" : {% if json.brightness is defined %}
-                      {{json.brightness}}
-                   {% else %}
-                      255
-                   {% endif %} }
+       { "cmd" : "{{json.state.lower()}}"
+         {% if json.brightness is defined %}
+             , "level" : {{json.brightness}}
+         {% endif %} }       
 
     # Scene on/off command.  This triggers the scene broadcast on the switch
     # in the same way clicking the button would.  The inputs are the same as
@@ -358,7 +374,7 @@ mqtt:
   #       device_class: 'motion'
   #
   #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/low_battery'
+  #       state_topic: 'insteon/aa.bb.cc/battery'
   #       device_class: 'battery'
   battery_sensor:
     # Output state change topic and payload.  This message is sent
@@ -800,7 +816,7 @@ mqtt:
     # case either command format is valid.   If reason is input, is will be
     # passed through to the state_payload.  The output of passing the
     # payload through the template must match the following:
-    #   { "cmd" : "on"/"off", "level" : LEVEL,
+    #   { "cmd" : "on"/"off", ["level" : LEVEL],
     #             ["mode" : 'normal'/'fast'/'instant'],
     #             ["fast" : 1/0], ["instant" : 1/0], ["reason" : "..."] }
     # where:
@@ -815,13 +831,16 @@ mqtt:
     # NOTE: HASS JSON switch doesn't send brightness in some cases
     # when actuated so handle that here in the template code.  The
     # other HASS MQTT options also have this problem.
+    # This example will use device's configured default on-level if brightness
+    # is not specified.  To use full-brightness instead, add the following to
+    # the json.brightness check below:
+    #    {% else %}
+    #        , "level" : 255
     dimmer_level_payload: >
-       { "cmd" : "{{json.state.lower()}}",
-         "level" : {% if json.brightness is defined %}
-                      {{json.brightness}}
-                   {% else %}
-                      255
-                   {% endif %} }
+       { "cmd" : "{{json.state.lower()}}"
+         {% if json.brightness is defined %}
+             , "level" : {{json.brightness}}
+         {% endif %} }       
 
     # Scene on/off command.  This triggers the scene broadcast on the switch
     # in the same way clicking the button would.  The inputs are the same as

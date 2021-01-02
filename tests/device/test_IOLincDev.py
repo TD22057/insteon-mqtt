@@ -28,18 +28,19 @@ def test_iolinc(tmpdir):
 
 
 class Test_IOLinc_Simple():
+    def test_type(self, test_iolinc):
+        assert test_iolinc.type() == "io_linc"
+
     def test_pair(self, test_iolinc):
         with mock.patch.object(IM.CommandSeq, 'add'):
             test_iolinc.pair()
             calls = [
                 call(test_iolinc.refresh),
-                call(test_iolinc.db_add_resp_of, 0x01, test_iolinc.modem.addr, 0x01,
-                     refresh=False),
                 call(test_iolinc.db_add_ctrl_of, 0x01, test_iolinc.modem.addr, 0x01,
                      refresh=False)
             ]
             IM.CommandSeq.add.assert_has_calls(calls)
-            assert IM.CommandSeq.add.call_count  == 3
+            assert IM.CommandSeq.add.call_count  == 2
 
     def test_get_flags(self, test_iolinc):
         with mock.patch.object(IM.CommandSeq, 'add_msg'):
@@ -184,9 +185,10 @@ class Test_Handles():
                               relay):
         with mock.patch.object(IM.Signal, 'emit'):
             test_iolinc.relay_linked = linked
-            to_addr = test_iolinc.addr
+            to_addr = IM.Address(0x00, 0x00, 0x01)
             from_addr = IM.Address(0x04, 0x05, 0x06)
-            flags = IM.message.Flags(IM.message.Flags.Type.BROADCAST, False)
+            flags = IM.message.Flags(IM.message.Flags.Type.ALL_LINK_BROADCAST,
+                                     False)
             cmd2 = 0x00
             msg = IM.message.InpStandard(from_addr, to_addr, flags, cmd1, cmd2)
             test_iolinc.handle_broadcast(msg)
@@ -199,6 +201,21 @@ class Test_Handles():
                 assert IM.Signal.emit.call_count == 1
             else:
                 assert IM.Signal.emit.call_count == 0
+
+    @pytest.mark.parametrize("cmd1,expected", [
+        (Msg.CmdType.LINK_CLEANUP_REPORT, None),
+    ])
+    def test_broadcast_2(self, test_iolinc, cmd1, expected):
+        with mock.patch.object(IM.Signal, 'emit') as mocked:
+            flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+            group = IM.Address(0x00, 0x00, 0x04)
+            addr = IM.Address(0x01, 0x02, 0x03)
+            msg = Msg.InpStandard(addr, group, flags, cmd1, 0x00)
+            test_iolinc.handle_broadcast(msg)
+            if expected is not None:
+                mocked.assert_called_once_with(test_device, expected)
+            else:
+                mocked.assert_not_called()
 
     @pytest.mark.parametrize("cmd2,mode,relay,reverse", [
         (0x00, IM.device.IOLinc.Modes.LATCHING, False, False),
@@ -278,7 +295,6 @@ class Test_Handles():
     @pytest.mark.parametrize("cmd1, type, expected", [
         (0x11, IM.message.Flags.Type.DIRECT_ACK, True),
         (0X13, IM.message.Flags.Type.DIRECT_ACK, False),
-        (0X11, IM.message.Flags.Type.DIRECT_NAK, None),
     ])
     def test_handle_ack(self, test_iolinc, cmd1, type, expected):
         with mock.patch.object(IM.Signal, 'emit'):
@@ -288,11 +304,8 @@ class Test_Handles():
             msg = IM.message.InpStandard(from_addr, to_addr, flags, cmd1, 0x01)
             test_iolinc.handle_ack(msg, lambda success, msg, cmd: True)
             calls = IM.Signal.emit.call_args_list
-            if expected is not None:
-                assert calls[0][0][2] == expected
-                assert IM.Signal.emit.call_count == 1
-            else:
-                assert IM.Signal.emit.call_count == 0
+            assert calls[0][0][2] == expected
+            assert IM.Signal.emit.call_count == 1
 
     @pytest.mark.parametrize("cmd1, entry_d1, mode, sensor, expected", [
         (0x11, None, IM.device.IOLinc.Modes.LATCHING, False, None),

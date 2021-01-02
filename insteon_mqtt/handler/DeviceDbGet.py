@@ -83,7 +83,7 @@ class DeviceDbGet(Base):
         if isinstance(msg, (Msg.OutExtended, Msg.OutStandard)):
             if msg.to_addr == self.db.addr and msg.cmd1 == 0x2f:
                 if not msg.is_ack:
-                    LOG.error("%s NAK response", self.db.addr)
+                    LOG.warning("%s PLM NAK response", self.db.addr)
                 return Msg.CONTINUE
 
             return Msg.UNKNOWN
@@ -103,11 +103,19 @@ class DeviceDbGet(Base):
                 return Msg.CONTINUE
 
             elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-                LOG.error("%s device NAK error: %s, Message: %s",
-                          msg.from_addr, msg.nak_str(), msg)
-                self.on_done(False, "Database command NAK. " + msg.nak_str(),
-                             None)
-                return Msg.FINISHED
+                if msg.cmd2 == msg.NakType.PRE_NAK:
+                    # This is a "Pre NAK in case database search takes
+                    # too long".  This happens when the device database is
+                    # large.  Just ignore it, add more wait time and wait.
+                    LOG.warning("%s Pre-NAK: %s, Message: %s", msg.from_addr,
+                                msg.nak_str(), msg)
+                    return Msg.CONTINUE
+                else:
+                    LOG.error("%s device NAK error: %s, Message: %s",
+                              msg.from_addr, msg.nak_str(), msg)
+                    self.on_done(False, "Database command NAK. " +
+                                 msg.nak_str(), None)
+                    return Msg.FINISHED
 
             else:
                 LOG.warning("%s device unexpected msg: %s", msg.from_addr, msg)

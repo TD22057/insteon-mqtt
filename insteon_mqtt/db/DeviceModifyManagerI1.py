@@ -164,7 +164,7 @@ class DeviceModifyManagerI1:
                    completion of the modification
         """
         # Increment the delta 1
-        self.db.set_delta(self.db.delta + 1)
+        self.db.increment_delta()
         self.handle_lsb_response(msg, on_done)
 
     #-------------------------------------------------------------------

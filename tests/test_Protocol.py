@@ -5,9 +5,14 @@
 # pylint: disable=protected-access
 #===========================================================================
 import time
+import pytest
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
 
+@pytest.fixture
+def test_proto():
+    link = MockSerial()
+    return IM.Protocol(link)
 
 class Test_Protocol:
     def test_reads(self):
@@ -56,6 +61,14 @@ class Test_Protocol:
         assert proto._read_history[0] == msg_keep
 
     #-----------------------------------------------------------------------
+    def test_set_wait_time(self, test_proto):
+        assert test_proto._next_write_time == 0
+        test_proto.set_wait_time(5)
+        assert test_proto._next_write_time == 5
+        test_proto.set_wait_time(2)
+        assert test_proto._next_write_time == 5
+        test_proto.set_wait_time(0)
+        assert test_proto._next_write_time > 5
 
 #===========================================================================
 

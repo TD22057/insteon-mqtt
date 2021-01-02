@@ -1,0 +1,136 @@
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Insteon-MQTT WebCLI</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+<body>
+<div class="modal" tabindex="-1" role="dialog" id='instructions'>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Insten-MQTT WebCLI</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>This is a very rudimentary web client to the insteon-MQTT
+        command line interface.</p>
+        <p>
+          The prefix of the basic command 'insteon-mqtt config.yaml' will
+          automatically be added for you.
+        </p>
+        <p>
+          For help, try typing '-h', this also works for many of the commands
+          as well such as 'db-add -h'.
+        </p>
+        <p>
+          Command history can be accessed using the up and down arrows.
+        </p>
+        <p>
+          There are some guardrails to help avoid causing damage, but it may
+          still be possible to cause issues.  If it seems like the process is
+          stuck, you can click the Stop Process button and it should end the
+          process.  If all else fails, you can restart Insteon-Mqtt from the
+          Home Assistant Supervisor.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="container">
+<div class="d-flex min-vh-100 flex-column">
+  <div class="row bg-dark flex-fill d-flex">
+    <div class="col" >
+      <pre id="output" class="pre-scrollable text-light" style="white-space: pre-wrap; max-height: 85vh;"></pre>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <div class="input-group mb-3">
+        <div class="input-group-prepend">
+          <span class="input-group-text">insteon-mqtt config.yaml</span>
+        </div>
+        <input type="text" class="form-control" id="input" autocomplete="off">
+        <div class="input-group-append">
+          <button class="btn btn-outline-primary" type="button" id="input_button">Execute</button>
+        </div>
+        <div class="input-group-append">
+          <button class="btn btn-outline-danger" type="button" id="estop_button">Stop Process</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.1/socket.io.min.js" integrity="sha384-sgSY8di7TEITpdVEpyuRuSt+z5CPE1vZvU0C2Mk6wsfcuR3zZfM1YZUgPgVs+29C" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+<script type="text/javascript" charset="utf-8">
+    $(document).ready(function() {
+      $("#instructions").modal('show');
+      $('#input').data("prev_cmd", []);
+      $('#input').data("next_prev_cmd_index", 0);
+      $('#instructions').on('hidden.bs.modal', function (e) {
+        $("#input").focus();
+      })
+      var pathname = window.location.pathname + 'socket.io';
+      var socket = io({path: pathname});
+      $('#input_button').click(function(e) {
+        var prev_cmds = $('#input').data("prev_cmd");
+        prev_cmds.unshift($('#input').val())
+        $('#input').data("prev_cmd", prev_cmds);
+        $('#input').data("next_prev_cmd_index", 0);
+        socket.emit('message', $('#input').val());
+        $('#input').val('');
+      });
+      $('#input').on('keypress',function(e) {
+        if(e.which == 13) { // Enter
+          var prev_cmds = $('#input').data("prev_cmd");
+          prev_cmds.unshift($('#input').val())
+          $('#input').data("prev_cmd", prev_cmds);
+          $('#input').data("next_prev_cmd_index", 0);
+          socket.emit('message', $('#input').val());
+          $('#input').val('');
+        }
+      });
+      $('#input').on('keydown',function(e) {
+        if(e.which == 38) { // Up
+          var prev_cmds = $('#input').data("prev_cmd");
+          var next_prev_cmd_index = $('#input').data("next_prev_cmd_index");
+          if (prev_cmds.length > next_prev_cmd_index){
+            $('#input').val(prev_cmds[next_prev_cmd_index]);
+            $('#input').data("next_prev_cmd_index", (next_prev_cmd_index + 1));
+          }
+          e.preventDefault();
+        }
+        if(e.which == 40) { // Down
+          var prev_cmds = $('#input').data("prev_cmd");
+          var next_prev_cmd_index = $('#input').data("next_prev_cmd_index");
+          if ( next_prev_cmd_index > 1){
+            $('#input').val(prev_cmds[next_prev_cmd_index - 2]);
+            $('#input').data("next_prev_cmd_index", (next_prev_cmd_index - 1));
+          }
+          else if (next_prev_cmd_index == 1) {
+            $('#input').val('');
+            $('#input').data("next_prev_cmd_index", 0);
+          }
+          e.preventDefault();
+        }
+      });
+      socket.on('message', function(msg){
+        $('#output').append(msg);
+        $('#output').scrollTop($('#output')[0].scrollHeight);
+      });
+      $('#estop_button').click(function(e) {
+            socket.emit('estop', 'STOP');
+      });
+    });
+</script>
+</body>
+</html>

@@ -71,50 +71,9 @@ class Switch(Base):
         self.broadcast_done = None
         self.broadcast_reason = ""
 
-    #-----------------------------------------------------------------------
-    def pair(self, on_done=None):
-        """Pair the device with the modem.
-
-        This only needs to be called one time.  It will set the device as a
-        controller and the modem as a responder so the modem will see group
-        broadcasts and report them to us.
-
-        The device must already be a responder to the modem (push set on the
-        modem, then set on the device) so we can update it's database.
-
-        Args:
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Switch %s pairing", self.addr)
-
-        # Build a sequence of calls to the do the pairing.  This insures each
-        # call finishes and works before calling the next one.  We have to do
-        # this for device db manipulation because we need to know the memory
-        # layout on the device before making changes.
-        seq = CommandSeq(self, "Switch paired", on_done)
-
-        # Start with a refresh command - since we're changing the db, it must
-        # be up to date or bad things will happen.
-        seq.add(self.refresh)
-
-        # Add the device as a responder to the modem on group 1.  This is
-        # probably already there - and maybe needs to be there before we can
-        # even issue any commands but this check insures that the link is
-        # present on the device and the modem.
-        seq.add(self.db_add_resp_of, 0x01, self.modem.addr, 0x01,
-                refresh=False)
-
-        # Now add the device as the controller of the modem for group 1.
-        # This lets the modem receive updates about the button presses and
-        # state changes.
-        seq.add(self.db_add_ctrl_of, 0x01, self.modem.addr, 0x01,
-                refresh=False)
-
-        # Finally start the sequence running.  This will return so the
-        # network event loop can process everything and the on_done callbacks
-        # will chain everything together.
-        seq.run()
+        # Update the group map with the groups to be paired and the handler
+        # for broadcast messages from this group
+        self.group_map.update({0x01: self.handle_on_off})
 
     #-----------------------------------------------------------------------
     def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
@@ -345,7 +304,8 @@ class Switch(Base):
                             "are: %s" % unknown, flags)
 
         # Start a command sequence so we can call the flag methods in series.
-        seq = CommandSeq(self, "Switch set_flags complete", on_done)
+        seq = CommandSeq(self, "Switch set_flags complete", on_done,
+                         name="DevSetFlags")
 
         if FLAG_BACKLIGHT in kwargs:
             backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
@@ -366,25 +326,16 @@ class Switch(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            on_done(True, "Backlight level updated", None)
-        else:
-            on_done(False, "Backlight level failed", None)
+        on_done(True, "Backlight level updated", None)
 
     #-----------------------------------------------------------------------
-    def handle_broadcast(self, msg):
+    def handle_on_off(self, msg):
         """Handle broadcast messages from this device.
 
-        The broadcast message from a device is sent when the device is
-        triggered.  The message has the group ID in it.  We'll update the
-        device state and look up the group in the all link database.  For
-        each device that is in the group (as a reponsder), we'll call
-        handle_group_cmd() on that device to trigger it.  This way all the
-        devices in the group are updated to the correct values when we see
-        the broadcast message.
+        This is called from base.handle_broadcast using the group_cmd map.
 
         Args:
-          msg (InpStandard):  Broadcast message from the device.
+          msg (InpStandard): Broadcast message from the device.
         """
         # If we have a saved reason from a simulated scene command, use that.
         # Otherwise the device button was pressed.
@@ -395,7 +346,7 @@ class Switch(Base):
         # ACK of the broadcast.  Ignore this unless we sent a simulated off
         # scene in which case run the broadcast done handler.  This is a
         # weird special case - see scene() for details.
-        if msg.cmd1 == 0x06:
+        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("Switch %s broadcast ACK grp: %s", self.addr, msg.group)
 
             if self.broadcast_done:
@@ -437,7 +388,7 @@ class Switch(Base):
         # group and call their handle_group_cmd() methods to update their
         # states since they will have seen the group broadcast and updated
         # (without sending anything out).
-        super().handle_broadcast(msg)
+        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
@@ -477,20 +428,13 @@ class Switch(Base):
         """
         # If this it the ACK we're expecting, update the internal state and
         # emit our signals.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("Switch %s ACK: %s", self.addr, msg)
+        LOG.debug("Switch %s ACK: %s", self.addr, msg)
 
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
-            reason = reason if reason else on_off.REASON_COMMAND
-            self._set_is_on(is_on, mode, reason)
-            on_done(True, "Switch state updated to on=%s" % self._is_on,
-                    self._is_on)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Switch %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            on_done(False, "Switch state update failed. " + msg.nak_str(),
-                    None)
+        is_on, mode = on_off.Mode.decode(msg.cmd1)
+        reason = reason if reason else on_off.REASON_COMMAND
+        self._set_is_on(is_on, mode, reason)
+        on_done(True, "Switch state updated to on=%s" % self._is_on,
+                self._is_on)
 
     #-----------------------------------------------------------------------
     def handle_scene(self, msg, on_done, reason=""):
@@ -512,22 +456,14 @@ class Switch(Base):
         # Call the callback.  We don't change state here - the device will
         # send a regular broadcast message which will run handle_broadcast
         # which will then update the state.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("Switch %s ACK: %s", self.addr, msg)
+        LOG.debug("Switch %s ACK: %s", self.addr, msg)
 
-            # Reason is device because we're simulating a button press.  We
-            # can't really pass this around because we just get a broadcast
-            # message later from the device.  So we set a temporary variable
-            # here and use it in handle_broadcast() to output the reason.
-            self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
-            on_done(True, "Scene triggered", None)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("Switch %s NAK error: %s, Message: %s", self.addr,
-                      msg.nak_str(), msg)
-            self.broadcast_reason = None
-            on_done(False, "Scene trigger failed failed. " + msg.nak_str(),
-                    None)
+        # Reason is device because we're simulating a button press.  We
+        # can't really pass this around because we just get a broadcast
+        # message later from the device.  So we set a temporary variable
+        # here and use it in handle_broadcast() to output the reason.
+        self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
+        on_done(True, "Scene triggered", None)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

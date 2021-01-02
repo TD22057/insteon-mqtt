@@ -27,7 +27,8 @@ class CommandSeq:
     this library needs, it works ok.
     """
     #-----------------------------------------------------------------------
-    def __init__(self, device, msg=None, on_done=None, error_stop=True):
+    def __init__(self, device, msg=None, on_done=None, error_stop=True,
+                 name=""):
         """Constructor
 
         Args:
@@ -37,6 +38,7 @@ class CommandSeq:
                    when there is an error or when all the commands finish.
           error_stop (bool): True to stop the sequence if a command fails.
                      False to continue on with the sequence.
+          name (str): A short name used in logging to identify this sequence
         """
         self.device = device
 
@@ -44,6 +46,7 @@ class CommandSeq:
         self.msg = msg
         self.error_stop = error_stop
         self.total = 0
+        self.name = name
 
         # List of Entry objects (see class below) to call for each step in
         # the sequence.
@@ -125,8 +128,8 @@ class CommandSeq:
 
         # Otherwise run the next command.
         else:
-            LOG.debug("Running command %d of %d", self.total + 1 -
-                      len(self.calls), self.total)
+            LOG.debug("CmdSeq %s Running %d of %d", self.name,
+                      self.total + 1 - len(self.calls), self.total)
 
             entry = self.calls.pop(0)
             entry.run(self.device, self.on_done)

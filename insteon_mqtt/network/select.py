@@ -234,7 +234,7 @@ class Manager:
         for fd in writes:
             link = self.links.get(fd, None)
             if link:
-                link.write_to_link()
+                link.write_to_link(t)
 
         # Poll the links in case they need to do brute force processing of
         # any kind.  There are some cases where the MQTT client poll can

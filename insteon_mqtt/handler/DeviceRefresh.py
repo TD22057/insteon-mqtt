@@ -69,12 +69,11 @@ class DeviceRefresh(Base):
         # Probably an echo back of our sent message.
         if isinstance(msg, Msg.OutStandard) and msg.to_addr == self.addr:
             if msg.is_ack:
-                LOG.debug("%s ACK response", self.addr)
+                LOG.debug("%s PLM ACK response", self.addr)
                 return Msg.CONTINUE
             else:
-                LOG.error("%s NAK response", self.addr)
-                self.on_done(False, "NAK response", None)
-                return Msg.FINISHED
+                LOG.warning("%s PLM NAK response", self.addr)
+                return Msg.CONTINUE
 
         # See if this is the standard message ack/nak we're expecting.
         elif isinstance(msg, Msg.InpStandard) and msg.from_addr == self.addr:
@@ -106,7 +105,7 @@ class DeviceRefresh(Base):
                     # w/ the current value and save the database.
                     def on_done(success, message, data):
                         if success:
-                            self.device.db.set_delta(msg.cmd1)
+                            self.device.db.delta = msg.cmd1
                             LOG.ui("%s database download complete\n%s",
                                    self.addr, self.device.db)
                         self.on_done(success, message, data)

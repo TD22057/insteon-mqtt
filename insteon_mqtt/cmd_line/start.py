@@ -32,13 +32,29 @@ def start(args, cfg):
     # Create the network event loop and MQTT and serial modem clients.
     loop = network.Manager()
     mqtt_link = network.Mqtt()
-    plm_link = network.Serial()
+    stack_link = network.Stack()
+
+    # Setup the PLM or Hub
+    use_hub = cfg['insteon'].get('use_hub', False)
+    time_out = None
+    if use_hub:
+        # This reduces the time that the select/poll call will block. The
+        # default of None is 3 seconds.  A half a second is the same speed at
+        # which we query the hub for incoming messages. If that rate is
+        # changed, consider changing this as well.
+        time_out = .5
+        plm_link = network.Hub()
+        loop.add_poll(plm_link)
+    else:
+        plm_link = network.Serial()
+        loop.add(plm_link, connected=False)
+
+    # Add Stack and timed
     stack_link = network.Stack()
     timed_link = network.TimedCall()
 
     # Add the clients to the event loop.
     loop.add(mqtt_link, connected=False)
-    loop.add(plm_link, connected=False)
     loop.add_poll(stack_link)
     loop.add_poll(timed_link)
 
@@ -53,4 +69,4 @@ def start(args, cfg):
 
     # Start the network event loop.
     while loop.active():
-        loop.select()
+        loop.select(time_out=time_out)

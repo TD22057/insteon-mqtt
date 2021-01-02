@@ -45,6 +45,7 @@ class MockProtocol:
         self.signal_received = IM.Signal()
         self.signal_msg_finished = IM.Signal()
         self.sent = []
+        self.addr_in_queue = False
 
     def clear(self):
         self.sent = []
@@ -55,5 +56,24 @@ class MockProtocol:
     def add_handler(self, handler):
         pass
 
+    def set_wait_time(self, seconds):
+        pass
+
+    def is_addr_in_write_queue(self, *args):
+        return self.addr_in_queue
+
+#===========================================================================
+class MockDevice:
+    """Mock insteon_mqtt/Device class
+    """
+    #-----------------------------------------------------------------------
+    def __init__(self, protocol, modem, address, name=None):
+        self.protocol = protocol
+        self.modem = modem
+        self.addr = IM.Address(address)
+        self.name = name
+
+    def send(self, msg, msg_handler, high_priority=False, after=None):
+        self.protocol.send(msg, msg_handler, high_priority, after)
 
 #===========================================================================

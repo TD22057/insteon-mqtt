@@ -57,6 +57,19 @@ class Base:
         self._msg = None
 
     #-----------------------------------------------------------------------
+    def set_retry_num(self, retry_num):
+        """Used to set the number of retrie
+
+        The number of times to retry the message if the handler times out
+        without returning Msg.FINISHED. This count does not include the initial
+        sending so a retry of 3 will send once and then retry 3 more times.
+
+        Args:
+           retry_num (int):  The number of retries
+        """
+        self._num_retry = retry_num
+
+    #-----------------------------------------------------------------------
     def sending_message(self, msg):
         """Messaging being sent callback.
 
@@ -107,8 +120,8 @@ class Base:
 
         # If we've exhausted the number of sends, end the handler.
         elif not self._msg or self._num_sent > self._num_retry:
-            LOG.warning("Handler timed out - no more retries (%s sent)",
-                        self._num_sent - 1)
+            LOG.error("Handler timed out - no more retries (%s sent)",
+                      self._num_sent - 1)
             self.handle_timeout(protocol)
             return True
 

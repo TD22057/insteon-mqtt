@@ -202,12 +202,6 @@ def pair(args, config):
         }
 
     reply = util.send(config, topic, payload, args.quiet)
-
-    if reply["status"]:
-        print("Pairing may fail if the modem db is out of date.  Try running")
-        print("the following and then re-try the pair command.")
-        print("   insteon-mqtt config.py refresh modem")
-
     return reply["status"]
 
 
@@ -332,6 +326,18 @@ def get_battery_voltage(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
         "cmd" : "get_battery_voltage",
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+
+#===========================================================================
+def set_low_battery_voltage(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "set_low_battery_voltage",
+        "voltage" : args.voltage
         }
 
     reply = util.send(config, topic, payload, args.quiet)
