@@ -203,7 +203,7 @@ class EZIO4O:
             reason = data.get("reason", "")
             self.device.set(level=is_on, group=group, mode=mode, reason=reason)
         except:
-            LOG.exception("Invalid EZIO4O on/off command: %s", data)
+            LOG.error("Invalid EZIO4O on/off command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_scene(self, client, data, message, group):
@@ -233,6 +233,6 @@ class EZIO4O:
             reason = data.get("reason", "")
             self.device.scene(is_on, group, reason)
         except:
-            LOG.exception("Invalid EZIO4O scene command: %s", data)
+            LOG.error("Invalid EZIO4O scene command: %s", data)
 
     #-----------------------------------------------------------------------

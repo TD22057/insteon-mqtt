@@ -166,6 +166,6 @@ class IOLinc:
             is_on = util.parse_on_off(data, have_mode=False)
             self.device.set(is_on)
         except:
-            LOG.exception("Invalid IOLinc on/off command: %s", data)
+            LOG.error("Invalid IOLinc on/off command: %s", data)
 
     #-----------------------------------------------------------------------

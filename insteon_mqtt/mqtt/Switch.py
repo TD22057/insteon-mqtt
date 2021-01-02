@@ -217,7 +217,7 @@ class Switch:
             reason = data.get("reason", "")
             self.device.set(level=is_on, mode=mode, reason=reason)
         except:
-            LOG.exception("Invalid switch on/off command: %s", data)
+            LOG.error("Invalid switch on/off command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_scene(self, client, data, message):
@@ -247,6 +247,6 @@ class Switch:
             # Tell the device to trigger the scene command.
             self.device.scene(is_on, group, reason)
         except:
-            LOG.exception("Invalid switch scene command: %s", data)
+            LOG.error("Invalid switch scene command: %s", data)
 
     #-----------------------------------------------------------------------

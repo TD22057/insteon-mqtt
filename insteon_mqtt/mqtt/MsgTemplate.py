@@ -99,7 +99,16 @@ class MsgTemplate:
           str:  Returns the rendered topic.  This may be None if the
           constructor or config topic data was None.
         """
-        return self._render(self.topic_str, self.topic, data, silent)
+        try:
+            ret = self._render(self.topic_str, self.topic, data, silent)
+        except jinja2.exceptions.UndefinedError as exc:
+            if not silent:
+                LOG.error("Error rendering topic: %s", exc)
+                LOG.error("Template was: \n%s",
+                          self.topic_str.strip())
+                LOG.error("Data passed was: %s", data)
+            ret = None
+        return ret
 
     #-----------------------------------------------------------------------
     def render_payload(self, data, silent=False):
@@ -114,7 +123,16 @@ class MsgTemplate:
           str:  Returns the rendered payload.  This may be None if the
           constructor or config topic data was None.
         """
-        return self._render(self.payload_str, self.payload, data, silent)
+        try:
+            ret = self._render(self.payload_str, self.payload, data, silent)
+        except jinja2.exceptions.UndefinedError as exc:
+            if not silent:
+                LOG.error("Error rendering payload: %s", exc)
+                LOG.error("Template was: \n%s",
+                          self.payload_str.strip())
+                LOG.error("Data passed was: %s", data)
+            ret = None
+        return ret
 
     #-----------------------------------------------------------------------
     def publish(self, mqtt, data, retain=None):
@@ -176,7 +194,7 @@ class MsgTemplate:
         try:
             return json.loads(value)
         except:
-            LOG.exception("Invalid JSON message %s from template %s", value,
+            LOG.error("Invalid JSON message %s from template %s", value,
                           self.payload_str)
             return None
 
@@ -196,12 +214,6 @@ class MsgTemplate:
         if template is None:
             return None
 
-        try:
-            return template.render(data)
-        except:
-            if not silent:
-                LOG.exception("Error rendering template '%s' with data: %s",
-                              raw, data)
-            return None
+        return template.render(data)
 
     #-----------------------------------------------------------------------
