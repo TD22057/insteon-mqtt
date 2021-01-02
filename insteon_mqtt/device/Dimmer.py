@@ -485,6 +485,70 @@ class Dimmer(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
+    def get_flags(self, on_done=None):
+        """Hijack base get_flags to inject extended flags request.
+
+        The flags will be passed to the on_done callback as the data field.
+        Derived types may do something with the flags by override the
+        handle_flags method.
+
+        Args:
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        seq = CommandSeq(self, "Dimmer get_flags complete", on_done,
+                         name="GetFlags")
+        seq.add(super().get_flags)
+        seq.add(self._get_ext_flags)
+        seq.run()
+
+    #-----------------------------------------------------------------------
+    def _get_ext_flags(self, on_done=None):
+        """Get the Insteon operational extended flags field from the device.
+
+        For the dimmer device, the flags include on-level and ramp-rate.
+
+        Args:
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.info("Dimmer %s cmd: get extended operation flags", self.label)
+
+        # D1 = group (0x01), D2 = 0x00 == Data Request, others ignored,
+        # per Insteon Dev Guide
+        data = bytes([0x01] + [0x00] * 13)
+
+        msg = Msg.OutExtended.direct(self.addr, Msg.CmdType.EXTENDED_SET_GET,
+                                     0x00, data)
+        msg_handler = handler.ExtendedCmdResponse(msg, self.handle_ext_flags,
+                                                  on_done)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def handle_ext_flags(self, msg, on_done):
+        """Handle replies to the _get_ext_flags command.
+
+        Extended message payload is:
+          D8 = on-level
+          D7 = ramp-rate
+
+        Args:
+          msg (message.InpExtended):  The message reply.
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+        """
+        on_level = msg.data[7]
+        self.db.set_meta('on_level', on_level)
+        ramp_rate = msg.data[6]
+        for ramp_key, ramp_value in self.ramp_pretty.items():
+            if ramp_rate <= ramp_key:
+                ramp_rate = ramp_value
+                break
+        LOG.ui("Dimmer %s on_level: %s (%.2f%%) ramp rate: %ss", self.label,
+               on_level, on_level / 2.55, ramp_rate)
+        on_done(True, "Operation complete", msg.data[5])
+
+    #-----------------------------------------------------------------------
     def set_on_level(self, level, on_done=None):
         """Set the device default on level.
 
