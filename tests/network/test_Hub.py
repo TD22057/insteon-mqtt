@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Tests for: insteont_mqtt/device/Thermostat.py
+# Tests for: insteont_mqtt/network/Hub.py
 #
 #===========================================================================
 import time

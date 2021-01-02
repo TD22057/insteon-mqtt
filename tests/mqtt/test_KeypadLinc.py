@@ -216,6 +216,13 @@ class Test_KeypadLinc:
 
         mdev.subscribe(link, qos)
 
+        payload = b'{ "on" : "ON", "mode" : "NORMAL" }'
+        link.publish("foo/%s/3" % addr.hex, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x2e
+        proto.clear()
+
         payload = b'{ "on" : "OFF", "mode" : "NORMAL" }'
         link.publish("foo/%s/3" % addr.hex, payload, qos, retain=False)
         assert len(proto.sent) == 1
@@ -234,6 +241,86 @@ class Test_KeypadLinc:
         link.publish("foo/%s/1" % addr.hex, b'asdf', qos, False)
         link.publish("foo/%s/1" % addr.hex,
                      b'{ "on" : "foo", "mode" : "bad" }', qos, False)
+
+    #-----------------------------------------------------------------------
+    def test_input_with_default_on_level(self, setup):
+        mdev, dev, link, addr, proto = setup.getAll(['mdev', 'dev', 'link',
+                                                     'addr', 'proto'])
+
+        qos = 2
+        config = {'keypad_linc' : {
+            'btn_on_off_topic' : 'foo/{{address}}/{{button}}',
+            'btn_on_off_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
+                                    '"mode" : "{{json.mode.lower()}}" }'),
+            'dimmer_level_topic' : 'bar/{{address}}/1',
+            'dimmer_level_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
+                                      '"mode" : "{{json.mode.lower()}}"'
+                                      '{% if json.level is defined %}'
+                                      ',"level" : {{json.level}}'
+                                      '{% endif %} }')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        otopic = "foo/%s/1" % addr.hex
+        ltopic = "bar/%s/1" % addr.hex
+
+        # Set a default on-level that will be used by MQTT commands that don't
+        # specify a level.
+        assert dev.get_on_level() == 255
+        on_level = 128
+        params = {"on_level" : on_level}
+        dev.set_flags(None, **params)
+        assert proto.sent[0].msg.cmd1 == 0x2e
+        assert proto.sent[0].msg.cmd2 == 0x00
+        assert proto.sent[0].msg.data[0] == 0x01
+        assert proto.sent[0].msg.data[1] == 0x06
+        assert proto.sent[0].msg.data[2] == on_level
+        proto.clear()
+
+        # Fake having completed the set_on_level() request
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(dev.addr.hex,
+                                     dev.modem.addr.hex,
+                                     flags, 0x2e, 0x00)
+        dev.handle_on_level(ack, IM.util.make_callback(None), on_level)
+        assert dev.get_on_level() == on_level
+
+        # Try multiple commands in a row; confirm that level goes to default
+        # on-level then to full brightness (just like would be done if the
+        # device's on-button is pressed).
+        # Fast-on should always go to full brightness.
+        on_off_tests = [("OFF", "NORMAL", 0x13, 0x00),
+                        ("ON", "NORMAL", 0x11, on_level),
+                        ("ON", "NORMAL", 0x11, 0xff),
+                        ("ON", "NORMAL", 0x11, on_level),
+                        ("OFF", "FAST", 0x14, 0x00),
+                        ("ON", "FAST", 0x12, 0xff),
+                        ("ON", "FAST", 0x12, 0xff),
+                        ("OFF", "INSTANT", 0x21, 0x00),
+                        ("ON", "INSTANT", 0x21, on_level),
+                        ("ON", "INSTANT", 0x21, 0xff),
+                        ("ON", "INSTANT", 0x21, on_level)]
+
+        # Try all on/off command tests with each topic
+        for topic in [otopic, ltopic]:
+            for command, mode, cmd1, cmd2 in on_off_tests:
+                payload = '{ "on" : "%s", "mode" : "%s" }' % (command, mode)
+                print("Trying:", topic, "=", payload)
+                link.publish(topic, bytes(payload, 'utf-8'), qos, retain=False)
+                assert len(proto.sent) == 1
+
+                assert proto.sent[0].msg.cmd1 == cmd1
+                assert proto.sent[0].msg.cmd2 == cmd2
+                proto.clear()
+
+                # Fake receiving the ack
+                flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK,
+                                         False)
+                ack = IM.message.InpStandard(dev.addr.hex,
+                                             dev.modem.addr.hex,
+                                             flags, cmd1, cmd2)
+                dev.handle_set_load(ack, IM.util.make_callback(None))
+                assert dev._level == cmd2
 
     #-----------------------------------------------------------------------
     def test_input_on_off_reason(self, setup):

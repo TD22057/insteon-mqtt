@@ -450,7 +450,7 @@ The MQTT format of the command is:
 
 Switch, KeypadLinc, and Dimmer all support the flags:
 
-   - backlight: integer in the range 0x00-0xff which changes the LED backlight
+   - backlight: integer in the range 0x00-0x7f which changes the LED backlight
      level on the device.
    - on_level: integer in the range 0x00-0xff which sets the on level that will
      be used when the button is pressed.

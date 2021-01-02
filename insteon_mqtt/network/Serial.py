@@ -3,6 +3,7 @@
 # Network link to a Serial device class
 #
 #===========================================================================
+import sys
 import serial
 from .. import log
 from ..Signal import Signal
@@ -213,6 +214,11 @@ class Serial(Link):
         try:
             # Write as much of that data as possible.
             num = self.client.write(data)
+        except:
+            e = sys.exc_info()[0]
+            LOG.exception("Serial write error from %s, %s", self.client.port,
+                          e)
+        else:
             LOG.debug("Wrote %s bytes to serial %s", num, self.client.port)
 
             if num == len(data):
@@ -230,10 +236,7 @@ class Serial(Link):
             elif num:
                 # Still data to write - remove the written data from the
                 # buffer.
-                self._write_buf[0] = data[num:]
-
-        except:
-            LOG.exception("Serial write error from %s", self.client.port)
+                self._write_buf[0] = (data[num:], after_time)
 
     #-----------------------------------------------------------------------
     def close(self):

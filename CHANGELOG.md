@@ -2,12 +2,23 @@
 
 ## [0.7.5]
 
+This is another significant update that both improves the user experience,
+adds a number of features, and improves the performance and reliability of
+the program.
+
 ### Additions
 
 - Support for using an Insteon Hub as a modem.  It comes with some caveats
   but it works well, please see
   [Hub Instructions](https://github.com/TD22057/insteon-mqtt/blob/dev/docs/hub.md)
   ([PR 201][P201])
+
+- Significantly improved Home Assistant Add-on installation!  
+  [Instructions](docs/HA_Addon_Instructions.md) Includes update notifications,
+  nicer icons, and better integration into Home Assistant. [PR 290][P290]
+
+- A new Web Command Line Interface for Home Assistant Installations.  No more
+  entering commands via MQTT topics and payloads.  [PR 238][P238]
 
 - More pyTests, up to 76% coverage now. ([PR 262][P262] & [PR 268][P268])
 
@@ -22,6 +33,10 @@
   battery chemistry that varies from the OEM batteries.  Voltage will be
   queried no more frequently than every 4 days.
   ([PR 282][P282] & [PR 288][P288])
+
+- Better handling of local device on_levels.  If known, on_level is now
+  accurately reported when the device turns on.  Local on_level is retrieved
+  with get_flags or set with set_flags.  (thanks @tstabrawa)([PR 285][P285])
 
 ### Fixes
 
@@ -45,6 +60,9 @@
 
 - Improved message timing after receiving a broadcast command from a device.
   ([PR 284][P284])
+
+- Fixed a few rare errors with the Serial interface.  (thanks @MrGibbage)
+  ([I 292][I292])
 
 ## [0.7.4]
 
@@ -519,3 +537,7 @@ will add new features.
 [P282]: https://github.com/TD22057/insteon-mqtt/pull/282
 [P288]: https://github.com/TD22057/insteon-mqtt/pull/288
 [P284]: https://github.com/TD22057/insteon-mqtt/pull/284
+[P290]: https://github.com/TD22057/insteon-mqtt/pull/290
+[P238]: https://github.com/TD22057/insteon-mqtt/pull/238
+[I292]: https://github.com/TD22057/insteon-mqtt/issues/292
+[P285]: https://github.com/TD22057/insteon-mqtt/pull/285
