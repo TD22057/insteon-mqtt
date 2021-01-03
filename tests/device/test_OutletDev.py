@@ -59,3 +59,41 @@ class Test_Base_Config():
                 mocked.assert_called_once_with(test_device, group_num, *expected)
             else:
                 mocked.assert_not_called()
+
+    def test_set_backlight(self, test_device):
+        # set_backlight(self, level, on_done=None)
+        test_device.set_backlight(0)
+        assert len(test_device.protocol.sent) == 1
+        assert test_device.protocol.sent[0].msg.cmd1 == 0x20
+        assert test_device.protocol.sent[0].msg.cmd2 == 0x08
+        test_device.protocol.clear()
+
+        def level_bytes(level):
+            data = bytes([
+                0x01,   # D1 must be group 0x01
+                0x07,   # D2 set global led brightness
+                level,  # D3 brightness level
+                ] + [0x00] * 11)
+            return data
+
+        for params in ([1, 0x01], [255, 0xFF], [127, 127]):
+            with mock.patch.object(IM.CommandSeq, 'add_msg'):
+                test_device.set_backlight(params[0])
+                args_list = IM.CommandSeq.add_msg.call_args_list
+                assert IM.CommandSeq.add_msg.call_count == 2
+                # Check the first call
+                assert args_list[0][0][0].cmd1 == 0x20
+                assert args_list[0][0][0].cmd2 == 0x09
+                # Check the first call
+                assert args_list[1][0][0].cmd1 == 0x2e
+                assert args_list[1][0][0].data == level_bytes(params[1])
+
+
+        with mock.patch.object(IM.CommandSeq, 'add_msg'):
+            # test backlight off
+            test_device.set_backlight(0)
+            args_list = IM.CommandSeq.add_msg.call_args_list
+            assert IM.CommandSeq.add_msg.call_count == 1
+            # Check the first call
+            assert args_list[0][0][0].cmd1 == 0x20
+            assert args_list[0][0][0].cmd2 == 0x08

@@ -6,7 +6,6 @@
 import io
 import itertools
 import json
-import os
 from ..Address import Address
 from .. import catalog
 from ..CommandSeq import CommandSeq
