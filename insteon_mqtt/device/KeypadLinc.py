@@ -90,7 +90,6 @@ class KeypadLinc(Base):
             'set_led_off_mask' : self.set_led_off_mask,
             'set_signal_bits' : self.set_signal_bits,
             'set_nontoggle_bits' : self.set_nontoggle_bits,
-            'set_backlight_on' : self.set_backlight_on,
             })
 
         if self.is_dimmer:
@@ -123,9 +122,6 @@ class KeypadLinc(Base):
 
         # Button 1 level (0-255)
         self._level = 0
-
-        # Backlight on/off.  See set_backlight for details.
-        self._backlight = True
 
         # Update the group map with the groups to be paired and the handler
         # for broadcast messages from this group
@@ -754,28 +750,32 @@ class KeypadLinc(Base):
 
         The default factory level is 0x1f.
 
+        Per page 157 of insteon dev guide range is between 0x11 and 0x7F,
+        however in practice backlight can be incremented from 0x00 to at least
+        0x7f.
+
         Args:
           level (int):  The backlight level in the range [0,255]
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("KeypadLinc %s setting backlight to %s", self.label, level)
 
-        # If the input level is zero, turn off the backlight.  That's a
-        # different command than setting the level.  We also need to keep
-        # track of it being off because we need to turn it back on before
-        # setting the level if that level is changed in the future.
-        if not level:
-            self.set_backlight_on(False, on_done)
+        seq = CommandSeq(self, "KeypadLinc set backlight complete", on_done,
+                         name="SetBacklight")
 
-        # Otherwise use the level changing command.
-        else:
-            seq = CommandSeq(self, "Backlight level", on_done,
-                             name="SetBacklight")
+        # First set the backlight on or off depending on level value
+        is_on = level > 0
+        LOG.info("KeypadLinc %s setting backlight to %s", self.label, is_on)
+        cmd = 0x09 if is_on else 0x08
+        msg = Msg.OutExtended.direct(self.addr, 0x20, cmd, bytes([0x00] * 14))
+        callback = functools.partial(self.handle_ack, task="Backlight on")
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
+        seq.add_msg(msg, msg_handler)
 
-            # Bound to 0x11 <= level <= 0x7f per page 157 of insteon dev guide.
-            # However in practice backlight can be incremented from 0x00 to 0x7f
-            level = min(level, 0x7f)
+        if is_on:
+            # Second set the level only if on
+            LOG.info("KeypadLinc %s setting backlight to %s", self.label,
+                     level)
 
             # Extended message data - see Insteon dev guide p156.
             data = bytes([
@@ -792,29 +792,7 @@ class KeypadLinc(Base):
             msg_handler = handler.StandardCmd(msg, callback, on_done)
             seq.add_msg(msg, msg_handler)
 
-            # If the backlight was off, turn it back on.
-            if not self._backlight:
-                seq.add(self.set_backlight_on, True)
-
-            seq.run()
-
-    #-----------------------------------------------------------------------
-    def set_backlight_on(self, is_on, on_done=None):
-        """Turn the backlight on or totally off.
-
-        Args:
-          is_on (bool): True to have the backlight on, False for off.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("KeypadLinc %s setting backlight to %s", self.label, is_on)
-        cmd = 0x09 if is_on else 0x08
-        msg = Msg.OutExtended.direct(self.addr, 0x20, cmd, bytes([0x00] * 14))
-
-        # This callback changes self._backlight if the command works.
-        callback = functools.partial(self.handle_backlight_on, is_on=is_on)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-        self.send(msg, msg_handler)
+        seq.run()
 
     #-----------------------------------------------------------------------
     def get_flags(self, on_done=None):
@@ -980,7 +958,6 @@ class KeypadLinc(Base):
         # Check the input flags to make sure only ones we can understand were
         # passed in.
         FLAG_BACKLIGHT = "backlight"
-        FLAG_BACKLIGHT_ON = "backlight_on"
         FLAG_GROUP = "group"
         FLAG_ON_LEVEL = "on_level"
         FLAG_RAMP_RATE = "ramp_rate"
@@ -989,9 +966,9 @@ class KeypadLinc(Base):
         FLAG_OFF_MASK = "off_mask"
         FLAG_SIGNAL_BITS = "signal_bits"
         FLAG_NONTOGGLE_BITS = "nontoggle_bits"
-        flags = set([FLAG_BACKLIGHT, FLAG_BACKLIGHT_ON, FLAG_LOAD_ATTACH,
-                     FLAG_FOLLOW_MASK, FLAG_SIGNAL_BITS, FLAG_NONTOGGLE_BITS,
-                     FLAG_OFF_MASK, FLAG_GROUP, FLAG_ON_LEVEL, FLAG_RAMP_RATE])
+        flags = set([FLAG_BACKLIGHT, FLAG_LOAD_ATTACH, FLAG_FOLLOW_MASK,
+                     FLAG_SIGNAL_BITS, FLAG_NONTOGGLE_BITS, FLAG_OFF_MASK,
+                     FLAG_GROUP, FLAG_ON_LEVEL, FLAG_RAMP_RATE])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown KeypadLinc flags input: %s.\n Valid "
@@ -1007,10 +984,6 @@ class KeypadLinc(Base):
         if FLAG_BACKLIGHT in kwargs:
             backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
             seq.add(self.set_backlight, backlight)
-
-        if FLAG_BACKLIGHT_ON in kwargs:
-            is_on = util.input_byte(kwargs, FLAG_BACKLIGHT_ON)
-            seq.add(self.set_backlight_on, is_on)
 
         if FLAG_LOAD_ATTACH in kwargs:
             load_attached = util.input_bool(kwargs, FLAG_LOAD_ATTACH)
@@ -1278,20 +1251,6 @@ class KeypadLinc(Base):
         if on_level is None:
             on_level = 0xff
         return on_level
-
-    #-----------------------------------------------------------------------
-    def handle_backlight_on(self, msg, on_done, is_on):
-        """Callback for handling turning the backlight on and off.
-
-        Args:
-          msg (InpStandard):  The response message from the command.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-          is_on (bool): True if the backlight is being turned on, False for
-                off.
-        """
-        on_done(True, "backlight set to %s" % is_on, None)
-        self._backlight = is_on
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):
