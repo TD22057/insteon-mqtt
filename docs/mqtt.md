@@ -453,8 +453,9 @@ Switch, KeypadLinc, and Dimmer all support the flags:
    - backlight: changes the LED backlight level on the device.  Insteon
      documentation defines the range from 0x11 - 0x7F, however, levels below
      0x11 appear to work on some devices, and levels above 0x7F may also work.
-     Setting to 0x00 will turn off the backlight, any other value will turn
-     on the backlight.
+     Switches and dimmers go as low as 0x04 and KeypadLincs go all the way
+     down to 0x01. Setting to 0x00 will turn off the backlight, any other
+     value will turn on the backlight.
    - on_level: integer in the range 0x00-0xff which sets the on level that will
      be used when the button is pressed.
    - load_attached: 0/1 to attach or detach the load from the group 1 button.
