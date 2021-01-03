@@ -470,7 +470,8 @@ class Dimmer(Base):
                 ] + [0x00] * 11)
 
             msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-            msg_handler = handler.StandardCmd(msg, self.handle_backlight, on_done)
+            msg_handler = handler.StandardCmd(msg, self.handle_backlight,
+                                              on_done)
             seq.add_msg(msg, msg_handler)
 
         seq.run()

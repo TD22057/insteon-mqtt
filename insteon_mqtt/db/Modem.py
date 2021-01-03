@@ -5,7 +5,6 @@
 #===========================================================================
 import io
 import json
-import os
 from ..Address import Address
 from .. import handler
 from .. import log
