@@ -192,23 +192,27 @@ class Test_KPL():
                 ] + [0x00] * 11)
             return data
 
-        for params in ([1, 0x11], [255, 0x7F], [127, 127]):
+        for params in ([1, 0x01], [255, 0xFF], [127, 127]):
             with mock.patch.object(IM.CommandSeq, 'add_msg'):
                 test_device.set_backlight(params[0])
                 args_list = IM.CommandSeq.add_msg.call_args_list
-                assert IM.CommandSeq.add_msg.call_count == 1
+                assert IM.CommandSeq.add_msg.call_count == 2
                 # Check the first call
-                assert args_list[0][0][0].cmd1 == 0x2e
-                assert args_list[0][0][0].data == level_bytes(params[1])
+                assert args_list[0][0][0].cmd1 == 0x20
+                assert args_list[0][0][0].cmd2 == 0x09
+                # Check the first call
+                assert args_list[1][0][0].cmd1 == 0x2e
+                assert args_list[1][0][0].data == level_bytes(params[1])
 
-        with mock.patch.object(IM.CommandSeq, 'add'):
+
+        with mock.patch.object(IM.CommandSeq, 'add_msg'):
             # test backlight off
-            test_device._backlight = False
-            test_device.set_backlight(1)
-            args_list = IM.CommandSeq.add.call_args_list
-            assert IM.CommandSeq.add.call_count == 1
+            test_device.set_backlight(0)
+            args_list = IM.CommandSeq.add_msg.call_args_list
+            assert IM.CommandSeq.add_msg.call_count == 1
             # Check the first call
-            assert args_list[0][0][1]
+            assert args_list[0][0][0].cmd1 == 0x20
+            assert args_list[0][0][0].cmd2 == 0x08
 
     def test_set_ramp_rate(self, test_device):
         # set_ramp_rate(self, rate, on_done=None)
