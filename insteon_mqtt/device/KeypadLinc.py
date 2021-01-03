@@ -90,6 +90,7 @@ class KeypadLinc(Base):
             'set_led_off_mask' : self.set_led_off_mask,
             'set_signal_bits' : self.set_signal_bits,
             'set_nontoggle_bits' : self.set_nontoggle_bits,
+            'set_backlight_on' : self.set_backlight_on,
             })
 
         if self.is_dimmer:
@@ -773,7 +774,8 @@ class KeypadLinc(Base):
                              name="SetBacklight")
 
             # Bound to 0x11 <= level <= 0x7f per page 157 of insteon dev guide.
-            level = max(0x11, min(level, 0x7f))
+            # However in practice backlight can be incremented from 0x00 to 0x7f
+            level = min(level, 0x7f)
 
             # Extended message data - see Insteon dev guide p156.
             data = bytes([
@@ -978,6 +980,7 @@ class KeypadLinc(Base):
         # Check the input flags to make sure only ones we can understand were
         # passed in.
         FLAG_BACKLIGHT = "backlight"
+        FLAG_BACKLIGHT_ON = "backlight_on"
         FLAG_GROUP = "group"
         FLAG_ON_LEVEL = "on_level"
         FLAG_RAMP_RATE = "ramp_rate"
@@ -986,9 +989,9 @@ class KeypadLinc(Base):
         FLAG_OFF_MASK = "off_mask"
         FLAG_SIGNAL_BITS = "signal_bits"
         FLAG_NONTOGGLE_BITS = "nontoggle_bits"
-        flags = set([FLAG_BACKLIGHT, FLAG_LOAD_ATTACH, FLAG_FOLLOW_MASK,
-                     FLAG_SIGNAL_BITS, FLAG_NONTOGGLE_BITS, FLAG_OFF_MASK,
-                     FLAG_GROUP, FLAG_ON_LEVEL, FLAG_RAMP_RATE])
+        flags = set([FLAG_BACKLIGHT, FLAG_BACKLIGHT_ON, FLAG_LOAD_ATTACH,
+                     FLAG_FOLLOW_MASK, FLAG_SIGNAL_BITS, FLAG_NONTOGGLE_BITS,
+                     FLAG_OFF_MASK, FLAG_GROUP, FLAG_ON_LEVEL, FLAG_RAMP_RATE])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             raise Exception("Unknown KeypadLinc flags input: %s.\n Valid "
@@ -1004,6 +1007,10 @@ class KeypadLinc(Base):
         if FLAG_BACKLIGHT in kwargs:
             backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
             seq.add(self.set_backlight, backlight)
+
+        if FLAG_BACKLIGHT_ON in kwargs:
+            is_on = util.input_byte(kwargs, FLAG_BACKLIGHT_ON)
+            seq.add(self.set_backlight_on, is_on)
 
         if FLAG_LOAD_ATTACH in kwargs:
             load_attached = util.input_bool(kwargs, FLAG_LOAD_ATTACH)
