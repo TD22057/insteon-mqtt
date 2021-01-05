@@ -236,7 +236,7 @@ class Dimmer:
             reason = data.get("reason", "")
             self.device.set(level=level, mode=mode, reason=reason)
         except:
-            LOG.exception("Invalid switch on/off command: %s", data)
+            LOG.error("Invalid switch on/off command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_set_level(self, client, data, message):
@@ -265,7 +265,7 @@ class Dimmer:
             # Tell the device to change its level.
             self.device.set(level=level, mode=mode, reason=reason)
         except:
-            LOG.exception("Invalid dimmer command: %s", data)
+            LOG.error("Invalid dimmer command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_scene(self, client, data, message):
@@ -294,6 +294,6 @@ class Dimmer:
             # Tell the device to trigger the scene command.
             self.device.scene(is_on, group, reason)
         except:
-            LOG.exception("Invalid dimmer command: %s", data)
+            LOG.error("Invalid dimmer command: %s", data)
 
     #-----------------------------------------------------------------------

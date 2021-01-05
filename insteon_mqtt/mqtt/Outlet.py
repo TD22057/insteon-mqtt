@@ -193,7 +193,7 @@ class Outlet:
             reason = data.get("reason", "")
             self.device.set(level=is_on, group=group, mode=mode, reason=reason)
         except:
-            LOG.exception("Invalid Outlet on/off command: %s", data)
+            LOG.error("Invalid Outlet on/off command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_scene(self, client, data, message, group):
@@ -221,6 +221,6 @@ class Outlet:
             reason = data.get("reason", "")
             self.device.scene(is_on, group, reason)
         except:
-            LOG.exception("Invalid Outlet scene command: %s", data)
+            LOG.error("Invalid Outlet scene command: %s", data)
 
     #-----------------------------------------------------------------------

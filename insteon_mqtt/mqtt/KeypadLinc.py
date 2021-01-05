@@ -298,7 +298,7 @@ class KeypadLinc:
             reason = data.get("reason", "")
             self.device.set(level, group, mode, reason=reason)
         except:
-            LOG.exception("Invalid KeypadLinc on/off command: %s", data)
+            LOG.error("Invalid KeypadLinc on/off command: %s", data)
             if raise_errors:
                 raise
 
@@ -333,7 +333,7 @@ class KeypadLinc:
             reason = data.get("reason", "")
             self.device.set(level, mode=mode, reason=reason)
         except:
-            LOG.exception("Invalid KeypadLinc level command: %s", data)
+            LOG.error("Invalid KeypadLinc level command: %s", data)
             if raise_errors:
                 raise
 
@@ -401,6 +401,6 @@ class KeypadLinc:
             reason = data.get("reason", "")
             self.device.scene(is_on, group, reason=reason)
         except:
-            LOG.exception("Invalid KeypadLinc command: %s", data)
+            LOG.error("Invalid KeypadLinc command: %s", data)
 
     #-----------------------------------------------------------------------
