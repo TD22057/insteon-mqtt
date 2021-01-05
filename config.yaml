@@ -52,7 +52,9 @@ insteon:
   ######
 
   # modem Insteon hex address
-  address: 44.85.11
+  # You do not need to specify this.  If it is defined, this address will be
+  # used even if it does not match what the modem reports.
+  # address: 44.85.11
 
   # Device database file storage location.
   #storage: '/var/lib/insteon-mqtt'

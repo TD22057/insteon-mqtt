@@ -119,7 +119,7 @@ class Modem:
         return "Modem"
 
     #-----------------------------------------------------------------------
-    def load_config(self, data, load_protocol=True):
+    def load_config(self, data):
         """Load a configuration dictionary.
 
         This should be the insteon key in the configuration data.  Key inputs
@@ -141,8 +141,7 @@ class Modem:
         LOG.info("Loading configuration data")
 
         # Pass the data to the modem network link.
-        if load_protocol:
-            self.protocol.load_config(data)
+        self.protocol.load_config(data)
 
         if 'address' in data:
             # Read the modem address from config if specified
@@ -177,6 +176,7 @@ class Modem:
                           "the address in config.yaml")
                 LOG.error("Unable to continue EXITING.")
                 sys.exit()
+                return
             else:
                 LOG.error("Unable to get modem address, using address in "
                           "config %s", self.addr)
