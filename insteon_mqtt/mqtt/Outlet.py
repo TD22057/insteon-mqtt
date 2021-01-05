@@ -190,6 +190,8 @@ class Outlet:
         try:
             # Tell the device to update it's state.
             is_on, mode, __ = util.parse_on_off(data)
+            if mode == on_off.Mode.RAMP:  # Not supported
+                mode = on_off.Mode.NORMAL
             reason = data.get("reason", "")
             self.device.set(level=is_on, group=group, mode=mode, reason=reason)
         except:

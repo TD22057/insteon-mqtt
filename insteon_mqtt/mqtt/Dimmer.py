@@ -232,6 +232,8 @@ class Dimmer:
         try:
             # Tell the device to update its state.
             is_on, mode, __ = util.parse_on_off(data)
+            if mode == on_off.Mode.RAMP:  # Not supported
+                mode = on_off.Mode.NORMAL
             level = 0 if not is_on else None
             reason = data.get("reason", "")
             self.device.set(level=level, mode=mode, reason=reason)
@@ -257,6 +259,8 @@ class Dimmer:
         LOG.info("Dimmer input command: %s", data)
         try:
             is_on, mode, __ = util.parse_on_off(data)
+            if mode == on_off.Mode.RAMP:  # Not supported
+                mode = on_off.Mode.NORMAL
             level = '0' if not is_on else data.get('level')
             if level is not None:
                 level = int(level)
