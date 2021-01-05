@@ -1,5 +1,19 @@
 # Revision Change History
 
+## [0.7.6]
+
+### Additions
+
+- There is no longer a need to set the Modem hex address in config.yaml.
+  ([PR 303][P303])
+
+### Fixes
+
+- Fix error with backlight setting (thanks @tommycw1)([PR 299][P299])
+
+- Small correction to write_time to allow dynamic calculation of time.
+  ([PR 302][P302])
+
 ## [0.7.5]
 
 This is another significant update that both improves the user experience,
@@ -541,3 +555,6 @@ will add new features.
 [P238]: https://github.com/TD22057/insteon-mqtt/pull/238
 [I292]: https://github.com/TD22057/insteon-mqtt/issues/292
 [P285]: https://github.com/TD22057/insteon-mqtt/pull/285
+[P299]: https://github.com/TD22057/insteon-mqtt/pull/299
+[P303]: https://github.com/TD22057/insteon-mqtt/pull/303
+[P302]: https://github.com/TD22057/insteon-mqtt/pull/302

@@ -40,6 +40,7 @@ from .ExtendedCmdResponse import ExtendedCmdResponse
 from .ModemDbGet import ModemDbGet
 from .ModemDbSearch import ModemDbSearch
 from .ModemDbModify import ModemDbModify
+from .ModemInfo import ModemInfo
 from .ModemLinkComplete import ModemLinkComplete
 from .ModemLinkStart import ModemLinkStart
 from .ModemReset import ModemReset

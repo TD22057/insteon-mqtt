@@ -6,6 +6,7 @@
 import io
 import json
 from ..Address import Address
+from .. import catalog
 from .. import handler
 from .. import log
 from .. import message as Msg
@@ -58,6 +59,13 @@ class Modem:
         # pylint: disable=protected-access
         obj._meta = data.get('meta', {})
 
+        # Load the category fields and turn them into description objecdt.
+        dev_cat = data.get('dev_cat', None)
+        sub_cat = data.get('sub_cat', None)
+        obj.desc = None
+        if dev_cat is not None:
+            obj.desc = catalog.find(dev_cat, sub_cat)
+
         return obj
 
     #-----------------------------------------------------------------------
@@ -72,6 +80,10 @@ class Modem:
 
         # Note: unlike devices, the PLM has no delta value so there doesn't
         # seem to be any way to tell if the db value is current or not.
+
+        # Device model information.
+        self.desc = None
+        self.firmware = None
 
         # Metadata storage.  Used for saving device data to persistent
         # storage for access across reboots
@@ -99,6 +111,49 @@ class Modem:
                   made.
         """
         self.save_path = path
+
+    #-----------------------------------------------------------------------
+    def set_info(self, dev_cat, sub_cat, firmware):
+        """Saves the device information to file.
+
+        Insteon devices are each assigned to a broad device category.
+        Individual devices each then have a subcategory.  See the catalog.py
+        module for details.
+
+        Within the broad device category, insteon devices are assigned to a
+        more narrow sub category.  Generally a sub-category remains
+        consistent throughout a single model number of a a product, however
+        not always.  Smart Labs has done a poor job of publishing the details
+        of the sub-categories.  Some resources for determining the details of
+        a sub-category are:
+
+        http://cache.insteon.com/pdf/INSTEON_DevCats_and_Product_Keys_20081008.pdf
+        http://madreporite.com/insteon/Insteon_device_list.htm
+
+        Generally knowing the dev_Cat and sub_Cat is sufficient for
+        determining the features that are available on a device.
+        Additionally knowing the engine version of the device is also another
+        good indicator.
+
+        The firmware version of a device is just that, the version number of
+        the embedded code on the device.  In theory, this firmware is
+        updatable (although not by a casual user), however Smart Labs has
+        never published an update for any device.
+
+        That said, it does seem that Smart Labs routinely updates the
+        firmware that is installed on devices before they are sold.  However,
+        Smart Labs does not publish changelogs, nor does it discuss what
+        changes have been made.  Based on anecdotal evidence, few if any
+        changes in firmware have added any features to a device.
+
+        Args:
+          dev_cat (int):  The device category.
+          sub_cat (int):  The device sub-category.
+          firmware (int): The device firmware.
+        """
+        self.desc = catalog.find(dev_cat, sub_cat)
+        self.firmware = firmware
+        self.save()
 
     #-----------------------------------------------------------------------
     def set_meta(self, key, value):
@@ -529,10 +584,14 @@ class Modem:
           (dict) Returns the database as a JSON dictionary.
         """
         entries = [i.to_json() for i in self.entries]
-        return {
+        data = {
             'entries' : entries,
             'meta' : self._meta
             }
+        if self.desc:
+            data['dev_cat'] = self.desc.dev_cat
+            data['sub_cat'] = self.desc.sub_cat
+        return data
 
     #-----------------------------------------------------------------------
     def __str__(self):
