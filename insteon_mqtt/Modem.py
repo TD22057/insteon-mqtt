@@ -5,6 +5,8 @@
 #===========================================================================
 import json
 import os
+import sys
+import functools
 from .Address import Address
 from .CommandSeq import CommandSeq
 from . import config
@@ -117,7 +119,7 @@ class Modem:
         return "Modem"
 
     #-----------------------------------------------------------------------
-    def load_config(self, data):
+    def load_config(self, data, load_protocol=True):
         """Load a configuration dictionary.
 
         This should be the insteon key in the configuration data.  Key inputs
@@ -139,38 +141,93 @@ class Modem:
         LOG.info("Loading configuration data")
 
         # Pass the data to the modem network link.
-        self.protocol.load_config(data)
+        if load_protocol:
+            self.protocol.load_config(data)
 
-        # Read the modem address.
-        self.addr = Address(data['address'])
+        if 'address' in data:
+            # Read the modem address from config if specified
+            self.addr = Address(data['address'])
+            self.label = "%s (%s)" % (self.addr, self.name)
+            LOG.info("Modem address set to %s", self.addr)
+
+        # Query the modem for its address
+        callback = functools.partial(self.load_config_step2, config_data=data)
+        self.get_addr(on_done=callback)
+        return
+
+    #-----------------------------------------------------------------------
+    def load_config_step2(self, success, msg, data, config_data=None):
+        """Proceed with the Second Step of Loading the Config
+
+        This occurs after requesting the address of the modem.
+
+        Args:
+          data (dict):  Configuration data to load.
+        """
+        if success:
+            if self.addr is not None and self.addr != data.addr:
+                LOG.error("Modem address in config %s does not match address "
+                          "returned by the modem %s", self.addr, data.addr)
+            else:
+                self.addr = data.addr
+            LOG.info("Modem address set to %s", self.addr)
+        else:
+            if self.addr is None:
+                LOG.error("Unable to get modem address, try specifying "
+                          "the address in config.yaml")
+                LOG.error("Unable to continue EXITING.")
+                sys.exit()
+            else:
+                LOG.error("Unable to get modem address, using address in "
+                          "config %s", self.addr)
+
         self.label = "%s (%s)" % (self.addr, self.name)
-        LOG.info("Modem address set to %s", self.addr)
 
         # Load the modem database.
-        if 'storage' in data:
-            save_path = data['storage']
+        if 'storage' in config_data:
+            save_path = config_data['storage']
             if not os.path.exists(save_path):
                 os.makedirs(save_path)
 
             self.save_path = save_path
             self.load_db()
 
-            LOG.info("Modem %s database loaded %s entries", self.addr,
+            LOG.info("Modem %s database loaded %s entries", self.label,
                      len(self.db))
             LOG.debug(str(self.db))
 
         # Read the device definitions
-        self._load_devices(data.get('devices', []))
+        self._load_devices(config_data.get('devices', []))
 
         # Read the scenes definitions and load db_configs
-        self.scenes = Scenes.SceneManager(self, data.get('scenes', None))
+        self.scenes = Scenes.SceneManager(self,
+                                          config_data.get('scenes', None))
 
         # Send refresh messages to each device to check if the database is up
         # to date.
-        if data.get('startup_refresh', False) is True:
+        if config_data.get('startup_refresh', False) is True:
             LOG.info("Starting device refresh")
             for device in self.devices.values():
                 device.refresh()
+
+
+    #-----------------------------------------------------------------------
+    def get_addr(self, on_done=None):
+        """Ask the Modem to Respond with its Address.
+
+        The modem will respond with a message containing its address.
+
+        Args:
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.info("Requesting the modem address.")
+
+        # Request the first db record from the handler.  The handler will
+        # request each next record as the records arrive.
+        msg = Msg.OutModemInfo()
+        msg_handler = handler.ModemInfo(self, on_done)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
