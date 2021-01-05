@@ -82,6 +82,7 @@ class Modem:
             'refresh' : self.refresh,
             'refresh_all' : self.refresh_all,
             'get_engine_all' : self.get_engine_all,
+            'get_model' : self.get_model,
             'linking' : self.linking,
             'scene' : self.scene,
             'factory_reset' : self.factory_reset,
@@ -166,12 +167,19 @@ class Modem:
         Args:
           data (dict):  Configuration data to load.
         """
+        dev_cat = None
+        sub_cat = None
+        firmware = None
         if success:
             if self.addr is not None and self.addr != data.addr:
                 LOG.error("Modem address in config %s does not match address "
                           "returned by the modem %s", self.addr, data.addr)
             else:
                 self.addr = data.addr
+            # Save device values for later when db is loaded.
+            dev_cat = data.dev_cat
+            sub_cat = data.sub_cat
+            firmware = data.firmware
             LOG.info("Modem address set to %s", self.addr)
         else:
             if self.addr is None:
@@ -198,6 +206,12 @@ class Modem:
             LOG.info("Modem %s database loaded %s entries", self.label,
                      len(self.db))
             LOG.debug(str(self.db))
+
+        # Save the modem description if we got it
+        if dev_cat is not None:
+            self.db.set_info(dev_cat, sub_cat, firmware)
+            LOG.debug("Modem %s received model information: %s firmware: %#x",
+                      self.addr, self.db.desc, firmware)
 
         # Read the device definitions
         self._load_devices(config_data.get('devices', []))
@@ -255,6 +269,20 @@ class Modem:
         msg = Msg.OutAllLinkGetFirst()
         msg_handler = handler.ModemDbGet(self.db, on_done)
         self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def get_model(self, on_done=None):
+        """Outputs the (dev_cat, sub_cat, and firmware) data from the device.
+
+        The data is obtained on startup and printed to the log already.  This
+        just repeats the same message.
+
+        Args:
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.ui("Modem %s model information: %s", self.addr, self.db.desc)
+        on_done(True, "Success get_model", None)
 
     #-----------------------------------------------------------------------
     def db_path(self):
