@@ -37,7 +37,10 @@ jobs:
     - name: Test with pytest
       run: |
         # Skips creating coverage stats for covered items
-        pytest --cache-clear --cov-report term:skip-covered --no-cov-on-fail --cov=insteon_mqtt tests/ | tee pytest-coverage.txt
+        # Set pipefail so that tee doesn't override the exit code
+        set -o pipefail
+        pytest --cache-clear --cov-report term:skip-covered --cov=insteon_mqtt tests/ | tee pytest-coverage.txt
+        set +o pipefail
 #     - name: Comment coverage
 #       uses: coroo/pytest-coverage-commentator@v1.0.2
 #       with:
