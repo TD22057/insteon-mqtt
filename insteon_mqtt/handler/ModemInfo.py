@@ -42,10 +42,6 @@ class ModemInfo(Base):
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
         """
-        # InpUserReset is sent when the user triggers a factory reset
-        #     on the physical modem.
-        # OutResetModem is sent when we send that command to the modem
-        #     to reset it and we'll get an ack/nak back.
         if isinstance(msg, (Msg.OutModemInfo)):
             if msg.is_ack:
                 self.on_done(True, "Modem get info success", msg)

@@ -135,6 +135,10 @@ class Modem:
         - devices   List of devices.  Each device is a type and insteon
                     address of the device.
 
+        This funciton is the first of 2 load_config steps.  It initializes the
+        protocol and checks the Modem address.  Step_2 below, continues the
+        rest of the config loading if the Modem address check is successful.
+
         Args:
           data (dict):  Configuration data to load.
         """
@@ -152,7 +156,6 @@ class Modem:
         # Query the modem for its address
         callback = functools.partial(self.load_config_step2, config_data=data)
         self.get_addr(on_done=callback)
-        return
 
     #-----------------------------------------------------------------------
     def load_config_step2(self, success, msg, data, config_data=None):
