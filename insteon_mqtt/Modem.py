@@ -210,7 +210,6 @@ class Modem:
             for device in self.devices.values():
                 device.refresh()
 
-
     #-----------------------------------------------------------------------
     def get_addr(self, on_done=None):
         """Ask the Modem to Respond with its Address.

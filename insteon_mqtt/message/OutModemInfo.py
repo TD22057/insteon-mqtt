@@ -48,7 +48,8 @@ class OutModemInfo(Base):
                             is_ack=is_ack)
 
     #-----------------------------------------------------------------------
-    def __init__(self, addr=None, dev_cat=None, sub_cat=None, firmware=None, is_ack=None):
+    def __init__(self, addr=None, dev_cat=None, sub_cat=None, firmware=None,
+                 is_ack=None):
         """Constructor
 
         Args:
