@@ -905,7 +905,7 @@ The button change defines the following variables for templates:
    - 'mode' is the on/off mode: 'normal', 'fast', instant', or 'ramp'
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
-   - 'transition' is the ramp rate in seconds (dimmers only).
+   - 'transition' is the ramp rate in seconds.
    - 'reason' is the reason for the change.  'device' if a button was pressed
      on the device.  'scene' if the device is responding to a scene trigger.
      'refresh' if the update is from a refresh'.  'command' if the device is
@@ -915,6 +915,7 @@ The button change defines the following variables for templates:
 The optional transition flag can be used to specify a ramp rate.  If 'ramp'
 mode is specified but no transition value, a ramp rate of 2 seconds is used.
 If a transition value is specified but no mode, 'ramp' mode is implied.
+Ramp mode is only supported on 2334-222 and 2334-232 devices at this time.
 
    ```
    { "cmd" : "on"/"off", "level" : LEVEL, ["mode" : 'normal'/'fast'/'instant'/'ramp'], "transition" : RATE }

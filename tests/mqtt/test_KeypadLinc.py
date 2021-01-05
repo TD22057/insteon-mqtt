@@ -327,6 +327,10 @@ class Test_KeypadLinc:
         mdev, dev, link, proto, modem = setup.getAll(
                 ['mdev', 'dev', 'link', 'proto', 'modem'])
 
+        # 0x01, 0x42 == 2334-232 (Keypad Dimmer Dual-Band, 6 Button)
+        dev.db.set_info(0x01, 0x42, 0x43)
+        assert dev.on_off_ramp_supported
+
         qos = 2
         config = {'keypad_linc' : {
             'dimmer_state_topic' : 'insteon/{{address}}/state',
@@ -601,6 +605,126 @@ class Test_KeypadLinc:
         assert link.client.pub[1] == dict(
             topic=stopic, payload='1 67', qos=qos, retain=True)
         link.client.clear()
+
+    #-----------------------------------------------------------------------
+    def test_input_no_transition(self, setup):
+        mdev, dev, link, addr, proto = setup.getAll(['mdev', 'dev', 'link',
+                                                     'addr', 'proto'])
+
+        # 0x01, 0x09 == 2486D (KeypadLinc Dimmer)
+        dev.db.set_info(0x01, 0x09, 0x2d)
+        assert not dev.on_off_ramp_supported
+
+        qos = 2
+        config = {'keypad_linc' : {
+            'dimmer_state_topic' : 'insteon/{{address}}/state',
+            'dimmer_state_payload' : '{{on}} {{level_255}}',
+            'btn_on_off_topic' : 'insteon/{{address}}/set/{{button}}',
+            'btn_on_off_payload' : ('{ "cmd" : "{{json.state.lower()}}"'
+                                    '{% if json.fast is defined %}'
+                                        ', "fast" : {{json.fast}}'
+                                    '{% endif %}'
+                                    '{% if json.instant is defined %}'
+                                        ', "instant" : {{json.instant}}'
+                                    '{% endif %}'
+                                    '{% if json.mode is defined %}'
+                                        ', "mode" : "{{json.mode.lower()}}"'
+                                    '{% endif %}'
+                                    '{% if json.transition is defined %}'
+                                        ', "transition" : {{json.transition}}'
+                                    '{% endif %}'
+                                    ' }'),
+            'dimmer_level_topic' : 'insteon/{{address}}/level',
+            'dimmer_level_payload' : ('{ "cmd" : "{{json.state.lower()}}",'
+                                      '"level" : '
+                                          '{% if json.level is defined %}'
+                                              '{{json.level}}'
+                                          '{% else %}'
+                                              '255'
+                                          '{% endif %}'
+                                     '{% if json.fast is defined %}'
+                                         ', "fast" : {{json.fast}}'
+                                     '{% endif %}'
+                                     '{% if json.instant is defined %}'
+                                         ', "instant" : {{json.instant}}'
+                                     '{% endif %}'
+                                     '{% if json.mode is defined %}'
+                                         ', "mode" : "{{json.mode.lower()}}"'
+                                     '{% endif %}'
+                                     '{% if json.transition is defined %}'
+                                         ', "transition" : {{json.transition}}'
+                                     '{% endif %}'
+                                     ' }')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        stopic = "insteon/%s/state" % addr.hex
+        otopic = link.client.sub[0].topic
+        ltopic = link.client.sub[1].topic
+
+        # -----------------------
+        # Confirm that ramp/transition ignored for devices that don't support it
+        # -----------------------
+
+        # -----------------------
+        # Light off in 32 seconds, mode explicitly specified
+        payload = b'{ "state" : "OFF", "mode" : "RAMP", "transition" : 32 }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert proto.sent[0].msg.cmd2 == 0x00
+        proto.clear()
+
+        # -----------------------
+        # Light on (full brightness) in 90 seconds, mode explicitly specified
+        payload = b'{ "state" : "ON", "mode" : "RAMP", "transition" : 90 }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x11
+        assert proto.sent[0].msg.cmd2 == 0xff
+        proto.clear()
+
+        # -----------------------
+        # Light off in 500 seconds, mode implied
+        payload = b'{ "state" : "OFF", "transition" : 500 }'
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert proto.sent[0].msg.cmd2 == 0x00
+        proto.clear()
+
+        # -----------------------
+        # Light on (level 67) in 0.3 seconds, mode implied
+        payload = b'{ "state" : "ON", "level" : "67", "transition" : 0.3 }'
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x11
+        assert proto.sent[0].msg.cmd2 == 0x43
+        proto.clear()
+
+        # -----------------------
+        # Light off, mode explicitly specified, transition omitted (2s implied)
+        payload = b'{ "state" : "OFF", "mode" : "RAMP" }'
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert proto.sent[0].msg.cmd2 == 0x00
+        proto.clear()
+
+        # -----------------------
+        # Light on, mode explicitly specified, transition omitted (2s implied)
+        payload = b'{ "state" : "ON", "mode" : "RAMP" }'
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x11
+        assert proto.sent[0].msg.cmd2 == 0xff
+        proto.clear()
 
     #-----------------------------------------------------------------------
     def test_input_on_off_reason(self, setup):

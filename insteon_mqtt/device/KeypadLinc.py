@@ -137,6 +137,20 @@ class KeypadLinc(Base):
                                0x08: self.handle_on_off})
 
     #-----------------------------------------------------------------------
+    @property
+    def on_off_ramp_supported(self):
+        """Returns True if the "Light ON at Ramp Rate" and "Light OFF at Ramp
+        Rate" commands are supported by this device and False if not (or if
+        not known).
+        """
+        if self.db.desc is None:
+            # Don't know device model yet.  Use "get_model" command to get it.
+            return False
+        else:
+            return (self.db.desc.model == "2334-222" or
+                    self.db.desc.model == "2334-232")
+
+    #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
         """Refresh the current device state and database if needed.
 
@@ -290,9 +304,12 @@ class KeypadLinc(Base):
 
         # Load group uses a direct command to set the level.
         else:
-            # For switches, on is always full level.  Also, no ramp/transition.
+            # For switches, on is always full level.
             if not self.is_dimmer:
                 level = 0xff
+
+            # Ignore RAMP mode / transition if command not supported
+            if not self.on_off_ramp_supported or not self.is_dimmer:
                 transition = None
                 if mode == on_off.Mode.RAMP:
                     mode = on_off.Mode.NORMAL
@@ -351,8 +368,8 @@ class KeypadLinc(Base):
 
         # Load group uses a direct command to set the level.
         else:
-            # No ramp/transition for switches
-            if not self.is_dimmer:
+            # Ignore RAMP mode / transition if command not supported
+            if not self.on_off_ramp_supported or not self.is_dimmer:
                 transition = None
                 if mode == on_off.Mode.RAMP:
                     mode = on_off.Mode.NORMAL
