@@ -101,6 +101,8 @@ class Patch_Stack():
         self.modem_obj = modem
         mqtt.load_config(config['mqtt'])
         modem.load_config(config['insteon'])
+        # Simulate a response to the get_info request to trigger config_step2
+        self.write_to_modem('026044851103159E06')
 
     def publish_to_mqtt(self, topic, payload):
         """Simulate sending an mqtt message
