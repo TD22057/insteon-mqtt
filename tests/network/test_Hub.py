@@ -88,7 +88,7 @@ class Test_Hub:
     #-----------------------------------------------------------------------
     @pytest.mark.parametrize("write,t,expected,buffer,calls", [
         (None, None, None, 0, 0),
-        (bytes([0x00]), None, bytes([0x00]), 0, 1),
+        (bytes([0x00]), time.time(), bytes([0x00]), 0, 1),
         (bytes([0x00]), time.time() + 10, None, 1, 0),
     ])
     def test_write(self, test_hub, write, t, expected, buffer, calls):
@@ -98,7 +98,9 @@ class Test_Hub:
             test_hub.poll(time.time())
             mock.patch.object(test_hub.client, 'write')
             if write is not None:
-                test_hub.write(write, after_time=t)
+                def time_call():
+                    return t
+                test_hub.write(write, time_call)
             test_hub._write_to_hub(time.time())
             args_list = test_hub.signal_wrote.emit.call_args_list
             assert test_hub.signal_wrote.emit.call_count == calls

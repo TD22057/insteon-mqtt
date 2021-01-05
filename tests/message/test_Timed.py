@@ -32,7 +32,8 @@ class Test_Timed:
         obj.send(protocol)
 
         last = link.mock_calls[-1]
-        assert last == mock.call.write(msg.to_bytes(), 0)
+        assert last == mock.call.write(msg.to_bytes(),
+                                       protocol.get_next_write_time)
 
     #-----------------------------------------------------------------------
 

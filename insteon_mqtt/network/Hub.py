@@ -86,7 +86,7 @@ class Hub():
         assert self._password is not None
 
     #-----------------------------------------------------------------------
-    def write(self, data, after_time=None):
+    def write(self, data, next_write_time):
         """Schedule data for writing to the serial device.
 
         This pushes the data into a queue for writing to the Hub device.
@@ -94,15 +94,11 @@ class Hub():
         the next HubClient loop.
 
         Args:
-          after_time (float):  Time in seconds past epoch after which to write
-                     the packet.  If None, the message will be sent whenever
-                     it can.
+          next_write_time (function):  A function that returns the timestamp
+               of the next permitted write time
         """
-        # Default after time is 0 which will always write.
-        after_time = after_time if after_time is not None else 0
-
         # Save the input data to the write queue.
-        self._write_buf.append((data, after_time))
+        self._write_buf.append((data, next_write_time))
 
         # if we have exceed the max queue size, pop the oldest packet off.
         # This way if the link goes down for a long time, we don't just build
@@ -154,8 +150,8 @@ class Hub():
 
         # Get the next data packet to write from the write queue and see if
         # enough time has elapsed to write the message.
-        data, after_time = self._write_buf[0]
-        if t < after_time:
+        data, next_write_time = self._write_buf[0]
+        if t < next_write_time():
             return
 
         self.client.write(data)
