@@ -77,3 +77,17 @@ class MockDevice:
         self.protocol.send(msg, msg_handler, high_priority, after)
 
 #===========================================================================
+class MockStack:
+    """Mock insteon_mqtt/network/Stack class
+    """
+    def __init__(self):
+        pass
+
+#===========================================================================
+class MockTimedCall:
+    """Mock insteon_mqtt/network/TimedCall class
+    """
+    def __init__(self):
+        pass
+
+#===========================================================================
