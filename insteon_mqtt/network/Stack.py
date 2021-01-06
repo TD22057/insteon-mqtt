@@ -76,13 +76,13 @@ class Stack:
                     entry[0](*entry[1], **entry[2])
                 except:
                     if group.error_stop:
-                        LOG.error("Error in executing stack function, "
-                                  "stopping all remaining functions in the "
-                                  "group")
+                        LOG.exception("Error in executing stack function, "
+                                      "stopping all remaining functions in "
+                                      "the group")
                         self.groups.pop(0)
                     else:
-                        LOG.error("Error in executing stack function, "
-                                  "continuing on to next function.")
+                        LOG.exception("Error in executing stack function, "
+                                      "continuing on to next function.")
 
     #-----------------------------------------------------------------------
     def new(self, error_stop=True):
