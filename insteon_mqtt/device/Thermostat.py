@@ -462,11 +462,7 @@ class Thermostat(Base):
             LOG.info("Thermostat %s broadcast %s grp: %s", self.addr, msg.cmd1,
                      msg.group)
 
-            try:
-                condition = Thermostat.Groups(msg.group)
-            except ValueError:
-                LOG.exception("Unknown thermostat group %s.", msg.group)
-                return
+            condition = Thermostat.Groups(msg.group)
 
             LOG.info("Thermostat %s signaling condition %s", self.addr,
                      condition)
