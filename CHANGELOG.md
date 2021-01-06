@@ -17,6 +17,8 @@
 - Small correction to write_time to allow dynamic calculation of time.
   ([PR 302][P302])
 
+- Better logging on Stack Errors. ([PR 306][P306])
+
 ## [0.7.5]
 
 This is another significant update that both improves the user experience,
@@ -562,3 +564,4 @@ will add new features.
 [P303]: https://github.com/TD22057/insteon-mqtt/pull/303
 [P302]: https://github.com/TD22057/insteon-mqtt/pull/302
 [P300]: https://github.com/TD22057/insteon-mqtt/pull/300
+[P306]: https://github.com/TD22057/insteon-mqtt/pull/306
