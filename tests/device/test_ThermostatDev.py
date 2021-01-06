@@ -330,6 +330,14 @@ class Test_Thermostat:
             else:
                 mocked.assert_not_called()
 
+    def test_units_bad(self, tmpdir, caplog):
+        protocol = MockProto()
+        modem = MockModem(tmpdir)
+        addr = IM.Address(0x01, 0x02, 0x03)
+        thermo = Thermo(protocol, modem, addr)
+        thermo.units = 18
+        assert 'Bad value 18, for units on Thermostat' in caplog.text
+
 class MockModem:
     def __init__(self, path):
         self.save_path = str(path)

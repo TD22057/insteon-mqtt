@@ -76,3 +76,21 @@ class Test_Base_Config():
             assert mocked.call_count == 2
             calls = [call(test_device, True), call(test_device, True)]
             mocked.assert_has_calls(calls)
+
+    def test_handle_refresh_not_wet(self, test_device):
+        with mock.patch.object(test_device, '_set_is_wet') as mocked:
+            flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+            group = IM.Address(0x00, 0x00, 0x04)
+            addr = IM.Address(0x01, 0x02, 0x03)
+            msg = Msg.InpStandard(addr, group, flags, Msg.CmdType.OFF, 0x00)
+            test_device.handle_refresh(msg)
+            mocked.assert_called_once_with(False)
+
+    def test_handle_refresh_wet(self, test_device):
+        with mock.patch.object(test_device, '_set_is_wet') as mocked:
+            flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+            group = IM.Address(0x00, 0x00, 0x04)
+            addr = IM.Address(0x01, 0x02, 0x03)
+            msg = Msg.InpStandard(addr, group, flags, Msg.CmdType.OFF, 0x11)
+            test_device.handle_refresh(msg)
+            mocked.assert_called_once_with(True)

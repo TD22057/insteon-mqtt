@@ -4,6 +4,7 @@
 #
 #===========================================================================
 import pytest
+import enum
 from pprint import pprint
 try:
     import mock
@@ -93,6 +94,17 @@ class Test_IOLinc_Set_Flags():
                 assert calls[i][0][0].cmd1 == 0x20
                 assert calls[i][0][0].cmd2 == expected[i]
             assert IM.CommandSeq.add_msg.call_count == 3
+
+    def test_mode(self, test_iolinc):
+        bad_mode = {"mode": 18}
+        test_iolinc.db.set_meta('IOLinc', bad_mode)
+        assert test_iolinc.mode == IM.device.IOLinc.Modes.LATCHING
+
+    def test_set_bad_mode(self, test_iolinc, caplog):
+        class BadModes(enum.IntEnum):
+            BAD = 18
+        test_iolinc.mode = BadModes.BAD
+        assert "Bad value BadModes.BAD, for mode on IOLinc" in caplog.text
 
     @pytest.mark.parametrize("flag,expected", [
         ({"trigger_reverse": 0},   [0x20, 0x0f]),

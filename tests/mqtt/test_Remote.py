@@ -138,4 +138,26 @@ class Test_Remote:
         link.client.clear()
 
 
+    #-----------------------------------------------------------------------
+    def test_config_battery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+
+        config = {'remote' : {
+            'low_battery_topic' : 'bar/{{address}}',
+            'low_battery_payload' : '{{is_low}} {{is_low_str.upper()}}',}}
+        qos = 3
+        mdev.load_config(config, qos)
+
+        btopic = "bar/%s" % setup.addr.hex
+
+        # Send a low battery signal
+        dev.signal_low_battery.emit(dev, False)
+        dev.signal_low_battery.emit(dev, True)
+        assert len(link.client.pub) == 2
+        assert link.client.pub[0] == dict(
+            topic=btopic, payload='0 OFF', qos=qos, retain=True)
+        assert link.client.pub[1] == dict(
+            topic=btopic, payload='1 ON', qos=qos, retain=True)
+
+
 #===========================================================================
