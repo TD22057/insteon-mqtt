@@ -36,19 +36,19 @@ class Scene(Base):
         # scene() for details.
         self.broadcast_reason = ""
 
-    def scene(self, is_on, group=0x01, reason="", on_done=None):
+    def scene(self, is_on, group=0x01, reason="", level=None, on_done=None):
         """Trigger a scene on the device.
 
         Triggering a scene is the same as simulating a button press on the
         device.  It will change the state of the device and notify responders
-        that are linked ot the device to be updated.
+        that are linked to the device to update their state as well.
 
         The process looks like:
           Modem -> Device OutExtended Scene Command
           Modem <- Device Device ACK
           World <- Device Broadcast
           Modem <- Device Direct Cleanup
-          Modem <- Device Cleanup Report
+          Modem <- Device Cleanup Report [Not always received]
 
         Args:
           is_on (bool): True for an on command, False for an off command.
@@ -57,6 +57,9 @@ class Scene(Base):
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
                  when the state changes - nothing else is done with it.
+          level (int):  Brightness level [0-255] to set the device to if
+                 the device supports dimming.  Linked devices will always
+                 turn on to the level specified in their link.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -68,14 +71,20 @@ class Scene(Base):
         # Send an 0x30 all link command to simulate the button being pressed
         # on the switch.  See page 163 of insteon dev guide
         cmd1 = 0x11 if is_on else 0x13
-        d2 = 0x00 if is_on else 0x01
+        # Must specify use_on_level if cmd is off
+        use_on_level = 0x00 if is_on else 0x01
+        # Only used if use_on_level is 0x01, default 0x00 for Off cmd
+        on_level = 0x00
+        if level is not None:
+            use_on_level = 0x01
+            on_level = int(level)
         data = bytes([
-            group,  # D1 = group (button)
-            d2,     # D2 = 0x00 use level in scene db or 0x01 use D3
-            0x00,   # D3 = on level if D2=0x01
-            cmd1,   # D4 = cmd1 to send
-            0x01,   # D5 = cmd2 to send
-            0x00,   # D6 = use ramp rate in scene db
+            group,         # D1 = group (button)
+            use_on_level,  # D2 = 0x00 use level in scene db or 0x01 use D3
+            on_level,      # D3 = on level if D2=0x01
+            cmd1,          # D4 = cmd1 to send to linked devices
+            0x01,          # D5 = cmd2 to send
+            0x00,          # D6 = use ramp rate in scene db or 0x01 for fast
             ] + [0x00] * 8)
         msg = Msg.OutExtended.direct(self.addr, 0x30, 0x00, data)
 
