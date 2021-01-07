@@ -382,7 +382,7 @@ class Test_Dimmer:
 
     #-----------------------------------------------------------------------
     def test_input_scene_reason(self, setup):
-        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
+        mdev, link, proto, dev = setup.getAll(['mdev', 'link', 'proto', 'dev'])
 
         qos = 2
         config = {'dimmer' : {
@@ -400,9 +400,16 @@ class Test_Dimmer:
 
         assert proto.sent[0].msg.cmd1 == 0x30
         assert proto.sent[0].msg.data[3] == 0x13
-        cb = proto.sent[0].handler.callback
-        assert cb.keywords == {"reason" : "ABC"}
+        cb = proto.sent[0].handler.on_done
+        assert dev.broadcast_reason == ""
+        # Signal a failure
+        cb(False, "Done", None)
+        assert dev.broadcast_reason == ""
+        # Signal a success
+        cb(True, "Done", None)
+        assert dev.broadcast_reason == "ABC"
         proto.clear()
+        dev.broadcast_reason = ""
 
         payload = b'{ "on" : "ON", "reason" : "DEF" }'
         link.publish(topic, payload, qos, retain=False)
@@ -410,8 +417,10 @@ class Test_Dimmer:
 
         assert proto.sent[0].msg.cmd1 == 0x30
         assert proto.sent[0].msg.data[3] == 0x11
-        cb = proto.sent[0].handler.callback
-        assert cb.keywords == {"reason" : "DEF"}
+        cb = proto.sent[0].handler.on_done
+        # Signal a success
+        cb(True, "Done", None)
+        assert dev.broadcast_reason == "DEF"
         proto.clear()
 
 

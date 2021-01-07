@@ -6,6 +6,7 @@
 #===========================================================================
 import functools
 from .Base import Base
+from . import trait
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
@@ -17,7 +18,7 @@ from .. import util
 LOG = log.get_logger()
 
 
-class Dimmer(Base):
+class Dimmer(trait.Scene, Base):
     """Insteon dimmer device.
 
     This class can be used to model any device that acts like a dimmer
@@ -76,14 +77,8 @@ class Dimmer(Base):
             'set' : self.set,
             'increment_up' : self.increment_up,
             'increment_down' : self.increment_down,
-            'scene' : self.scene,
             'set_flags' : self.set_flags,
             })
-
-        # Special callback to run when receiving a broadcast clean up.  See
-        # scene() for details.
-        self.broadcast_done = None
-        self.broadcast_reason = ""
 
         # Update the group map with the groups to be paired and the handler
         # for broadcast messages from this group
@@ -220,59 +215,6 @@ class Dimmer(Base):
             self.on(group, level, mode, reason, on_done)
         else:
             self.off(group, mode, reason, on_done)
-
-    #-----------------------------------------------------------------------
-    def scene(self, is_on, group=0x01, reason="", on_done=None):
-        """Trigger a scene on the device.
-
-        Triggering a scene is the same as simulating a button press on the
-        device.  It will change the state of the device and notify responders
-        that are linked ot the device to be updated.
-
-        Args:
-          is_on (bool): True for an on command, False for an off command.
-          group (int): The group on the device to simulate.  For this device,
-                this must be 1.
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Dimmer %s scene %s", self.addr, "on" if is_on else "off")
-        assert group == 0x01
-
-        # Send an 0x30 all link command to simulate the button being pressed
-        # on the switch.  See page 163 of insteon dev guide
-        cmd1 = 0x11 if is_on else 0x13
-        data = bytes([
-            group,  # D1 = group (button)
-            0x00,   # D2 = use level in scene db
-            0x00,   # D3 = on level if D2=0x01
-            cmd1,   # D4 = cmd1 to send
-            0x01,   # D5 = cmd2 to send
-            0x00,   # D6 = use ramp rate in scene db
-            ] + [0x00] * 8)
-        msg = Msg.OutExtended.direct(self.addr, 0x30, 0x00, data)
-
-        # Use the standard command handler which will notify us when the
-        # command is ACK'ed.
-        done_callback = on_done if is_on else None
-        callback = functools.partial(self.handle_scene, reason=reason)
-        msg_handler = handler.StandardCmd(msg, callback, done_callback)
-        self.send(msg, msg_handler)
-
-        # Scene triggering will not turn the device off (no idea why), so we
-        # have to send an explicit off command to do that.  If this is None,
-        # we're triggering a scene and so should bypass the normal
-        # handle_broadcast logic to take this case into account.  Note that
-        # if we sent and off command either before or after the ACK of the
-        # command above, it doesn't work - we have to wait until the
-        # broadcast msg is finished.
-        if not is_on:
-            self.broadcast_done = \
-                functools.partial(self.off, group=group, on_done=on_done,
-                                  reason=reason)
 
     #-----------------------------------------------------------------------
     def increment_up(self, reason="", on_done=None):
@@ -737,9 +679,6 @@ class Dimmer(Base):
         # weird special case - see scene() for details.
         if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("Dimmer %s broadcast ACK grp: %s", self.addr, msg.group)
-            if self.broadcast_done:
-                self.broadcast_done()
-            self.broadcast_done = None
             return
 
         # On/off commands.
@@ -766,10 +705,7 @@ class Dimmer(Base):
                         level = 0xff
                 self._set_level(level, mode, reason)
 
-            # For an off command, we need to see if broadcast_done is active.
-            # This is a generated broadcast and we need to manually turn the
-            # device off so don't update its state until that occurs.
-            elif not self.broadcast_done:
+            else:
                 self._set_level(0x00, mode, reason)
 
         # Starting or stopping manual mode.
@@ -834,35 +770,6 @@ class Dimmer(Base):
         self._set_level(msg.cmd2, mode, reason)
         on_done(True, "Dimmer state updated to %s" % self._level,
                 msg.cmd2)
-
-    #-----------------------------------------------------------------------
-    def handle_scene(self, msg, on_done, reason=""):
-        """Callback for scene simulation commanded messages.
-
-        This callback is run when we get a reply back from triggering a scene
-        on the device.  If the command was ACK'ed, we know it worked.  The
-        device will then send out standard broadcast messages which will
-        trigger other updates for the scene devices.
-
-        Args:
-          msg (message.InpStandard): The reply message from the device.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-        """
-        # Call the callback.  We don't change state here - the device will
-        # send a regular broadcast message which will run handle_broadcast
-        # which will then update the state.
-        LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
-
-        # Reason is device because we're simulating a button press.  We
-        # can't really pass this around because we just get a broadcast
-        # message later from the device.  So we set a temporary variable
-        # here and use it in handle_broadcast() to output the reason.
-        self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
-        on_done(True, "Scene triggered", None)
 
     #-----------------------------------------------------------------------
     def handle_increment(self, msg, on_done, delta, reason=""):
