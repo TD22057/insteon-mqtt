@@ -508,8 +508,8 @@ class Test_KeypadLinc:
 
     #-----------------------------------------------------------------------
     def test_input_scene_reason(self, setup):
-        mdev, link, addr, proto = setup.getAll(['mdev', 'link', 'addr',
-                                                'proto'])
+        mdev, link, addr, proto, dev = setup.getAll(['mdev', 'link', 'addr',
+                                                     'proto', 'dev'])
 
         qos = 2
         config = {'keypad_linc' : {
@@ -526,8 +526,10 @@ class Test_KeypadLinc:
 
         assert proto.sent[0].msg.cmd1 == 0x30
         assert proto.sent[0].msg.data[3] == 0x13
-        cb = proto.sent[0].handler.callback
-        assert cb.keywords["reason"] == "A b C"
+        cb = proto.sent[0].handler.on_done
+        # Signal a success
+        cb(True, "Done", None)
+        assert dev.broadcast_reason == "A b C"
         proto.clear()
 
         payload = b'{ "on" : "ON", "reason" : "d E f" }'
@@ -536,8 +538,10 @@ class Test_KeypadLinc:
 
         assert proto.sent[0].msg.cmd1 == 0x30
         assert proto.sent[0].msg.data[3] == 0x11
-        cb = proto.sent[0].handler.callback
-        assert cb.keywords["reason"] == "d E f"
+        cb = proto.sent[0].handler.on_done
+        # Signal a success
+        cb(True, "Done", None)
+        assert dev.broadcast_reason == "d E f"
         proto.clear()
 
 #===========================================================================
