@@ -7,11 +7,12 @@ from .. import log
 from .. import on_off
 from .MsgTemplate import MsgTemplate
 from . import util
+from .SceneTopic import SceneTopic
 
 LOG = log.get_logger()
 
 
-class Switch:
+class Switch(SceneTopic):
     """MQTT interface to an Insteon on/off switch.
 
     This class connects to a device.Switch object and converts it's
@@ -44,14 +45,12 @@ class Switch:
             topic='insteon/{{address}}/set',
             payload='{ "cmd" : "{{value.lower()}}" }')
 
-        # Input scene on/off command template.
-        self.msg_scene = MsgTemplate(
-            topic='insteon/{{address}}/scene',
-            payload='{ "cmd" : "{{value.lower()}}" }')
-
         # Receive notifications from the Insteon device when it changes.
         device.signal_on_off.connect(self._insteon_on_off)
         device.signal_manual.connect(self._insteon_manual)
+
+        # Setup the Scene Topic
+        super().__init__(mqtt, device)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -66,13 +65,14 @@ class Switch:
         if not data:
             return
 
+        self.load_scene_data(data, qos)
+
         # Update the MQTT topics and payloads from the config file.
         self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
         self.msg_manual_state.load_config(data, 'manual_state_topic',
                                           'manual_state_payload', qos)
         self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
                                     qos)
-        self.msg_scene.load_config(data, 'scene_topic', 'scene_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -89,9 +89,7 @@ class Switch:
         topic = self.msg_on_off.render_topic(self.template_data())
         link.subscribe(topic, qos, self._input_on_off)
 
-        # Scene triggering messages.
-        topic = self.msg_scene.render_topic(self.template_data())
-        link.subscribe(topic, qos, self._input_scene)
+        self.scene_subscribe(link, qos)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
@@ -103,8 +101,7 @@ class Switch:
         topic = self.msg_on_off.render_topic(self.template_data())
         link.unsubscribe(topic)
 
-        topic = self.msg_scene.render_topic(self.template_data())
-        link.unsubscribe(topic)
+        self.scene_unsubscribe(link)
 
     #-----------------------------------------------------------------------
     def template_data(self, is_on=None, mode=on_off.Mode.NORMAL,
@@ -218,35 +215,5 @@ class Switch:
             self.device.set(level=is_on, mode=mode, reason=reason)
         except:
             LOG.error("Invalid switch on/off command: %s", data)
-
-    #-----------------------------------------------------------------------
-    def _input_scene(self, client, data, message):
-        """Handle an input scene MQTT message.
-
-        This is called when we receive a message on the scene trigger MQTT
-        topic subscription.  Parse the message and pass the command to the
-        Insteon device.
-
-        Args:
-          client (paho.Client):  The paho mqtt client (self.link).
-          data:  Optional user data (unused).
-          message:  MQTT message - has attrs: topic, payload, qos, retain.
-        """
-        LOG.debug("Switch message %s %s", message.topic, message.payload)
-
-        # Parse the input MQTT message.
-        data = self.msg_scene.to_json(message.payload)
-        LOG.info("Switch input command: %s", data)
-
-        try:
-            # Scenes don't support modes so don't parse that element.
-            is_on = util.parse_on_off(data, have_mode=False)
-            group = int(data.get('group', 0x01))
-            reason = data.get("reason", "")
-
-            # Tell the device to trigger the scene command.
-            self.device.scene(is_on, group, reason)
-        except:
-            LOG.error("Invalid switch scene command: %s", data)
 
     #-----------------------------------------------------------------------

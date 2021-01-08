@@ -424,24 +424,6 @@ class Thermostat(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def handle_generic_ack(self, msg, on_done=None):
-        """Handles generic ack responses where there is nothing to do.
-
-        Generally the reason there is nothing to do is that the thermostat
-        will send a subsequent direct message through which we can update
-        the necessary state
-
-        Args:
-          msg (InpStandard): Direct ACK message from the device.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        on_done = util.make_callback(on_done)
-
-        LOG.debug("Thermostat %s generic ack recevied", self.addr)
-        on_done(True, "Thermostat generic ack recevied", None)
-
-    #-----------------------------------------------------------------------
     def handle_message(self, msg):
         """Handle broadcast messages from this device.
 

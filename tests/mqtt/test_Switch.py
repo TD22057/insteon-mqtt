@@ -245,7 +245,7 @@ class Test_Switch:
 
     #-----------------------------------------------------------------------
     def test_input_scene_reason(self, setup):
-        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
+        mdev, link, proto, dev = setup.getAll(['mdev', 'link', 'proto', 'dev'])
 
         qos = 2
         config = {'switch' : {
@@ -263,8 +263,10 @@ class Test_Switch:
 
         assert proto.sent[0].msg.cmd1 == 0x30
         assert proto.sent[0].msg.data[3] == 0x13
-        cb = proto.sent[0].handler.callback
-        assert cb.keywords == {"reason" : "a b c"}
+        cb = proto.sent[0].handler.on_done
+        # Signal a success
+        cb(True, "Done", None)
+        assert dev.broadcast_reason == "a b c"
         proto.clear()
 
         payload = b'{ "on" : "ON", "reason" : "zyx" }'
@@ -273,8 +275,10 @@ class Test_Switch:
 
         assert proto.sent[0].msg.cmd1 == 0x30
         assert proto.sent[0].msg.data[3] == 0x11
-        cb = proto.sent[0].handler.callback
-        assert cb.keywords == {"reason" : "zyx"}
+        cb = proto.sent[0].handler.on_done
+        # Signal a success
+        cb(True, "Done", None)
+        assert dev.broadcast_reason == "zyx"
         proto.clear()
 
 

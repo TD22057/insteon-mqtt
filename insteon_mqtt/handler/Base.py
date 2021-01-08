@@ -163,7 +163,7 @@ class Base:
           message.FINISHED if we handled the message and are done.
         """
         raise NotImplementedError("%s.msg_received not implemented" %
-                                  self.__class__)
+                                  self.__class__)  # pragma: no cover
 
     #-----------------------------------------------------------------------
     def handle_timeout(self, protocol):

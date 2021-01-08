@@ -42,11 +42,6 @@ class Outlet:
             topic='insteon/{{address}}/set/{{button}}',
             payload='{ "cmd" : "{{value.lower()}}" }')
 
-        # Input scene on/off command template.
-        self.msg_scene = MsgTemplate(
-            topic='insteon/{{address}}/scene/{{button}}',
-            payload='{ "cmd" : "{{value.lower()}}" }')
-
         device.signal_on_off.connect(self._insteon_on_off)
 
     #-----------------------------------------------------------------------
@@ -65,7 +60,6 @@ class Outlet:
         self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
         self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
                                     qos)
-        self.msg_scene.load_config(data, 'scene_topic', 'scene_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -88,10 +82,6 @@ class Outlet:
             topic = self.msg_on_off.render_topic(data)
             link.subscribe(topic, qos, handler)
 
-            handler = functools.partial(self._input_scene, group=group)
-            topic = self.msg_scene.render_topic(data)
-            link.subscribe(topic, qos, handler)
-
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
         """Unsubscribe to any MQTT topics the object was subscribed to.
@@ -103,9 +93,6 @@ class Outlet:
             data = self.template_data(button=group)
 
             topic = self.msg_on_off.render_topic(data)
-            link.unsubscribe(topic)
-
-            topic = self.msg_scene.render_topic(data)
             link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
@@ -194,33 +181,5 @@ class Outlet:
             self.device.set(level=is_on, group=group, mode=mode, reason=reason)
         except:
             LOG.error("Invalid Outlet on/off command: %s", data)
-
-    #-----------------------------------------------------------------------
-    def _input_scene(self, client, data, message, group):
-        """Handle an input scene MQTT message.
-
-        This is called when we receive a message on the scene trigger MQTT
-        topic subscription.  Parse the message and pass the command to the
-        Insteon device.
-
-        Args:
-          client (paho.Client):  The paho mqtt client (self.link).
-          data:  Optional user data (unused).
-          message:  MQTT message - has attrs: topic, payload, qos, retain.
-        """
-        LOG.debug("Outlet btn %s message %s %s", group, message.topic,
-                  message.payload)
-
-        # Parse the input MQTT message.
-        data = self.msg_scene.to_json(message.payload)
-        LOG.info("Outlet input command: %s", data)
-
-        try:
-            # Scenes don't support modes so don't parse that element.
-            is_on = util.parse_on_off(data, have_mode=False)
-            reason = data.get("reason", "")
-            self.device.scene(is_on, group, reason)
-        except:
-            LOG.error("Invalid Outlet scene command: %s", data)
 
     #-----------------------------------------------------------------------

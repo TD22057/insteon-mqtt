@@ -523,30 +523,41 @@ the current all link database for a device.
 
 ### Scene triggering.
 
-Supported: modem, devices
+Supported: devices
 
-This command triggers scenes from the modem or device.  For the modem, this
-triggers virtual modem scenes (i.e. any group number where the modem is the
-controller).  For devices, the group is the button number and this will
-simulate pressing the button on the device.  Note that devices do not work
-properly with the off command - they will emit the off scene message but not
-actually turn off themselves so insteon-mqtt will send an off command to the
-device once the scene messages are done.  The reason field is optional and
+This command triggers scenes from a device, as though the button on the
+device has been pressed.  The group is the button number and this will
+simulate pressing the button on the device.  This will cause all linked
+responders to react to the ON/OFF command. The reason field is optional and
 will be passed through to the output state change payload.
 
-   ```
-   { "cmd": "scene", "group" : group, "is_on" : 0/1, ["reason" : "..."] }
-   ```
-
-   Supported: modem
-
-   The modem also allows the triggering of scenes from a name defined in a
-   [Scene Management](scenes.md) file as well. To access a scene by its name
-   simply drop the group attribute and add the name attribute such as.
+Args:
+- group = Will default to 1 and can generally be omitted for most devices.
+- is_on = True or False.  This defines whether linked devices are sent an
+on or an off command.  The target device will treat off as level = 0x00 and
+on as the level defined on the device on_level unless level is passed.
+- level = If present, the target device will change to this on_level
+- reason = Will be passed through to the output state, defaults to 'device'
 
    ```
-   { "cmd": "scene", "name" : "test_scene", "is_on" : 0/1, ["reason" : "..."] }
+   { "cmd": "scene", "group" : group, "is_on" : 0/1, ["level": 0-255],
+   ["reason" : "..."] }
    ```
+
+Supported: modem
+
+For the modem, this triggers virtual modem scenes (i.e. any group number
+where the modem is the controller).  The modem also allows the triggering
+of scenes from a name defined in a [Scene Management](scenes.md) file as
+well. To access a scene by its name simply drop the group attribute and add
+the name attribute such as.
+
+Args:
+- Same as the device args, but modem does __not__ support the level command
+
+```
+{ "cmd": "scene", "name" : "test_scene", "is_on" : 0/1, ["reason" : "..."] }
+```
 
 
 ### Mark a battery device as awake.

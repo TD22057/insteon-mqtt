@@ -4,6 +4,9 @@
 
 ### Additions
 
+- Improved [Scene command][SCENETRIGGER], now supports level for devices.
+  ([PR 308][P308])
+
 - There is no longer a need to set the Modem hex address in config.yaml.
   ([PR 303][P303])
 
@@ -18,6 +21,9 @@
   ([PR 302][P302])
 
 - Better logging on Stack Errors. ([PR 306][P306])
+
+- Fixed error where 'device' reason was not set by default in scene command.
+  ([PR 308][P308])
 
 ## [0.7.5]
 
@@ -565,3 +571,5 @@ will add new features.
 [P302]: https://github.com/TD22057/insteon-mqtt/pull/302
 [P300]: https://github.com/TD22057/insteon-mqtt/pull/300
 [P306]: https://github.com/TD22057/insteon-mqtt/pull/306
+[SCENETRIGGER]: https://github.com/TD22057/insteon-mqtt/blob/master/docs/mqtt.md#scene-triggering
+[P308]: https://github.com/TD22057/insteon-mqtt/pull/308
