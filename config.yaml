@@ -356,7 +356,7 @@ mqtt:
        { "cmd" : "{{json.state.lower()}}"
          {% if json.brightness is defined %}
              , "level" : {{json.brightness}}
-         {% endif %} }       
+         {% endif %} }
 
     # Scene on/off command.  This triggers the scene broadcast on the switch
     # in the same way clicking the button would.  The inputs are the same as
@@ -842,7 +842,7 @@ mqtt:
        { "cmd" : "{{json.state.lower()}}"
          {% if json.brightness is defined %}
              , "level" : {{json.brightness}}
-         {% endif %} }       
+         {% endif %} }
 
     # Scene on/off command.  This triggers the scene broadcast on the switch
     # in the same way clicking the button would.  The inputs are the same as
@@ -1021,11 +1021,5 @@ mqtt:
     #          a variable from a json payload.
     on_off_topic: "insteon/{{address}}/set/{{button}}"
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
-
-    # Scene on/off command.  This triggers the scene broadcast on the outlet
-    # in the same way clicking the button would.  The inputs are the same as
-    # those for the on_off topic and payload.
-    scene_topic: "insteon/{{address}}/scene/{{button}}"
-    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
 #----------------------------------------------------------------
