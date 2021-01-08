@@ -29,7 +29,11 @@ class SceneTopic:
         if scene_topic is None:
             scene_topic = 'insteon/{{address}}/scene'
         if scene_payload is None:
-            scene_payload = '{ "cmd" : "{{value.lower()}}" }'
+            scene_payload = '{ "cmd" : "{{json.cmd.lower()}}"' \
+                            '{% if json.brightness is defined %}' \
+                            '  , "level" : {{json.brightness}}' \
+                            '{% endif %}' \
+                            '}'
         # Input scene on/off command template.
         self.msg_scene = MsgTemplate(
             topic=scene_topic,

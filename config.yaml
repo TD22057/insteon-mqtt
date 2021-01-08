@@ -206,7 +206,9 @@ mqtt:
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
     scene_topic: 'insteon/modem/scene'
-    scene_payload: '{{value}}'
+    scene_payload: '{ "cmd" : "{{json.cmd.lower()}}",
+                      "group" : {{json.group}}
+                    }'
 
 
   # IMPORTANT: all devices must have the pair() command run one time to make
@@ -265,7 +267,11 @@ mqtt:
     # in the same way clicking the button would.  The inputs are the same as
     # those for the on_off topic and payload.
     scene_topic: 'insteon/{{address}}/scene'
-    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+    scene_payload: '{ "cmd" : "{{json.cmd.lower()}}"
+                      {% if json.brightness is defined %}
+                          , "level" : {{json.brightness}}
+                      {% endif %}
+                    }'
 
   #------------------------------------------------------------------------
   # Dimmers
@@ -362,7 +368,11 @@ mqtt:
     # in the same way clicking the button would.  The inputs are the same as
     # those for the on_off topic and payload.
     scene_topic: 'insteon/{{address}}/scene'
-    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+    scene_payload: '{ "cmd" : "{{json.cmd.lower()}}"
+                      {% if json.brightness is defined %}
+                          , "level" : {{json.brightness}}
+                      {% endif %}
+                    }'
 
   #------------------------------------------------------------------------
   # Battery powered sensors
@@ -848,7 +858,11 @@ mqtt:
     # in the same way clicking the button would.  The inputs are the same as
     # those for the btn_on_off topic and payload.
     btn_scene_topic: 'insteon/{{address}}/scene/{{button}}'
-    btn_scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+    btn_scene_payload: '{ "cmd" : "{{json.cmd.lower()}}"
+                          {% if json.brightness is defined %}
+                              , "level" : {{json.brightness}}
+                          {% endif %}
+                        }'
 
   #------------------------------------------------------------------------
   # IO Linc relay controllers

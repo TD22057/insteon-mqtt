@@ -66,8 +66,7 @@ class KeypadLinc(SceneTopic):
         device.signal_level_changed.connect(self._insteon_level_changed)
         device.signal_manual.connect(self._insteon_manual)
         super().__init__(mqtt, device,
-                         scene_topic='insteon/{{address}}/scene/{{button}}',
-                         scene_payload='{ "cmd" : "{{value.lower()}}" }')
+                         scene_topic='insteon/{{address}}/scene/{{button}}')
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
