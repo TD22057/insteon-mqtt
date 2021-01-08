@@ -448,6 +448,11 @@ class Test_Dimmer:
         assert proto.sent[0].msg.data[3] == 0x11  #cmd1
         assert proto.sent[0].msg.data[1] == 0x00  #use_on_level
         assert proto.sent[0].msg.data[2] == 0x00  #on_level
+        cb = proto.sent[0].handler.on_done
+        # Check default reason value if not specified
+        cb(True, "Done", None)
+        assert dev.broadcast_reason == IM.on_off.REASON_DEVICE
+        proto.clear()
         proto.clear()
 
         # just OFF command

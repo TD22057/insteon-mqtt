@@ -54,7 +54,7 @@ class SceneTopic:
     #-----------------------------------------------------------------------
     def template_data(self, level=None, mode=on_off.Mode.NORMAL, manual=None,
                       reason=None, button=None):
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     #-----------------------------------------------------------------------
     def scene_subscribe(self, link, qos, group=None):
@@ -114,7 +114,7 @@ class SceneTopic:
             # Scenes don't support modes so don't parse that element.
             is_on = util.parse_on_off(data, have_mode=False)
             group = int(data.get('group', group))
-            reason = data.get("reason", "")
+            reason = data.get("reason", None)
             level = data.get("level", None)
 
             # Tell the device to trigger the scene command.

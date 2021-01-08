@@ -1,15 +1,16 @@
 #===========================================================================
 #
-# Scene Trait.  This enables the simulated scene function used on the
+# Scene Functions.  This enables the simulated scene function used on the
 # Dimmer, Switch, and KeypadLinc.
 #
 #===========================================================================
-from .Base import Base
-from .. import handler
-from .. import log
-from .. import message as Msg
-from .. import on_off
-from .. import util
+import time
+from ..Base import Base
+from ... import handler
+from ... import log
+from ... import message as Msg
+from ... import on_off
+from ... import util
 
 LOG = log.get_logger()
 
@@ -40,7 +41,12 @@ class Scene(Base):
         # scene() for details.
         self.broadcast_reason = ""
 
-    def scene(self, is_on, group=0x01, reason="", level=None, on_done=None):
+        # NOTE!
+        # The class extending this class needs to define the controller groups
+        # in the self.group_map.  Only these groups will be valid scene
+        # targets
+
+    def scene(self, is_on, group=0x01, reason=None, level=None, on_done=None):
         """Trigger a scene on the device.
 
         Triggering a scene is the same as simulating a button press on the
@@ -96,12 +102,17 @@ class Scene(Base):
         # command is ACK'ed.
         def our_on_done(success, msg, data):
             if success:
+                # We know that a broadcast command is going to arrive from the
+                # device.  The amount of time we need to wait is unknown, but
+                # this is a reasonable guess, that will be overwritten by the
+                # wait time calculated by the arriving broadcast message.
+                self.protocol.set_wait_time(time.time() + 1)
                 # Reason is device because we're simulating a button press.
                 # We can't really pass this around because we just get a
                 # broadcast message later from the device.  So we set a
                 # temporary variable here and use it in handle_broadcast()
                 # to output the reason.
-                if reason:
+                if reason is not None:
                     self.broadcast_reason = reason
                 else:
                     self.broadcast_reason = on_off.REASON_DEVICE

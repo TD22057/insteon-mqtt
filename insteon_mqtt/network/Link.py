@@ -44,7 +44,7 @@ class Link:
         Otherwise this is the retry interval in seconds to try and reconnect
         the link by calling connect().
         """
-        return None
+        return None  # pragma: no cover
 
     #-----------------------------------------------------------------------
     def connect(self):
@@ -56,7 +56,7 @@ class Link:
           bool:  Returns True if the connection was successful or False it
           it failed.
         """
-        return False
+        return False  # pragma: no cover
 
     #-----------------------------------------------------------------------
     def fileno(self):
@@ -66,7 +66,7 @@ class Link:
           int:  Returns the descriptor (obj.fileno() usually) to monitor.
         """
         raise NotImplementedError("%s.fileno() not implemented" %
-                                  self.__class__)
+                                  self.__class__)  # pragma: no cover
 
     #-----------------------------------------------------------------------
     def poll(self, t):
@@ -78,7 +78,7 @@ class Link:
         Args:
            t (float):  Current Unix clock time tag.
         """
-        pass
+        pass  # pragma: no cover
 
     #-----------------------------------------------------------------------
     def read_from_link(self):
@@ -92,7 +92,7 @@ class Link:
            to indicate success.
         """
         raise NotImplementedError("%s.read_from_link() not implemented" %
-                                  self.__class__)
+                                  self.__class__)  # pragma: no cover
 
     #-----------------------------------------------------------------------
     def write_to_link(self, t):
@@ -107,7 +107,7 @@ class Link:
            t (float):  The current time (time.time).
         """
         raise NotImplementedError("%s.write_to_link() not implemented" %
-                                  self.__class__)
+                                  self.__class__)  # pragma: no cover
 
     #-----------------------------------------------------------------------
     def close(self):
@@ -116,6 +116,6 @@ class Link:
         The link must call self.signal_closing.emit() after closing.
         """
         raise NotImplementedError("%s.close() not implemented" %
-                                  self.__class__)
+                                  self.__class__)  # pragma: no cover
 
     #-----------------------------------------------------------------------
