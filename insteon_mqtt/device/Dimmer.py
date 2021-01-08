@@ -6,7 +6,7 @@
 #===========================================================================
 import functools
 from .Base import Base
-from . import trait
+from .Scene import Scene
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
@@ -18,7 +18,7 @@ from .. import util
 LOG = log.get_logger()
 
 
-class Dimmer(trait.Scene, Base):
+class Dimmer(Scene, Base):
     """Insteon dimmer device.
 
     This class can be used to model any device that acts like a dimmer

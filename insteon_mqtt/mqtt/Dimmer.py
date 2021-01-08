@@ -7,11 +7,12 @@ from .. import log
 from .. import on_off
 from .MsgTemplate import MsgTemplate
 from . import util
+from .SceneTopic import SceneTopic
 
 LOG = log.get_logger()
 
 
-class Dimmer:
+class Dimmer(SceneTopic):
     """MQTT interface to an Insteon dimmer switch.
 
     This class connects to a device.Dimmer object and converts it's output
@@ -51,15 +52,11 @@ class Dimmer:
             payload='{ "cmd" : "{{json.state.lower()}}", '
                     '"level" : {{json.brightness}} }')
 
-        # Input scene on/off command template.
-        self.msg_scene = MsgTemplate(
-            topic='insteon/{{address}}/scene',
-            payload='{ "cmd" : "{{value.lower()}}" }')
-
         # Connect the signals from the insteon device so we get notified of
         # changes.
         device.signal_level_changed.connect(self._insteon_level_changed)
         device.signal_manual.connect(self._insteon_manual)
+        super().__init__(mqtt, device)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -74,6 +71,8 @@ class Dimmer:
         if not data:
             return
 
+        super().load_config_data(data, qos)
+
         # Update the MQTT topics and payloads from the config file.
         self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
         self.msg_manual_state.load_config(data, 'manual_state_topic',
@@ -81,7 +80,6 @@ class Dimmer:
         self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
                                     qos)
         self.msg_level.load_config(data, 'level_topic', 'level_payload', qos)
-        self.msg_scene.load_config(data, 'scene_topic', 'scene_payload', qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -102,9 +100,7 @@ class Dimmer:
         topic = self.msg_level.render_topic(self.template_data())
         link.subscribe(topic, qos, self._input_set_level)
 
-        # Scene triggering messages.
-        topic = self.msg_scene.render_topic(self.template_data())
-        link.subscribe(topic, qos, self._input_scene)
+        super().subscribe(link, qos)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
@@ -119,8 +115,7 @@ class Dimmer:
         topic = self.msg_level.render_topic(self.template_data())
         link.unsubscribe(topic)
 
-        topic = self.msg_scene.render_topic(self.template_data())
-        link.unsubscribe(topic)
+        super().unsubscribe(link)
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ
@@ -264,35 +259,6 @@ class Dimmer:
 
             # Tell the device to change its level.
             self.device.set(level=level, mode=mode, reason=reason)
-        except:
-            LOG.error("Invalid dimmer command: %s", data)
-
-    #-----------------------------------------------------------------------
-    def _input_scene(self, client, data, message):
-        """Handle an input scene MQTT message.
-
-        This is called when we receive a message on the scene trigger MQTT
-        topic subscription.  Parse the message and pass the command to the
-        Insteon device.
-
-        Args:
-          client (paho.Client):  The paho mqtt client (self.link).
-          data:  Optional user data (unused).
-          message:  MQTT message - has attrs: topic, payload, qos, retain.
-        """
-        LOG.debug("Dimmer message %s %s", message.topic, message.payload)
-
-        # Parse the input MQTT message.
-        data = self.msg_scene.to_json(message.payload)
-        LOG.info("Dimmer input command: %s", data)
-        try:
-            # Scenes don't support modes so don't parse that element.
-            is_on = util.parse_on_off(data, have_mode=False)
-            group = int(data.get('group', 0x01))
-            reason = data.get("reason", "")
-
-            # Tell the device to trigger the scene command.
-            self.device.scene(is_on, group, reason)
         except:
             LOG.error("Invalid dimmer command: %s", data)
 

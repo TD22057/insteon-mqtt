@@ -4,17 +4,21 @@
 # Dimmer, Switch, and KeypadLinc.
 #
 #===========================================================================
-from ..Base import Base
-from ... import handler
-from ... import log
-from ... import message as Msg
-from ... import on_off
-from ... import util
+from .Base import Base
+from .. import handler
+from .. import log
+from .. import message as Msg
+from .. import on_off
+from .. import util
 
 LOG = log.get_logger()
 
 
 class Scene(Base):
+    """Scene Trait Abstract Class
+
+    This is an abstract class that provides support for the Scene topic.
+    """
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
 

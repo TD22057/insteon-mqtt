@@ -12,14 +12,14 @@ from .. import on_off
 from ..Signal import Signal
 from .. import util
 from .Base import Base
-from . import trait
+from .Scene import Scene
 from . import Dimmer
 
 LOG = log.get_logger()
 
 
 #===========================================================================
-class KeypadLinc(trait.Scene, Base):
+class KeypadLinc(Scene, Base):
     """Insteon KeypadLinc dimmer/switch device.
 
     This class can be used to model a 6 or 8 button KeypadLinc with dimming

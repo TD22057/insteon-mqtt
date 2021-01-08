@@ -424,4 +424,50 @@ class Test_Dimmer:
         proto.clear()
 
 
+    #-----------------------------------------------------------------------
+    def test_input_scene_level(self, setup):
+        mdev, link, proto, dev = setup.getAll(['mdev', 'link', 'proto', 'dev'])
+
+        qos = 2
+        config = {'dimmer' : {
+            'scene_topic' : 'foo/{{address}}/scene',
+            'scene_payload' : ('{ "cmd" : "{{json.on.lower()}}"'
+                               '{% if json.level is defined %}'
+                               ',"level" : "{{json.level}}"'
+                               '{% endif %} }')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        topic = link.client.sub[2].topic
+
+        # just ON command
+        payload = b'{ "on" : "on"}'
+        link.publish(topic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x11  #cmd1
+        assert proto.sent[0].msg.data[1] == 0x00  #use_on_level
+        assert proto.sent[0].msg.data[2] == 0x00  #on_level
+        proto.clear()
+
+        # just OFF command
+        payload = b'{ "on" : "off"}'
+        link.publish(topic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x13  #cmd1
+        assert proto.sent[0].msg.data[1] == 0x01  #use_on_level
+        assert proto.sent[0].msg.data[2] == 0x00  #on_level
+        proto.clear()
+
+        # just ON with level
+        payload = b'{ "on" : "on", "level": 128}'
+        link.publish(topic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x11  #cmd1
+        assert proto.sent[0].msg.data[1] == 0x01  #use_on_level
+        assert proto.sent[0].msg.data[2] == 0x80  #on_level
+        proto.clear()
+
 #===========================================================================
