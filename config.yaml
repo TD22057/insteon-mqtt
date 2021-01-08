@@ -971,12 +971,6 @@ mqtt:
     on_off_topic: 'insteon/{{address}}/set/{{button}}'
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
-    # Scene on/off command.  This triggers the scene broadcast on the outlet
-    # in the same way clicking the button would.  The inputs are the same as
-    # those for the on_off topic and payload.
-    scene_topic: 'insteon/{{address}}/scene/{{button}}'
-    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
-
   #------------------------------------------------------------------------
   # EZIO4O 4 relay output module
   #------------------------------------------------------------------------
