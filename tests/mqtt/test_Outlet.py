@@ -45,26 +45,18 @@ class Test_Outlet:
         mdev, addr, link = setup.getAll(['mdev', 'addr', 'link'])
 
         mdev.subscribe(link, 2)
-        assert len(link.client.sub) == 4
+        assert len(link.client.sub) == 2
         assert link.client.sub[0] == dict(
             topic='insteon/%s/set/1' % addr.hex, qos=2)
         assert link.client.sub[1] == dict(
-            topic='insteon/%s/scene/1' % addr.hex, qos=2)
-        assert link.client.sub[2] == dict(
             topic='insteon/%s/set/2' % addr.hex, qos=2)
-        assert link.client.sub[3] == dict(
-            topic='insteon/%s/scene/2' % addr.hex, qos=2)
 
         mdev.unsubscribe(link)
-        assert len(link.client.unsub) == 4
+        assert len(link.client.unsub) == 2
         assert link.client.unsub[0] == dict(
             topic='insteon/%s/set/1' % addr.hex)
         assert link.client.unsub[1] == dict(
-            topic='insteon/%s/scene/1' % addr.hex)
-        assert link.client.unsub[2] == dict(
             topic='insteon/%s/set/2' % addr.hex)
-        assert link.client.unsub[3] == dict(
-            topic='insteon/%s/scene/2' % addr.hex)
 
     #-----------------------------------------------------------------------
     def test_template(self, setup):
@@ -141,7 +133,7 @@ class Test_Outlet:
 
         mdev.subscribe(link, qos)
         topic1 = link.client.sub[0].topic
-        topic2 = link.client.sub[2].topic
+        topic2 = link.client.sub[1].topic
 
         payload = b'{ "on" : "OFF", "mode" : "NORMAL" }'
         link.publish(topic1, payload, qos, retain=False)
@@ -178,7 +170,7 @@ class Test_Outlet:
 
         mdev.subscribe(link, qos)
         topic1 = link.client.sub[0].topic
-        topic2 = link.client.sub[2].topic
+        topic2 = link.client.sub[1].topic
 
         payload = b'{ "on" : "OFF", "mode" : "NORMAL", "reason" : "ABC" }'
         link.publish(topic1, payload, qos, retain=False)
@@ -203,72 +195,5 @@ class Test_Outlet:
 
         # test error payload
         link.publish(topic1, b'asdf', qos, False)
-
-    #-----------------------------------------------------------------------
-    def test_input_scene(self, setup):
-        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
-
-        qos = 2
-        config = {'outlet' : {
-            'scene_topic' : 'foo/{{address}}/{{button}}',
-            'scene_payload' : ('{ "cmd" : "{{json.on.lower()}}" }')}}
-        mdev.load_config(config, qos=qos)
-
-        mdev.subscribe(link, qos)
-        topic = link.client.sub[1].topic
-
-        payload = b'{ "on" : "OFF" }'
-        link.publish(topic, payload, qos, retain=False)
-        assert len(proto.sent) == 1
-
-        assert proto.sent[0].msg.cmd1 == 0x30
-        assert proto.sent[0].msg.data[3] == 0x13
-        proto.clear()
-
-        payload = b'{ "on" : "ON" }'
-        link.publish(topic, payload, qos, retain=False)
-        assert len(proto.sent) == 1
-
-        assert proto.sent[0].msg.cmd1 == 0x30
-        assert proto.sent[0].msg.data[3] == 0x11
-        proto.clear()
-
-        # test error payload
-        link.publish(topic, b'asdf', qos, False)
-
-    #-----------------------------------------------------------------------
-    def test_input_scene_reason(self, setup):
-        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
-
-        qos = 2
-        config = {'outlet' : {
-            'scene_topic' : 'foo/{{address}}/{{button}}',
-            'scene_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
-                               '"reason" : "{{json.reason}}"}')}}
-        mdev.load_config(config, qos=qos)
-
-        mdev.subscribe(link, qos)
-        topic = link.client.sub[1].topic
-
-        payload = b'{ "on" : "OFF", "reason" : "a b c" }'
-        link.publish(topic, payload, qos, retain=False)
-        assert len(proto.sent) == 1
-
-        assert proto.sent[0].msg.cmd1 == 0x30
-        assert proto.sent[0].msg.data[3] == 0x13
-        cb = proto.sent[0].handler.callback
-        assert cb.keywords == {"reason" : "a b c"}
-        proto.clear()
-
-        payload = b'{ "on" : "ON", "reason" : "zyx" }'
-        link.publish(topic, payload, qos, retain=False)
-        assert len(proto.sent) == 1
-
-        assert proto.sent[0].msg.cmd1 == 0x30
-        assert proto.sent[0].msg.data[3] == 0x11
-        cb = proto.sent[0].handler.callback
-        assert cb.keywords == {"reason" : "zyx"}
-        proto.clear()
-
 
 #===========================================================================
