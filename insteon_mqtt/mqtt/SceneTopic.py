@@ -3,6 +3,7 @@
 # MQTT Scene Topic
 #
 #===========================================================================
+import functools
 from .. import log
 from .. import on_off
 from .MsgTemplate import MsgTemplate
@@ -16,20 +17,26 @@ class SceneTopic:
 
     This is an abstract class that provides support for the Scene topic.
     """
-    def __init__(self, mqtt, device):
+    def __init__(self, mqtt, device, scene_topic=None, scene_payload=None):
         """Constructor
 
         Args:
           mqtt (mqtt.Mqtt):  The MQTT main interface.
           device (device):  The Insteon object to link to.
         """
+        # It looks cleaner setting these long strings here rather than in the
+        # function declaration
+        if scene_topic is None:
+            scene_topic = 'insteon/{{address}}/scene'
+        if scene_payload is None:
+            scene_payload = '{ "cmd" : "{{value.lower()}}" }'
         # Input scene on/off command template.
         self.msg_scene = MsgTemplate(
-            topic='insteon/{{address}}/scene',
-            payload='{ "cmd" : "{{value.lower()}}" }')
+            topic=scene_topic,
+            payload=scene_payload)
 
     #-----------------------------------------------------------------------
-    def load_config_data(self, data, qos=None):
+    def load_scene_data(self, data, qos=None, topic=None, payload=None):
         """Load values from a configuration data object.
 
         Args:
@@ -37,16 +44,20 @@ class SceneTopic:
                         class.
           qos (int):  The default quality of service level to use.
         """
+        if topic is None:
+            topic = 'scene_topic'
+        if payload is None:
+            payload = 'scene_payload'
         # Update the MQTT topics and payloads from the config file.
-        self.msg_scene.load_config(data, 'scene_topic', 'scene_payload', qos)
+        self.msg_scene.load_config(data, topic, payload, qos)
 
     #-----------------------------------------------------------------------
     def template_data(self, level=None, mode=on_off.Mode.NORMAL, manual=None,
-                      reason=None):
+                      reason=None, button=None):
         raise NotImplementedError
 
     #-----------------------------------------------------------------------
-    def subscribe(self, link, qos):
+    def scene_subscribe(self, link, qos, group=None):
         """Subscribe to any MQTT topics the object needs.
 
         Subscriptions are used when the object has things that can be
@@ -57,21 +68,32 @@ class SceneTopic:
           qos (int):  The quality of service to use.
         """
         # Scene triggering messages.
-        topic = self.msg_scene.render_topic(self.template_data())
-        link.subscribe(topic, qos, self._input_scene)
+        if group is not None:
+            handler = functools.partial(self._input_scene, group=group)
+            topic = self.msg_scene.render_topic(
+                self.template_data(button=group)
+            )
+        else:
+            handler = self._input_scene
+            topic = self.msg_scene.render_topic(self.template_data())
+        link.subscribe(topic, qos, handler)
 
     #-----------------------------------------------------------------------
-    def unsubscribe(self, link):
+    def scene_unsubscribe(self, link, group=None):
         """Unsubscribe to any MQTT topics the object was subscribed to.
 
         Args:
           link (network.Mqtt):  The MQTT network client to use.
         """
-        topic = self.msg_scene.render_topic(self.template_data())
+        if group is not None:
+            data = self.template_data(button=group)
+            topic = self.msg_scene.render_topic(data)
+        else:
+            topic = self.msg_scene.render_topic(self.template_data())
         link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
-    def _input_scene(self, client, data, message):
+    def _input_scene(self, client, data, message, group=0x01):
         """Handle an input scene MQTT message.
 
         This is called when we receive a message on the scene trigger MQTT
@@ -91,7 +113,7 @@ class SceneTopic:
         try:
             # Scenes don't support modes so don't parse that element.
             is_on = util.parse_on_off(data, have_mode=False)
-            group = int(data.get('group', 0x01))
+            group = int(data.get('group', group))
             reason = data.get("reason", "")
             level = data.get("level", None)
 

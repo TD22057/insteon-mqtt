@@ -56,6 +56,8 @@ class Dimmer(SceneTopic):
         # changes.
         device.signal_level_changed.connect(self._insteon_level_changed)
         device.signal_manual.connect(self._insteon_manual)
+
+        # Setup the Scene Topic
         super().__init__(mqtt, device)
 
     #-----------------------------------------------------------------------
@@ -71,7 +73,7 @@ class Dimmer(SceneTopic):
         if not data:
             return
 
-        super().load_config_data(data, qos)
+        self.load_scene_data(data, qos)
 
         # Update the MQTT topics and payloads from the config file.
         self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
@@ -100,7 +102,7 @@ class Dimmer(SceneTopic):
         topic = self.msg_level.render_topic(self.template_data())
         link.subscribe(topic, qos, self._input_set_level)
 
-        super().subscribe(link, qos)
+        self.scene_subscribe(link, qos)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
@@ -115,7 +117,7 @@ class Dimmer(SceneTopic):
         topic = self.msg_level.render_topic(self.template_data())
         link.unsubscribe(topic)
 
-        super().unsubscribe(link)
+        self.scene_unsubscribe(link)
 
     #-----------------------------------------------------------------------
     # pylint: disable=arguments-differ

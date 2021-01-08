@@ -491,6 +491,7 @@ class Test_KeypadLinc:
         assert len(proto.sent) == 1
 
         assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[0] == 0x03 #group
         assert proto.sent[0].msg.data[3] == 0x13
         proto.clear()
 
@@ -499,6 +500,7 @@ class Test_KeypadLinc:
         assert len(proto.sent) == 1
 
         assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[0] == 0x01 #group
         assert proto.sent[0].msg.data[3] == 0x11
         proto.clear()
 
@@ -542,6 +544,52 @@ class Test_KeypadLinc:
         # Signal a success
         cb(True, "Done", None)
         assert dev.broadcast_reason == "d E f"
+        proto.clear()
+
+    #-----------------------------------------------------------------------
+    def test_input_scene_level(self, setup):
+        mdev, link, proto, dev, addr = setup.getAll(['mdev', 'link', 'proto',
+                                                     'dev', 'addr'])
+
+        qos = 2
+        config = {'keypad_linc' : {
+            'btn_scene_topic' : 'foo/{{address}}/{{button}}',
+            'btn_scene_payload' : ('{ "cmd" : "{{json.on.lower()}}"'
+                                   '{% if json.level is defined %}'
+                                   ',"level" : "{{json.level}}"'
+                                   '{% endif %} }')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+
+        # just ON command
+        payload = b'{ "on" : "on"}'
+        link.publish("foo/%s/1" % addr.hex, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x11  #cmd1
+        assert proto.sent[0].msg.data[1] == 0x00  #use_on_level
+        assert proto.sent[0].msg.data[2] == 0x00  #on_level
+        proto.clear()
+
+        # just OFF command
+        payload = b'{ "on" : "off"}'
+        link.publish("foo/%s/1" % addr.hex, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x13  #cmd1
+        assert proto.sent[0].msg.data[1] == 0x01  #use_on_level
+        assert proto.sent[0].msg.data[2] == 0x00  #on_level
+        proto.clear()
+
+        # just ON with level
+        payload = b'{ "on" : "on", "level": 128}'
+        link.publish("foo/%s/1" % addr.hex, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x11  #cmd1
+        assert proto.sent[0].msg.data[1] == 0x01  #use_on_level
+        assert proto.sent[0].msg.data[2] == 0x80  #on_level
         proto.clear()
 
 #===========================================================================
