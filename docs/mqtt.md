@@ -544,20 +544,20 @@ on as the level defined on the device on_level unless level is passed.
    ["reason" : "..."] }
    ```
 
-   Supported: modem
+Supported: modem
 
-   For the modem, this triggers virtual modem scenes (i.e. any group number
-   where the modem is the controller).  The modem also allows the triggering
-   of scenes from a name defined in a [Scene Management](scenes.md) file as
-   well. To access a scene by its name simply drop the group attribute and add
-   the name attribute such as.
+For the modem, this triggers virtual modem scenes (i.e. any group number
+where the modem is the controller).  The modem also allows the triggering
+of scenes from a name defined in a [Scene Management](scenes.md) file as
+well. To access a scene by its name simply drop the group attribute and add
+the name attribute such as.
 
-   Args:
-   - Same as the device args, but modem does __not__ support the level command
+Args:
+- Same as the device args, but modem does __not__ support the level command
 
-   ```
-   { "cmd": "scene", "name" : "test_scene", "is_on" : 0/1, ["reason" : "..."] }
-   ```
+```
+{ "cmd": "scene", "name" : "test_scene", "is_on" : 0/1, ["reason" : "..."] }
+```
 
 
 ### Mark a battery device as awake.
