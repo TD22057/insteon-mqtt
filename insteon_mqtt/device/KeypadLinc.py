@@ -269,7 +269,8 @@ class KeypadLinc(Base):
                    completed.  Signature is: on_done(success, msg, data)
 
         """
-        LOG.info("KeypadLinc %s cmd: on grp %s %s", self.addr, group, level)
+        LOG.info("KeypadLinc %s cmd: on grp %s %s mode %s ramp %s reason %s",
+                 self.addr, group, level, mode, str(transition), reason)
 
         # If the group is 0, use the load group.
         group = self._load_group if group == 0 else group
@@ -309,10 +310,19 @@ class KeypadLinc(Base):
                 level = 0xff
 
             # Ignore RAMP mode / transition if command not supported
-            if not self.on_off_ramp_supported or not self.is_dimmer:
-                transition = None
-                if mode == on_off.Mode.RAMP:
-                    mode = on_off.Mode.NORMAL
+            if mode == on_off.Mode.RAMP or transition is not None:
+                if not self.is_dimmer or not self.on_off_ramp_supported:
+                    if self.db.desc is None:
+                        LOG.info("KeypadLinc model not in DB - ignoring "
+                                 "ramp rate.  Use 'get_model %s' to retrieve.",
+                                 self.addr)
+                    else:
+                        LOG.info("Light ON at Ramp Rate not supported with %s"
+                                 "devices - ignoring specified ramp rate.",
+                                 self.db.desc.model)
+                    transition = None
+                    if mode == on_off.Mode.RAMP:
+                        mode = on_off.Mode.NORMAL
 
             # Send the correct on code.
             cmd1 = on_off.Mode.encode(True, mode)
@@ -354,7 +364,8 @@ class KeypadLinc(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("KeypadLinc %s cmd: off grp %s", self.addr, group)
+        LOG.info("KeypadLinc %s cmd: off grp %s mode %s ramp %s reason %s",
+                 self.addr, group, mode, str(transition), reason)
 
         # If the group is 0, use the load group.
         group = self._load_group if group == 0 else group
@@ -369,10 +380,19 @@ class KeypadLinc(Base):
         # Load group uses a direct command to set the level.
         else:
             # Ignore RAMP mode / transition if command not supported
-            if not self.on_off_ramp_supported or not self.is_dimmer:
-                transition = None
-                if mode == on_off.Mode.RAMP:
-                    mode = on_off.Mode.NORMAL
+            if mode == on_off.Mode.RAMP or transition is not None:
+                if not self.is_dimmer or not self.on_off_ramp_supported:
+                    if self.db.desc is None:
+                        LOG.info("KeypadLinc model not in DB - ignoring "
+                                 "ramp rate.  Use 'get_model %s' to retrieve.",
+                                 self.addr)
+                    else:
+                        LOG.info("Light OFF at Ramp Rate not supported with %s"
+                                 "devices - ignoring specified ramp rate.",
+                                 self.db.desc.model)
+                    transition = None
+                    if mode == on_off.Mode.RAMP:
+                        mode = on_off.Mode.NORMAL
 
             # Send an off or instant off command.
             cmd1 = on_off.Mode.encode(False, mode)
