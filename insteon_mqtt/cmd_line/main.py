@@ -251,7 +251,8 @@ def parse_args(args):
                     "message with use 'scene'.")
     sp.add_argument("-l", "--level", metavar="level", type=str, default=None,
                     help="The brightness level to set the device if supported."
-                    " Otherwise on will be the defined scene level.")
+                    " Otherwise on will be the defined scene level. Modem "
+                    "does not support the level command.")
     sp.add_argument("address", help="Device address or name.")
     sp.add_argument("group", help="Group (button) number of the "
                     "scene to trigger (use 1 for single buttons.) "
