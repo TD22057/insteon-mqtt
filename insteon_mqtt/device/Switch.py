@@ -5,7 +5,7 @@
 #===========================================================================
 import functools
 from .Base import Base
-from .Scene import Scene
+from . import functions
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
@@ -18,7 +18,7 @@ LOG = log.get_logger()
 
 
 #===========================================================================
-class Switch(Scene, Base):
+class Switch(functions.Scene, Base):
     """Insteon on/off switch device.
 
     This class can be used to model any device that acts like a on/off switch
