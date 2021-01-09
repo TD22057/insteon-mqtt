@@ -4,6 +4,10 @@
 
 ### Additions
 
+- Enable passing ramp_rate with set and level commands.  Currently only
+  newer (last 4ish years?) KeyPadLinc Dimmers are known to support this.
+  (thanks to @tommycw1 and @tstabrawa)([PR 213][P213])
+
 - Improved [Scene command][SCENETRIGGER], now supports level for devices.
   ([PR 308][P308])
 
@@ -577,3 +581,4 @@ will add new features.
 [SCENETRIGGER]: https://github.com/TD22057/insteon-mqtt/blob/master/docs/mqtt.md#scene-triggering
 [P308]: https://github.com/TD22057/insteon-mqtt/pull/308
 [P313]: https://github.com/TD22057/insteon-mqtt/pull/313
+[P213]: https://github.com/TD22057/insteon-mqtt/pull/213
