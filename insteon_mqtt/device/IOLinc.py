@@ -331,8 +331,8 @@ class IOLinc(Base):
                      "momentary_secs"])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
-            raise Exception("Unknown IOLinc flags input: %s.\n Valid flags " +
-                            "are: %s" % unknown, flags)
+            LOG.error("Unknown IOLinc flags input: %s.\n Valid flags are: %s",
+                      unknown, flags)
 
         seq = CommandSeq(self.protocol, "Device flags set", on_done,
                          name="SetFLags")

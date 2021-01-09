@@ -304,8 +304,8 @@ class Outlet(Base):
         flags = set([FLAG_BACKLIGHT])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
-            raise Exception("Unknown Outlet flags input: %s.\n Valid flags "
-                            "are: %s" % unknown, flags)
+            LOG.error("Unknown Outlet flags input: %s.\n Valid flags "
+                      "are: %s", unknown, flags)
 
         # Start a command sequence so we can call the flag methods in series.
         seq = CommandSeq(self, "Outlet set_flags complete", on_done,

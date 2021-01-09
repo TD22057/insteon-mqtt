@@ -912,8 +912,8 @@ class KeypadLinc(functions.Scene, Base):
                      FLAG_GROUP, FLAG_ON_LEVEL, FLAG_RAMP_RATE])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
-            raise Exception("Unknown KeypadLinc flags input: %s.\n Valid "
-                            "flags are: %s" % (unknown, flags))
+            LOG.error("Unknown KeypadLinc flags input: %s.\n Valid "
+                      "flags are: %s", unknown, flags)
 
         # Start a command sequence so we can call the flag methods in series.
         seq = CommandSeq(self, "KeypadLinc set_flags complete",

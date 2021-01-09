@@ -253,8 +253,8 @@ class Switch(functions.Scene, Base):
         flags = set([FLAG_BACKLIGHT])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
-            raise Exception("Unknown Switch flags input: %s.\n Valid flags "
-                            "are: %s" % unknown, flags)
+            LOG.error("Unknown Switch flags input: %s.\n Valid flags "
+                      "are: %s", unknown, flags)
 
         # Start a command sequence so we can call the flag methods in series.
         seq = CommandSeq(self, "Switch set_flags complete", on_done,

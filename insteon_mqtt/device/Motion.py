@@ -245,8 +245,8 @@ class Motion(BatterySensor):
                      "light_sensitivity"])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
-            raise Exception("Unknown Motion flags input: %s.\n Valid flags "
-                            "are: %s" % (unknown, flags))
+            LOG.error("Unknown Motion flags input: %s.\n Valid flags "
+                      "are: %s", unknown, flags)
 
         seq = CommandSeq(self, "Motion Set Flags Success", on_done,
                          name="SetFlags")

@@ -418,9 +418,9 @@ class EZIO4O(Base):
 
         unknown = set(flags_to_set).difference(valid_flags)
         if unknown:
-            raise Exception(
+            LOG.error(
                 "EZIO4O Unknown flags input: %s.\n Valid "
-                "flags are: %s" % (unknown, valid_flags)
+                "flags are: %s", unknown, valid_flags
             )
 
         # Construct the flag register to write

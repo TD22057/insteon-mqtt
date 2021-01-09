@@ -15,6 +15,9 @@
 
 ### Fixes
 
+- Better error reporting to user when bad flags are used in set_flags.
+  ([PR 313][P313])
+
 - Fix error with backlight setting (thanks @tommycw1)([PR 299][P299])
 
 - Small correction to write_time to allow dynamic calculation of time.
@@ -573,3 +576,4 @@ will add new features.
 [P306]: https://github.com/TD22057/insteon-mqtt/pull/306
 [SCENETRIGGER]: https://github.com/TD22057/insteon-mqtt/blob/master/docs/mqtt.md#scene-triggering
 [P308]: https://github.com/TD22057/insteon-mqtt/pull/308
+[P313]: https://github.com/TD22057/insteon-mqtt/pull/313
