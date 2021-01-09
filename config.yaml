@@ -129,7 +129,7 @@ insteon:
     io_linc:
       - 45.33.d4: 'garage'
 
-    # On/off ouetlets
+    # On/off outlets
     outlet:
      - aa.11.cc: 'outlet'
 
