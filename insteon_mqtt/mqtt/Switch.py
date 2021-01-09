@@ -212,8 +212,8 @@ class Switch(SceneTopic):
             # Tell the device to update it's state.
             is_on, mode, transition = util.parse_on_off(data)
             if mode == on_off.Mode.RAMP or transition is not None:
-                LOG.info("Light ON/OFF at Ramp Rate not supported with "
-                         "switches - ignoring ramp rate.")
+                LOG.error("Light ON/OFF at Ramp Rate not supported with "
+                          "switches - ignoring ramp rate.")
             if mode == on_off.Mode.RAMP:  # Not supported
                 mode = on_off.Mode.NORMAL
             reason = data.get("reason", "")

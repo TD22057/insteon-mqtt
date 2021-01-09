@@ -186,7 +186,7 @@ class EZIO4O:
             # Tell the device to update it's state.
             is_on, mode, transition = util.parse_on_off(data)
             if mode == on_off.Mode.RAMP or transition is not None:
-                LOG.info("Light ON/OFF at Ramp Rate not supported with EZIO4O"
+                LOG.error("Light ON/OFF at Ramp Rate not supported with EZIO4O"
                          " - ignoring ramp rate.")
             if mode == on_off.Mode.RAMP:  # Not supported
                 mode = on_off.Mode.NORMAL

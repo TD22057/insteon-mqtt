@@ -308,13 +308,13 @@ class KeypadLinc(functions.Scene, Base):
             if mode == on_off.Mode.RAMP or transition is not None:
                 if not self.is_dimmer or not self.on_off_ramp_supported:
                     if self.db.desc is None:
-                        LOG.info("KeypadLinc model not in DB - ignoring "
-                                 "ramp rate.  Use 'get_model %s' to retrieve.",
-                                 self.addr)
+                        LOG.error("Model info not in DB - ignoring ramp "
+                                  "rate.  Use 'get_model %s' to retrieve.",
+                                  self.addr)
                     else:
-                        LOG.info("Light ON at Ramp Rate not supported with %s"
-                                 "devices - ignoring specified ramp rate.",
-                                 self.db.desc.model)
+                        LOG.error("Light ON at Ramp Rate not supported with "
+                                  "%s devices - ignoring specified ramp rate.",
+                                  self.db.desc.model)
                     transition = None
                     if mode == on_off.Mode.RAMP:
                         mode = on_off.Mode.NORMAL
@@ -378,13 +378,13 @@ class KeypadLinc(functions.Scene, Base):
             if mode == on_off.Mode.RAMP or transition is not None:
                 if not self.is_dimmer or not self.on_off_ramp_supported:
                     if self.db.desc is None:
-                        LOG.info("KeypadLinc model not in DB - ignoring "
-                                 "ramp rate.  Use 'get_model %s' to retrieve.",
-                                 self.addr)
+                        LOG.error("Model info not in DB - ignoring ramp "
+                                  "rate.  Use 'get_model %s' to retrieve.",
+                                  self.addr)
                     else:
-                        LOG.info("Light OFF at Ramp Rate not supported with %s"
-                                 "devices - ignoring specified ramp rate.",
-                                 self.db.desc.model)
+                        LOG.error("Light OFF at Ramp Rate not supported with "
+                                  "%s devices - ignoring specified ramp rate.",
+                                  self.db.desc.model)
                     transition = None
                     if mode == on_off.Mode.RAMP:
                         mode = on_off.Mode.NORMAL
