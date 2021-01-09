@@ -82,6 +82,7 @@ class Patch_Stack():
             IM.cmd_line.main()
             # Signal the mqtt link as connected
             # Ths causes the device mqtt objects to subscribe to topics
+            self.mqtt_obj.link.connected = True
             self.mqtt_obj.link.signal_connected.emit(self.mqtt_obj.link, True)
 
         start()
