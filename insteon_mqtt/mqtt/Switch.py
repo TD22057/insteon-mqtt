@@ -100,8 +100,7 @@ class Switch(StateTopic, SceneTopic):
         self.scene_unsubscribe(link)
 
     #-----------------------------------------------------------------------
-    def template_data(self, is_on=None, mode=on_off.Mode.NORMAL,
-                      manual=None, reason=None):
+    def template_data(self, **kwargs):
         """Create the Jinja templating data variables for on/off messages.
 
         Args:
@@ -123,19 +122,29 @@ class Switch(StateTopic, SceneTopic):
                      else self.device.addr.hex,
             }
 
-        if is_on is not None:
-            data["on"] = 1 if is_on else 0
-            data["on_str"] = "on" if is_on else "off"
-            data["mode"] = str(mode)
-            data["fast"] = 1 if mode == on_off.Mode.FAST else 0
-            data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
-            data["reason"] = reason if reason is not None else ""
+        if 'is_on' in kwargs and kwargs['is_on'] is not None:
+            data["on"] = 1 if kwargs['is_on'] else 0
+            data["on_str"] = "on" if kwargs['is_on'] else "off"
+            data["mode"] = str(on_off.Mode.NORMAL)
+            data["fast"] = 0
+            data["instant"] = 0
+            if 'mode' in kwargs:
+                data["mode"] = str(kwargs['mode'])
+                data["fast"] = 1 if kwargs['mode'] == on_off.Mode.FAST else 0
+                data["instant"] = 0
+                if kwargs['mode'] == on_off.Mode.INSTANT:
+                    data["instant"] = 1
+            data["reason"] = ""
+            if 'reason' in kwargs and kwargs['reason'] is not None:
+                data["reason"] = kwargs['reason']
 
-        if manual is not None:
-            data["manual_str"] = str(manual)
-            data["manual"] = manual.int_value()
-            data["manual_openhab"] = manual.openhab_value()
-            data["reason"] = reason if reason is not None else ""
+        if 'manual' in kwargs and kwargs['manual'] is not None:
+            data["manual_str"] = str(kwargs['manual'])
+            data["manual"] = kwargs['manual'].int_value()
+            data["manual_openhab"] = kwargs['manual'].openhab_value()
+            data["reason"] = ""
+            if 'reason' in kwargs and kwargs['reason'] is not None:
+                data["reason"] = kwargs['reason']
 
         return data
 

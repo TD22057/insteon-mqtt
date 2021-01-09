@@ -95,8 +95,8 @@ class Test_Switch:
         mdev.load_config({})
 
         # Send an on/off signal
-        dev.signal_on_off.emit(dev, True)
-        dev.signal_on_off.emit(dev, False)
+        dev.signal_state.emit(dev, is_on=True)
+        dev.signal_state.emit(dev, is_on=False)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic='%s/state' % topic, payload='on', qos=0, retain=True)
@@ -125,8 +125,8 @@ class Test_Switch:
         mtopic = "bar/%s" % setup.addr.hex
 
         # Send an on/off signal
-        dev.signal_on_off.emit(dev, True)
-        dev.signal_on_off.emit(dev, False)
+        dev.signal_state.emit(dev, is_on=True)
+        dev.signal_state.emit(dev, is_on=False)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic=stopic, payload='1 ON', qos=qos, retain=True)

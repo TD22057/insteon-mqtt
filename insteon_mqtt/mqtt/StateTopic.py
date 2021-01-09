@@ -36,7 +36,7 @@ class StateTopic:
             payload=state_payload)
 
         # Receive notifications from the Insteon device when it changes.
-        self.device.signal_on_off.connect(self._insteon_on_off)
+        self.device.signal_state.connect(self.publish_state)
 
         super().__init__(**kwargs)
 
@@ -57,12 +57,11 @@ class StateTopic:
         self.msg_state.load_config(data, topic, payload, qos)
 
     #-----------------------------------------------------------------------
-    def template_data(self, *args, **kwargs):
+    def template_data(self, **kwargs):
         raise NotImplementedError  # pragma: no cover
 
     #-----------------------------------------------------------------------
-    def _insteon_on_off(self, device, is_on, mode=on_off.Mode.NORMAL,
-                        reason=""):
+    def publish_state(self, device, **kwargs):
         """Device on/off callback.
 
         This is triggered via signal when the Insteon device is turned on or
@@ -75,14 +74,15 @@ class StateTopic:
           reason (str):  The reason the device was triggered.  This is an
                  arbitrary string set into the template variables.
         """
-        LOG.info("MQTT received on/off %s on: %s %s '%s'", device.label, is_on,
-                 mode, reason)
+        LOG.info("MQTT received state %s on: %s", device.label, kwargs)
 
         # For manual mode messages, don't retain them because they don't
         # represent persistent state - they're momentary events.
-        retain = False if mode == on_off.Mode.MANUAL else None
+        retain = None
+        if 'mode' in kwargs:
+            retain = False if kwargs['mode'] == on_off.Mode.MANUAL else None
 
-        data = self.template_data(is_on, mode, reason=reason)
+        data = self.template_data(**kwargs)
         self.msg_state.publish(self.mqtt, data, retain=retain)
 
     #-----------------------------------------------------------------------
