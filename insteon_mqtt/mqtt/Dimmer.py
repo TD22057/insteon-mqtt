@@ -228,7 +228,12 @@ class Dimmer(SceneTopic):
         LOG.info("Dimmer input command: %s", data)
         try:
             # Tell the device to update its state.
-            is_on, mode = util.parse_on_off(data)
+            is_on, mode, transition = util.parse_on_off(data)
+            if mode == on_off.Mode.RAMP or transition is not None:
+                LOG.error("Light ON/OFF at Ramp Rate not supported with "
+                          "dimmers - ignoring ramp rate.")
+            if mode == on_off.Mode.RAMP:  # Not supported
+                mode = on_off.Mode.NORMAL
             level = 0 if not is_on else None
             reason = data.get("reason", "")
             self.device.set(level=level, mode=mode, reason=reason)
@@ -253,7 +258,12 @@ class Dimmer(SceneTopic):
         data = self.msg_level.to_json(message.payload)
         LOG.info("Dimmer input command: %s", data)
         try:
-            is_on, mode = util.parse_on_off(data)
+            is_on, mode, transition = util.parse_on_off(data)
+            if mode == on_off.Mode.RAMP or transition is not None:
+                LOG.error("Light ON/OFF at Ramp Rate not supported with "
+                          "dimmers - ignoring ramp rate.")
+            if mode == on_off.Mode.RAMP:  # Not supported
+                mode = on_off.Mode.NORMAL
             level = '0' if not is_on else data.get('level')
             if level is not None:
                 level = int(level)

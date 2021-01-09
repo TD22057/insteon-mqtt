@@ -321,7 +321,7 @@ mqtt:
     # passed through to the state_payload.  The output of passing the payload
     # through the template must match the following:
     #   { "cmd" : "on"/"off", ["mode" : 'normal'/'fast'/'instant'],
-    #             ["fast" : 1/0], ["instant" : 1/0], ["reason" : "..."] } }
+    #             ["fast" : 1/0], ["instant" : 1/0], ["reason" : "..."] }
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
@@ -340,7 +340,8 @@ mqtt:
     # following:
     #   { "cmd" : "on"/"off", ["level" : LEVEL],
     #                         ["mode" : 'normal'/'fast'/'instant'],
-    #                         ["fast" : 1/0], ["instant" : 1/0] }
+    #                         ["fast" : 1/0], ["instant" : 1/0],
+    #                         ["reason" : "..."] }
     # where:
     #   LEVEL = 0->255 dimmer level
     # Available variables for templating are:
@@ -791,7 +792,7 @@ mqtt:
     #   on_str = 'off'/'on'
     #   level_255 = 0-255
     #   level_100 = 0-100
-    #   mode = 'normal'/'fast'/'instant'
+    #   mode = 'normal'/'fast'/'instant'/'ramp'
     #   fast = 0/1
     #   instant = 0/1
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
@@ -813,8 +814,9 @@ mqtt:
     # passed through to the state_payload.  The output of passing the payload
     # through the template must match the following:
     #   { "cmd" : 'on'/'off', "button": button,
-    #             ["mode" : 'normal'/'fast'/'instant'],
-    #             ["fast" : 1/0], ["instant" : 1/0], ["reason" : "..."] }
+    #             ["mode" : 'normal'/'fast'/'instant'/'ramp'],
+    #             ["fast" : 1/0], ["instant" : 1/0], ["reason" : "..."],
+    #             ["transition" : time_in_seconds] }
     # Available variables for templating are:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
@@ -829,8 +831,9 @@ mqtt:
     # passed through to the state_payload.  The output of passing the
     # payload through the template must match the following:
     #   { "cmd" : "on"/"off", ["level" : LEVEL],
-    #             ["mode" : 'normal'/'fast'/'instant'],
-    #             ["fast" : 1/0], ["instant" : 1/0], ["reason" : "..."] }
+    #             ["mode" : 'normal'/'fast'/'instant'/'ramp'],
+    #             ["fast" : 1/0], ["instant" : 1/0], ["reason" : "..."],
+    #             ["transition" : time_in_seconds] }
     # where:
     #   LEVEL = 0->255 dimmer level
     # Available variables for templating are:
@@ -852,6 +855,9 @@ mqtt:
        { "cmd" : "{{json.state.lower()}}"
          {% if json.brightness is defined %}
              , "level" : {{json.brightness}}
+         {% endif %}
+         {% if json.transition is defined %}
+             , "transition" : {{json.transition}}
          {% endif %} }
 
     # Scene on/off command.  This triggers the scene broadcast on the switch
