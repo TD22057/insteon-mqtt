@@ -64,6 +64,17 @@ class Test_ModemEntry:
         str(obj)
 
     #-----------------------------------------------------------------------
+    def test_no_data(self):
+        addr = IM.Address('12.34.ab')
+        data = None
+        obj = IM.db.ModemEntry(addr, 0x03, False, data, db=None)
+
+        assert obj.addr == addr
+        assert obj.group == 0x03
+        assert obj.is_controller is False
+        assert obj.data == bytes(3)
+
+    #-----------------------------------------------------------------------
     def test_label(self):
         addr = IM.Address('12.34.ab')
         data = bytes([0x01, 0x02, 0x03])

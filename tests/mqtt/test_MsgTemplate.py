@@ -114,4 +114,25 @@ class Test_MsgTemplate:
             assert rec.levelname == "ERROR"
         assert jdata is None
 
+    #-----------------------------------------------------------------------
+    def test_render_payload_error(self, caplog):
+        # This is a common error where a user uses a plain value instead of
+        # a json object
+        msg = MsgTemplate(topic='insteon/{{address}}/level',
+                          payload='{ "cmd" : "{{json.state.lower()}}", '
+                                  '"level" : {{json.brightness}} }')
+
+        jdata = msg.to_json(b'ON')
+        assert "Error rendering payload" in caplog.text
+        assert jdata is None
+
+    #-----------------------------------------------------------------------
+    def test_render_payload(self, caplog):
+        msg = MsgTemplate(topic='insteon/{{address}}/level',
+                          payload='{ "cmd" : "{{json.state.lower()}}", '
+                                  '"level" : {{json.brightness}} }')
+
+        jdata = msg.to_json(b'{"state": "ON","brightness":255}')
+        assert jdata == {'cmd': 'on', 'level': 255}
+
 #===========================================================================

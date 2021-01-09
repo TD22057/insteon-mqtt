@@ -183,6 +183,7 @@ def scene(args, config):
         "cmd" : "scene",
         "is_on" : bool(args.is_on),
         "reason" : args.reason,
+        "level": args.level
         }
 
     try:

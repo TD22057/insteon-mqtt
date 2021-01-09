@@ -1,5 +1,30 @@
 # Revision Change History
 
+## [0.7.6]
+
+### Additions
+
+- Improved [Scene command][SCENETRIGGER], now supports level for devices.
+  ([PR 308][P308])
+
+- There is no longer a need to set the Modem hex address in config.yaml.
+  ([PR 303][P303])
+
+- Better error reporting when MQTT payload does not match template.
+  ([PR 300][P300])
+
+### Fixes
+
+- Fix error with backlight setting (thanks @tommycw1)([PR 299][P299])
+
+- Small correction to write_time to allow dynamic calculation of time.
+  ([PR 302][P302])
+
+- Better logging on Stack Errors. ([PR 306][P306])
+
+- Fixed error where 'device' reason was not set by default in scene command.
+  ([PR 308][P308])
+
 ## [0.7.5]
 
 This is another significant update that both improves the user experience,
@@ -541,3 +566,10 @@ will add new features.
 [P238]: https://github.com/TD22057/insteon-mqtt/pull/238
 [I292]: https://github.com/TD22057/insteon-mqtt/issues/292
 [P285]: https://github.com/TD22057/insteon-mqtt/pull/285
+[P299]: https://github.com/TD22057/insteon-mqtt/pull/299
+[P303]: https://github.com/TD22057/insteon-mqtt/pull/303
+[P302]: https://github.com/TD22057/insteon-mqtt/pull/302
+[P300]: https://github.com/TD22057/insteon-mqtt/pull/300
+[P306]: https://github.com/TD22057/insteon-mqtt/pull/306
+[SCENETRIGGER]: https://github.com/TD22057/insteon-mqtt/blob/master/docs/mqtt.md#scene-triggering
+[P308]: https://github.com/TD22057/insteon-mqtt/pull/308

@@ -1071,6 +1071,23 @@ class Base:
                         self.label, msg.group)
 
     #-----------------------------------------------------------------------
+    def handle_generic_ack(self, msg, on_done=None):
+        """Handles generic ack responses where there is nothing to do.
+
+        Used where there is nothing to do on receiving an ack except call
+        the on_done callback.
+
+        Args:
+          msg (InpStandard): Direct ACK message from the device.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        on_done = util.make_callback(on_done)
+
+        LOG.debug("Device %s generic ack recevied", self.addr)
+        on_done(True, "Device generic ack recevied", None)
+
+    #-----------------------------------------------------------------------
     def update_linked_devices(self, msg):
         """Update the state of linked devices from broadcast message
 

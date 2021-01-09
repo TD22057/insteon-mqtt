@@ -226,6 +226,6 @@ class FanLinc(Dimmer):
             reason = data.get("reason", "")
             self.device.fan_set(fan_speed, reason=reason)
         except:
-            LOG.exception("Invalid fan set speed command: %s", data)
+            LOG.error("Invalid fan set speed command: %s", data)
 
     #-----------------------------------------------------------------------

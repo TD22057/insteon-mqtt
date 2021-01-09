@@ -111,6 +111,6 @@ class Modem:
             # Tell the device to trigger the scene command.
             self.device.scene(is_on, group=group, name=name)
         except:
-            LOG.exception("Invalid modem command: %s", data)
+            LOG.error("Invalid modem command: %s", data)
 
     #-----------------------------------------------------------------------

@@ -8,11 +8,12 @@ from .. import log
 from .. import on_off
 from .MsgTemplate import MsgTemplate
 from . import util
+from .SceneTopic import SceneTopic
 
 LOG = log.get_logger()
 
 
-class KeypadLinc:
+class KeypadLinc(SceneTopic):
     """MQTT interface to an Insteon KeypadLinc dimmer or switch.
 
     This class connects to a device.KeypadLinc object and converts it's output
@@ -45,11 +46,6 @@ class KeypadLinc:
             topic='insteon/{{address}}/set/{{button}}',
             payload='{ "cmd" : "{{value.lower()}}" }')
 
-        # Input scene on/off command template.
-        self.msg_btn_scene = MsgTemplate(
-            topic='insteon/{{address}}/scene/{{button}}',
-            payload='{ "cmd" : "{{value.lower()}}" }')
-
         self.msg_dimmer_state = None
         self.msg_dimmer_level = None
         if self.device.is_dimmer:
@@ -69,6 +65,8 @@ class KeypadLinc:
         # changes.
         device.signal_level_changed.connect(self._insteon_level_changed)
         device.signal_manual.connect(self._insteon_manual)
+        super().__init__(mqtt, device,
+                         scene_topic='insteon/{{address}}/scene/{{button}}')
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -83,14 +81,16 @@ class KeypadLinc:
         if not data:
             return
 
+        self.load_scene_data(data, qos,
+                             topic='btn_scene_topic',
+                             payload='btn_scene_payload')
+
         self.msg_btn_state.load_config(data, 'btn_state_topic',
                                        'btn_state_payload', qos)
         self.msg_manual_state.load_config(data, 'manual_state_topic',
                                           'manual_state_payload', qos)
         self.msg_btn_on_off.load_config(data, 'btn_on_off_topic',
                                         'btn_on_off_payload', qos)
-        self.msg_btn_scene.load_config(data, 'btn_scene_topic',
-                                       'btn_scene_payload', qos)
 
         if self.device.is_dimmer:
             self.msg_dimmer_state.load_config(data, 'dimmer_state_topic',
@@ -134,9 +134,8 @@ class KeypadLinc:
 
                 link.subscribe(topic_dimmer, qos, self._input_set_level)
 
-            handler = functools.partial(self._input_scene, group=1)
-            topic = self.msg_btn_scene.render_topic(data)
-            link.subscribe(topic, qos, handler)
+            # Add the Scene Topic
+            self.scene_subscribe(link, qos, group=1)
 
         # We need to subscribe to each button topic so we know which one is
         # which.
@@ -147,9 +146,8 @@ class KeypadLinc:
             topic = self.msg_btn_on_off.render_topic(data)
             link.subscribe(topic, qos, handler)
 
-            handler = functools.partial(self._input_scene, group=group)
-            topic = self.msg_btn_scene.render_topic(data)
-            link.subscribe(topic, qos, handler)
+            # Add the Scene Topic
+            self.scene_subscribe(link, qos, group=group)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
@@ -164,8 +162,8 @@ class KeypadLinc:
             topic = self.msg_btn_on_off.render_topic(data)
             link.unsubscribe(topic)
 
-            topic = self.msg_btn_scene.render_topic(data)
-            link.unsubscribe(topic)
+            # Remove the Scene Topic
+            self.scene_unsubscribe(link, group=group)
 
         if self.device.is_dimmer:
             data = self.template_data(button=1)
@@ -299,7 +297,7 @@ class KeypadLinc:
             self.device.set(level, group, mode, reason=reason,
                             transition=transition)
         except:
-            LOG.exception("Invalid KeypadLinc on/off command: %s", data)
+            LOG.error("Invalid KeypadLinc on/off command: %s", data)
             if raise_errors:
                 raise
 
@@ -335,7 +333,7 @@ class KeypadLinc:
             self.device.set(level, mode=mode, reason=reason,
                             transition=transition)
         except:
-            LOG.exception("Invalid KeypadLinc level command: %s", data)
+            LOG.error("Invalid KeypadLinc level command: %s", data)
             if raise_errors:
                 raise
 
@@ -374,35 +372,3 @@ class KeypadLinc:
         # If we make it here, it's an error.
         LOG.error("Invalid input command did match a dimmer or on/off "
                   "message: %s", message.payload)
-
-    #-----------------------------------------------------------------------
-    def _input_scene(self, client, data, message, group):
-        """Handle an input scene MQTT message.
-
-        This is called when we receive a message on the scene trigger MQTT
-        topic subscription.  Parse the message and pass the command to the
-        Insteon device.
-
-        Args:
-          client (paho.Client):  The paho mqtt client (self.link).
-          data:  Optional user data (unused).
-          message:  MQTT message - has attrs: topic, payload, qos, retain.
-        """
-        LOG.debug("KeypadLinc scene %s message %s %s", group, message.topic,
-                  message.payload)
-
-        # Parse the input MQTT message.
-        data = self.msg_btn_scene.to_json(message.payload)
-        if not data:
-            return
-
-        LOG.info("KeypadLinc input command: %s", data)
-        try:
-            # Scenes don't support modes so don't parse that element.
-            is_on = util.parse_on_off(data, have_mode=False)
-            reason = data.get("reason", "")
-            self.device.scene(is_on, group, reason=reason)
-        except:
-            LOG.exception("Invalid KeypadLinc command: %s", data)
-
-    #-----------------------------------------------------------------------

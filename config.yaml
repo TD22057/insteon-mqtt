@@ -52,7 +52,9 @@ insteon:
   ######
 
   # modem Insteon hex address
-  address: 44.85.11
+  # You do not need to specify this.  If it is defined, this address will be
+  # used even if it does not match what the modem reports.
+  # address: 44.85.11
 
   # Device database file storage location.
   #storage: '/var/lib/insteon-mqtt'
@@ -204,7 +206,9 @@ mqtt:
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
     scene_topic: 'insteon/modem/scene'
-    scene_payload: '{{value}}'
+    scene_payload: '{ "cmd" : "{{json.cmd.lower()}}",
+                      "group" : {{json.group}}
+                    }'
 
 
   # IMPORTANT: all devices must have the pair() command run one time to make
@@ -263,7 +267,11 @@ mqtt:
     # in the same way clicking the button would.  The inputs are the same as
     # those for the on_off topic and payload.
     scene_topic: 'insteon/{{address}}/scene'
-    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+    scene_payload: '{ "cmd" : "{{json.cmd.lower()}}"
+                      {% if json.brightness is defined %}
+                          , "level" : {{json.brightness}}
+                      {% endif %}
+                    }'
 
   #------------------------------------------------------------------------
   # Dimmers
@@ -361,7 +369,11 @@ mqtt:
     # in the same way clicking the button would.  The inputs are the same as
     # those for the on_off topic and payload.
     scene_topic: 'insteon/{{address}}/scene'
-    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+    scene_payload: '{ "cmd" : "{{json.cmd.lower()}}"
+                      {% if json.brightness is defined %}
+                          , "level" : {{json.brightness}}
+                      {% endif %}
+                    }'
 
   #------------------------------------------------------------------------
   # Battery powered sensors
@@ -852,7 +864,11 @@ mqtt:
     # in the same way clicking the button would.  The inputs are the same as
     # those for the btn_on_off topic and payload.
     btn_scene_topic: 'insteon/{{address}}/scene/{{button}}'
-    btn_scene_payload: '{ "cmd" : "{{value.lower()}}" }'
+    btn_scene_payload: '{ "cmd" : "{{json.cmd.lower()}}"
+                          {% if json.brightness is defined %}
+                              , "level" : {{json.brightness}}
+                          {% endif %}
+                        }'
 
   #------------------------------------------------------------------------
   # IO Linc relay controllers
@@ -975,12 +991,6 @@ mqtt:
     on_off_topic: 'insteon/{{address}}/set/{{button}}'
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
-    # Scene on/off command.  This triggers the scene broadcast on the outlet
-    # in the same way clicking the button would.  The inputs are the same as
-    # those for the on_off topic and payload.
-    scene_topic: 'insteon/{{address}}/scene/{{button}}'
-    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
-
   #------------------------------------------------------------------------
   # EZIO4O 4 relay output module
   #------------------------------------------------------------------------
@@ -1025,11 +1035,5 @@ mqtt:
     #          a variable from a json payload.
     on_off_topic: "insteon/{{address}}/set/{{button}}"
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
-
-    # Scene on/off command.  This triggers the scene broadcast on the outlet
-    # in the same way clicking the button would.  The inputs are the same as
-    # those for the on_off topic and payload.
-    scene_topic: "insteon/{{address}}/scene/{{button}}"
-    scene_payload: '{ "cmd" : "{{value.lower()}}" }'
 
 #----------------------------------------------------------------

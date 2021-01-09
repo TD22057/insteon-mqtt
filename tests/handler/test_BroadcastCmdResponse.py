@@ -26,6 +26,11 @@ class Test_BroadcastCmdResponse:
         assert r == Msg.UNKNOWN
 
         # ack back.
+        out.is_ack = True
+        r = handler.msg_received(proto, out)
+        assert r == Msg.CONTINUE
+
+        # NAK back.
         out.is_ack = False
         r = handler.msg_received(proto, out)
         assert r == Msg.CONTINUE

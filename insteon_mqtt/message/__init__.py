@@ -48,6 +48,7 @@ from .OutAllLinkCancel import OutAllLinkCancel
 from .OutAllLinkGetFirst import OutAllLinkGetFirst
 from .OutAllLinkGetNext import OutAllLinkGetNext
 from .OutAllLinkUpdate import OutAllLinkUpdate
+from .OutModemInfo import OutModemInfo
 from .OutModemLinking import OutModemLinking
 from .OutModemScene import OutModemScene
 from .OutResetModem import OutResetModem
@@ -75,6 +76,7 @@ types = {
     0x5c : Unreachable,
 
     # host -> modem messages
+    0x60 : OutModemInfo,
     0x61 : OutModemScene,
     0x62 : OutStandard,  # Handles reading standard and extended
     0x64 : OutModemLinking,

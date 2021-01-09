@@ -59,14 +59,8 @@ class Outlet(Base):
             'on' : self.on,
             'off' : self.off,
             'set' : self.set,
-            'scene' : self.scene,
             'set_flags' : self.set_flags,
             })
-
-        # Special callback to run when receiving a broadcast clean up.  See
-        # scene() for details.
-        self.broadcast_done = None
-        self.broadcast_reason = ""
 
         # NOTE: the outlet does NOT include the group in the ACK of an on/off
         # command.  So there is no way to tell which outlet is being ACK'ed
@@ -125,11 +119,6 @@ class Outlet(Base):
            reason="", on_done=None):
         """Turn the device on.
 
-        NOTE: This does NOT simulate a button press on the device - it just
-        changes the state of the device.  It will not trigger any responders
-        that are linked to this device.  To simulate a button press, call the
-        scene() method.
-
         This will send the command to the device to update it's state.  When
         we get an ACK of the result, we'll change our internal state and emit
         the state changed signals.
@@ -180,11 +169,6 @@ class Outlet(Base):
             on_done=None):
         """Turn the device off.
 
-        NOTE: This does NOT simulate a button press on the device - it just
-        changes the state of the device.  It will not trigger any responders
-        that are linked to this device.  To simulate a button press, call the
-        scene() method.
-
         This will send the command to the device to update it's state.  When
         we get an ACK of the result, we'll change our internal state and emit
         the state changed signals.
@@ -231,11 +215,6 @@ class Outlet(Base):
             on_done=None):
         """Turn the device on or off.  Level zero will be off.
 
-        NOTE: This does NOT simulate a button press on the device - it just
-        changes the state of the device.  It will not trigger any responders
-        that are linked to this device.  To simulate a button press, call the
-        scene() method.
-
         This will send the command to the device to update it's state.  When
         we get an ACK of the result, we'll change our internal state and emit
         the state changed signals.
@@ -254,59 +233,6 @@ class Outlet(Base):
             self.on(group, level, mode, reason, on_done)
         else:
             self.off(group, mode, reason, on_done)
-
-    #-----------------------------------------------------------------------
-    def scene(self, is_on, group=0x01, reason="", on_done=None):
-        """Trigger a scene on the device.
-
-        Triggering a scene is the same as simulating a button press on the
-        device.  It will change the state of the device and notify responders
-        that are linked ot the device to be updated.
-
-        Args:
-          is_on (bool):  True for an on command, False for an off command.
-          group (int):  The group on the device to simulate.  The top outlet
-                is group 1, the bottom outlet is group 2.
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Outlet %s scene %s", self.addr, "on" if is_on else "off")
-        assert group == 0x01
-
-        # Send an 0x30 all link command to simulate the button being pressed
-        # on the outlet.  See page 163 of insteon dev guide
-        cmd1 = 0x11 if is_on else 0x13
-        data = bytes([
-            group,  # D1 = group (button)
-            0x00,   # D2 = use level in scene db
-            0x00,   # D3 = on level if D2=0x01
-            cmd1,   # D4 = cmd1 to send
-            0x00,   # D5 = cmd2 to send
-            0x00,   # D6 = use ramp rate in scene db
-            ] + [0x00] * 8)
-        msg = Msg.OutExtended.direct(self.addr, 0x30, 0x00, data)
-
-        # Use the standard command handler which will notify us when the
-        # command is ACK'ed.
-        done_callback = on_done if is_on else None
-        callback = functools.partial(self.handle_scene, reason=reason)
-        msg_handler = handler.StandardCmd(msg, callback, done_callback)
-        self.send(msg, msg_handler)
-
-        # Scene triggering will not turn the device off (no idea why), so we
-        # have to send an explicit off command to do that.  If this is None,
-        # we're triggering a scene and so should bypass the normal
-        # handle_broadcast logic to take this case into account.  Note that
-        # if we sent and off command either before or after the ACK of the
-        # command above, it doesn't work - we have to wait until the
-        # broadcast msg is finished.
-        if not is_on:
-            self.broadcast_done = \
-                functools.partial(self.off, group=group, on_done=on_done,
-                                  reason=reason)
 
     #-----------------------------------------------------------------------
     def set_backlight(self, level, on_done=None):
@@ -415,21 +341,9 @@ class Outlet(Base):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # If we have a saved reason from a simulated scene command, use that.
-        # Otherwise the device button was pressed.
-        reason = self.broadcast_reason if self.broadcast_reason else \
-                 on_off.REASON_DEVICE
-        self.broadcast_reason = ""
-
-        # ACK of the broadcast.  Ignore this unless we sent a simulated off
-        # scene in which case run the broadcast done handler.  This is a
-        # weird special case - see scene() for details.
+        reason = on_off.REASON_DEVICE
         if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
             LOG.info("Outlet %s broadcast ACK grp: %s", self.addr, msg.group)
-
-            if self.broadcast_done:
-                self.broadcast_done()
-            self.broadcast_done = None
 
         # On/off command codes.
         elif on_off.Mode.is_valid(msg.cmd1):
@@ -437,15 +351,7 @@ class Outlet(Base):
             LOG.info("Outlet %s broadcast grp: %s on: %s mode: %s", self.addr,
                      msg.group, is_on, mode)
 
-            # For an on command, we can update directly.
-            if is_on:
-                self._set_is_on(msg.group, True, mode, reason)
-
-            # For an off command, we need to see if broadcast_done is active.
-            # This is a generated broadcast and we need to manually turn the
-            # device off so don't update it's state until that occurs.
-            elif not self.broadcast_done:
-                self._set_is_on(msg.group, False, mode, reason)
+            self._set_is_on(msg.group, is_on, mode, reason)
 
             self.update_linked_devices(msg)
 
@@ -523,35 +429,6 @@ class Outlet(Base):
         self._set_is_on(group, is_on, mode, reason)
         on_done(True, "Outlet state updated to on=%s" % self._is_on,
                 self._is_on)
-
-    #-----------------------------------------------------------------------
-    def handle_scene(self, msg, on_done, reason=""):
-        """Callback for scene simulation commanded messages.
-
-        This callback is run when we get a reply back from triggering a scene
-        on the device.  If the command was ACK'ed, we know it worked.  The
-        device will then send out standard broadcast messages which will
-        trigger other updates for the scene devices.
-
-        Args:
-          msg (message.InpStandard): The reply message from the device.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-        """
-        # Call the callback.  We don't change state here - the device will
-        # send a regular broadcast message which will run handle_broadcast
-        # which will then update the state.
-        LOG.debug("Outlet %s ACK: %s", self.addr, msg)
-
-        # Reason is device because we're simulating a button press.  We
-        # can't really pass this around because we just get a broadcast
-        # message later from the device.  So we set a temporary variable
-        # here and use it in handle_broadcast() to output the reason.
-        self.broadcast_reason = reason if reason else on_off.REASON_DEVICE
-        on_done(True, "Scene triggered", None)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
