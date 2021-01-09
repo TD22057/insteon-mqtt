@@ -58,7 +58,7 @@ class Dimmer(SceneTopic):
         device.signal_manual.connect(self._insteon_manual)
 
         # Setup the Scene Topic
-        super().__init__(mqtt, device)
+        super().__init__()
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):

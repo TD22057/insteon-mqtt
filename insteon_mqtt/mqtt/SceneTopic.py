@@ -17,12 +17,9 @@ class SceneTopic:
 
     This is an abstract class that provides support for the Scene topic.
     """
-    def __init__(self, mqtt, device, scene_topic=None, scene_payload=None):
+    def __init__(self, scene_topic=None, scene_payload=None, **kwargs):
         """Constructor
 
-        Args:
-          mqtt (mqtt.Mqtt):  The MQTT main interface.
-          device (device):  The Insteon object to link to.
         """
         # It looks cleaner setting these long strings here rather than in the
         # function declaration
@@ -38,6 +35,8 @@ class SceneTopic:
         self.msg_scene = MsgTemplate(
             topic=scene_topic,
             payload=scene_payload)
+
+        super().__init__(**kwargs)
 
     #-----------------------------------------------------------------------
     def load_scene_data(self, data, qos=None, topic=None, payload=None):
