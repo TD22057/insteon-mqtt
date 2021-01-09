@@ -142,11 +142,16 @@ class Mqtt:
         This is called when the low level MQTT client connects to the broker.
         After the connection, we'll subscribe to our topics.
 
+        The connected arg doesn't actually tell us if the MQTT link is
+        connected.  It just tells us that the connect() call has returned
+        without error.  The link.connected attribute will be set to True
+        when the link is actually connected.
+
         Args:
           link (network.Mqtt):  The MQTT network link.
           connected (bool):  True if connected, False if disconnected.
         """
-        if connected:
+        if self.link.connected:
             self._subscribe()
 
     #-----------------------------------------------------------------------
@@ -180,7 +185,8 @@ class Mqtt:
         self.devices[device.addr.id] = obj
 
         # If we are already connected we need to subscribe this device
-        obj.subscribe(self.link, self.qos)
+        if self.link.connected:
+            obj.subscribe(self.link, self.qos)
 
     #-----------------------------------------------------------------------
     def handle_cmd(self, client, userdata, message):

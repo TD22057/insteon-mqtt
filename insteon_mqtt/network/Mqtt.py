@@ -290,6 +290,7 @@ class Mqtt(Link):
         """
         if result == 0:
             self.connected = True
+            self.signal_connected.emit(self, True)
         else:
             LOG.error("MQTT connection refused %s %s %s", self.host, self.port,
                       result)
