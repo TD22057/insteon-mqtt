@@ -179,6 +179,9 @@ class Mqtt:
         # Save the MQTT device so we can find it again.
         self.devices[device.addr.id] = obj
 
+        # If we are already connected we need to subscribe this device
+        obj.subscribe(self.link, self.qos)
+
     #-----------------------------------------------------------------------
     def handle_cmd(self, client, userdata, message):
         """MQTT command message callback.
