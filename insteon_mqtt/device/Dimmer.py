@@ -575,8 +575,8 @@ class Dimmer(functions.Scene, Base):
         flags = set([FLAG_BACKLIGHT, FLAG_ON_LEVEL, FLAG_RAMP_RATE])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
-            raise Exception("Unknown Dimmer flags input: %s.\n Valid flags "
-                            "are: %s" % unknown, flags)
+            LOG.error("Unknown Dimmer flags input: %s.\n Valid flags "
+                            "are: %s", unknown, flags)
 
         # Start a command sequence so we can call the flag methods in series.
         seq = CommandSeq(self, "Dimmer set_flags complete", on_done,

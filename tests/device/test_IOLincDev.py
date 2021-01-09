@@ -69,12 +69,12 @@ class Test_IOLinc_Set_Flags():
             test_iolinc.set_flags(None)
             assert IM.CommandSeq.add_msg.call_count == 0
 
-    def test_set_flags_unknown(self, test_iolinc):
-        with pytest.raises(Exception):
-            test_iolinc.trigger_reverse = 0
-            with mock.patch.object(IM.CommandSeq, 'add_msg'):
-                test_iolinc.set_flags(None, Unknown=1)
-                assert IM.CommandSeq.add_msg.call_count == 0
+    def test_set_flags_unknown(self, test_iolinc, caplog):
+        test_iolinc.trigger_reverse = 0
+        with mock.patch.object(IM.CommandSeq, 'add_msg'):
+            test_iolinc.set_flags(None, Unknown=1)
+            assert IM.CommandSeq.add_msg.call_count == 0
+            assert 'Unknown IOLinc flags input' in caplog.text
 
     @pytest.mark.parametrize("mode,expected", [
         ("latching", [0x07, 0x13, 0x15]),
