@@ -106,7 +106,7 @@ class Test_util:
             v = IM.util.input_choice(inputs, 'key2', ['foo', 'bar'])
 
     #-----------------------------------------------------------------------
-    def test_input_bool(self):
+    def test_input_bool(self, caplog):
         inputs = {'key1' : 'TRUE', 'key2' : 'FALSE',
                   'key3' : 1, 'key4': 0,
                   'key5' : 'On', 'key6' : 'Off',
@@ -140,11 +140,11 @@ class Test_util:
         v = IM.util.input_bool(inputs, 'invalid')
         assert v is None
 
-        with pytest.raises(ValueError):
-            v = IM.util.input_bool(inputs, 'key9')
+        v = IM.util.input_bool(inputs, 'key9')
+        assert 'Valid inputs are 1/0' in caplog.text
 
     #-----------------------------------------------------------------------
-    def test_input_integer(self):
+    def test_input_integer(self,caplog):
         inputs = {'key1' : '1', 'key2' : 2,
                   'key3' : '0x03', 'key4' : 0x04,
                   'key5' : None, 'key6' : 'None',
@@ -174,11 +174,11 @@ class Test_util:
         v = IM.util.input_integer(inputs, 'invalid')
         assert v is None
 
-        with pytest.raises(ValueError):
-            v = IM.util.input_integer(inputs, 'key8')
+        v = IM.util.input_integer(inputs, 'key8')
+        assert 'Valid inputs are integer values' in caplog.text
 
     #-----------------------------------------------------------------------
-    def test_input_byte(self):
+    def test_input_byte(self, caplog):
         inputs = {'key1' : 0, 'key2' : '10',
                   'key3' : '0x2f', 'key4' : '0b11',
                   'key5' : 256, 'key6' : '257',
@@ -199,14 +199,14 @@ class Test_util:
         v = IM.util.input_byte(inputs, 'key4')
         assert v == 0x03
 
-        with pytest.raises(ValueError):
-            v = IM.util.input_byte(inputs, 'key5')
+        v = IM.util.input_byte(inputs, 'key5')
+        assert 'Valid inputs are 0-255' in caplog.text
 
-        with pytest.raises(ValueError):
-            v = IM.util.input_byte(inputs, 'key6')
+        v = IM.util.input_byte(inputs, 'key6')
+        assert 'Valid inputs are 0-255' in caplog.text
 
-        with pytest.raises(ValueError):
-            v = IM.util.input_byte(inputs, 'key7')
+        v = IM.util.input_byte(inputs, 'key7')
+        assert 'Valid inputs are 0-255' in caplog.text
 
 
 #===========================================================================

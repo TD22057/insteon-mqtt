@@ -33,7 +33,7 @@ class Mode(enum.Enum):
     RAMP = "ramp"
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
     @staticmethod
     def is_valid(cmd):
@@ -163,7 +163,7 @@ class Manual(enum.Enum):
     STOP = "stop"
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
     @staticmethod
     def is_valid(cmd):

@@ -716,7 +716,7 @@ class SceneDevice:
                        "device that is neither defined in the config file nor "
                        "defined in the scenes file as an address: %s" %
                        self.label)
-                raise Exception(msg)
+                LOG.exception(msg)
 
         # Remove values from yaml_data if they are default values and make
         # pretty. Easiest way to do this is just to set things to themselves
