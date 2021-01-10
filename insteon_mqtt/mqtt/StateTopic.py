@@ -20,9 +20,20 @@ class StateTopic(BaseTopic):
     This is an abstract class that provides support for the State topic.
     """
     def __init__(self, mqtt, device, state_topic=None, state_payload=None,
-                 **kwargs):
+                 state_topic_1=None, state_payload_1=None, **kwargs):
         """Constructor
 
+        Args:
+          state_topic (str): A string of the jinja template for the topic
+          state_payload (str): A string of the jinja template for the payload
+          state_topic_1 (str): A string of the jinja template for the topic of
+                               group 1 if it is distinct from other groups.
+                               Only the KPL Dimmer uses this.
+          state_payload_1 (str): A string of the jinja template for the payload
+                                 of group 1 if it is distinct from other
+                                 groups. Only the KPL Dimmer uses this.
+          mqtt (mqtt.Mqtt):  The MQTT main interface.
+          device (device.KeypadLinc):  The Insteon object to link to.
         """
         super().__init__(mqtt, device, **kwargs)
         # It looks cleaner setting these long strings here rather than in the
@@ -39,6 +50,18 @@ class StateTopic(BaseTopic):
             topic=state_topic,
             payload=state_payload)
 
+        # Set a disctinct template for button 1 if asked.  Only used for KPL
+        # Dimmer
+        self.msg_state_1 = None
+        if state_topic_1 is not None or state_payload_1 is not None:
+            if state_topic_1 is None:
+                state_topic_1 = state_topic
+            if state_payload_1 is None:
+                state_payload_1 = state_payload
+            self.msg_state_1 = MsgTemplate(
+                topic=state_topic_1,
+                payload=state_payload_1)
+
         # Receive notifications from the Insteon device when it changes.
         self.device.signal_state.connect(self.publish_state)
 
@@ -47,7 +70,8 @@ class StateTopic(BaseTopic):
         self.state_retain = True
 
     #-----------------------------------------------------------------------
-    def load_state_data(self, data, qos=None, topic=None, payload=None):
+    def load_state_data(self, data, qos=None, topic=None, payload=None,
+                        topic_1=None, payload_1=None):
         """Load values from a configuration data object.
 
         Args:
@@ -61,6 +85,13 @@ class StateTopic(BaseTopic):
             payload = 'state_payload'
         # Update the MQTT topics and payloads from the config file.
         self.msg_state.load_config(data, topic, payload, qos)
+
+        if self.msg_state_1 is not None:
+            if topic_1 is None:
+                topic_1 = 'dimmer_state_topic'
+            if payload_1 is None:
+                payload_1 = 'dimmer_state_payload'
+            self.msg_state_1.load_config(data, topic_1, payload_1, qos)
 
     #-----------------------------------------------------------------------
     def state_template_data(self, **kwargs):
@@ -139,6 +170,13 @@ class StateTopic(BaseTopic):
                 retain = False
 
         data = self.state_template_data(**kwargs)
-        self.msg_state.publish(self.mqtt, data, retain=retain)
+
+        # If this has a distinct template for group 1 use it.
+        if ('button' in kwargs and
+                kwargs['button'] == 1 and
+                self.msg_state_1 is not None):
+            self.msg_state_1.publish(self.mqtt, data, retain=retain)
+        else:
+            self.msg_state.publish(self.mqtt, data, retain=retain)
 
     #-----------------------------------------------------------------------

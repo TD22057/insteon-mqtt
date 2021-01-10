@@ -39,7 +39,7 @@ class KeypadLinc(functions.Scene, Base):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_level_changed( Device, int level, on_off.Mode mode, str reason):
+    - signal_state( Device, int level, on_off.Mode mode, str reason):
       Sent whenever the dimmer is turned on or off or changes level.  The
       level field will be in the range 0-255.  For an on/off switch, this
       will only emit 0 or 255.
@@ -71,7 +71,7 @@ class KeypadLinc(functions.Scene, Base):
 
         # Group on/off signal.
         # API: func(Device, int group, int level, on_off.Mode mode, str reason)
-        self.signal_level_changed = Signal()
+        self.signal_state = Signal()
 
         # Manual mode start up, down, off
         # API: func(Device, int group, on_off.Manual mode, str reason)
@@ -1475,7 +1475,8 @@ class KeypadLinc(functions.Scene, Base):
             manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
             LOG.info("KeypadLinc %s manual change %s", self.addr, manual)
 
-            self.signal_manual.emit(self, msg.group, manual, reason)
+            self.signal_manual.emit(self, button=msg.group, manual=manual,
+                                    reason=reason)
 
             # Non-load group buttons don't change state in manual mode. (found
             # through experiments)
@@ -1609,7 +1610,8 @@ class KeypadLinc(functions.Scene, Base):
         # Starting/stopping manual increment (cmd2 0x00=up, 0x01=down)
         elif on_off.Manual.is_valid(msg.cmd1):
             manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-            self.signal_manual.emit(self, localGroup, manual, reason)
+            self.signal_manual.emit(self, button=localGroup, manual=manual,
+                                    reason=reason)
 
             # If the button is released, refresh to get the final level in
             # dimming mode since we don't know where the level stopped.
@@ -1648,6 +1650,7 @@ class KeypadLinc(functions.Scene, Base):
             self._led_bits = util.bit_set(self._led_bits, group - 1,
                                           1 if level else 0)
 
-        self.signal_level_changed.emit(self, group, level, mode, reason)
+        self.signal_state.emit(self, button=group, level=level, mode=mode,
+                               reason=reason)
 
     #-----------------------------------------------------------------------
