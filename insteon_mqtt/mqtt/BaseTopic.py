@@ -23,7 +23,7 @@ class BaseTopic:
         self.device = device
 
     #-----------------------------------------------------------------------
-    def topic_template_data(self, button=None):
+    def base_template_data(self, button=None):
         """Create the Jinja templating data variables for use in topics.
 
         Args:

@@ -9,11 +9,12 @@ from .MsgTemplate import MsgTemplate
 from . import util
 from .SceneTopic import SceneTopic
 from .StateTopic import StateTopic
+from .ManualTopic import ManualTopic
 
 LOG = log.get_logger()
 
 
-class Switch(StateTopic, SceneTopic):
+class Switch(StateTopic, SceneTopic, ManualTopic):
     """MQTT interface to an Insteon on/off switch.
 
     This class connects to a device.Switch object and converts it's
@@ -33,16 +34,10 @@ class Switch(StateTopic, SceneTopic):
         # Setup the Topics
         super().__init__(mqtt, device)
 
-        # Output manual state change is off by default.
-        self.msg_manual_state = MsgTemplate(None, None)
-
         # Input on/off command template.
         self.msg_on_off = MsgTemplate(
             topic='insteon/{{address}}/set',
             payload='{ "cmd" : "{{value.lower()}}" }')
-
-        # Receive notifications from the Insteon device when it changes.
-        device.signal_manual.connect(self._insteon_manual)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -60,10 +55,8 @@ class Switch(StateTopic, SceneTopic):
         # Load the various topics
         self.load_scene_data(data, qos)
         self.load_state_data(data, qos)
+        self.load_manual_data(data, qos)
 
-        # Update the MQTT topics and payloads from the config file.
-        self.msg_manual_state.load_config(data, 'manual_state_topic',
-                                          'manual_state_payload', qos)
         self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
                                     qos)
 
@@ -79,7 +72,7 @@ class Switch(StateTopic, SceneTopic):
           qos (int):  The quality of service to use.
         """
         # On/off command messages.
-        topic = self.msg_on_off.render_topic(self.template_data())
+        topic = self.msg_on_off.render_topic(self.base_template_data())
         link.subscribe(topic, qos, self._input_on_off)
 
         self.scene_subscribe(link, qos)
@@ -91,7 +84,7 @@ class Switch(StateTopic, SceneTopic):
         Args:
           link (network.Mqtt):  The MQTT network client to use.
         """
-        topic = self.msg_on_off.render_topic(self.template_data())
+        topic = self.msg_on_off.render_topic(self.base_template_data())
         link.unsubscribe(topic)
 
         self.scene_unsubscribe(link)
@@ -144,28 +137,6 @@ class Switch(StateTopic, SceneTopic):
                 data["reason"] = kwargs['reason']
 
         return data
-
-    #-----------------------------------------------------------------------
-    def _insteon_manual(self, device, manual, reason=""):
-        """Device manual mode callback.
-
-        This is triggered via signal when the Insteon device starts or stops
-        manual mode (holding a button down).  It will publish an MQTT message
-        with the new state.
-
-        Args:
-          device (device.Base): The Insteon device that changed.
-          manual (on_off.Manual):  The manual mode.
-          reason (str):  The reason the device was triggered.  This is an
-                 arbitrary string set into the template variables.
-        """
-        LOG.info("MQTT received manual change %s %s '%s'", device.label,
-                 manual, reason)
-
-        # For manual mode messages, don't retain them because they don't
-        # represent persistent state - they're momentary events.
-        data = self.template_data(manual=manual, reason=reason)
-        self.msg_manual_state.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------
     def _input_on_off(self, client, data, message):

@@ -89,11 +89,11 @@ class Dimmer(StateTopic, SceneTopic):
           qos (int):  The quality of service to use.
         """
         # On/off command messages.
-        topic = self.msg_on_off.render_topic(self.topic_template_data())
+        topic = self.msg_on_off.render_topic(self.base_template_data())
         link.subscribe(topic, qos, self._input_on_off)
 
         # Level changing command messages.
-        topic = self.msg_level.render_topic(self.topic_template_data())
+        topic = self.msg_level.render_topic(self.base_template_data())
         link.subscribe(topic, qos, self._input_set_level)
 
         self.scene_subscribe(link, qos)
@@ -105,10 +105,10 @@ class Dimmer(StateTopic, SceneTopic):
         Args:
           link (network.Mqtt):  The MQTT network client to use.
         """
-        topic = self.msg_on_off.render_topic(self.topic_template_data())
+        topic = self.msg_on_off.render_topic(self.base_template_data())
         link.unsubscribe(topic)
 
-        topic = self.msg_level.render_topic(self.topic_template_data())
+        topic = self.msg_level.render_topic(self.base_template_data())
         link.unsubscribe(topic)
 
         self.scene_unsubscribe(link)

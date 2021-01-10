@@ -70,11 +70,11 @@ class SceneTopic(BaseTopic):
         if group is not None:
             handler = functools.partial(self._input_scene, group=group)
             topic = self.msg_scene.render_topic(
-                self.topic_template_data(button=group)
+                self.base_template_data(button=group)
             )
         else:
             handler = self._input_scene
-            topic = self.msg_scene.render_topic(self.topic_template_data())
+            topic = self.msg_scene.render_topic(self.base_template_data())
         link.subscribe(topic, qos, handler)
 
     #-----------------------------------------------------------------------
@@ -85,10 +85,10 @@ class SceneTopic(BaseTopic):
           link (network.Mqtt):  The MQTT network client to use.
         """
         if group is not None:
-            data = self.topic_template_data(button=group)
+            data = self.base_template_data(button=group)
             topic = self.msg_scene.render_topic(data)
         else:
-            topic = self.msg_scene.render_topic(self.topic_template_data())
+            topic = self.msg_scene.render_topic(self.base_template_data())
         link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
