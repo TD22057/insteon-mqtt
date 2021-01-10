@@ -19,6 +19,12 @@ class ManualTopic(BaseTopic):
     """
     @staticmethod
     def manual_template_data(**kwargs):
+        """Generate the manual template data
+
+        This is used in StateTopic as well by devices that do not necessarily
+        have a ManualTopic.  Not sure if this is necessary, but to enable such
+        functionality, this is a static method.
+        """
         data = {}
         if 'manual' in kwargs and kwargs['manual'] is not None:
             data["manual_str"] = str(kwargs['manual'])
@@ -31,8 +37,15 @@ class ManualTopic(BaseTopic):
 
     def __init__(self, mqtt, device, manual_topic=None, manual_payload=None,
                  **kwargs):
-        """Constructor
+        """Manual Topic Constructor
 
+        Manual topics are off by default.
+
+        Args:
+          mqtt (mqtt.Mqtt):  The MQTT main interface.
+          device (device):  The Insteon object to link to.
+          manual_topic (str): The template for the topic
+          manual_payload (str): The tempalte for the payload
         """
         super().__init__(mqtt, device, **kwargs)
 
@@ -64,17 +77,14 @@ class ManualTopic(BaseTopic):
 
     #-----------------------------------------------------------------------
     def publish_manual(self, device, **kwargs):
-        """Device on/off callback.
+        """Device Manual Change Callback.
 
-        This is triggered via signal when the Insteon device is turned on or
-        off.  It will publish an MQTT message with the new manual.
+        This is triggered via signal when the Insteon device is manual change
+        is triggered.  It will publish an MQTT message with the new manual.
 
         Args:
-          device (device.Switch):   The Insteon device that changed.
-          is_on (bool):   True for on, False for off.
-          mode (on_off.Mode):  The on/off mode manual.
-          reason (str):  The reason the device was triggered.  This is an
-                 arbitrary string set into the template variables.
+          device (device):   The Insteon device that changed.
+          kwargs (dict):  The dictionary of values to pass to template.
         """
         LOG.info("MQTT received manual change %s on: %s", device.label, kwargs)
         data = ManualTopic.manual_template_data(**kwargs)

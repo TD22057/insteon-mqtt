@@ -19,8 +19,13 @@ class SceneTopic(BaseTopic):
     """
     def __init__(self, mqtt, device, scene_topic=None, scene_payload=None,
                  **kwargs):
-        """Constructor
+        """Scene Topic Constructor
 
+        Args:
+          mqtt (mqtt.Mqtt):  The MQTT main interface.
+          device (device):  The Insteon object to link to.
+          scene_topic (str): The template for the topic
+          scene_payload (str): The template for the payload
         """
         super().__init__(mqtt, device, **kwargs)
         # It looks cleaner setting these long strings here rather than in the

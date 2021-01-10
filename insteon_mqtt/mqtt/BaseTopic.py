@@ -9,22 +9,24 @@ LOG = log.get_logger()
 
 
 class BaseTopic:
-    """MQTT interface to an Insteon on/off switch.
-
-    This class connects to a device.Switch object and converts it's
-    output state changes to MQTT messages.  It also subscribes to topics to
-    allow input MQTT messages to change the state of the Insteon device.
-
-    Switches will report their state and can be commanded to turn on and off.
+    """Abstract Class for MQTT Topics
     """
-
     def __init__(self, mqtt, device):
+        """Constructor
+
+        Args:
+          mqtt (mqtt.Mqtt):  The MQTT main interface.
+          device (device):  The Insteon object to link to.
+        """
         self.mqtt = mqtt
         self.device = device
 
     #-----------------------------------------------------------------------
     def base_template_data(self, **kwargs):
         """Create the Jinja templating data variables for use in topics.
+
+        As the base template, this provides the immutable values such as
+        address and name.
 
         Args:
           button (int):  The button (group) ID (1-8) of the Insteon button

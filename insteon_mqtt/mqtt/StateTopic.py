@@ -19,9 +19,11 @@ class StateTopic(BaseTopic):
     """
     def __init__(self, mqtt, device, state_topic=None, state_payload=None,
                  state_topic_1=None, state_payload_1=None, **kwargs):
-        """Constructor
+        """State Topic Constructor
 
         Args:
+          device (device):  The Insteon object to link to.
+          mqtt (mqtt.Mqtt):  The MQTT main interface.
           state_topic (str): A string of the jinja template for the topic
           state_payload (str): A string of the jinja template for the payload
           state_topic_1 (str): A string of the jinja template for the topic of
@@ -31,7 +33,6 @@ class StateTopic(BaseTopic):
                                  of group 1 if it is distinct from other
                                  groups. Only the KPL Dimmer uses this.
           mqtt (mqtt.Mqtt):  The MQTT main interface.
-          device (device.KeypadLinc):  The Insteon object to link to.
         """
         super().__init__(mqtt, device, **kwargs)
         # It looks cleaner setting these long strings here rather than in the
@@ -95,7 +96,7 @@ class StateTopic(BaseTopic):
     def state_template_data(self, **kwargs):
         """Create the Jinja templating data variables for on/off messages.
 
-        Args:
+        kwargs includes:
           is_on (bool):  The on/off state of the switch.  If None, on/off and
                 mode attributes are not added to the data.
           mode (on_off.Mode):  The on/off mode state.
@@ -103,6 +104,8 @@ class StateTopic(BaseTopic):
                  attributes are not added to the data.
           reason (str):  The reason the device was triggered.  This is an
                  arbitrary string set into the template variables.
+          level (int):  A brightness level between 0-255
+          button (int): Passed to base_template_data, the group numer to use
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -151,11 +154,8 @@ class StateTopic(BaseTopic):
         off.  It will publish an MQTT message with the new state.
 
         Args:
-          device (device.Switch):   The Insteon device that changed.
-          is_on (bool):   True for on, False for off.
-          mode (on_off.Mode):  The on/off mode state.
-          reason (str):  The reason the device was triggered.  This is an
-                 arbitrary string set into the template variables.
+          device (device):   The Insteon device that changed.
+          kwargs (dict): The arguments to pass to state_template_data
         """
         LOG.info("MQTT received state %s on: %s", device.label, kwargs)
 
