@@ -8,11 +8,12 @@ from .. import log
 from .. import on_off
 from .MsgTemplate import MsgTemplate
 from . import util
+from .StateTopic import StateTopic
 
 LOG = log.get_logger()
 
 
-class EZIO4O:
+class EZIO4O(StateTopic):
     """MQTT interface to Smartenit EZIO4O 4 relay output device.
 
     This class connects to a device.EZIO4O object and converts it's
@@ -30,22 +31,15 @@ class EZIO4O:
           mqtt (mqtt.Mqtt):  The MQTT main interface.
           device (device.Outlet):  The Insteon object to link to.
         """
-        self.mqtt = mqtt
-        self.device = device
-
-        # Output state change reporting template.
-        self.msg_state = MsgTemplate(
-            topic="insteon/{{address}}/state/{{button}}",
-            payload="{{on_str.lower()}}"
-        )
+        # Setup the Topics
+        super().__init__(mqtt, device,
+                         state_topic='insteon/{{address}}/state/{{button}}')
 
         # Input on/off command template.
         self.msg_on_off = MsgTemplate(
             topic="insteon/{{address}}/set/{{button}}",
             payload='{ "cmd" : "{{value.lower()}}" }',
         )
-
-        device.signal_on_off.connect(self._insteon_on_off)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -60,7 +54,9 @@ class EZIO4O:
         if not data:
             return
 
-        self.msg_state.load_config(data, "state_topic", "state_payload", qos)
+        # Load the various topics
+        self.load_state_data(data, qos)
+
         self.msg_on_off.load_config(data, "on_off_topic",
                                     "on_off_payload", qos)
 
@@ -80,7 +76,7 @@ class EZIO4O:
         # group number set for each socket.
         for group in [1, 2, 3, 4]:
             handler = functools.partial(self._input_on_off, group=group)
-            data = self.template_data(button=group)
+            data = self.base_template_data(button=group)
 
             topic = self.msg_on_off.render_topic(data)
             link.subscribe(topic, qos, handler)
@@ -93,72 +89,10 @@ class EZIO4O:
           link (network.Mqtt):  The MQTT network client to use.
         """
         for group in [1, 2, 3, 4]:
-            data = self.template_data(button=group)
+            data = self.base_template_data(button=group)
 
             topic = self.msg_on_off.render_topic(data)
             link.unsubscribe(topic)
-
-    #-----------------------------------------------------------------------
-    def template_data(self, is_on=None, button=None, mode=on_off.Mode.NORMAL,
-                      reason=None):
-        """Create the Jinja templating data variables for on/off messages.
-
-        Args:
-          button (int):  The button (group) ID (1-4) of the EZIO4O relay
-                 that was triggered.
-          is_on (bool):  True for on, False for off.  If None, on/off and
-                mode attributes are not added to the data.
-          mode (on_off.Mode):  The on/off mode state.
-          reason (str):  The reason the device was triggered.  This is an
-                 arbitrary string set into the template variables.
-
-        Returns:
-          dict:  Returns a dict with the variables available for templating.
-        """
-        name = self.device.name if self.device.name else self.device.addr.hex
-        data = {"address": self.device.addr.hex, "name": name}
-
-        if button is not None:
-            data["button"] = button
-
-        if is_on is not None:
-            data["on"] = 1 if is_on else 0
-            data["on_str"] = "on" if is_on else "off"
-            data["mode"] = str(mode)
-            data["fast"] = 1 if mode == on_off.Mode.FAST else 0
-            data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
-            data["reason"] = reason if reason is not None else ""
-
-        return data
-
-    #-----------------------------------------------------------------------
-    def _insteon_on_off(self, device, group, is_on,
-                        mode=on_off.Mode.NORMAL, reason=""):
-        """Device active on/off callback.
-
-        This is triggered via signal when the Insteon device turns on or off.
-        It will publish an MQTT message with the new state.
-
-        Args:
-          device (device.Outlet):  The Insteon device that changed.
-          group (int):  The relay number (1 to 4) that was changed.
-          is_on (bool):  True for on, False for off.  If None, on/off and
-                mode attributes are not added to the data.
-          mode (on_off.Mode):  The on/off mode state.
-          reason (str):  The reason the device was triggered.  This is an
-                 arbitrary string set into the template variables.
-        """
-        LOG.info(
-            "MQTT received on/off %s grp: %s on: %s %s '%s'",
-            device.label,
-            group,
-            is_on,
-            mode,
-            reason,
-        )
-
-        data = self.template_data(is_on, group, mode, reason=reason)
-        self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
     def _input_on_off(self, client, data, message, group):
