@@ -34,7 +34,7 @@ class BaseTopic:
           dict:  Returns a dict with the variables available for templating.
         """
         data = {"address" : self.device.addr.hex,
-                "name" : self.device.addr.hex,}
+                "name" : self.device.addr.hex}
         if self.device.name:
             data['name'] = self.device.name
         if 'button' in kwargs and kwargs['button'] is not None:

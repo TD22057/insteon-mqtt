@@ -4,9 +4,7 @@
 #
 #===========================================================================
 from .. import log
-from .. import on_off
 from .BatterySensor import BatterySensor
-from .MsgTemplate import MsgTemplate
 from .ManualTopic import ManualTopic
 
 LOG = log.get_logger()

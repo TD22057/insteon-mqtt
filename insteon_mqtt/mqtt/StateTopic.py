@@ -3,11 +3,9 @@
 # MQTT State Topic
 #
 #===========================================================================
-# import functools
 from .. import log
 from .. import on_off
 from .MsgTemplate import MsgTemplate
-# from . import util
 from .BaseTopic import BaseTopic
 from .ManualTopic import ManualTopic
 
@@ -144,6 +142,7 @@ class StateTopic(BaseTopic):
         data.update(manual_data)
 
         return data
+
     #-----------------------------------------------------------------------
     def publish_state(self, device, **kwargs):
         """Device on/off callback.
