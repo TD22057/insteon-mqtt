@@ -62,26 +62,27 @@ class Test_Switch:
     def test_template(self, setup):
         mdev, addr, name = setup.getAll(['mdev', 'addr', 'name'])
 
-        data = mdev.template_data()
+        data = mdev.base_template_data()
         right = {"address" : addr.hex, "name" : name}
         assert data == right
 
-        data = mdev.template_data(is_on=True, mode=IM.on_off.Mode.FAST,
-                                  manual=IM.on_off.Manual.STOP,
-                                  reason="something")
+        data = mdev.state_template_data(is_on=True, mode=IM.on_off.Mode.FAST,
+                                        manual=IM.on_off.Manual.STOP,
+                                        reason="something")
         right = {"address" : addr.hex, "name" : name,
                  "on" : 1, "on_str" : "on", "reason" : "something",
                  "mode" : "fast", "fast" : 1, "instant" : 0,
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
         assert data == right
 
-        data = mdev.template_data(is_on=False)
+        data = mdev.state_template_data(is_on=False)
         right = {"address" : addr.hex, "name" : name, "reason" : "",
                  "on" : 0, "on_str" : "off",
                  "mode" : "normal", "fast" : 0, "instant" : 0}
         assert data == right
 
-        data = mdev.template_data(manual=IM.on_off.Manual.UP, reason="foo")
+        data = mdev.state_template_data(manual=IM.on_off.Manual.UP,
+                                        reason="foo")
         right = {"address" : addr.hex, "name" : name, "reason" : "foo",
                  "manual_str" : "up", "manual" : 1, "manual_openhab" : 2}
         assert data == right

@@ -107,56 +107,6 @@ class Dimmer(StateTopic, SceneTopic, ManualTopic):
         self.scene_unsubscribe(link)
 
     #-----------------------------------------------------------------------
-    def template_data(self, **kwargs):
-        """Create the Jinja templating data variables for on/off messages.
-
-        Args:
-          level (int):  The dimmer level.  If None, on/off and levels
-                attributes are not added to the data.
-          mode (on_off.Mode):  The on/off mode state.
-          manual (on_off.Manual):  The manual mode state.  If None, manual
-                 attributes are not added to the data.
-          reason (str):  The reason the device was triggered.  This is an
-                 arbitrary string set into the template variables.
-
-        Returns:
-          dict:  Returns a dict with the variables available for templating.
-        """
-        data = {
-            "address" : self.device.addr.hex,
-            "name" : self.device.name if self.device.name
-                     else self.device.addr.hex,
-            }
-
-        if 'level' in kwargs and kwargs['level'] is not None:
-            data["on"] = 1 if kwargs['level'] else 0
-            data["on_str"] = "on" if kwargs['level'] else "off"
-            data["level_255"] = kwargs['level']
-            data["level_100"] = int(100.0 * kwargs['level'] / 255.0)
-            data["mode"] = str(on_off.Mode.NORMAL)
-            data["fast"] = 0
-            data["instant"] = 0
-            if 'mode' in kwargs:
-                data["mode"] = str(kwargs['mode'])
-                data["fast"] = 1 if kwargs['mode'] == on_off.Mode.FAST else 0
-                data["instant"] = 0
-                if kwargs['mode'] == on_off.Mode.INSTANT:
-                    data["instant"] = 1
-            data["reason"] = ""
-            if 'reason' in kwargs and kwargs['reason'] is not None:
-                data["reason"] = kwargs['reason']
-
-        if 'manual' in kwargs and kwargs['manual'] is not None:
-            data["manual_str"] = str(kwargs['manual'])
-            data["manual"] = kwargs['manual'].int_value()
-            data["manual_openhab"] = kwargs['manual'].openhab_value()
-            data["reason"] = ""
-            if 'reason' in kwargs and kwargs['reason'] is not None:
-                data["reason"] = kwargs['reason']
-
-        return data
-
-    #-----------------------------------------------------------------------
     def _input_on_off(self, client, data, message):
         """Handle an input on/off change MQTT message.
 

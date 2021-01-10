@@ -9,7 +9,7 @@ from .. import on_off
 from .MsgTemplate import MsgTemplate
 # from . import util
 from .BaseTopic import BaseTopic
-# from .ManualTopic import ManualTopic
+from .ManualTopic import ManualTopic
 
 LOG = log.get_logger()
 
@@ -59,9 +59,56 @@ class StateTopic(BaseTopic):
         self.msg_state.load_config(data, topic, payload, qos)
 
     #-----------------------------------------------------------------------
-    def template_data(self, **kwargs):
-        raise NotImplementedError  # pragma: no cover
+    def state_template_data(self, **kwargs):
+        """Create the Jinja templating data variables for on/off messages.
 
+        Args:
+          is_on (bool):  The on/off state of the switch.  If None, on/off and
+                mode attributes are not added to the data.
+          mode (on_off.Mode):  The on/off mode state.
+          manual (on_off.Manual):  The manual mode state.  If None, manual
+                 attributes are not added to the data.
+          reason (str):  The reason the device was triggered.  This is an
+                 arbitrary string set into the template variables.
+
+        Returns:
+          dict:  Returns a dict with the variables available for templating.
+        """
+        # Set up the variables that can be used in the templates.
+        data = self.base_template_data()
+
+        # Dimmers
+        if 'level' in kwargs and kwargs['level'] is not None:
+            data["on"] = 1 if kwargs['level'] else 0
+            data["on_str"] = "on" if kwargs['level'] else "off"
+            data["level_255"] = kwargs['level']
+            data["level_100"] = int(100.0 * kwargs['level'] / 255.0)
+
+        # Non-dimmers
+        elif 'is_on' in kwargs and kwargs['is_on'] is not None:
+            data["on"] = 1 if kwargs['is_on'] else 0
+            data["on_str"] = "on" if kwargs['is_on'] else "off"
+
+        # If we have an on value
+        if 'on' in data:
+            data["mode"] = str(on_off.Mode.NORMAL)
+            data["fast"] = 0
+            data["instant"] = 0
+            if 'mode' in kwargs:
+                data["mode"] = str(kwargs['mode'])
+                data["fast"] = 1 if kwargs['mode'] == on_off.Mode.FAST else 0
+                data["instant"] = 0
+                if kwargs['mode'] == on_off.Mode.INSTANT:
+                    data["instant"] = 1
+            data["reason"] = ""
+            if 'reason' in kwargs and kwargs['reason'] is not None:
+                data["reason"] = kwargs['reason']
+
+        # Update with manual data
+        manual_data = ManualTopic.manual_template_data(**kwargs)
+        data.update(manual_data)
+
+        return data
     #-----------------------------------------------------------------------
     def publish_state(self, device, **kwargs):
         """Device on/off callback.
@@ -84,7 +131,7 @@ class StateTopic(BaseTopic):
         if 'mode' in kwargs:
             retain = False if kwargs['mode'] == on_off.Mode.MANUAL else None
 
-        data = self.template_data(**kwargs)
+        data = self.state_template_data(**kwargs)
         self.msg_state.publish(self.mqtt, data, retain=retain)
 
     #-----------------------------------------------------------------------

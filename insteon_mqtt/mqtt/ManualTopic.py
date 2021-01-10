@@ -66,10 +66,6 @@ class ManualTopic(BaseTopic):
         self.msg_manual_state.load_config(data, topic, payload, qos)
 
     #-----------------------------------------------------------------------
-    def template_data(self, **kwargs):
-        raise NotImplementedError  # pragma: no cover
-
-    #-----------------------------------------------------------------------
     def publish_manual(self, device, manual, reason=""):
         """Device on/off callback.
 

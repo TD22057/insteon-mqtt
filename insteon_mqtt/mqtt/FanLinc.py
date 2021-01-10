@@ -99,7 +99,7 @@ class FanLinc(Dimmer):
         super().subscribe(link, qos)
 
         # Subscribe to the FanLinc topics.
-        data = self.template_data()
+        data = self.base_template_data()
 
         topic = self.msg_fan_on_off.render_topic(data)
         if topic:
