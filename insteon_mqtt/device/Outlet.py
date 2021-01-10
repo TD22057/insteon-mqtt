@@ -27,7 +27,7 @@ class Outlet(Base):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_on_off( Device, int group, bool is_on, on_off.Mode mode, str
+    - signal_state( Device, int group, bool is_on, on_off.Mode mode, str
                      reason ): Sent whenever the switch is turned on or off.
                      Group will be 1 for the top outlet and 2 for the bottom
                      outlet.
@@ -51,7 +51,7 @@ class Outlet(Base):
         # Support on/off style signals.
         # API: func(Device, int group, bool is_on, on_off.Mode mode,
         #           str reason)
-        self.signal_on_off = Signal()
+        self.signal_state = Signal()
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
@@ -493,6 +493,7 @@ class Outlet(Base):
         self._is_on[group - 1] = is_on
 
         # Notify others that the outlet state has changed.
-        self.signal_on_off.emit(self, group, is_on, mode, reason)
+        self.signal_state.emit(self, button=group, is_on=is_on, mode=mode,
+                               reason=reason)
 
     #-----------------------------------------------------------------------
