@@ -101,8 +101,8 @@ class Test_Dimmer:
         mdev.load_config({})
 
         # Send a level signal
-        dev.signal_level_changed.emit(dev, 0x12)
-        dev.signal_level_changed.emit(dev, 0x00)
+        dev.signal_state.emit(dev, level=0x12)
+        dev.signal_state.emit(dev, level=0x00)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic='%s/state' % topic,
@@ -135,8 +135,8 @@ class Test_Dimmer:
         mtopic = "bar/%s" % setup.addr.hex
 
         # Send a level signal
-        dev.signal_level_changed.emit(dev, 0xff)
-        dev.signal_level_changed.emit(dev, 0x00)
+        dev.signal_state.emit(dev, level=0xff)
+        dev.signal_state.emit(dev, level=0x00)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic=ltopic, payload='1 255', qos=qos, retain=True)

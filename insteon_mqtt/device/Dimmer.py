@@ -28,7 +28,7 @@ class Dimmer(functions.Scene, Base):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_level_changed( Device, int level, on_off.Mode mode, str reason ):
+    - signal_state( Device, int level, on_off.Mode mode, str reason ):
       Sent whenever the dimmer is turned on or off or changes level.  The
       level field will be in the range 0-255.
 
@@ -63,7 +63,7 @@ class Dimmer(functions.Scene, Base):
 
         # Support dimmer style signals and motion on/off style signals.
         # API:  func(Device, int level, on_off.Mode mode, str reason)
-        self.signal_level_changed = Signal()
+        self.signal_state = Signal()
 
         # Manual mode start up, down, off
         # API: func(Device, on_off.Manual mode, str reason)
@@ -876,6 +876,6 @@ class Dimmer(functions.Scene, Base):
                  reason)
         self._level = level
 
-        self.signal_level_changed.emit(self, level, mode, reason)
+        self.signal_state.emit(self, level=level, mode=mode, reason=reason)
 
     #-----------------------------------------------------------------------

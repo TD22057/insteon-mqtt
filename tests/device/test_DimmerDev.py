@@ -38,16 +38,30 @@ class Test_Base_Config():
             assert IM.CommandSeq.add.call_count == 2
 
     @pytest.mark.parametrize("group,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.ON, 0x00,[255,IM.on_off.Mode.NORMAL, 'device']),
-        (0x01,Msg.CmdType.OFF, 0x00, [0,IM.on_off.Mode.NORMAL, 'device']),
-        (0x01,Msg.CmdType.ON_FAST, 0x00,[255,IM.on_off.Mode.FAST, 'device']),
-        (0x01,Msg.CmdType.OFF_FAST, 0x00, [0,IM.on_off.Mode.FAST, 'device']),
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, [IM.on_off.Manual.DOWN, 'device']),
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, [IM.on_off.Manual.UP, 'device']),
-        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, [IM.on_off.Manual.STOP, 'device']),
+        (0x01,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "reason":'device'}),
+        (0x01,Msg.CmdType.OFF, 0x00, {"level":0,"mode":IM.on_off.Mode.NORMAL, "reason":'device'}),
+        (0x01,Msg.CmdType.ON_FAST, 0x00,{"level":255,"mode":IM.on_off.Mode.FAST, "reason":'device'}),
+        (0x01,Msg.CmdType.OFF_FAST, 0x00, {"level":0,"mode":IM.on_off.Mode.FAST, "reason":'device'}),
         (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
     ])
     def test_handle_on_off(self, test_device, group, cmd1, cmd2, expected):
+        with mock.patch.object(IM.Signal, 'emit') as mocked:
+            flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+            group = IM.Address(0x00, 0x00, group)
+            addr = IM.Address(0x01, 0x02, 0x03)
+            msg = Msg.InpStandard(addr, group, flags, cmd1, cmd2)
+            test_device.handle_broadcast(msg)
+            if expected is not None:
+                mocked.assert_called_once_with(test_device, **expected)
+            else:
+                mocked.assert_not_called()
+
+    @pytest.mark.parametrize("group,cmd1,cmd2,expected", [
+        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, [IM.on_off.Manual.DOWN, 'device']),
+        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, [IM.on_off.Manual.UP, 'device']),
+        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, [IM.on_off.Manual.STOP, 'device']),
+    ])
+    def test_handle_on_off_manual(self, test_device, group, cmd1, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:
             flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
             group = IM.Address(0x00, 0x00, group)
@@ -92,19 +106,19 @@ class Test_Base_Config():
         # default on-level then to full brightness, as expected.
         # Fast-on should always go to full brightness.
         params = [
-            (Msg.CmdType.ON, 0x00, [64, IM.on_off.Mode.NORMAL, 'device']),
-            (Msg.CmdType.ON, 0x00, [255, IM.on_off.Mode.NORMAL, 'device']),
-            (Msg.CmdType.ON, 0x00, [64, IM.on_off.Mode.NORMAL, 'device']),
-            (Msg.CmdType.OFF, 0x00, [0, IM.on_off.Mode.NORMAL, 'device']),
-            (Msg.CmdType.ON_FAST, 0x00, [255, IM.on_off.Mode.FAST, 'device']),
-            (Msg.CmdType.ON_FAST, 0x00, [255, IM.on_off.Mode.FAST, 'device']),
-            (Msg.CmdType.OFF_FAST, 0x00, [0, IM.on_off.Mode.FAST, 'device']),
+            (Msg.CmdType.ON, 0x00, {"level":64, "mode":IM.on_off.Mode.NORMAL, "reason":'device'}),
+            (Msg.CmdType.ON, 0x00, {"level":255, "mode":IM.on_off.Mode.NORMAL, "reason":'device'}),
+            (Msg.CmdType.ON, 0x00, {"level":64, "mode":IM.on_off.Mode.NORMAL, "reason":'device'}),
+            (Msg.CmdType.OFF, 0x00, {"level":0, "mode":IM.on_off.Mode.NORMAL, "reason":'device'}),
+            (Msg.CmdType.ON_FAST, 0x00, {"level":255, "mode":IM.on_off.Mode.FAST, "reason":'device'}),
+            (Msg.CmdType.ON_FAST, 0x00, {"level":255, "mode":IM.on_off.Mode.FAST, "reason":'device'}),
+            (Msg.CmdType.OFF_FAST, 0x00, {"level":0, "mode":IM.on_off.Mode.FAST, "reason":'device'}),
             (Msg.CmdType.ON_INSTANT, 0x00,
-                [64, IM.on_off.Mode.INSTANT, 'device']),
+                {"level":64, "mode":IM.on_off.Mode.INSTANT, "reason":'device'}),
             (Msg.CmdType.ON_INSTANT, 0x00,
-                [255, IM.on_off.Mode.INSTANT, 'device']),
+                {"level":255,"mode": IM.on_off.Mode.INSTANT, "reason":'device'}),
             (Msg.CmdType.ON_INSTANT, 0x00,
-                [64, IM.on_off.Mode.INSTANT, 'device'])]
+                {"level":64, "mode":IM.on_off.Mode.INSTANT, "reason":'device'})]
         for cmd1, cmd2, expected in params:
             with mock.patch.object(IM.Signal, 'emit') as mocked:
                 print("Trying:", "[%x, %x]" % (cmd1, cmd2))
@@ -115,7 +129,7 @@ class Test_Base_Config():
                 msg = Msg.InpStandard(addr, group, flags, cmd1, cmd2)
                 test_device.handle_broadcast(msg)
                 if expected is not None:
-                    mocked.assert_called_once_with(test_device, *expected)
+                    mocked.assert_called_once_with(test_device, **expected)
                 else:
                     mocked.assert_not_called()
 
