@@ -42,6 +42,10 @@ class StateTopic(BaseTopic):
         # Receive notifications from the Insteon device when it changes.
         self.device.signal_state.connect(self.publish_state)
 
+        # Set to false if you do not want messages from this device retained.
+        # Currently only used by the battery operated remote
+        self.state_retain = True
+
     #-----------------------------------------------------------------------
     def load_state_data(self, data, qos=None, topic=None, payload=None):
         """Load values from a configuration data object.
@@ -75,7 +79,7 @@ class StateTopic(BaseTopic):
           dict:  Returns a dict with the variables available for templating.
         """
         # Set up the variables that can be used in the templates.
-        data = self.base_template_data()
+        data = self.base_template_data(**kwargs)
 
         # Dimmers
         if 'level' in kwargs and kwargs['level'] is not None:
@@ -125,11 +129,14 @@ class StateTopic(BaseTopic):
         """
         LOG.info("MQTT received state %s on: %s", device.label, kwargs)
 
-        # For manual mode messages, don't retain them because they don't
-        # represent persistent state - they're momentary events.
-        retain = None
-        if 'mode' in kwargs:
-            retain = False if kwargs['mode'] == on_off.Mode.MANUAL else None
+        if not self.state_retain:
+            retain = False
+        else:
+            # For manual mode messages, don't retain them because they don't
+            # represent persistent state - they're momentary events.
+            retain = None
+            if 'mode' in kwargs and kwargs['mode'] == on_off.Mode.MANUAL:
+                retain = False
 
         data = self.state_template_data(**kwargs)
         self.msg_state.publish(self.mqtt, data, retain=retain)

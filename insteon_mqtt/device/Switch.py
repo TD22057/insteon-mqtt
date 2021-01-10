@@ -321,7 +321,7 @@ class Switch(functions.Scene, Base):
             manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
             LOG.info("Switch %s manual change %s", self.addr, manual)
 
-            self.signal_manual.emit(self, manual)
+            self.signal_manual.emit(self, manual=manual)
 
             # Switches change state when the switch is held (not all devices
             # do this).

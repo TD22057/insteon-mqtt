@@ -6,11 +6,12 @@
 import time
 from .. import log
 from .MsgTemplate import MsgTemplate
+from .StateTopic import StateTopic
 
 LOG = log.get_logger()
 
 
-class BatterySensor:
+class BatterySensor(StateTopic):
     """MQTT interface to an Insteon general battery powered sensor.
 
     This class connects to a device.BatterySensor object and converts it's
@@ -20,20 +21,17 @@ class BatterySensor:
     activated so they can't respond to commands.  Battery sensors have a
     state topic and a low battery topic they will publish to.
     """
-    def __init__(self, mqtt, device):
+    def __init__(self, mqtt, device, **kwargs):
         """Constructor
 
         Args:
           mqtt (mqtt.Mqtt):  The MQTT main interface.
           device (device.BatterySensor):  The Insteon object to link to.
         """
-        self.mqtt = mqtt
-        self.device = device
+        # Setup the Topics
+        super().__init__(mqtt, device, **kwargs)
 
         # Default values for the topics.
-        self.msg_state = MsgTemplate(
-            topic='insteon/{{address}}/state',
-            payload='{{on_str.lower()}}')
         self.msg_battery = MsgTemplate(
             topic='insteon/{{address}}/low_battery',
             payload='{{is_low_str.lower()}}')
@@ -43,7 +41,6 @@ class BatterySensor:
 
         # Connect the signals from the insteon device so we get notified of
         # changes.
-        device.signal_on_off.connect(self._insteon_on_off)
         device.signal_low_battery.connect(self._insteon_low_battery)
         device.signal_heartbeat.connect(self._insteon_heartbeat)
 
@@ -60,7 +57,9 @@ class BatterySensor:
         if not data:
             return
 
-        self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
+        # Load the various topics
+        self.load_state_data(data, qos)
+
         self.msg_battery.load_config(data, 'low_battery_topic',
                                      'low_battery_payload', qos)
         self.msg_heartbeat.load_config(data, 'heartbeat_topic',
@@ -124,22 +123,6 @@ class BatterySensor:
             data["heartbeat_time"] = time.time() if is_heartbeat else 0
 
         return data
-
-    #-----------------------------------------------------------------------
-    def _insteon_on_off(self, device, is_on):
-        """Device active on/off callback.
-
-        This is triggered via signal when the Insteon device goes on or off.
-        It will publish an MQTT message with the new state.
-
-        Args:
-          device (device.BatterySensor):  The Insteon device that changed.
-          is_on (bool):  True for on, False for off.
-        """
-        LOG.info("MQTT received on/off change %s on: %s", device.label, is_on)
-
-        data = self.template_data(is_on=is_on)
-        self.msg_state.publish(self.mqtt, data)
 
     #-----------------------------------------------------------------------
     def _insteon_low_battery(self, device, is_low):

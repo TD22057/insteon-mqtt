@@ -66,7 +66,7 @@ class ManualTopic(BaseTopic):
         self.msg_manual_state.load_config(data, topic, payload, qos)
 
     #-----------------------------------------------------------------------
-    def publish_manual(self, device, manual, reason=""):
+    def publish_manual(self, device, **kwargs):
         """Device on/off callback.
 
         This is triggered via signal when the Insteon device is turned on or
@@ -79,10 +79,10 @@ class ManualTopic(BaseTopic):
           reason (str):  The reason the device was triggered.  This is an
                  arbitrary string set into the template variables.
         """
-        LOG.info("MQTT received manual change %s on: %s", device.label, manual)
-        data = ManualTopic.manual_template_data(manual=manual, reason=reason)
+        LOG.info("MQTT received manual change %s on: %s", device.label, kwargs)
+        data = ManualTopic.manual_template_data(**kwargs)
         # update data with base data
-        base_data = self.base_template_data()
+        base_data = self.base_template_data(**kwargs)
         data.update(base_data)
         self.msg_manual_state.publish(self.mqtt, data, retain=False)
 

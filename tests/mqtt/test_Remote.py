@@ -55,28 +55,31 @@ class Test_Remote:
     def test_template(self, setup):
         mdev, addr, name = setup.getAll(['mdev', 'addr', 'name'])
 
-        data = mdev.template_data_remote(3)
+        data = mdev.base_template_data(button=3)
         right = {"address" : addr.hex, "name" : name, "button" : 3}
         assert data == right
 
-        data = mdev.template_data_remote(4, is_on=True,
-                                         mode=IM.on_off.Mode.FAST,
-                                         manual=IM.on_off.Manual.STOP)
+        data = mdev.state_template_data(button=4, is_on=True,
+                                        mode=IM.on_off.Mode.FAST,
+                                        manual=IM.on_off.Manual.STOP)
         right = {"address" : addr.hex, "name" : name, "button" : 4,
                  "on" : 1, "on_str" : "on",
                  "mode" : "fast", "fast" : 1, "instant" : 0,
-                 "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
+                 "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1,
+                 "reason": ''}
         assert data == right
 
-        data = mdev.template_data_remote(4, is_on=False)
+        data = mdev.state_template_data(button=4, is_on=False)
         right = {"address" : addr.hex, "name" : name, "button"  : 4,
                  "on" : 0, "on_str" : "off",
-                 "mode" : "normal", "fast" : 0, "instant" : 0}
+                 "mode" : "normal", "fast" : 0, "instant" : 0,
+                 "reason": ''}
         assert data == right
 
-        data = mdev.template_data_remote(5, manual=IM.on_off.Manual.UP)
+        data = mdev.state_template_data(button=5, manual=IM.on_off.Manual.UP)
         right = {"address" : addr.hex, "name" : name, "button" : 5,
-                 "manual_str" : "up", "manual" : 1, "manual_openhab" : 2}
+                 "manual_str" : "up", "manual" : 1, "manual_openhab" : 2,
+                 "reason": ''}
         assert data == right
 
     #-----------------------------------------------------------------------
@@ -88,8 +91,8 @@ class Test_Remote:
         mdev.load_config({})
 
         # Send an on/off signal
-        dev.signal_pressed.emit(dev, 2, True)
-        dev.signal_pressed.emit(dev, 4, False)
+        dev.signal_state.emit(dev, button=2, is_on=True)
+        dev.signal_state.emit(dev, button=4, is_on=False)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic='%s/state/2' % topic, payload='on', qos=0, retain=False)
@@ -98,8 +101,8 @@ class Test_Remote:
         link.client.clear()
 
         # Send a manual mode signal - should do nothing w/ the default config.
-        dev.signal_manual.emit(dev, 1, IM.on_off.Manual.DOWN)
-        dev.signal_manual.emit(dev, 1, IM.on_off.Manual.STOP)
+        dev.signal_manual.emit(dev, button=1, manual=IM.on_off.Manual.DOWN)
+        dev.signal_manual.emit(dev, button=1, manual=IM.on_off.Manual.STOP)
         assert len(link.client.pub) == 0
 
     #-----------------------------------------------------------------------
@@ -118,8 +121,8 @@ class Test_Remote:
         mtopic = "bar/%s" % setup.addr.hex
 
         # Send an on/off signal
-        dev.signal_pressed.emit(dev, 2, True)
-        dev.signal_pressed.emit(dev, 4, False)
+        dev.signal_state.emit(dev, button=2, is_on=True)
+        dev.signal_state.emit(dev, button=4, is_on=False)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic="%s/2" % stopic, payload='1 ON', qos=qos, retain=False)
@@ -128,8 +131,8 @@ class Test_Remote:
         link.client.clear()
 
         # Send a manual signal
-        dev.signal_manual.emit(dev, 1, IM.on_off.Manual.DOWN)
-        dev.signal_manual.emit(dev, 3, IM.on_off.Manual.STOP)
+        dev.signal_manual.emit(dev, button=1, manual=IM.on_off.Manual.DOWN)
+        dev.signal_manual.emit(dev, button=3, manual=IM.on_off.Manual.STOP)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic="%s/1" % mtopic, payload='-1 DOWN', qos=qos, retain=False)

@@ -57,9 +57,9 @@ class Test_Base_Config():
                 mocked.assert_not_called()
 
     @pytest.mark.parametrize("group,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, [IM.on_off.Manual.DOWN, 'device']),
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, [IM.on_off.Manual.UP, 'device']),
-        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, [IM.on_off.Manual.STOP, 'device']),
+        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.DOWN, "reason":'device'}),
+        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, {"manual":IM.on_off.Manual.UP, "reason":'device'}),
+        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP, "reason":'device'}),
     ])
     def test_handle_on_off_manual(self, test_device, group, cmd1, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:
@@ -69,7 +69,7 @@ class Test_Base_Config():
             msg = Msg.InpStandard(addr, group, flags, cmd1, cmd2)
             test_device.handle_broadcast(msg)
             if expected is not None:
-                mocked.assert_called_once_with(test_device, *expected)
+                mocked.assert_called_once_with(test_device, **expected)
             else:
                 mocked.assert_not_called()
 

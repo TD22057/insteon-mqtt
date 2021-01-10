@@ -23,7 +23,7 @@ class BaseTopic:
         self.device = device
 
     #-----------------------------------------------------------------------
-    def base_template_data(self, button=None):
+    def base_template_data(self, **kwargs):
         """Create the Jinja templating data variables for use in topics.
 
         Args:
@@ -37,6 +37,6 @@ class BaseTopic:
                 "name" : self.device.addr.hex,}
         if self.device.name:
             data['name'] = self.device.name
-        if button is not None:
-            data['button'] = button
+        if 'button' in kwargs and kwargs['button'] is not None:
+            data['button'] = kwargs['button']
         return data

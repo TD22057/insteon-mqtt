@@ -106,8 +106,8 @@ class Test_Switch:
         link.client.clear()
 
         # Send a manual mode signal - should do nothing w/ the default config.
-        dev.signal_manual.emit(dev, IM.on_off.Manual.DOWN)
-        dev.signal_manual.emit(dev, IM.on_off.Manual.STOP)
+        dev.signal_manual.emit(dev, manual=IM.on_off.Manual.DOWN)
+        dev.signal_manual.emit(dev, manual=IM.on_off.Manual.STOP)
         assert len(link.client.pub) == 0
 
     #-----------------------------------------------------------------------
@@ -136,8 +136,8 @@ class Test_Switch:
         link.client.clear()
 
         # Send a manual signal
-        dev.signal_manual.emit(dev, IM.on_off.Manual.DOWN)
-        dev.signal_manual.emit(dev, IM.on_off.Manual.STOP)
+        dev.signal_manual.emit(dev, manual=IM.on_off.Manual.DOWN)
+        dev.signal_manual.emit(dev, manual=IM.on_off.Manual.STOP)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic=mtopic, payload='-1 DOWN', qos=qos, retain=False)

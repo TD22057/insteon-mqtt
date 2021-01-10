@@ -713,7 +713,7 @@ class Dimmer(functions.Scene, Base):
             manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
             LOG.info("Dimmer %s manual change %s", self.addr, manual)
 
-            self.signal_manual.emit(self, manual, reason)
+            self.signal_manual.emit(self, manual=manual, reason=reason)
 
             # Refresh to get the new level after the button is released.
             if manual == on_off.Manual.STOP:
@@ -846,7 +846,7 @@ class Dimmer(functions.Scene, Base):
         # Starting or stopping manual mode.
         elif on_off.Manual.is_valid(msg.cmd1):
             manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-            self.signal_manual.emit(self, manual, reason=reason)
+            self.signal_manual.emit(self, manual=manual, reason=reason)
 
             # If the button is released, refresh to get the final level.
             if manual == on_off.Manual.STOP:
