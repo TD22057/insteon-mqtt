@@ -3,24 +3,27 @@
 # MQTT State Topic
 #
 #===========================================================================
-import functools
+# import functools
 from .. import log
 from .. import on_off
 from .MsgTemplate import MsgTemplate
-from . import util
+# from . import util
+from .BaseTopic import BaseTopic
 
 LOG = log.get_logger()
 
 
-class StateTopic:
+class StateTopic(BaseTopic):
     """MQTT interface to the State Topic
 
     This is an abstract class that provides support for the State topic.
     """
-    def __init__(self, state_topic=None, state_payload=None, **kwargs):
+    def __init__(self, mqtt, device, state_topic=None, state_payload=None,
+                 **kwargs):
         """Constructor
 
         """
+        super().__init__(mqtt, device, **kwargs)
         # It looks cleaner setting these long strings here rather than in the
         # function declaration
         if state_topic is None:
@@ -37,8 +40,6 @@ class StateTopic:
 
         # Receive notifications from the Insteon device when it changes.
         self.device.signal_state.connect(self.publish_state)
-
-        super().__init__(**kwargs)
 
     #-----------------------------------------------------------------------
     def load_state_data(self, data, qos=None, topic=None, payload=None):

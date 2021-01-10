@@ -30,8 +30,8 @@ class Switch(StateTopic, SceneTopic):
           mqtt (mqtt.Mqtt):  The MQTT main interface.
           device (device.Switch):  The Insteon object to link to.
         """
-        self.mqtt = mqtt
-        self.device = device
+        # Setup the Topics
+        super().__init__(mqtt, device)
 
         # Output manual state change is off by default.
         self.msg_manual_state = MsgTemplate(None, None)
@@ -43,9 +43,6 @@ class Switch(StateTopic, SceneTopic):
 
         # Receive notifications from the Insteon device when it changes.
         device.signal_manual.connect(self._insteon_manual)
-
-        # Setup the Topics
-        super().__init__()
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):

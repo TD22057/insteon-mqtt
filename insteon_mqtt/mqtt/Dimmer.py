@@ -30,8 +30,10 @@ class Dimmer(StateTopic, SceneTopic):
           mqtt (mqtt.Mqtt):  The MQTT main interface.
           device (device.Dimmer):  The Insteon object to link to.
         """
-        self.mqtt = mqtt
-        self.device = device
+        # Setup the Topics
+        super().__init__(mqtt, device,
+                         state_payload='{ "state" : "{{on_str.lower()}}", '
+                                       '"brightness" : {{level_255}} }')
 
         # Output manual state change is off by default.
         self.msg_manual_state = MsgTemplate(None, None)
@@ -50,10 +52,6 @@ class Dimmer(StateTopic, SceneTopic):
         # Connect the signals from the insteon device so we get notified of
         # changes.
         device.signal_manual.connect(self._insteon_manual)
-
-        # Setup the Topics
-        super().__init__(state_payload='{ "state" : "{{on_str.lower()}}", '
-                                       '"brightness" : {{level_255}} }')
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -91,11 +89,11 @@ class Dimmer(StateTopic, SceneTopic):
           qos (int):  The quality of service to use.
         """
         # On/off command messages.
-        topic = self.msg_on_off.render_topic(self.template_data())
+        topic = self.msg_on_off.render_topic(self.topic_template_data())
         link.subscribe(topic, qos, self._input_on_off)
 
         # Level changing command messages.
-        topic = self.msg_level.render_topic(self.template_data())
+        topic = self.msg_level.render_topic(self.topic_template_data())
         link.subscribe(topic, qos, self._input_set_level)
 
         self.scene_subscribe(link, qos)
@@ -107,10 +105,10 @@ class Dimmer(StateTopic, SceneTopic):
         Args:
           link (network.Mqtt):  The MQTT network client to use.
         """
-        topic = self.msg_on_off.render_topic(self.template_data())
+        topic = self.msg_on_off.render_topic(self.topic_template_data())
         link.unsubscribe(topic)
 
-        topic = self.msg_level.render_topic(self.template_data())
+        topic = self.msg_level.render_topic(self.topic_template_data())
         link.unsubscribe(topic)
 
         self.scene_unsubscribe(link)
