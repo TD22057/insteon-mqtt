@@ -9,11 +9,12 @@ from .MsgTemplate import MsgTemplate
 from . import util
 from .SceneTopic import SceneTopic
 from .StateTopic import StateTopic
+from .ManualTopic import ManualTopic
 
 LOG = log.get_logger()
 
 
-class Dimmer(StateTopic, SceneTopic):
+class Dimmer(StateTopic, SceneTopic, ManualTopic):
     """MQTT interface to an Insteon dimmer switch.
 
     This class connects to a device.Dimmer object and converts it's output
@@ -35,9 +36,6 @@ class Dimmer(StateTopic, SceneTopic):
                          state_payload='{ "state" : "{{on_str.lower()}}", '
                                        '"brightness" : {{level_255}} }')
 
-        # Output manual state change is off by default.
-        self.msg_manual_state = MsgTemplate(None, None)
-
         # Input on/off command template.
         self.msg_on_off = MsgTemplate(
             topic='insteon/{{address}}/set',
@@ -48,10 +46,6 @@ class Dimmer(StateTopic, SceneTopic):
             topic='insteon/{{address}}/level',
             payload='{ "cmd" : "{{json.state.lower()}}", '
                     '"level" : {{json.brightness}} }')
-
-        # Connect the signals from the insteon device so we get notified of
-        # changes.
-        device.signal_manual.connect(self._insteon_manual)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -69,10 +63,9 @@ class Dimmer(StateTopic, SceneTopic):
         # Load the various topics
         self.load_scene_data(data, qos)
         self.load_state_data(data, qos)
+        self.load_manual_data(data, qos)
 
         # Update the MQTT topics and payloads from the config file.
-        self.msg_manual_state.load_config(data, 'manual_state_topic',
-                                          'manual_state_payload', qos)
         self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
                                     qos)
         self.msg_level.load_config(data, 'level_topic', 'level_payload', qos)
@@ -162,28 +155,6 @@ class Dimmer(StateTopic, SceneTopic):
                 data["reason"] = kwargs['reason']
 
         return data
-
-    #-----------------------------------------------------------------------
-    def _insteon_manual(self, device, manual, reason=""):
-        """Device manual mode changed callback.
-
-        This is triggered via signal when the Insteon device starts or stops
-        manual mode (holding a button down).  It will publish an MQTT message
-        with the new state.
-
-        Args:
-          device (device.Dimmer):  The Insteon device that changed.
-          manual (on_off.Manual):  The manual mode.
-          reason (str):  The reason the device was triggered.  This is an
-                 arbitrary string set into the template variables.
-        """
-        LOG.info("MQTT received manual change %s mode: %s %s", device.label,
-                 manual, reason)
-
-        # For manual mode messages, don't retain them because they don't
-        # represent persistent state - they're momentary events.
-        data = self.template_data(manual=manual, reason=reason)
-        self.msg_manual_state.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------
     def _input_on_off(self, client, data, message):
