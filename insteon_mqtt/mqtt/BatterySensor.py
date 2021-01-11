@@ -103,11 +103,7 @@ class BatterySensor(StateTopic):
           dict:  Returns a dict with the variables available for templating.
         """
         # Set up the variables that can be used in the templates.
-        data = {
-            "address" : self.device.addr.hex,
-            "name" : self.device.name if self.device.name
-                     else self.device.addr.hex,
-            }
+        data = self.base_template_data()
 
         if is_on is not None:
             data["on"] = 1 if is_on else 0

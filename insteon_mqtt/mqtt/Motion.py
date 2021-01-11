@@ -76,11 +76,7 @@ class Motion(BatterySensor):
           dict:  Returns a dict with the variables available for templating.
         """
         # Set up the variables that can be used in the templates.
-        data = {
-            "address" : self.device.addr.hex,
-            "name" : self.device.name if self.device.name
-                     else self.device.addr.hex,
-            }
+        data = self.base_template_data()
 
         if is_dawn is not None:
             data["is_dawn"] = 1 if is_dawn else 0
