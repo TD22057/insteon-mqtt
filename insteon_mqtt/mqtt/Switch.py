@@ -10,11 +10,12 @@ from . import util
 from .SceneTopic import SceneTopic
 from .StateTopic import StateTopic
 from .ManualTopic import ManualTopic
+from .SetTopic import SetTopic
 
 LOG = log.get_logger()
 
 
-class Switch(StateTopic, SceneTopic, ManualTopic):
+class Switch(SetTopic, StateTopic, SceneTopic, ManualTopic):
     """MQTT interface to an Insteon on/off switch.
 
     This class connects to a device.Switch object and converts it's
@@ -34,11 +35,6 @@ class Switch(StateTopic, SceneTopic, ManualTopic):
         # Setup the Topics
         super().__init__(mqtt, device)
 
-        # Input on/off command template.
-        self.msg_on_off = MsgTemplate(
-            topic='insteon/{{address}}/set',
-            payload='{ "cmd" : "{{value.lower()}}" }')
-
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -56,9 +52,7 @@ class Switch(StateTopic, SceneTopic, ManualTopic):
         self.load_scene_data(data, qos)
         self.load_state_data(data, qos)
         self.load_manual_data(data, qos)
-
-        self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
-                                    qos)
+        self.load_set_data(data, qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -72,9 +66,7 @@ class Switch(StateTopic, SceneTopic, ManualTopic):
           qos (int):  The quality of service to use.
         """
         # On/off command messages.
-        topic = self.msg_on_off.render_topic(self.base_template_data())
-        link.subscribe(topic, qos, self._input_on_off)
-
+        self.set_subscribe(link, qos)
         self.scene_subscribe(link, qos)
 
     #-----------------------------------------------------------------------
@@ -84,40 +76,7 @@ class Switch(StateTopic, SceneTopic, ManualTopic):
         Args:
           link (network.Mqtt):  The MQTT network client to use.
         """
-        topic = self.msg_on_off.render_topic(self.base_template_data())
-        link.unsubscribe(topic)
-
+        self.set_unsubscribe(link)
         self.scene_unsubscribe(link)
-
-    #-----------------------------------------------------------------------
-    def _input_on_off(self, client, data, message):
-        """Handle an input on/off change MQTT message.
-
-        This is called when we receive a message on the on/off MQTT topic
-        subscription.  Parse the message and pass the command to the Insteon
-        device.
-
-        Args:
-          client (paho.Client):  The paho mqtt client (self.link).
-          data:  Optional user data (unused).
-          message:  MQTT message - has attrs: topic, payload, qos, retain.
-        """
-        LOG.debug("Switch message %s %s", message.topic, message.payload)
-
-        # Parse the input MQTT message.
-        data = self.msg_on_off.to_json(message.payload)
-        LOG.info("Switch input command: %s", data)
-        try:
-            # Tell the device to update it's state.
-            is_on, mode, transition = util.parse_on_off(data)
-            if mode == on_off.Mode.RAMP or transition is not None:
-                LOG.error("Light ON/OFF at Ramp Rate not supported with "
-                          "switches - ignoring ramp rate.")
-            if mode == on_off.Mode.RAMP:  # Not supported
-                mode = on_off.Mode.NORMAL
-            reason = data.get("reason", "")
-            self.device.set(is_on=is_on, mode=mode, reason=reason)
-        except:
-            LOG.error("Invalid switch on/off command: %s", data)
 
     #-----------------------------------------------------------------------
