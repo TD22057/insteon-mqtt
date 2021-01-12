@@ -4,7 +4,10 @@
 #
 #===========================================================================
 from .. import on_off
+from .. import log
 
+
+LOG = log.get_logger()
 
 def parse_on_off(data, have_mode=True):
     """Parse on/off JSON data from an input message payload.
@@ -36,6 +39,7 @@ def parse_on_off(data, have_mode=True):
     elif cmd == 'off':
         is_on = False
     else:
+        LOG.error("Invalid on/off command input '%s'", cmd)
         raise Exception("Invalid on/off command input '%s'" % cmd)
 
     if not have_mode:
@@ -44,16 +48,22 @@ def parse_on_off(data, have_mode=True):
     # If mode is present, use that to specify normal/fast/instant.
     # Otherwise look for individual keywords.
     if 'mode' in data:
-        mode = on_off.Mode(data.get('mode', 'normal').lower())
+        mode_str = data.get('mode')
+        try:
+            mode = on_off.Mode(mode_str.lower())
+        except:
+            LOG.error("Invalid mode command input '%s'", mode_str)
+            mode = on_off.Mode.NORMAL
     else:
         mode = on_off.Mode.NORMAL
+        # These options seem to be undocumented, except for docstring above
         if data.get('fast', False):
             mode = on_off.Mode.FAST
         elif data.get('instant', False):
             mode = on_off.Mode.INSTANT
 
     # Ramp mode is implied if transition is specified and fast/instant are not
-    transition = data.get("transition")
+    transition = data.get("transition", None)
     if (transition is not None) and (mode == on_off.Mode.NORMAL):
         mode = on_off.Mode.RAMP
 
