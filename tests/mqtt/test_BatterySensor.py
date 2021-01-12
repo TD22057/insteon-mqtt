@@ -88,9 +88,9 @@ class Test_BatterySensor:
         dev.signal_low_battery.emit(dev, True)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
-            topic='%s/low_battery' % topic, payload='off', qos=0, retain=True)
+            topic='%s/battery' % topic, payload='off', qos=0, retain=True)
         assert link.client.pub[1] == dict(
-            topic='%s/low_battery' % topic, payload='on', qos=0, retain=True)
+            topic='%s/battery' % topic, payload='on', qos=0, retain=True)
 
     #-----------------------------------------------------------------------
     def test_config(self, setup):

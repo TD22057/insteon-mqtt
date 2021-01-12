@@ -33,7 +33,7 @@ class BatterySensor(StateTopic):
 
         # Default values for the topics.
         self.msg_battery = MsgTemplate(
-            topic='insteon/{{address}}/low_battery',
+            topic='insteon/{{address}}/battery',
             payload='{{is_low_str.lower()}}')
         self.msg_heartbeat = MsgTemplate(
             topic='insteon/{{address}}/heartbeat',
