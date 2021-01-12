@@ -4,11 +4,11 @@
 #
 #===========================================================================
 from .. import log
-from .SceneTopic import SceneTopic
+from . import topic
 LOG = log.get_logger()
 
 
-class Modem(SceneTopic):
+class Modem(topic.SceneTopic):
     """MQTT interface to an Insteon power line modem (PLM).
 
     This class connects to an insteon_mqtt.Modem object and allows input MQTT

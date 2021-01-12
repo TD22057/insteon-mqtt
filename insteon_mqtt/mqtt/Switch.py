@@ -4,15 +4,13 @@
 #
 #===========================================================================
 from .. import log
-from .SceneTopic import SceneTopic
-from .StateTopic import StateTopic
-from .ManualTopic import ManualTopic
-from .SetTopic import SetTopic
+from . import topic
 
 LOG = log.get_logger()
 
 
-class Switch(SetTopic, StateTopic, SceneTopic, ManualTopic):
+class Switch(topic.SetTopic, topic.StateTopic, topic.SceneTopic,
+             topic.ManualTopic):
     """MQTT interface to an Insteon on/off switch.
 
     This class connects to a device.Switch object and converts it's

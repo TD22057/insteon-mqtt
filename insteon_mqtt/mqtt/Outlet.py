@@ -4,13 +4,12 @@
 #
 #===========================================================================
 from .. import log
-from .StateTopic import StateTopic
-from .SetTopic import SetTopic
+from . import topic
 
 LOG = log.get_logger()
 
 
-class Outlet(SetTopic, StateTopic):
+class Outlet(topic.SetTopic, topic.StateTopic):
     """MQTT interface to an Insteon on/off outlet.
 
     This class connects to a device.Outlet object and converts it's

@@ -7,15 +7,13 @@ from .. import log
 from .. import on_off
 from .MsgTemplate import MsgTemplate
 from . import util
-from .SceneTopic import SceneTopic
-from .StateTopic import StateTopic
-from .ManualTopic import ManualTopic
-from .SetTopic import SetTopic
+from . import topic
 
 LOG = log.get_logger()
 
 
-class Dimmer(StateTopic, SceneTopic, ManualTopic, SetTopic):
+class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
+             topic.SetTopic):
     """MQTT interface to an Insteon dimmer switch.
 
     This class connects to a device.Dimmer object and converts it's output
@@ -79,8 +77,8 @@ class Dimmer(StateTopic, SceneTopic, ManualTopic, SetTopic):
         self.set_subscribe(link, qos)
 
         # Level changing command messages.
-        topic = self.msg_level.render_topic(self.base_template_data())
-        link.subscribe(topic, qos, self._input_set_level)
+        topic_str = self.msg_level.render_topic(self.base_template_data())
+        link.subscribe(topic_str, qos, self._input_set_level)
 
         self.scene_subscribe(link, qos)
 
@@ -93,8 +91,8 @@ class Dimmer(StateTopic, SceneTopic, ManualTopic, SetTopic):
         """
         self.set_unsubscribe(link)
 
-        topic = self.msg_level.render_topic(self.base_template_data())
-        link.unsubscribe(topic)
+        topic_str = self.msg_level.render_topic(self.base_template_data())
+        link.unsubscribe(topic_str)
 
         self.scene_unsubscribe(link)
 

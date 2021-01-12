@@ -5,13 +5,12 @@
 #===========================================================================
 from .. import log
 from .MsgTemplate import MsgTemplate
-from .BaseTopic import BaseTopic
-from .SetTopic import SetTopic
+from . import topic
 
 LOG = log.get_logger()
 
 
-class IOLinc(SetTopic, BaseTopic):
+class IOLinc(topic.SetTopic):
     """MQTT interface to an Insteon IOLinc device.
 
     This class connects to a device.IOLinc object and converts it's

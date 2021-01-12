@@ -4,13 +4,12 @@
 #
 #===========================================================================
 from .. import log
-from .StateTopic import StateTopic
-from .SetTopic import SetTopic
+from . import topic
 
 LOG = log.get_logger()
 
 
-class EZIO4O(StateTopic, SetTopic):
+class EZIO4O(topic.StateTopic, topic.SetTopic):
     """MQTT interface to Smartenit EZIO4O 4 relay output device.
 
     This class connects to a device.EZIO4O object and converts it's

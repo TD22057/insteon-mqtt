@@ -6,15 +6,13 @@
 from .. import log
 from .MsgTemplate import MsgTemplate
 from . import util
-from .SceneTopic import SceneTopic
-from .StateTopic import StateTopic
-from .ManualTopic import ManualTopic
-from .SetTopic import SetTopic
+from . import topic
 
 LOG = log.get_logger()
 
 
-class KeypadLinc(SetTopic, SceneTopic, StateTopic, ManualTopic):
+class KeypadLinc(topic.SetTopic, topic.SceneTopic, topic.StateTopic,
+                 topic.ManualTopic):
     """MQTT interface to an Insteon KeypadLinc dimmer or switch.
 
     This class connects to a device.KeypadLinc object and converts it's output
@@ -136,8 +134,8 @@ class KeypadLinc(SetTopic, SceneTopic, StateTopic, ManualTopic):
 
         if self.device.is_dimmer:
             data = self.base_template_data(button=1)
-            topic = self.msg_dimmer_level.render_topic(data)
-            link.unsubscribe(topic)
+            topic_str = self.msg_dimmer_level.render_topic(data)
+            link.unsubscribe(topic_str)
 
     #-----------------------------------------------------------------------
     def _input_set_level(self, client, data, message, raise_errors=False):

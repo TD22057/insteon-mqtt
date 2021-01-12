@@ -4,9 +4,9 @@
 #
 #===========================================================================
 import functools
-from .. import log
-from .MsgTemplate import MsgTemplate
-from . import util
+from ... import log
+from ..MsgTemplate import MsgTemplate
+from .. import util
 from .BaseTopic import BaseTopic
 
 LOG = log.get_logger()

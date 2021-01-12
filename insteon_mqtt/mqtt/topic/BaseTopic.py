@@ -3,7 +3,7 @@
 # MQTT Base Topic
 #
 #===========================================================================
-from .. import log
+from ... import log
 
 LOG = log.get_logger()
 

@@ -6,12 +6,12 @@
 import time
 from .. import log
 from .MsgTemplate import MsgTemplate
-from .StateTopic import StateTopic
+from . import topic
 
 LOG = log.get_logger()
 
 
-class BatterySensor(StateTopic):
+class BatterySensor(topic.StateTopic):
     """MQTT interface to an Insteon general battery powered sensor.
 
     This class connects to a device.BatterySensor object and converts it's
