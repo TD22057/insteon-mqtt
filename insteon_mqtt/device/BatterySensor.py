@@ -286,7 +286,7 @@ class BatterySensor(Base):
         """
         LOG.info("Setting device %s on:%s", self.label, is_on)
         self._is_on = is_on
-        self.signal_state.emit(self, self._is_on)
+        self.signal_state.emit(self, is_on=self._is_on)
 
     #-----------------------------------------------------------------------
     def _pop_send_queue(self):
