@@ -4,9 +4,6 @@
 #
 #===========================================================================
 from .. import log
-from .. import on_off
-from .MsgTemplate import MsgTemplate
-from . import util
 from .SceneTopic import SceneTopic
 from .StateTopic import StateTopic
 from .ManualTopic import ManualTopic

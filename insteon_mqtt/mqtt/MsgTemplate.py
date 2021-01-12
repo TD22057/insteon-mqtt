@@ -195,7 +195,7 @@ class MsgTemplate:
             return json.loads(value)
         except:
             LOG.error("Invalid JSON message %s from template %s", value,
-                          self.payload_str)
+                      self.payload_str)
             return None
 
     #-----------------------------------------------------------------------

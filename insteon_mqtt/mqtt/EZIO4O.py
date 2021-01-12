@@ -3,11 +3,7 @@
 # EZIO4O 4 relay output device
 #
 #===========================================================================
-import functools
 from .. import log
-from .. import on_off
-from .MsgTemplate import MsgTemplate
-from . import util
 from .StateTopic import StateTopic
 from .SetTopic import SetTopic
 

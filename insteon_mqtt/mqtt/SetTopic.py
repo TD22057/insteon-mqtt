@@ -70,12 +70,11 @@ class SetTopic(BaseTopic):
         # set triggering messages.
         if group is not None:
             handler = functools.partial(self._input_set, group=group)
-            topic = self.msg_set.render_topic(
-                self.base_template_data(button=group)
-            )
         else:
             handler = self._input_set
-            topic = self.msg_set.render_topic(self.base_template_data())
+        topic = self.msg_set.render_topic(
+            self.base_template_data(button=group)
+        )
         link.subscribe(topic, qos, handler)
 
     #-----------------------------------------------------------------------
