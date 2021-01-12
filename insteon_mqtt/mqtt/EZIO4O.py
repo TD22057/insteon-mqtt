@@ -9,11 +9,12 @@ from .. import on_off
 from .MsgTemplate import MsgTemplate
 from . import util
 from .StateTopic import StateTopic
+from .SetTopic import SetTopic
 
 LOG = log.get_logger()
 
 
-class EZIO4O(StateTopic):
+class EZIO4O(StateTopic, SetTopic):
     """MQTT interface to Smartenit EZIO4O 4 relay output device.
 
     This class connects to a device.EZIO4O object and converts it's
@@ -33,13 +34,8 @@ class EZIO4O(StateTopic):
         """
         # Setup the Topics
         super().__init__(mqtt, device,
-                         state_topic='insteon/{{address}}/state/{{button}}')
-
-        # Input on/off command template.
-        self.msg_on_off = MsgTemplate(
-            topic="insteon/{{address}}/set/{{button}}",
-            payload='{ "cmd" : "{{value.lower()}}" }',
-        )
+                         state_topic='insteon/{{address}}/state/{{button}}',
+                         set_topic="insteon/{{address}}/set/{{button}}")
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -56,9 +52,7 @@ class EZIO4O(StateTopic):
 
         # Load the various topics
         self.load_state_data(data, qos)
-
-        self.msg_on_off.load_config(data, "on_off_topic",
-                                    "on_off_payload", qos)
+        self.load_set_data(data, qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -75,11 +69,7 @@ class EZIO4O(StateTopic):
         # Create a function that will call the input callback with the right
         # group number set for each socket.
         for group in [1, 2, 3, 4]:
-            handler = functools.partial(self._input_on_off, group=group)
-            data = self.base_template_data(button=group)
-
-            topic = self.msg_on_off.render_topic(data)
-            link.subscribe(topic, qos, handler)
+            self.set_subscribe(link, qos, group=group)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
@@ -89,44 +79,6 @@ class EZIO4O(StateTopic):
           link (network.Mqtt):  The MQTT network client to use.
         """
         for group in [1, 2, 3, 4]:
-            data = self.base_template_data(button=group)
-
-            topic = self.msg_on_off.render_topic(data)
-            link.unsubscribe(topic)
-
-    #-----------------------------------------------------------------------
-    def _input_on_off(self, client, data, message, group):
-        """Handle an input on/off change MQTT message.
-
-        This is called when we receive a message on the on/off MQTT topic
-        subscription.  Parse the message and pass the command to the Insteon
-        device.
-
-        Args:
-          client (paho.Client):  The paho mqtt client (self.link).
-          data:  Optional user data (unused).
-          message:  MQTT message - has attrs: topic, payload, qos, retain.
-        """
-        LOG.debug(
-            "EZIO4O output %s message %s %s", group, message.topic,
-            message.payload
-        )
-
-        # Parse the input MQTT message.
-        data = self.msg_on_off.to_json(message.payload)
-        LOG.info("EZIO4O input command: %s", data)
-
-        try:
-            # Tell the device to update it's state.
-            is_on, mode, transition = util.parse_on_off(data)
-            if mode == on_off.Mode.RAMP or transition is not None:
-                LOG.error("Light ON/OFF at Ramp Rate not supported with EZIO4O"
-                          " - ignoring ramp rate.")
-            if mode == on_off.Mode.RAMP:  # Not supported
-                mode = on_off.Mode.NORMAL
-            reason = data.get("reason", "")
-            self.device.set(level=is_on, group=group, mode=mode, reason=reason)
-        except:
-            LOG.error("Invalid EZIO4O on/off command: %s", data)
+            self.set_unsubscribe(link, group=group)
 
     #-----------------------------------------------------------------------

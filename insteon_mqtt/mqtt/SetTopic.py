@@ -121,7 +121,7 @@ class SetTopic(BaseTopic):
                 mode = on_off.Mode.NORMAL
             level = 0 if not is_on else None
             reason = data.get("reason", "")
-            self.device.set(level=level, mode=mode, reason=reason)
+            self.device.set(level=level, group=group, mode=mode, reason=reason)
         except:
             LOG.error("Invalid SetTopic command: %s", data)
 
