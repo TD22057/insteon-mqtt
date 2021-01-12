@@ -7,7 +7,7 @@ import functools
 from .. import log
 from .MsgTemplate import MsgTemplate
 from . import util
-from .. import on_off
+# from .. import on_off
 from .BaseTopic import BaseTopic
 
 LOG = log.get_logger()
@@ -113,16 +113,10 @@ class SetTopic(BaseTopic):
         try:
             # Tell the device to update its state.
             is_on, mode, transition = util.parse_on_off(data)
-            if mode == on_off.Mode.RAMP or transition is not None:
-                # This doesn't belong here!!!! Will fix
-                LOG.error("Light ON/OFF at Ramp Rate not supported with "
-                          "dimmers - ignoring ramp rate.")
-            if mode == on_off.Mode.RAMP:  # Not supported
-                mode = on_off.Mode.NORMAL
-            level = 0 if not is_on else None
+            level = data.get("level", None)
             reason = data.get("reason", "")
             self.device.set(is_on=is_on, level=level, group=group, mode=mode,
-                            reason=reason)
+                            transition=transition, reason=reason)
         except:
             LOG.error("Invalid SetTopic command: %s", data)
 
