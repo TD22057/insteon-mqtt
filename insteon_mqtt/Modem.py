@@ -1038,7 +1038,7 @@ class Modem:
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
-    def scene(self, is_on, group=None, name=None, num_retry=3, reason="",
+    def scene(self, is_on, group=0x01, name=None, reason=None, level=None,
               on_done=None):
         """Trigger a virtual modem scene.
 
@@ -1050,7 +1050,7 @@ class Modem:
                 False to send an off (0x13) command for the scene.
           group (int):  The modem group (scene) number to send.
           name (str):  The name of the scene as defined in a scenes.yaml file
-          num_retry (int):  The number of retries to use if the message fails.
+          level (None): Not used by Modem, should be None.
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
                  when the state changes - nothing else is done with it.
@@ -1060,11 +1060,13 @@ class Modem:
         """
         # TODO: figure out how to pass reason around
         on_done = util.make_callback(on_done)
+        if level is not None:
+            LOG.error("Modem scenes do not use level command")
         if name is not None:
             try:
                 group = self.scene_map[name]
             except KeyError:
-                LOG.error("Unable to find modem scene %s", name)
+                LOG.error("Unable to find modem scene named %s", name)
                 on_done(False, "Scene command failed", None)
                 return
         else:
