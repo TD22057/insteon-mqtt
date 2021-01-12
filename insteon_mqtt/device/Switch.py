@@ -28,7 +28,7 @@ class Switch(functions.Scene, Base):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_on_off( Device, bool is_on, on_off.Mode mode, str reason ):
+    - signal_state( Device, bool is_on, on_off.Mode mode, str reason ):
       Sent whenever the switch is turned on or off.
 
     - signal_manual( Device, on_off.Manual mode ): Sent when the device
@@ -51,7 +51,7 @@ class Switch(functions.Scene, Base):
 
         # Support on/off style signals.
         # API: func(Device, bool is_on, on_off.Mode mode, str reason)
-        self.signal_on_off = Signal()
+        self.signal_state = Signal()
 
         # Manual mode start up, down, off
         # API: func(Device, on_off.Manual mode)
@@ -321,7 +321,7 @@ class Switch(functions.Scene, Base):
             manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
             LOG.info("Switch %s manual change %s", self.addr, manual)
 
-            self.signal_manual.emit(self, manual)
+            self.signal_manual.emit(self, manual=manual)
 
             # Switches change state when the switch is held (not all devices
             # do this).
@@ -438,6 +438,7 @@ class Switch(functions.Scene, Base):
                  mode, reason)
         self._is_on = bool(is_on)
 
-        self.signal_on_off.emit(self, self._is_on, mode, reason)
+        self.signal_state.emit(self, is_on=self._is_on, mode=mode,
+                               reason=reason)
 
     #-----------------------------------------------------------------------

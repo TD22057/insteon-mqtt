@@ -8,11 +8,13 @@ from .. import on_off
 from .MsgTemplate import MsgTemplate
 from . import util
 from .SceneTopic import SceneTopic
+from .StateTopic import StateTopic
+from .ManualTopic import ManualTopic
 
 LOG = log.get_logger()
 
 
-class Switch(SceneTopic):
+class Switch(StateTopic, SceneTopic, ManualTopic):
     """MQTT interface to an Insteon on/off switch.
 
     This class connects to a device.Switch object and converts it's
@@ -29,28 +31,13 @@ class Switch(SceneTopic):
           mqtt (mqtt.Mqtt):  The MQTT main interface.
           device (device.Switch):  The Insteon object to link to.
         """
-        self.mqtt = mqtt
-        self.device = device
-
-        # Output state change reporting template.
-        self.msg_state = MsgTemplate(
-            topic='insteon/{{address}}/state',
-            payload='{{on_str.lower()}}')
-
-        # Output manual state change is off by default.
-        self.msg_manual_state = MsgTemplate(None, None)
+        # Setup the Topics
+        super().__init__(mqtt, device)
 
         # Input on/off command template.
         self.msg_on_off = MsgTemplate(
             topic='insteon/{{address}}/set',
             payload='{ "cmd" : "{{value.lower()}}" }')
-
-        # Receive notifications from the Insteon device when it changes.
-        device.signal_on_off.connect(self._insteon_on_off)
-        device.signal_manual.connect(self._insteon_manual)
-
-        # Setup the Scene Topic
-        super().__init__(mqtt, device)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -65,12 +52,11 @@ class Switch(SceneTopic):
         if not data:
             return
 
+        # Load the various topics
         self.load_scene_data(data, qos)
+        self.load_state_data(data, qos)
+        self.load_manual_data(data, qos)
 
-        # Update the MQTT topics and payloads from the config file.
-        self.msg_state.load_config(data, 'state_topic', 'state_payload', qos)
-        self.msg_manual_state.load_config(data, 'manual_state_topic',
-                                          'manual_state_payload', qos)
         self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
                                     qos)
 
@@ -86,7 +72,7 @@ class Switch(SceneTopic):
           qos (int):  The quality of service to use.
         """
         # On/off command messages.
-        topic = self.msg_on_off.render_topic(self.template_data())
+        topic = self.msg_on_off.render_topic(self.base_template_data())
         link.subscribe(topic, qos, self._input_on_off)
 
         self.scene_subscribe(link, qos)
@@ -98,97 +84,10 @@ class Switch(SceneTopic):
         Args:
           link (network.Mqtt):  The MQTT network client to use.
         """
-        topic = self.msg_on_off.render_topic(self.template_data())
+        topic = self.msg_on_off.render_topic(self.base_template_data())
         link.unsubscribe(topic)
 
         self.scene_unsubscribe(link)
-
-    #-----------------------------------------------------------------------
-    def template_data(self, is_on=None, mode=on_off.Mode.NORMAL,
-                      manual=None, reason=None):
-        """Create the Jinja templating data variables for on/off messages.
-
-        Args:
-          is_on (bool):  The on/off state of the switch.  If None, on/off and
-                mode attributes are not added to the data.
-          mode (on_off.Mode):  The on/off mode state.
-          manual (on_off.Manual):  The manual mode state.  If None, manual
-                 attributes are not added to the data.
-          reason (str):  The reason the device was triggered.  This is an
-                 arbitrary string set into the template variables.
-
-        Returns:
-          dict:  Returns a dict with the variables available for templating.
-        """
-        # Set up the variables that can be used in the templates.
-        data = {
-            "address" : self.device.addr.hex,
-            "name" : self.device.name if self.device.name
-                     else self.device.addr.hex,
-            }
-
-        if is_on is not None:
-            data["on"] = 1 if is_on else 0
-            data["on_str"] = "on" if is_on else "off"
-            data["mode"] = str(mode)
-            data["fast"] = 1 if mode == on_off.Mode.FAST else 0
-            data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
-            data["reason"] = reason if reason is not None else ""
-
-        if manual is not None:
-            data["manual_str"] = str(manual)
-            data["manual"] = manual.int_value()
-            data["manual_openhab"] = manual.openhab_value()
-            data["reason"] = reason if reason is not None else ""
-
-        return data
-
-    #-----------------------------------------------------------------------
-    def _insteon_on_off(self, device, is_on, mode=on_off.Mode.NORMAL,
-                        reason=""):
-        """Device on/off callback.
-
-        This is triggered via signal when the Insteon device is turned on or
-        off.  It will publish an MQTT message with the new state.
-
-        Args:
-          device (device.Switch):   The Insteon device that changed.
-          is_on (bool):   True for on, False for off.
-          mode (on_off.Mode):  The on/off mode state.
-          reason (str):  The reason the device was triggered.  This is an
-                 arbitrary string set into the template variables.
-        """
-        LOG.info("MQTT received on/off %s on: %s %s '%s'", device.label, is_on,
-                 mode, reason)
-
-        # For manual mode messages, don't retain them because they don't
-        # represent persistent state - they're momentary events.
-        retain = False if mode == on_off.Mode.MANUAL else None
-
-        data = self.template_data(is_on, mode, reason=reason)
-        self.msg_state.publish(self.mqtt, data, retain=retain)
-
-    #-----------------------------------------------------------------------
-    def _insteon_manual(self, device, manual, reason=""):
-        """Device manual mode callback.
-
-        This is triggered via signal when the Insteon device starts or stops
-        manual mode (holding a button down).  It will publish an MQTT message
-        with the new state.
-
-        Args:
-          device (device.Base): The Insteon device that changed.
-          manual (on_off.Manual):  The manual mode.
-          reason (str):  The reason the device was triggered.  This is an
-                 arbitrary string set into the template variables.
-        """
-        LOG.info("MQTT received manual change %s %s '%s'", device.label,
-                 manual, reason)
-
-        # For manual mode messages, don't retain them because they don't
-        # represent persistent state - they're momentary events.
-        data = self.template_data(manual=manual, reason=reason)
-        self.msg_manual_state.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------
     def _input_on_off(self, client, data, message):

@@ -5,15 +5,16 @@
 #===========================================================================
 import functools
 from .. import log
-from .. import on_off
 from .MsgTemplate import MsgTemplate
 from . import util
 from .SceneTopic import SceneTopic
+from .StateTopic import StateTopic
+from .ManualTopic import ManualTopic
 
 LOG = log.get_logger()
 
 
-class KeypadLinc(SceneTopic):
+class KeypadLinc(SceneTopic, StateTopic, ManualTopic):
     """MQTT interface to an Insteon KeypadLinc dimmer or switch.
 
     This class connects to a device.KeypadLinc object and converts it's output
@@ -30,43 +31,28 @@ class KeypadLinc(SceneTopic):
           mqtt (mqtt.Mqtt):  The MQTT main interface.
           device (device.KeypadLinc):  The Insteon object to link to.
         """
-        self.mqtt = mqtt
-        self.device = device
-
-        # Output on/off state change reporting template.
-        self.msg_btn_state = MsgTemplate(
-            topic='insteon/{{address}}/state/{{button}}',
-            payload='{{on_str.lower()}}')
-
-        # Output manual state change is off by default.
-        self.msg_manual_state = MsgTemplate(None, None)
+        # Setup a special template for button one if this is a dimmer
+        state_payload_1 = None
+        if device.is_dimmer:
+            state_payload_1 = '{ "state" : "{{on_str.lower()}}", ' \
+                              '"brightness" : {{level_255}} }'
+        super().__init__(mqtt, device,
+                         scene_topic='insteon/{{address}}/scene/{{button}}',
+                         state_topic='insteon/{{address}}/state/{{button}}',
+                         state_payload_1=state_payload_1,)
 
         # Input on/off command template.
         self.msg_btn_on_off = MsgTemplate(
             topic='insteon/{{address}}/set/{{button}}',
             payload='{ "cmd" : "{{value.lower()}}" }')
 
-        self.msg_dimmer_state = None
         self.msg_dimmer_level = None
         if self.device.is_dimmer:
-            # Output dimmer state change reporting template.
-            self.msg_dimmer_state = MsgTemplate(
-                topic='insteon/{{address}}/state/1',
-                payload='{ "state" : "{{on_str.lower()}}", '
-                        '"brightness" : {{level_255}} }')
-
             # Input dimmer level command template.
             self.msg_dimmer_level = MsgTemplate(
                 topic='insteon/{{address}}/level',
                 payload='{ "cmd" : "{{json.state.lower()}}", '
                         '"level" : {{json.brightness}} }')
-
-        # Connect the signals from the insteon device so we get notified of
-        # changes.
-        device.signal_level_changed.connect(self._insteon_level_changed)
-        device.signal_manual.connect(self._insteon_manual)
-        super().__init__(mqtt, device,
-                         scene_topic='insteon/{{address}}/scene/{{button}}')
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
@@ -81,20 +67,19 @@ class KeypadLinc(SceneTopic):
         if not data:
             return
 
+        # Load the various topics
+        self.load_state_data(data, qos,
+                             topic='btn_state_topic',
+                             payload='btn_state_payload')
+        self.load_manual_data(data, qos)
         self.load_scene_data(data, qos,
                              topic='btn_scene_topic',
                              payload='btn_scene_payload')
 
-        self.msg_btn_state.load_config(data, 'btn_state_topic',
-                                       'btn_state_payload', qos)
-        self.msg_manual_state.load_config(data, 'manual_state_topic',
-                                          'manual_state_payload', qos)
         self.msg_btn_on_off.load_config(data, 'btn_on_off_topic',
                                         'btn_on_off_payload', qos)
 
         if self.device.is_dimmer:
-            self.msg_dimmer_state.load_config(data, 'dimmer_state_topic',
-                                              'dimmer_state_payload', qos)
             self.msg_dimmer_level.load_config(data, 'dimmer_level_topic',
                                               'dimmer_level_payload', qos)
 
@@ -117,7 +102,7 @@ class KeypadLinc(SceneTopic):
             start_group = 2
 
             # Create the topic names for button 1.
-            data = self.template_data(button=1)
+            data = self.base_template_data(button=1)
             topic_switch = self.msg_btn_on_off.render_topic(data)
             topic_dimmer = self.msg_dimmer_level.render_topic(data)
 
@@ -141,7 +126,7 @@ class KeypadLinc(SceneTopic):
         # which.
         for group in range(start_group, 9):
             handler = functools.partial(self._input_on_off, group=group)
-            data = self.template_data(button=group)
+            data = self.base_template_data(button=group)
 
             topic = self.msg_btn_on_off.render_topic(data)
             link.subscribe(topic, qos, handler)
@@ -157,7 +142,7 @@ class KeypadLinc(SceneTopic):
           link (network.Mqtt):  The MQTT network client to use.
         """
         for group in range(1, 9):
-            data = self.template_data(button=group)
+            data = self.base_template_data(button=group)
 
             topic = self.msg_btn_on_off.render_topic(data)
             link.unsubscribe(topic)
@@ -166,106 +151,9 @@ class KeypadLinc(SceneTopic):
             self.scene_unsubscribe(link, group=group)
 
         if self.device.is_dimmer:
-            data = self.template_data(button=1)
+            data = self.base_template_data(button=1)
             topic = self.msg_dimmer_level.render_topic(data)
             link.unsubscribe(topic)
-
-    #-----------------------------------------------------------------------
-    # pylint: disable=arguments-differ
-    def template_data(self, button=None, level=None, mode=on_off.Mode.NORMAL,
-                      manual=None, reason=None):
-        """Create the Jinja templating data variables for on/off messages.
-
-        Args:
-          button (int):  The button (group) ID (1-8) of the Insteon button
-                 that was triggered.
-          level (int):  The dimmer level.  If None, on/off, levels, and mode
-                attributes are not added to the data.
-          mode (on_off.Mode):  The on/off mode state.
-          manual (on_off.Manual):  The manual mode state.  If None, manual
-                 attributes are not added to the data.
-          reason (str):  The reason the device was triggered.  This is an
-                 arbitrary string set into the template variables.
-
-        Returns:
-          dict:  Returns a dict with the variables available for templating.
-        """
-        data = {
-            "address" : self.device.addr.hex,
-            "name" : self.device.name if self.device.name
-                     else self.device.addr.hex,
-            "button" : button,
-            }
-
-        if level is not None:
-            level = int(level)
-            data["on"] = 1 if level else 0
-            data["on_str"] = "on" if level else "off"
-            data["level_255"] = level
-            data["level_100"] = int(100.0 * level / 255.0)
-            data["mode"] = str(mode)
-            data["fast"] = 1 if mode == on_off.Mode.FAST else 0
-            data["instant"] = 1 if mode == on_off.Mode.INSTANT else 0
-            data["reason"] = reason if reason is not None else ""
-
-        if manual is not None:
-            data["manual_str"] = str(manual)
-            data["manual"] = manual.int_value()
-            data["manual_openhab"] = manual.openhab_value()
-            data["reason"] = reason if reason is not None else ""
-
-        return data
-
-    #-----------------------------------------------------------------------
-    def _insteon_level_changed(self, device, group, level,
-                               mode=on_off.Mode.NORMAL, reason=""):
-        """Device on/off and dimmer level changed callback.
-
-        This is triggered via signal when the Insteon device goes active or
-        inactive.  It will publish an MQTT message with the new state.
-
-        Args:
-          device (device.KeypadLinc):  The Insteon device that changed.
-          group (int):  The button (1-8) that was pressed.
-          level (int):  The dimmer level (0->255)
-          mode (on_off.Mode):  The on/off mode state.
-          reason (str):  The reason the device was triggered.  This is an
-                 arbitrary string set into the template variables.
-        """
-        LOG.info("MQTT received button press %s = btn %s at %s %s %s",
-                 device.label, group, level, mode, reason)
-
-        data = self.template_data(group, level, mode, reason=reason)
-
-        # For manual mode messages, don't retain them because they don't
-        # represent persistent state - they're momentary events.
-        retain = False if mode == on_off.Mode.MANUAL else None
-
-        if group == 1 and self.device.is_dimmer:
-            self.msg_dimmer_state.publish(self.mqtt, data, retain=retain)
-        else:
-            self.msg_btn_state.publish(self.mqtt, data, retain=retain)
-
-    #-----------------------------------------------------------------------
-    def _insteon_manual(self, device, group, manual, reason=""):
-        """Device manual mode changed callback.
-
-        This is triggered via signal when the Insteon device starts or stops
-        manual mode (holding a button down).  It will publish an MQTT message
-        with the new state.
-
-        Args:
-          device (device.Dimmer):  The Insteon device that changed.
-          group (int):  The button (1-8) that was pressed.
-          manual (on_off.Manual):  The manual mode.
-        """
-        LOG.info("MQTT received manual button press %s = btn %s %s %s",
-                 device.label, group, manual, reason)
-
-        # For manual mode messages, don't retain them because they don't
-        # represent persistent state - they're momentary events.
-        data = self.template_data(group, manual=manual, reason=reason)
-        self.msg_manual_state.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------
     def _input_on_off(self, client, data, message, group, raise_errors=False):

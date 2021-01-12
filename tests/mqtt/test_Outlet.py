@@ -62,18 +62,18 @@ class Test_Outlet:
     def test_template(self, setup):
         mdev, addr, name = setup.getAll(['mdev', 'addr', 'name'])
 
-        data = mdev.template_data()
+        data = mdev.base_template_data()
         right = {"address" : addr.hex, "name" : name}
         assert data == right
 
-        data = mdev.template_data(is_on=True, button=1, reason="something",
-                                  mode=IM.on_off.Mode.FAST)
+        data = mdev.state_template_data(is_on=True, button=1, reason="something",
+                                        mode=IM.on_off.Mode.FAST)
         right = {"address" : addr.hex, "name" : name, "button" : 1,
                  "on" : 1, "on_str" : "on", "reason" : "something",
                  "mode" : "fast", "fast" : 1, "instant" : 0}
         assert data == right
 
-        data = mdev.template_data(is_on=False, button=2)
+        data = mdev.state_template_data(is_on=False, button=2)
         right = {"address" : addr.hex, "name" : name, "button" : 2,
                  "on" : 0, "on_str" : "off", "reason" : "",
                  "mode" : "normal", "fast" : 0, "instant" : 0}
@@ -88,8 +88,8 @@ class Test_Outlet:
         mdev.load_config({})
 
         # Send an on/off signal
-        dev.signal_on_off.emit(dev, 1, True)
-        dev.signal_on_off.emit(dev, 2, False)
+        dev.signal_state.emit(dev, button=1, is_on=True)
+        dev.signal_state.emit(dev, button=2, is_on=False)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic='%s/state/1' % topic, payload='on', qos=0, retain=True)
@@ -110,8 +110,8 @@ class Test_Outlet:
         stopic = "foo/%s" % setup.addr.hex
 
         # Send an on/off signal
-        dev.signal_on_off.emit(dev, 1, True)
-        dev.signal_on_off.emit(dev, 2, False)
+        dev.signal_state.emit(dev, button=1, is_on=True)
+        dev.signal_state.emit(dev, button=2, is_on=False)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic=stopic + "/1", payload='1 1 ON', qos=qos, retain=True)

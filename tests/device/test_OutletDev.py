@@ -40,13 +40,13 @@ class Test_Base_Config():
             assert IM.CommandSeq.add.call_count == 3
 
     @pytest.mark.parametrize("group_num,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.ON, 0x00,[True,IM.on_off.Mode.NORMAL, 'device']),
-        (0x01,Msg.CmdType.OFF, 0x00, [0,IM.on_off.Mode.NORMAL, 'device']),
-        (0x01,Msg.CmdType.ON_FAST, 0x00,[True,IM.on_off.Mode.FAST, 'device']),
-        (0x01,Msg.CmdType.OFF_FAST, 0x00, [0,IM.on_off.Mode.FAST, 'device']),
+        (0x01,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL, "reason":'device',"button":1}),
+        (0x01,Msg.CmdType.OFF, 0x00, {"is_on":0,"mode":IM.on_off.Mode.NORMAL, "reason":'device',"button":1}),
+        (0x01,Msg.CmdType.ON_FAST, 0x00,{"is_on":True,"mode":IM.on_off.Mode.FAST, "reason":'device',"button":1}),
+        (0x01,Msg.CmdType.OFF_FAST, 0x00, {"is_on":0,"mode":IM.on_off.Mode.FAST, "reason":'device',"button":1}),
         (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, None),
         (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
-        (0x02,Msg.CmdType.ON, 0x00,[True,IM.on_off.Mode.NORMAL, 'device']),
+        (0x02,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL, "reason":'device',"button":2}),
     ])
     def test_handle_on_off(self, test_device, group_num, cmd1, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:
@@ -56,7 +56,7 @@ class Test_Base_Config():
             msg = Msg.InpStandard(addr, group, flags, cmd1, cmd2)
             test_device.handle_broadcast(msg)
             if expected is not None:
-                mocked.assert_called_once_with(test_device, group_num, *expected)
+                mocked.assert_called_once_with(test_device, **expected)
             else:
                 mocked.assert_not_called()
 

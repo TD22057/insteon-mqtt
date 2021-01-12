@@ -32,10 +32,6 @@ class FanLinc(Dimmer):
     - signal_fan_speed( Device, bool is_on, on_off.Mode mode, str reason ):
       Sent whenever the switch is turned on or off.
 
-    - signal_manual( Device, on_off.Manual mode, str reason ): Sent when the
-      device starts or stops manual mode (when a button is held down or
-      released).
-
     """
     type_name = "fan_linc"
 

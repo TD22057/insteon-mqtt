@@ -6,11 +6,12 @@
 from .. import log
 from .MsgTemplate import MsgTemplate
 from . import util
+from .BaseTopic import BaseTopic
 
 LOG = log.get_logger()
 
 
-class IOLinc:
+class IOLinc(BaseTopic):
     """MQTT interface to an Insteon IOLinc device.
 
     This class connects to a device.IOLinc object and converts it's
@@ -24,8 +25,7 @@ class IOLinc:
           mqtt (mqtt.Mqtt):  The MQTT main interface.
           device (device.IOLinc):  The Insteon object to link to.
         """
-        self.mqtt = mqtt
-        self.device = device
+        super().__init__(mqtt, device)
 
         # Output state change reporting template.
         self.msg_state = MsgTemplate(
@@ -108,11 +108,7 @@ class IOLinc:
           dict:  Returns a dict with the variables available for templating.
         """
         # Set up the variables that can be used in the templates.
-        data = {
-            "address" : self.device.addr.hex,
-            "name" : self.device.name if self.device.name
-                     else self.device.addr.hex,
-            }
+        data = self.base_template_data()
 
         if sensor_is_on is not None:
             data["sensor_on"] = 1 if sensor_is_on else 0

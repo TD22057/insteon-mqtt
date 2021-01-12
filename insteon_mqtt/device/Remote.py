@@ -32,7 +32,7 @@ class Remote(BatterySensor):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_pressed( Device, int group, bool is_on, on_off.Mode mode ):
+    - signal_state( Device, int group, bool is_on, on_off.Mode mode ):
       Sent whenever a button is pressed.  The remote will toggle on and off
       with each button press.
 
@@ -78,7 +78,7 @@ class Remote(BatterySensor):
 
         # Button pressed signal.
         # API: func(Device, int group, bool on, on_off.Mode mode)
-        self.signal_pressed = Signal()
+        self.signal_state = Signal()
 
         # Manual mode start up, down, off
         # API: func(Device, int group, on_off.Manual mode)
@@ -158,7 +158,8 @@ class Remote(BatterySensor):
                          self.addr, msg.group, is_on, mode)
 
                 # Notify others that the button was pressed.
-                self.signal_pressed.emit(self, msg.group, is_on, mode)
+                self.signal_state.emit(self, button=msg.group, is_on=is_on,
+                                       mode=mode)
                 self.update_linked_devices(msg)
 
             # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
@@ -167,7 +168,7 @@ class Remote(BatterySensor):
                 LOG.info("Remote %s manual change group: %s %s", self.addr,
                          msg.group, manual)
 
-                self.signal_manual.emit(self, msg.group, manual)
+                self.signal_manual.emit(self, button=msg.group, manual=manual)
                 self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------

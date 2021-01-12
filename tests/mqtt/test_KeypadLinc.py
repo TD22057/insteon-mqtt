@@ -106,11 +106,11 @@ class Test_KeypadLinc:
     def test_template(self, setup):
         mdev, addr, name = setup.getAll(['mdev', 'addr', 'name'])
 
-        data = mdev.template_data(button=5)
+        data = mdev.base_template_data(button=5)
         right = {"address" : addr.hex, "name" : name, "button" : 5}
         assert data == right
 
-        data = mdev.template_data(button=3, level=255, reason="something",
+        data = mdev.state_template_data(button=3, level=255, reason="something",
                                   mode=IM.on_off.Mode.FAST,
                                   manual=IM.on_off.Manual.STOP)
         right = {"address" : addr.hex, "name" : name, "button" : 3,
@@ -120,7 +120,7 @@ class Test_KeypadLinc:
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
         assert data == right
 
-        data = mdev.template_data(button=1, level=128,
+        data = mdev.state_template_data(button=1, level=128,
                                   mode=IM.on_off.Mode.INSTANT)
         right = {"address" : addr.hex, "name" : name, "button" : 1,
                  "on" : 1, "on_str" : "on", "reason" : "",
@@ -128,14 +128,14 @@ class Test_KeypadLinc:
                  "mode" : "instant", "fast" : 0, "instant" : 1}
         assert data == right
 
-        data = mdev.template_data(button=2, level=0, reason="foo")
+        data = mdev.state_template_data(button=2, level=0, reason="foo")
         right = {"address" : addr.hex, "name" : name, "button" : 2,
                  "on" : 0, "on_str" : "off", "reason" : "foo",
                  "level_255" : 0, "level_100" : 0,
                  "mode" : "normal", "fast" : 0, "instant" : 0}
         assert data == right
 
-        data = mdev.template_data(button=2, manual=IM.on_off.Manual.UP,
+        data = mdev.state_template_data(button=2, manual=IM.on_off.Manual.UP,
                                   reason="HELLO")
         right = {"address" : addr.hex, "name" : name, "button" : 2,
                  "reason" : "HELLO", "manual_str" : "up", "manual" : 1,
@@ -151,8 +151,8 @@ class Test_KeypadLinc:
         mdev.load_config({})
 
         # Send an on/off signal
-        dev.signal_level_changed.emit(dev, 1, 255)
-        dev.signal_level_changed.emit(dev, 2, 0)
+        dev.signal_state.emit(dev, button=1, level=255)
+        dev.signal_state.emit(dev, button=2, level=0)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic='%s/state/1' % topic, qos=0, retain=True,
@@ -162,8 +162,8 @@ class Test_KeypadLinc:
         link.client.clear()
 
         # Send a manual mode signal - should do nothing w/ the default config.
-        dev.signal_manual.emit(dev, 3, IM.on_off.Manual.DOWN)
-        dev.signal_manual.emit(dev, 4, IM.on_off.Manual.STOP)
+        dev.signal_manual.emit(dev, button=3, manual=IM.on_off.Manual.DOWN)
+        dev.signal_manual.emit(dev, button=4, manual=IM.on_off.Manual.STOP)
         assert len(link.client.pub) == 0
 
     #-----------------------------------------------------------------------
@@ -179,8 +179,8 @@ class Test_KeypadLinc:
         mdev.load_config(config, qos)
 
         # Send an on/off signal
-        dev.signal_level_changed.emit(dev, 3, 128)
-        dev.signal_level_changed.emit(dev, 2, 0)
+        dev.signal_state.emit(dev, button=3, level=128)
+        dev.signal_state.emit(dev, button=2, level=0)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic="foo/%s/3" % setup.addr.hex, payload='1 ON', qos=qos,
@@ -191,8 +191,8 @@ class Test_KeypadLinc:
         link.client.clear()
 
         # Send a manual signal
-        dev.signal_manual.emit(dev, 5, IM.on_off.Manual.DOWN)
-        dev.signal_manual.emit(dev, 4, IM.on_off.Manual.STOP)
+        dev.signal_manual.emit(dev, button=5, manual=IM.on_off.Manual.DOWN)
+        dev.signal_manual.emit(dev, button=4, manual=IM.on_off.Manual.STOP)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic="bar/%s/5" % setup.addr.hex, payload='-1 DOWN', qos=qos,

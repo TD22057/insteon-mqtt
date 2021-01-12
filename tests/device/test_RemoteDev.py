@@ -79,21 +79,21 @@ class Test_Base_Config():
             assert IM.CommandSeq.add.call_count == 9
 
     @pytest.mark.parametrize("group_num,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.ON, 0x00,[True,IM.on_off.Mode.NORMAL]),
-        (0x01,Msg.CmdType.OFF, 0x00, [False,IM.on_off.Mode.NORMAL]),
-        (0x01,Msg.CmdType.ON_FAST, 0x00,[True,IM.on_off.Mode.FAST]),
-        (0x01,Msg.CmdType.OFF_FAST, 0x00, [False,IM.on_off.Mode.FAST]),
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, [IM.on_off.Manual.DOWN]),
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, [IM.on_off.Manual.UP]),
-        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, [IM.on_off.Manual.STOP]),
+        (0x01,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":1}),
+        (0x01,Msg.CmdType.OFF, 0x00, {"is_on":False,"mode":IM.on_off.Mode.NORMAL,"button":1}),
+        (0x01,Msg.CmdType.ON_FAST, 0x00,{"is_on":True,"mode":IM.on_off.Mode.FAST,"button":1}),
+        (0x01,Msg.CmdType.OFF_FAST, 0x00, {"is_on":False,"mode":IM.on_off.Mode.FAST,"button":1}),
+        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.DOWN,"button":1}),
+        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, {"manual":IM.on_off.Manual.UP,"button":1}),
+        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP,"button":1}),
         (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
-        (0x02,Msg.CmdType.ON, 0x00,[True,IM.on_off.Mode.NORMAL]),
-        (0x03,Msg.CmdType.ON, 0x00,[True,IM.on_off.Mode.NORMAL]),
-        (0x04,Msg.CmdType.ON, 0x00,[True,IM.on_off.Mode.NORMAL]),
-        (0x05,Msg.CmdType.ON, 0x00,[True,IM.on_off.Mode.NORMAL]),
-        (0x06,Msg.CmdType.ON, 0x00,[True,IM.on_off.Mode.NORMAL]),
-        (0x07,Msg.CmdType.ON, 0x00,[True,IM.on_off.Mode.NORMAL]),
-        (0x08,Msg.CmdType.ON, 0x00,[True,IM.on_off.Mode.NORMAL]),
+        (0x02,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":2}),
+        (0x03,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":3}),
+        (0x04,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":4}),
+        (0x05,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":5}),
+        (0x06,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":6}),
+        (0x07,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":7}),
+        (0x08,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":8}),
     ])
     def test_handle_on_off(self, test_device8, group_num, cmd1, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:
@@ -103,6 +103,6 @@ class Test_Base_Config():
             msg = Msg.InpStandard(addr, group, flags, cmd1, cmd2)
             test_device8.handle_broadcast(msg)
             if expected is not None:
-                mocked.assert_called_once_with(test_device8, group_num, *expected)
+                mocked.assert_called_once_with(test_device8, **expected)
             else:
                 mocked.assert_not_called()

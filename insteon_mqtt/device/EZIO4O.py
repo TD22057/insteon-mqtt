@@ -68,7 +68,7 @@ class EZIO4O(Base):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_on_off( Device, int group, bool is_on, on_off.Mode mode, str
+    - signal_state( Device, int group, bool is_on, on_off.Mode mode, str
                      reason ): Sent whenever an output is turned on or off.
                      Group will be 1 to 4 matching the corresponding device
                      output.
@@ -92,7 +92,7 @@ class EZIO4O(Base):
         # Support on/off style signals.
         # API: func(Device, int group, bool is_on, on_off.Mode mode,
         #           str reason)
-        self.signal_on_off = Signal()
+        self.signal_state = Signal()
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
@@ -675,6 +675,7 @@ class EZIO4O(Base):
         self._is_on[group - 1] = is_on
 
         # Notify others that the output state has changed.
-        self.signal_on_off.emit(self, group, is_on, mode, reason)
+        self.signal_state.emit(self, button=group, is_on=is_on, mode=mode,
+                               reason=reason)
 
     #-----------------------------------------------------------------------

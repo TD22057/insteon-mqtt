@@ -5,25 +5,29 @@
 #===========================================================================
 import functools
 from .. import log
-from .. import on_off
 from .MsgTemplate import MsgTemplate
 from . import util
+from .BaseTopic import BaseTopic
 
 LOG = log.get_logger()
 
 
-class SceneTopic:
+class SceneTopic(BaseTopic):
     """MQTT interface to the Scene Topic
 
     This is an abstract class that provides support for the Scene topic.
     """
-    def __init__(self, mqtt, device, scene_topic=None, scene_payload=None):
-        """Constructor
+    def __init__(self, mqtt, device, scene_topic=None, scene_payload=None,
+                 **kwargs):
+        """Scene Topic Constructor
 
         Args:
           mqtt (mqtt.Mqtt):  The MQTT main interface.
           device (device):  The Insteon object to link to.
+          scene_topic (str): The template for the topic
+          scene_payload (str): The template for the payload
         """
+        super().__init__(mqtt, device, **kwargs)
         # It looks cleaner setting these long strings here rather than in the
         # function declaration
         if scene_topic is None:
@@ -56,11 +60,6 @@ class SceneTopic:
         self.msg_scene.load_config(data, topic, payload, qos)
 
     #-----------------------------------------------------------------------
-    def template_data(self, level=None, mode=on_off.Mode.NORMAL, manual=None,
-                      reason=None, button=None):
-        raise NotImplementedError  # pragma: no cover
-
-    #-----------------------------------------------------------------------
     def scene_subscribe(self, link, qos, group=None):
         """Subscribe to any MQTT topics the object needs.
 
@@ -75,11 +74,11 @@ class SceneTopic:
         if group is not None:
             handler = functools.partial(self._input_scene, group=group)
             topic = self.msg_scene.render_topic(
-                self.template_data(button=group)
+                self.base_template_data(button=group)
             )
         else:
             handler = self._input_scene
-            topic = self.msg_scene.render_topic(self.template_data())
+            topic = self.msg_scene.render_topic(self.base_template_data())
         link.subscribe(topic, qos, handler)
 
     #-----------------------------------------------------------------------
@@ -90,10 +89,10 @@ class SceneTopic:
           link (network.Mqtt):  The MQTT network client to use.
         """
         if group is not None:
-            data = self.template_data(button=group)
+            data = self.base_template_data(button=group)
             topic = self.msg_scene.render_topic(data)
         else:
-            topic = self.msg_scene.render_topic(self.template_data())
+            topic = self.msg_scene.render_topic(self.base_template_data())
         link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
