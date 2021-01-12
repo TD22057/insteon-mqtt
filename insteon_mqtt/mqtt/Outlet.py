@@ -121,8 +121,10 @@ class Outlet(StateTopic):
             if mode == on_off.Mode.RAMP:  # Not supported
                 mode = on_off.Mode.NORMAL
             reason = data.get("reason", "")
-            self.device.set(level=is_on, group=group, mode=mode, reason=reason)
+            level = data.get("level", None)
+            self.device.set(is_on=is_on, level=level, group=group, mode=mode,
+                            reason=reason)
         except:
-            LOG.error("Invalid Outlet on/off command: %s", data)
+            LOG.exception("Invalid Outlet on/off command: %s", data)
 
     #-----------------------------------------------------------------------

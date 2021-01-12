@@ -182,8 +182,8 @@ class KeypadLinc(SceneTopic, StateTopic, ManualTopic):
             is_on, mode, transition = util.parse_on_off(data)
             level = None if is_on else 0x00
             reason = data.get("reason", "")
-            self.device.set(level, group, mode, reason=reason,
-                            transition=transition)
+            self.device.set(is_on=is_on, level=level, group=group, mode=mode,
+                            reason=reason, transition=transition)
         except:
             LOG.error("Invalid KeypadLinc on/off command: %s", data)
             if raise_errors:
@@ -218,7 +218,7 @@ class KeypadLinc(SceneTopic, StateTopic, ManualTopic):
             if level is not None:
                 level = int(level)
             reason = data.get("reason", "")
-            self.device.set(level, mode=mode, reason=reason,
+            self.device.set(is_on=is_on, level=level, mode=mode, reason=reason,
                             transition=transition)
         except:
             LOG.error("Invalid KeypadLinc level command: %s", data)

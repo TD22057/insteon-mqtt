@@ -160,7 +160,7 @@ class IOLinc(BaseTopic):
         try:
             # IOLinc doesn't support modes so don't parse that element.
             is_on = util.parse_on_off(data, have_mode=False)
-            self.device.set(is_on)
+            self.device.set(is_on=is_on)
         except:
             LOG.error("Invalid IOLinc on/off command: %s", data)
 

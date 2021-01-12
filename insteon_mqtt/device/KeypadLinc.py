@@ -19,7 +19,7 @@ LOG = log.get_logger()
 
 
 #===========================================================================
-class KeypadLinc(functions.Scene, Base):
+class KeypadLinc(functions.Set, functions.Scene, Base):
     """Insteon KeypadLinc dimmer/switch device.
 
     This class can be used to model a 6 or 8 button KeypadLinc with dimming
@@ -82,7 +82,6 @@ class KeypadLinc(functions.Scene, Base):
         self.cmd_map.update({
             'on' : self.on,
             'off' : self.off,
-            'set' : self.set,
             'set_flags' : self.set_flags,
             'set_button_led' : self.set_button_led,
             'set_load_attached' : self.set_load_attached,
@@ -399,48 +398,6 @@ class KeypadLinc(functions.Scene, Base):
             callback = functools.partial(self.handle_set_load, reason=reason)
             msg_handler = handler.StandardCmd(msg, callback, on_done)
             self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def set(self, level, group=0, mode=on_off.Mode.NORMAL, reason="",
-            transition=None, on_done=None):
-        """Turn the device on or off.  Level zero will be off.
-
-        NOTE: This does NOT simulate a button press on the device - it just
-        changes the state of the device.  It will not trigger any responders
-        that are linked to this device.  To simulate a button press, call the
-        scene() method.   If the input button is controlling the load (group 1
-        for an attached load, group 0 for attached or detached), then the
-        load will change.  Otherwise this command just changes the LED of
-        the button.
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          level (int):  If non zero, turn the device on.  Should be in the
-                range 0 to 255.  For non-dimmer groups, it will only look at
-                level=0 or level>0.  If None, use default on-level.
-          group (int): The group to send the command to.  If the group is 0,
-                it will always be the load (whether it's attached or not).
-                Otherwise it must be in the range [1,8] and controls the
-                specific button.
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        if (level is None) or level:
-            # None/True == use default on-level.  Since true is integer 1,
-            # do an explicit check here to catch that input.
-            if level is True:
-                level = None
-
-            self.on(group, level, mode, reason, transition, on_done)
-        else:
-            self.off(group, mode, reason, transition, on_done)
 
     #-----------------------------------------------------------------------
     def increment_up(self, reason="", on_done=None):

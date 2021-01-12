@@ -18,7 +18,7 @@ LOG = log.get_logger()
 
 
 #===========================================================================
-class Switch(functions.Scene, Base):
+class Switch(functions.Set, functions.Scene, Base):
     """Insteon on/off switch device.
 
     This class can be used to model any device that acts like a on/off switch
@@ -62,7 +62,6 @@ class Switch(functions.Scene, Base):
         self.cmd_map.update({
             'on' : self.on,
             'off' : self.off,
-            'set' : self.set,
             'set_flags' : self.set_flags,
             })
 
@@ -72,7 +71,7 @@ class Switch(functions.Scene, Base):
 
     #-----------------------------------------------------------------------
     def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
-           on_done=None):
+           transition=None, on_done=None):
         """Turn the device on.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -101,6 +100,9 @@ class Switch(functions.Scene, Base):
         assert group == 0x01
         assert isinstance(mode, on_off.Mode)
 
+        if transition:
+            LOG.error("Device %s does not suppor transition.", self.addr)
+
         # Send the requested on code value.
         cmd1 = on_off.Mode.encode(True, mode)
         msg = Msg.OutStandard.direct(self.addr, cmd1, 0xff)
@@ -114,7 +116,7 @@ class Switch(functions.Scene, Base):
 
     #-----------------------------------------------------------------------
     def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            on_done=None):
+            transition=None, on_done=None):
         """Turn the device off.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -141,6 +143,9 @@ class Switch(functions.Scene, Base):
         assert group == 0x01
         assert isinstance(mode, on_off.Mode)
 
+        if transition:
+            LOG.error("Device %s does not suppor transition.", self.addr)
+
         # Send an off or instant off command.
         cmd1 = on_off.Mode.encode(False, mode)
         msg = Msg.OutStandard.direct(self.addr, cmd1, 0x00)
@@ -150,38 +155,6 @@ class Switch(functions.Scene, Base):
         callback = functools.partial(self.handle_ack, reason=reason)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            on_done=None):
-        """Turn the device on or off.  Level zero will be off.
-
-        NOTE: This does NOT simulate a button press on the device - it just
-        changes the state of the device.  It will not trigger any responders
-        that are linked to this device.  To simulate a button press, call the
-        scene() method.
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          level (int):  If non-zero, turn the device on.  The API is an int
-                to keep a consistent API with other devices.
-          group (int):  The group to send the command to.  For switches this
-                this must be 1.  Allowing a group here gives us a consistent
-                API to the on command across devices.
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        if level:
-            self.on(group, level, mode, reason, on_done)
-        else:
-            self.off(group, mode, reason, on_done)
 
     #-----------------------------------------------------------------------
     def set_backlight(self, level, on_done=None):

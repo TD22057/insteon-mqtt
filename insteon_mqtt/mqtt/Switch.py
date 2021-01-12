@@ -116,7 +116,7 @@ class Switch(StateTopic, SceneTopic, ManualTopic):
             if mode == on_off.Mode.RAMP:  # Not supported
                 mode = on_off.Mode.NORMAL
             reason = data.get("reason", "")
-            self.device.set(level=is_on, mode=mode, reason=reason)
+            self.device.set(is_on=is_on, mode=mode, reason=reason)
         except:
             LOG.error("Invalid switch on/off command: %s", data)
 

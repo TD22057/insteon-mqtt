@@ -122,13 +122,13 @@ class Dimmer(StateTopic, SceneTopic, ManualTopic, SetTopic):
                           "dimmers - ignoring ramp rate.")
             if mode == on_off.Mode.RAMP:  # Not supported
                 mode = on_off.Mode.NORMAL
-            level = '0' if not is_on else data.get('level')
+            level = '0' if not is_on else data.get('level', None)
             if level is not None:
                 level = int(level)
             reason = data.get("reason", "")
 
             # Tell the device to change its level.
-            self.device.set(level=level, mode=mode, reason=reason)
+            self.device.set(is_on=is_on, level=level, mode=mode, reason=reason)
         except:
             LOG.error("Invalid dimmer command: %s", data)
 

@@ -18,7 +18,7 @@ from .. import util
 LOG = log.get_logger()
 
 
-class Dimmer(functions.Scene, Base):
+class Dimmer(functions.Scene, functions.Set, Base):
     """Insteon dimmer device.
 
     This class can be used to model any device that acts like a dimmer
@@ -74,7 +74,6 @@ class Dimmer(functions.Scene, Base):
         self.cmd_map.update({
             'on' : self.on,
             'off' : self.off,
-            'set' : self.set,
             'increment_up' : self.increment_up,
             'increment_down' : self.increment_down,
             'set_flags' : self.set_flags,
@@ -86,7 +85,7 @@ class Dimmer(functions.Scene, Base):
 
     #-----------------------------------------------------------------------
     def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
-           on_done=None):
+           transition=None, on_done=None):
         """Turn the device on.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -112,6 +111,8 @@ class Dimmer(functions.Scene, Base):
                    completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Dimmer %s cmd: on %s", self.addr, level)
+        if transition:
+            LOG.error("Device %s does not suppor transition.", self.addr)
         if level is None:
             # Not specified - choose brightness as pressing the button would do
             if mode == on_off.Mode.FAST:
@@ -142,7 +143,7 @@ class Dimmer(functions.Scene, Base):
 
     #-----------------------------------------------------------------------
     def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            on_done=None):
+            transition=None, on_done=None):
         """Turn the device off.
 
         NOTE: This does NOT simulate a button press on the device - it just
@@ -166,6 +167,8 @@ class Dimmer(functions.Scene, Base):
                    completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Dimmer %s cmd: off", self.addr)
+        if transition:
+            LOG.error("Device %s does not suppor transition.", self.addr)
         assert group == 0x01
         assert isinstance(mode, on_off.Mode)
 
@@ -178,43 +181,6 @@ class Dimmer(functions.Scene, Base):
         callback = functools.partial(self.handle_ack, reason=reason)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            on_done=None):
-        """Turn the device on or off.  Level zero will be off.
-
-        NOTE: This does NOT simulate a button press on the device - it just
-        changes the state of the device.  It will not trigger any responders
-        that are linked to this device.  To simulate a button press, call the
-        scene() method.
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          level (int): If non zero, turn the device on.  Should be in the
-                range 0 to 255.  If None, use default on-level.
-          group (int): The group to send the command to.  For this device,
-                this must be 1.  Allowing a group here gives us a consistent
-                API to the on command across devices.
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        if (level is None) or level:
-            # None/True == use default on-level.  Since true is integer 1,
-            # do an explicit check here to catch that input.
-            if level is True:
-                level = None
-
-            self.on(group, level, mode, reason, on_done)
-        else:
-            self.off(group, mode, reason, on_done)
 
     #-----------------------------------------------------------------------
     def increment_up(self, reason="", on_done=None):
@@ -576,7 +542,7 @@ class Dimmer(functions.Scene, Base):
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
             LOG.error("Unknown Dimmer flags input: %s.\n Valid flags "
-                            "are: %s", unknown, flags)
+                      "are: %s", unknown, flags)
 
         # Start a command sequence so we can call the flag methods in series.
         seq = CommandSeq(self, "Dimmer set_flags complete", on_done,
