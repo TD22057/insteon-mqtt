@@ -45,9 +45,24 @@ class Test_Base_Config():
             assert IM.CommandSeq.add.call_count == 5
 
     @pytest.mark.parametrize("group_num,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.ON, 0x00,[True]),
-        (0x01,Msg.CmdType.OFF, 0x00, [False]),
+        (0x01,Msg.CmdType.ON, 0x00,{"is_on":True}),
+        (0x01,Msg.CmdType.OFF, 0x00, {"is_on":False}),
         (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
+    ])
+    def test_handle_broadcast_state(self, test_device, group_num, cmd1, cmd2, expected):
+        with mock.patch.object(IM.Signal, 'emit') as mocked:
+            self._is_wet = False
+            flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+            group = IM.Address(0x00, 0x00, group_num)
+            addr = IM.Address(0x01, 0x02, 0x03)
+            msg = Msg.InpStandard(addr, group, flags, cmd1, cmd2)
+            test_device.handle_broadcast(msg)
+            if expected is not None:
+                mocked.assert_called_once_with(test_device, **expected)
+            else:
+                mocked.assert_not_called()
+
+    @pytest.mark.parametrize("group_num,cmd1,cmd2,expected", [
         (0x02,Msg.CmdType.ON, 0x00,[True]),
         (0x02,Msg.CmdType.OFF, 0x00, [False]),
         (0x02,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
