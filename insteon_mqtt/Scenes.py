@@ -381,6 +381,22 @@ class SceneManager:
         """
         # Get a list of the empty groups
         empty_groups = self.modem.db.empty_groups()
+
+        # Remove groups that are already defined in the scenes file but not
+        # synced to the modem
+        for scene in self.entries:
+            for controller in scene.controllers:
+                if (controller.device is not None and
+                        controller.device.type() == "Modem" and
+                        controller.group > 0x01):
+                    try:
+                        position = empty_groups.index(controller.group)
+                        del empty_groups[position]
+                    except ValueError:
+                        # The group was not present
+                        pass
+
+        # Now assign groups
         updated = False
         for scene in self.entries:
             for controller in scene.controllers:

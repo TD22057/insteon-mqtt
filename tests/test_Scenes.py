@@ -155,24 +155,30 @@ class Test_Scenes:
         # 20 is the current lowest allowed group number
         assert scenes.data[0]['controllers'][0]['modem'] == 20
 
-    def test_assign_modem_group_mulitple(self):
+    def test_assign_modem_group_multiple(self):
         modem = MockModem()
         scenes = Scenes.SceneManager(modem, None)
         scenes.data = [{'controllers': ['ff.ff.ff'],
                         'responders': ['cc.bb.22'],
                         'name': 'test'},
+                       # This entry has a group, but is not synced to modem
+                       # yet
+                       {'controllers':  [{'ff.ff.ff': {'group': 22}}],
+                        'responders': ['cc.bb.24'],
+                        'name': 'test3'},
                        {'controllers': ['ff.ff.ff'],
                         'responders': ['cc.bb.23'],
                         'name': 'test2'},
-                       {'controllers': ['ff.ff.ff'],
+                       {'controllers':  ['ff.ff.ff'],
                         'responders': ['cc.bb.24'],
                         'name': 'test3'}]
         scenes._init_scene_entries()
         scenes._assign_modem_group()
         # 20 is the current lowest allowed group number
         assert scenes.data[0]['controllers'][0]['modem'] == 20
-        assert scenes.data[1]['controllers'][0]['modem'] == 21
-        assert scenes.data[2]['controllers'][0]['modem'] == 22
+        assert scenes.data[1]['controllers'][0]['modem'] == 22
+        assert scenes.data[2]['controllers'][0]['modem'] == 21
+        assert scenes.data[3]['controllers'][0]['modem'] == 23
 
     def test_bad_config(self):
         modem = MockModem()
