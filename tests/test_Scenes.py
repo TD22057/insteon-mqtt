@@ -155,6 +155,25 @@ class Test_Scenes:
         # 20 is the current lowest allowed group number
         assert scenes.data[0]['controllers'][0]['modem'] == 20
 
+    def test_assign_modem_group_mulitple(self):
+        modem = MockModem()
+        scenes = Scenes.SceneManager(modem, None)
+        scenes.data = [{'controllers': ['ff.ff.ff'],
+                        'responders': ['cc.bb.22'],
+                        'name': 'test'},
+                       {'controllers': ['ff.ff.ff'],
+                        'responders': ['cc.bb.23'],
+                        'name': 'test2'},
+                       {'controllers': ['ff.ff.ff'],
+                        'responders': ['cc.bb.24'],
+                        'name': 'test3'}]
+        scenes._init_scene_entries()
+        scenes._assign_modem_group()
+        # 20 is the current lowest allowed group number
+        assert scenes.data[0]['controllers'][0]['modem'] == 20
+        assert scenes.data[1]['controllers'][0]['modem'] == 21
+        assert scenes.data[2]['controllers'][0]['modem'] == 22
+
     def test_bad_config(self):
         modem = MockModem()
         scenes = Scenes.SceneManager(modem, None)

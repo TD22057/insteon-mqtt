@@ -200,8 +200,8 @@ class Modem:
         return len(self.entries)
 
     #-----------------------------------------------------------------------
-    def next_group(self):
-        """Find the next free internal PLM group number that is available.
+    def empty_groups(self):
+        """Get a list of the unused internal PLM group numbers
 
         This is used to find an available group number for creating a virtual
         modem scene.  The modem supports 1-255 for groups.  Groups 1-8 are
@@ -209,13 +209,14 @@ class Modem:
         device for the device button group to send it a simulated scene.
 
         Returns:
-          (int) Returns the next group number of None if there are none.
+          (array) Returns a list of the empty groups
         """
+        ret = []
         for i in range(GROUP_START, 255):
             if i not in self.groups:
-                return i
+                ret.append(i)
 
-        return None
+        return ret
 
     #-----------------------------------------------------------------------
     def delete_entry(self, entry):
