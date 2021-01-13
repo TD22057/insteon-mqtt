@@ -32,6 +32,9 @@
 - Fixed error where 'device' reason was not set by default in scene command.
   ([PR 308][P308])
 
+- Fix bug where multiple new Modem controller entries would end up with the
+  same group number.  ([PR 326][P326])
+
 ## [0.7.5]
 
 This is another significant update that both improves the user experience,
@@ -582,3 +585,4 @@ will add new features.
 [P308]: https://github.com/TD22057/insteon-mqtt/pull/308
 [P313]: https://github.com/TD22057/insteon-mqtt/pull/313
 [P213]: https://github.com/TD22057/insteon-mqtt/pull/213
+[P326]: https://github.com/TD22057/insteon-mqtt/pull/326

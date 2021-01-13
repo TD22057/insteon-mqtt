@@ -379,6 +379,8 @@ class SceneManager:
         Args:
           config (object):   Configuration object.
         """
+        # Get a list of the empty groups
+        empty_groups = self.modem.db.empty_groups()
         updated = False
         for scene in self.entries:
             for controller in scene.controllers:
@@ -387,8 +389,14 @@ class SceneManager:
                         controller.group <= 0x01):
                     updated = True
 
-                    # Get and set the next available group id
-                    controller.group = self.modem.db.next_group()
+                    if len(empty_groups) >= 1:
+                        # Get and set the next available group id
+                        controller.group = empty_groups.pop(0)
+                    else:
+                        LOG.critical("Unable to add the modem as a controller "
+                                     "of a new scene. All 255 groups have "
+                                     "been used on your modem.")
+                        return
 
         # All done save the config file if necessary
         if updated:
