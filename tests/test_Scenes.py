@@ -12,6 +12,7 @@ import insteon_mqtt.CommandSeq as CommandSeq
 import insteon_mqtt.db.Device as Device
 import insteon_mqtt.db.DeviceEntry as DeviceEntry
 import insteon_mqtt.db.Modem as ModemDB
+import insteon_mqtt.db.ModemEntry as ModemEntry
 import insteon_mqtt.device.Base as Base
 import insteon_mqtt.device.Dimmer as Dimmer
 import insteon_mqtt.device.FanLinc as FanLinc
@@ -155,24 +156,44 @@ class Test_Scenes:
         # 20 is the current lowest allowed group number
         assert scenes.data[0]['controllers'][0]['modem'] == 20
 
-    def test_assign_modem_group_mulitple(self):
+    def test_assign_modem_group_multiple(self):
         modem = MockModem()
+
+        # Add an existing entry to the modem
+        entry1 = ModemEntry.from_json({"addr": "cc.bb.44",
+                                       "group": 44,
+                                       "is_controller": True,
+                                       "data": [0, 0, 0]})
+        modem.db.add_entry(entry1)
+
         scenes = Scenes.SceneManager(modem, None)
         scenes.data = [{'controllers': ['ff.ff.ff'],
                         'responders': ['cc.bb.22'],
                         'name': 'test'},
+                       # This entry has a group, but is not synced to modem
+                       # yet
+                       {'controllers':  [{'ff.ff.ff': {'group': 22}}],
+                        'responders': ['cc.bb.22'],
+                        'name': 'test3'},
+                       # This entry has a group, and is already synced to the
+                       # modem
+                       {'controllers':  [{'ff.ff.ff': {'group': 44}}],
+                        'responders': ['cc.bb.44'],
+                        'name': 'test3'},
                        {'controllers': ['ff.ff.ff'],
                         'responders': ['cc.bb.23'],
                         'name': 'test2'},
-                       {'controllers': ['ff.ff.ff'],
+                       {'controllers':  ['ff.ff.ff'],
                         'responders': ['cc.bb.24'],
                         'name': 'test3'}]
         scenes._init_scene_entries()
         scenes._assign_modem_group()
         # 20 is the current lowest allowed group number
         assert scenes.data[0]['controllers'][0]['modem'] == 20
-        assert scenes.data[1]['controllers'][0]['modem'] == 21
-        assert scenes.data[2]['controllers'][0]['modem'] == 22
+        assert scenes.data[1]['controllers'][0]['modem'] == 22
+        assert scenes.data[2]['controllers'][0]['modem'] == 44
+        assert scenes.data[3]['controllers'][0]['modem'] == 21
+        assert scenes.data[4]['controllers'][0]['modem'] == 23
 
     def test_bad_config(self):
         modem = MockModem()
