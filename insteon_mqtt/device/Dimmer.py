@@ -65,8 +65,6 @@ class Dimmer(functions.State, functions.Scene, functions.Set, Base):
         # Remote (mqtt) commands mapped to methods calls.  Add to the base
         # class defined commands.
         self.cmd_map.update({
-            'on' : self.on,
-            'off' : self.off,
             'increment_up' : self.increment_up,
             'increment_down' : self.increment_down,
             'set_flags' : self.set_flags,
@@ -77,36 +75,18 @@ class Dimmer(functions.State, functions.Scene, functions.Set, Base):
         self.group_map.update({0x01: self.handle_on_off})
 
     #-----------------------------------------------------------------------
-    def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
-           transition=None, on_done=None):
-        """Turn the device on.
+    def adjust_level(self, mode, level):
+        """Check whether device supports level
 
-        NOTE: This does NOT simulate a button press on the device - it just
-        changes the state of the device.  It will not trigger any responders
-        that are linked to this device.  To simulate a button press, call the
-        scene() method.
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
+        Adjusts mode and level based on device support
 
         Args:
-          group (int): The group to send the command to.  For this device,
-                this must be 1.  Allowing a group here gives us a consistent
-                API to the on command across devices.
-          level (int): If non zero, turn the device on.  Should be in the
-                range 0 to 255.  If None, use default on-level.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
+          level (int): On level between 0-255.
+        Returns
+          mode (on_off.Mode): Adjusted mode based on device supports.
+          level (int): Adjusted on level based on device supports.
         """
-        LOG.info("Dimmer %s cmd: on %s", self.addr, level)
-        if transition or mode == on_off.Mode.RAMP:
-            LOG.error("Device %s does not support transition.", self.addr)
-            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
         if level is None:
             # Not specified - choose brightness as pressing the button would do
             if mode == on_off.Mode.FAST:
@@ -121,61 +101,7 @@ class Dimmer(functions.State, functions.Scene, functions.Set, Base):
                     # Just like with button presses, if already at default on
                     # level, go to full brightness.
                     level = 0xff
-        assert level >= 0 and level <= 0xff
-        assert group == 0x01
-        assert isinstance(mode, on_off.Mode)
-
-        # Send the requested on code value.
-        cmd1 = on_off.Mode.encode(True, mode)
-        msg = Msg.OutStandard.direct(self.addr, cmd1, level)
-
-        # Use the standard command handler which will notify us when the
-        # command is ACK'ed.
-        callback = functools.partial(self.handle_ack, reason=reason)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-        self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            transition=None, on_done=None):
-        """Turn the device off.
-
-        NOTE: This does NOT simulate a button press on the device - it just
-        changes the state of the device.  It will not trigger any responders
-        that are linked to this device.  To simulate a button press, call the
-        scene() method.
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          group (int): The group to send the command to.  For this device,
-                this must be 1.  Allowing a group here gives us a consistent
-                API to the on command across devices.
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Dimmer %s cmd: off", self.addr)
-        if transition or mode == on_off.Mode.RAMP:
-            LOG.error("Device %s does not support transition.", self.addr)
-            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
-        assert group == 0x01
-        assert isinstance(mode, on_off.Mode)
-
-        # Send an off or instant off command.
-        cmd1 = on_off.Mode.encode(False, mode)
-        msg = Msg.OutStandard.direct(self.addr, cmd1, 0x00)
-
-        # Use the standard command handler which will notify us when
-        # the command is ACK'ed.
-        callback = functools.partial(self.handle_ack, reason=reason)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-        self.send(msg, msg_handler)
+        return (mode, level)
 
     #-----------------------------------------------------------------------
     def increment_up(self, reason="", on_done=None):
