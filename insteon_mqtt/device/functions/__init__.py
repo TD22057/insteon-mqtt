@@ -20,3 +20,4 @@ the list of available functions to inherit from.
 from ..Base import Base
 from .Scene import Scene
 from .Set import Set
+from .State import State

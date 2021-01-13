@@ -45,8 +45,10 @@ class Test_Base_Config():
             assert IM.CommandSeq.add.call_count == 5
 
     @pytest.mark.parametrize("group_num,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.ON, 0x00,{"is_on":True}),
-        (0x01,Msg.CmdType.OFF, 0x00, {"is_on":False}),
+        (0x01,Msg.CmdType.ON, 0x00,{"is_on":True, "level":None, "reason":'',
+         "mode":IM.on_off.Mode.NORMAL}),
+        (0x01,Msg.CmdType.OFF, 0x00, {"is_on":False, "level":None, "reason":'',
+         "mode":IM.on_off.Mode.NORMAL}),
         (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
     ])
     def test_handle_broadcast_state(self, test_device, group_num, cmd1, cmd2, expected):

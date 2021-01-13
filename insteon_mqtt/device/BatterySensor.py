@@ -5,6 +5,7 @@
 #===========================================================================
 import time
 from .Base import Base
+from . import functions
 from .. import log
 from .. import message as Msg
 from ..Signal import Signal
@@ -12,7 +13,7 @@ from ..Signal import Signal
 LOG = log.get_logger()
 
 
-class BatterySensor(Base):
+class BatterySensor(functions.State, Base):
     """Insteon battery powered sensor.
 
     Battery powered sensors send basic on/off commands, low battery warnings,
@@ -61,8 +62,6 @@ class BatterySensor(Base):
         """
         super().__init__(protocol, modem, address, name)
 
-        # Sensor on/off signal.  API: func( Device, bool is_on )
-        self.signal_state = Signal()
         # Sensor low battery signal.  API: func( Device, bool is_low )
         self.signal_low_battery = Signal()
         # Sensor heartbeat signal.  API: func( Device, True )
@@ -83,7 +82,6 @@ class BatterySensor(Base):
             0x04 : self.handle_heartbeat,
             })
 
-        self._is_on = False
         self._send_queue = []
         self.cmd_map.update({
             'awake' : self.awake
@@ -122,12 +120,6 @@ class BatterySensor(Base):
         else:
             LOG.ui("BatterySensor %s - queueing msg until awake", self.label)
             self._send_queue.append([msg, msg_handler, high_priority, after])
-
-    #-----------------------------------------------------------------------
-    def is_on(self):
-        """Return if sensor has been tripped.
-        """
-        return self._is_on
 
     #-----------------------------------------------------------------------
     def handle_finished(self, msg):
@@ -184,7 +176,7 @@ class BatterySensor(Base):
         else:
             LOG.info("BatterySensor %s on_off broadcast cmd: %s", self.addr,
                      msg.cmd1)
-            self._set_is_on(msg.cmd1 == Msg.CmdType.ON)
+            self._set_state(is_on=msg.cmd1 == Msg.CmdType.ON)
             self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
@@ -247,7 +239,7 @@ class BatterySensor(Base):
 
         # Current on/off level is stored in cmd2 so update our state
         # to match.
-        self._set_is_on(msg.cmd2 != 0x00)
+        self._set_state(is_on=msg.cmd2 != 0x00)
 
     #-----------------------------------------------------------------------
     def awake(self, on_done):
@@ -273,20 +265,6 @@ class BatterySensor(Base):
         #Empty the queue
         self._send_queue = []
         on_done(True, "Complete", None)
-
-    #-----------------------------------------------------------------------
-    def _set_is_on(self, is_on):
-        """Set the device on/off state.
-
-        This will change the internal state and emit the state changed
-        signal.
-
-        Args:
-          is_on (bool):  True if motion is active, False if it isn't.
-        """
-        LOG.info("Setting device %s on:%s", self.label, is_on)
-        self._is_on = is_on
-        self.signal_state.emit(self, is_on=self._is_on)
 
     #-----------------------------------------------------------------------
     def _pop_send_queue(self):

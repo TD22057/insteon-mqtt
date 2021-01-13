@@ -48,14 +48,14 @@ class Test_Base_Config():
         (Msg.CmdType.LINK_CLEANUP_REPORT, None),
     ])
     def test_broadcast_1(self, test_device, cmd1, expected):
-        with mock.patch.object(Device.BatterySensor, '_set_is_on') as mocked:
+        with mock.patch.object(Device.BatterySensor, '_set_state') as mocked:
             flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
             group = IM.Address(0x00, 0x00, 0x01)
             addr = IM.Address(0x01, 0x02, 0x03)
             msg = Msg.InpStandard(addr, group, flags, cmd1, 0x00)
             test_device.handle_broadcast(msg)
             if expected is not None:
-                mocked.assert_called_once_with(expected)
+                mocked.assert_called_once_with(is_on=expected)
             else:
                 mocked.assert_not_called()
 

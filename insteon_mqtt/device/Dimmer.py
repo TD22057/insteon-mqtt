@@ -18,7 +18,7 @@ from .. import util
 LOG = log.get_logger()
 
 
-class Dimmer(functions.Scene, functions.Set, Base):
+class Dimmer(functions.State, functions.Scene, functions.Set, Base):
     """Insteon dimmer device.
 
     This class can be used to model any device that acts like a dimmer
@@ -57,13 +57,6 @@ class Dimmer(functions.Scene, functions.Set, Base):
           name (str): Nice alias name to use for the device.
         """
         super().__init__(protocol, modem, address, name)
-
-        # Current dimming level. 0x00 -> 0xff
-        self._level = 0x00
-
-        # Support dimmer style signals and motion on/off style signals.
-        # API:  func(Device, int level, on_off.Mode mode, str reason)
-        self.signal_state = Signal()
 
         # Manual mode start up, down, off
         # API: func(Device, on_off.Manual mode, str reason)
@@ -671,10 +664,10 @@ class Dimmer(functions.Scene, functions.Set, Base):
                         # Pressing on again when already at the default on
                         # level causes the device to go to full-brightness.
                         level = 0xff
-                self._set_level(level, mode, reason)
+                self._set_state(level=level, mode=mode, reason=reason)
 
             else:
-                self._set_level(0x00, mode, reason)
+                self._set_state(level=0x00, mode=mode, reason=reason)
 
         # Starting or stopping manual mode.
         elif on_off.Manual.is_valid(msg.cmd1):
@@ -709,7 +702,7 @@ class Dimmer(functions.Scene, functions.Set, Base):
         LOG.ui("Dimmer %s refresh at level %s", self.addr, msg.cmd2)
 
         # Update the device dimmer level.
-        self._set_level(msg.cmd2, reason=on_off.REASON_REFRESH)
+        self._set_state(level=msg.cmd2, reason=on_off.REASON_REFRESH)
 
     #-----------------------------------------------------------------------
     def handle_ack(self, msg, on_done, reason=""):
@@ -735,7 +728,7 @@ class Dimmer(functions.Scene, functions.Set, Base):
 
         _is_on, mode = on_off.Mode.decode(msg.cmd1)
         reason = reason if reason else on_off.REASON_COMMAND
-        self._set_level(msg.cmd2, mode, reason)
+        self._set_state(level=msg.cmd2, mode=mode, reason=reason)
         on_done(True, "Dimmer state updated to %s" % self._level,
                 msg.cmd2)
 
@@ -764,7 +757,7 @@ class Dimmer(functions.Scene, functions.Set, Base):
         # Add the delta and bound at [0, 255]
         level = min(self._level + delta, 255)
         level = max(level, 0)
-        self._set_level(level, reason=reason)
+        self._set_state(level=level, reason=reason)
 
         s = "Dimmer %s state updated to %s" % (self.addr, self._level)
         on_done(True, s, msg.cmd2)
@@ -801,15 +794,15 @@ class Dimmer(functions.Scene, functions.Set, Base):
 
             # Get the on level from the database entry.
             level = entry.data[0] if is_on else 0x00
-            self._set_level(level, mode, reason=reason)
+            self._set_state(level=level, mode=mode, reason=reason)
 
         # Increment up 1 unit which is 8 levels.
         elif msg.cmd1 == 0x15:
-            self._set_level(min(0xff, self._level + 8), reason=reason)
+            self._set_state(level=min(0xff, self._level + 8), reason=reason)
 
         # Increment down 1 unit which is 8 levels.
         elif msg.cmd1 == 0x16:
-            self._set_level(max(0x00, self._level - 8), reason=reason)
+            self._set_state(level=max(0x00, self._level - 8), reason=reason)
 
         # Starting or stopping manual mode.
         elif on_off.Manual.is_valid(msg.cmd1):
@@ -823,27 +816,5 @@ class Dimmer(functions.Scene, functions.Set, Base):
         else:
             LOG.warning("Dimmer %s unknown group cmd %#04x", self.addr,
                         msg.cmd1)
-
-    #-----------------------------------------------------------------------
-    def _set_level(self, level, mode=on_off.Mode.NORMAL, reason=""):
-        """Update the device level state.
-
-        This will change the internal state and emit the state changed
-        signals.  It is called by whenever we're informed that the device has
-        changed state.
-
-        Args:
-          level (int): The new device level in the range [0,255].  0 is off.
-          mode (on_off.Mode): The type of on/off that was triggered (normal,
-               fast, etc).
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-        """
-        LOG.info("Setting device %s on=%s %s %s", self.label, level, mode,
-                 reason)
-        self._level = level
-
-        self.signal_state.emit(self, level=level, mode=mode, reason=reason)
 
     #-----------------------------------------------------------------------
