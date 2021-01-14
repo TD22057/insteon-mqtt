@@ -37,7 +37,7 @@ class State(Base):
         self.signal_state = Signal()
 
     #-----------------------------------------------------------------------
-    def _set_state(self, is_on=None, level=None,
+    def _set_state(self, is_on=None, level=None, button=None,
                    mode=on_off.Mode.NORMAL, reason=""):
         """Update the device level or on/off state.
 
@@ -62,4 +62,4 @@ class State(Base):
             self._level = level
 
         self.signal_state.emit(self, is_on=is_on, level=level, mode=mode,
-                               reason=reason)
+                               button=None, reason=reason)
