@@ -1166,7 +1166,7 @@ class KeypadLinc(functions.State, functions.Set, functions.Scene, Base):
 
         # Current load group level is stored in cmd2 so update our level to
         # match.
-        self._set_level(self._load_group, msg.cmd2,
+        self._set_state(button=self._load_group, level=msg.cmd2,
                         reason=on_off.REASON_REFRESH)
 
     #-----------------------------------------------------------------------
@@ -1204,7 +1204,8 @@ class KeypadLinc(functions.State, functions.Set, functions.Scene, Base):
                "{:08b}".format(self._led_bits))
 
         # Change the level and emit the active signal.
-        self._set_level(group, 0xff if is_on else 0x00, reason=reason)
+        self._set_state(button=group, level=0xff if is_on else 0x00,
+                        reason=reason)
 
         msg = "KeypadLinc %s LED group %s updated to %s" % \
               (self.addr, group, is_on)
@@ -1262,7 +1263,8 @@ class KeypadLinc(functions.State, functions.Set, functions.Scene, Base):
 
             LOG.debug("Btn %d old: %d new %d", i + 1, is_on, was_on)
             if is_on != was_on:
-                self._set_level(i + 1, 0xff if is_on else 0x00, reason=reason)
+                self._set_state(button=i + 1, level=0xff if is_on else 0x00,
+                                reason=reason)
 
         self._led_bits = led_bits
 
@@ -1312,7 +1314,7 @@ class KeypadLinc(functions.State, functions.Set, functions.Scene, Base):
 
         #LED     LOG.debug("Btn %d old: %d new %d", i + 1, is_on, was_on)
         #LED     if is_on != was_on:
-        #LED         self._set_level(i + 1, 0xff if is_on else 0x00,
+        #LED         self._set_state(i + 1, 0xff if is_on else 0x00,
         #LED reason=reason)
 
         #LED self._led_bits = led_bits
@@ -1371,10 +1373,12 @@ class KeypadLinc(functions.State, functions.Set, functions.Scene, Base):
                         # Pressing on again when already at the default on
                         # level causes the device to go to full-brightness.
                         level = 0xff
-                self._set_level(msg.group, level, mode, reason)
+                self._set_state(button=msg.group, level=level, mode=mode,
+                                reason=reason)
 
             else:
-                self._set_level(msg.group, 0x00, mode, reason)
+                self._set_state(button=msg.group, level=0x00, mode=mode,
+                                reason=reason)
 
         # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
         elif on_off.Manual.is_valid(msg.cmd1):
@@ -1390,9 +1394,13 @@ class KeypadLinc(functions.State, functions.Set, functions.Scene, Base):
                 # Switches change state when the switch is held.
                 if not self.is_dimmer:
                     if manual == on_off.Manual.UP:
-                        self._set_level(0xff, on_off.Mode.MANUAL, reason)
+                        self._set_state(button=self._load_group, level=0xff,
+                                        mode=on_off.Mode.MANUAL,
+                                        reason=reason)
                     elif manual == on_off.Manual.DOWN:
-                        self._set_level(0x00, on_off.Mode.MANUAL, reason)
+                        self._set_state(button=self._load_group, level=0x00,
+                                        mode=on_off.Mode.MANUAL,
+                                        reason=reason)
 
                 # Ping the device to get the dimmer states - we don't know
                 # what the keypadlinc things the state is - could be on or
@@ -1428,7 +1436,7 @@ class KeypadLinc(functions.State, functions.Set, functions.Scene, Base):
         # Add the delta and bound at [0, 255]
         level = min(self._level + delta, 255)
         level = max(level, 0)
-        self._set_level(self._load_group, level, reason=reason)
+        self._set_state(button=self._load_group, level=level, reason=reason)
 
         s = "KeypadLinc %s state updated to %s" % (self.addr, self._level)
         on_done(True, s, msg.cmd2)
@@ -1472,18 +1480,21 @@ class KeypadLinc(functions.State, functions.Set, functions.Scene, Base):
             if self.is_dimmer and is_on and localGroup == self._load_group:
                 level = entry.data[0]
 
-            self._set_level(localGroup, level, mode, reason)
+            self._set_state(button=localGroup, level=level, mode=mode,
+                            reason=reason)
 
         # Increment up 1 unit which is 8 levels.
         elif msg.cmd1 == 0x15:
             assert localGroup == self._load_group
-            self._set_level(localGroup, min(0xff, self._level + 8),
+            self._set_state(button=localGroup, level=min(0xff,
+                                                         self._level + 8),
                             reason=reason)
 
         # Increment down 1 unit which is 8 levels.
         elif msg.cmd1 == 0x16:
             assert msg.group == self._load_group
-            self._set_level(localGroup, max(0x00, self._level - 8),
+            self._set_state(button=localGroup, level=max(0x00,
+                                                         self._level - 8),
                             reason=reason)
 
         # Starting/stopping manual increment (cmd2 0x00=up, 0x01=down)
@@ -1502,25 +1513,16 @@ class KeypadLinc(functions.State, functions.Set, functions.Scene, Base):
                         msg.cmd1)
 
     #-----------------------------------------------------------------------
-    def _set_level(self, group, level, mode=on_off.Mode.NORMAL, reason=""):
-        """Update the device level state for a group.
+    def _set_level(self, group, level):
+        """Save the Level of the Device
 
-        This will change the internal state and emit the state changed
-        signals.  It is called by whenever we're informed that the device has
-        changed state.
+        Used to help with the KPL unique functions.
 
         Args:
-          group (int):  The group number to update [1,8].
-          level (int):  The new device level in the range [0,255].  0 is off.
-          mode (on_off.Mode): The type of on/off that was triggered (normal,
-               fast, etc).
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
+          group (int): The group which this applies
+          level (int): The new device level in the range [0,255].  0 is off.
         """
-        LOG.info("Setting device %s grp=%s on=%s %s%s", self.label, group,
-                 level, mode, reason)
-
+        group = 0x01 if group is None else group
         if group == self._load_group:
             self._level = level
 
@@ -1528,8 +1530,5 @@ class KeypadLinc(functions.State, functions.Set, functions.Scene, Base):
         if group < 9:
             self._led_bits = util.bit_set(self._led_bits, group - 1,
                                           1 if level else 0)
-
-        self.signal_state.emit(self, button=group, level=level, mode=mode,
-                               reason=reason)
 
     #-----------------------------------------------------------------------

@@ -48,6 +48,7 @@ class State(Base):
         Args:
           is_on (bool):  True if the switch is on, False if it isn't.
           level (int): The new device level in the range [0,255].  0 is off.
+          button (int): The button to which this applies
           mode (on_off.Mode): The type of on/off that was triggered (normal,
                fast, etc).
           reason (str):  This is optional and is used to identify why the
@@ -58,8 +59,20 @@ class State(Base):
                  level, mode, reason)
         if is_on is not None:
             self._is_on = is_on
-        if level is not None:
-            self._level = level
+        self._set_level(button, level)
 
         self.signal_state.emit(self, is_on=is_on, level=level, mode=mode,
-                               button=None, reason=reason)
+                               button=button, reason=reason)
+
+    #-----------------------------------------------------------------------
+    def _set_level(self, group, level):
+        """Save the Level of the Device
+
+        Used to help with the KPL unique functions.
+
+        Args:
+          group (int): The group which this applies
+          level (int): The new device level in the range [0,255].  0 is off.
+        """
+        if level is not None:
+            self._level = level
