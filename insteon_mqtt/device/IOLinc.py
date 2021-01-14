@@ -18,7 +18,7 @@ from .. import util
 LOG = log.get_logger()
 
 
-class IOLinc(functions.Set, Base):
+class IOLinc(functions.SetAndState, Base):
     """Insteon IOLinc relay/sensor device.
 
     This class can be used to model the IOLinc device which has a sensor and

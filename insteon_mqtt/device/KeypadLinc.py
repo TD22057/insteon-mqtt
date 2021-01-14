@@ -19,7 +19,7 @@ LOG = log.get_logger()
 
 
 #===========================================================================
-class KeypadLinc(functions.State, functions.Set, functions.Scene, Base):
+class KeypadLinc(functions.SetAndState, functions.Scene, Base):
     """Insteon KeypadLinc dimmer/switch device.
 
     This class can be used to model a 6 or 8 button KeypadLinc with dimming

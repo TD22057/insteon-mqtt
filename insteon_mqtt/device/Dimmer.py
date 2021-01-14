@@ -18,7 +18,7 @@ from .. import util
 LOG = log.get_logger()
 
 
-class Dimmer(functions.State, functions.Scene, functions.Set, Base):
+class Dimmer(functions.Scene, functions.SetAndState, Base):
     """Insteon dimmer device.
 
     This class can be used to model any device that acts like a dimmer

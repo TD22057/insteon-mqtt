@@ -58,7 +58,7 @@ EZIO4xx_flags = {
 }
 
 
-class EZIO4O(functions.Set, Base):
+class EZIO4O(functions.SetAndState, Base):
     """Smartenit EZIO4O - 4 relay output device.
 
     This class can be used to model the EZIO4O device which has 4 outputs.

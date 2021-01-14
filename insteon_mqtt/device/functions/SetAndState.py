@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Set Functions.
+# Provides BOTH the Set and State Functions.
 #
 #===========================================================================
 import functools
@@ -9,15 +9,18 @@ from ... import message as Msg
 from ... import handler
 from ... import log
 from ... import on_off
+from .State import State
 
 
 LOG = log.get_logger()
 
 
-class Set(Base):
-    """Scene Trait Abstract Class
+class SetAndState(State):
+    """Set and State Abstract Classes
 
-    This is an abstract class that provides support for the Scene topic.
+    This is an abstract class that provides support for the set and state
+    functions.  A device SHOULD NOT also inherit from the State function if
+    it is using this.  Some devices BatterSensor may only inherit from State.
     """
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
@@ -256,8 +259,3 @@ class Set(Base):
         reason = reason if reason else on_off.REASON_COMMAND
         self._set_state(is_on=is_on, level=level, mode=mode, reason=reason)
         on_done(True, "Device state updated to on=%s" % is_on, is_on)
-
-    #-----------------------------------------------------------------------
-    def _set_state(self, is_on=None, level=None, mode=on_off.Mode.NORMAL,
-                   button=None, reason=""):
-        raise NotImplementedError()

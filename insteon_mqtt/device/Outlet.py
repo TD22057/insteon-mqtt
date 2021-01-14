@@ -17,7 +17,7 @@ from .. import util
 LOG = log.get_logger()
 
 
-class Outlet(functions.Set, Base):
+class Outlet(functions.SetAndState, Base):
     """Insteon on/off outlet device.
 
     This is used for in-wall on/off outlets.  Each outlet (top and bottom) is
