@@ -142,11 +142,6 @@ class SetAndState(State):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        group = self.adjust_set_group(group)
-
-        if self.use_alt_set_cmd(group, False, reason, on_done):
-            return
-
         LOG.info("Device %s grp: %s cmd: off %s", self.addr, group, mode)
         assert group in self.responder_groups
         assert isinstance(mode, on_off.Mode)
@@ -195,37 +190,6 @@ class SetAndState(State):
         cmd1 = on_off.Mode.encode(False, mode)
         cmd2 = 0x00
         return (cmd1, cmd2)
-
-    #-----------------------------------------------------------------------
-    def use_alt_set_cmd(self, group, is_on, reason, on_done):
-        """Should this be processed using an alternate command?
-
-        Exists for the KPL to intercept on/off commands for the non-load group.
-        If should process using an alternate command, do that here and return
-        True.
-
-        Args:
-          group (int): The group the command should be sent to.
-          is_on (bool): Should the command be on?
-          reason (str): The reason string
-          on_done (callback): The on_done callback.
-        Returns
-          True if the command has been processed elsewhere, False otherwise.
-        """
-        return False
-
-    #-----------------------------------------------------------------------
-    def adjust_set_group(self, group):
-        """Adjust the group number for processing by the set command?
-
-        Exists for the KPL to alter the group number based on the load_group
-
-        Args:
-          group (int): The group the command should be sent to.
-        Returns
-          Group(int): The adjusted group number.
-        """
-        return group
 
     #-----------------------------------------------------------------------
     def handle_ack(self, msg, on_done, reason=""):
