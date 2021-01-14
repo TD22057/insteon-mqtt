@@ -37,7 +37,7 @@ class State(Base):
         self.signal_state = Signal()
 
     #-----------------------------------------------------------------------
-    def _set_state(self, is_on=None, level=None, button=None,
+    def _set_state(self, is_on=None, level=None, group=None,
                    mode=on_off.Mode.NORMAL, reason=""):
         """Update the device level or on/off state.
 
@@ -48,7 +48,7 @@ class State(Base):
         Args:
           is_on (bool):  True if the switch is on, False if it isn't.
           level (int): The new device level in the range [0,255].  0 is off.
-          button (int): The button to which this applies
+          group (int): The group to which this applies
           mode (on_off.Mode): The type of on/off that was triggered (normal,
                fast, etc).
           reason (str):  This is optional and is used to identify why the
@@ -57,10 +57,10 @@ class State(Base):
         """
         LOG.info("Setting device %s on %s level %s %s %s", self.label, is_on,
                  level, mode, reason)
-        self._cache_state(button, is_on, level)
+        self._cache_state(group, is_on, level)
 
         self.signal_state.emit(self, is_on=is_on, level=level, mode=mode,
-                               button=button, reason=reason)
+                               button=group, reason=reason)
 
     #-----------------------------------------------------------------------
     def _cache_state(self, group, is_on, level):

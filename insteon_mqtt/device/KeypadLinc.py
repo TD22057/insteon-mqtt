@@ -1164,7 +1164,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
 
         # Current load group level is stored in cmd2 so update our level to
         # match.
-        self._set_state(button=self._load_group, level=msg.cmd2,
+        self._set_state(group=self._load_group, level=msg.cmd2,
                         reason=on_off.REASON_REFRESH)
 
     #-----------------------------------------------------------------------
@@ -1202,7 +1202,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
                "{:08b}".format(self._led_bits))
 
         # Change the level and emit the active signal.
-        self._set_state(button=group, level=0xff if is_on else 0x00,
+        self._set_state(group=group, level=0xff if is_on else 0x00,
                         reason=reason)
 
         msg = "KeypadLinc %s LED group %s updated to %s" % \
@@ -1261,7 +1261,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
 
             LOG.debug("Btn %d old: %d new %d", i + 1, is_on, was_on)
             if is_on != was_on:
-                self._set_state(button=i + 1, level=0xff if is_on else 0x00,
+                self._set_state(group=i + 1, level=0xff if is_on else 0x00,
                                 reason=reason)
 
         self._led_bits = led_bits
@@ -1371,11 +1371,11 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
                         # Pressing on again when already at the default on
                         # level causes the device to go to full-brightness.
                         level = 0xff
-                self._set_state(button=msg.group, level=level, mode=mode,
+                self._set_state(group=msg.group, level=level, mode=mode,
                                 reason=reason)
 
             else:
-                self._set_state(button=msg.group, level=0x00, mode=mode,
+                self._set_state(group=msg.group, level=0x00, mode=mode,
                                 reason=reason)
 
         # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
@@ -1392,11 +1392,11 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
                 # Switches change state when the switch is held.
                 if not self.is_dimmer:
                     if manual == on_off.Manual.UP:
-                        self._set_state(button=self._load_group, level=0xff,
+                        self._set_state(group=self._load_group, level=0xff,
                                         mode=on_off.Mode.MANUAL,
                                         reason=reason)
                     elif manual == on_off.Manual.DOWN:
-                        self._set_state(button=self._load_group, level=0x00,
+                        self._set_state(group=self._load_group, level=0x00,
                                         mode=on_off.Mode.MANUAL,
                                         reason=reason)
 
@@ -1434,7 +1434,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
         # Add the delta and bound at [0, 255]
         level = min(self._level + delta, 255)
         level = max(level, 0)
-        self._set_state(button=self._load_group, level=level, reason=reason)
+        self._set_state(group=self._load_group, level=level, reason=reason)
 
         s = "KeypadLinc %s state updated to %s" % (self.addr, self._level)
         on_done(True, s, msg.cmd2)
@@ -1478,20 +1478,20 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
             if self.is_dimmer and is_on and localGroup == self._load_group:
                 level = entry.data[0]
 
-            self._set_state(button=localGroup, level=level, mode=mode,
+            self._set_state(group=localGroup, level=level, mode=mode,
                             reason=reason)
 
         # Increment up 1 unit which is 8 levels.
         elif msg.cmd1 == 0x15:
             assert localGroup == self._load_group
-            self._set_state(button=localGroup, level=min(0xff,
+            self._set_state(group=localGroup, level=min(0xff,
                                                          self._level + 8),
                             reason=reason)
 
         # Increment down 1 unit which is 8 levels.
         elif msg.cmd1 == 0x16:
             assert msg.group == self._load_group
-            self._set_state(button=localGroup, level=max(0x00,
+            self._set_state(group=localGroup, level=max(0x00,
                                                          self._level - 8),
                             reason=reason)
 

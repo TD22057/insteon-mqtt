@@ -533,7 +533,8 @@ class EZIO4O(functions.SetAndState, Base):
 
                 # State change for output
                 if is_on != self._is_on[i]:
-                    self._set_is_on(i + 1, is_on, reason=on_off.REASON_REFRESH)
+                    self._set_state(group=i + 1, is_on=is_on,
+                                    reason=on_off.REASON_REFRESH)
         else:
             LOG.error("EZIO4O %s unknown refresh response %s", self.label, msg)
 
@@ -581,7 +582,8 @@ class EZIO4O(functions.SetAndState, Base):
 
                 # State change for the output and all outputs with state change
                 if is_on != self._is_on[i] or i == group - 1:
-                    self._set_is_on(i + 1, is_on, reason=on_off.REASON_REFRESH)
+                    self._set_state(group=i + 1, is_on=is_on,
+                                    reason=on_off.REASON_REFRESH)
                     on_done(True, "EZIO4O state %s updated to: %s" %
                             (i + 1, is_on), None)
 
@@ -622,43 +624,24 @@ class EZIO4O(functions.SetAndState, Base):
         # Handle on/off commands codes.
         if on_off.Mode.is_valid(msg.cmd1):
             is_on, mode = on_off.Mode.decode(msg.cmd1)
-            self._set_is_on(localGroup, is_on, mode, on_off.REASON_SCENE)
+            self._set_state(group=localGroup, is_on=is_on, mode=mode,
+                            reason=on_off.REASON_SCENE)
 
         else:
             LOG.warning("EZIO4O %s unknown group cmd %#04x", self.label,
                         msg.cmd1)
 
     #-----------------------------------------------------------------------
-    def _set_is_on(self, group, is_on, mode=on_off.Mode.NORMAL, reason=""):
-        """Update the device on/off state.
+    def _cache_state(self, group, is_on, level):
+        """Cache the State of the Device
 
-        This will change the internal state and emit the state changed
-        signals.  It is called by whenever we're informed that the device has
-        changed state.
+        Used to help with the KPL unique functions.
 
         Args:
-          group (int):  The group to update (1 to 4).
-          is_on (bool):  True if the switch is on, False if it isn't.
-          mode (on_off.Mode): The type of on/off that was triggered (normal,
-               fast, etc).
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
+          group (int): The group which this applies
+          is_on (bool): Whether the device is on.
+          level (int): The new device level in the range [0,255].  0 is off.
         """
-        is_on = bool(is_on)
-
-        LOG.info(
-            "EZIO4O %s setting grp: %s to %s %s %s",
-            self.label,
-            group,
-            is_on,
-            mode,
-            reason,
-        )
         self._is_on[group - 1] = is_on
-
-        # Notify others that the output state has changed.
-        self.signal_state.emit(self, button=group, is_on=is_on, mode=mode,
-                               reason=reason)
 
     #-----------------------------------------------------------------------
