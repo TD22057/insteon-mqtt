@@ -4,7 +4,6 @@
 #
 #===========================================================================
 import functools
-from ..Base import Base
 from ... import message as Msg
 from ... import handler
 from ... import log

@@ -80,8 +80,6 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
         # Remote (mqtt) commands mapped to methods calls.  Add to the base
         # class defined commands.
         self.cmd_map.update({
-            'on' : self.on,
-            'off' : self.off,
             'set_flags' : self.set_flags,
             'set_button_led' : self.set_button_led,
             'set_load_attached' : self.set_load_attached,
@@ -1513,15 +1511,18 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
                         msg.cmd1)
 
     #-----------------------------------------------------------------------
-    def _set_level(self, group, level):
-        """Save the Level of the Device
+    def _cache_state(self, group, is_on, level):
+        """Cache the State of the Device
 
         Used to help with the KPL unique functions.
 
         Args:
           group (int): The group which this applies
+          is_on (bool): Whether the device is on.
           level (int): The new device level in the range [0,255].  0 is off.
         """
+        if is_on is not None:
+            self._is_on = is_on
         group = 0x01 if group is None else group
         if group == self._load_group:
             self._level = level
