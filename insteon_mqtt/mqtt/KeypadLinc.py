@@ -64,7 +64,9 @@ class KeypadLinc(topic.SetTopic, topic.SceneTopic, topic.StateTopic,
         # Load the various topics
         self.load_state_data(data, qos,
                              topic='btn_state_topic',
-                             payload='btn_state_payload')
+                             payload='btn_state_payload',
+                             topic_1='dimmer_state_topic',
+                             payload_1='dimmer_state_payload')
         self.load_manual_data(data, qos)
         self.load_scene_data(data, qos,
                              topic='btn_scene_topic',

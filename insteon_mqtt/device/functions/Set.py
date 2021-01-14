@@ -102,19 +102,21 @@ class Set(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("Device %s cmd: on %s", self.addr, mode)
+        group = self.adjust_set_group(group)
+
+        LOG.info("Device %s grp: %s cmd: on %s", self.addr, group, mode)
         assert group in self.responder_groups
         assert isinstance(mode, on_off.Mode)
 
-        mode, transition = self.adjust_transition(mode, transition)
-        mode, level = self.adjust_level(mode, level)
+        if self.use_alt_set_cmd(group, True, reason, on_done):
+            return
 
         # Send the requested on code value.
-        cmd1 = on_off.Mode.encode(True, mode)
+        cmd1, cmd2 = self.cmd_on_values(mode, level, transition)
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        msg = Msg.OutStandard.direct(self.addr, cmd1, level)
+        msg = Msg.OutStandard.direct(self.addr, cmd1, cmd2)
         callback = functools.partial(self.handle_ack, reason=reason)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
@@ -142,15 +144,17 @@ class Set(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("Device %s cmd: off %s", self.addr, mode)
+        group = self.adjust_set_group(group)
+
+        LOG.info("Device %s grp: %s cmd: off %s", self.addr, group, mode)
         assert group in self.responder_groups
         assert isinstance(mode, on_off.Mode)
 
-        mode, transition = self.adjust_transition(mode, transition)
+        if self.use_alt_set_cmd(group, False, reason, on_done):
+            return
 
         # Send an off or instant off command.
-        cmd1 = on_off.Mode.encode(False, mode)
-        cmd2 = 0x00
+        cmd1, cmd2 = self.cmd_off_values(mode, transition)
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
@@ -160,41 +164,70 @@ class Set(Base):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def adjust_transition(self, mode, transition):
-        """Check whether device supports transition
+    def cmd_on_values(self, mode, level, transition):
+        """Calculate Cmd Values for On
 
-        Adjusts mode and transition based on device support
+        Args:
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          level (int): On level between 0-255.
+          transition (int): Ramp rate for the transition in seconds.
+        Returns
+          cmd1, cmd2 (int): Value of cmds for this device.
+        """
+        if transition:
+            LOG.error("Device %s does not support transition.", self.addr)
+        if level:
+            LOG.error("Device %s does not support level.", self.addr)
+        cmd1 = on_off.Mode.encode(True, mode)
+        cmd2 = 0xFF
+        return (cmd1, cmd2)
+
+    #-----------------------------------------------------------------------
+    def cmd_off_values(self, mode, transition):
+        """Calculate Cmd Values for Off
 
         Args:
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           transition (int): Ramp rate for the transition in seconds.
         Returns
-          mode (on_off.Mode): Adjusted mode based on device supports.
-          transition (int): Adjusted transition based on device supports.
+          cmd1, cmd2 (int): Value of cmds for this device.
         """
         if transition:
             LOG.error("Device %s does not support transition.", self.addr)
-            transition = None
-        return (mode, transition)
+        cmd1 = on_off.Mode.encode(False, mode)
+        cmd2 = 0x00
+        return (cmd1, cmd2)
 
     #-----------------------------------------------------------------------
-    def adjust_level(self, mode, level):
-        """Check whether device supports level
+    def use_alt_set_cmd(self, group, is_on, reason, on_done):
+        """Should this be processed using an alternate command?
 
-        Adjusts mode and level based on device support
+        Exists for the KPL to intercept on/off commands for the non-load group.
+        If should process using an alternate command, do that here and return
+        True.
 
         Args:
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          level (int): On level between 0-255.
+          group (int): The group the command should be sent to.
+          is_on (bool): Should the command be on?
+          reason (str): The reason string
+          on_done (callback): The on_done callback.
         Returns
-          mode (on_off.Mode): Adjusted mode based on device supports.
-          level (int): Adjusted on level based on device supports.  Always
-                       returns 0xFF for default devices.
+          True if the command has been processed elsewhere, False otherwise.
         """
-        if level:
-            LOG.error("Device %s does not support level.", self.addr)
-        level = 0xFF
-        return (mode, level)
+        return False
+
+    #-----------------------------------------------------------------------
+    def adjust_set_group(self, group):
+        """Adjust the group number for processing by the set command?
+
+        Exists for the KPL to alter the group number based on the load_group
+
+        Args:
+          group (int): The group the command should be sent to.
+        Returns
+          Group(int): The adjusted group number.
+        """
+        return group
 
     #-----------------------------------------------------------------------
     def handle_ack(self, msg, on_done, reason=""):
@@ -219,11 +252,12 @@ class Set(Base):
         LOG.debug("Device %s ACK: %s", self.addr, msg)
 
         is_on, mode = on_off.Mode.decode(msg.cmd1)
+        level = on_off.Mode.decode_level(msg.cmd1, msg.cmd2)
         reason = reason if reason else on_off.REASON_COMMAND
-        self._set_state(is_on=is_on, mode=mode, reason=reason)
-        on_done(True, "Switch state updated to on=%s" % is_on, is_on)
+        self._set_state(is_on=is_on, level=level, mode=mode, reason=reason)
+        on_done(True, "Device state updated to on=%s" % is_on, is_on)
 
     #-----------------------------------------------------------------------
     def _set_state(self, is_on=None, level=None, mode=on_off.Mode.NORMAL,
-                   reason=""):
+                   button=None, reason=""):
         raise NotImplementedError()

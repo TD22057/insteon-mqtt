@@ -37,8 +37,8 @@ class State(Base):
         self.signal_state = Signal()
 
     #-----------------------------------------------------------------------
-    def _set_state(self, is_on=None, level=None, mode=on_off.Mode.NORMAL,
-                   reason=""):
+    def _set_state(self, is_on=None, level=None,
+                   mode=on_off.Mode.NORMAL, reason=""):
         """Update the device level or on/off state.
 
         This will change the internal state and emit the state changed

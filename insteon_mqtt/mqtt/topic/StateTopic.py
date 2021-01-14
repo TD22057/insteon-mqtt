@@ -171,9 +171,8 @@ class StateTopic(BaseTopic):
         data = self.state_template_data(**kwargs)
 
         # If this has a distinct template for group 1 use it.
-        if ('button' in kwargs and
-                kwargs['button'] == 1 and
-                self.msg_state_1 is not None):
+        button = kwargs.get('button', None)
+        if (button == 1 or button is None) and self.msg_state_1 is not None:
             self.msg_state_1.publish(self.mqtt, data, retain=retain)
         else:
             self.msg_state.publish(self.mqtt, data, retain=retain)

@@ -75,18 +75,18 @@ class Dimmer(functions.State, functions.Scene, functions.Set, Base):
         self.group_map.update({0x01: self.handle_on_off})
 
     #-----------------------------------------------------------------------
-    def adjust_level(self, mode, level):
-        """Check whether device supports level
-
-        Adjusts mode and level based on device support
+    def cmd_on_values(self, mode, level, transition):
+        """Calculate Cmd Values for On
 
         Args:
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           level (int): On level between 0-255.
+          transition (int): Ramp rate for the transition in seconds.
         Returns
-          mode (on_off.Mode): Adjusted mode based on device supports.
-          level (int): Adjusted on level based on device supports.
+          cmd1, cmd2 (int): Value of cmds for this device.
         """
+        if transition:
+            LOG.error("Device %s does not support transition.", self.addr)
         if level is None:
             # Not specified - choose brightness as pressing the button would do
             if mode == on_off.Mode.FAST:
@@ -101,7 +101,8 @@ class Dimmer(functions.State, functions.Scene, functions.Set, Base):
                     # Just like with button presses, if already at default on
                     # level, go to full brightness.
                     level = 0xff
-        return (mode, level)
+        cmd1 = on_off.Mode.encode(True, mode)
+        return (cmd1, level)
 
     #-----------------------------------------------------------------------
     def increment_up(self, reason="", on_done=None):
@@ -629,34 +630,6 @@ class Dimmer(functions.State, functions.Scene, functions.Set, Base):
 
         # Update the device dimmer level.
         self._set_state(level=msg.cmd2, reason=on_off.REASON_REFRESH)
-
-    #-----------------------------------------------------------------------
-    def handle_ack(self, msg, on_done, reason=""):
-        """Callback for standard commanded messages.
-
-        This callback is run when we get a reply back from one of our
-        commands to the device.  If the command was ACK'ed, we know it worked
-        so we'll update the internal state of the device and emit the signals
-        to notify others of the state change.
-
-        Args:
-          msg (message.InpStandard): The reply message from the device.
-              The on/off level will be in the cmd2 field.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-        """
-        # If this it the ACK we're expecting, update the internal state and
-        # emit our signals.
-        LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
-
-        _is_on, mode = on_off.Mode.decode(msg.cmd1)
-        reason = reason if reason else on_off.REASON_COMMAND
-        self._set_state(level=msg.cmd2, mode=mode, reason=reason)
-        on_done(True, "Dimmer state updated to %s" % self._level,
-                msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_increment(self, msg, on_done, delta, reason=""):
