@@ -562,27 +562,24 @@ class EZIO4O(functions.SetAndState, Base):
             LOG.error("EZIO4O %s unknown refresh response %s", self.label, msg)
 
     #-----------------------------------------------------------------------
-    def handle_ack(self, msg, on_done, reason=""):
+    def decode_on_level(self, cmd1, cmd2):
         """Callback for standard commanded messages.
 
-        This callback is run when we get a reply back from one of our
-        commands to the device.  If the command was ACK'ed, we know it worked
-        so we'll update the internal state of the device and emit the signals
-        to notify others of the state change.
+        Decodes the cmds recevied from the device into is_on, level, and mode
+        to be consumed by _set_state().
 
         Args:
-          msg (message.InpStandard):  The reply message from the device.
-              The on/off level will be in the cmd2 field.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
+          cmd1 (byte): The command 1 value
+          cmd2 (byte): The command 2 value
+        Returns:
+          is_on (bool): Is the device on.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          level (int): On level between 0-255.
         """
-        assert 0x00 <= msg.cmd2 <= 0x0F
-        assert msg.cmd1 in [0x45, 0x46]
-
-        LOG.debug("EZIO4O %s ACK response %s", self.label, msg)
+        # Default Returns
+        is_on = None
+        level = None
+        mode = on_off.Mode.NORMAL
 
         # Get the last output we were commanding.  The message doesn't tell
         # us which output it was so we have to track it here.  See __init__
@@ -590,29 +587,22 @@ class EZIO4O(functions.SetAndState, Base):
         if not self._which_output:
             LOG.error("EZIO4O %s ACK error.  No output ID's were saved",
                       self.label)
-            on_done(False, "EZIO4O update failed - no ID's saved", None)
-            return
+        else:
+            group = self._which_output.pop(0)
 
-        group = self._which_output.pop(0)
-
-        # If this it the ACK we're expecting, update the internal
-        # state and emit our signals.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("EZIO4O %s ACK: %s", self.label, msg)
-
+            # Update other groups as reason=refresh
             for i in range(4):
-                is_on = bool(util.bit_get(msg.cmd2, i))
-
+                if i == group - 1:
+                    continue
+                is_on = bool(util.bit_get(cmd2, i))
                 # State change for the output and all outputs with state change
-                if is_on != self._is_on[i] or i == group - 1:
+                if is_on != self._is_on[i]:
                     self._set_state(group=i + 1, is_on=is_on,
                                     reason=on_off.REASON_REFRESH)
-                    on_done(True, "EZIO4O state %s updated to: %s" %
-                            (i + 1, is_on), None)
+            # Update the requested group as part of normal set process
+            is_on = bool(util.bit_get(cmd2, group))
 
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("EZIO4O %s NAK error: %s", self.label, msg)
-            on_done(False, "EZIO4O state %s update failed" % group, None)
+        return (is_on, level, mode)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

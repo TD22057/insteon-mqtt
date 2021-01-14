@@ -249,8 +249,30 @@ class SetAndState(State):
         # emit our signals.
         LOG.debug("Device %s ACK: %s", self.addr, msg)
 
-        is_on, mode = on_off.Mode.decode(msg.cmd1)
-        level = on_off.Mode.decode_level(msg.cmd1, msg.cmd2)
-        reason = reason if reason else on_off.REASON_COMMAND
-        self._set_state(is_on=is_on, level=level, mode=mode, reason=reason)
-        on_done(True, "Device state updated to on=%s" % is_on, is_on)
+        is_on, level, mode = self.decode_on_level(msg.cmd1, msg.cmd2)
+        if is_on is None:
+            on_done(False, "Unable to decode Device %s state. %s" % self.addr,
+                    msg)
+        else:
+            reason = reason if reason else on_off.REASON_COMMAND
+            self._set_state(is_on=is_on, level=level, mode=mode, reason=reason)
+            on_done(True, "Device state updated to on=%s" % is_on, is_on)
+
+    #-----------------------------------------------------------------------
+    def decode_on_level(self, cmd1, cmd2):
+        """Callback for standard commanded messages.
+
+        Decodes the cmds recevied from the device into is_on, level, and mode
+        to be consumed by _set_state().
+
+        Args:
+          cmd1 (byte): The command 1 value
+          cmd2 (byte): The command 2 value
+        Returns:
+          is_on (bool): Is the device on.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          level (int): On level between 0-255.
+        """
+        is_on, mode = on_off.Mode.decode(cmd1)
+        level = on_off.Mode.decode_level(cmd1, cmd2)
+        return (is_on, level, mode)
