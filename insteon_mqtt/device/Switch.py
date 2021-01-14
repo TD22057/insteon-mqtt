@@ -3,7 +3,6 @@
 # Insteon on/off device
 #
 #===========================================================================
-import functools
 from .Base import Base
 from . import functions
 from ..CommandSeq import CommandSeq

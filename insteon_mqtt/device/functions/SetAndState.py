@@ -98,23 +98,19 @@ class SetAndState(State):
           level (int):  If non-zero, turn the device on.  The API is an int
                 to keep a consistent API with other devices.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          transition (int): Transition time in seconds if supported.
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
                  when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        group = self.adjust_set_group(group)
-
         LOG.info("Device %s grp: %s cmd: on %s", self.addr, group, mode)
         assert group in self.responder_groups
         assert isinstance(mode, on_off.Mode)
 
-        if self.use_alt_set_cmd(group, True, reason, on_done):
-            return
-
         # Send the requested on code value.
-        cmd1, cmd2 = self.cmd_on_values(mode, level, transition)
+        cmd1, cmd2 = self.cmd_on_values(mode, level, transition, group)
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
@@ -148,15 +144,15 @@ class SetAndState(State):
         """
         group = self.adjust_set_group(group)
 
+        if self.use_alt_set_cmd(group, False, reason, on_done):
+            return
+
         LOG.info("Device %s grp: %s cmd: off %s", self.addr, group, mode)
         assert group in self.responder_groups
         assert isinstance(mode, on_off.Mode)
 
-        if self.use_alt_set_cmd(group, False, reason, on_done):
-            return
-
         # Send an off or instant off command.
-        cmd1, cmd2 = self.cmd_off_values(mode, transition)
+        cmd1, cmd2 = self.cmd_off_values(mode, transition, group)
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
@@ -166,7 +162,7 @@ class SetAndState(State):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def cmd_on_values(self, mode, level, transition):
+    def cmd_on_values(self, mode, level, transition, group):
         """Calculate Cmd Values for On
 
         Args:
@@ -185,7 +181,7 @@ class SetAndState(State):
         return (cmd1, cmd2)
 
     #-----------------------------------------------------------------------
-    def cmd_off_values(self, mode, transition):
+    def cmd_off_values(self, mode, transition, group):
         """Calculate Cmd Values for Off
 
         Args:

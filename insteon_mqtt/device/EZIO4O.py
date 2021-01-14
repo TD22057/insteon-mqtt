@@ -99,8 +99,6 @@ class EZIO4O(functions.SetAndState, Base):
         # base class defined commands.
         self.cmd_map.update(
             {
-                "on": self.on,
-                "off": self.off,
                 "set_flags": self.set_flags,
             }
         )
@@ -120,6 +118,7 @@ class EZIO4O(functions.SetAndState, Base):
         # The EZIO4O has no inputs and so has no groups to pair to or
         # broadcast messages to process
         # self.group_map.update({})
+        self.responder_groups = [1, 2, 3, 4]
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
@@ -167,23 +166,21 @@ class EZIO4O(functions.SetAndState, Base):
            transition=None, on_done=None):
         """Turn the device on.
 
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
+        This is a wrapper around the SetAndState functions class.
 
         Args:
-          group (int):  The group to send the command to.  Group 1 to 4
-                matching output 1 to 4.
-          level (int):  If non zero, turn the device on.  Should be in the
-                range 0 to 255.  Only dimmers use the intermediate values, all
-                other devices look at level=0 or level>0.
+          group (int):  The group to send the command to.
+          level (int):  If non-zero, turn the device on.  The API is an int
+                to keep a consistent API with other devices.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          transition (int): Transition time in seconds if supported.
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
                  when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+<<<<<<< HEAD
         LOG.info("EZIO4O %s grp: %s cmd: on", self.label, group)
         assert 1 <= group <= 4
         assert isinstance(mode, on_off.Mode)
@@ -201,31 +198,31 @@ class EZIO4O(functions.SetAndState, Base):
         callback = functools.partial(self.handle_ack, reason=reason)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
 
+=======
+>>>>>>> Move EZIO4O to SetAndState; Remove Weird Functions Wrap Instead
         # See __init__ code comments for what this is for.
         self._which_output.append(group)
-
-        # Send the message to the PLM modem for protocol.
-        self.send(msg, msg_handler)
+        super().on(group=group, level=level, mode=mode, reason=reason,
+                   transition=transition, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
             transition=None, on_done=None):
-        """Turn the device off.
+        """Turn the device on.
 
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
+        This is a wrapper around the SetAndState functions class.
 
         Args:
-          group (int):  The group to send the command to.  Group 1 to 4
-                        matching output 1 to 4.
+          group (int):  The group to send the command to.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          transition (int): Transition time in seconds if supported.
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
                  when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+<<<<<<< HEAD
         LOG.info("EZIO4O %s grp: %s cmd: off", self.label, group)
         assert 1 <= group <= 4
         assert isinstance(mode, on_off.Mode)
@@ -233,21 +230,47 @@ class EZIO4O(functions.SetAndState, Base):
         if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
             mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
-
-        # Use a standard message to send "output off" (0x46) command for the
-        # output
-        msg = Msg.OutStandard.direct(self.addr, 0x46, group - 1)
-
-        # Use the standard command handler which will notify us when the
-        # command is ACK'ed.
-        callback = functools.partial(self.handle_ack, reason=reason)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-
+=======
         # See __init__ code comments for what this is for.
         self._which_output.append(group)
+        super().off(group=group, mode=mode, reason=reason,
+                    transition=transition, on_done=on_done)
+>>>>>>> Move EZIO4O to SetAndState; Remove Weird Functions Wrap Instead
 
-        # Send the message to the PLM modem for protocol.
-        self.send(msg, msg_handler)
+    #-----------------------------------------------------------------------
+    def cmd_on_values(self, mode, level, transition, group):
+        """Calculate Cmd Values for On
+
+        Args:
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          level (int): On level between 0-255.
+          transition (int): Ramp rate for the transition in seconds.
+        Returns
+          cmd1, cmd2 (int): Value of cmds for this device.
+        """
+        if transition:
+            LOG.error("Device %s does not support transition.", self.addr)
+        if level:
+            LOG.error("Device %s does not support level.", self.addr)
+        cmd1 = 0x45
+        cmd2 = group - 1
+        return (cmd1, cmd2)
+
+    #-----------------------------------------------------------------------
+    def cmd_off_values(self, mode, transition, group):
+        """Calculate Cmd Values for Off
+
+        Args:
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          transition (int): Ramp rate for the transition in seconds.
+        Returns
+          cmd1, cmd2 (int): Value of cmds for this device.
+        """
+        if transition:
+            LOG.error("Device %s does not support transition.", self.addr)
+        cmd1 = 0x46
+        cmd2 = group - 1
+        return (cmd1, cmd2)
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):

@@ -75,7 +75,7 @@ class Dimmer(functions.Scene, functions.SetAndState, Base):
         self.group_map.update({0x01: self.handle_on_off})
 
     #-----------------------------------------------------------------------
-    def cmd_on_values(self, mode, level, transition):
+    def cmd_on_values(self, mode, level, transition, group):
         """Calculate Cmd Values for On
 
         Args:

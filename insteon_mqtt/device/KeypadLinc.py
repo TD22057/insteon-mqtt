@@ -232,7 +232,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
         seq.add_msg(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def cmd_on_values(self, mode, level, transition):
+    def cmd_on_values(self, mode, level, transition, group):
         """Calculate Cmd Values for On
 
         Args:
@@ -268,7 +268,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
         return (cmd1, cmd2)
 
     #-----------------------------------------------------------------------
-    def cmd_off_values(self, mode, transition):
+    def cmd_off_values(self, mode, transition, group):
         """Calculate Cmd Values for Off
 
         Args:
@@ -284,41 +284,64 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
         return (cmd1, cmd2)
 
     #-----------------------------------------------------------------------
-    def adjust_set_group(self, group):
-        """Adjust the group number for processing by the set command?
+    def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
+           transition=None, on_done=None):
+        """Turn the device on.
 
-        Exists for the KPL to alter the group number based on the load_group
+        This is a wrapper around the SetAndState functions class, that adds
+        a few unique KPL functions.
 
         Args:
-          group (int): The group the command should be sent to.
-        Returns
-          Group(int): The adjusted group number.
+          group (int):  The group to send the command to.
+          level (int):  If non-zero, turn the device on.  The API is an int
+                to keep a consistent API with other devices.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          transition (int): Transition time in seconds if supported.
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
         # If the group is 0, use the load group.
         group = self._load_group if group == 0 else group
-        return group
 
-    #-----------------------------------------------------------------------
-    def use_alt_set_cmd(self, group, is_on, reason, on_done):
-        """Should this be processed using an alternate command?
-
-        Exists for the KPL to intercept on/off commands for the non-load group.
-        If should process using an alternate command, do that here and return
-        True.
-
-        Args:
-          group (int): The group the command should be sent to.
-          is_on (bool): Should the command be on?
-          reason (str): The reason string
-          on_done (callback): The on_done callback.
-        Returns
-          True if the command has been processed elsewhere, False otherwise.
-        """
         # Non-load buttons are turned on/off via the LED command.
         if group != self._load_group:
             self.set_button_led(group, True, reason, on_done)
-            return True
-        return False
+        else:
+            # This is a regular on command pass to SetAndState class
+            super().on(group=group, level=level, mode=mode, reason=reason,
+                       transition=transition, on_done=on_done)
+
+    #-----------------------------------------------------------------------
+    def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
+            transition=None, on_done=None):
+        """Turn the device on.
+
+        This is a wrapper around the SetAndState functions class, that adds
+        a few unique KPL functions.
+
+        Args:
+          group (int):  The group to send the command to.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          transition (int): Transition time in seconds if supported.
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        # If the group is 0, use the load group.
+        group = self._load_group if group == 0 else group
+
+        # Non-load buttons are turned on/off via the LED command.
+        if group != self._load_group:
+            self.set_button_led(group, False, reason, on_done)
+        else:
+            # This is a regular on command pass to SetAndState class
+            super().off(group=group, mode=mode, reason=reason,
+                        transition=transition, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def mode_transition_supported(self, mode, transition):
@@ -1485,14 +1508,14 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
         elif msg.cmd1 == 0x15:
             assert localGroup == self._load_group
             self._set_state(group=localGroup, level=min(0xff,
-                                                         self._level + 8),
+                                                        self._level + 8),
                             reason=reason)
 
         # Increment down 1 unit which is 8 levels.
         elif msg.cmd1 == 0x16:
             assert msg.group == self._load_group
             self._set_state(group=localGroup, level=max(0x00,
-                                                         self._level - 8),
+                                                        self._level - 8),
                             reason=reason)
 
         # Starting/stopping manual increment (cmd2 0x00=up, 0x01=down)
