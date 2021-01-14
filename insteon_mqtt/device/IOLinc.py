@@ -39,7 +39,7 @@ class IOLinc(functions.SetAndState, Base):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_on_off( Device, bool sensor_is_on, bool relay_is_on,
+    - signal_state( Device, bool sensor_is_on, bool relay_is_on,
                      on_off.Mode mode ):
       Sent whenever the sensor is turned on or off.
 
@@ -137,13 +137,11 @@ class IOLinc(functions.SetAndState, Base):
 
         # Support on/off style signals for the sensor
         # API: func(Device, bool is_on)
-        self.signal_on_off = Signal()
+        self.signal_state = Signal()
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
         self.cmd_map.update({
-            'on' : self.on,
-            'off' : self.off,
             'set_flags' : self.set_flags,
             })
 
@@ -488,87 +486,6 @@ class IOLinc(functions.SetAndState, Base):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
-           transition=None, on_done=None):
-        """Turn the relay on.
-
-        This turns the relay on no matter what.  It ignores the momentary
-        A/B/C settings and just turns the relay on. It will not trigger any
-        responders that are linked to this device.  If you want to control
-        the device where it respects the momentary settings and properly
-        updates responders, please define a scene for the device and use
-        that scene to control it.
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          group (int):  The group to send the command to.  For this device,
-                this must be 1.  Allowing a group here gives us a consistent
-                API to the on command across devices.
-          level (int):  If non zero, turn the device on.  Should be in the
-                range 0 to 255.  Only dimmers use the intermediate values, all
-                other devices look at level=0 or level>0.
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("IOLinc %s cmd: on", self.addr)
-        assert group == 0x01
-
-        if transition or mode == on_off.Mode.RAMP:
-            LOG.error("Device %s does not support transition.", self.addr)
-            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
-
-        # Send an on command.  Use the standard command handler which will
-        # notify us when the command is ACK'ed.
-        msg = Msg.OutStandard.direct(self.addr, 0x11, 0xff)
-        msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
-
-        # Send the message to the PLM modem.
-        self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            transition=None, on_done=None):
-        """Turn the relay off.
-
-        This turns the relay off no matter what.  It ignores the momentary
-        A/B/C settings and just turns the relay off. It will not trigger any
-        responders that are linked to this device.  If you want to control
-        the device where it respects the momentary settings and properly
-        updates responders, please define a scene for the device and use
-        that scene to control it.
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          group (int):  The group to send the command to.  For this device,
-                this must be 1.  Allowing a group here gives us a consistent
-                API to the on command across devices.
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("IOLinc %s cmd: off", self.addr)
-        assert group == 0x01
-
-        if transition or mode == on_off.Mode.RAMP:
-            LOG.error("Device %s does not support transition.", self.addr)
-            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
-
-        # Send an off command.  Use the standard command handler which will
-        # notify us when the command is ACK'ed.
-        msg = Msg.OutStandard.direct(self.addr, 0x13, 0x00)
-        msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
-
-        # Send the message to the PLM modem.
-        self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
     def handle_on_off(self, msg):
         """Handle broadcast messages from this device.
 
@@ -853,7 +770,8 @@ class IOLinc(functions.SetAndState, Base):
         LOG.info("Setting device %s sensor on %s", self.label, is_on)
         self._sensor_is_on = bool(is_on)
 
-        self.signal_on_off.emit(self, self._sensor_is_on, self._relay_is_on)
+        self.signal_state.emit(self, sensor_is_on=self._sensor_is_on,
+                               relay_is_on=self._relay_is_on)
 
     #-----------------------------------------------------------------------
     def _set_relay_is_on(self, is_on, reason="", momentary=False):
@@ -876,7 +794,8 @@ class IOLinc(functions.SetAndState, Base):
             LOG.info("IOLinc %s relay on %s", self.label, is_on)
         self._relay_is_on = bool(is_on)
 
-        self.signal_on_off.emit(self, self._sensor_is_on, self._relay_is_on)
+        self.signal_state.emit(self, sensor_is_on=self._sensor_is_on,
+                               relay_is_on=self._relay_is_on)
 
         if is_on and self.mode is not IOLinc.Modes.LATCHING:
             # First remove any pending call, we want to reset the clock

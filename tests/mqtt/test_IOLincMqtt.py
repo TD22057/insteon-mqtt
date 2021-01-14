@@ -59,17 +59,17 @@ class Test_IOLinc:
     def test_template(self, setup):
         mdev, addr, name = setup.getAll(['mdev', 'addr', 'name'])
 
-        data = mdev.template_data()
+        data = mdev.base_template_data()
         right = {"address" : addr.hex, "name" : name}
         assert data == right
 
-        data = mdev.template_data(relay_is_on=True, sensor_is_on=True)
+        data = mdev.state_template_data(relay_is_on=True, sensor_is_on=True)
         right = {"address" : addr.hex, "name" : name,
                  "relay_on" : 1, "relay_on_str" : "on",
                  "sensor_on" : 1, "sensor_on_str" : "on"}
         assert data == right
 
-        data = mdev.template_data(relay_is_on=False, sensor_is_on=False)
+        data = mdev.state_template_data(relay_is_on=False, sensor_is_on=False)
         right = {"address" : addr.hex, "name" : name,
                  "relay_on" : 0, "relay_on_str" : "off",
                  "sensor_on" : 0, "sensor_on_str" : "off"}
@@ -84,13 +84,13 @@ class Test_IOLinc:
         mdev.load_config({})
 
         # Send an on/off signal
-        dev.signal_on_off.emit(dev, True, True)
-        dev.signal_on_off.emit(dev, False, False)
+        dev.signal_state.emit(dev, relay_is_on=True, sensor_is_on=True)
+        dev.signal_state.emit(dev, relay_is_on=False, sensor_is_on=False)
         # There are three topics per message state, relay, sensor
         assert len(link.client.pub) == 6
         assert link.client.pub[0] == dict(
             topic='%s/state' % topic,
-            payload='{"sensor": "on", "relay": "on"}',
+            payload='{"sensor":"on", "relay":"on"}',
             qos=0, retain=True)
         assert link.client.pub[1] == dict(
             topic='%s/relay' % topic,
@@ -102,7 +102,7 @@ class Test_IOLinc:
             qos=0, retain=True)
         assert link.client.pub[3] == dict(
             topic='%s/state' % topic,
-            payload='{"sensor": "off", "relay": "off"}',
+            payload='{"sensor":"off", "relay":"off"}',
             qos=0, retain=True)
         assert link.client.pub[4] == dict(
             topic='%s/relay' % topic,
@@ -132,8 +132,8 @@ class Test_IOLinc:
         stopic = "foo/%s" % setup.addr.hex
 
         # Send an on/off signal
-        dev.signal_on_off.emit(dev, True, True)
-        dev.signal_on_off.emit(dev, False, False)
+        dev.signal_state.emit(dev, relay_is_on=True, sensor_is_on=True)
+        dev.signal_state.emit(dev, relay_is_on=False, sensor_is_on=False)
         assert len(link.client.pub) == 6
         assert link.client.pub[0] == dict(
             topic=stopic, payload='1 ON', qos=qos, retain=True)

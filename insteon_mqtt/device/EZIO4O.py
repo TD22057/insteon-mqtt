@@ -180,26 +180,6 @@ class EZIO4O(functions.SetAndState, Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-<<<<<<< HEAD
-        LOG.info("EZIO4O %s grp: %s cmd: on", self.label, group)
-        assert 1 <= group <= 4
-        assert isinstance(mode, on_off.Mode)
-
-        if transition or mode == on_off.Mode.RAMP:
-            LOG.error("Device %s does not support transition.", self.addr)
-            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
-
-        # Use a standard message to send "output on" (0x45) command for the
-        # output
-        msg = Msg.OutStandard.direct(self.addr, 0x45, group - 1)
-
-        # Use the standard command handler which will notify us when
-        # the command is ACK'ed.
-        callback = functools.partial(self.handle_ack, reason=reason)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-
-=======
->>>>>>> Move EZIO4O to SetAndState; Remove Weird Functions Wrap Instead
         # See __init__ code comments for what this is for.
         self._which_output.append(group)
         super().on(group=group, level=level, mode=mode, reason=reason,
@@ -222,20 +202,10 @@ class EZIO4O(functions.SetAndState, Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-<<<<<<< HEAD
-        LOG.info("EZIO4O %s grp: %s cmd: off", self.label, group)
-        assert 1 <= group <= 4
-        assert isinstance(mode, on_off.Mode)
-
-        if transition or mode == on_off.Mode.RAMP:
-            LOG.error("Device %s does not support transition.", self.addr)
-            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
-=======
         # See __init__ code comments for what this is for.
         self._which_output.append(group)
         super().off(group=group, mode=mode, reason=reason,
                     transition=transition, on_done=on_done)
->>>>>>> Move EZIO4O to SetAndState; Remove Weird Functions Wrap Instead
 
     #-----------------------------------------------------------------------
     def cmd_on_values(self, mode, level, transition, group):

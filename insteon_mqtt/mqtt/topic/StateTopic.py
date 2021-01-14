@@ -143,7 +143,6 @@ class StateTopic(BaseTopic):
         # Update with manual data
         manual_data = ManualTopic.manual_template_data(**kwargs)
         data.update(manual_data)
-
         return data
 
     #-----------------------------------------------------------------------
