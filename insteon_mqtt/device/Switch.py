@@ -101,7 +101,7 @@ class Switch(functions.Set, functions.Scene, Base):
         assert isinstance(mode, on_off.Mode)
 
         if transition:
-            LOG.error("Device %s does not suppor transition.", self.addr)
+            LOG.error("Device %s does not support transition.", self.addr)
 
         # Send the requested on code value.
         cmd1 = on_off.Mode.encode(True, mode)
@@ -144,7 +144,7 @@ class Switch(functions.Set, functions.Scene, Base):
         assert isinstance(mode, on_off.Mode)
 
         if transition:
-            LOG.error("Device %s does not suppor transition.", self.addr)
+            LOG.error("Device %s does not support transition.", self.addr)
 
         # Send an off or instant off command.
         cmd1 = on_off.Mode.encode(False, mode)

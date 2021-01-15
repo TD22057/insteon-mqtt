@@ -168,7 +168,7 @@ class Dimmer(functions.Scene, functions.Set, Base):
         """
         LOG.info("Dimmer %s cmd: off", self.addr)
         if transition:
-            LOG.error("Device %s does not suppor transition.", self.addr)
+            LOG.error("Device %s does not support transition.", self.addr)
         assert group == 0x01
         assert isinstance(mode, on_off.Mode)
 

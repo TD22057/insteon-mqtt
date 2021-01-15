@@ -189,7 +189,7 @@ class EZIO4O(functions.Set, Base):
         assert isinstance(mode, on_off.Mode)
 
         if transition:
-            LOG.error("Device %s does not suppor transition.", self.addr)
+            LOG.error("Device %s does not support transition.", self.addr)
 
         # Use a standard message to send "output on" (0x45) command for the
         # output
@@ -230,7 +230,7 @@ class EZIO4O(functions.Set, Base):
         assert isinstance(mode, on_off.Mode)
 
         if transition:
-            LOG.error("Device %s does not suppor transition.", self.addr)
+            LOG.error("Device %s does not support transition.", self.addr)
 
         # Use a standard message to send "output off" (0x46) command for the
         # output

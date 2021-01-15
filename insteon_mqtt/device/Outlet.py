@@ -141,7 +141,7 @@ class Outlet(functions.Set, Base):
         assert isinstance(mode, on_off.Mode)
 
         if transition:
-            LOG.error("Device %s does not suppor transition.", self.addr)
+            LOG.error("Device %s does not support transition.", self.addr)
 
         # Send the requested on code value.
         cmd1 = on_off.Mode.encode(True, mode)
@@ -190,7 +190,7 @@ class Outlet(functions.Set, Base):
         assert isinstance(mode, on_off.Mode)
 
         if transition:
-            LOG.error("Device %s does not suppor transition.", self.addr)
+            LOG.error("Device %s does not support transition.", self.addr)
 
         # Send the correct off code.
         cmd1 = on_off.Mode.encode(False, mode)

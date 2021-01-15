@@ -518,7 +518,7 @@ class IOLinc(functions.Set, Base):
         assert group == 0x01
 
         if transition:
-            LOG.error("Device %s does not suppor transition.", self.addr)
+            LOG.error("Device %s does not support transition.", self.addr)
 
         # Send an on command.  Use the standard command handler which will
         # notify us when the command is ACK'ed.
@@ -556,7 +556,7 @@ class IOLinc(functions.Set, Base):
         assert group == 0x01
 
         if transition:
-            LOG.error("Device %s does not suppor transition.", self.addr)
+            LOG.error("Device %s does not support transition.", self.addr)
 
         # Send an off command.  Use the standard command handler which will
         # notify us when the command is ACK'ed.
