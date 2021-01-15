@@ -9,6 +9,7 @@ from .. import log
 
 LOG = log.get_logger()
 
+
 def parse_on_off(data, have_mode=True):
     """Parse on/off JSON data from an input message payload.
 
