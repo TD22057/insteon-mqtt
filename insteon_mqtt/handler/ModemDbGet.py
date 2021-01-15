@@ -93,6 +93,8 @@ class ModemDbGet(Base):
             # Request the next record in the PLM database.
             LOG.info("Modem requesting next db record")
             msg = Msg.OutAllLinkGetNext()
+            self._PLM_sent = False
+            self._PLM_ACK = False
             self.db.device.send(msg, self)
 
             # Return finished - this way the getnext message will go out.

@@ -19,6 +19,8 @@ class Test_ModemInfo:
         modem = H.main.MockModem(tmpdir)
         proto = H.main.MockProtocol()
         handler = IM.handler.ModemInfo(modem, callback)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
 
         #Try a good message
         msg = Msg.OutModemInfo(addr=IM.Address('11.22.33'), dev_cat=0x44,
@@ -38,3 +40,31 @@ class Test_ModemInfo:
         msg = Msg.OutResetModem(is_ack=True)
         r = handler.msg_received(proto, msg)
         assert r == Msg.UNKNOWN
+
+    #-----------------------------------------------------------------------
+    def test_plm_sent(self, tmpdir):
+        calls = []
+
+        def callback(success, msg, done):
+            calls.append((success, msg, done))
+
+        modem = H.main.MockModem(tmpdir)
+        proto = H.main.MockProtocol()
+        handler = IM.handler.ModemInfo(modem, callback)
+        assert not handler._PLM_sent
+
+        #Try a message prior to sent
+        msg = Msg.OutModemInfo(addr=IM.Address('11.22.33'), dev_cat=0x44,
+                               sub_cat=0x55, firmware=0x66, is_ack=True)
+        r = handler.msg_received(proto, msg)
+        assert r == Msg.UNKNOWN
+
+        # Signal Sent
+        handler.sending_message(msg)
+        assert handler._PLM_sent
+
+        #Try a message prior to sent
+        msg = Msg.OutModemInfo(addr=IM.Address('11.22.33'), dev_cat=0x44,
+                               sub_cat=0x55, firmware=0x66, is_ack=True)
+        r = handler.msg_received(proto, msg)
+        assert r == Msg.FINISHED

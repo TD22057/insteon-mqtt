@@ -21,6 +21,8 @@ class Test_BroadcastCmdResponse:
         # sent message, match input command
         out = Msg.OutStandard.direct(addr, 0x10, 0x00)
         handler = IM.handler.BroadcastCmdResponse(out, callback)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
 
         r = handler.msg_received(proto, "dummy")
         assert r == Msg.UNKNOWN
@@ -98,6 +100,35 @@ class Test_BroadcastCmdResponse:
         r = handler.msg_received(proto, msg)
         assert r == Msg.UNKNOWN
 
+    def test_plm_sent_ack(self):
+        # Tests matching the command from the outbound message.
+        proto = MockProto()
+        calls = []
+
+        def callback(msg, on_done=None):
+            calls.append(msg)
+
+        addr = IM.Address('0a.12.34')
+
+        # sent message, match input command
+        out = Msg.OutStandard.direct(addr, 0x10, 0x00)
+        handler = IM.handler.BroadcastCmdResponse(out, callback)
+
+        # test not sent
+        out.is_ack = True
+        r = handler.msg_received(proto, out)
+        assert r == Msg.UNKNOWN
+        assert not handler._PLM_sent
+
+        # Signal Sent
+        handler.sending_message(out)
+        assert handler._PLM_sent
+
+        # test ack sent
+        out.is_ack = True
+        r = handler.msg_received(proto, out)
+        assert r == Msg.CONTINUE
+        assert handler._PLM_ACK
 
 #===========================================================================
 

@@ -18,6 +18,8 @@ class Test_DeviceDbGet:
         addr = IM.Address('0a.12.34')
         db = Mockdb(addr)
         handler = IM.handler.DeviceDbGet(db, callback)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
 
         # Normal nak
         std_ack = Msg.OutStandard.direct(addr, 0x2f, 0x00)
@@ -65,6 +67,8 @@ class Test_DeviceDbGet:
         addr = IM.Address('0a.12.34')
         db = Mockdb(addr)
         handler = IM.handler.DeviceDbGet(db, callback)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
 
         flags = Msg.Flags(Msg.Flags.Type.DIRECT, True)
         data = bytes([0x01, 0, 0, 0, 0, 0xFF, 0, 0x01, 0, 0, 0, 0, 0, 0])
@@ -84,6 +88,37 @@ class Test_DeviceDbGet:
         msg.cmd1 = 0x00
         r = handler.msg_received(proto, msg)
         assert r == Msg.UNKNOWN
+
+    def test_plm_sent_ack(self):
+        proto = None
+        calls = []
+
+        def callback(success, msg, value):
+            calls.append(msg)
+
+        addr = IM.Address('0a.12.34')
+        db = Mockdb(addr)
+        handler = IM.handler.DeviceDbGet(db, callback)
+
+        # test not sent
+        std_ack = Msg.OutStandard.direct(addr, 0x2f, 0x00)
+        std_ack.is_ack = True
+        r = handler.msg_received(proto, std_ack)
+        assert r == Msg.UNKNOWN
+
+        # Signal Sent
+        handler.sending_message(std_ack)
+        assert handler._PLM_sent
+
+        # test ACK
+        assert not handler._PLM_ACK
+        std_ack = Msg.OutStandard.direct(addr, 0x2f, 0x00)
+        std_ack.is_ack = True
+        r = handler.msg_received(proto, std_ack)
+        assert r == Msg.CONTINUE
+        assert handler._PLM_ACK
+
+
 
 
 #===========================================================================

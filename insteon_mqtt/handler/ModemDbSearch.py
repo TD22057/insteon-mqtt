@@ -104,6 +104,8 @@ class ModemDbSearch(Base):
             msg = Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.SEARCH,
                                        db_flags, entry.group, entry.addr,
                                        bytes(3))
+            self._PLM_sent = False
+            self._PLM_ACK = False
             self.db.device.send(msg, self)
 
             # Return finished - this way the getnext message will go out.

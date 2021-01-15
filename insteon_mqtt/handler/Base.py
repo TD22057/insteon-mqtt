@@ -145,6 +145,8 @@ class Base:
         # the handler again so we don't lose the count.
         # This calls protocol rather then device so that the hops count is
         # correcly set, also since we don't have the Device object here
+        self._PLM_sent = False
+        self._PLM_ACK = False
         protocol.send(self._msg, self)
 
         # Tell the protocol that we're expired.  This will end this handler
