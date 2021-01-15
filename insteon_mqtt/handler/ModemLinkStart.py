@@ -41,6 +41,9 @@ class ModemLinkStart(Base):
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
         """
+        if not self._PLM_sent:
+            # If PLM hasn't sent our message yet, this can't be for us
+            return Msg.UNKNOWN
         if not isinstance(msg, Msg.OutModemLinking):
             return Msg.UNKNOWN
 

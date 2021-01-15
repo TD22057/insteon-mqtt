@@ -62,6 +62,9 @@ class ModemDbSearch(Base):
         # ok in Python>=3.5 but not 3.4.
         from .. import db    # pylint: disable=import-outside-toplevel
 
+        if not self._PLM_sent:
+            # If PLM hasn't sent our message yet, this can't be for us
+            return Msg.UNKNOWN
         # Message is an ACK/NAK of the record request.
         if (isinstance(msg, (Msg.OutAllLinkUpdate)) and
                 msg.cmd in (Msg.OutAllLinkUpdate.Cmd.EXISTS,

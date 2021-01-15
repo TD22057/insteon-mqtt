@@ -76,6 +76,9 @@ class DeviceDbGet(Base):
         # ok in Python>=3.5 but not 3.4.
         from .. import db  # pylint: disable=import-outside-toplevel
 
+        if not self._PLM_sent:
+            # If PLM hasn't sent our message yet, this can't be for us
+            return Msg.UNKNOWN
         # Probably an echo back of our sent message.  See if the message
         # matches the address we sent to and assume it's the ACK/NAK message.
         # These seem to be either extended or standard message so allow for

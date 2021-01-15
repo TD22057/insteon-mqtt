@@ -50,6 +50,9 @@ class DeviceDbModify(Base):
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
         """
+        if not self._PLM_sent:
+            # If PLM hasn't sent our message yet, this can't be for us
+            return Msg.UNKNOWN
         if isinstance(msg, Msg.OutExtended):
             # See if the message address matches our expected reply.
             if msg.to_addr == self.db.addr and msg.cmd1 == 0x2f:

@@ -56,6 +56,10 @@ class Base:
         self._num_retry = num_retry
         self._msg = None
 
+        # Track if PLM sent and if PLM ACK has arrived.
+        self._PLM_sent = False
+        self._PLM_ACK = False
+
     #-----------------------------------------------------------------------
     def set_retry_num(self, retry_num):
         """Used to set the number of retrie
@@ -81,6 +85,9 @@ class Base:
         # Save the message for a later retry if requested.
         self._num_sent += 1
         self._msg = msg
+
+        # Update flag to note sent
+        self._PLM_sent = True
 
         # Update the expiration time.
         self.update_expire_time()

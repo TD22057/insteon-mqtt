@@ -66,6 +66,9 @@ class DeviceRefresh(Base):
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
         """
+        if not self._PLM_sent:
+            # If PLM hasn't sent our message yet, this can't be for us
+            return Msg.UNKNOWN
         # Probably an echo back of our sent message.
         if isinstance(msg, Msg.OutStandard) and msg.to_addr == self.addr:
             if msg.is_ack:
