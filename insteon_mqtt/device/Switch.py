@@ -100,8 +100,9 @@ class Switch(functions.Set, functions.Scene, Base):
         assert group == 0x01
         assert isinstance(mode, on_off.Mode)
 
-        if transition:
+        if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
 
         # Send the requested on code value.
         cmd1 = on_off.Mode.encode(True, mode)
@@ -143,8 +144,9 @@ class Switch(functions.Set, functions.Scene, Base):
         assert group == 0x01
         assert isinstance(mode, on_off.Mode)
 
-        if transition:
+        if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
 
         # Send an off or instant off command.
         cmd1 = on_off.Mode.encode(False, mode)

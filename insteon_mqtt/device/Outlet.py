@@ -140,8 +140,9 @@ class Outlet(functions.Set, Base):
         assert 1 <= group <= 2
         assert isinstance(mode, on_off.Mode)
 
-        if transition:
+        if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
 
         # Send the requested on code value.
         cmd1 = on_off.Mode.encode(True, mode)
@@ -189,8 +190,9 @@ class Outlet(functions.Set, Base):
         assert 1 <= group <= 2
         assert isinstance(mode, on_off.Mode)
 
-        if transition:
+        if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
 
         # Send the correct off code.
         cmd1 = on_off.Mode.encode(False, mode)

@@ -517,8 +517,9 @@ class IOLinc(functions.Set, Base):
         LOG.info("IOLinc %s cmd: on", self.addr)
         assert group == 0x01
 
-        if transition:
+        if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
 
         # Send an on command.  Use the standard command handler which will
         # notify us when the command is ACK'ed.
@@ -555,8 +556,9 @@ class IOLinc(functions.Set, Base):
         LOG.info("IOLinc %s cmd: off", self.addr)
         assert group == 0x01
 
-        if transition:
+        if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
 
         # Send an off command.  Use the standard command handler which will
         # notify us when the command is ACK'ed.

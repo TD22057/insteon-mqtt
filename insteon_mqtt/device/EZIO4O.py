@@ -188,8 +188,9 @@ class EZIO4O(functions.Set, Base):
         assert 1 <= group <= 4
         assert isinstance(mode, on_off.Mode)
 
-        if transition:
+        if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else modeddr)
 
         # Use a standard message to send "output on" (0x45) command for the
         # output
@@ -229,8 +230,9 @@ class EZIO4O(functions.Set, Base):
         assert 1 <= group <= 4
         assert isinstance(mode, on_off.Mode)
 
-        if transition:
+        if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
 
         # Use a standard message to send "output off" (0x46) command for the
         # output
