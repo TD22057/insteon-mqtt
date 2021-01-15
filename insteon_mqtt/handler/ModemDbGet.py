@@ -72,10 +72,11 @@ class ModemDbGet(Base):
                 return Msg.FINISHED
 
             # ACK - keep reading until we get the record we requested.
+            self._PLM_ACK = True
             return Msg.CONTINUE
 
         # Message is the record we requested.
-        if isinstance(msg, Msg.InpAllLinkRec):
+        if isinstance(msg, Msg.InpAllLinkRec) and self._PLM_ACK:
             LOG.info("Adding modem db record for %s grp: %s", msg.addr,
                      msg.group)
             if not msg.db_flags.in_use:

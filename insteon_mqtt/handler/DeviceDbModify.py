@@ -58,6 +58,7 @@ class DeviceDbModify(Base):
             if msg.to_addr == self.db.addr and msg.cmd1 == 0x2f:
                 # ACK - command is ok - wait for ACK from device.
                 if msg.is_ack:
+                    self._PLM_ACK = True
                     return Msg.CONTINUE
 
                 # NAK - device rejected command.
@@ -66,7 +67,7 @@ class DeviceDbModify(Base):
                     self.on_done(False, "Device database update failed", None)
                     return Msg.FINISHED
 
-        elif isinstance(msg, Msg.InpStandard):
+        elif isinstance(msg, Msg.InpStandard) and self._PLM_ACK:
             # See if the message address matches our expected reply.
             if msg.from_addr == self.db.addr and msg.cmd1 == 0x2f:
                 # ACK or NAK - either way this transaction is complete.

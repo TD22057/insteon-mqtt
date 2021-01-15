@@ -66,6 +66,7 @@ class BroadcastCmdResponse(Base):
                     LOG.warning("%s PLM NAK response", self.addr)
                 else:
                     LOG.debug("%s got PLM ACK", self.addr)
+                    self._PLM_ACK = True
                 return Msg.CONTINUE
 
             # Message didn't match the expected addr/cmd.
@@ -74,7 +75,7 @@ class BroadcastCmdResponse(Base):
 
         # Probably an ACK/NAK from the device for our get command.
         elif (isinstance(msg, Msg.InpStandard) and
-              msg.flags.type != Msg.Flags.Type.BROADCAST):
+              msg.flags.type != Msg.Flags.Type.BROADCAST and self._PLM_ACK):
             # Filter by address and command.
             if msg.from_addr != self.addr or msg.cmd1 != self.cmd:
                 return Msg.UNKNOWN
@@ -103,7 +104,7 @@ class BroadcastCmdResponse(Base):
 
         # Process the payload reply.
         elif (isinstance(msg, Msg.InpStandard) and
-              msg.flags.type == Msg.Flags.Type.BROADCAST):
+              msg.flags.type == Msg.Flags.Type.BROADCAST and self._PLM_ACK):
             # Filter by address and command.
             if msg.from_addr == self.addr:
                 # Run the callback - it's up to the callback to check if this

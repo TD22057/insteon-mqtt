@@ -73,13 +73,15 @@ class DeviceRefresh(Base):
         if isinstance(msg, Msg.OutStandard) and msg.to_addr == self.addr:
             if msg.is_ack:
                 LOG.debug("%s PLM ACK response", self.addr)
+                self._PLM_ACK = True
                 return Msg.CONTINUE
             else:
                 LOG.warning("%s PLM NAK response", self.addr)
                 return Msg.CONTINUE
 
         # See if this is the standard message ack/nak we're expecting.
-        elif isinstance(msg, Msg.InpStandard) and msg.from_addr == self.addr:
+        elif (isinstance(msg, Msg.InpStandard) and
+              msg.from_addr == self.addr and self._PLM_ACK):
             if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
                 # All link database delta is stored in cmd1 so we if we have
                 # the latest version.  If not, schedule an update.

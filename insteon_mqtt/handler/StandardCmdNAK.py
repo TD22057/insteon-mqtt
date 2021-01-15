@@ -49,6 +49,7 @@ class StandardCmdNAK(StandardCmd):
                     LOG.warning("%s PLM NAK response", self.addr)
                 else:
                     LOG.debug("%s got PLM ACK", self.addr)
+                    self._PLM_ACK = True
                 return Msg.CONTINUE
 
             # Message didn't match the expected addr/cmd.
@@ -56,7 +57,7 @@ class StandardCmdNAK(StandardCmd):
             return Msg.UNKNOWN
 
         # See if this is the standard message ack/nak we're expecting.
-        elif isinstance(msg, Msg.InpStandard):
+        elif isinstance(msg, Msg.InpStandard) and self._PLM_ACK:
             # If this message matches our address and command, it's probably
             # the ACK we're expecting.
             if msg.from_addr == self.addr and msg.cmd1 == self.cmd:

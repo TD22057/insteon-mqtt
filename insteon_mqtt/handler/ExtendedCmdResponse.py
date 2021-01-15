@@ -75,12 +75,15 @@ class ExtendedCmdResponse(Base):
             if msg.to_addr == self.addr and msg.cmd1 == self.cmd:
                 if not msg.is_ack:
                     LOG.warning("%s PLM NAK response", self.addr)
+                else:
+                    LOG.debug("%s PLM ACK", self.addr)
+                    self._PLM_ACK = True
                 return Msg.CONTINUE
 
             return Msg.UNKNOWN
 
         # Probably an ACK/NAK from the device for our get command.
-        elif isinstance(msg, Msg.InpStandard):
+        elif isinstance(msg, Msg.InpStandard) and self._PLM_ACK:
             # Filter by address and command.
             if msg.from_addr != self.addr or msg.cmd1 != self.cmd:
                 return Msg.UNKNOWN
@@ -110,7 +113,7 @@ class ExtendedCmdResponse(Base):
                 return Msg.UNKNOWN
 
         # Process the payload reply.
-        elif isinstance(msg, Msg.InpExtended):
+        elif isinstance(msg, Msg.InpExtended) and self._PLM_ACK:
             # Filter by address and command.
             if msg.from_addr == self.addr and msg.cmd1 == self.cmd:
                 # Run the callback - it's up to the callback to check if this
