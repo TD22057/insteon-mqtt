@@ -112,7 +112,7 @@ class Dimmer(functions.Scene, functions.Set, Base):
         """
         LOG.info("Dimmer %s cmd: on %s", self.addr, level)
         if transition:
-            LOG.error("Device %s does not suppor transition.", self.addr)
+            LOG.error("Device %s does not support transition.", self.addr)
         if level is None:
             # Not specified - choose brightness as pressing the button would do
             if mode == on_off.Mode.FAST:
