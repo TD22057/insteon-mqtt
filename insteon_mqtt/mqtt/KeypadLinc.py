@@ -172,7 +172,7 @@ class KeypadLinc(topic.SetTopic, topic.SceneTopic, topic.StateTopic,
                 if level is not None:
                     level = int(level)
                 reason = data.get("reason", "")
-                self.device.set(is_on=is_on, level=level, mode=mode, reason=reason,
-                                transition=transition)
+                self.device.set(is_on=is_on, level=level, mode=mode, 
+                                reason=reason, transition=transition)
             except:
                 LOG.error("Invalid KeypadLinc level command: %s", data)
