@@ -190,7 +190,7 @@ class EZIO4O(functions.Set, Base):
 
         if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
-            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else modeddr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
 
         # Use a standard message to send "output on" (0x45) command for the
         # output
