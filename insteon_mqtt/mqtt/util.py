@@ -57,7 +57,6 @@ def parse_on_off(data, have_mode=True):
             mode = on_off.Mode.NORMAL
     else:
         mode = on_off.Mode.NORMAL
-        # These options seem to be undocumented, except for docstring above
         if data.get('fast', False):
             mode = on_off.Mode.FAST
         elif data.get('instant', False):
