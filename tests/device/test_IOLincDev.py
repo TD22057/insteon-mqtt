@@ -157,30 +157,31 @@ class Test_IOLinc_Set():
     ])
     def test_sensor_on(self, test_iolinc, is_on, expected):
         with mock.patch.object(IM.Signal, 'emit'):
-            test_iolinc._set_sensor_is_on(is_on)
+            test_iolinc._set_state(group=1, is_on=is_on)
             calls = IM.Signal.emit.call_args_list
-            assert calls[0][1]['sensor_is_on'] == expected
+            assert calls[0][1]['is_on'] == expected
+            assert calls[0][1]['button'] == 1
             assert IM.Signal.emit.call_count == 1
 
-    @pytest.mark.parametrize("is_on, mode, moment, relay, add, remove", [
-        (True, IM.device.IOLinc.Modes.LATCHING, False, True, 0, 0),
-        (True, IM.device.IOLinc.Modes.MOMENTARY_A, False, True, 1, 0),
-        (True, IM.device.IOLinc.Modes.MOMENTARY_A, False, True, 1, 1),
-        (False, IM.device.IOLinc.Modes.MOMENTARY_A, False, False, 0, 0),
-        (False, IM.device.IOLinc.Modes.MOMENTARY_A, True, False, 0, 0),
-        (False, IM.device.IOLinc.Modes.MOMENTARY_A, True, False, 0, 1),
+    @pytest.mark.parametrize("is_on, mode, relay, add, remove", [
+        (True, IM.device.IOLinc.Modes.LATCHING, True, 0, 0),
+        (True, IM.device.IOLinc.Modes.MOMENTARY_A, True, 1, 0),
+        (True, IM.device.IOLinc.Modes.MOMENTARY_A, True, 1, 1),
+        (False, IM.device.IOLinc.Modes.MOMENTARY_A, False, 0, 0),
+        (False, IM.device.IOLinc.Modes.MOMENTARY_A, False, 0, 0),
+        (False, IM.device.IOLinc.Modes.MOMENTARY_A, False, 0, 1),
     ])
-    def test_relay_on(self, test_iolinc, is_on, mode, moment, relay,
-                      add, remove):
+    def test_relay_on(self, test_iolinc, is_on, mode, relay, add, remove):
         with mock.patch.object(IM.Signal, 'emit'):
             with mock.patch.object(test_iolinc.modem.timed_call, 'add'):
                 with mock.patch.object(test_iolinc.modem.timed_call, 'remove'):
                     test_iolinc.mode = mode
                     if remove > 0:
                         test_iolinc._momentary_call = True
-                    test_iolinc._set_relay_is_on(is_on, momentary=moment)
+                    test_iolinc._set_state(group=2, is_on=is_on)
                     emit_calls = IM.Signal.emit.call_args_list
-                    assert emit_calls[0][1]['relay_is_on'] == relay
+                    assert emit_calls[0][1]['is_on'] == relay
+                    assert emit_calls[0][1]['button'] == 2
                     assert IM.Signal.emit.call_count == 1
                     assert test_iolinc.modem.timed_call.add.call_count == add
                     assert test_iolinc.modem.timed_call.remove.call_count == remove
@@ -206,10 +207,12 @@ class Test_Handles():
             test_iolinc.handle_broadcast(msg)
             calls = IM.Signal.emit.call_args_list
             if linked:
-                assert calls[1][1]['relay_is_on'] == relay
+                assert calls[1][1]['is_on'] == relay
+                assert calls[1][1]['button'] == 2
                 assert IM.Signal.emit.call_count == 2
             elif sensor is not None:
-                assert calls[0][1]['sensor_is_on'] == sensor
+                assert calls[0][1]['is_on'] == sensor
+                assert calls[0][1]['button'] == 1
                 assert IM.Signal.emit.call_count == 1
             else:
                 assert IM.Signal.emit.call_count == 0
@@ -286,7 +289,8 @@ class Test_Handles():
             msg = IM.message.InpStandard(from_addr, to_addr, flags, 0x19, cmd2)
             test_iolinc.handle_refresh_relay(msg)
             calls = IM.Signal.emit.call_args_list
-            assert calls[0][1]['relay_is_on'] == expected
+            assert calls[0][1]['is_on'] == expected
+            assert calls[0][1]['button'] == 2
             assert IM.Signal.emit.call_count == 1
 
     @pytest.mark.parametrize("cmd2,expected", [
@@ -301,7 +305,8 @@ class Test_Handles():
             msg = IM.message.InpStandard(from_addr, to_addr, flags, 0x19, cmd2)
             test_iolinc.handle_refresh_sensor(msg)
             calls = IM.Signal.emit.call_args_list
-            assert calls[0][1]['sensor_is_on'] == expected
+            assert calls[0][1]['is_on'] == expected
+            assert calls[0][1]['button'] == 1
             assert IM.Signal.emit.call_count == 1
 
     @pytest.mark.parametrize("cmd1, type, expected", [
@@ -316,7 +321,8 @@ class Test_Handles():
             msg = IM.message.InpStandard(from_addr, to_addr, flags, cmd1, 0x01)
             test_iolinc.handle_ack(msg, lambda success, msg, cmd: True)
             calls = IM.Signal.emit.call_args_list
-            assert calls[0][1]['relay_is_on'] == expected
+            assert calls[0][1]['is_on'] == expected
+            assert calls[0][1]['button'] == 2
             assert IM.Signal.emit.call_count == 1
 
     @pytest.mark.parametrize("cmd1, entry_d1, mode, sensor, expected", [
@@ -363,7 +369,9 @@ class Test_Handles():
             # Test the responses received
             calls = IM.Signal.emit.call_args_list
             if expected is not None:
-                assert calls[0][1]['relay_is_on'] == expected
+                print(calls)
+                assert calls[0][1]['is_on'] == expected
+                assert calls[0][1]['button'] == 2
                 assert IM.Signal.emit.call_count == 1
             else:
                 assert IM.Signal.emit.call_count == 0
