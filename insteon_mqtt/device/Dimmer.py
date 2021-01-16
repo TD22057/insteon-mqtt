@@ -85,8 +85,9 @@ class Dimmer(functions.Scene, functions.SetAndState, Base):
         Returns
           cmd1, cmd2 (int): Value of cmds for this device.
         """
-        if transition:
+        if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
         if level is None:
             # Not specified - choose brightness as pressing the button would do
             if mode == on_off.Mode.FAST:

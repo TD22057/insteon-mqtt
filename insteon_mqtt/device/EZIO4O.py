@@ -218,8 +218,9 @@ class EZIO4O(functions.SetAndState, Base):
         Returns
           cmd1, cmd2 (int): Value of cmds for this device.
         """
-        if transition:
+        if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
         if level:
             LOG.error("Device %s does not support level.", self.addr)
         cmd1 = 0x45
@@ -236,8 +237,9 @@ class EZIO4O(functions.SetAndState, Base):
         Returns
           cmd1, cmd2 (int): Value of cmds for this device.
         """
-        if transition:
+        if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
         cmd1 = 0x46
         cmd2 = group - 1
         return (cmd1, cmd2)

@@ -167,8 +167,9 @@ class SetAndState(State):
         Returns
           cmd1, cmd2 (int): Value of cmds for this device.
         """
-        if transition:
+        if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
         if level:
             LOG.error("Device %s does not support level.", self.addr)
         cmd1 = on_off.Mode.encode(True, mode)
@@ -185,8 +186,9 @@ class SetAndState(State):
         Returns
           cmd1, cmd2 (int): Value of cmds for this device.
         """
-        if transition:
+        if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
         cmd1 = on_off.Mode.encode(False, mode)
         cmd2 = 0x00
         return (cmd1, cmd2)
