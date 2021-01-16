@@ -213,13 +213,14 @@ class SetAndState(State):
         # emit our signals.
         LOG.debug("Device %s ACK: %s", self.addr, msg)
 
-        is_on, level, mode = self.decode_on_level(msg.cmd1, msg.cmd2)
+        is_on, level, mode, group = self.decode_on_level(msg.cmd1, msg.cmd2)
         if is_on is None:
             on_done(False, "Unable to decode Device %s state. %s" % self.addr,
                     msg)
         else:
             reason = reason if reason else on_off.REASON_COMMAND
-            self._set_state(is_on=is_on, level=level, mode=mode, reason=reason)
+            self._set_state(is_on=is_on, level=level, mode=mode, group=group,
+                            reason=reason)
             on_done(True, "Device state updated to on=%s" % is_on, is_on)
 
     #-----------------------------------------------------------------------
@@ -236,7 +237,9 @@ class SetAndState(State):
           is_on (bool): Is the device on.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           level (int): On level between 0-255.
+          group (int): The group number that this state applies to. Defaults
+                       to None.
         """
         is_on, mode = on_off.Mode.decode(cmd1)
         level = on_off.Mode.decode_level(cmd1, cmd2)
-        return (is_on, level, mode)
+        return (is_on, level, mode, None)

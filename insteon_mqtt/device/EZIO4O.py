@@ -545,8 +545,11 @@ class EZIO4O(functions.SetAndState, Base):
           is_on (bool): Is the device on.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           level (int): On level between 0-255.
+          group (int): The group number that this state applies to. Defaults
+                       to None.
         """
         # Default Returns
+        group = None
         is_on = None
         level = None
         mode = on_off.Mode.NORMAL
@@ -572,7 +575,7 @@ class EZIO4O(functions.SetAndState, Base):
             # Update the requested group as part of normal set process
             is_on = bool(util.bit_get(cmd2, group))
 
-        return (is_on, level, mode)
+        return (is_on, level, mode, group)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

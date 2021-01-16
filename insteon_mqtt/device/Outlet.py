@@ -57,8 +57,6 @@ class Outlet(functions.SetAndState, Base):
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
         self.cmd_map.update({
-            'on' : self.on,
-            'off' : self.off,
             'set_flags' : self.set_flags,
             })
 
@@ -74,6 +72,9 @@ class Outlet(functions.SetAndState, Base):
         # Can the outlet really act as a controller?
         self.group_map.update({0x01: self.handle_on_off,
                                0x02: self.handle_on_off})
+
+        # List of responder group numbers
+        self.responder_groups = [0x01, 0x02]
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
@@ -136,36 +137,22 @@ class Outlet(functions.SetAndState, Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("Outlet %s grp: %s cmd: on", group, self.addr)
-        assert 1 <= group <= 2
-        assert isinstance(mode, on_off.Mode)
-
-        if transition or mode == on_off.Mode.RAMP:
-            LOG.error("Device %s does not support transition.", self.addr)
-            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
-
-        # Send the requested on code value.
-        cmd1 = on_off.Mode.encode(True, mode)
-
-        # Top outlet uses a standard message
-        if group == 1:
-            msg = Msg.OutStandard.direct(self.addr, cmd1, 0xff)
-
-        # Bottom outlet uses an extended message
-        else:
-            data = bytes([0x02] + [0x00] * 13)
-            msg = Msg.OutExtended.direct(self.addr, cmd1, 0xff, data)
-
-        # Use the standard command handler which will notify us when
-        # the command is ACK'ed.
-        callback = functools.partial(self.handle_ack, reason=reason)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-
         # See __init__ code comments for what this is for.
         self._which_outlet.append(group)
 
-        # Send the message to the PLM modem for protocol.
-        self.send(msg, msg_handler)
+        # Bottom outlet uses an extended message
+        if group == 2:
+            cmd1, cmd2 = self.cmd_on_values(mode, level, transition, group)
+            data = bytes([0x02] + [0x00] * 13)
+            msg = Msg.OutExtended.direct(self.addr, cmd1, cmd2, data)
+            callback = functools.partial(self.handle_ack, reason=reason)
+            msg_handler = handler.StandardCmd(msg, callback, on_done)
+            self.send(msg, msg_handler)
+        else:
+            # Bottom outlet uses a regular on command pass to SetAndState
+            super().on(group=group, level=level, mode=mode, reason=reason,
+                       transition=transition, on_done=on_done)
+
 
     #-----------------------------------------------------------------------
     def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
@@ -186,36 +173,21 @@ class Outlet(functions.SetAndState, Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("Outlet %s cmd: off", self.addr)
-        assert 1 <= group <= 2
-        assert isinstance(mode, on_off.Mode)
-
-        if transition or mode == on_off.Mode.RAMP:
-            LOG.error("Device %s does not support transition.", self.addr)
-            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
-
-        # Send the correct off code.
-        cmd1 = on_off.Mode.encode(False, mode)
-
-        # Top outlet uses a standard message
-        if group == 1:
-            msg = Msg.OutStandard.direct(self.addr, cmd1, 0x00)
-
-        # Bottom outlet uses an extended message
-        else:
-            data = bytes([0x02] + [0x00] * 13)
-            msg = Msg.OutExtended.direct(self.addr, cmd1, 0x00, data)
-
-        # Use the standard command handler which will notify us when the
-        # command is ACK'ed.
-        callback = functools.partial(self.handle_ack, reason=reason)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-
         # See __init__ code comments for what this is for.
         self._which_outlet.append(group)
 
-        # Send the message to the PLM modem for protocol.
-        self.send(msg, msg_handler)
+        # Bottom outlet uses an extended message
+        if group == 2:
+            cmd1, cmd2 = self.cmd_off_values(mode, transition, group)
+            data = bytes([0x02] + [0x00] * 13)
+            msg = Msg.OutExtended.direct(self.addr, cmd1, cmd2, data)
+            callback = functools.partial(self.handle_ack, reason=reason)
+            msg_handler = handler.StandardCmd(msg, callback, on_done)
+            self.send(msg, msg_handler)
+        else:
+            # Bottom outlet uses a regular on command pass to SetAndState
+            super().off(group=group, mode=mode, reason=reason,
+                        transition=transition, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def set_backlight(self, level, on_done=None):
@@ -334,7 +306,8 @@ class Outlet(functions.SetAndState, Base):
             LOG.info("Outlet %s broadcast grp: %s on: %s mode: %s", self.addr,
                      msg.group, is_on, mode)
 
-            self._set_is_on(msg.group, is_on, mode, reason)
+            self._set_state(group=msg.group, is_on=is_on, mode=mode,
+                            reason=reason)
 
             self.update_linked_devices(msg)
 
@@ -367,51 +340,48 @@ class Outlet(functions.SetAndState, Base):
                    is_on[1])
 
             # Set the state for each outlet.
-            self._set_is_on(1, is_on[0], reason=on_off.REASON_REFRESH)
-            self._set_is_on(2, is_on[1], reason=on_off.REASON_REFRESH)
+            self._set_state(group=1, is_on=is_on[0],
+                            reason=on_off.REASON_REFRESH)
+            self._set_state(group=2, is_on=is_on[1],
+                            reason=on_off.REASON_REFRESH)
 
         else:
             LOG.error("Outlet %s unknown refresh response %s", self.label,
                       msg.cmd2)
 
     #-----------------------------------------------------------------------
-    def handle_ack(self, msg, on_done, reason=""):
+    def decode_on_level(self, cmd1, cmd2):
         """Callback for standard commanded messages.
 
-        This callback is run when we get a reply back from one of our
-        commands to the device.  If the command was ACK'ed, we know it worked
-        so we'll update the internal state of the device and emit the signals
-        to notify others of the state change.
+        Decodes the cmds recevied from the device into is_on, level, and mode
+        to be consumed by _set_state().
 
         Args:
-          msg (message.InpStandard):  The reply message from the device.
-              The on/off level will be in the cmd2 field.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
+          cmd1 (byte): The command 1 value
+          cmd2 (byte): The command 2 value
+        Returns:
+          is_on (bool): Is the device on.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          level (int): On level between 0-255.
+          group (int): The group number that this state applies to. Defaults
+                       to None.
         """
+        # Default Returns
+        group = None
+        is_on = None
+        level = None
+        mode = on_off.Mode.NORMAL
+
         # Get the last outlet we were commanding.  The message doesn't tell
         # us which outlet it was so we have to track it here.  See __init__
         # code comments for more info.
         if not self._which_outlet:
             LOG.error("Outlet %s ACK error.  No outlet ID's were saved",
                       self.addr)
-            on_done(False, "Outlet update failed - no ID's saved", None)
-            return
-
-        group = self._which_outlet.pop(0)
-
-        # If this it the ACK we're expecting, update the internal
-        # state and emit our signals.
-        LOG.debug("Outlet %s grp: %s ACK: %s", self.addr, group, msg)
-
-        is_on, mode = on_off.Mode.decode(msg.cmd1)
-        reason = reason if reason else on_off.REASON_COMMAND
-        self._set_is_on(group, is_on, mode, reason)
-        on_done(True, "Outlet state updated to on=%s" % self._is_on,
-                self._is_on)
+        else:
+            group = self._which_outlet.pop(0)
+            is_on, mode = on_off.Mode.decode(cmd1)
+        return (is_on, level, mode, group)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
@@ -443,7 +413,8 @@ class Outlet(functions.SetAndState, Base):
         # Handle on/off commands codes.
         if on_off.Mode.is_valid(msg.cmd1):
             is_on, mode = on_off.Mode.decode(msg.cmd1)
-            self._set_is_on(localGroup, is_on, mode, on_off.REASON_SCENE)
+            self._set_state(group=localGroup, is_on=is_on, mode=mode,
+                            reason=on_off.REASON_SCENE)
 
         # Note: I don't believe the on/off switch can participate in manual
         # mode stopping commands since it changes state when the button is
@@ -453,30 +424,17 @@ class Outlet(functions.SetAndState, Base):
                         msg.cmd1)
 
     #-----------------------------------------------------------------------
-    def _set_is_on(self, group, is_on, mode=on_off.Mode.NORMAL, reason=""):
-        """Update the device on/off state.
+    def _cache_state(self, group, is_on, level, reason):
+        """Cache the State of the Device
 
-        This will change the internal state and emit the state changed
-        signals.  It is called by whenever we're informed that the device has
-        changed state.
+        Used to help with the unique device functions.
 
         Args:
-          group (int):  The group to update (1 for upper outlet, 2 for lower).
-          is_on (bool):  True if the switch is on, False if it isn't.
-          mode (on_off.Mode): The type of on/off that was triggered (normal,
-               fast, etc).
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
+          group (int): The group which this applies
+          is_on (bool): Whether the device is on.
+          level (int): The new device level in the range [0,255].  0 is off.
+          reason (str): Reason string to pass around.
         """
-        is_on = bool(is_on)
-
-        LOG.info("Setting device %s grp: %s on %s %s %s", self.label, group,
-                 is_on, mode, reason)
         self._is_on[group - 1] = is_on
-
-        # Notify others that the outlet state has changed.
-        self.signal_state.emit(self, button=group, is_on=is_on, mode=mode,
-                               reason=reason)
 
     #-----------------------------------------------------------------------
