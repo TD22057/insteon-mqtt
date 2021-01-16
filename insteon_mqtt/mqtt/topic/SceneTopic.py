@@ -4,9 +4,9 @@
 #
 #===========================================================================
 import functools
-from .. import log
-from .MsgTemplate import MsgTemplate
-from . import util
+from ... import log
+from ..MsgTemplate import MsgTemplate
+from .. import util
 from .BaseTopic import BaseTopic
 
 LOG = log.get_logger()
@@ -96,7 +96,7 @@ class SceneTopic(BaseTopic):
         link.unsubscribe(topic)
 
     #-----------------------------------------------------------------------
-    def _input_scene(self, client, data, message, group=0x01):
+    def _input_scene(self, client, data, message, group=None):
         """Handle an input scene MQTT message.
 
         This is called when we receive a message on the scene trigger MQTT
@@ -116,12 +116,15 @@ class SceneTopic(BaseTopic):
         try:
             # Scenes don't support modes so don't parse that element.
             is_on = util.parse_on_off(data, have_mode=False)
-            group = int(data.get('group', group))
+            if 'group' in data:
+                group = int(data.get('group'))
+            name = data.get("name", None)
             reason = data.get("reason", None)
             level = data.get("level", None)
 
             # Tell the device to trigger the scene command.
-            self.device.scene(is_on, group, reason, level)
+            self.device.scene(is_on, level=level, group=group, name=name,
+                              reason=reason)
         except:
             LOG.error("Invalid SceneTopic command: %s", data)
 

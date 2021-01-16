@@ -5,6 +5,7 @@
 #===========================================================================
 import functools
 from .Base import Base
+from . import functions
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
@@ -16,7 +17,7 @@ from .. import util
 LOG = log.get_logger()
 
 
-class Outlet(Base):
+class Outlet(functions.Set, Base):
     """Insteon on/off outlet device.
 
     This is used for in-wall on/off outlets.  Each outlet (top and bottom) is
@@ -58,7 +59,6 @@ class Outlet(Base):
         self.cmd_map.update({
             'on' : self.on,
             'off' : self.off,
-            'set' : self.set,
             'set_flags' : self.set_flags,
             })
 
@@ -116,7 +116,7 @@ class Outlet(Base):
 
     #-----------------------------------------------------------------------
     def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL,
-           reason="", on_done=None):
+           reason="", transition=None, on_done=None):
         """Turn the device on.
 
         This will send the command to the device to update it's state.  When
@@ -138,8 +138,11 @@ class Outlet(Base):
         """
         LOG.info("Outlet %s grp: %s cmd: on", group, self.addr)
         assert 1 <= group <= 2
-        assert level >= 0 and level <= 0xff
         assert isinstance(mode, on_off.Mode)
+
+        if transition or mode == on_off.Mode.RAMP:
+            LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
 
         # Send the requested on code value.
         cmd1 = on_off.Mode.encode(True, mode)
@@ -166,7 +169,7 @@ class Outlet(Base):
 
     #-----------------------------------------------------------------------
     def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            on_done=None):
+            transition=None, on_done=None):
         """Turn the device off.
 
         This will send the command to the device to update it's state.  When
@@ -186,6 +189,10 @@ class Outlet(Base):
         LOG.info("Outlet %s cmd: off", self.addr)
         assert 1 <= group <= 2
         assert isinstance(mode, on_off.Mode)
+
+        if transition or mode == on_off.Mode.RAMP:
+            LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
 
         # Send the correct off code.
         cmd1 = on_off.Mode.encode(False, mode)
@@ -209,30 +216,6 @@ class Outlet(Base):
 
         # Send the message to the PLM modem for protocol.
         self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            on_done=None):
-        """Turn the device on or off.  Level zero will be off.
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          level (int):  If non zero, turn the device on.  Should be in the
-                range 0 to 255.  Only dimmers use the intermediate values, all
-                other devices look at level=0 or level>0.
-          group (int):  The group to send the command to.  The top outlet is
-                group 1, the bottom outlet is group 2.
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        if level:
-            self.on(group, level, mode, reason, on_done)
-        else:
-            self.off(group, mode, reason, on_done)
 
     #-----------------------------------------------------------------------
     def set_backlight(self, level, on_done=None):

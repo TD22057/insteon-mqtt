@@ -5,13 +5,12 @@
 #===========================================================================
 from .. import log
 from .MsgTemplate import MsgTemplate
-from . import util
-from .BaseTopic import BaseTopic
+from . import topic
 
 LOG = log.get_logger()
 
 
-class IOLinc(BaseTopic):
+class IOLinc(topic.SetTopic):
     """MQTT interface to an Insteon IOLinc device.
 
     This class connects to a device.IOLinc object and converts it's
@@ -43,11 +42,6 @@ class IOLinc(BaseTopic):
             topic='insteon/{{address}}/sensor',
             payload='{{sensor_on_str.lower()}}')
 
-        # Input on/off command template.
-        self.msg_on_off = MsgTemplate(
-            topic='insteon/{{address}}/set',
-            payload='{ "cmd" : "{{value.lower()}}" }')
-
         device.signal_on_off.connect(self._insteon_on_off)
 
     #-----------------------------------------------------------------------
@@ -68,8 +62,7 @@ class IOLinc(BaseTopic):
                                          'relay_state_payload', qos)
         self.msg_sensor_state.load_config(data, 'sensor_state_topic',
                                           'sensor_state_payload', qos)
-        self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
-                                    qos)
+        self.load_set_data(data, qos)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -83,8 +76,7 @@ class IOLinc(BaseTopic):
           qos (int):  The quality of service to use.
         """
         # On/off command messages.
-        topic = self.msg_on_off.render_topic(self.template_data())
-        link.subscribe(topic, qos, self._input_on_off)
+        self.set_subscribe(link, qos)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
@@ -93,8 +85,7 @@ class IOLinc(BaseTopic):
         Args:
           link (network.Mqtt):  The MQTT network client to use.
         """
-        topic = self.msg_on_off.render_topic(self.template_data())
-        link.unsubscribe(topic)
+        self.set_unsubscribe(link)
 
     #-----------------------------------------------------------------------
     def template_data(self, sensor_is_on=None, relay_is_on=None):
@@ -137,31 +128,5 @@ class IOLinc(BaseTopic):
         self.msg_state.publish(self.mqtt, data)
         self.msg_relay_state.publish(self.mqtt, data)
         self.msg_sensor_state.publish(self.mqtt, data)
-
-    #-----------------------------------------------------------------------
-    def _input_on_off(self, client, data, message):
-        """Handle an input on/off change MQTT message.
-
-        This is called when we receive a message on the on/off MQTT topic
-        subscription.  Parse the message and pass the command to the Insteon
-        device.
-
-        Args:
-          client (paho.Client):  The paho mqtt client (self.link).
-          data:  Optional user data (unused).
-          message:  MQTT message - has attrs: topic, payload, qos, retain.
-        """
-        LOG.debug("IOLinc message %s %s", message.topic, message.payload)
-
-        # Parse the input MQTT message.
-        data = self.msg_on_off.to_json(message.payload)
-        LOG.info("IOLinc input command: %s", data)
-
-        try:
-            # IOLinc doesn't support modes so don't parse that element.
-            is_on = util.parse_on_off(data, have_mode=False)
-            self.device.set(is_on)
-        except:
-            LOG.error("Invalid IOLinc on/off command: %s", data)
 
     #-----------------------------------------------------------------------

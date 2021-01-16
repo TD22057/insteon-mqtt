@@ -88,7 +88,6 @@ class Test_KeypadLinc:
                 "insteon/%s/set/%d" % (addr.hex, i),
                 "insteon/%s/scene/%d" % (addr.hex, i),
                 ]
-
         assert len(link.client.sub) == len(topics)
         for i in range(len(topics)):
             assert link.client.sub[i] == dict(topic=topics[i], qos=2)

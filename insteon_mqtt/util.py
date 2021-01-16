@@ -9,6 +9,7 @@ from . import log
 
 LOG = log.get_logger()
 
+
 def to_hex(data, num=None, space=' '):
     """Convert a byte array to a string of hex.
 

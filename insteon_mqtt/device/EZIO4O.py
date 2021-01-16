@@ -5,6 +5,7 @@
 #===========================================================================
 import functools
 from .Base import Base
+from . import functions
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
@@ -57,7 +58,7 @@ EZIO4xx_flags = {
 }
 
 
-class EZIO4O(Base):
+class EZIO4O(functions.Set, Base):
     """Smartenit EZIO4O - 4 relay output device.
 
     This class can be used to model the EZIO4O device which has 4 outputs.
@@ -101,7 +102,6 @@ class EZIO4O(Base):
                 "on": self.on,
                 "off": self.off,
                 "set_flags": self.set_flags,
-                "set": self.set,
             }
         )
 
@@ -164,7 +164,7 @@ class EZIO4O(Base):
 
     #-----------------------------------------------------------------------
     def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
-           on_done=None):
+           transition=None, on_done=None):
         """Turn the device on.
 
         This will send the command to the device to update it's state.  When
@@ -186,8 +186,11 @@ class EZIO4O(Base):
         """
         LOG.info("EZIO4O %s grp: %s cmd: on", self.label, group)
         assert 1 <= group <= 4
-        assert level >= 0 and level <= 0xFF
         assert isinstance(mode, on_off.Mode)
+
+        if transition or mode == on_off.Mode.RAMP:
+            LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
 
         # Use a standard message to send "output on" (0x45) command for the
         # output
@@ -206,7 +209,7 @@ class EZIO4O(Base):
 
     #-----------------------------------------------------------------------
     def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            on_done=None):
+            transition=None, on_done=None):
         """Turn the device off.
 
         This will send the command to the device to update it's state.  When
@@ -227,6 +230,10 @@ class EZIO4O(Base):
         assert 1 <= group <= 4
         assert isinstance(mode, on_off.Mode)
 
+        if transition or mode == on_off.Mode.RAMP:
+            LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
+
         # Use a standard message to send "output off" (0x46) command for the
         # output
         msg = Msg.OutStandard.direct(self.addr, 0x46, group - 1)
@@ -241,30 +248,6 @@ class EZIO4O(Base):
 
         # Send the message to the PLM modem for protocol.
         self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            on_done=None):
-        """Turn the device on or off.  Level zero will be off.
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          level (int):  If non zero, turn the device on.  Should be in the
-                range 0 to 255.  Only dimmers use the intermediate values, all
-                other devices look at level=0 or level>0.
-          group (int):  The group to send the command to.  Group 1 to 4
-                        matching output 1 to 4.
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        if level:
-            self.on(group, level, mode, reason, on_done)
-        else:
-            self.off(group, mode, reason, on_done)
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):

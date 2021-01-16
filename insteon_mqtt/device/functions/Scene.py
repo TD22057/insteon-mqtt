@@ -46,7 +46,8 @@ class Scene(Base):
         # in the self.group_map.  Only these groups will be valid scene
         # targets
 
-    def scene(self, is_on, group=0x01, reason=None, level=None, on_done=None):
+    def scene(self, is_on, group=0x01, name=None, reason=None, level=None,
+              on_done=None):
         """Trigger a scene on the device.
 
         Triggering a scene is the same as simulating a button press on the
@@ -64,6 +65,7 @@ class Scene(Base):
           is_on (bool): True for an on command, False for an off command.
           group (int): The group on the device to simulate.  For this device,
                 this must be 1.
+          name (None): Not used, only here for modem compatibility.
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
                  when the state changes - nothing else is done with it.
@@ -74,7 +76,13 @@ class Scene(Base):
                    completed.  Signature is: on_done(success, msg, data)
         """
         LOG.info("Device %s scene %s", self.addr, "on" if is_on else "off")
+        if group is None:
+            group = 0x01
         assert group in self.group_map
+
+        if name is not None:
+            LOG.error("Device %s scenes cannot use names, groups only.",
+                      self.addr)
 
         on_done = util.make_callback(on_done)
 

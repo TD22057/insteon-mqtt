@@ -5,12 +5,12 @@
 #===========================================================================
 from .. import log
 from .BatterySensor import BatterySensor
-from .ManualTopic import ManualTopic
+from . import topic
 
 LOG = log.get_logger()
 
 
-class Remote(BatterySensor, ManualTopic):
+class Remote(BatterySensor, topic.ManualTopic):
     """MQTT interface to an Insteon mini-remote.
 
     This class connects to a device.Remote object and converts it's output

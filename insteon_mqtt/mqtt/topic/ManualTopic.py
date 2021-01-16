@@ -3,8 +3,8 @@
 # MQTT Manual Topic
 #
 #===========================================================================
-from .. import log
-from .MsgTemplate import MsgTemplate
+from ... import log
+from ..MsgTemplate import MsgTemplate
 from .BaseTopic import BaseTopic
 
 LOG = log.get_logger()

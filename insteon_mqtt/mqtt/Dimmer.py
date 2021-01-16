@@ -7,14 +7,13 @@ from .. import log
 from .. import on_off
 from .MsgTemplate import MsgTemplate
 from . import util
-from .SceneTopic import SceneTopic
-from .StateTopic import StateTopic
-from .ManualTopic import ManualTopic
+from . import topic
 
 LOG = log.get_logger()
 
 
-class Dimmer(StateTopic, SceneTopic, ManualTopic):
+class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
+             topic.SetTopic):
     """MQTT interface to an Insteon dimmer switch.
 
     This class connects to a device.Dimmer object and converts it's output
@@ -35,11 +34,6 @@ class Dimmer(StateTopic, SceneTopic, ManualTopic):
         super().__init__(mqtt, device,
                          state_payload='{ "state" : "{{on_str.lower()}}", '
                                        '"brightness" : {{level_255}} }')
-
-        # Input on/off command template.
-        self.msg_on_off = MsgTemplate(
-            topic='insteon/{{address}}/set',
-            payload='{ "cmd" : "{{value.lower()}}" }')
 
         # Input level command template.
         self.msg_level = MsgTemplate(
@@ -64,10 +58,9 @@ class Dimmer(StateTopic, SceneTopic, ManualTopic):
         self.load_scene_data(data, qos)
         self.load_state_data(data, qos)
         self.load_manual_data(data, qos)
+        self.load_set_data(data, qos)
 
         # Update the MQTT topics and payloads from the config file.
-        self.msg_on_off.load_config(data, 'on_off_topic', 'on_off_payload',
-                                    qos)
         self.msg_level.load_config(data, 'level_topic', 'level_payload', qos)
 
     #-----------------------------------------------------------------------
@@ -81,13 +74,11 @@ class Dimmer(StateTopic, SceneTopic, ManualTopic):
           link (network.Mqtt):  The MQTT network client to use.
           qos (int):  The quality of service to use.
         """
-        # On/off command messages.
-        topic = self.msg_on_off.render_topic(self.base_template_data())
-        link.subscribe(topic, qos, self._input_on_off)
+        self.set_subscribe(link, qos)
 
         # Level changing command messages.
-        topic = self.msg_level.render_topic(self.base_template_data())
-        link.subscribe(topic, qos, self._input_set_level)
+        topic_str = self.msg_level.render_topic(self.base_template_data())
+        link.subscribe(topic_str, qos, self._input_set_level)
 
         self.scene_subscribe(link, qos)
 
@@ -98,45 +89,12 @@ class Dimmer(StateTopic, SceneTopic, ManualTopic):
         Args:
           link (network.Mqtt):  The MQTT network client to use.
         """
-        topic = self.msg_on_off.render_topic(self.base_template_data())
-        link.unsubscribe(topic)
+        self.set_unsubscribe(link)
 
-        topic = self.msg_level.render_topic(self.base_template_data())
-        link.unsubscribe(topic)
+        topic_str = self.msg_level.render_topic(self.base_template_data())
+        link.unsubscribe(topic_str)
 
         self.scene_unsubscribe(link)
-
-    #-----------------------------------------------------------------------
-    def _input_on_off(self, client, data, message):
-        """Handle an input on/off change MQTT message.
-
-        This is called when we receive a message on the on/off MQTT topic
-        subscription.  Parse the message and pass the command to the Insteon
-        device.
-
-        Args:
-          client (paho.Client):  The paho mqtt client (self.link).
-          data:  Optional user data (unused).
-          message:  MQTT message - has attrs: topic, payload, qos, retain.
-        """
-        LOG.debug("Dimmer message %s %s", message.topic, message.payload)
-
-        # Parse the input MQTT message.
-        data = self.msg_on_off.to_json(message.payload)
-        LOG.info("Dimmer input command: %s", data)
-        try:
-            # Tell the device to update its state.
-            is_on, mode, transition = util.parse_on_off(data)
-            if mode == on_off.Mode.RAMP or transition is not None:
-                LOG.error("Light ON/OFF at Ramp Rate not supported with "
-                          "dimmers - ignoring ramp rate.")
-            if mode == on_off.Mode.RAMP:  # Not supported
-                mode = on_off.Mode.NORMAL
-            level = 0 if not is_on else None
-            reason = data.get("reason", "")
-            self.device.set(level=level, mode=mode, reason=reason)
-        except:
-            LOG.error("Invalid switch on/off command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_set_level(self, client, data, message):
@@ -162,13 +120,13 @@ class Dimmer(StateTopic, SceneTopic, ManualTopic):
                           "dimmers - ignoring ramp rate.")
             if mode == on_off.Mode.RAMP:  # Not supported
                 mode = on_off.Mode.NORMAL
-            level = '0' if not is_on else data.get('level')
+            level = '0' if not is_on else data.get('level', None)
             if level is not None:
                 level = int(level)
             reason = data.get("reason", "")
 
             # Tell the device to change its level.
-            self.device.set(level=level, mode=mode, reason=reason)
+            self.device.set(is_on=is_on, level=level, mode=mode, reason=reason)
         except:
             LOG.error("Invalid dimmer command: %s", data)
 
