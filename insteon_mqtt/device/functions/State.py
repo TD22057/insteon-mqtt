@@ -57,21 +57,22 @@ class State(Base):
         """
         LOG.info("Setting device %s on %s level %s %s %s", self.label, is_on,
                  level, mode, reason)
-        self._cache_state(group, is_on, level)
+        self._cache_state(group, is_on, level, reason)
 
         self.signal_state.emit(self, is_on=is_on, level=level, mode=mode,
                                button=group, reason=reason)
 
     #-----------------------------------------------------------------------
-    def _cache_state(self, group, is_on, level):
+    def _cache_state(self, group, is_on, level, reason):
         """Cache the State of the Device
 
-        Used to help with the KPL unique functions.
+        Used to help with the unique device functions.
 
         Args:
           group (int): The group which this applies
           is_on (bool): Whether the device is on.
           level (int): The new device level in the range [0,255].  0 is off.
+          reason (str): Reason string to pass around.
         """
         if is_on is not None:
             self._is_on = is_on

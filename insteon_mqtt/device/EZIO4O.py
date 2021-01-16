@@ -615,15 +615,16 @@ class EZIO4O(functions.SetAndState, Base):
                         msg.cmd1)
 
     #-----------------------------------------------------------------------
-    def _cache_state(self, group, is_on, level):
+    def _cache_state(self, group, is_on, level, reason):
         """Cache the State of the Device
 
-        Used to help with the KPL unique functions.
+        Used to help with the EZIO unique functions.
 
         Args:
           group (int): The group which this applies
           is_on (bool): Whether the device is on.
           level (int): The new device level in the range [0,255].  0 is off.
+          reason (str): Reason string to pass around.
         """
         self._is_on[group - 1] = is_on
 

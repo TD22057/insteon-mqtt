@@ -106,10 +106,23 @@ class IOLinc(topic.StateTopic, topic.SetTopic):
         # Insert IOLinc specific items
         sensor_is_on = kwargs.get('sensor_is_on', None)
         relay_is_on = kwargs.get('relay_is_on', None)
-        if sensor_is_on is not None:
+        button = kwargs.get('button', None)
+        if button is not None and 'is_on' in kwargs:
+            # I am not very happy about having to query back to the device
+            # here.  But this is needed because when first designing this
+            # class I allowed a state topic that produced the states of two
+            # things the sensor and the relay.  Had these been kept in
+            # different topics this would not be needed.  Consider that if
+            # copying this code.
+            if button == 1:
+                sensor_is_on = kwargs['is_on']
+                relay_is_on = self.device.relay_is_on
+            elif button == 2:
+                relay_is_on = kwargs['is_on']
+                sensor_is_on = self.device.sensor_is_on
+
             data["sensor_on"] = 1 if sensor_is_on else 0
             data["sensor_on_str"] = "on" if sensor_is_on else "off"
-        if relay_is_on is not None:
             data["relay_on"] = 1 if relay_is_on else 0
             data["relay_on_str"] = "on" if relay_is_on else "off"
         return data

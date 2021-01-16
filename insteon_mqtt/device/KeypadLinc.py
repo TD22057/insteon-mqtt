@@ -1534,7 +1534,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
                         msg.cmd1)
 
     #-----------------------------------------------------------------------
-    def _cache_state(self, group, is_on, level):
+    def _cache_state(self, group, is_on, level, reason):
         """Cache the State of the Device
 
         Used to help with the KPL unique functions.
@@ -1543,6 +1543,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
           group (int): The group which this applies
           is_on (bool): Whether the device is on.
           level (int): The new device level in the range [0,255].  0 is off.
+          reason (str): Reason string to pass around.
         """
         if is_on is not None:
             self._is_on = is_on
