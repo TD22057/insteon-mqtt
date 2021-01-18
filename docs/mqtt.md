@@ -969,7 +969,7 @@ A sample remote control topic and payload configuration is:
      btn_on_off_payload: '{ "cmd" : "{{json.state}}" }'
 
      # Input dimmer control
-     level_topic: 'insteon/{{address}}/level/1'
+     level_topic: 'insteon/{{address}}/set/1'
      level_payload: >
         { "cmd" : "{{json.state}}",
           "level" : {{json.brightness}} }
