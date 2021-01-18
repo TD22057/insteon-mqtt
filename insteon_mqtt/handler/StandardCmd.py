@@ -66,6 +66,9 @@ class StandardCmd(Base):
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
         """
+        if not self._PLM_sent:
+            # If PLM hasn't sent our message yet, this can't be for us
+            return Msg.UNKNOWN
         # Probably an echo back of our sent message.
         if isinstance(msg, Msg.OutStandard):
             # If the message is the echo back of our message, then continue
@@ -75,6 +78,7 @@ class StandardCmd(Base):
                     LOG.warning("%s PLM NAK response", self.addr)
                 else:
                     LOG.debug("%s got PLM ACK", self.addr)
+                    self._PLM_ACK = True
                 return Msg.CONTINUE
 
             # Message didn't match the expected addr/cmd.
@@ -82,7 +86,7 @@ class StandardCmd(Base):
             return Msg.UNKNOWN
 
         # See if this is the standard message ack/nak we're expecting.
-        elif isinstance(msg, Msg.InpStandard):
+        elif isinstance(msg, Msg.InpStandard) and self._PLM_ACK:
             # If this message matches our address and command, it's probably
             # the ACK we're expecting.
             if msg.from_addr == self.addr and msg.cmd1 == self.cmd:

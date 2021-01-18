@@ -81,6 +81,10 @@ class ModemDbModify(Base):
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
         """
+        if not self._PLM_sent:
+            # If PLM hasn't sent our message yet, this can't be for us
+            return Msg.UNKNOWN
+
         # Not a message for us.
         if not isinstance(msg, Msg.OutAllLinkUpdate):
             return Msg.UNKNOWN
@@ -119,6 +123,8 @@ class ModemDbModify(Base):
                 self.is_retry = True
 
                 # Send the message.
+                self._PLM_sent = False
+                self._PLM_ACK = False
                 self.db.device.send(msg, self)
 
             elif (msg.cmd == Msg.OutAllLinkUpdate.Cmd.ADD_RESPONDER or
@@ -147,6 +153,8 @@ class ModemDbModify(Base):
                 self.is_retry = True
 
                 # Send the message.
+                self._PLM_sent = False
+                self._PLM_ACK = False
                 self.db.device.send(msg, self)
 
             # No matter what, all these messages are finished.
@@ -185,6 +193,9 @@ class ModemDbModify(Base):
         if self.next:
             LOG.info("Sending next modem db update")
             msg, self.entry = self.next.pop(0)
+            # Reset the PLM Flags
+            self._PLM_ACK = False
+            self._PLM_sent = False
             self.db.device.send(msg, self)
 
         # Only run the callback if this is the last message in the chain.

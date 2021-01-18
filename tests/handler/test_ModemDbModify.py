@@ -61,6 +61,8 @@ class Test_ModemDbModify:
         test_db.add_entry(test_entry_dev1_ctrl)
         assert len(test_db) == 1
         handler = Handler.ModemDbModify(test_db, test_entry_dev1_ctrl)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         db_flags = Msg.DbFlags(in_use=True,
                                is_controller=test_entry_dev1_ctrl.is_controller,
                                is_last_rec=False)
@@ -79,6 +81,8 @@ class Test_ModemDbModify:
         test_db.add_entry(test_entry_dev1_resp)
         assert len(test_db) == 2
         handler = Handler.ModemDbModify(test_db, test_entry_dev1_ctrl)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         db_flags = Msg.DbFlags(in_use=True,
                                is_controller=test_entry_dev1_ctrl.is_controller,
                                is_last_rec=False)
@@ -103,10 +107,12 @@ class Test_ModemDbModify:
         handler.msg_received(test_db.device.protocol, msg)
         assert len(test_db) == 1
         # signal second delete ack
+        handler._PLM_sent = True
         handler.msg_received(test_db.device.protocol, msg)
         assert len(test_db) == 0
         # signal final add ack
         msg2.is_ack = True
+        handler._PLM_sent = True
         handler.msg_received(test_db.device.protocol, msg2)
         assert len(test_db) == 1
         assert test_db.entries[0] == test_entry_dev1_ctrl
@@ -116,6 +122,8 @@ class Test_ModemDbModify:
         test_db.add_entry(test_entry_dev1_ctrl)
         assert len(test_db) == 1
         handler = Handler.ModemDbModify(test_db, test_entry_dev1_ctrl)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         db_flags = Msg.DbFlags(in_use=True,
                                is_controller=test_entry_dev1_ctrl.is_controller,
                                is_last_rec=False)
@@ -135,6 +143,8 @@ class Test_ModemDbModify:
         assert len(test_db) == 1
         handler = Handler.ModemDbModify(test_db, test_entry_dev1_ctrl_mod,
                                         existing_entry=test_entry_dev1_ctrl)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         db_flags = Msg.DbFlags(in_use=True,
                                is_controller=test_entry_dev1_ctrl.is_controller,
                                is_last_rec=False)
@@ -151,6 +161,8 @@ class Test_ModemDbModify:
         # add clean
         assert len(test_db) == 0
         handler = Handler.ModemDbModify(test_db, test_entry_dev1_ctrl)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         db_flags = Msg.DbFlags(in_use=True,
                                is_controller=test_entry_dev1_ctrl.is_controller,
                                is_last_rec=False)
@@ -166,6 +178,8 @@ class Test_ModemDbModify:
     def test_add_nak(self, test_db, test_entry_dev1_ctrl):
         assert len(test_db) == 0
         handler = Handler.ModemDbModify(test_db, test_entry_dev1_ctrl)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         db_flags = Msg.DbFlags(in_use=True,
                                is_controller=test_entry_dev1_ctrl.is_controller,
                                is_last_rec=False)
@@ -188,6 +202,8 @@ class Test_ModemDbModify:
         assert len(test_db) == 1
         handler = Handler.ModemDbModify(test_db, test_entry_dev1_ctrl_mod,
                                         existing_entry=test_entry_dev1_ctrl)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         db_flags = Msg.DbFlags(in_use=True,
                                is_controller=test_entry_dev1_ctrl.is_controller,
                                is_last_rec=False)
@@ -207,6 +223,8 @@ class Test_ModemDbModify:
     def test_prevent_loop(self, test_db, test_entry_dev1_ctrl, caplog):
         handler = Handler.ModemDbModify(test_db, test_entry_dev1_ctrl_mod,
                                         existing_entry=test_entry_dev1_ctrl)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         handler.is_retry = True
         db_flags = Msg.DbFlags(in_use=True,
                                is_controller=test_entry_dev1_ctrl.is_controller,
@@ -223,7 +241,71 @@ class Test_ModemDbModify:
     def test_wrong_handler(self, test_db, test_entry_dev1_ctrl):
         handler = Handler.ModemDbModify(test_db, test_entry_dev1_ctrl_mod,
                                         existing_entry=test_entry_dev1_ctrl)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         msg = Msg.OutAllLinkCancel()
         ret = handler.msg_received(test_db.device.protocol, msg)
         # This should fail to prevent infinite loops
         assert ret == Msg.UNKNOWN
+
+def test_plm_ack_sent(test_db, test_entry_dev1_ctrl,
+                      test_entry_dev1_resp):
+    # delete 2nd entry and then re-add the first
+    test_db.add_entry(test_entry_dev1_ctrl)
+    test_db.add_entry(test_entry_dev1_resp)
+    assert len(test_db) == 2
+    handler = Handler.ModemDbModify(test_db, test_entry_dev1_ctrl)
+    db_flags = Msg.DbFlags(in_use=True,
+                           is_controller=test_entry_dev1_ctrl.is_controller,
+                           is_last_rec=False)
+    msg = Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.DELETE,
+                               db_flags,
+                               test_entry_dev1_ctrl.group,
+                               test_entry_dev1_ctrl.addr,
+                               data=None)
+    # Add update to delete 2nd entry
+    handler.add_update(msg, test_entry_dev1_resp)
+    # Then restore the first
+    db_flags = Msg.DbFlags(in_use=True,
+                           is_controller=test_entry_dev1_ctrl.is_controller,
+                           is_last_rec=False)
+    msg2 = Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.ADD_CONTROLLER,
+                                db_flags, test_entry_dev1_ctrl.group,
+                                test_entry_dev1_ctrl.addr,
+                                test_entry_dev1_ctrl.data)
+    handler.add_update(msg2, test_entry_dev1_ctrl)
+
+    # try prior to sent
+    msg.is_ack = True
+    ret = handler.msg_received(test_db.device.protocol, msg)
+    assert ret == Msg.UNKNOWN
+    assert not handler._PLM_sent
+
+    # Signal Sent
+    handler.sending_message(msg)
+    assert handler._PLM_sent
+
+    # signal first delete ack
+    msg.is_ack = True
+    handler.msg_received(test_db.device.protocol, msg)
+    assert len(test_db) == 1
+
+    # signal second delete ack prior to sent
+    ret = handler.msg_received(test_db.device.protocol, msg)
+    assert ret == Msg.UNKNOWN
+
+    # Signal Sent
+    handler.sending_message(msg)
+    assert handler._PLM_sent
+
+    # signal second delete ack
+    handler.msg_received(test_db.device.protocol, msg)
+    assert len(test_db) == 0
+    # signal final add ack
+    # Signal Sent
+    handler.sending_message(msg)
+    assert handler._PLM_sent
+    msg2.is_ack = True
+    handler.msg_received(test_db.device.protocol, msg2)
+    assert len(test_db) == 1
+    assert test_db.entries[0] == test_entry_dev1_ctrl

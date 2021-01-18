@@ -72,6 +72,9 @@ class Patch_Stack():
         self._subscribed_topics = {}
         self.mqtt_obj = None
         self.modem_obj = None
+        # Set to false to disable the PLM from marking all sent messages as
+        # written
+        self.all_written = True
 
         @patch('insteon_mqtt.network.Mqtt.subscribe', self._mqtt_subscribe)
         @patch('insteon_mqtt.config.apply', self._config_apply)
@@ -102,6 +105,8 @@ class Patch_Stack():
         self.modem_obj = modem
         mqtt.load_config(config['mqtt'])
         modem.load_config(config['insteon'])
+        # Mark the initial get addr request as written
+        self._signal_written()
         # Simulate a response to the get_info request to trigger config_step2
         self.write_to_modem('026044851103159E06')
 
@@ -117,8 +122,15 @@ class Patch_Stack():
             self._subscribed_topics[topic](None, None, msg_obj)
 
     def _modem_out(self, msg_bytes, next_write_time):
-        # This captures the messages sent out to the PLM
+        """This captures the messages sent out to the PLM"""
+        if self.all_written:
+            self._signal_written()
         self.written_msgs.append(msg_bytes.hex())
+
+    def _signal_written(self):
+        # All messages sent get marked as written to the PLM
+        out = self.modem_obj.protocol._write_queue[0]
+        out.handler.sending_message(None)
 
     def write_to_modem(self, data):
         """Simulate the modem receiving a message

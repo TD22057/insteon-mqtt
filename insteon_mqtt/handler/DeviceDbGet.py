@@ -76,6 +76,9 @@ class DeviceDbGet(Base):
         # ok in Python>=3.5 but not 3.4.
         from .. import db  # pylint: disable=import-outside-toplevel
 
+        if not self._PLM_sent:
+            # If PLM hasn't sent our message yet, this can't be for us
+            return Msg.UNKNOWN
         # Probably an echo back of our sent message.  See if the message
         # matches the address we sent to and assume it's the ACK/NAK message.
         # These seem to be either extended or standard message so allow for
@@ -84,12 +87,14 @@ class DeviceDbGet(Base):
             if msg.to_addr == self.db.addr and msg.cmd1 == 0x2f:
                 if not msg.is_ack:
                     LOG.warning("%s PLM NAK response", self.db.addr)
+                else:
+                    self._PLM_ACK = True
                 return Msg.CONTINUE
 
             return Msg.UNKNOWN
 
         # Probably an ACK/NAK from the device for our get command.
-        elif isinstance(msg, Msg.InpStandard):
+        elif isinstance(msg, Msg.InpStandard) and self._PLM_ACK:
             # Filter by address and command.
             if msg.from_addr != self.db.addr or msg.cmd1 != 0x2f:
                 return Msg.UNKNOWN
@@ -122,7 +127,7 @@ class DeviceDbGet(Base):
                 return Msg.UNKNOWN
 
         # Process the real reply.  Database reply is an extended messages.
-        elif isinstance(msg, Msg.InpExtended):
+        elif isinstance(msg, Msg.InpExtended) and self._PLM_ACK:
             # Filter by address and command.
             if msg.from_addr != self.db.addr or msg.cmd1 != 0x2f:
                 return Msg.UNKNOWN
