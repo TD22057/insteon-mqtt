@@ -19,7 +19,8 @@ LOG = log.get_logger()
 
 
 #===========================================================================
-class KeypadLinc(functions.SetAndState, functions.Scene, Base):
+class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
+                 Base):
     """Insteon KeypadLinc dimmer/switch device.
 
     This class can be used to model a 6 or 8 button KeypadLinc with dimming
@@ -703,58 +704,6 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
                                          reason=reason)
             msg_handler = handler.StandardCmd(msg, callback, on_done)
             self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def set_backlight(self, level, on_done=None):
-        """Set the device backlight level.
-
-        This changes the level of the LED back light that is used by the
-        device status LED's (dimmer levels, KeypadLinc buttons, etc).
-
-        The default factory level is 0x1f.
-
-        Per page 157 of insteon dev guide range is between 0x11 and 0x7F,
-        however in practice backlight can be incremented from 0x00 to at least
-        0x7f.
-
-        Args:
-          level (int):  The backlight level in the range [0,255]
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-
-        seq = CommandSeq(self, "KeypadLinc set backlight complete", on_done,
-                         name="SetBacklight")
-
-        # First set the backlight on or off depending on level value
-        is_on = level > 0
-        LOG.info("KeypadLinc %s setting backlight to %s", self.label, is_on)
-        cmd = 0x09 if is_on else 0x08
-        msg = Msg.OutExtended.direct(self.addr, 0x20, cmd, bytes([0x00] * 14))
-        callback = self.generic_ack_callback("Backlight on: %s." % is_on)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-        seq.add_msg(msg, msg_handler)
-
-        if is_on:
-            # Second set the level only if on
-            LOG.info("KeypadLinc %s setting backlight to %s", self.label,
-                     level)
-
-            # Extended message data - see Insteon dev guide p156.
-            data = bytes([
-                0x01,   # D1 must be group 0x01
-                0x07,   # D2 set global led brightness
-                level,  # D3 brightness level
-                ] + [0x00] * 11)
-            msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-
-            # Use the standard command handler which will notify us when the
-            # command is ACK'ed.
-            callback = self.generic_ack_callback("Backlight level updated.")
-            msg_handler = handler.StandardCmd(msg, callback, on_done)
-            seq.add_msg(msg, msg_handler)
-
-        seq.run()
 
     #-----------------------------------------------------------------------
     def get_flags(self, on_done=None):

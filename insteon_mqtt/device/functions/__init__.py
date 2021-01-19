@@ -21,3 +21,4 @@ from ..Base import Base
 from .Scene import Scene
 from .SetAndState import SetAndState
 from .State import State
+from .Backlight import Backlight
