@@ -178,7 +178,7 @@ class Test_KPL():
 
     def test_set_backlight(self, test_device):
         # set_backlight(self, level, on_done=None)
-        test_device.set_backlight(0)
+        test_device.set_backlight(backlight=0)
         assert len(test_device.protocol.sent) == 1
         assert test_device.protocol.sent[0].msg.cmd1 == 0x20
         assert test_device.protocol.sent[0].msg.cmd2 == 0x08
@@ -194,7 +194,7 @@ class Test_KPL():
 
         for params in ([1, 0x01], [255, 0xFF], [127, 127]):
             with mock.patch.object(IM.CommandSeq, 'add_msg'):
-                test_device.set_backlight(params[0])
+                test_device.set_backlight(backlight=params[0])
                 args_list = IM.CommandSeq.add_msg.call_args_list
                 assert IM.CommandSeq.add_msg.call_count == 2
                 # Check the first call
@@ -207,7 +207,7 @@ class Test_KPL():
 
         with mock.patch.object(IM.CommandSeq, 'add_msg'):
             # test backlight off
-            test_device.set_backlight(0)
+            test_device.set_backlight(backlight=0)
             args_list = IM.CommandSeq.add_msg.call_args_list
             assert IM.CommandSeq.add_msg.call_count == 1
             # Check the first call
@@ -218,7 +218,7 @@ class Test_KPL():
         # set_ramp_rate(self, rate, on_done=None)
         # Test switch
         test_device.is_dimmer = False
-        test_device.set_ramp_rate(5)
+        test_device.set_ramp_rate(ramp_rate=5)
         assert len(test_device.protocol.sent) == 0
 
         # Test dimmer
@@ -231,7 +231,7 @@ class Test_KPL():
                 ] + [0x00] * 11)
             return data
         for params in ([.1, 0x1f], [540, 0x00], [600, 0x00], [.0001, 0x1c]):
-            test_device.set_ramp_rate(params[0])
+            test_device.set_ramp_rate(ramp_rate=params[0])
             assert len(test_device.protocol.sent) == 1
             assert test_device.protocol.sent[0].msg.cmd1 == 0x2e
             assert test_device.protocol.sent[0].msg.data == level_bytes(params[1])
@@ -241,7 +241,7 @@ class Test_KPL():
         # set_on_level(self, level, on_done=None)
         # Test switch
         test_device.is_dimmer = False
-        test_device.set_on_level(5)
+        test_device.set_on_level(on_level=5)
         assert len(test_device.protocol.sent) == 0
 
         # Test dimmer
@@ -256,14 +256,14 @@ class Test_KPL():
                 ] + [0x00] * 11)
             return data
         for params in ([1, 0x01], [127, 127], [255, 0xFF]):
-            test_device.set_on_level(params[0])
+            test_device.set_on_level(on_level=params[0])
             assert len(test_device.protocol.sent) == 1
             assert test_device.protocol.sent[0].msg.cmd1 == 0x2e
             assert (test_device.protocol.sent[0].msg.data ==
                     level_bytes(params[1]))
             test_device.protocol.clear()
 
-        test_device.set_on_level(64)
+        test_device.set_on_level(on_level=64)
 
         # Fake having completed the set_on_level(64) request
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
@@ -323,7 +323,7 @@ class Test_KPL():
                 args_list = IM.CommandSeq.add.call_args_list
                 assert IM.CommandSeq.add.call_count == 1
                 assert args_list[0][0][0] == params[1]
-                assert args_list[0][0][1] == params[2]
+                assert args_list[0][1] == params[0]
 
     def test_handle_refresh_state(self, test_device):
         # handle_refresh_state(self, msg, on_done):

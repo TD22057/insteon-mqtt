@@ -81,7 +81,6 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
         # Remote (mqtt) commands mapped to methods calls.  Add to the base
         # class defined commands.
         self.cmd_map.update({
-            'set_flags' : self.set_flags,
             'set_button_led' : self.set_button_led,
             'set_load_attached' : self.set_load_attached,
             'set_led_follow_mask' : self.set_led_follow_mask,
@@ -131,6 +130,16 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
 
         # List of responder group numbers
         self.responder_groups = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+        # Define the flags handled by set_flags()
+        self.set_flags_map.update({'on_level': self.set_on_level,
+                                   'ramp_rate': self.set_ramp_rate,
+                                   'group': None,
+                                   'load_attached': self.set_load_attached,
+                                   'follow_mask': self.set_led_follow_mask,
+                                   'off_mask': self.set_led_off_mask,
+                                   'signal_bits': self.set_signal_bits,
+                                   'nontoggle_bits': self.set_nontoggle_bits})
 
     #-----------------------------------------------------------------------
     @property
@@ -770,7 +779,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
         on_done(True, "Operation complete", msg.data[5])
 
     #-----------------------------------------------------------------------
-    def set_on_level(self, level, on_done=None):
+    def set_on_level(self, on_done=None, **kwargs):
         """Set the device default on level.
 
         This changes the dimmer level the device will go to when the on
@@ -785,6 +794,13 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
         if not self.is_dimmer:
             LOG.error("KeypadLinc %s switch doesn't support setting on level",
                       self.addr)
+            return
+
+        # Check for valid input
+        level = util.input_byte(kwargs, 'on_level')
+        if level is None:
+            LOG.error("Invalid on level.")
+            on_done(False, 'Invalid on level.', None)
             return
 
         LOG.info("KeypadLinc %s setting on level to %s", self.label, level)
@@ -806,7 +822,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set_ramp_rate(self, rate, on_done=None):
+    def set_ramp_rate(self, on_done=None, **kwargs):
         """Set the device default ramp rate.
 
         This changes the dimmer default ramp rate of how quickly the it
@@ -821,6 +837,13 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
         if not self.is_dimmer:
             LOG.error("KeypadLinc %s switch doesn't support setting ramp_rate",
                       self.addr)
+            return
+
+        # Check for valid input
+        rate = util.input_float(kwargs, 'ramp_rate')
+        if rate is None:
+            LOG.error("Invalid ramp rate.")
+            on_done(False, 'Invalid ramp rate.', None)
             return
 
         LOG.info("Dimmer %s setting ramp rate to %s", self.label, rate)
@@ -847,93 +870,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set_flags(self, on_done, **kwargs):
-        """Set internal device flags.
-
-        This command is used to change internal device flags and states.
-        Valid inputs are:
-
-        - backlight=level:  Change the backlight LED level (0-255).  See
-          set_backlight() for details.
-
-        - on_level=level: Change the default device on level (0-255) See
-          set_on_level for details.
-
-        Args:
-          kwargs: Key=value pairs of the flags to change.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("KeypadLinc %s cmd: set flags", self.label)
-
-        # Check the input flags to make sure only ones we can understand were
-        # passed in.
-        FLAG_BACKLIGHT = "backlight"
-        FLAG_GROUP = "group"
-        FLAG_ON_LEVEL = "on_level"
-        FLAG_RAMP_RATE = "ramp_rate"
-        FLAG_LOAD_ATTACH = "load_attached"
-        FLAG_FOLLOW_MASK = "follow_mask"
-        FLAG_OFF_MASK = "off_mask"
-        FLAG_SIGNAL_BITS = "signal_bits"
-        FLAG_NONTOGGLE_BITS = "nontoggle_bits"
-        flags = set([FLAG_BACKLIGHT, FLAG_LOAD_ATTACH, FLAG_FOLLOW_MASK,
-                     FLAG_SIGNAL_BITS, FLAG_NONTOGGLE_BITS, FLAG_OFF_MASK,
-                     FLAG_GROUP, FLAG_ON_LEVEL, FLAG_RAMP_RATE])
-        unknown = set(kwargs.keys()).difference(flags)
-        if unknown:
-            LOG.error("Unknown KeypadLinc flags input: %s.\n Valid "
-                      "flags are: %s", unknown, flags)
-
-        # Start a command sequence so we can call the flag methods in series.
-        seq = CommandSeq(self, "KeypadLinc set_flags complete",
-                         on_done, name="SetFlags")
-
-        # Get the group if it was set.
-        group = util.input_integer(kwargs, FLAG_GROUP)
-
-        if FLAG_BACKLIGHT in kwargs:
-            backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
-            seq.add(self.set_backlight, backlight)
-
-        if FLAG_LOAD_ATTACH in kwargs:
-            load_attached = util.input_bool(kwargs, FLAG_LOAD_ATTACH)
-            seq.add(self.set_load_attached, load_attached)
-
-        if FLAG_ON_LEVEL in kwargs:
-            on_level = util.input_byte(kwargs, FLAG_ON_LEVEL)
-            seq.add(self.set_on_level, on_level)
-
-        if FLAG_RAMP_RATE in kwargs:
-            rate = util.input_float(kwargs, FLAG_RAMP_RATE)
-            seq.add(self.set_ramp_rate, rate)
-
-        if FLAG_FOLLOW_MASK in kwargs:
-            if group is None:
-                raise Exception("follow_mask requires group=<NUM> to be input")
-
-            mask = util.input_byte(kwargs, FLAG_FOLLOW_MASK)
-            seq.add(self.set_led_follow_mask, group, mask)
-
-        if FLAG_OFF_MASK in kwargs:
-            if group is None:
-                raise Exception("off_mask requires group=<NUM> to be input")
-
-            mask = util.input_byte(kwargs, FLAG_OFF_MASK)
-            seq.add(self.set_led_off_mask, group, mask)
-
-        if FLAG_SIGNAL_BITS in kwargs:
-            bits = util.input_byte(kwargs, FLAG_SIGNAL_BITS)
-            seq.add(self.set_signal_bits, bits)
-
-        if FLAG_NONTOGGLE_BITS in kwargs:
-            bits = util.input_byte(kwargs, FLAG_NONTOGGLE_BITS)
-            seq.add(self.set_nontoggle_bits, bits)
-
-        seq.run()
-
-    #-----------------------------------------------------------------------
-    def set_led_follow_mask(self, group, mask, on_done=None):
+    def set_led_follow_mask(self, on_done=None, **kwargs):
         """Set the LED follow mask.
 
         The LED follow mask is a bitmask defined for each group (button),
@@ -954,6 +891,18 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
                input group.
         """
         on_done = util.make_callback(on_done)
+
+        # Check for valid input
+        group = util.input_byte(kwargs, 'group')
+        if group is None:
+            LOG.error("follow_mask requires group=<NUM> to be input")
+            on_done(False, 'Invalid group specified.', None)
+            return
+        mask = util.input_byte(kwargs, 'follow_mask')
+        if mask is None:
+            LOG.error("Invalid follow mask.")
+            on_done(False, 'Invalid follow mask.', None)
+            return
 
         task = "button {} follow mask: {:08b}".format(group, mask)
         LOG.info("KeypadLinc %s setting %s", self.addr, task)
@@ -991,7 +940,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
         # TODO: get button follow masks and save in db as part of refresh.
 
     #-----------------------------------------------------------------------
-    def set_led_off_mask(self, group, mask, on_done=None):
+    def set_led_off_mask(self, on_done=None, **kwargs):
         """Set the LED off mask.
 
         The LED off mask is a bitmask defined for each group (button).  The
@@ -1013,6 +962,18 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
                button is pressed.
         """
         on_done = util.make_callback(on_done)
+
+        # Check for valid input
+        group = util.input_byte(kwargs, 'group')
+        if group is None:
+            LOG.error("off_mask requires group=<NUM> to be input")
+            on_done(False, 'Invalid group specified.', None)
+            return
+        mask = util.input_byte(kwargs, 'off_mask')
+        if mask is None:
+            LOG.error("Invalid off mask.")
+            on_done(False, 'Invalid off mask.', None)
+            return
 
         task = "button {} off mask: {:08b}".format(group, mask)
         LOG.info("KeypadLinc %s setting %s", self.addr, task)
@@ -1050,7 +1011,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
         # TODO: get button off masks and save in db as part of refresh.
 
     #-----------------------------------------------------------------------
-    def set_signal_bits(self, signal_bits, on_done=None):
+    def set_signal_bits(self, on_done=None, **kwargs):
         """Set which signal is emitted for non-toggle buttons.
 
         This is a bit flag set (one bit per button) that is used when a
@@ -1064,6 +1025,13 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+        # Check for valid input
+        signal_bits = util.input_byte(kwargs, 'signal_bits')
+        if signal_bits is None:
+            LOG.error("Invalid signal bits.")
+            on_done(False, 'Invalid signal bits.', None)
+            return
+
         task = "signal bits: {:08b}".format(signal_bits)
         LOG.info("KeypadLinc %s setting %s", self.label, task)
 
@@ -1083,7 +1051,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set_nontoggle_bits(self, nontoggle_bits, on_done=None):
+    def set_nontoggle_bits(self, on_done=None, **kwargs):
         """Set a button to be a toggle or non-toggle button.
 
         If a bit is zero, it's a toggle button which is the normal behavior.
@@ -1100,6 +1068,13 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+        # Check for valid input
+        nontoggle_bits = util.input_byte(kwargs, 'nontoggle_bits')
+        if nontoggle_bits is None:
+            LOG.error("Invalid nontoggle bits.")
+            on_done(False, 'Invalid nontoggle bits.', None)
+            return
+
         task = "nontoggle bits: {:08b}".format(nontoggle_bits)
         LOG.info("KeypadLinc %s setting %s", self.label, task)
 

@@ -130,6 +130,7 @@ class Base:
             'linking' : self.linking,
             'join': self.join,
             'pair' : self.pair,
+            'set_flags' : self.set_flags,
             'get_flags' : self.get_flags,
             'get_engine' : self.get_engine,
             'get_model' : self.get_model,
@@ -149,6 +150,15 @@ class Base:
         # modem.  Generally if a device has a responder only group, it does
         # not need to be paired
         self.group_map = {}
+
+        # Define the flags handled by set_flags()
+        # Keys are the flag names in lower case.  The value should be the
+        # function to call.  The signature of the function is
+        # function(on_done=None, **kwargs).  Each function will receive all
+        # flags specified in the call and should just ignore those that are
+        # unrelated.  Flags that are used as part of another flag should have
+        # a key of None.
+        self.set_flags_map = {}
 
     #-----------------------------------------------------------------------
     def clear_db_config(self):
@@ -384,6 +394,48 @@ class Base:
         # Finally start the sequence running.  This will return so the
         # network event loop can process everything and the on_done callbacks
         # will chain everything together.
+        seq.run()
+
+    #-----------------------------------------------------------------------
+    def set_flags(self, on_done, **kwargs):
+        """Set internal device flags.
+
+        This command is used to change internal device flags and states.
+        Valid inputs are:
+
+        - on_level=level: Change the default device on level (0-255) See
+          set_on_level for details.
+
+        Args:
+          kwargs: Key=value pairs of the flags to change.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.info("Device %s cmd: set flags", self.label)
+
+        # force user input flags to lower
+        kwargs = {k.lower(): v for k, v in kwargs.items()}
+
+        # Check the input flags to make sure only ones we can understand were
+        # passed in.
+        flags = set(self.set_flags_map.keys())
+        unknown = set(kwargs.keys()).difference(flags)
+        if unknown:
+            LOG.error("Unknown set flags input: %s.\n Valid flags "
+                      "are: %s", unknown, flags)
+
+        # Remove Unknowns
+        for bad_key in unknown:
+            del kwargs[bad_key]
+
+        # Start a command sequence so we can call the flag methods in series.
+        seq = CommandSeq(self, "Device set_flags complete", on_done,
+                         name="DevSetFlags")
+
+        for flag in kwargs:
+            if self.set_flags_map[flag] is not None:
+                seq.add(self.set_flags_map[flag], **kwargs)
+
         seq.run()
 
     #-----------------------------------------------------------------------

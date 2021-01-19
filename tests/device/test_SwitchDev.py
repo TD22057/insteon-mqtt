@@ -81,8 +81,7 @@ class Test_Base_Config():
             mocked.assert_has_calls(calls)
 
     def test_set_backlight(self, test_device):
-        # set_backlight(self, level, on_done=None)
-        test_device.set_backlight(0)
+        test_device.set_backlight(backlight=0)
         assert len(test_device.protocol.sent) == 1
         assert test_device.protocol.sent[0].msg.cmd1 == 0x20
         assert test_device.protocol.sent[0].msg.cmd2 == 0x08
@@ -98,7 +97,7 @@ class Test_Base_Config():
 
         for params in ([1, 0x01], [255, 0xFF], [127, 127]):
             with mock.patch.object(IM.CommandSeq, 'add_msg'):
-                test_device.set_backlight(params[0])
+                test_device.set_backlight(backlight=params[0])
                 args_list = IM.CommandSeq.add_msg.call_args_list
                 assert IM.CommandSeq.add_msg.call_count == 2
                 # Check the first call
@@ -111,9 +110,26 @@ class Test_Base_Config():
 
         with mock.patch.object(IM.CommandSeq, 'add_msg'):
             # test backlight off
-            test_device.set_backlight(0)
+            test_device.set_backlight(backlight=0)
             args_list = IM.CommandSeq.add_msg.call_args_list
             assert IM.CommandSeq.add_msg.call_count == 1
             # Check the first call
             assert args_list[0][0][0].cmd1 == 0x20
             assert args_list[0][0][0].cmd2 == 0x08
+
+    def test_set_backlight_bad(self, test_device, caplog):
+        def on_done(success, msg, data):
+            assert not success
+        test_device.set_backlight(backlight='badstring', on_done=on_done)
+        assert 'Invalid backlight level' in caplog.text
+
+    def test_set_flags(self, test_device):
+        test_device.set_flags(None, backlight=0)
+        assert len(test_device.protocol.sent) == 1
+        assert test_device.protocol.sent[0].msg.cmd1 == 0x20
+        assert test_device.protocol.sent[0].msg.cmd2 == 0x08
+
+    def test_set_flags_bad(self, test_device, caplog):
+        test_device.set_flags(None, bad=0)
+        assert len(test_device.protocol.sent) == 0
+        assert 'Unknown set flags input' in caplog.text

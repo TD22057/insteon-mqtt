@@ -7,7 +7,9 @@ from ..Base import Base
 from ... import handler
 from ... import log
 from ... import message as Msg
+from ... import util
 from ...CommandSeq import CommandSeq
+
 
 LOG = log.get_logger()
 
@@ -31,11 +33,11 @@ class Backlight(Base):
         """
         super().__init__(protocol, modem, address, name)
 
-        # At some point we should make a map of flags and the functions that
-        # handle them.
+        # Define the flags handled by set_flags()
+        self.set_flags_map.update({'backlight': self.set_backlight})
 
     #-----------------------------------------------------------------------
-    def set_backlight(self, level, on_done=None):
+    def set_backlight(self, on_done=None, **kwargs):
         """Set the device backlight level.
 
         This changes the level of the LED back light that is used by the
@@ -52,6 +54,13 @@ class Backlight(Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+        # Check for valid input
+        level = util.input_byte(kwargs, 'backlight')
+        if level is None:
+            LOG.error("Invalid backlight level.")
+            on_done(False, 'Invalid backlight level.', None)
+            return
+
         seq = CommandSeq(self, "Device set backlight complete", on_done,
                          name="SetBacklight")
 

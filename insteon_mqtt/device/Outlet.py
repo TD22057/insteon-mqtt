@@ -12,7 +12,6 @@ from .. import log
 from .. import message as Msg
 from .. import on_off
 from ..Signal import Signal
-from .. import util
 
 LOG = log.get_logger()
 
@@ -56,9 +55,8 @@ class Outlet(functions.SetAndState, functions.Backlight, Base):
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
-        self.cmd_map.update({
-            'set_flags' : self.set_flags,
-            })
+        # self.cmd_map.update({
+        #     })
 
         # NOTE: the outlet does NOT include the group in the ACK of an on/off
         # command.  So there is no way to tell which outlet is being ACK'ed
@@ -187,42 +185,6 @@ class Outlet(functions.SetAndState, functions.Backlight, Base):
             # Top outlet uses a regular on command pass to SetAndState
             super().off(group=group, mode=mode, reason=reason,
                         transition=transition, on_done=on_done)
-
-    #-----------------------------------------------------------------------
-    def set_flags(self, on_done, **kwargs):
-        """Set internal device flags.
-
-        This command is used to change internal device flags and states.
-        Valid inputs are:
-
-        - backlight=level:  Change the backlight LED level (0-255).  See
-          set_backlight() for details.
-
-        Args:
-          kwargs: Key=value pairs of the flags to change.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Outlet %s cmd: set flags", self.label)
-
-        # Check the input flags to make sure only ones we can understand were
-        # passed in.
-        FLAG_BACKLIGHT = "backlight"
-        flags = set([FLAG_BACKLIGHT])
-        unknown = set(kwargs.keys()).difference(flags)
-        if unknown:
-            LOG.error("Unknown Outlet flags input: %s.\n Valid flags "
-                      "are: %s", unknown, flags)
-
-        # Start a command sequence so we can call the flag methods in series.
-        seq = CommandSeq(self, "Outlet set_flags complete", on_done,
-                         name="DevSetFlags")
-
-        if FLAG_BACKLIGHT in kwargs:
-            backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
-            seq.add(self.set_backlight, backlight)
-
-        seq.run()
 
     #-----------------------------------------------------------------------
     def handle_on_off(self, msg):

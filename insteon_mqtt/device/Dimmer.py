@@ -75,6 +75,10 @@ class Dimmer(functions.Scene, functions.SetAndState, functions.Backlight,
         # for broadcast messages from this group
         self.group_map.update({0x01: self.handle_on_off})
 
+        # Define the flags handled by set_flags()
+        self.set_flags_map.update({'on_level': self.set_on_level,
+                                   'ramp_rate': self.set_ramp_rate})
+
     #-----------------------------------------------------------------------
     def cmd_on_values(self, mode, level, transition, group):
         """Calculate Cmd Values for On
@@ -327,7 +331,7 @@ class Dimmer(functions.Scene, functions.SetAndState, functions.Backlight,
         on_done(True, "Operation complete", msg.data[5])
 
     #-----------------------------------------------------------------------
-    def set_on_level(self, level, on_done=None):
+    def set_on_level(self, on_done=None, **kwargs):
         """Set the device default on level.
 
         This changes the dimmer level the device will go to when the on
@@ -339,6 +343,13 @@ class Dimmer(functions.Scene, functions.SetAndState, functions.Backlight,
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+        # Check for valid input
+        level = util.input_byte(kwargs, 'on_level')
+        if level is None:
+            LOG.error("Invalid on level.")
+            on_done(False, 'Invalid on level.', None)
+            return
+
         LOG.info("Dimmer %s setting on level to %s", self.label, level)
 
         # Extended message data - see Insteon dev guide p156.
@@ -357,7 +368,7 @@ class Dimmer(functions.Scene, functions.SetAndState, functions.Backlight,
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def set_ramp_rate(self, rate, on_done=None):
+    def set_ramp_rate(self, on_done=None, **kwargs):
         """Set the device default ramp rate.
 
         This changes the dimmer default ramp rate of how quickly it will
@@ -369,6 +380,13 @@ class Dimmer(functions.Scene, functions.SetAndState, functions.Backlight,
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+        # Check for valid input
+        rate = util.input_float(kwargs, 'ramp_rate')
+        if rate is None:
+            LOG.error("Invalid ramp rate.")
+            on_done(False, 'Invalid ramp rate.', None)
+            return
+
         LOG.info("Dimmer %s setting ramp rate to %s", self.label, rate)
 
         data_3 = 0x1c  # the default ramp rate is .5
@@ -391,55 +409,6 @@ class Dimmer(functions.Scene, functions.SetAndState, functions.Backlight,
         callback = self.generic_ack_callback("Button ramp rate updated")
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def set_flags(self, on_done, **kwargs):
-        """Set internal device flags.
-
-        This command is used to change internal device flags and states.
-        Valid inputs are:
-
-        - backlight=level: Change the backlight LED level (0-255).  See
-          set_backlight() for details.
-
-        - on_level=level: Change the default device on level (0-255) See
-          set_on_level for details.
-
-        Args:
-          kwargs: Key=value pairs of the flags to change.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Dimmer %s cmd: set flags", self.label)
-
-        # Check the input flags to make sure only ones we can understand were
-        # passed in.
-        FLAG_BACKLIGHT = "backlight"
-        FLAG_ON_LEVEL = "on_level"
-        FLAG_RAMP_RATE = "ramp_rate"
-        flags = set([FLAG_BACKLIGHT, FLAG_ON_LEVEL, FLAG_RAMP_RATE])
-        unknown = set(kwargs.keys()).difference(flags)
-        if unknown:
-            LOG.error("Unknown Dimmer flags input: %s.\n Valid flags "
-                      "are: %s", unknown, flags)
-
-        # Start a command sequence so we can call the flag methods in series.
-        seq = CommandSeq(self, "Dimmer set_flags complete", on_done,
-                         name="SetFlags")
-
-        if FLAG_BACKLIGHT in kwargs:
-            backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
-            seq.add(self.set_backlight, backlight)
-
-        if FLAG_ON_LEVEL in kwargs:
-            on_level = util.input_byte(kwargs, FLAG_ON_LEVEL)
-            seq.add(self.set_on_level, on_level)
-
-        if FLAG_RAMP_RATE in kwargs:
-            rate = util.input_float(kwargs, FLAG_RAMP_RATE)
-            seq.add(self.set_ramp_rate, rate)
-
-        seq.run()
 
     #-----------------------------------------------------------------------
     def handle_on_level(self, msg, on_done, level):
