@@ -2,6 +2,10 @@
 
 ## [0.7.6]
 
+A few new features and some significant bug fixes.  A significant refactor of
+the underlying codebase for better stability and feature support. Likely one
+more refactor release still to come.
+
 ### Additions
 
 - Enable passing ramp_rate with set and level commands.  Currently only
