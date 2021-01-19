@@ -291,8 +291,8 @@ class Motion(BatterySensor):
             value,  # D3 = the flag value
             ] + [0x00] * 11)
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-        msg_handler = handler.StandardCmd(msg, self.handle_ext_cmd,
-                                          on_done)
+        callback = self.generic_ack_callback("Falgs updated.")
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -361,13 +361,6 @@ class Motion(BatterySensor):
         on_done(True, "Operation complete", msg.data[5])
 
     #-----------------------------------------------------------------------
-    def handle_ext_cmd(self, msg, on_done):
-        """Handle replies to the set_flags command.
-        Nothing to do, any NAK of failure is caught by the message handler
-        """
-        on_done(True, "Operation complete", None)
-
-    #-----------------------------------------------------------------------
     def _set_light_sens(self, sensitivity, on_done):
         """Change the light sensitivity amount.
 
@@ -382,8 +375,8 @@ class Motion(BatterySensor):
             int(sensitivity),  # D3 = the sensitivity value
             ] + [0x00] * 11)
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-        msg_handler = handler.StandardCmd(msg, self.handle_ext_cmd,
-                                          on_done)
+        callback = self.generic_ack_callback("Light sensitivity updated.")
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -429,8 +422,8 @@ class Motion(BatterySensor):
             timeout,  # D3 = the sensitivity value
             ] + [0x00] * 11)
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-        msg_handler = handler.StandardCmd(msg, self.handle_ext_cmd,
-                                          on_done)
+        callback = self.generic_ack_callback("Motion timeout updated.")
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

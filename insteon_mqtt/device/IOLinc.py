@@ -380,8 +380,8 @@ class IOLinc(functions.SetAndState, Base):
                 for cmd2 in (type_a, type_b, type_c):
                     msg = Msg.OutExtended.direct(self.addr, 0x20, cmd2,
                                                  bytes([0x00] * 14))
-                    msg_handler = handler.StandardCmd(msg,
-                                                      self.handle_set_flags)
+                    callback = self.generic_ack_callback("Flags updated.")
+                    msg_handler = handler.StandardCmd(msg, callback)
                     seq.add_msg(msg, msg_handler)
 
             elif flag == 'trigger_reverse':
@@ -396,7 +396,8 @@ class IOLinc(functions.SetAndState, Base):
 
                 msg = Msg.OutExtended.direct(self.addr, 0x20, cmd2,
                                              bytes([0x00] * 14))
-                msg_handler = handler.StandardCmd(msg, self.handle_set_flags)
+                callback = self.generic_ack_callback("Flags updated.")
+                msg_handler = handler.StandardCmd(msg, callback)
                 seq.add_msg(msg, msg_handler)
 
             elif flag == 'relay_linked':
@@ -411,7 +412,8 @@ class IOLinc(functions.SetAndState, Base):
 
                 msg = Msg.OutExtended.direct(self.addr, 0x20, cmd2,
                                              bytes([0x00] * 14))
-                msg_handler = handler.StandardCmd(msg, self.handle_set_flags)
+                callback = self.generic_ack_callback("Flags updated.")
+                msg_handler = handler.StandardCmd(msg, callback)
                 seq.add_msg(msg, msg_handler)
 
             elif flag == 'momentary_secs':
@@ -436,14 +438,16 @@ class IOLinc(functions.SetAndState, Base):
                 msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00,
                                              bytes([0x00, 0x06, time_val] +
                                                    [0x00] * 11))
-                msg_handler = handler.StandardCmd(msg, self.handle_set_flags)
+                callback = self.generic_ack_callback("Flags updated.")
+                msg_handler = handler.StandardCmd(msg, callback)
                 seq.add_msg(msg, msg_handler)
 
                 # set the multiple
                 msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00,
                                              bytes([0x00, 0x07, multiple, ] +
                                                    [0x00] * 11))
-                msg_handler = handler.StandardCmd(msg, self.handle_set_flags)
+                callback = self.generic_ack_callback("Flags updated.")
+                msg_handler = handler.StandardCmd(msg, callback)
                 seq.add_msg(msg, msg_handler)
 
                 # Save this to the device metadata
@@ -624,19 +628,6 @@ class IOLinc(functions.SetAndState, Base):
         self.momentary_secs = seconds
         LOG.ui("Momentary Secs : %s", seconds)
         on_done(True, "Operation complete", None)
-
-    #-----------------------------------------------------------------------
-    def handle_set_flags(self, msg, on_done):
-        """Callback for handling flag change responses.
-
-        This is called when we get a response to the set_flags command.
-
-        Args:
-          msg (message.InpStandard):  The refresh message reply.  The msg.cmd2
-          field represents the flag that was set.
-        """
-        LOG.info("IOLinc Set Flag=%s", msg.cmd2)
-        on_done(True, "Operation complete", msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_refresh_relay(self, msg):

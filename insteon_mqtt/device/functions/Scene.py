@@ -125,6 +125,6 @@ class Scene(Base):
                 else:
                     self.broadcast_reason = on_off.REASON_DEVICE
             on_done(success, msg, data)
-        msg_handler = handler.StandardCmd(msg, self.handle_generic_ack,
-                                          our_on_done)
+        callback = self.generic_ack_callback("Device acknowledged scene cmd.")
+        msg_handler = handler.StandardCmd(msg, callback, our_on_done)
         self.send(msg, msg_handler)

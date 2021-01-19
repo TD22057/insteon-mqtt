@@ -287,7 +287,8 @@ class Dimmer(functions.Scene, functions.SetAndState, Base):
         LOG.info("Dimmer %s setting backlight to %s", self.label, is_on)
         cmd = 0x09 if is_on else 0x08
         msg = Msg.OutExtended.direct(self.addr, 0x20, cmd, bytes([0x00] * 14))
-        msg_handler = handler.StandardCmd(msg, self.handle_backlight, on_done)
+        callback = self.generic_ack_callback("Backlight is on: %s" % is_on)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
         seq.add_msg(msg, msg_handler)
 
         if is_on:
@@ -301,8 +302,8 @@ class Dimmer(functions.Scene, functions.SetAndState, Base):
                 ] + [0x00] * 11)
 
             msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-            msg_handler = handler.StandardCmd(msg, self.handle_backlight,
-                                              on_done)
+            callback = self.generic_ack_callback("Backlight level updated.")
+            msg_handler = handler.StandardCmd(msg, callback, on_done)
             seq.add_msg(msg, msg_handler)
 
         seq.run()
@@ -433,7 +434,8 @@ class Dimmer(functions.Scene, functions.SetAndState, Base):
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        msg_handler = handler.StandardCmd(msg, self.handle_ramp_rate, on_done)
+        callback = self.generic_ack_callback("Button ramp rate updated")
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -486,21 +488,6 @@ class Dimmer(functions.Scene, functions.SetAndState, Base):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def handle_backlight(self, msg, on_done):
-        """Callback for handling set_backlight() responses.
-
-        This is called when we get a response to the set_backlight() command.
-        We don't need to do anything - just call the on_done callback with
-        the status.
-
-        Args:
-          msg (InpStandard): The response message from the command.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        on_done(True, "Backlight level updated", None)
-
-    #-----------------------------------------------------------------------
     def handle_on_level(self, msg, on_done, level):
         """Callback for handling set_on_level() responses.
 
@@ -515,24 +502,6 @@ class Dimmer(functions.Scene, functions.SetAndState, Base):
         """
         self.db.set_meta('on_level', level)
         on_done(True, "Button on level updated", None)
-
-    #-----------------------------------------------------------------------
-    def handle_ramp_rate(self, msg, on_done):
-        """Callback for handling set_ramp_rate() responses.
-
-        This is called when we get a response to the set_ramp_rate() command.
-        We don't need to do anything - just call the on_done callback with
-        the status.
-
-        Args:
-          msg (InpStandard): The response message from the command.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            on_done(True, "Button ramp rate updated", None)
-        else:
-            on_done(False, "Button ramp rate failed", None)
 
     #-----------------------------------------------------------------------
     def get_on_level(self):

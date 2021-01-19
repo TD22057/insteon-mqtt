@@ -86,7 +86,8 @@ class Switch(functions.SetAndState, functions.Scene, Base):
         LOG.info("Switch %s setting backlight to %s", self.label, is_on)
         cmd = 0x09 if is_on else 0x08
         msg = Msg.OutExtended.direct(self.addr, 0x20, cmd, bytes([0x00] * 14))
-        msg_handler = handler.StandardCmd(msg, self.handle_backlight, on_done)
+        callback = self.generic_ack_callback("Backlight set on: %s" % is_on)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
         seq.add_msg(msg, msg_handler)
 
         if is_on:
@@ -101,7 +102,8 @@ class Switch(functions.SetAndState, functions.Scene, Base):
                 ] + [0x00] * 11)
 
             msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-            msg_handler = handler.StandardCmd(msg, self.handle_backlight,
+            callback = self.generic_ack_callback("Backlight level updated")
+            msg_handler = handler.StandardCmd(msg, callback,
                                               on_done)
             seq.add_msg(msg, msg_handler)
 
@@ -142,21 +144,6 @@ class Switch(functions.SetAndState, functions.Scene, Base):
             seq.add(self.set_backlight, backlight)
 
         seq.run()
-
-    #-----------------------------------------------------------------------
-    def handle_backlight(self, msg, on_done):
-        """Callback for handling set_backlight() responses.
-
-        This is called when we get a response to the set_backlight() command.
-        We don't need to do anything - just call the on_done callback with
-        the status.
-
-        Args:
-          msg (InpStandard):  The response message from the command.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        on_done(True, "Backlight level updated", None)
 
     #-----------------------------------------------------------------------
     def handle_on_off(self, msg):

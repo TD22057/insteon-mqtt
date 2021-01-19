@@ -731,7 +731,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
         LOG.info("KeypadLinc %s setting backlight to %s", self.label, is_on)
         cmd = 0x09 if is_on else 0x08
         msg = Msg.OutExtended.direct(self.addr, 0x20, cmd, bytes([0x00] * 14))
-        callback = functools.partial(self.handle_ack_task, task="Backlight on")
+        callback = self.generic_ack_callback("Backlight on: %s." % is_on)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         seq.add_msg(msg, msg_handler)
 
@@ -750,8 +750,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
 
             # Use the standard command handler which will notify us when the
             # command is ACK'ed.
-            callback = functools.partial(self.handle_ack_task,
-                                         task="Backlight level")
+            callback = self.generic_ack_callback("Backlight level updated.")
             msg_handler = handler.StandardCmd(msg, callback, on_done)
             seq.add_msg(msg, msg_handler)
 
@@ -894,8 +893,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        callback = functools.partial(self.handle_ack_task,
-                                     task="Button ramp rate")
+        callback = self.generic_ack_callback("Button ramp rate updated.")
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
@@ -1035,7 +1033,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        callback = functools.partial(self.handle_ack_task, task=task)
+        callback = self.generic_ack_callback(task)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
@@ -1094,7 +1092,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        callback = functools.partial(self.handle_ack_task, task=task)
+        callback = self.generic_ack_callback(task)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
@@ -1131,7 +1129,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        callback = functools.partial(self.handle_ack_task, task=task)
+        callback = self.generic_ack_callback(task)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
@@ -1167,24 +1165,9 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        callback = functools.partial(self.handle_ack_task, task=task)
+        callback = self.generic_ack_callback(task)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def handle_ack_task(self, msg, on_done, task=""):
-        """Callback for handling standard ack/nak.
-
-        Other that reporting the result, no other action is taken.  It's used
-        for commands that don't need any more processing.
-
-        Args:
-          msg (InpStandard):  The response message from the command.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-          task (str):  The message to report.
-        """
-        on_done(True, "%s updated" % task, None)
 
     #-----------------------------------------------------------------------
     def handle_on_level(self, msg, on_done, level):

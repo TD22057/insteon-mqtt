@@ -268,15 +268,6 @@ class Test_Handles():
         test_iolinc.handle_get_momentary(msg, lambda success, msg, cmd: True)
         assert test_iolinc.momentary_secs == seconds
 
-    def test_handle_set_flags(self, test_iolinc):
-        # Dummy Test, nothing to do here
-        to_addr = test_iolinc.addr
-        from_addr = IM.Address(0x04, 0x05, 0x06)
-        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
-        msg = IM.message.InpStandard(from_addr, to_addr, flags, 0x00, 0x00)
-        test_iolinc.handle_set_flags(msg, lambda success, msg, cmd: True)
-        assert True == True
-
     @pytest.mark.parametrize("cmd2,expected", [
         (0x00, False),
         (0Xff, True),

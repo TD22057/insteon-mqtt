@@ -419,8 +419,8 @@ class Thermostat(Base):
         """
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00,
                                      bytes([0x00] + [0x08] + [0x00] * 12))
-        msg_handler = handler.StandardCmd(msg, self.handle_generic_ack,
-                                          on_done, num_retry=3)
+        callback = self.generic_ack_callback("Thermostate broadcast enabled")
+        msg_handler = handler.StandardCmd(msg, callback, on_done, num_retry=3)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

@@ -4,6 +4,7 @@
 #
 #===========================================================================
 import json
+import functools
 import os.path
 from .MsgHistory import MsgHistory
 from ..Address import Address
@@ -343,7 +344,8 @@ class Base:
         # see, there is no way to cancel it.
         msg = Msg.OutExtended.direct(self.addr, 0x09, group,
                                      bytes([0x00] * 14))
-        msg_handler = handler.StandardCmd(msg, self.handle_linking, on_done)
+        callback = self.generic_ack_callback("Entered linking mode")
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -1083,7 +1085,17 @@ class Base:
                         self.label, msg.group)
 
     #-----------------------------------------------------------------------
-    def handle_generic_ack(self, msg, on_done=None):
+    def generic_ack_callback(self, text):
+        """Creates a handle_generic_ack callback with unique on_done text
+
+        Args:
+          text (str): The string to output to the on_done callback when on
+                      success
+        """
+        return functools.partial(self.handle_generic_ack, text=text)
+
+    #-----------------------------------------------------------------------
+    def handle_generic_ack(self, msg, on_done=None, text=None):
         """Handles generic ack responses where there is nothing to do.
 
         Used where there is nothing to do on receiving an ack except call
@@ -1096,8 +1108,9 @@ class Base:
         """
         on_done = util.make_callback(on_done)
 
-        LOG.debug("Device %s generic ack recevied", self.addr)
-        on_done(True, "Device generic ack recevied", None)
+        LOG.debug("Device %s ack recevied", self.addr)
+        text = "Device acknowledged the command." if text is None else text
+        on_done(True, text, None)
 
     #-----------------------------------------------------------------------
     def update_linked_devices(self, msg):
@@ -1149,21 +1162,6 @@ class Base:
         """
         # Default implementation - derived classes should specialize this.
         LOG.info("Device %s ignoring group cmd - not implemented", self.label)
-
-    #-----------------------------------------------------------------------
-    def handle_linking(self, msg, on_done=None):
-        """Respond to a linking command for this device.
-
-        This is called when we get a response to the linking command.  It
-        will trigger on_done with either a success or failure flag set.
-
-        Args:
-          msg (InpStandard):  The linking response message.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        on_done = util.make_callback(on_done)
-        on_done(True, "Entered linking mode", None)
 
     #-----------------------------------------------------------------------
     def _db_update(self, local_group, is_controller, remote_addr, remote_group,
