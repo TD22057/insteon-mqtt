@@ -3,7 +3,6 @@
 # Backlight Functions.
 #
 #===========================================================================
-import time
 from ..Base import Base
 from ... import handler
 from ... import log
