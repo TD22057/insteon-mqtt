@@ -208,25 +208,6 @@ class BatterySensor(functions.State, Base):
         self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
-        """Handle replies to the refresh command.
-
-        The refresh command reply will contain the current device
-        state in cmd2 and this updates the device with that value.
-
-        NOTE: refresh() will not work if the device is asleep.
-
-        Args:
-          msg (message.InpStandard):  The refresh message reply.  The current
-              device state is in the msg.cmd2 field.
-        """
-        LOG.ui("BatterySensor %s refresh on = %s", self.addr, msg.cmd2 != 0x00)
-
-        # Current on/off level is stored in cmd2 so update our state
-        # to match.
-        self._set_state(is_on=(msg.cmd2 != 0x00))
-
-    #-----------------------------------------------------------------------
     def awake(self, on_done):
         """Set the device as awake.
 

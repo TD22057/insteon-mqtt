@@ -209,24 +209,6 @@ class Switch(functions.SetAndState, functions.Scene, Base):
         self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
-        """Callback for handling refresh() responses.
-
-        This is called when we get a response to the refresh() command.  The
-        refresh command reply will contain the current device state in cmd2
-        and this updates the device with that value.  It is called by
-        handler.DeviceRefresh when we can an ACK for the refresh command.
-
-        Args:
-          msg (message.InpStandard):  The refresh message reply.  The current
-              device state is in the msg.cmd2 field.
-        """
-        LOG.ui("Switch %s refresh on=%s", self.label, msg.cmd2 > 0x00)
-
-        # Current on/off level is stored in cmd2 so update our level.
-        self._set_state(is_on=msg.cmd2 > 0x00, reason=on_off.REASON_REFRESH)
-
-    #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
         """Respond to a group command for this device.
 

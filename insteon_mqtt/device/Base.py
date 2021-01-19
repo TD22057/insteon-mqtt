@@ -13,6 +13,7 @@ from .. import handler
 from .. import log
 from .. import message as Msg
 from .. import util
+from .. import on_off
 
 LOG = log.get_logger()
 
@@ -943,6 +944,14 @@ class Base:
                           "%s with args: %s", self.label, cmd, str(kwargs))
 
     #-----------------------------------------------------------------------
+    def _set_state(self, is_on=None, level=None, group=None,
+                   mode=on_off.Mode.NORMAL, reason=""):
+        # Implemented by functions.State.  Raises the question of if that
+        # function should be moved here, and disabled for those few devices
+        # that don't support it
+        pass
+
+    #-----------------------------------------------------------------------
     def handle_received(self, msg):
         """Receives incoming message notifications from protocol
 
@@ -962,19 +971,22 @@ class Base:
         self.history.add(msg)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
-        """Handle replies to the refresh command.
+    def handle_refresh(self, msg, group=None):
+        """Callback for handling refresh() responses.
 
-        The refresh command reply will contain the current device state in
-        cmd2 and this updates the device with that value.
+        This is called when we get a response to the refresh() command.  The
+        refresh command reply will contain the current device state in cmd2
+        and this updates the device with that value.  It is called by
+        handler.DeviceRefresh when we can an ACK for the refresh command.
 
         Args:
-          msg (message.InpStandard):  The refresh message reply.  The current
+          msg (message.InpStandard): The refresh message reply.  The current
               device state is in the msg.cmd2 field.
         """
-        # Do nothing - derived types can override this if they have
-        # state to extract and update.
-        pass
+        LOG.ui("Device %s refresh cmd2 %s", self.addr, msg.cmd2)
+
+        # Level works for most things can add a derive state if needed.
+        self._set_state(level=msg.cmd2, reason=on_off.REASON_REFRESH)
 
     #-----------------------------------------------------------------------
     def handle_flags(self, msg, on_done):

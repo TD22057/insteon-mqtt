@@ -607,24 +607,6 @@ class Dimmer(functions.Scene, functions.SetAndState, Base):
         self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
-        """Callback for handling refresh() responses.
-
-        This is called when we get a response to the refresh() command.  The
-        refresh command reply will contain the current device state in cmd2
-        and this updates the device with that value.  It is called by
-        handler.DeviceRefresh when we can an ACK for the refresh command.
-
-        Args:
-          msg (message.InpStandard): The refresh message reply.  The current
-              device state is in the msg.cmd2 field.
-        """
-        LOG.ui("Dimmer %s refresh at level %s", self.addr, msg.cmd2)
-
-        # Update the device dimmer level.
-        self._set_state(level=msg.cmd2, reason=on_off.REASON_REFRESH)
-
-    #-----------------------------------------------------------------------
     def handle_increment(self, msg, on_done, delta, reason=""):
         """Callback for increment up/down commanded messages.
 

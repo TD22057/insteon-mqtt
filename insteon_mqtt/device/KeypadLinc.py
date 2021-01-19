@@ -173,7 +173,6 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
         # mask, on level, led brightness, non-toggle mask, led bit mask (led
         # on/off), on/off bit mask, etc (see keypadlinc manual)
 
-        #
         # First send a refresh command which get's the state of the LED's by
         # returning a bit flag.  Pass skip_db here - we'll let the second
         # refresh handler below take care of getting the database updated.
@@ -190,7 +189,10 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
         # it will send a database download command to the device to update
         # the database.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
-        msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
+        #self._load_group
+        callback = functools.partial(self.handle_refresh,
+                                     group=self._load_group)
+        msg_handler = handler.DeviceRefresh(self, callback, force,
                                             None, num_retry=3)
         seq.add_msg(msg, msg_handler)
 
@@ -1213,26 +1215,6 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
         if on_level is None:
             on_level = 0xff
         return on_level
-
-    #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
-        """Handle replies to the refresh command.
-
-        The refresh command reply will contain the current device load group
-        state in cmd2 and this updates the device with that value.
-
-        Args:
-          msg:  (message.InpStandard) The refresh message reply.  The current
-                device state is in the msg.cmd2 field.
-        """
-        # NOTE: This is called by the handler.DeviceRefresh class when the
-        # refresh message send by Base.refresh is ACK'ed.
-        LOG.ui("KeypadLinc %s refresh at level %s", self.addr, msg.cmd2)
-
-        # Current load group level is stored in cmd2 so update our level to
-        # match.
-        self._set_state(group=self._load_group, level=msg.cmd2,
-                        reason=on_off.REASON_REFRESH)
 
     #-----------------------------------------------------------------------
     def handle_button_led(self, msg, on_done, group, is_on, led_bits,
