@@ -70,13 +70,13 @@ class Test_FanLinc:
     def test_template(self, setup):
         mdev, addr, name = setup.getAll(['mdev', 'addr', 'name'])
 
-        data = mdev.template_data()
+        data = mdev.base_template_data()
         right = {"address" : addr.hex, "name" : name}
         assert data == right
 
-        data = mdev.template_data(level=0x55, mode=IM.on_off.Mode.FAST,
-                                  manual=IM.on_off.Manual.STOP,
-                                  reason="something")
+        data = mdev.state_template_data(level=0x55, mode=IM.on_off.Mode.FAST,
+                                        manual=IM.on_off.Manual.STOP,
+                                        reason="something")
         right = {"address" : addr.hex, "name" : name,
                  "on" : 1, "on_str" : "on", "reason" : "something",
                  "level_255" : 85, "level_100" : 33,
@@ -84,14 +84,14 @@ class Test_FanLinc:
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
         assert data == right
 
-        data = mdev.template_data(level=0x00)
+        data = mdev.state_template_data(level=0x00)
         right = {"address" : addr.hex, "name" : name,
                  "on" : 0, "on_str" : "off", "reason" : "",
                  "level_255" : 0, "level_100" : 0,
                  "mode" : "normal", "fast" : 0, "instant" : 0}
         assert data == right
 
-        data = mdev.template_data(manual=IM.on_off.Manual.UP)
+        data = mdev.state_template_data(manual=IM.on_off.Manual.UP)
         right = {"address" : addr.hex, "name" : name, "reason" : "",
                  "manual_str" : "up", "manual" : 1, "manual_openhab" : 2}
         assert data == right
@@ -137,8 +137,8 @@ class Test_FanLinc:
         mdev.load_config({})
 
         # Send a level signal
-        dev.signal_level_changed.emit(dev, 0x12)
-        dev.signal_level_changed.emit(dev, 0x00)
+        dev.signal_state.emit(dev, level=0x12)
+        dev.signal_state.emit(dev, level=0x00)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic='%s/state' % topic,
@@ -185,8 +185,8 @@ class Test_FanLinc:
         stopic = "fan/speed/%s" % setup.addr.hex
 
         # Send a level signal
-        dev.signal_level_changed.emit(dev, 0xff)
-        dev.signal_level_changed.emit(dev, 0x00)
+        dev.signal_state.emit(dev, level=0xff)
+        dev.signal_state.emit(dev, level=0x00)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic=ltopic, payload='1 255', qos=qos, retain=True)
@@ -325,72 +325,6 @@ class Test_FanLinc:
         assert proto.sent[0].msg.cmd2 == 0x43
         cb = proto.sent[0].handler.callback
         assert cb.keywords == {"reason" : "jkl"}
-        proto.clear()
-
-    #-----------------------------------------------------------------------
-    def test_input_scene(self, setup):
-        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
-
-        qos = 2
-        config = {'dimmer' : {
-            'scene_topic' : 'foo/{{address}}/scene',
-            'scene_payload' : ('{ "cmd" : "{{json.on.lower()}}" }')}}
-        mdev.load_config(config, qos=qos)
-
-        mdev.subscribe(link, qos)
-        topic = link.client.sub[2].topic
-
-        payload = b'{ "on" : "OFF" }'
-        link.publish(topic, payload, qos, retain=False)
-        assert len(proto.sent) == 1
-
-        assert proto.sent[0].msg.cmd1 == 0x30
-        assert proto.sent[0].msg.data[3] == 0x13
-        proto.clear()
-
-        payload = b'{ "on" : "ON" }'
-        link.publish(topic, payload, qos, retain=False)
-        assert len(proto.sent) == 1
-
-        assert proto.sent[0].msg.cmd1 == 0x30
-        assert proto.sent[0].msg.data[3] == 0x11
-        proto.clear()
-
-        # test error payload
-        link.publish(topic, b'asdf', qos, False)
-
-    #-----------------------------------------------------------------------
-    def test_input_scene_reason(self, setup):
-        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
-
-        qos = 2
-        config = {'dimmer' : {
-            'scene_topic' : 'foo/{{address}}/scene',
-            'scene_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
-                               '"reason" : "{{json.reason}}"}')}}
-        mdev.load_config(config, qos=qos)
-
-        mdev.subscribe(link, qos)
-        topic = link.client.sub[2].topic
-
-        payload = b'{ "on" : "OFF", "reason" : "ABC" }'
-        link.publish(topic, payload, qos, retain=False)
-        assert len(proto.sent) == 1
-
-        assert proto.sent[0].msg.cmd1 == 0x30
-        assert proto.sent[0].msg.data[3] == 0x13
-        cb = proto.sent[0].handler.callback
-        assert cb.keywords == {"reason" : "ABC"}
-        proto.clear()
-
-        payload = b'{ "on" : "ON", "reason" : "DEF" }'
-        link.publish(topic, payload, qos, retain=False)
-        assert len(proto.sent) == 1
-
-        assert proto.sent[0].msg.cmd1 == 0x30
-        assert proto.sent[0].msg.data[3] == 0x11
-        cb = proto.sent[0].handler.callback
-        assert cb.keywords == {"reason" : "DEF"}
         proto.clear()
 
     #-----------------------------------------------------------------------

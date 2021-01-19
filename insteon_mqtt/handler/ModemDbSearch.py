@@ -62,6 +62,9 @@ class ModemDbSearch(Base):
         # ok in Python>=3.5 but not 3.4.
         from .. import db    # pylint: disable=import-outside-toplevel
 
+        if not self._PLM_sent:
+            # If PLM hasn't sent our message yet, this can't be for us
+            return Msg.UNKNOWN
         # Message is an ACK/NAK of the record request.
         if (isinstance(msg, (Msg.OutAllLinkUpdate)) and
                 msg.cmd in (Msg.OutAllLinkUpdate.Cmd.EXISTS,
@@ -77,10 +80,11 @@ class ModemDbSearch(Base):
                 return Msg.FINISHED
 
             # ACK - keep reading until we get the record we requested.
+            self._PLM_ACK = True
             return Msg.CONTINUE
 
         # Message is the record we requested.
-        if isinstance(msg, Msg.InpAllLinkRec):
+        if isinstance(msg, Msg.InpAllLinkRec) and self._PLM_ACK:
             LOG.info("Adding modem db record for %s grp: %s", msg.addr,
                      msg.group)
             # Create a modem database entry from the message data
@@ -100,6 +104,8 @@ class ModemDbSearch(Base):
             msg = Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.SEARCH,
                                        db_flags, entry.group, entry.addr,
                                        bytes(3))
+            self._PLM_sent = False
+            self._PLM_ACK = False
             self.db.device.send(msg, self)
 
             # Return finished - this way the getnext message will go out.

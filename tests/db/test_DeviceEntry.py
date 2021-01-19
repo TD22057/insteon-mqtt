@@ -83,6 +83,16 @@ class Test_DeviceEntry:
         assert obj.label == "12.34.ab (Awesomesauce)"
 
     #-----------------------------------------------------------------------
+    def test_repr(self):
+        addr = IM.Address('12.34.ab')
+        ctrl = Msg.DbFlags(in_use=True, is_controller=True, is_last_rec=False)
+        data = bytes([0x01, 0x02, 0x03])
+        mem_loc = (0xfe << 8) + 0x10
+        obj = IM.db.DeviceEntry(addr, 0x03, mem_loc, ctrl, data, db=None)
+
+        assert obj.__repr__() == "fe10: 12.34.ab"
+
+    #-----------------------------------------------------------------------
 
 #===========================================================================
 class MockProto:

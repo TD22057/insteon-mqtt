@@ -54,6 +54,24 @@ class Test_OutStandard:
         str(obj)
 
     #-----------------------------------------------------------------------
+    def test_link_cleanup(self):
+        addr = IM.Address(0x48, 0x3d, 0x46)
+        obj = Msg.OutStandard.link_cleanup(addr, 0x11, 0x25)
+
+        assert obj.to_addr.ids == [0x48, 0x3d, 0x46]
+        assert obj.flags.type == Msg.Flags.Type.ALL_LINK_CLEANUP
+        assert obj.flags.is_ext is False
+        assert obj.flags.hops_left == 3
+        assert obj.flags.max_hops == 3
+        assert obj.flags.is_nak is False
+        assert obj.flags.is_broadcast is False
+        assert obj.cmd1 == 0x11
+        assert obj.cmd2 == 0x25
+        assert obj.is_ack is None
+
+        str(obj)
+
+    #-----------------------------------------------------------------------
     def test_size(self):
         b = bytes([])
         assert Msg.OutStandard.msg_size(b) == Msg.OutStandard.fixed_msg_size

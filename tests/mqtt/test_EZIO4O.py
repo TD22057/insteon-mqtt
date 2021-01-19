@@ -62,36 +62,28 @@ class Test_EZIO4O:
         mdev, addr, link = setup.getAll(["mdev", "addr", "link"])
 
         mdev.subscribe(link, 2)
-        assert len(link.client.sub) == 8
+        assert len(link.client.sub) == 4
         assert link.client.sub[0] == dict(topic="insteon/%s/set/1" % addr.hex, qos=2)
-        assert link.client.sub[1] == dict(topic="insteon/%s/scene/1" % addr.hex, qos=2)
-        assert link.client.sub[2] == dict(topic="insteon/%s/set/2" % addr.hex, qos=2)
-        assert link.client.sub[3] == dict(topic="insteon/%s/scene/2" % addr.hex, qos=2)
-        assert link.client.sub[4] == dict(topic="insteon/%s/set/3" % addr.hex, qos=2)
-        assert link.client.sub[5] == dict(topic="insteon/%s/scene/3" % addr.hex, qos=2)
-        assert link.client.sub[6] == dict(topic="insteon/%s/set/4" % addr.hex, qos=2)
-        assert link.client.sub[7] == dict(topic="insteon/%s/scene/4" % addr.hex, qos=2)
+        assert link.client.sub[1] == dict(topic="insteon/%s/set/2" % addr.hex, qos=2)
+        assert link.client.sub[2] == dict(topic="insteon/%s/set/3" % addr.hex, qos=2)
+        assert link.client.sub[3] == dict(topic="insteon/%s/set/4" % addr.hex, qos=2)
 
         mdev.unsubscribe(link)
-        assert len(link.client.unsub) == 8
+        assert len(link.client.unsub) == 4
         assert link.client.unsub[0] == dict(topic="insteon/%s/set/1" % addr.hex)
-        assert link.client.unsub[1] == dict(topic="insteon/%s/scene/1" % addr.hex)
-        assert link.client.unsub[2] == dict(topic="insteon/%s/set/2" % addr.hex)
-        assert link.client.unsub[3] == dict(topic="insteon/%s/scene/2" % addr.hex)
-        assert link.client.unsub[4] == dict(topic="insteon/%s/set/3" % addr.hex)
-        assert link.client.unsub[5] == dict(topic="insteon/%s/scene/3" % addr.hex)
-        assert link.client.unsub[6] == dict(topic="insteon/%s/set/4" % addr.hex)
-        assert link.client.unsub[7] == dict(topic="insteon/%s/scene/4" % addr.hex)
+        assert link.client.unsub[1] == dict(topic="insteon/%s/set/2" % addr.hex)
+        assert link.client.unsub[2] == dict(topic="insteon/%s/set/3" % addr.hex)
+        assert link.client.unsub[3] == dict(topic="insteon/%s/set/4" % addr.hex)
 
     #-----------------------------------------------------------------------
     def test_template(self, setup):
         mdev, addr, name = setup.getAll(["mdev", "addr", "name"])
 
-        data = mdev.template_data()
+        data = mdev.base_template_data()
         right = {"address": addr.hex, "name": name}
         assert data == right
 
-        data = mdev.template_data(
+        data = mdev.state_template_data(
             is_on=True, button=1, reason="something", mode=IM.on_off.Mode.FAST
         )
         right = {
@@ -107,7 +99,7 @@ class Test_EZIO4O:
         }
         assert data == right
 
-        data = mdev.template_data(is_on=False, button=2)
+        data = mdev.state_template_data(is_on=False, button=2)
         right = {
             "address": addr.hex,
             "name": name,
@@ -121,7 +113,7 @@ class Test_EZIO4O:
         }
         assert data == right
 
-        data = mdev.template_data(is_on=False, button=3)
+        data = mdev.state_template_data(is_on=False, button=3)
         right = {
             "address": addr.hex,
             "name": name,
@@ -135,7 +127,7 @@ class Test_EZIO4O:
         }
         assert data == right
 
-        data = mdev.template_data(is_on=False, button=4)
+        data = mdev.state_template_data(is_on=False, button=4)
         right = {
             "address": addr.hex,
             "name": name,
@@ -158,10 +150,10 @@ class Test_EZIO4O:
         mdev.load_config({})
 
         # Send an on/off signal
-        dev.signal_on_off.emit(dev, 1, True)
-        dev.signal_on_off.emit(dev, 2, False)
-        dev.signal_on_off.emit(dev, 3, True)
-        dev.signal_on_off.emit(dev, 4, False)
+        dev.signal_state.emit(dev, button=1, is_on=True)
+        dev.signal_state.emit(dev, button=2, is_on=False)
+        dev.signal_state.emit(dev, button=3, is_on=True)
+        dev.signal_state.emit(dev, button=4, is_on=False)
         assert len(link.client.pub) == 4
         assert link.client.pub[0] == dict(
             topic="%s/state/1" % topic, payload="on", qos=0, retain=True
@@ -193,10 +185,10 @@ class Test_EZIO4O:
         stopic = "foo/%s" % setup.addr.hex
 
         # Send an on/off signal
-        dev.signal_on_off.emit(dev, 1, True)
-        dev.signal_on_off.emit(dev, 2, False)
-        dev.signal_on_off.emit(dev, 3, True)
-        dev.signal_on_off.emit(dev, 4, False)
+        dev.signal_state.emit(dev, button=1, is_on=True)
+        dev.signal_state.emit(dev, button=2, is_on=False)
+        dev.signal_state.emit(dev, button=3, is_on=True)
+        dev.signal_state.emit(dev, button=4, is_on=False)
         assert len(link.client.pub) == 4
         assert link.client.pub[0] == dict(
             topic=stopic + "/1", payload="1 1 ON", qos=qos, retain=True
@@ -236,7 +228,7 @@ class Test_EZIO4O:
             # turn on
             proto.clear()
             payload = b'{ "on" : "ON", "mode" : "NORMAL" }'
-            link.publish(link.client.sub[i * 2].topic, payload, qos, retain=False)
+            link.publish(link.client.sub[i].topic, payload, qos, retain=False)
             assert len(proto.sent) == 1
             assert proto.sent[0].msg.cmd1 == 0x45
             assert proto.sent[0].msg.cmd2 == i
@@ -245,7 +237,7 @@ class Test_EZIO4O:
             # turn off
             proto.clear()
             payload = b'{ "on" : "OFF", "mode" : "FAST" }'
-            link.publish(link.client.sub[i * 2].topic, payload, qos, retain=False)
+            link.publish(link.client.sub[i].topic, payload, qos, retain=False)
             assert len(proto.sent) == 1
             assert proto.sent[0].msg.cmd1 == 0x46
             assert proto.sent[0].msg.cmd2 == i
@@ -279,7 +271,7 @@ class Test_EZIO4O:
             # turn on
             proto.clear()
             payload = b'{ "on" : "ON", "mode" : "FAST", "reason" : "baz" }'
-            link.publish(link.client.sub[i * 2].topic, payload, qos, retain=False)
+            link.publish(link.client.sub[i].topic, payload, qos, retain=False)
             assert len(proto.sent) == 1
             assert proto.sent[0].msg.cmd1 == 0x45
             assert proto.sent[0].msg.cmd2 == i
@@ -290,7 +282,7 @@ class Test_EZIO4O:
             # turn off
             proto.clear()
             payload = b'{ "on" : "OFF", "mode" : "NORMAL", "reason" : "ABC" }'
-            link.publish(link.client.sub[i * 2].topic, payload, qos, retain=False)
+            link.publish(link.client.sub[i].topic, payload, qos, retain=False)
             assert len(proto.sent) == 1
             assert proto.sent[0].msg.cmd1 == 0x46
             assert proto.sent[0].msg.cmd2 == i
@@ -300,119 +292,6 @@ class Test_EZIO4O:
 
         # test error payload
         link.publish(link.client.sub[0].topic, b"asdf", qos, False)
-
-    #-----------------------------------------------------------------------
-    def test_input_scene(self, setup):
-        dev, mdev, link, modem = setup.getAll(["dev", "mdev", "link", "modem"])
-
-        qos = 2
-        config = {
-            "ezio4o": {
-                "scene_topic": "foo/{{address}}/{{button}}",
-                "scene_payload": ('{ "cmd" : "{{json.on.lower()}}" }'),
-            }
-        }
-        mdev.load_config(config, qos=qos)
-
-        mdev.subscribe(link, qos)
-
-        # add device to the modem database
-        modem.add(dev)
-
-        # add device default responder db link with modem
-        local = MockSceneDevice(dev.addr, False, 1, [0, 0, 1])
-        remote = MockSceneDevice(modem.addr, True, 1, [0, 0, 1])
-        dev.db.add_from_config(remote, local)
-
-        # add device scenes responder db links for each group with modem
-        # scene/1 to scene/4  -> device responder for modem group 50 to 53
-        for i in range(4):
-            local.group = i + 1
-            local.link_data = [0, 0, i]
-            remote.group = 1
-            dev.db.add_from_config(remote, local)
-
-            remote.group = i + 50
-            dev.db.add_from_config(remote, local)
-
-        # for all group trigger modem ALL-Link Broadcast -> modem scene
-        for i in range(4):
-            # turn off
-            modem.scenes = []
-            payload = b'{ "on" : "OFF" }'
-            link.publish(link.client.sub[i * 2 + 1].topic, payload, qos, retain=False)
-            assert len(modem.scenes) == 1
-            assert modem.scenes[0][0] == 0  # is_on
-            assert modem.scenes[0][1] == i + 50  # group
-
-            # turn on
-            modem.scenes = []
-            payload = b'{ "on" : "ON" }'
-            link.publish(link.client.sub[i * 2 + 1].topic, payload, qos, retain=False)
-            assert modem.scenes[0][0] == 1  # is_on
-            assert modem.scenes[0][1] == i + 50  # group
-
-        # test error payload
-        link.publish(link.client.sub[1].topic, b"asdf", qos, False)
-
-    #-----------------------------------------------------------------------
-    def test_input_scene_reason(self, setup):
-        dev, mdev, link, modem = setup.getAll(["dev", "mdev", "link", "modem"])
-
-        qos = 2
-        config = {
-            "ezio4o": {
-                "scene_topic": "foo/{{address}}/{{button}}",
-                "scene_payload": (
-                    '{ "cmd" : "{{json.on.lower()}}",' '"reason" : "{{json.reason}}"}'
-                ),
-            }
-        }
-        mdev.load_config(config, qos=qos)
-
-        mdev.subscribe(link, qos)
-
-        # add device to the modem database
-        modem.add(dev)
-
-        # add device default responder db link with modem
-        local = MockSceneDevice(dev.addr, False, 1, [0, 0, 1])
-        remote = MockSceneDevice(modem.addr, True, 1, [0, 0, 1])
-        dev.db.add_from_config(remote, local)
-
-        # add device scenes responder db links for each group with modem
-        # scene/1 to scene/4  -> device responder for modem group 50 to 53
-        for i in range(4):
-            local.group = i + 1
-            local.link_data = [0, 0, i]
-            remote.group = 1
-            dev.db.add_from_config(remote, local)
-
-            remote.group = i + 50
-            dev.db.add_from_config(remote, local)
-
-        # for all group trigger modem ALL-Link Broadcast -> modem scene
-        for i in range(4):
-            # turn off
-            modem.scenes = []
-            payload = b'{ "on" : "OFF", "reason" : "a b c" }'
-            link.publish(link.client.sub[i * 2 + 1].topic, payload, qos, retain=False)
-            assert len(modem.scenes) == 1
-            assert modem.scenes[0][0] == 0  # is_on
-            assert modem.scenes[0][1] == i + 50  # group
-            assert modem.scenes[0][2] == "a b c"  # reason
-
-            # turn on
-            modem.scenes = []
-            payload = b'{ "on" : "ON", "reason" : "zyx" }'
-            link.publish(link.client.sub[i * 2 + 1].topic, payload, qos, retain=False)
-            assert len(modem.scenes) == 1
-            assert modem.scenes[0][0] == 1  # is_on
-            assert modem.scenes[0][1] == i + 50  # group
-            assert modem.scenes[0][2] == "zyx"  # reason
-
-        # test error payload
-        link.publish(link.client.sub[1].topic, b"asdf", qos, False)
 
 
 #===========================================================================

@@ -379,6 +379,24 @@ class SceneManager:
         Args:
           config (object):   Configuration object.
         """
+        # Get a list of the empty groups
+        empty_groups = self.modem.db.empty_groups()
+
+        # Remove groups that are already defined in the scenes file but not
+        # synced to the modem
+        for scene in self.entries:
+            for controller in scene.controllers:
+                if (controller.device is not None and
+                        controller.device.type() == "Modem" and
+                        controller.group > 0x01):
+                    try:
+                        position = empty_groups.index(controller.group)
+                        del empty_groups[position]
+                    except ValueError:
+                        # The group was not present
+                        pass
+
+        # Now assign groups
         updated = False
         for scene in self.entries:
             for controller in scene.controllers:
@@ -387,8 +405,14 @@ class SceneManager:
                         controller.group <= 0x01):
                     updated = True
 
-                    # Get and set the next available group id
-                    controller.group = self.modem.db.next_group()
+                    if len(empty_groups) >= 1:
+                        # Get and set the next available group id
+                        controller.group = empty_groups.pop(0)
+                    else:
+                        LOG.critical("Unable to add the modem as a controller "
+                                     "of a new scene. All 255 groups have "
+                                     "been used on your modem.")
+                        return
 
         # All done save the config file if necessary
         if updated:
@@ -716,7 +740,7 @@ class SceneDevice:
                        "device that is neither defined in the config file nor "
                        "defined in the scenes file as an address: %s" %
                        self.label)
-                raise Exception(msg)
+                LOG.exception(msg)
 
         # Remove values from yaml_data if they are default values and make
         # pretty. Easiest way to do this is just to set things to themselves

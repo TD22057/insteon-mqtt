@@ -106,7 +106,7 @@ class Serial(Link):
         return self._fd
 
     #-----------------------------------------------------------------------
-    def write(self, data, after_time=None):
+    def write(self, data, next_write_time):
         """Schedule data for writing to the serial device.
 
         This pushes the data into a queue for writing to the serial device.
@@ -114,15 +114,11 @@ class Serial(Link):
         it actually be written.
 
         Args:
-          after_time (float):  Time in seconds past epoch after which to write
-                     the packet.  If None, the message will be sent whenever
-                     it can.
+          next_write_time (function):  A function that returns the timestamp
+               of the next permitted write time
         """
-        # Default after time is 0 which will always write.
-        after_time = after_time if after_time is not None else 0
-
         # Save the input data to the write queue.
-        self._write_buf.append((data, after_time))
+        self._write_buf.append((data, next_write_time))
         self.signal_needs_write.emit(self, True)
 
         # if we have exceed the max queue size, pop the oldest packet off.
@@ -206,9 +202,9 @@ class Serial(Link):
 
         # Get the next data packet to write from the write queue and see if
         # enough time has elapsed to write the message.
-        data, after_time = self._write_buf[0]
-        if t < after_time:
-            #LOG.debug("Waiting to write %f < %f", t, after_time)
+        data, next_write_time = self._write_buf[0]
+        if t < next_write_time():
+            #LOG.debug("Waiting to write %f < %f", t, next_write_time())
             return
 
         try:
@@ -236,7 +232,7 @@ class Serial(Link):
             elif num:
                 # Still data to write - remove the written data from the
                 # buffer.
-                self._write_buf[0] = (data[num:], after_time)
+                self._write_buf[0] = (data[num:], next_write_time)
 
     #-----------------------------------------------------------------------
     def close(self):

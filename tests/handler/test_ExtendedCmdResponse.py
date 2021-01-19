@@ -23,6 +23,8 @@ class Test_ExtendedCmdResponse:
                                      bytes([0x00] * 2 + [0x01] + [0x00] * 11),
                                      crc_type="CRC")
         handler = IM.handler.ExtendedCmdResponse(out, callback)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
 
         r = handler.msg_received(proto, "dummy")
         assert r == Msg.UNKNOWN
@@ -94,6 +96,39 @@ class Test_ExtendedCmdResponse:
         msg.from_addr = IM.Address('0a.12.33')
         r = handler.msg_received(proto, msg)
         assert r == Msg.UNKNOWN
+
+    def test_plm_ack_sent(self):
+        # Tests matching the command from the outbound message.
+        proto = MockProto()
+        calls = []
+
+        def callback(msg, on_done=None):
+            calls.append(msg)
+
+        addr = IM.Address('0a.12.34')
+
+        # sent message, match input command
+        out = Msg.OutExtended.direct(addr, 0x2e, 0x00,
+                                     bytes([0x00] * 2 + [0x01] + [0x00] * 11),
+                                     crc_type="CRC")
+        handler = IM.handler.ExtendedCmdResponse(out, callback)
+
+        # test before sent
+        out.is_ack = False
+        r = handler.msg_received(proto, out)
+        assert r == Msg.UNKNOWN
+        assert not handler._PLM_sent
+
+        # Signal Sent
+        handler.sending_message(out)
+        assert handler._PLM_sent
+        assert not handler._PLM_ACK
+
+        # test ack
+        out.is_ack = True
+        r = handler.msg_received(proto, out)
+        assert r == Msg.CONTINUE
+        assert handler._PLM_ACK
 
 
 #===========================================================================

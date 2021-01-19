@@ -30,9 +30,10 @@ class Mode(enum.Enum):
     INSTANT = "instant"
     # this is manual load status change, not holding down a button
     MANUAL = "manual"
+    RAMP = "ramp"
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
     @staticmethod
     def is_valid(cmd):
@@ -79,6 +80,50 @@ class Mode(enum.Enum):
                             % (cmd, str(_cmdMap.keys())))
         return result
 
+    @staticmethod
+    def encode_cmd2(is_on, mode, level, transition):
+        """Convert on/off, mode, level, and transition to a cmd2 value.
+
+        Args:
+          is_on (bool):        True for on, False for off.
+          mode (Mode):         The mode enumeration to use.
+          level (int):         Brighness value in range 0 to 255.
+          transition (float):  Ramp time in seconds.
+        Returns:
+          int: Returns the Insteon cmd2 value for the input.
+        """
+        # Mapping of half-ramp rates to human readable values
+        half_ramp_pretty = {0x00: 480, 0x01: 360, 0x02: 270, 0x03: 210,
+                            0x04: 150, 0x05: 90, 0x06: 47, 0x07: 38.5,
+                            0x08: 32, 0x09: 28, 0x0a: 23.5, 0x0b: 19,
+                            0x0c: 6.5, 0x0d: 2, 0x0e: .3, 0x0f: .1}
+        assert isinstance(mode, Mode)
+        if not is_on:
+            level = 0
+        if mode == Mode.RAMP:
+            if transition is None:
+                transition = 2
+            half_ramp = 0x0f
+            for ramp_key, ramp_value in half_ramp_pretty.items():
+                if transition >= ramp_value:
+                    half_ramp = ramp_key
+                    break
+            level = level & 0xf0
+            return level | half_ramp
+        else:
+            return level
+
+    @staticmethod
+    def decode_level(cmd1, cmd2):
+        is_on, mode = Mode.decode(cmd1)
+        if not is_on:
+            return 0x00
+        elif mode == Mode.RAMP:
+            # Special case - lower 4 bits are treated as 0xf by device
+            return cmd2 | 0x0f
+        else:
+            return cmd2
+
 #===========================================================================
 # It would be better if these were part of Mode - but python < 3.7 doesn't
 # support adding attributes to an enum that are enumeration values.
@@ -89,11 +134,13 @@ _cmdMap = {0x11 : [True, Mode.NORMAL],
            0x12 : [True, Mode.FAST],
            0x21 : [True, Mode.INSTANT],
            0x23 : [True, Mode.MANUAL],
+           0x2e : [True, Mode.RAMP],
            0x13 : [False, Mode.NORMAL],
            0x14 : [False, Mode.FAST],
            # Per Insteon dev guide, there is no instant off - it's instant on
            # with level set to 0.
-           0x22 : [False, Mode.MANUAL]}
+           0x22 : [False, Mode.MANUAL],
+           0x2f : [False, Mode.RAMP]}
 
 # Map enum mode to command code for on and off.
 _onCode = {v[1] : k for k, v in _cmdMap.items() if v[0] is True}
@@ -116,7 +163,7 @@ class Manual(enum.Enum):
     STOP = "stop"
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
     @staticmethod
     def is_valid(cmd):

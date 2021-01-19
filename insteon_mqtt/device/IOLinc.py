@@ -6,6 +6,7 @@
 import enum
 import time
 from .Base import Base
+from . import functions
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
@@ -17,7 +18,7 @@ from .. import util
 LOG = log.get_logger()
 
 
-class IOLinc(Base):
+class IOLinc(functions.Set, Base):
     """Insteon IOLinc relay/sensor device.
 
     This class can be used to model the IOLinc device which has a sensor and
@@ -143,7 +144,6 @@ class IOLinc(Base):
         self.cmd_map.update({
             'on' : self.on,
             'off' : self.off,
-            'set' : self.set,
             'set_flags' : self.set_flags,
             })
 
@@ -331,8 +331,8 @@ class IOLinc(Base):
                      "momentary_secs"])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
-            raise Exception("Unknown IOLinc flags input: %s.\n Valid flags " +
-                            "are: %s" % unknown, flags)
+            LOG.error("Unknown IOLinc flags input: %s.\n Valid flags are: %s",
+                      unknown, flags)
 
         seq = CommandSeq(self.protocol, "Device flags set", on_done,
                          name="SetFLags")
@@ -489,7 +489,7 @@ class IOLinc(Base):
 
     #-----------------------------------------------------------------------
     def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
-           on_done=None):
+           transition=None, on_done=None):
         """Turn the relay on.
 
         This turns the relay on no matter what.  It ignores the momentary
@@ -517,6 +517,10 @@ class IOLinc(Base):
         LOG.info("IOLinc %s cmd: on", self.addr)
         assert group == 0x01
 
+        if transition or mode == on_off.Mode.RAMP:
+            LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
+
         # Send an on command.  Use the standard command handler which will
         # notify us when the command is ACK'ed.
         msg = Msg.OutStandard.direct(self.addr, 0x11, 0xff)
@@ -527,7 +531,7 @@ class IOLinc(Base):
 
     #-----------------------------------------------------------------------
     def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            on_done=None):
+            transition=None, on_done=None):
         """Turn the relay off.
 
         This turns the relay off no matter what.  It ignores the momentary
@@ -552,6 +556,10 @@ class IOLinc(Base):
         LOG.info("IOLinc %s cmd: off", self.addr)
         assert group == 0x01
 
+        if transition or mode == on_off.Mode.RAMP:
+            LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
+
         # Send an off command.  Use the standard command handler which will
         # notify us when the command is ACK'ed.
         msg = Msg.OutStandard.direct(self.addr, 0x13, 0x00)
@@ -559,37 +567,6 @@ class IOLinc(Base):
 
         # Send the message to the PLM modem.
         self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def set(self, level, group=0x01, instant=False, on_done=None):
-        """Turn the relay on or off.  Level zero will be off.
-
-        This turns the relay on or off no matter what.  It ignores the
-        momentary A/B/C settings and just turns the relay on. It will not
-        trigger any responders that are linked to this device.  If you want to
-        control the device where it respects the momentary settings and
-        properly updates responders, please define a scene for the device and
-        use that scene to control it.
-
-        This will send the command to the device to update it's state.
-        When we get an ACK of the result, we'll change our internal
-        state and emit the state changed signals.
-
-        Args:
-          level (int):  If non zero, turn the device on.  Should be in the
-                range 0 to 255.  Only dimmers use the intermediate values, all
-                other devices look at level=0 or level>0.
-          group (int):  The group to send the command to.  For this device,
-                this must be 1.  Allowing a group here gives us a consistent
-                API to the on command across devices.
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        if level:
-            self.on(group, level, instant, on_done)
-        else:
-            self.off(group, instant, on_done)
 
     #-----------------------------------------------------------------------
     def handle_on_off(self, msg):

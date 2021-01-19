@@ -35,7 +35,7 @@ def setup(mock_paho_mqtt, tmpdir):
     mdev = IM.mqtt.KeypadLinc(mqtt, dev)
 
     return H.Data(addr=addr, name=name, dev=dev, mdev=mdev, link=link,
-                  proto=proto)
+                  proto=proto, modem=modem)
 
 
 #===========================================================================
@@ -88,7 +88,6 @@ class Test_KeypadLinc:
                 "insteon/%s/set/%d" % (addr.hex, i),
                 "insteon/%s/scene/%d" % (addr.hex, i),
                 ]
-
         assert len(link.client.sub) == len(topics)
         for i in range(len(topics)):
             assert link.client.sub[i] == dict(topic=topics[i], qos=2)
@@ -106,11 +105,11 @@ class Test_KeypadLinc:
     def test_template(self, setup):
         mdev, addr, name = setup.getAll(['mdev', 'addr', 'name'])
 
-        data = mdev.template_data(button=5)
+        data = mdev.base_template_data(button=5)
         right = {"address" : addr.hex, "name" : name, "button" : 5}
         assert data == right
 
-        data = mdev.template_data(button=3, level=255, reason="something",
+        data = mdev.state_template_data(button=3, level=255, reason="something",
                                   mode=IM.on_off.Mode.FAST,
                                   manual=IM.on_off.Manual.STOP)
         right = {"address" : addr.hex, "name" : name, "button" : 3,
@@ -120,7 +119,7 @@ class Test_KeypadLinc:
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
         assert data == right
 
-        data = mdev.template_data(button=1, level=128,
+        data = mdev.state_template_data(button=1, level=128,
                                   mode=IM.on_off.Mode.INSTANT)
         right = {"address" : addr.hex, "name" : name, "button" : 1,
                  "on" : 1, "on_str" : "on", "reason" : "",
@@ -128,14 +127,14 @@ class Test_KeypadLinc:
                  "mode" : "instant", "fast" : 0, "instant" : 1}
         assert data == right
 
-        data = mdev.template_data(button=2, level=0, reason="foo")
+        data = mdev.state_template_data(button=2, level=0, reason="foo")
         right = {"address" : addr.hex, "name" : name, "button" : 2,
                  "on" : 0, "on_str" : "off", "reason" : "foo",
                  "level_255" : 0, "level_100" : 0,
                  "mode" : "normal", "fast" : 0, "instant" : 0}
         assert data == right
 
-        data = mdev.template_data(button=2, manual=IM.on_off.Manual.UP,
+        data = mdev.state_template_data(button=2, manual=IM.on_off.Manual.UP,
                                   reason="HELLO")
         right = {"address" : addr.hex, "name" : name, "button" : 2,
                  "reason" : "HELLO", "manual_str" : "up", "manual" : 1,
@@ -151,8 +150,8 @@ class Test_KeypadLinc:
         mdev.load_config({})
 
         # Send an on/off signal
-        dev.signal_level_changed.emit(dev, 1, 255)
-        dev.signal_level_changed.emit(dev, 2, 0)
+        dev.signal_state.emit(dev, button=1, level=255)
+        dev.signal_state.emit(dev, button=2, level=0)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic='%s/state/1' % topic, qos=0, retain=True,
@@ -162,8 +161,8 @@ class Test_KeypadLinc:
         link.client.clear()
 
         # Send a manual mode signal - should do nothing w/ the default config.
-        dev.signal_manual.emit(dev, 3, IM.on_off.Manual.DOWN)
-        dev.signal_manual.emit(dev, 4, IM.on_off.Manual.STOP)
+        dev.signal_manual.emit(dev, button=3, manual=IM.on_off.Manual.DOWN)
+        dev.signal_manual.emit(dev, button=4, manual=IM.on_off.Manual.STOP)
         assert len(link.client.pub) == 0
 
     #-----------------------------------------------------------------------
@@ -179,8 +178,8 @@ class Test_KeypadLinc:
         mdev.load_config(config, qos)
 
         # Send an on/off signal
-        dev.signal_level_changed.emit(dev, 3, 128)
-        dev.signal_level_changed.emit(dev, 2, 0)
+        dev.signal_state.emit(dev, button=3, level=128)
+        dev.signal_state.emit(dev, button=2, level=0)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic="foo/%s/3" % setup.addr.hex, payload='1 ON', qos=qos,
@@ -191,8 +190,8 @@ class Test_KeypadLinc:
         link.client.clear()
 
         # Send a manual signal
-        dev.signal_manual.emit(dev, 5, IM.on_off.Manual.DOWN)
-        dev.signal_manual.emit(dev, 4, IM.on_off.Manual.STOP)
+        dev.signal_manual.emit(dev, button=5, manual=IM.on_off.Manual.DOWN)
+        dev.signal_manual.emit(dev, button=4, manual=IM.on_off.Manual.STOP)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
             topic="bar/%s/5" % setup.addr.hex, payload='-1 DOWN', qos=qos,
@@ -321,6 +320,410 @@ class Test_KeypadLinc:
                                              flags, cmd1, cmd2)
                 dev.handle_set_load(ack, IM.util.make_callback(None))
                 assert dev._level == cmd2
+
+#-----------------------------------------------------------------------
+    def test_input_transition(self, setup):
+        mdev, dev, link, proto, modem = setup.getAll(
+                ['mdev', 'dev', 'link', 'proto', 'modem'])
+
+        # 0x01, 0x42 == 2334-232 (Keypad Dimmer Dual-Band, 6 Button)
+        dev.db.set_info(0x01, 0x42, 0x43)
+        assert dev.on_off_ramp_supported
+
+        qos = 2
+        config = {'keypad_linc' : {
+            'dimmer_state_topic' : 'insteon/{{address}}/state',
+            'dimmer_state_payload' : '{{on}} {{level_255}}',
+            'btn_on_off_topic' : 'insteon/{{address}}/set/{{button}}',
+            'btn_on_off_payload' : ('{ "cmd" : "{{json.state.lower()}}"'
+                                    '{% if json.fast is defined %}'
+                                        ', "fast" : {{json.fast}}'
+                                    '{% endif %}'
+                                    '{% if json.instant is defined %}'
+                                        ', "instant" : {{json.instant}}'
+                                    '{% endif %}'
+                                    '{% if json.mode is defined %}'
+                                        ', "mode" : "{{json.mode.lower()}}"'
+                                    '{% endif %}'
+                                    '{% if json.transition is defined %}'
+                                        ', "transition" : {{json.transition}}'
+                                    '{% endif %}'
+                                    ' }'),
+            'dimmer_level_topic' : 'insteon/{{address}}/level',
+            'dimmer_level_payload' : ('{ "cmd" : "{{json.state.lower()}}",'
+                                      '"level" : '
+                                          '{% if json.level is defined %}'
+                                              '{{json.level}}'
+                                          '{% else %}'
+                                              '255'
+                                          '{% endif %}'
+                                     '{% if json.fast is defined %}'
+                                         ', "fast" : {{json.fast}}'
+                                     '{% endif %}'
+                                     '{% if json.instant is defined %}'
+                                         ', "instant" : {{json.instant}}'
+                                     '{% endif %}'
+                                     '{% if json.mode is defined %}'
+                                         ', "mode" : "{{json.mode.lower()}}"'
+                                     '{% endif %}'
+                                     '{% if json.transition is defined %}'
+                                         ', "transition" : {{json.transition}}'
+                                     '{% endif %}'
+                                     ' }')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        stopic = "insteon/%s/state" % setup.addr.hex
+        otopic = link.client.sub[0].topic
+        ltopic = link.client.sub[1].topic
+
+        # -----------------------
+        # Check handling of "Light ON at Ramp Rate" and "Light OFF at Ramp Rate"
+        # -----------------------
+
+        # -----------------------
+        # Light off in 32 seconds, mode explicitly specified
+        payload = b'{ "state" : "OFF", "mode" : "RAMP", "transition" : 32 }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x2f
+        assert proto.sent[0].msg.cmd2 == 0x08
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x2f, 0x08)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='0 0', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light on (full brightness) in 90 seconds, mode explicitly specified
+        payload = b'{ "state" : "ON", "mode" : "RAMP", "transition" : 90 }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x2e
+        assert proto.sent[0].msg.cmd2 == 0xf5
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x2e, 0xf5)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='1 255', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light off in 500 seconds, mode implied
+        payload = b'{ "state" : "OFF", "transition" : 500 }'
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x2f
+        assert proto.sent[0].msg.cmd2 == 0x00
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x2f, 0x00)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='0 0', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light on (level 67) in 0.3 seconds, mode implied
+        payload = b'{ "state" : "ON", "level" : "67", "transition" : 0.3 }'
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x2e
+        assert proto.sent[0].msg.cmd2 == 0x4e
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x2e, 0x4e)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='1 79', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light off, mode explicitly specified, transition omitted (2s implied)
+        payload = b'{ "state" : "OFF", "mode" : "RAMP" }'
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x2f
+        assert proto.sent[0].msg.cmd2 == 0x0d
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x2f, 0x0d)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='0 0', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light on, mode explicitly specified, transition omitted (2s implied)
+        payload = b'{ "state" : "ON", "mode" : "RAMP" }'
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x2e
+        assert proto.sent[0].msg.cmd2 == 0xfd
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x2e, 0xfd)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='1 255', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Test that transition is ignored for fast/instant on/off
+        # -----------------------
+
+        # -----------------------
+        # Light off in 500 seconds, mode explicitly set to FAST
+        payload = b'{ "state" : "OFF", "mode" : "FAST", "transition" : 500 }'
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x14
+        assert proto.sent[0].msg.cmd2 == 0x00
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x14, 0x00)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='0 0', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light on (level 67) in 0.3 seconds, mode explicitly set to INSTANT
+        payload = (b'{ "state" : "ON", "level" : "67", "mode" : "INSTANT",'
+                   b'"transition" : 0.3 }')
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x21
+        assert proto.sent[0].msg.cmd2 == 0x43
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x21, 0x43)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='1 67', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light off in 500 seconds, mode explicitly set to FAST
+        payload = b'{ "state" : "OFF", "fast" : 1, "transition" : 500 }'
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x14
+        assert proto.sent[0].msg.cmd2 == 0x00
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x14, 0x00)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='0 0', qos=qos, retain=True)
+        link.client.clear()
+
+        # -----------------------
+        # Light on (level 67) in 0.3 seconds, mode explicitly set to INSTANT
+        payload = (b'{ "state" : "ON", "level" : "67", "instant" : 1,'
+                   b'"transition" : 0.3 }')
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x21
+        assert proto.sent[0].msg.cmd2 == 0x43
+        proto.clear()
+
+        # Fake an ACK received
+        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
+        ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
+                                     0x21, 0x43)
+        dev.handle_set_load(ack, IM.util.make_callback(None))
+        # Check that reported state matches command
+        assert len(link.client.pub) == 2
+        assert link.client.pub[1] == dict(
+            topic=stopic, payload='1 67', qos=qos, retain=True)
+        link.client.clear()
+
+    #-----------------------------------------------------------------------
+    def test_input_no_transition(self, setup):
+        mdev, dev, link, addr, proto = setup.getAll(['mdev', 'dev', 'link',
+                                                     'addr', 'proto'])
+
+        # 0x01, 0x09 == 2486D (KeypadLinc Dimmer)
+        dev.db.set_info(0x01, 0x09, 0x2d)
+        assert not dev.on_off_ramp_supported
+
+        qos = 2
+        config = {'keypad_linc' : {
+            'dimmer_state_topic' : 'insteon/{{address}}/state',
+            'dimmer_state_payload' : '{{on}} {{level_255}}',
+            'btn_on_off_topic' : 'insteon/{{address}}/set/{{button}}',
+            'btn_on_off_payload' : ('{ "cmd" : "{{json.state.lower()}}"'
+                                    '{% if json.fast is defined %}'
+                                        ', "fast" : {{json.fast}}'
+                                    '{% endif %}'
+                                    '{% if json.instant is defined %}'
+                                        ', "instant" : {{json.instant}}'
+                                    '{% endif %}'
+                                    '{% if json.mode is defined %}'
+                                        ', "mode" : "{{json.mode.lower()}}"'
+                                    '{% endif %}'
+                                    '{% if json.transition is defined %}'
+                                        ', "transition" : {{json.transition}}'
+                                    '{% endif %}'
+                                    ' }'),
+            'dimmer_level_topic' : 'insteon/{{address}}/level',
+            'dimmer_level_payload' : ('{ "cmd" : "{{json.state.lower()}}",'
+                                      '"level" : '
+                                          '{% if json.level is defined %}'
+                                              '{{json.level}}'
+                                          '{% else %}'
+                                              '255'
+                                          '{% endif %}'
+                                     '{% if json.fast is defined %}'
+                                         ', "fast" : {{json.fast}}'
+                                     '{% endif %}'
+                                     '{% if json.instant is defined %}'
+                                         ', "instant" : {{json.instant}}'
+                                     '{% endif %}'
+                                     '{% if json.mode is defined %}'
+                                         ', "mode" : "{{json.mode.lower()}}"'
+                                     '{% endif %}'
+                                     '{% if json.transition is defined %}'
+                                         ', "transition" : {{json.transition}}'
+                                     '{% endif %}'
+                                     ' }')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+        stopic = "insteon/%s/state" % addr.hex
+        otopic = link.client.sub[0].topic
+        ltopic = link.client.sub[1].topic
+
+        # -----------------------
+        # Confirm that ramp/transition ignored for devices that don't support it
+        # -----------------------
+
+        # -----------------------
+        # Light off in 32 seconds, mode explicitly specified
+        payload = b'{ "state" : "OFF", "mode" : "RAMP", "transition" : 32 }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert proto.sent[0].msg.cmd2 == 0x00
+        proto.clear()
+
+        # -----------------------
+        # Light on (full brightness) in 90 seconds, mode explicitly specified
+        payload = b'{ "state" : "ON", "mode" : "RAMP", "transition" : 90 }'
+        link.publish(otopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x11
+        assert proto.sent[0].msg.cmd2 == 0xff
+        proto.clear()
+
+        # -----------------------
+        # Light off in 500 seconds, mode implied
+        payload = b'{ "state" : "OFF", "transition" : 500 }'
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert proto.sent[0].msg.cmd2 == 0x00
+        proto.clear()
+
+        # -----------------------
+        # Light on (level 67) in 0.3 seconds, mode implied
+        payload = b'{ "state" : "ON", "level" : "67", "transition" : 0.3 }'
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x11
+        assert proto.sent[0].msg.cmd2 == 0x43
+        proto.clear()
+
+        # -----------------------
+        # Light off, mode explicitly specified, transition omitted (2s implied)
+        payload = b'{ "state" : "OFF", "mode" : "RAMP" }'
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x13
+        assert proto.sent[0].msg.cmd2 == 0x00
+        proto.clear()
+
+        # -----------------------
+        # Light on, mode explicitly specified, transition omitted (2s implied)
+        payload = b'{ "state" : "ON", "mode" : "RAMP" }'
+        link.publish(ltopic, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+
+        assert proto.sent[0].msg.cmd1 == 0x11
+        assert proto.sent[0].msg.cmd2 == 0xff
+        proto.clear()
 
     #-----------------------------------------------------------------------
     def test_input_on_off_reason(self, setup):
@@ -491,6 +894,7 @@ class Test_KeypadLinc:
         assert len(proto.sent) == 1
 
         assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[0] == 0x03 #group
         assert proto.sent[0].msg.data[3] == 0x13
         proto.clear()
 
@@ -499,6 +903,7 @@ class Test_KeypadLinc:
         assert len(proto.sent) == 1
 
         assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[0] == 0x01 #group
         assert proto.sent[0].msg.data[3] == 0x11
         proto.clear()
 
@@ -508,8 +913,8 @@ class Test_KeypadLinc:
 
     #-----------------------------------------------------------------------
     def test_input_scene_reason(self, setup):
-        mdev, link, addr, proto = setup.getAll(['mdev', 'link', 'addr',
-                                                'proto'])
+        mdev, link, addr, proto, dev = setup.getAll(['mdev', 'link', 'addr',
+                                                     'proto', 'dev'])
 
         qos = 2
         config = {'keypad_linc' : {
@@ -526,8 +931,10 @@ class Test_KeypadLinc:
 
         assert proto.sent[0].msg.cmd1 == 0x30
         assert proto.sent[0].msg.data[3] == 0x13
-        cb = proto.sent[0].handler.callback
-        assert cb.keywords["reason"] == "A b C"
+        cb = proto.sent[0].handler.on_done
+        # Signal a success
+        cb(True, "Done", None)
+        assert dev.broadcast_reason == "A b C"
         proto.clear()
 
         payload = b'{ "on" : "ON", "reason" : "d E f" }'
@@ -536,8 +943,56 @@ class Test_KeypadLinc:
 
         assert proto.sent[0].msg.cmd1 == 0x30
         assert proto.sent[0].msg.data[3] == 0x11
-        cb = proto.sent[0].handler.callback
-        assert cb.keywords["reason"] == "d E f"
+        cb = proto.sent[0].handler.on_done
+        # Signal a success
+        cb(True, "Done", None)
+        assert dev.broadcast_reason == "d E f"
+        proto.clear()
+
+    #-----------------------------------------------------------------------
+    def test_input_scene_level(self, setup):
+        mdev, link, proto, dev, addr = setup.getAll(['mdev', 'link', 'proto',
+                                                     'dev', 'addr'])
+
+        qos = 2
+        config = {'keypad_linc' : {
+            'btn_scene_topic' : 'foo/{{address}}/{{button}}',
+            'btn_scene_payload' : ('{ "cmd" : "{{json.on.lower()}}"'
+                                   '{% if json.level is defined %}'
+                                   ',"level" : "{{json.level}}"'
+                                   '{% endif %} }')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+
+        # just ON command
+        payload = b'{ "on" : "on"}'
+        link.publish("foo/%s/1" % addr.hex, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x11  #cmd1
+        assert proto.sent[0].msg.data[1] == 0x00  #use_on_level
+        assert proto.sent[0].msg.data[2] == 0x00  #on_level
+        proto.clear()
+
+        # just OFF command
+        payload = b'{ "on" : "off"}'
+        link.publish("foo/%s/1" % addr.hex, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x13  #cmd1
+        assert proto.sent[0].msg.data[1] == 0x01  #use_on_level
+        assert proto.sent[0].msg.data[2] == 0x00  #on_level
+        proto.clear()
+
+        # just ON with level
+        payload = b'{ "on" : "on", "level": 128}'
+        link.publish("foo/%s/1" % addr.hex, payload, qos, retain=False)
+        assert len(proto.sent) == 1
+        assert proto.sent[0].msg.cmd1 == 0x30
+        assert proto.sent[0].msg.data[3] == 0x11  #cmd1
+        assert proto.sent[0].msg.data[1] == 0x01  #use_on_level
+        assert proto.sent[0].msg.data[2] == 0x80  #on_level
         proto.clear()
 
 #===========================================================================

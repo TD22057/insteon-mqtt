@@ -10,7 +10,7 @@ import insteon_mqtt.message as Msg
 
 
 class Test_Broadcast:
-    def test_acks(self, tmpdir):
+    def test_acks(self, tmpdir, caplog):
         proto = MockProto()
         calls = []
         modem = IM.Modem(proto, IM.network.Stack(), IM.network.TimedCall())
@@ -54,6 +54,13 @@ class Test_Broadcast:
         # should be at least 5.5 seconds ahead
         assert proto.wait_time - time.time() > 5
 
+        # Test duplicate
+        r = handler.msg_received(proto, msg)
+
+        assert r == Msg.CONTINUE
+        # should not increase calls
+        assert len(calls) == 1
+
         # cleanup should be ignored since prev was processed.
         flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_CLEANUP, False)
         msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
@@ -86,6 +93,17 @@ class Test_Broadcast:
         # wait time should be cleared
         assert proto.wait_time < pre_success_time
 
+        # Failure Report Broadcast
+        pre_success_time = proto.wait_time
+        flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+        success_report_to_addr = IM.Address(0x11, 1, 0x1)
+        msg = Msg.InpStandard(addr, addr, flags, 0x06, 0x01)
+        r = handler.msg_received(proto, msg)
+
+        assert 'Cleanup report for 0a.12.34, grp 52 had 1 fails.' in caplog.text
+        assert r == Msg.CONTINUE
+        assert len(calls) == 4
+
         # Pretend that a new broadcast message dropped / not received by PLM
 
         # Cleanup should be handled since corresponding broadcast was missed
@@ -94,7 +112,7 @@ class Test_Broadcast:
         r = handler.msg_received(proto, msg)
 
         assert r == Msg.CONTINUE
-        assert len(calls) == 4
+        assert len(calls) == 5
 
     #-----------------------------------------------------------------------
 

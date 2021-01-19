@@ -246,6 +246,18 @@ class Protocol:
             LOG.debug("Setting next write time: %s", print_time)
 
     #-----------------------------------------------------------------------
+    def get_next_write_time(self):
+        """Get the Timestamp of the next Permitted Write
+
+        Used by the Serial and Hub objects to determine when they can write a
+        message.
+
+        Returns:
+          (epoch Seconds): The next time a message can be written
+        """
+        return self._next_write_time
+
+    #-----------------------------------------------------------------------
     def is_addr_in_write_queue(self, addr):
         """Checks whether a message to the specified address already exists
         in the _write_queue
@@ -546,7 +558,7 @@ class Protocol:
         # Write the message to the PLM modem.  The message will only be sent
         # when the current time is after the next write time as tracked by
         # the link.
-        self.link.write(msg_bytes, self._next_write_time)
+        self.link.write(msg_bytes, self.get_next_write_time)
         self._write_status = WriteStatus.PENDING_WRITE
 
     #-----------------------------------------------------------------------

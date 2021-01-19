@@ -5,6 +5,8 @@
 #===========================================================================
 import json
 import os
+import sys
+import functools
 from .Address import Address
 from .CommandSeq import CommandSeq
 from . import config
@@ -80,6 +82,7 @@ class Modem:
             'refresh' : self.refresh,
             'refresh_all' : self.refresh_all,
             'get_engine_all' : self.get_engine_all,
+            'get_model' : self.get_model,
             'linking' : self.linking,
             'scene' : self.scene,
             'factory_reset' : self.factory_reset,
@@ -133,6 +136,10 @@ class Modem:
         - devices   List of devices.  Each device is a type and insteon
                     address of the device.
 
+        This funciton is the first of 2 load_config steps.  It initializes the
+        protocol and checks the Modem address.  Step_2 below, continues the
+        rest of the config loading if the Modem address check is successful.
+
         Args:
           data (dict):  Configuration data to load.
         """
@@ -141,36 +148,102 @@ class Modem:
         # Pass the data to the modem network link.
         self.protocol.load_config(data)
 
-        # Read the modem address.
-        self.addr = Address(data['address'])
+        if 'address' in data:
+            # Read the modem address from config if specified
+            self.addr = Address(data['address'])
+            self.label = "%s (%s)" % (self.addr, self.name)
+            LOG.info("Modem address set to %s", self.addr)
+
+        # Query the modem for its address
+        callback = functools.partial(self.load_config_step2, config_data=data)
+        self.get_addr(on_done=callback)
+
+    #-----------------------------------------------------------------------
+    def load_config_step2(self, success, msg, data, config_data=None):
+        """Proceed with the Second Step of Loading the Config
+
+        This occurs after requesting the address of the modem.
+
+        Args:
+          data (dict):  Configuration data to load.
+        """
+        dev_cat = None
+        sub_cat = None
+        firmware = None
+        if success:
+            if self.addr is not None and self.addr != data.addr:
+                LOG.error("Modem address in config %s does not match address "
+                          "returned by the modem %s", self.addr, data.addr)
+            else:
+                self.addr = data.addr
+            # Save device values for later when db is loaded.
+            dev_cat = data.dev_cat
+            sub_cat = data.sub_cat
+            firmware = data.firmware
+            LOG.info("Modem address set to %s", self.addr)
+        else:
+            if self.addr is None:
+                LOG.error("Unable to get modem address, try specifying "
+                          "the address in config.yaml")
+                LOG.error("Unable to continue EXITING.")
+                sys.exit()
+                return
+            else:
+                LOG.error("Unable to get modem address, using address in "
+                          "config %s", self.addr)
+
         self.label = "%s (%s)" % (self.addr, self.name)
-        LOG.info("Modem address set to %s", self.addr)
 
         # Load the modem database.
-        if 'storage' in data:
-            save_path = data['storage']
+        if 'storage' in config_data:
+            save_path = config_data['storage']
             if not os.path.exists(save_path):
                 os.makedirs(save_path)
 
             self.save_path = save_path
             self.load_db()
 
-            LOG.info("Modem %s database loaded %s entries", self.addr,
+            LOG.info("Modem %s database loaded %s entries", self.label,
                      len(self.db))
             LOG.debug(str(self.db))
 
+        # Save the modem description if we got it
+        if dev_cat is not None:
+            self.db.set_info(dev_cat, sub_cat, firmware)
+            LOG.debug("Modem %s received model information: %s firmware: %#x",
+                      self.addr, self.db.desc, firmware)
+
         # Read the device definitions
-        self._load_devices(data.get('devices', []))
+        self._load_devices(config_data.get('devices', []))
 
         # Read the scenes definitions and load db_configs
-        self.scenes = Scenes.SceneManager(self, data.get('scenes', None))
+        self.scenes = Scenes.SceneManager(self,
+                                          config_data.get('scenes', None))
 
         # Send refresh messages to each device to check if the database is up
         # to date.
-        if data.get('startup_refresh', False) is True:
+        if config_data.get('startup_refresh', False) is True:
             LOG.info("Starting device refresh")
             for device in self.devices.values():
                 device.refresh()
+
+    #-----------------------------------------------------------------------
+    def get_addr(self, on_done=None):
+        """Ask the Modem to Respond with its Address.
+
+        The modem will respond with a message containing its address.
+
+        Args:
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.info("Requesting the modem address.")
+
+        # Request the first db record from the handler.  The handler will
+        # request each next record as the records arrive.
+        msg = Msg.OutModemInfo()
+        msg_handler = handler.ModemInfo(self, on_done)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
@@ -196,6 +269,20 @@ class Modem:
         msg = Msg.OutAllLinkGetFirst()
         msg_handler = handler.ModemDbGet(self.db, on_done)
         self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def get_model(self, on_done=None):
+        """Outputs the (dev_cat, sub_cat, and firmware) data from the device.
+
+        The data is obtained on startup and printed to the log already.  This
+        just repeats the same message.
+
+        Args:
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.ui("Modem %s model information: %s", self.addr, self.db.desc)
+        on_done(True, "Success get_model", None)
 
     #-----------------------------------------------------------------------
     def db_path(self):
@@ -951,7 +1038,7 @@ class Modem:
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
-    def scene(self, is_on, group=None, name=None, num_retry=3, reason="",
+    def scene(self, is_on, group=0x01, name=None, reason=None, level=None,
               on_done=None):
         """Trigger a virtual modem scene.
 
@@ -963,7 +1050,7 @@ class Modem:
                 False to send an off (0x13) command for the scene.
           group (int):  The modem group (scene) number to send.
           name (str):  The name of the scene as defined in a scenes.yaml file
-          num_retry (int):  The number of retries to use if the message fails.
+          level (None): Not used by Modem, should be None.
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
                  when the state changes - nothing else is done with it.
@@ -973,11 +1060,13 @@ class Modem:
         """
         # TODO: figure out how to pass reason around
         on_done = util.make_callback(on_done)
+        if level is not None:
+            LOG.error("Modem scenes do not use level command")
         if name is not None:
             try:
                 group = self.scene_map[name]
             except KeyError:
-                LOG.error("Unable to find modem scene %s", name)
+                LOG.error("Unable to find modem scene named %s", name)
                 on_done(False, "Scene command failed", None)
                 return
         else:

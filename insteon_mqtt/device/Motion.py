@@ -28,7 +28,7 @@ class Motion(BatterySensor):
     database is current or what the current motion state is - we can really
     only respond to the sensor when it sends out a message.
 
-    Motion sensors send a Motion.signal_on_off signal (from BatterySensor)
+    Motion sensors send a Motion.signal_state signal (from BatterySensor)
     when motion is detected.  Some motion sensors also support a dusk/dawn
     light sensor.  In that case, the Motion.signal_dawn signal is emitted
     when the light sensor changes state.
@@ -47,7 +47,7 @@ class Motion(BatterySensor):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_on_off( Device, bool is_on ): Sent when the sensor is tripped
+    - signal_state( Device, bool is_on ): Sent when the sensor is tripped
       (is_on=True) or resets (is_on=False).
 
     - signal_low_battery( Device, bool is_low ): Sent to indicate the current
@@ -245,8 +245,8 @@ class Motion(BatterySensor):
                      "light_sensitivity"])
         unknown = set(kwargs.keys()).difference(flags)
         if unknown:
-            raise Exception("Unknown Motion flags input: %s.\n Valid flags "
-                            "are: %s" % (unknown, flags))
+            LOG.error("Unknown Motion flags input: %s.\n Valid flags "
+                      "are: %s", unknown, flags)
 
         seq = CommandSeq(self, "Motion Set Flags Success", on_done,
                          name="SetFlags")

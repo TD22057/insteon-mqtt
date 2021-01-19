@@ -3,6 +3,7 @@
 # Tests for: insteont_mqtt/db/DeviceModifyManagerI1.py
 #
 #===========================================================================
+from unittest import mock
 import insteon_mqtt as IM
 import insteon_mqtt.message as Msg
 
@@ -30,6 +31,33 @@ class Test_Device:
 
         manager.start_modify()
         assert protocol.msgs[0].to_bytes() == db_msg.to_bytes()
+
+    #-----------------------------------------------------------------------
+    def test_start_modify_with_on_done(self):
+        # tests start_modify and _set_msb
+        protocol = MockProto()
+        modem = MockModem()
+        addr = IM.Address(0x01, 0x02, 0x03)
+        device = IM.device.Base(protocol, modem, addr)
+
+        # Create the new entry at the current last memory location.
+        db_flags = Msg.DbFlags(in_use=True, is_controller=True,
+                               is_last_rec=False)
+        i1_entry = IM.db.DeviceEntry(addr, 0x01, device.db.last.mem_loc,
+                                     db_flags, None, db=device.db)
+
+        manager = IM.db.DeviceModifyManagerI1(device,
+                                              device.db,
+                                              i1_entry)
+
+        db_msg = Msg.OutStandard.direct(device.addr, 0x28, 0x0F)
+
+        def fake_on_done(success, msg, data):
+            pass
+
+        manager.start_modify(on_done=fake_on_done)
+        assert protocol.msgs[0].to_bytes() == db_msg.to_bytes()
+        assert manager.on_done == fake_on_done
 
     #-----------------------------------------------------------------------
     def test_handle_set_msb(self):
@@ -94,6 +122,31 @@ class Test_Device:
         db_msg = Msg.OutStandard.direct(device.addr, 0x2B, 0xF9)
         manager.handle_lsb_response(msg, None)
         assert protocol.msgs[1].to_bytes() == db_msg.to_bytes()
+
+    #-----------------------------------------------------------------------
+    def test_handle_write_lsb_response(self):
+        # tests handle_lsb_response and write_lsb_byte
+        protocol = MockProto()
+        modem = MockModem()
+        addr = IM.Address(0x01, 0x02, 0x03)
+        device = IM.device.Base(protocol, modem, addr)
+
+        # Create the new entry at the current last memory location.
+        db_flags = Msg.DbFlags(in_use=True, is_controller=True,
+                               is_last_rec=False)
+        i1_entry = IM.db.DeviceEntry(addr, 0x01, device.db.last.mem_loc,
+                                     db_flags, None, db=device.db)
+
+        manager = IM.db.DeviceModifyManagerI1(device,
+                                              device.db,
+                                              i1_entry)
+        device.db.delta = 5
+        msg = "fake message"
+        on_done = "fake on_done"
+        with mock.patch.object(manager, 'handle_lsb_response') as mocked:
+            manager.handle_lsb_write_response(msg, on_done)
+            assert device.db.delta == 6
+            mocked.assert_called_once_with(msg, on_done)
 
     #-----------------------------------------------------------------------
     def test_finish_write(self):

@@ -383,7 +383,7 @@ class Thermostat:
             mode = self.device.ModeCommands[mode_str]
             self.device.mode_command(mode)
         except:
-            LOG.exception("Invalid thermostat mode command: %s", data)
+            LOG.error("Invalid thermostat mode command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_fan(self, client, data, message):
@@ -413,7 +413,7 @@ class Thermostat:
             mode = self.device.FanCommands[mode_str]
             self.device.fan_command(mode)
         except:
-            LOG.exception("Unknown thermostat fan mode command: %s", data)
+            LOG.error("Unknown thermostat fan mode command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_heat_setpoint(self, client, data, message):
@@ -447,7 +447,7 @@ class Thermostat:
 
             self.device.heat_sp_command(temp_c)
         except:
-            LOG.exception("Invalid thermostat heat setpoint command: %s", data)
+            LOG.error("Invalid thermostat heat setpoint command: %s", data)
 
     #-----------------------------------------------------------------------
     def _input_cool_setpoint(self, client, data, message):
@@ -481,4 +481,4 @@ class Thermostat:
 
             self.device.cool_sp_command(temp_c)
         except:
-            LOG.exception("Invalid thermostat cool setpoint command: %s", data)
+            LOG.error("Invalid thermostat cool setpoint command: %s", data)

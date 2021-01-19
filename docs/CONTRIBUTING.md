@@ -64,3 +64,38 @@ added.
    # Create html files that show missing lines
    pytest --cov=insteon_mqtt --cov-report html
    ```
+
+# Logging
+
+The user interface is entirely driven by log messages, so some care has to be
+taken to select the proper logging levels.  The following are some
+suggestions.
+
+1. `LOG.exception()` This will generate a `LOG.error()` message, and will
+output a traceback to the log.  This should be used if the source of the error
+is unknown and a traceback would be helpful to diagnose the source.
+2. `LOG.error()` This will generate a message sent to the User Interface.
+This should be used if the users command cannot be carried out.
+3. `LOG.warning()` This will generate a message sent to the User Interface.
+This should be used to warn a user that some anomaly happened, but it probably
+didn't interfere with their request.
+4. `LOG.UI()` This will generate a message sent to the User Interface.  This
+should be used to give direct User Interface responses.  Generally, these are
+expected successful responses.
+5. `LOG.info()` This will only generate a message in the log.  This should
+be used for assisting in debugging.  These should generally include valuable
+information such as the translation of a value or message into something
+readable.
+6. `LOG.debug()` This will only generate a message in the log.  This should
+be used for truly verbose logging.  Messages that say nothing more than "we
+made it to this point in the code" should go here.
+
+Log levels `Error, Warning, and UI` __are all outputted to the user
+interface__, while `exception, debug, and info` __are only written to the
+log__.  So please take into account your audience when selecting a log level
+and the content of  the log message.
+
+Generally, unless you intend to catch an Exception somewhere else in the code
+do not use the generic `raise Exception` as this will only produce an
+exception and traceback in the log, but will not produce any other logging
+message.  Consider using `LOG.exception()` instead.

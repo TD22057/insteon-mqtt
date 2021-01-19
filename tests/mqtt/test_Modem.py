@@ -56,7 +56,7 @@ class Test_Modem:
     def test_template(self, setup):
         mdev, addr, name = setup.getAll(['mdev', 'addr', 'name'])
 
-        data = mdev.template_data()
+        data = mdev.base_template_data()
         right = {"address" : addr.hex, "name" : name}
         assert data == right
 

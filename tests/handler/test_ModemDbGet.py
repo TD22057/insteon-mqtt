@@ -19,6 +19,8 @@ class Test_ModemDbGet:
         proto = MockProtocol()
         db = Mockdb()
         handler = IM.handler.ModemDbGet(db, callback)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
 
         get_first = Msg.OutAllLinkGetFirst(is_ack=True)
         get_next = Msg.OutAllLinkGetNext(is_ack=True)
@@ -47,6 +49,8 @@ class Test_ModemDbGet:
         db = Mockdb()
         db.device = MockDevice()
         handler = IM.handler.ModemDbGet(db, callback)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         proto = MockProtocol()
 
         b = bytes([0x02, 0x57,
@@ -63,6 +67,59 @@ class Test_ModemDbGet:
         assert isinstance(db.device.sent[0]['msg'], Msg.OutAllLinkGetNext)
         assert db.device.sent[0]['handler'] == handler
         assert db.entry == test_entry
+
+    #-----------------------------------------------------------------------
+    def test_recs_not_used(self, caplog):
+        calls = []
+
+        def callback(success, msg, done):
+            calls.append(msg)
+
+        db = Mockdb()
+        db.device = MockDevice()
+        handler = IM.handler.ModemDbGet(db, callback)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
+        proto = MockProtocol()
+
+        flags = Msg.DbFlags(False, True, False).to_bytes()[0]
+
+        b = bytes([0x02, 0x57,
+                   flags,  # flags
+                   0x01,  # group
+                   0x3a, 0x29, 0x84,  # addess
+                   0x01, 0x0e, 0x43])  # data
+        msg = Msg.InpAllLinkRec.from_bytes(b)
+        r = handler.msg_received(proto, msg)
+        assert r == Msg.FINISHED
+        assert isinstance(db.device.sent[0]['msg'], Msg.OutAllLinkGetNext)
+        assert db.device.sent[0]['handler'] == handler
+
+    #-----------------------------------------------------------------------
+    def test_plm_ack_sent(self, caplog):
+        calls = []
+
+        def callback(success, msg, done):
+            calls.append(msg)
+
+        proto = MockProtocol()
+        db = Mockdb()
+        handler = IM.handler.ModemDbGet(db, callback)
+        msg = Msg.OutAllLinkGetFirst(is_ack=True)
+
+        # test not sent
+        r = handler.msg_received(proto, msg)
+        assert r == Msg.UNKNOWN
+
+        # Signal Sent
+        handler.sending_message(msg)
+        assert handler._PLM_sent
+        assert not handler._PLM_ACK
+
+        # test receive ack
+        r = handler.msg_received(proto, msg)
+        assert r == Msg.CONTINUE
+
 
 #===========================================================================
 

@@ -450,8 +450,12 @@ The MQTT format of the command is:
 
 Switch, KeypadLinc, and Dimmer all support the flags:
 
-   - backlight: integer in the range 0x00-0xff which changes the LED backlight
-     level on the device.
+   - backlight: changes the LED backlight level on the device.  Insteon
+     documentation defines the range from 0x11 - 0x7F, however, levels below
+     0x11 appear to work on some devices, and levels above 0x7F may also work.
+     Switches and dimmers go as low as 0x04 and KeypadLincs go all the way
+     down to 0x01. Setting to 0x00 will turn off the backlight, any other
+     value will turn on the backlight.
    - on_level: integer in the range 0x00-0xff which sets the on level that will
      be used when the button is pressed.
    - load_attached: 0/1 to attach or detach the load from the group 1 button.
@@ -519,30 +523,41 @@ the current all link database for a device.
 
 ### Scene triggering.
 
-Supported: modem, devices
+Supported: devices
 
-This command triggers scenes from the modem or device.  For the modem, this
-triggers virtual modem scenes (i.e. any group number where the modem is the
-controller).  For devices, the group is the button number and this will
-simulate pressing the button on the device.  Note that devices do not work
-properly with the off command - they will emit the off scene message but not
-actually turn off themselves so insteon-mqtt will send an off command to the
-device once the scene messages are done.  The reason field is optional and
+This command triggers scenes from a device, as though the button on the
+device has been pressed.  The group is the button number and this will
+simulate pressing the button on the device.  This will cause all linked
+responders to react to the ON/OFF command. The reason field is optional and
 will be passed through to the output state change payload.
 
-   ```
-   { "cmd": "scene", "group" : group, "is_on" : 0/1, ["reason" : "..."] }
-   ```
-
-   Supported: modem
-
-   The modem also allows the triggering of scenes from a name defined in a
-   [Scene Management](scenes.md) file as well. To access a scene by its name
-   simply drop the group attribute and add the name attribute such as.
+Args:
+- group = Will default to 1 and can generally be omitted for most devices.
+- is_on = True or False.  This defines whether linked devices are sent an
+on or an off command.  The target device will treat off as level = 0x00 and
+on as the level defined on the device on_level unless level is passed.
+- level = If present, the target device will change to this on_level
+- reason = Will be passed through to the output state, defaults to 'device'
 
    ```
-   { "cmd": "scene", "name" : "test_scene", "is_on" : 0/1, ["reason" : "..."] }
+   { "cmd": "scene", "group" : group, "is_on" : 0/1, ["level": 0-255],
+   ["reason" : "..."] }
    ```
+
+Supported: modem
+
+For the modem, this triggers virtual modem scenes (i.e. any group number
+where the modem is the controller).  The modem also allows the triggering
+of scenes from a name defined in a [Scene Management](scenes.md) file as
+well. To access a scene by its name simply drop the group attribute and add
+the name attribute such as.
+
+Args:
+- Same as the device args, but modem does __not__ support the level command
+
+```
+{ "cmd": "scene", "name" : "test_scene", "is_on" : 0/1, ["reason" : "..."] }
+```
 
 
 ### Mark a battery device as awake.
@@ -878,7 +893,7 @@ matching the Home Assistant MQTT fan configuration.
 The KeypadLinc is a wall mounted on/off or dimmer control and scene
 controller.  Basically it combines a on/off or dimmer switch and remote
 control.  Dimmers and on/off devices are listed under separate entries in the
-input confi file which controls the behavior of the group 1 switch.  The
+input config file which controls the behavior of the group 1 switch.  The
 other buttons are treated as on/off switches (see the switch documentation
 above) but have no load connected to them.  KeypadLincs are usually
 configured as 6 button or 8 button devices with the following button number
@@ -898,14 +913,30 @@ The button change defines the following variables for templates:
    - 'button' is 1...n for the button number.
    - 'on' is 1 if the button is on, 0 if it's off.
    - 'on_str' is 'on' if the button is on, 'off' if it's off.
-   - 'mode' is the on/off mode: 'normal', 'fast', or instant'
+   - 'mode' is the on/off mode: 'normal', 'fast', instant', or 'ramp'
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
+   - 'transition' is the ramp rate in seconds.
    - 'reason' is the reason for the change.  'device' if a button was pressed
      on the device.  'scene' if the device is responding to a scene trigger.
      'refresh' if the update is from a refresh'.  'command' if the device is
      responding to an on/off command.  Or an arbitrary string if one was
      passed in via the scene or on/off style command inputs.
+
+The optional transition flag can be used to specify a ramp rate.  If 'ramp'
+mode is specified but no transition value, a ramp rate of 2 seconds is used.
+If a transition value is specified but no mode, 'ramp' mode is implied.
+Ramp mode is only supported on 2334-222 and 2334-232 devices at this time.
+
+   ```
+   { "cmd" : "on"/"off", "level" : LEVEL, ["mode" : 'normal'/'fast'/'instant'/'ramp'], "transition" : RATE }
+   ```
+
+Note: RATE is specified as a number of seconds and is rounded down to the
+nearest supported Half Rate.  Note that not all devices support ramp rates
+and that specifying one will limit the precision of LEVEL.
+See http://www.madreporite.com/insteon/ramprate.htm for more details on the
+"Light ON at Ramp Rate" and "Light OFF at Ramp Rate" commands.
 
 Manual state output is invoked when a button on the device is held down.
 Manual mode flags are UP or DOWN (when the on or off button is pressed and
@@ -938,7 +969,7 @@ A sample remote control topic and payload configuration is:
      btn_on_off_payload: '{ "cmd" : "{{json.state}}" }'
 
      # Input dimmer control
-     level_topic: 'insteon/{{address}}/level/1'
+     level_topic: 'insteon/{{address}}/set/1'
      level_payload: >
         { "cmd" : "{{json.state}}",
           "level" : {{json.brightness}} }

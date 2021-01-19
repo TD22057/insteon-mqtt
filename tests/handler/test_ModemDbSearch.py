@@ -47,9 +47,11 @@ def test_entry_dev1_resp():
     is_controller = False
     return IM.db.ModemEntry(addr, group, is_controller, data)
 
-class Test_ModemDbModify:
+class Test_ModemDbSearch:
     def test_ack(self, test_db, test_entry_dev1_ctrl):
         handler = Handler.ModemDbSearch(test_db)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         db_flags = Msg.DbFlags(in_use=True,
                                is_controller=test_entry_dev1_ctrl.is_controller,
                                is_last_rec=False)
@@ -63,6 +65,8 @@ class Test_ModemDbModify:
 
     def test_nack(self, test_db, test_entry_dev1_ctrl):
         handler = Handler.ModemDbSearch(test_db)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         db_flags = Msg.DbFlags(in_use=True,
                                is_controller=test_entry_dev1_ctrl.is_controller,
                                is_last_rec=False)
@@ -76,12 +80,16 @@ class Test_ModemDbModify:
 
     def test_wrong_handler(self, test_db, test_entry_dev1_ctrl):
         handler = Handler.ModemDbSearch(test_db)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         msg = Msg.OutAllLinkCancel()
         ret = handler.msg_received(test_db.device.protocol, msg)
         assert ret == Msg.UNKNOWN
 
     def test_entry_received(self, test_db, test_entry_dev1_ctrl):
         handler = Handler.ModemDbSearch(test_db)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         db_flags = Msg.DbFlags(in_use=True,
                                is_controller=test_entry_dev1_ctrl.is_controller,
                                is_last_rec=False)
@@ -101,6 +109,8 @@ class Test_ModemDbModify:
     def test_entry_not_used(self, test_db, test_entry_dev1_ctrl):
         # I don't think this is possible, but we have the code, so test for it
         handler = Handler.ModemDbSearch(test_db)
+        handler._PLM_sent = True
+        handler._PLM_ACK = True
         db_flags = Msg.DbFlags(in_use=False,
                                is_controller=test_entry_dev1_ctrl.is_controller,
                                is_last_rec=False)
@@ -115,3 +125,28 @@ class Test_ModemDbModify:
         assert sent[0].msg.cmd == Msg.OutAllLinkUpdate.Cmd.SEARCH
         assert sent[0].msg.group == test_entry_dev1_ctrl.group
         assert sent[0].msg.addr == test_entry_dev1_ctrl.addr
+
+    #-----------------------------------------------------------------------
+    def test_plm_sent(self, test_db, tmpdir):
+        db_flags = Msg.DbFlags(in_use=True,
+                               is_controller=False,
+                               is_last_rec=False)
+        handler = Handler.ModemDbSearch(test_db)
+        assert not handler._PLM_sent
+
+        #Try a message prior to sent
+        msg = Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.EXISTS,
+                                   db_flags,
+                                   0x01,
+                                   0x01,
+                                   data=None, is_ack=True)
+        ret = handler.msg_received(test_db.device.protocol, msg)
+        assert ret == Msg.UNKNOWN
+
+        # Signal Sent
+        handler.sending_message(msg)
+        assert handler._PLM_sent
+
+        #Try a message after sent
+        ret = handler.msg_received(test_db.device.protocol, msg)
+        assert ret == Msg.CONTINUE

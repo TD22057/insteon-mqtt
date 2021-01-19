@@ -99,7 +99,7 @@ class FanLinc(Dimmer):
         super().subscribe(link, qos)
 
         # Subscribe to the FanLinc topics.
-        data = self.template_data()
+        data = self.base_template_data()
 
         topic = self.msg_fan_on_off.render_topic(data)
         if topic:
@@ -149,11 +149,8 @@ class FanLinc(Dimmer):
         Returns:
           dict:  Returns a dict with the variables available for templating.
         """
-        data = {
-            "address" : self.device.addr.hex,
-            "name" : self.device.name if self.device.name
-                     else self.device.addr.hex,
-            }
+        # Set up the variables that can be used in the templates.
+        data = self.base_template_data()
 
         if level is not None:
             assert isinstance(level, Dev.FanLinc.Speed)
@@ -226,6 +223,6 @@ class FanLinc(Dimmer):
             reason = data.get("reason", "")
             self.device.fan_set(fan_speed, reason=reason)
         except:
-            LOG.exception("Invalid fan set speed command: %s", data)
+            LOG.error("Invalid fan set speed command: %s", data)
 
     #-----------------------------------------------------------------------

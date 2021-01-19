@@ -69,14 +69,22 @@ class ModemScene(Base):
           Msg.CONTINUE if we handled the message and expect more.
           Msg.FINISHED if we handled the message and are done.
         """
+        if not self._PLM_sent:
+            # If PLM hasn't sent our message yet, this can't be for us
+            return Msg.UNKNOWN
         # We should get an initial ack of the scene message
         if isinstance(msg, Msg.OutModemScene):
             if msg.is_ack:
+                self._PLM_ACK = True
                 return Msg.CONTINUE
 
             # NAK - modem not connected?
             self.on_done(False, "Scene command failed", None)
             return Msg.FINISHED
+
+        # Make sure we have PLM ACK before proceeding
+        elif not self._PLM_ACK:
+            return Msg.UNKNOWN
 
         # Next we should get cleanup_acks from each device
         elif (isinstance(msg, Msg.InpStandard) and

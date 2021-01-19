@@ -37,7 +37,7 @@ class BatterySensor(Base):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_on_off( Device, bool is_on ): Sent when the sensor is tripped
+    - signal_state( Device, bool is_on ): Sent when the sensor is tripped
       (is_on=True) or resets (is_on=False).
 
     - signal_low_battery( Device, bool is_low ): Sent to indicate the current
@@ -62,7 +62,7 @@ class BatterySensor(Base):
         super().__init__(protocol, modem, address, name)
 
         # Sensor on/off signal.  API: func( Device, bool is_on )
-        self.signal_on_off = Signal()
+        self.signal_state = Signal()
         # Sensor low battery signal.  API: func( Device, bool is_low )
         self.signal_low_battery = Signal()
         # Sensor heartbeat signal.  API: func( Device, True )
@@ -286,7 +286,7 @@ class BatterySensor(Base):
         """
         LOG.info("Setting device %s on:%s", self.label, is_on)
         self._is_on = is_on
-        self.signal_on_off.emit(self, self._is_on)
+        self.signal_state.emit(self, is_on=self._is_on)
 
     #-----------------------------------------------------------------------
     def _pop_send_queue(self):

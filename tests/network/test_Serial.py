@@ -47,7 +47,9 @@ class Test_Serial():
 
     def test_write_to_link_too_soon(self, test_device):
         t = time.time()
-        test_device._write_buf.append((bytes(8), time.time() + 5))
+        def call_time():
+            return time.time() + 5
+        test_device._write_buf.append((bytes(8), call_time))
         with patch.object(test_device.signal_needs_write, 'emit') as mock_emit:
             test_device.write_to_link(t)
             mock_emit.assert_not_called()
@@ -55,7 +57,9 @@ class Test_Serial():
     def test_write_to_link_partial(self, test_device):
         test_device.client.write_max = 4
         msg_time = time.time()
-        test_device._write_buf.append((bytes(8), msg_time))
+        def call_time():
+            return msg_time
+        test_device._write_buf.append((bytes(8), call_time))
         t = time.time()
         with patch.object(test_device.signal_needs_write, 'emit') as needs_emit:
             with patch.object(test_device.signal_wrote, 'emit') as wrote_emit:
@@ -66,7 +70,7 @@ class Test_Serial():
                 # Should still be 4 bytes in there
                 assert len(test_device._write_buf[0][0]) == 4
                 # After time should be the same
-                assert test_device._write_buf[0][1] == msg_time
+                assert test_device._write_buf[0][1] == call_time
                 # This should cause the rest of the data to be written
                 test_device.write_to_link(t)
                 needs_emit.assert_called_once_with(test_device, False)
@@ -78,7 +82,9 @@ class Test_Serial():
             raise Exception("Fake Serial", "Broken", "Test")
         test_device.client.write = write
         msg_time = time.time()
-        test_device._write_buf.append((bytes(8), msg_time))
+        def call_time():
+            return msg_time
+        test_device._write_buf.append((bytes(8), call_time))
         t = time.time()
         test_device.write_to_link(t)
         assert "Serial write error" in caplog.text

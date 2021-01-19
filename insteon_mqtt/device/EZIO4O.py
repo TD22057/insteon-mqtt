@@ -5,6 +5,7 @@
 #===========================================================================
 import functools
 from .Base import Base
+from . import functions
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
@@ -57,7 +58,7 @@ EZIO4xx_flags = {
 }
 
 
-class EZIO4O(Base):
+class EZIO4O(functions.Set, Base):
     """Smartenit EZIO4O - 4 relay output device.
 
     This class can be used to model the EZIO4O device which has 4 outputs.
@@ -68,7 +69,7 @@ class EZIO4O(Base):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_on_off( Device, int group, bool is_on, on_off.Mode mode, str
+    - signal_state( Device, int group, bool is_on, on_off.Mode mode, str
                      reason ): Sent whenever an output is turned on or off.
                      Group will be 1 to 4 matching the corresponding device
                      output.
@@ -92,7 +93,7 @@ class EZIO4O(Base):
         # Support on/off style signals.
         # API: func(Device, int group, bool is_on, on_off.Mode mode,
         #           str reason)
-        self.signal_on_off = Signal()
+        self.signal_state = Signal()
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
@@ -101,18 +102,11 @@ class EZIO4O(Base):
                 "on": self.on,
                 "off": self.off,
                 "set_flags": self.set_flags,
-                "set": self.set,
-                "scene": self.scene,
             }
         )
 
         # EZIOxx configuration port settings. See set_flags().
         self._flag_value = None
-
-        # Special callback to run when receiving a broadcast clean up.  See
-        # scene() for details.
-        self.broadcast_done = None
-        self.broadcast_reason = ""
 
         # NOTE: EZIO4O does NOT include the group in the ACK of an on/off
         # command.  So there is no way to tell which output is being ACK'ed
@@ -170,13 +164,8 @@ class EZIO4O(Base):
 
     #-----------------------------------------------------------------------
     def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
-           on_done=None):
+           transition=None, on_done=None):
         """Turn the device on.
-
-        NOTE: This does NOT simulate a button press on the device - it just
-        changes the state of the device.  It will not trigger any responders
-        that are linked to this device.  To simulate a button press, call the
-        scene() method.
 
         This will send the command to the device to update it's state.  When
         we get an ACK of the result, we'll change our internal state and emit
@@ -197,8 +186,11 @@ class EZIO4O(Base):
         """
         LOG.info("EZIO4O %s grp: %s cmd: on", self.label, group)
         assert 1 <= group <= 4
-        assert level >= 0 and level <= 0xFF
         assert isinstance(mode, on_off.Mode)
+
+        if transition or mode == on_off.Mode.RAMP:
+            LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
 
         # Use a standard message to send "output on" (0x45) command for the
         # output
@@ -217,13 +209,8 @@ class EZIO4O(Base):
 
     #-----------------------------------------------------------------------
     def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            on_done=None):
+            transition=None, on_done=None):
         """Turn the device off.
-
-        NOTE: This does NOT simulate a button press on the device - it just
-        changes the state of the device.  It will not trigger any responders
-        that are linked to this device.  To simulate a button press, call the
-        scene() method.
 
         This will send the command to the device to update it's state.  When
         we get an ACK of the result, we'll change our internal state and emit
@@ -243,6 +230,10 @@ class EZIO4O(Base):
         assert 1 <= group <= 4
         assert isinstance(mode, on_off.Mode)
 
+        if transition or mode == on_off.Mode.RAMP:
+            LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
+
         # Use a standard message to send "output off" (0x46) command for the
         # output
         msg = Msg.OutStandard.direct(self.addr, 0x46, group - 1)
@@ -257,95 +248,6 @@ class EZIO4O(Base):
 
         # Send the message to the PLM modem for protocol.
         self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def set(self, level, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            on_done=None):
-        """Turn the device on or off.  Level zero will be off.
-
-        NOTE: This does NOT simulate a button press on the device - it just
-        changes the state of the device.  It will not trigger any responders
-        that are linked to this device.  To simulate a button press, call the
-        scene() method.
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          level (int):  If non zero, turn the device on.  Should be in the
-                range 0 to 255.  Only dimmers use the intermediate values, all
-                other devices look at level=0 or level>0.
-          group (int):  The group to send the command to.  Group 1 to 4
-                        matching output 1 to 4.
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        if level:
-            self.on(group, level, mode, reason, on_done)
-        else:
-            self.off(group, mode, reason, on_done)
-
-    #-----------------------------------------------------------------------
-    def scene(self, is_on, group=0x01, reason="", on_done=None):
-        """Trigger a scene on the device.
-
-        Triggering a scene is the same as simulating a button press on the
-        device.  It will change the state of the device and notify responders
-        that are linked ot the device to be updated.
-
-        Args:
-          is_on (bool):  True for an on command, False for an off command.
-          group (int):  The output on the device to stimulate.  Group 1 to 4
-                matching output 1 to 4.
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info(
-            "EZIO4O %s grp: %s cmd: scene %s",
-            self.label,
-            group,
-            "on" if is_on else "off",
-        )
-        assert 1 <= group <= 4
-
-        on_done = util.make_callback(on_done)
-
-        # From here search modem scene (link group resp) into device link
-        # database matching to the desired output (group-1) in data 2
-        # Will use the first entry in the device database with responder
-        # link from the modem with a non 0 group
-
-        modem_scene = 0
-
-        entries = self.db.find_all(self.modem.addr, is_controller=False)
-        for e in entries:
-            if e.group != 1 and e.data[2] == group - 1:
-                modem_scene = e.group
-                break
-
-        if not modem_scene:
-            LOG.error(
-                "EZIO4O %s Can't trigger scene %s - there is no responder "
-                "from the modem in the device db",
-                self.label,
-                group,
-            )
-            on_done(False, "Failed to send scene command", None)
-            return
-
-        # Tell the modem to send it's virtual scene broadcast to the device
-        LOG.info(
-            "EZIO4O %s triggering modem scene %s for device output %s",
-            self.label,
-            modem_scene,
-            group,
-        )
-        self.modem.scene(is_on, modem_scene, on_done=on_done, reason=reason)
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):
@@ -499,9 +401,9 @@ class EZIO4O(Base):
 
         unknown = set(flags_to_set).difference(valid_flags)
         if unknown:
-            raise Exception(
+            LOG.error(
                 "EZIO4O Unknown flags input: %s.\n Valid "
-                "flags are: %s" % (unknown, valid_flags)
+                "flags are: %s", unknown, valid_flags
             )
 
         # Construct the flag register to write
@@ -688,40 +590,6 @@ class EZIO4O(Base):
             on_done(False, "EZIO4O state %s update failed" % group, None)
 
     #-----------------------------------------------------------------------
-    def handle_scene(self, msg, on_done, reason=""):
-        """Callback for scene simulation commanded messages.
-
-        This callback is run when we get a reply back from triggering a scene
-        on the device.  If the command was ACK'ed, we know it worked.  The
-        device will then send out standard broadcast messages which will
-        trigger other updates for the scene devices.
-
-        Args:
-          msg (message.InpStandard): The reply message from the device.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-        """
-        # DEBUG
-        LOG.debug("EZIO4O %s handle scene %s", self.label, msg)
-
-        # Call the callback.  We don't change state here - the device will
-        # send a regular broadcast message which will run handle_broadcast
-        # which will then update the state.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("EZIO4O %s ACK: %s", self.label, msg)
-
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("EZIO4O %s NAK error: %s", self.label, msg)
-            self.broadcast_reason = None
-            on_done(False, "EZIO4O Scene trigger failed", None)
-
-        else:
-            LOG.debug("EZIO4O %s broadcast ACK: %s", self.label, msg)
-
-    #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
         """Respond to a group command for this device.
 
@@ -790,6 +658,7 @@ class EZIO4O(Base):
         self._is_on[group - 1] = is_on
 
         # Notify others that the output state has changed.
-        self.signal_on_off.emit(self, group, is_on, mode, reason)
+        self.signal_state.emit(self, button=group, is_on=is_on, mode=mode,
+                               reason=reason)
 
     #-----------------------------------------------------------------------
