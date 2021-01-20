@@ -288,7 +288,40 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
         return (cmd1, cmd2)
 
     #-----------------------------------------------------------------------
-    def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
+    def set(self, is_on=None, level=None, group=0x00, mode=on_off.Mode.NORMAL,
+            reason="", transition=None, on_done=None):
+        """Turn the device on or off.  Level zero will be off.
+
+        NOTE: This does NOT simulate a button press on the device - it just
+        changes the state of the device.  It will not trigger any responders
+        that are linked to this device.  To simulate a button press, call the
+        scene() method.
+
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
+
+        Args:
+          is_on (bool): True to turn on, False for off
+          level (int): If non zero, turn the device on.  Should be in the
+                range 0 to 255.  If None, use default on-level.
+          group (int): The group to send the command to. If the group is 0,
+                it will always be the load (whether it's attached or not).
+                Otherwise it must be in the range [1,8] and controls the
+                specific button.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
+          transition (int): The transition ramp_rate if supported.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        super().set(is_on=is_on, level=level, group=group, mode=mode,
+                    reason=reason, transition=transition, on_done=on_done)
+
+    #-----------------------------------------------------------------------
+    def on(self, group=0x00, level=None, mode=on_off.Mode.NORMAL, reason="",
            transition=None, on_done=None):
         """Turn the device on.
 
@@ -296,7 +329,10 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
         a few unique KPL functions.
 
         Args:
-          group (int):  The group to send the command to.
+          group (int):  The group to send the command to.  If the group is 0,
+                it will always be the load (whether it's attached or not).
+                Otherwise it must be in the range [1,8] and controls the
+                specific button.
           level (int):  If non-zero, turn the device on.  The API is an int
                 to keep a consistent API with other devices.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
@@ -319,7 +355,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
                        transition=transition, on_done=on_done)
 
     #-----------------------------------------------------------------------
-    def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
+    def off(self, group=0x00, mode=on_off.Mode.NORMAL, reason="",
             transition=None, on_done=None):
         """Turn the device off.
 
@@ -327,7 +363,10 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
         a few unique KPL functions.
 
         Args:
-          group (int):  The group to send the command to.
+          group (int):  The group to send the command to.  If the group is 0,
+                it will always be the load (whether it's attached or not).
+                Otherwise it must be in the range [1,8] and controls the
+                specific button.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           transition (int): Transition time in seconds if supported.
           reason (str):  This is optional and is used to identify why the

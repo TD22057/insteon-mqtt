@@ -792,6 +792,29 @@ class Test_KeypadLinc:
                      qos, False)
 
     #-----------------------------------------------------------------------
+    def test_input_level_detached_load(self, setup):
+        mdev, link, addr, proto, dev = setup.getAll(['mdev', 'link', 'addr',
+                                                     'proto', 'dev'])
+
+        qos = 2
+        config = {'keypad_linc' : {
+            'dimmer_level_topic' : 'foo/{{address}}/1',
+            'dimmer_level_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
+                                      '"level" : "{{json.num}}" }')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+
+        # Set device in detached load state
+        dev._load_group = 9
+
+        payload = b'{ "on" : "OFF", "num" : 0 }'
+        link.publish("foo/%s/1" % addr.hex, payload, qos, retain=False)
+        # This should still trigger a standard off command
+        assert len(proto.sent) == 1
+        assert proto.sent[0].msg.cmd1 == 0x13
+
+    #-----------------------------------------------------------------------
     def test_input_level_reason(self, setup):
         mdev, link, addr, proto = setup.getAll(['mdev', 'link', 'addr',
                                                 'proto'])
