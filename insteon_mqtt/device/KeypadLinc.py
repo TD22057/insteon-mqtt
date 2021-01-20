@@ -12,15 +12,14 @@ from .. import on_off
 from ..Signal import Signal
 from .. import util
 from .Base import Base
-from . import functions
-from . import Dimmer
+from .functions import SetAndState, Scene, Backlight, DimmerFlags
+# from . import Dimmer
 
 LOG = log.get_logger()
 
 
 #===========================================================================
-class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
-                 Base):
+class KeypadLinc(SetAndState, Scene, Backlight, DimmerFlags, Base):
     """Insteon KeypadLinc dimmer/switch device.
 
     This class can be used to model a 6 or 8 button KeypadLinc with dimming
@@ -132,9 +131,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
         self.responder_groups = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
         # Define the flags handled by set_flags()
-        self.set_flags_map.update({'on_level': self.set_on_level,
-                                   'ramp_rate': self.set_ramp_rate,
-                                   'group': None,
+        self.set_flags_map.update({'group': None,
                                    'load_attached': self.set_load_attached,
                                    'follow_mask': self.set_led_follow_mask,
                                    'off_mask': self.set_led_off_mask,
@@ -549,8 +546,8 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
         if not is_controller:
             if self.is_dimmer:
                 ramp = 0x1f  # default
-                if data[1] in Dimmer.ramp_pretty:
-                    ramp = Dimmer.ramp_pretty[data[1]]
+                if data[1] in self.ramp_pretty:
+                    ramp = self.ramp_pretty[data[1]]
                 on_level = int((data[0] / .255) + .5) / 10
                 ret = [{'on_level': on_level},
                        {'ramp_rate': ramp},
@@ -586,7 +583,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
         if not is_controller and self.is_dimmer:
             if 'ramp_rate' in data:
                 data_2 = 0x1f
-                for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
+                for ramp_key, ramp_value in self.ramp_pretty.items():
                     if data['ramp_rate'] >= ramp_value:
                         data_2 = ramp_key
                         break
@@ -770,7 +767,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
         on_level = msg.data[7]
         self.db.set_meta('on_level', on_level)
         ramp_rate = msg.data[6]
-        for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
+        for ramp_key, ramp_value in self.ramp_pretty.items():
             if ramp_rate <= ramp_key:
                 ramp_rate = ramp_value
                 break
@@ -796,30 +793,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
                       self.addr)
             return
 
-        # Check for valid input
-        level = util.input_byte(kwargs, 'on_level')
-        if level is None:
-            LOG.error("Invalid on level.")
-            on_done(False, 'Invalid on level.', None)
-            return
-
-        LOG.info("KeypadLinc %s setting on level to %s", self.label, level)
-
-        # Extended message data - see Insteon dev guide p156.
-        data = bytes([
-            0x01,   # D1 must be group 0x01
-            0x06,   # D2 set on level when button is pressed
-            level,  # D3 brightness level
-            ] + [0x00] * 11)
-
-        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-
-        # Use the standard command handler which will notify us when the
-        # command is ACK'ed.
-        callback = functools.partial(self.handle_on_level, level=level)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-
-        self.send(msg, msg_handler)
+        super().set_on_level(on_done=on_done, **kwargs)
 
     #-----------------------------------------------------------------------
     def set_ramp_rate(self, on_done=None, **kwargs):
@@ -839,35 +813,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
                       self.addr)
             return
 
-        # Check for valid input
-        rate = util.input_float(kwargs, 'ramp_rate')
-        if rate is None:
-            LOG.error("Invalid ramp rate.")
-            on_done(False, 'Invalid ramp rate.', None)
-            return
-
-        LOG.info("Dimmer %s setting ramp rate to %s", self.label, rate)
-
-        data_3 = 0x1c  # the default ramp rate is .5
-        for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
-            if rate >= ramp_value:
-                data_3 = ramp_key
-                break
-
-        # Extended message data - see Insteon dev guide p156.
-        data = bytes([
-            0x01,   # D1 must be group 0x01
-            0x05,   # D2 set ramp rate when button is pressed
-            data_3,  # D3 rate
-            ] + [0x00] * 11)
-
-        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-
-        # Use the standard command handler which will notify us when the
-        # command is ACK'ed.
-        callback = self.generic_ack_callback("Button ramp rate updated.")
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-        self.send(msg, msg_handler)
+        super().set_ramp_rate(on_done=on_done, **kwargs)
 
     #-----------------------------------------------------------------------
     def set_led_follow_mask(self, on_done=None, **kwargs):
@@ -1092,36 +1038,6 @@ class KeypadLinc(functions.SetAndState, functions.Scene, functions.Backlight,
         callback = self.generic_ack_callback(task)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def handle_on_level(self, msg, on_done, level):
-        """Callback for handling set_on_level() responses.
-
-        This is called when we get a response to the set_on_level() command.
-        Update stored on-level in device DB and call the on_done callback with
-        the status.
-
-        Args:
-          msg (InpStandard): The response message from the command.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        self.db.set_meta('on_level', level)
-        on_done(True, "Button on level updated", None)
-
-    #-----------------------------------------------------------------------
-    def get_on_level(self):
-        """Look up previously-set on-level in device database, if present
-
-        This is called when we need to look up what is the default on-level
-        (such as when getting an ON broadcast message from the device).
-
-        If on_level is not found in the DB, assumes on-level is full-on.
-        """
-        on_level = self.db.get_meta('on_level')
-        if on_level is None:
-            on_level = 0xff
-        return on_level
 
     #-----------------------------------------------------------------------
     def handle_button_led(self, msg, on_done, group, is_on, led_bits,

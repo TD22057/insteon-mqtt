@@ -391,8 +391,8 @@ class FanLinc(Dimmer):
                    {'group': data[2]}]
             if data[2] <= 0x01:
                 ramp = 0x1f  # default
-                if data[1] in Dimmer.ramp_pretty:
-                    ramp = Dimmer.ramp_pretty[data[1]]
+                if data[1] in self.ramp_pretty:
+                    ramp = self.ramp_pretty[data[1]]
                 ret = [{'on_level': int((data[0] / .255) + .5) / 10},
                        {'ramp_rate': ramp},
                        {'group': data[2]}]
@@ -427,7 +427,7 @@ class FanLinc(Dimmer):
                 data_3 = data['group']
             if 'ramp_rate' in data and (data_3 is None or data_3 <= 0x01):
                 data_2 = 0x1f
-                for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
+                for ramp_key, ramp_value in self.ramp_pretty.items():
                     if data['ramp_rate'] >= ramp_value:
                         data_2 = ramp_key
                         break
