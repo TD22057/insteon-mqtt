@@ -18,6 +18,7 @@ class MockModem:
         self.scenes = []
         self.devices = {}
         self.device_names = {}
+        self.timed_call = MockTimedCall()
 
     def add(self, device):
         self.devices[device.addr.id] = device
@@ -88,6 +89,12 @@ class MockTimedCall:
     """Mock insteon_mqtt/network/TimedCall class
     """
     def __init__(self):
+        pass
+
+    def add(self, *args, **kwargs):
+        pass
+
+    def remove(self, *args, **kwargs):
         pass
 
 #===========================================================================
