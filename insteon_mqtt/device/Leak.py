@@ -82,14 +82,9 @@ class Leak(BatterySensor):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("LeakSensor %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-        else:
-            LOG.info("LeakSensor %s received is-dry message", self.label)
-            self._set_is_wet(False)
-            self.update_linked_devices(msg)
+        LOG.info("LeakSensor %s received is-dry message", self.label)
+        self._set_is_wet(False)
+        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_wet(self, msg):
@@ -101,14 +96,9 @@ class Leak(BatterySensor):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("LeakSensor %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-        else:
-            LOG.info("LeakSensor %s received is-wet message", self.label)
-            self._set_is_wet(True)
-            self.update_linked_devices(msg)
+        LOG.info("LeakSensor %s received is-wet message", self.label)
+        self._set_is_wet(True)
+        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_heartbeat(self, msg):
@@ -123,20 +113,15 @@ class Leak(BatterySensor):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("LeakSensor %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-        else:
-            LOG.info("LeakSensor %s received heartbeat", self.label)
-            # Update the wet/dry state using the heartbeat if needed.
-            is_wet = msg.cmd1 == 0x13
-            if self._is_wet != is_wet:
-                self._set_is_wet(is_wet)
+        LOG.info("LeakSensor %s received heartbeat", self.label)
+        # Update the wet/dry state using the heartbeat if needed.
+        is_wet = msg.cmd1 == 0x13
+        if self._is_wet != is_wet:
+            self._set_is_wet(is_wet)
 
-            # Send True for any heart beat message
-            self.signal_heartbeat.emit(self, True)
-            self.update_linked_devices(msg)
+        # Send True for any heart beat message
+        self.signal_heartbeat.emit(self, True)
+        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):

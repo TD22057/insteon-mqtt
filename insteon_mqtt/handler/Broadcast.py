@@ -28,7 +28,10 @@ class Broadcast(Base):
     Finally a broadcast LINK_CLEANUP_REPORT is sent.  This message indicates
     if the device received ACKs from all linked devices or not.  This message
     indicates that the device is finished sending messages.  However, as
-    broadcast message, it is not guaranteed to be received.
+    broadcast message, it is not guaranteed to be received.  Some devices
+    even have a user option to turn off these messages.  These messages
+    contain information about how the success or failure of the broadcast but
+    do not contain the ON/OFF value of the broadcast.
 
     This handler will call device.handle_broadcast(msg) for the device that
     sends the message.
@@ -92,8 +95,6 @@ class Broadcast(Base):
         if msg.flags.type == Msg.Flags.Type.ALL_LINK_BROADCAST:
             if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
                 # This is the final broadcast signalling completion.
-                # All of these messages will be forwarded to the device
-                # potentially even duplicates
                 # Re-enable sending
                 # First clear wait time
                 protocol.set_wait_time(0)
@@ -106,7 +107,7 @@ class Broadcast(Base):
                 else:
                     text = "Cleanup report for %s, grp %s had %d fails."
                     LOG.warning(text, msg.from_addr, msg.group, msg.cmd2)
-                return self._process(msg, protocol, wait_time)
+                return Msg.CONTINUE
             else:
                 # This is the initial broadcast or an echo of it.
                 if self._should_process(msg, wait_time):

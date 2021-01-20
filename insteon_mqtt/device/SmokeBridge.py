@@ -120,15 +120,10 @@ class SmokeBridge(Base):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("Smoke bridge %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-
         # 0x11 ON command for the smoke bridge means the error is active.
         # NOTE: there is no off command - that seems to be handled by the
         # bridge sending the CLEAR condition group.
-        elif msg.cmd1 == Msg.CmdType.ON:
+        if msg.cmd1 == Msg.CmdType.ON:
             LOG.info("Smoke bridge %s broadcast ON grp: %s", self.addr,
                      msg.group)
 
