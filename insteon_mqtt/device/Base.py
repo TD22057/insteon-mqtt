@@ -156,8 +156,9 @@ class Base:
         # function to call.  The signature of the function is
         # function(on_done=None, **kwargs).  Each function will receive all
         # flags specified in the call and should just ignore those that are
-        # unrelated.  Flags that are used as part of another flag should have
-        # a key of None.
+        # unrelated.  If the value None is used, no function will be called if
+        # that key is the only one passed.  Functions will only be called once
+        # even if the same function is used for multiple flags
         self.set_flags_map = {}
 
     #-----------------------------------------------------------------------
@@ -432,9 +433,13 @@ class Base:
         seq = CommandSeq(self, "Device set_flags complete", on_done,
                          name="DevSetFlags")
 
+        # Use a set, so that functions are unique and only called once
+        functions = set()
         for flag in kwargs:
             if self.set_flags_map[flag] is not None:
-                seq.add(self.set_flags_map[flag], **kwargs)
+                functions.add(self.set_flags_map[flag])
+        for function in functions:
+            seq.add(function, **kwargs)
 
         seq.run()
 
