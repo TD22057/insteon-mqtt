@@ -124,7 +124,7 @@ class Leak(BatterySensor):
         self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
+    def handle_refresh(self, msg, group=None):
         """Callback for handling refresh() responses.
 
         This is called when we get a response to the refresh() command.  The
