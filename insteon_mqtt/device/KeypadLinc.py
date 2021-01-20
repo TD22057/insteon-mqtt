@@ -239,12 +239,14 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           level (int): On level between 0-255.
           transition (int): Ramp rate for the transition in seconds.
+          group (int): The group number that this state applies to. Defaults
+                       to None.
         Returns
           cmd1, cmd2 (int): Value of cmds for this device.
         """
         if not self.is_dimmer:
             level = 0xff
-        # TODO this is direclty copied from Dimmer, would be better to have
+        # TODO this is directly copied from Dimmer, would be better to have
         # this as shared code.
         elif level is None:
             # Not specified - choose brightness as pressing the button would do
@@ -274,6 +276,8 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
         Args:
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           transition (int): Ramp rate for the transition in seconds.
+          group (int): The group number that this state applies to. Defaults
+                       to None.
         Returns
           cmd1, cmd2 (int): Value of cmds for this device.
         """
@@ -317,7 +321,7 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
     #-----------------------------------------------------------------------
     def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
             transition=None, on_done=None):
-        """Turn the device on.
+        """Turn the device off.
 
         This is a wrapper around the SetAndState functions class, that adds
         a few unique KPL functions.

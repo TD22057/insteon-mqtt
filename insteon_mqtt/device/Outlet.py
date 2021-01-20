@@ -149,7 +149,7 @@ class Outlet(functions.SetAndState, Base):
             msg_handler = handler.StandardCmd(msg, callback, on_done)
             self.send(msg, msg_handler)
         else:
-            # Bottom outlet uses a regular on command pass to SetAndState
+            # Top outlet uses a regular on command pass to SetAndState
             super().on(group=group, level=level, mode=mode, reason=reason,
                        transition=transition, on_done=on_done)
 
@@ -185,7 +185,7 @@ class Outlet(functions.SetAndState, Base):
             msg_handler = handler.StandardCmd(msg, callback, on_done)
             self.send(msg, msg_handler)
         else:
-            # Bottom outlet uses a regular on command pass to SetAndState
+            # Top outlet uses a regular on command pass to SetAndState
             super().off(group=group, mode=mode, reason=reason,
                         transition=transition, on_done=on_done)
 

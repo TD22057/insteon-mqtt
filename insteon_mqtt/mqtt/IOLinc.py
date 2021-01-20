@@ -114,10 +114,10 @@ class IOLinc(topic.StateTopic, topic.SetTopic):
             # things the sensor and the relay.  Had these been kept in
             # different topics this would not be needed.  Consider that if
             # copying this code.
-            if button == 1:
+            if button == 1:  # This was a sensor emit
                 sensor_is_on = kwargs['is_on']
                 relay_is_on = self.device.relay_is_on
-            elif button == 2:
+            elif button == 2:  # This was a relay emit
                 relay_is_on = kwargs['is_on']
                 sensor_is_on = self.device.sensor_is_on
 

@@ -176,7 +176,7 @@ class BatterySensor(functions.State, Base):
         else:
             LOG.info("BatterySensor %s on_off broadcast cmd: %s", self.addr,
                      msg.cmd1)
-            self._set_state(is_on=msg.cmd1 == Msg.CmdType.ON)
+            self._set_state(is_on=(msg.cmd1 == Msg.CmdType.ON))
             self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
@@ -239,7 +239,7 @@ class BatterySensor(functions.State, Base):
 
         # Current on/off level is stored in cmd2 so update our state
         # to match.
-        self._set_state(is_on=msg.cmd2 != 0x00)
+        self._set_state(is_on=(msg.cmd2 != 0x00))
 
     #-----------------------------------------------------------------------
     def awake(self, on_done):

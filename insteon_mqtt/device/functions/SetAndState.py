@@ -164,6 +164,8 @@ class SetAndState(State):
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           level (int): On level between 0-255.
           transition (int): Ramp rate for the transition in seconds.
+          group (int): The group number that this state applies to. Defaults
+                       to None.
         Returns
           cmd1, cmd2 (int): Value of cmds for this device.
         """
@@ -183,6 +185,8 @@ class SetAndState(State):
         Args:
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           transition (int): Ramp rate for the transition in seconds.
+          group (int): The group number that this state applies to. Defaults
+                       to None.
         Returns
           cmd1, cmd2 (int): Value of cmds for this device.
         """
