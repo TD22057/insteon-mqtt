@@ -4,7 +4,7 @@
 #
 #===========================================================================
 from .Base import Base
-from . import functions
+from .functions import SetAndState, Scene, Backlight
 from .. import log
 from .. import message as Msg
 from .. import on_off
@@ -14,8 +14,7 @@ LOG = log.get_logger()
 
 
 #===========================================================================
-class Switch(functions.SetAndState, functions.Scene, functions.Backlight,
-             Base):
+class Switch(SetAndState, Scene, Backlight, Base):
     """Insteon on/off switch device.
 
     This class can be used to model any device that acts like a on/off switch

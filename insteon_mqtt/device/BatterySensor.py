@@ -5,7 +5,7 @@
 #===========================================================================
 import time
 from .Base import Base
-from . import functions
+from .functions import State
 from .. import log
 from .. import message as Msg
 from ..Signal import Signal
@@ -13,7 +13,7 @@ from ..Signal import Signal
 LOG = log.get_logger()
 
 
-class BatterySensor(functions.State, Base):
+class BatterySensor(State, Base):
     """Insteon battery powered sensor.
 
     Battery powered sensors send basic on/off commands, low battery warnings,

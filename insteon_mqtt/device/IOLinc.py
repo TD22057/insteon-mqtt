@@ -6,7 +6,7 @@
 import enum
 import time
 from .Base import Base
-from . import functions
+from .functions import SetAndState
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
@@ -22,7 +22,7 @@ GROUP_SENSOR = 1
 GROUP_RELAY = 2
 
 
-class IOLinc(functions.SetAndState, Base):
+class IOLinc(SetAndState, Base):
     """Insteon IOLinc relay/sensor device.
 
     This class can be used to model the IOLinc device which has a sensor and

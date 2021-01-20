@@ -6,7 +6,7 @@
 #===========================================================================
 import functools
 from .Base import Base
-from . import functions
+from .functions import Scene, SetAndState, Backlight, DimmerFlags
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
@@ -18,8 +18,7 @@ from .. import util
 LOG = log.get_logger()
 
 
-class Dimmer(functions.Scene, functions.SetAndState, functions.Backlight,
-             functions.DimmerFlags, Base):
+class Dimmer(Scene, SetAndState, Backlight, DimmerFlags, Base):
     """Insteon dimmer device.
 
     This class can be used to model any device that acts like a dimmer

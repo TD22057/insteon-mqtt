@@ -5,7 +5,7 @@
 #===========================================================================
 import functools
 from .Base import Base
-from . import functions
+from .functions import SetAndState, Backlight
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
@@ -16,7 +16,7 @@ from ..Signal import Signal
 LOG = log.get_logger()
 
 
-class Outlet(functions.SetAndState, functions.Backlight, Base):
+class Outlet(SetAndState, Backlight, Base):
     """Insteon on/off outlet device.
 
     This is used for in-wall on/off outlets.  Each outlet (top and bottom) is
