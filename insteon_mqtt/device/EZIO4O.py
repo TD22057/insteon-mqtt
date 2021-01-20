@@ -120,6 +120,10 @@ class EZIO4O(functions.SetAndState, Base):
         # self.group_map.update({})
         self.responder_groups = [1, 2, 3, 4]
 
+        # Define the flags handled by set_flags()
+        for flag in EZIO4xx_flags:
+            self.set_flags_map[flag] = self._change_flags
+
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
         """Refresh the current device state and database if needed.
@@ -346,7 +350,7 @@ class EZIO4O(functions.SetAndState, Base):
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
-    def set_flags(self, on_done, **kwargs):
+    def _change_flags(self, on_done, **kwargs):
         """Set internal device flags.
 
         This command is used to change EZIOxx Configuration Port settings.
@@ -381,8 +385,6 @@ class EZIO4O(functions.SetAndState, Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("EZIO4O %s cmd: set flags", self.label)
-
         # TODO initialize flags on first run
         # Initialise flag value by reading the device Configuration Port
         # settings
@@ -393,20 +395,9 @@ class EZIO4O(functions.SetAndState, Base):
             )
             return
 
-        # Check the input flags to make sure only ones we can understand were
-        # passed in.
-        valid_flags = EZIO4xx_flags.keys()
-        flags_to_set = kwargs.keys()
-
-        unknown = set(flags_to_set).difference(valid_flags)
-        if unknown:
-            LOG.error(
-                "EZIO4O Unknown flags input: %s.\n Valid "
-                "flags are: %s", unknown, valid_flags
-            )
-
         # Construct the flag register to write
         new_flag_value = self._flag_value
+        flags_to_set = kwargs.keys()
 
         for field in list(flags_to_set):
             if True in EZIO4xx_flags[field]["options"]:
