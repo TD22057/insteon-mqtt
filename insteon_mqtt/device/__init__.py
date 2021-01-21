@@ -33,6 +33,7 @@ from .EZIO4O import EZIO4O
 from .FanLinc import FanLinc
 from .IOLinc import IOLinc
 from .KeypadLinc import KeypadLinc
+from .KeypadLincDimmer import KeypadLincDimmer
 from .Leak import Leak
 from .MsgHistory import MsgHistory
 from .Motion import Motion

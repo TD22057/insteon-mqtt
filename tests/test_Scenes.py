@@ -17,6 +17,7 @@ import insteon_mqtt.device.Base as Base
 import insteon_mqtt.device.Dimmer as Dimmer
 import insteon_mqtt.device.FanLinc as FanLinc
 import insteon_mqtt.device.KeypadLinc as KeypadLinc
+import insteon_mqtt.device.KeypadLincDimmer as KeypadLincDimmer
 import insteon_mqtt.device.Remote as Remote
 
 
@@ -364,8 +365,8 @@ class Test_Scenes:
 
     def test_KeypadLinc_scenes_same_ramp_rate(self):
         modem = MockModem()
-        keypadlinc = KeypadLinc(modem.protocol, modem, Address("11.22.33"),
-                                "KeypadLinc")
+        keypadlinc = KeypadLincDimmer(modem.protocol, modem,
+                                      Address("11.22.33"), "KeypadLinc")
         modem.devices[str(keypadlinc.addr)] = keypadlinc
         device = modem.find(Address("aa.bb.cc"))
         modem.devices[device.label] = device
@@ -575,8 +576,8 @@ class Test_Scenes:
 
     def test_foreign_hub_keypad_button_backlights_scene(self):
         modem = MockModem()
-        keypad = KeypadLinc(modem.protocol, modem, Address("11.22.33"),
-                            "Keypad")
+        keypad = KeypadLincDimmer(modem.protocol, modem, Address("11.22.33"),
+                                  "Keypad")
         modem.devices[str(keypad.addr)] = keypad
         device = modem.find(Address("aa.bb.cc"))
         modem.devices[device.label] = device

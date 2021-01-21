@@ -20,7 +20,7 @@ def test_device(tmpdir):
     protocol = H.main.MockProtocol()
     modem = H.main.MockModem(tmpdir)
     addr = IM.Address(0x01, 0x02, 0x03)
-    device = IM.device.KeypadLincDimmer(protocol, modem, addr, 'test_device')
+    device = IM.device.KeypadLinc(protocol, modem, addr, 'test_device')
     return device
 
 class Test_KPL():
@@ -72,7 +72,7 @@ class Test_KPL():
         data = test_device.link_data(True, 0x02, data=None)
         assert data == bytes([0x03, 0x00, 0x02])
         data = test_device.link_data(False, 0x02, data=None)
-        assert data == bytes([0xff, 0x1f, 0x02])
+        assert data == bytes([0xff, 0x00, 0x02])
 
     def test_link_data_pretty(self, test_device):
         # is_controller, data
@@ -81,40 +81,20 @@ class Test_KPL():
         data = test_device.link_data_to_pretty(True, data=[0x01, 0x00, 0x00])
         assert data == [{'data_1': 1}, {'data_2': 0}, {'group': 0}]
         data = test_device.link_data_to_pretty(False, data=[0xff, 0x00, 0x00])
-        assert data == [{'on_level': 100.0}, {'ramp_rate': 540}, {'group': 0}]
+        assert data == [{'data_1': 255}, {'data_2': 0}, {'group': 0}]
         data = test_device.link_data_to_pretty(False, data=[0xff, 0x1f, 0x05])
-        assert data == [{'on_level': 100.0}, {'ramp_rate': .1}, {'group': 5}]
+        assert data == [{'data_1': 255}, {'data_2': 0x1F}, {'group': 5}]
 
     def test_link_data_from_pretty(self, test_device):
         # link_data_from_pretty(self, is_controller, data):
-        data = test_device.link_data_from_pretty(False, data={'on_level': 100.0,
-                                                              'ramp_rate': .1,
-                                                              'group': 5})
-        assert data == [0xff, 0x1f, 0x05]
-        data = test_device.link_data_from_pretty(False, data={'on_level': 100.0,
-                                                              'ramp_rate': 540,
-                                                              'group': 1})
-        assert data == [0xff, 0x00, 0x01]
-        data = test_device.link_data_from_pretty(True, data={'on_level': 100.0,
-                                                             'ramp_rate': 540,
-                                                             'group': 1})
+        data = test_device.link_data_from_pretty(False, data={'group': 5})
+        assert data == [None, None, 0x05]
+        data = test_device.link_data_from_pretty(False, data={'group': 1})
         assert data == [None, None, 0x01]
         data = test_device.link_data_from_pretty(True, data={'data_1': 0x01,
                                                              'data_2': 0x02,
                                                              'data_3': 0x03})
         assert data == [0x01, 0x02, 0x03]
-
-    def test_increment_up(self, test_device):
-        # increment_up(self, reason="", on_done=None)
-        test_device.increment_up()
-        assert len(test_device.protocol.sent) == 1
-        assert test_device.protocol.sent[0].msg.cmd1 == 0x15
-
-    def test_increment_down(self, test_device):
-        # increment_up(self, reason="", on_done=None)
-        test_device.increment_down()
-        assert len(test_device.protocol.sent) == 1
-        assert test_device.protocol.sent[0].msg.cmd1 == 0x16
 
     def test_set_load_attached(self, test_device):
         # set_load_attached(self, is_attached, on_done=None):
@@ -200,89 +180,10 @@ class Test_KPL():
             assert args_list[0][0][0].cmd1 == 0x20
             assert args_list[0][0][0].cmd2 == 0x08
 
-    def test_set_ramp_rate(self, test_device):
-        # set_ramp_rate(self, rate, on_done=None)
-        def level_bytes(level):
-            data = bytes([
-                0x01,   # D1 must be group 0x01
-                0x05,   # D2 set global led brightness
-                level,  # D3 brightness level
-                ] + [0x00] * 11)
-            return data
-        for params in ([.1, 0x1f], [540, 0x00], [600, 0x00], [.0001, 0x1c]):
-            test_device.set_ramp_rate(ramp_rate=params[0])
-            assert len(test_device.protocol.sent) == 1
-            assert test_device.protocol.sent[0].msg.cmd1 == 0x2e
-            assert test_device.protocol.sent[0].msg.data == level_bytes(params[1])
-            test_device.protocol.clear()
-
-    def test_set_on_level(self, test_device):
-        # set_on_level(self, level, on_done=None)
-        assert(test_device.get_on_level() == 255)
-
-        def level_bytes(level):
-            data = bytes([
-                0x01,
-                0x06,
-                level,
-                ] + [0x00] * 11)
-            return data
-        for params in ([1, 0x01], [127, 127], [255, 0xFF]):
-            test_device.set_on_level(on_level=params[0])
-            assert len(test_device.protocol.sent) == 1
-            assert test_device.protocol.sent[0].msg.cmd1 == 0x2e
-            assert (test_device.protocol.sent[0].msg.data ==
-                    level_bytes(params[1]))
-            test_device.protocol.clear()
-
-        test_device.set_on_level(on_level=64)
-
-        # Fake having completed the set_on_level(64) request
-        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
-        ack = IM.message.InpStandard(test_device.addr.hex,
-                                     test_device.modem.addr.hex,
-                                     flags, 0x2e, 0x00)
-        test_device.handle_on_level(ack, IM.util.make_callback(None), 64)
-        assert(test_device.get_on_level() == 64)
-        test_device.protocol.clear()
-
-        # Try multiple button presses in a row; confirm that level goes to
-        # default on-level then to full brightness, as expected.
-        # Fast-on should always go to full brightness.
-        params = [
-            (Msg.CmdType.ON, 0x00, {"level":64, "mode":IM.on_off.Mode.NORMAL, "is_on": None, "reason":'device', "button":1}),
-            (Msg.CmdType.ON, 0x00, {"level":255, "mode":IM.on_off.Mode.NORMAL, "is_on": None, "reason":'device', "button":1}),
-            (Msg.CmdType.ON, 0x00, {"level":64, "mode":IM.on_off.Mode.NORMAL, "is_on": None, "reason":'device', "button":1}),
-            (Msg.CmdType.OFF, 0x00, {"level":0, "mode":IM.on_off.Mode.NORMAL, "is_on": None, "reason":'device', "button":1}),
-            (Msg.CmdType.ON_FAST, 0x00, {"level":255, "mode":IM.on_off.Mode.FAST, "is_on": None, "reason":'device', "button":1}),
-            (Msg.CmdType.ON_FAST, 0x00, {"level":255, "mode":IM.on_off.Mode.FAST, "is_on": None, "reason":'device', "button":1}),
-            (Msg.CmdType.OFF_FAST, 0x00, {"level":0, "mode":IM.on_off.Mode.FAST, "is_on": None, "reason":'device', "button":1}),
-            (Msg.CmdType.ON_INSTANT, 0x00,
-                {"level":64, "mode":IM.on_off.Mode.INSTANT, "is_on": None, "reason":'device', "button":1}),
-            (Msg.CmdType.ON_INSTANT, 0x00,
-                {"level":255, "mode":IM.on_off.Mode.INSTANT, "is_on": None, "reason":'device', "button":1}),
-            (Msg.CmdType.ON_INSTANT, 0x00,
-                {"level":64, "mode":IM.on_off.Mode.INSTANT, "is_on": None, "reason":'device', "button":1})]
-        for cmd1, cmd2, expected in params:
-            with mock.patch.object(IM.Signal, 'emit') as mocked:
-                print("Trying:", "[%x, %x]" % (cmd1, cmd2))
-                flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
-                group_num = 0x01
-                group = IM.Address(0x00, 0x00, group_num)
-                addr = IM.Address(0x01, 0x02, 0x03)
-                msg = Msg.InpStandard(addr, group, flags, cmd1, cmd2)
-                test_device.handle_broadcast(msg)
-                if expected is not None:
-                    mocked.assert_called_once_with(test_device, **expected)
-                else:
-                    mocked.assert_not_called()
-
     def test_set_flags(self, test_device):
         # set_flags(self, on_done, **kwargs)
         for params in ([{'backlight': 1}, test_device.set_backlight, 0x01],
                        [{'load_attached': 1}, test_device.set_load_attached, 0x01],
-                       [{'on_level': 127}, test_device.set_on_level, 0x7F],
-                       [{'ramp_rate': .1}, test_device.set_ramp_rate, .1],
                        [{'follow_mask': 1, "group": 4},
                         test_device.set_led_follow_mask, 4],
                        [{'off_mask': 1, "group": 4},
@@ -312,8 +213,8 @@ class Test_KPL():
         (0x01,Msg.CmdType.OFF, 0x00, {"level":0,"mode":IM.on_off.Mode.NORMAL, "is_on": None, "reason":'device', "button":1}),
         (0x01,Msg.CmdType.ON_FAST, 0x00,{"level":255,"mode":IM.on_off.Mode.FAST, "is_on": None, "reason":'device', "button":1}),
         (0x01,Msg.CmdType.OFF_FAST, 0x00, {"level":0,"mode":IM.on_off.Mode.FAST, "is_on": None, "reason":'device', "button":1}),
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.DOWN, "reason":'device', "button":1}),
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, {"manual":IM.on_off.Manual.UP, "reason":'device', "button":1}),
+        # (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.DOWN, "reason":'device', "button":1}),
+        # (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, {"manual":IM.on_off.Manual.UP, "reason":'device', "button":1}),
         (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP, "reason":'device', "button":1}),
         (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
         (0x02,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "is_on": None, "reason":'device', "button":2}),
@@ -335,27 +236,3 @@ class Test_KPL():
                 mocked.assert_called_once_with(test_device, **expected)
             else:
                 mocked.assert_not_called()
-
-    def test_get_flags(self, test_device):
-        # This should hijack get flags and should insert a call to
-        # EXTENDED_SET_GET
-        with mock.patch.object(IM.CommandSeq, 'add'):
-            test_device.get_flags()
-            calls = [
-                # TODO: figure out how to define the call to super().get_flags
-                call(test_device._get_ext_flags),
-            ]
-            IM.CommandSeq.add.assert_has_calls(calls)
-            assert IM.CommandSeq.add.call_count == 2
-
-    def test_handle_ext_flags(self, test_device):
-        from_addr = IM.Address(0x01, 0x02, 0x05)
-        flags = Msg.Flags(Msg.Flags.Type.DIRECT, True)
-        data = bytes([0x01, 0x01, 0x00, 0x00, 0x20, 0x20, 0x1c, 0x1c, 0x1f,
-                      0x00, 0x01, 0x00, 0x00, 0x00])
-        msg = Msg.InpExtended(from_addr, test_device.addr, flags,
-                              Msg.CmdType.EXTENDED_SET_GET, 0x00, data)
-        def on_done(success, *args):
-            assert success
-        test_device.handle_ext_flags(msg, on_done)
-        assert test_device.get_on_level() == 0x1C

@@ -12,14 +12,14 @@ from .. import on_off
 from ..Signal import Signal
 from .. import util
 from .Base import Base
-from .functions import SetAndState, Scene, Backlight, DimmerFuncs
+from .functions import SetAndState, Scene, Backlight
 # from . import Dimmer
 
 LOG = log.get_logger()
 
 
 #===========================================================================
-class KeypadLinc(SetAndState, Scene, Backlight, DimmerFuncs, Base):
+class KeypadLinc(SetAndState, Scene, Backlight, Base):
     """Insteon KeypadLinc dimmer/switch device.
 
     This class can be used to model a 6 or 8 button KeypadLinc with dimming
@@ -50,7 +50,7 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFuncs, Base):
     """
 
     #-----------------------------------------------------------------------
-    def __init__(self, protocol, modem, address, name, dimmer=True):
+    def __init__(self, protocol, modem, address, name):
         """Constructor
 
         Args:
@@ -66,8 +66,7 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFuncs, Base):
         super().__init__(protocol, modem, address, name)
 
         # Switch or dimmer type.
-        self.is_dimmer = dimmer
-        self.type_name = "keypad_linc" if dimmer else "keypad_linc_sw"
+        self.type_name = "keypad_linc_sw"
 
         # Group on/off signal.
         # API: func(Device, int group, int level, on_off.Mode mode, str reason)
@@ -235,50 +234,6 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFuncs, Base):
         seq.add_msg(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def cmd_on_values(self, mode, level, transition, group):
-        """Calculate Cmd Values for On
-
-        Args:
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          level (int): On level between 0-255.
-          transition (int): Ramp rate for the transition in seconds.
-          group (int): The group number that this state applies to. Defaults
-                       to None.
-        Returns
-          cmd1, cmd2 (int): Value of cmds for this device.
-        """
-        if not self.is_dimmer:
-            level = 0xff
-        elif level is None:
-            # If level is not specified it uses the level that the device
-            # would go to if the button was physically pressed.
-            level = self.derive_on_level(mode)
-
-        mode, transition = self.mode_transition_supported(mode, transition)
-
-        cmd1 = on_off.Mode.encode(True, mode)
-        cmd2 = on_off.Mode.encode_cmd2(True, mode, level, transition)
-        return (cmd1, cmd2)
-
-    #-----------------------------------------------------------------------
-    def cmd_off_values(self, mode, transition, group):
-        """Calculate Cmd Values for Off
-
-        Args:
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          transition (int): Ramp rate for the transition in seconds.
-          group (int): The group number that this state applies to. Defaults
-                       to None.
-        Returns
-          cmd1, cmd2 (int): Value of cmds for this device.
-        """
-        # Ignore RAMP mode / transition if command not supported
-        mode, transition = self.mode_transition_supported(mode, transition)
-        cmd1 = on_off.Mode.encode(False, mode)
-        cmd2 = on_off.Mode.encode_cmd2(True, mode, 0, transition)
-        return (cmd1, cmd2)
-
-    #-----------------------------------------------------------------------
     def set(self, is_on=None, level=None, group=0x00, mode=on_off.Mode.NORMAL,
             reason="", transition=None, on_done=None):
         """Turn the device on or off.  Level zero will be off.
@@ -389,65 +344,12 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFuncs, Base):
         """
         # Ignore RAMP mode / transition if command not supported
         if mode == on_off.Mode.RAMP or transition is not None:
-            if not self.is_dimmer or not self.on_off_ramp_supported:
-                if self.db.desc is None:
-                    LOG.error("Model info not in DB - ignoring ramp "
-                              "rate.  Use 'get_model %s' to retrieve.",
-                              self.addr)
-                else:
-                    LOG.error("Light ON at Ramp Rate not supported with "
-                              "%s devices - ignoring specified ramp rate.",
-                              self.db.desc.model)
-                transition = None
-                if mode == on_off.Mode.RAMP:
-                    mode = on_off.Mode.NORMAL
+            LOG.error("Light ON at Ramp Rate not supported with "
+                      "non-dimming devices - ignoring specified ramp rate.")
+            transition = None
+            if mode == on_off.Mode.RAMP:
+                mode = on_off.Mode.NORMAL
         return (mode, transition)
-
-    #-----------------------------------------------------------------------
-    def increment_up(self, reason="", on_done=None):
-        """Increment the current level up.
-
-        Levels increment in units of 8 (32 divisions from off to on).
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        if not self.is_dimmer:
-            LOG.error("KeypadLinc %s switch doesn't support increment up "
-                      "command", self.addr)
-            return
-        super().increment_up(reason=reason, on_done=on_done)
-
-    #-----------------------------------------------------------------------
-    def increment_down(self, reason="", on_done=None):
-        """Increment the current level down.
-
-        Levels increment in units of 8 (32 divisions from off to on).
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        if not self.is_dimmer:
-            LOG.error("KeypadLinc %s switch doesn't support increment down "
-                      "command", self.addr)
-            return
-        super().increment_down(reason=reason, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):
@@ -486,10 +388,7 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFuncs, Base):
         # Responder data is always link dependent.  Since nothing was given,
         # assume the user wants to turn the device on (0xff).
         else:
-            data_2 = 0x00
-            if self.is_dimmer:
-                data_2 = 0x1f
-            defaults = [0xff, data_2, group]
+            defaults = [0xff, 0x00, group]
 
         # For each field, use the input if not -1, else the default.
         return util.resolve_data3(defaults, data)
@@ -511,15 +410,6 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFuncs, Base):
           list[3]:  list, containing a dict of the human readable values
         """
         ret = [{'data_1': data[0]}, {'data_2': data[1]}, {'group': data[2]}]
-        if not is_controller:
-            if self.is_dimmer:
-                ramp = 0x1f  # default
-                if data[1] in self.ramp_pretty:
-                    ramp = self.ramp_pretty[data[1]]
-                on_level = int((data[0] / .255) + .5) / 10
-                ret = [{'on_level': on_level},
-                       {'ramp_rate': ramp},
-                       {'group': data[2]}]
         return ret
 
     #-----------------------------------------------------------------------
@@ -548,15 +438,6 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFuncs, Base):
             data_3 = data['data_3']
         if 'group' in data:
             data_3 = data['group']
-        if not is_controller and self.is_dimmer:
-            if 'ramp_rate' in data:
-                data_2 = 0x1f
-                for ramp_key, ramp_value in self.ramp_pretty.items():
-                    if data['ramp_rate'] >= ramp_value:
-                        data_2 = ramp_key
-                        break
-            if 'on_level' in data:
-                data_1 = int(data['on_level'] * 2.55 + .5)
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
@@ -678,110 +559,6 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFuncs, Base):
                                          reason=reason)
             msg_handler = handler.StandardCmd(msg, callback, on_done)
             self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def get_flags(self, on_done=None):
-        """Hijack base get_flags to inject extended flags request.
-
-        The flags will be passed to the on_done callback as the data field.
-        Derived types may do something with the flags by override the
-        handle_flags method.
-
-        Args:
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        seq = CommandSeq(self, "Dimmer get_flags complete", on_done,
-                         name="GetFlags")
-        seq.add(super().get_flags)
-        seq.add(self._get_ext_flags)
-        seq.run()
-
-    #-----------------------------------------------------------------------
-    def _get_ext_flags(self, on_done=None):
-        """Get the Insteon operational extended flags field from the device.
-
-        For the dimmer device, the flags include on-level and ramp-rate.
-
-        Args:
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Dimmer %s cmd: get extended operation flags", self.label)
-
-        # D1 = group (0x01), D2 = 0x00 == Data Request, others ignored,
-        # per Insteon Dev Guide
-        data = bytes([0x01] + [0x00] * 13)
-
-        msg = Msg.OutExtended.direct(self.addr, Msg.CmdType.EXTENDED_SET_GET,
-                                     0x00, data)
-        msg_handler = handler.ExtendedCmdResponse(msg, self.handle_ext_flags,
-                                                  on_done)
-        self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def handle_ext_flags(self, msg, on_done):
-        """Handle replies to the _get_ext_flags command.
-
-        Extended message payload is:
-          D8 = on-level
-          D7 = ramp-rate
-
-        Args:
-          msg (message.InpExtended):  The message reply.
-          on_done:  Finished callback.  This is called when the command has
-                    completed.  Signature is: on_done(success, msg, data)
-        """
-        on_level = msg.data[7]
-        self.db.set_meta('on_level', on_level)
-        ramp_rate = msg.data[6]
-        for ramp_key, ramp_value in self.ramp_pretty.items():
-            if ramp_rate <= ramp_key:
-                ramp_rate = ramp_value
-                break
-        LOG.ui("Dimmer %s on_level: %s (%.2f%%) ramp rate: %ss", self.label,
-               on_level, on_level / 2.55, ramp_rate)
-        on_done(True, "Operation complete", msg.data[5])
-
-    #-----------------------------------------------------------------------
-    def set_on_level(self, on_done=None, **kwargs):
-        """Set the device default on level.
-
-        This changes the dimmer level the device will go to when the on
-        button is pressed.  This can be very useful because a double-tap
-        (fast-on) will the turn the device to full brightness if needed.
-
-        Args:
-          level (int):  The default on level in the range [0,255]
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        if not self.is_dimmer:
-            LOG.error("KeypadLinc %s switch doesn't support setting on level",
-                      self.addr)
-            return
-
-        super().set_on_level(on_done=on_done, **kwargs)
-
-    #-----------------------------------------------------------------------
-    def set_ramp_rate(self, on_done=None, **kwargs):
-        """Set the device default ramp rate.
-
-        This changes the dimmer default ramp rate of how quickly the it
-        will turn on or off. This rate can be between 0.1 seconds and up
-        to 9 minutes.
-
-        Args:
-          rate (float): Ramp rate in in the range [0.1, 540] seconds
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        if not self.is_dimmer:
-            LOG.error("KeypadLinc %s switch doesn't support setting ramp_rate",
-                      self.addr)
-            return
-
-        super().set_ramp_rate(on_done=on_done, **kwargs)
 
     #-----------------------------------------------------------------------
     def set_led_follow_mask(self, on_done=None, **kwargs):
@@ -1186,8 +963,7 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFuncs, Base):
 
             # For an on command, we can update directly.
             if is_on:
-                level = self.derive_on_level(mode)
-                self._set_state(group=msg.group, level=level, mode=mode,
+                self._set_state(group=msg.group, level=0xFF, mode=mode,
                                 reason=reason)
             else:
                 self._set_state(group=msg.group, level=0x00, mode=mode,
@@ -1205,45 +981,16 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFuncs, Base):
             # through experiments)
             if msg.group == self._load_group:
                 # Switches change state when the switch is held.
-                if not self.is_dimmer:
-                    if manual == on_off.Manual.UP:
-                        self._set_state(group=self._load_group, level=0xff,
-                                        mode=on_off.Mode.MANUAL,
-                                        reason=reason)
-                    elif manual == on_off.Manual.DOWN:
-                        self._set_state(group=self._load_group, level=0x00,
-                                        mode=on_off.Mode.MANUAL,
-                                        reason=reason)
-
-                # Ping the device to get the dimmer states - we don't know
-                # what the keypadlinc things the state is - could be on or
-                # off.  Doing a dim down for a long time puts all the other
-                # devices "off" but the keypadlinc can still think that it's
-                # on.  So we have to do a refresh to find out.
-                elif manual == on_off.Manual.STOP:
-                    self.refresh()
+                if manual == on_off.Manual.UP:
+                    self._set_state(group=self._load_group, level=0xff,
+                                    mode=on_off.Mode.MANUAL,
+                                    reason=reason)
+                elif manual == on_off.Manual.DOWN:
+                    self._set_state(group=self._load_group, level=0x00,
+                                    mode=on_off.Mode.MANUAL,
+                                    reason=reason)
 
         self.update_linked_devices(msg)
-
-    #-----------------------------------------------------------------------
-    def handle_increment(self, msg, on_done, delta, reason=""):
-        """Callback for increment up/down commanded messages.
-
-        This callback is run when we get a reply back from triggering an
-        increment up or down on the device.  If the command was ACK'ed, we
-        know it worked.
-
-        Args:
-          msg (message.InpStandard): The reply message from the device.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-          delta (int):  The amount +/- of level to change by.
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-        """
-        super().handle_increment(msg, on_done, delta, reason=reason,
-                                 group=self._load_group)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
@@ -1281,9 +1028,6 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFuncs, Base):
             # For switches, on/off determines the level.  For dimmers, it's
             # set by the responder entry in the database.
             level = 0xff if is_on else 0x00
-            if self.is_dimmer and is_on and localGroup == self._load_group:
-                level = entry.data[0]
-
             self._set_state(group=localGroup, level=level, mode=mode,
                             reason=reason)
 
