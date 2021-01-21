@@ -892,7 +892,8 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
-        callback = functools.partial(self.handle_ack_task, task="Button ramp rate")
+        callback = functools.partial(self.handle_ack_task,
+                                     task="Button ramp rate")
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 

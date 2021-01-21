@@ -153,7 +153,6 @@ class Outlet(functions.SetAndState, Base):
             super().on(group=group, level=level, mode=mode, reason=reason,
                        transition=transition, on_done=on_done)
 
-
     #-----------------------------------------------------------------------
     def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
             transition=None, on_done=None):

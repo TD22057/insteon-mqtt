@@ -710,7 +710,8 @@ class IOLinc(functions.SetAndState, Base):
         # This state is for the relay.
         LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
         reason = reason if reason else on_off.REASON_COMMAND
-        self._set_state(group=GROUP_RELAY, reason=reason, is_on=msg.cmd1 == 0x11)
+        self._set_state(group=GROUP_RELAY, reason=reason,
+                        is_on=msg.cmd1 == 0x11)
         on_done(True, "IOLinc command complete", None)
 
     #-----------------------------------------------------------------------
@@ -762,7 +763,8 @@ class IOLinc(functions.SetAndState, Base):
                     is_on = True
                 else:
                     is_on = False
-            self._set_state(group=GROUP_RELAY, is_on=is_on, reason=on_off.REASON_SCENE)
+            self._set_state(group=GROUP_RELAY, is_on=is_on,
+                            reason=on_off.REASON_SCENE)
         else:
             LOG.warning("IOLinc %s unknown group cmd %#04x", self.addr,
                         msg.cmd1)
@@ -794,7 +796,8 @@ class IOLinc(functions.SetAndState, Base):
                          self.label, self.momentary_secs)
                 self._momentary_call = \
                     self.modem.timed_call.add(run_time, self._set_state,
-                                              False, group=GROUP_RELAY, reason=reason,
+                                              False, group=GROUP_RELAY,
+                                              reason=reason,
                                               momentary=True)
             elif not is_on and self._momentary_call:
                 if self.modem.timed_call.remove(self._momentary_call):
