@@ -38,10 +38,10 @@ class Test_Base_Config():
             assert IM.CommandSeq.add.call_count == 2
 
     @pytest.mark.parametrize("group,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL, "reason":'device'}),
-        (0x01,Msg.CmdType.OFF, 0x00, {"is_on":False,"mode":IM.on_off.Mode.NORMAL, "reason":'device'}),
-        (0x01,Msg.CmdType.ON_FAST, 0x00,{"is_on":True,"mode":IM.on_off.Mode.FAST, "reason":'device'}),
-        (0x01,Msg.CmdType.OFF_FAST, 0x00, {"is_on":False,"mode":IM.on_off.Mode.FAST, "reason":'device'}),
+        (0x01,Msg.CmdType.ON, 0x00,{"is_on":True,"level":None,"mode":IM.on_off.Mode.NORMAL, "button":None, "reason":'device'}),
+        (0x01,Msg.CmdType.OFF, 0x00, {"is_on":False,"level":None,"mode":IM.on_off.Mode.NORMAL, "button":None, "reason":'device'}),
+        (0x01,Msg.CmdType.ON_FAST, 0x00,{"is_on":True,"level":None,"mode":IM.on_off.Mode.FAST, "button":None, "reason":'device'}),
+        (0x01,Msg.CmdType.OFF_FAST, 0x00, {"is_on":False,"level":None,"mode":IM.on_off.Mode.FAST, "button":None, "reason":'device'}),
         (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
     ])
     def test_handle_on_off(self, test_device, group, cmd1, cmd2, expected):
@@ -65,7 +65,8 @@ class Test_Base_Config():
             test_device.handle_broadcast(msg)
             assert mocked.call_count == 2
             calls = [call(test_device, manual=IM.on_off.Manual.DOWN),
-                     call(test_device, is_on=False, mode=IM.on_off.Mode.MANUAL, reason='device')]
+                     call(test_device, is_on=False, level=None,
+                          mode=IM.on_off.Mode.MANUAL, button=None, reason='device')]
             mocked.assert_has_calls(calls)
         with mock.patch.object(IM.Signal, 'emit') as mocked:
             flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
@@ -75,7 +76,8 @@ class Test_Base_Config():
             test_device.handle_broadcast(msg)
             assert mocked.call_count == 2
             calls = [call(test_device, manual=IM.on_off.Manual.UP),
-                     call(test_device, is_on=True, mode=IM.on_off.Mode.MANUAL, reason='device')]
+                     call(test_device, is_on=True, button=None, level=None,
+                          mode=IM.on_off.Mode.MANUAL, reason='device')]
             mocked.assert_has_calls(calls)
 
     def test_set_backlight(self, test_device):

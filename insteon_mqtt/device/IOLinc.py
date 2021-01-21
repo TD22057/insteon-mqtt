@@ -17,8 +17,12 @@ from .. import util
 
 LOG = log.get_logger()
 
+#Constants for easier comprehension
+GROUP_SENSOR = 1
+GROUP_RELAY = 2
 
-class IOLinc(functions.Set, Base):
+
+class IOLinc(functions.SetAndState, Base):
     """Insteon IOLinc relay/sensor device.
 
     This class can be used to model the IOLinc device which has a sensor and
@@ -39,8 +43,7 @@ class IOLinc(functions.Set, Base):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_on_off( Device, bool sensor_is_on, bool relay_is_on,
-                     on_off.Mode mode ):
+    - signal_state( Device, bool is_on, button int [1=Sensor,2=Relay]):
       Sent whenever the sensor is turned on or off.
 
     NOTES:
@@ -137,19 +140,31 @@ class IOLinc(functions.Set, Base):
 
         # Support on/off style signals for the sensor
         # API: func(Device, bool is_on)
-        self.signal_on_off = Signal()
+        self.signal_state = Signal()
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
         self.cmd_map.update({
-            'on' : self.on,
-            'off' : self.off,
             'set_flags' : self.set_flags,
             })
 
         # Update the group map with the groups to be paired and the handler
         # for broadcast messages from this group
         self.group_map.update({0x01: self.handle_on_off})
+
+    #-----------------------------------------------------------------------
+    @property
+    def sensor_is_on(self):
+        """Returns the cached sensor state
+        """
+        return self._sensor_is_on
+
+    #-----------------------------------------------------------------------
+    @property
+    def relay_is_on(self):
+        """Returns the cached relay state
+        """
+        return self._relay_is_on
 
     #-----------------------------------------------------------------------
     @property
@@ -488,87 +503,6 @@ class IOLinc(functions.Set, Base):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
-           transition=None, on_done=None):
-        """Turn the relay on.
-
-        This turns the relay on no matter what.  It ignores the momentary
-        A/B/C settings and just turns the relay on. It will not trigger any
-        responders that are linked to this device.  If you want to control
-        the device where it respects the momentary settings and properly
-        updates responders, please define a scene for the device and use
-        that scene to control it.
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          group (int):  The group to send the command to.  For this device,
-                this must be 1.  Allowing a group here gives us a consistent
-                API to the on command across devices.
-          level (int):  If non zero, turn the device on.  Should be in the
-                range 0 to 255.  Only dimmers use the intermediate values, all
-                other devices look at level=0 or level>0.
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("IOLinc %s cmd: on", self.addr)
-        assert group == 0x01
-
-        if transition or mode == on_off.Mode.RAMP:
-            LOG.error("Device %s does not support transition.", self.addr)
-            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
-
-        # Send an on command.  Use the standard command handler which will
-        # notify us when the command is ACK'ed.
-        msg = Msg.OutStandard.direct(self.addr, 0x11, 0xff)
-        msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
-
-        # Send the message to the PLM modem.
-        self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
-            transition=None, on_done=None):
-        """Turn the relay off.
-
-        This turns the relay off no matter what.  It ignores the momentary
-        A/B/C settings and just turns the relay off. It will not trigger any
-        responders that are linked to this device.  If you want to control
-        the device where it respects the momentary settings and properly
-        updates responders, please define a scene for the device and use
-        that scene to control it.
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          group (int):  The group to send the command to.  For this device,
-                this must be 1.  Allowing a group here gives us a consistent
-                API to the on command across devices.
-          mode (on_off.Mode): The type of command to send (normal, fast, etc).
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("IOLinc %s cmd: off", self.addr)
-        assert group == 0x01
-
-        if transition or mode == on_off.Mode.RAMP:
-            LOG.error("Device %s does not support transition.", self.addr)
-            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
-
-        # Send an off command.  Use the standard command handler which will
-        # notify us when the command is ACK'ed.
-        msg = Msg.OutStandard.direct(self.addr, 0x13, 0x00)
-        msg_handler = handler.StandardCmd(msg, self.handle_ack, on_done)
-
-        # Send the message to the PLM modem.
-        self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
     def handle_on_off(self, msg):
         """Handle broadcast messages from this device.
 
@@ -597,18 +531,18 @@ class IOLinc(functions.Set, Base):
         # On command.  0x11: on
         elif msg.cmd1 == Msg.CmdType.ON:
             LOG.info("IOLinc %s broadcast ON grp: %s", self.addr, msg.group)
-            self._set_sensor_is_on(True)
+            self._set_state(group=GROUP_SENSOR, is_on=True)
             if self.relay_linked:
                 # If relay_linked is enabled then the relay was triggered
-                self._set_relay_is_on(True)
+                self._set_state(group=GROUP_RELAY, is_on=True)
 
         # Off command. 0x13: off
         elif msg.cmd1 == Msg.CmdType.OFF:
             LOG.info("IOLinc %s broadcast OFF grp: %s", self.addr, msg.group)
-            self._set_sensor_is_on(False)
+            self._set_state(group=GROUP_SENSOR, is_on=False)
             if self.relay_linked:
                 # If relay_linked is enabled then the relay was triggered
-                self._set_relay_is_on(False)
+                self._set_state(group=GROUP_RELAY, is_on=False)
 
         self.update_linked_devices(msg)
 
@@ -726,7 +660,7 @@ class IOLinc(functions.Set, Base):
 
         # Current on/off level is stored in cmd2 so update our level to
         # match.
-        self._set_relay_is_on(msg.cmd2 > 0x00)
+        self._set_state(group=GROUP_RELAY, is_on=msg.cmd2 > 0x00)
 
     #-----------------------------------------------------------------------
     def handle_refresh_sensor(self, msg):
@@ -745,16 +679,18 @@ class IOLinc(functions.Set, Base):
 
         # Current on/off level is stored in cmd2 so update our level to
         # match.
-        self._set_sensor_is_on(msg.cmd2 > 0x00)
+        self._set_state(group=GROUP_SENSOR, is_on=msg.cmd2 > 0x00)
 
     #-----------------------------------------------------------------------
-    def handle_ack(self, msg, on_done):
+    def handle_ack(self, msg, on_done, reason=""):
         """Callback for standard commanded messages.
 
         This callback is run when we get a reply back from one of our direct
         commands to the device.  If the command was ACK'ed, we know it worked
         so we'll update the internal state of the device and emit the signals
         to notify others of the state change.
+
+        This overrides the function in SetAndState
 
         These commands only affect the state of the relay.  They respect the
         momentary_secs length.  However:
@@ -773,17 +709,10 @@ class IOLinc(functions.Set, Base):
         """
         # This state is for the relay.
         LOG.debug("IOLinc %s ACK: %s", self.addr, msg)
+        reason = reason if reason else on_off.REASON_COMMAND
+        self._set_state(group=GROUP_RELAY, reason=reason,
+                        is_on=msg.cmd1 == 0x11)
         on_done(True, "IOLinc command complete", None)
-
-        # On command.  0x11: on
-        if msg.cmd1 == 0x11:
-            LOG.info("IOLinc %s relay ON", self.addr)
-            self._set_relay_is_on(True)
-
-        # Off command. 0x13: off
-        elif msg.cmd1 == 0x13:
-            LOG.info("IOLinc %s relay OFF", self.addr)
-            self._set_relay_is_on(False)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
@@ -834,66 +763,47 @@ class IOLinc(functions.Set, Base):
                     is_on = True
                 else:
                     is_on = False
-            self._set_relay_is_on(is_on, on_off.REASON_SCENE)
+            self._set_state(group=GROUP_RELAY, is_on=is_on,
+                            reason=on_off.REASON_SCENE)
         else:
             LOG.warning("IOLinc %s unknown group cmd %#04x", self.addr,
                         msg.cmd1)
 
-    #-----------------------------------------------------------------------
-    def _set_sensor_is_on(self, is_on, reason=""):
-        """Update the device sensor on/off state.
+#-----------------------------------------------------------------------
+    def _cache_state(self, group, is_on, level, reason):
+        """Cache the State of the Device
 
-        This will change the internal state of the sensor and emit the state
-        changed signals.  It is called by whenever we're informed that the
-        device has changed state.
+        Used to help with the IOLinc unique functions.
 
         Args:
-          is_on (bool):  True if the sensor is on, False if it isn't.
+          group (int): The group which this applies
+          is_on (bool): Whether the device is on.
+          level (int): The new device level in the range [0,255].  0 is off.
+          reason (str): Reason string to pass around.
         """
-        LOG.info("Setting device %s sensor on %s", self.label, is_on)
-        self._sensor_is_on = bool(is_on)
-
-        self.signal_on_off.emit(self, self._sensor_is_on, self._relay_is_on)
-
-    #-----------------------------------------------------------------------
-    def _set_relay_is_on(self, is_on, reason="", momentary=False):
-        """Update the device relay on/off state.
-
-        This will change the internal state of the relay and emit the state
-        changed signals.  It is called by whenever we're informed that the
-        device has changed state.
-
-        Args:
-          is_on (bool):  True if the relay is on, False if it isn't.
-          reason (string): The reason for the state
-          momemtary (bool): Used to write message to log if this was called in
-                            response to a timed call
-        """
-        if momentary:
-            LOG.info("IOLinc %s automatic update relay on %s",
-                     self.label, is_on)
-        else:
-            LOG.info("IOLinc %s relay on %s", self.label, is_on)
-        self._relay_is_on = bool(is_on)
-
-        self.signal_on_off.emit(self, self._sensor_is_on, self._relay_is_on)
-
-        if is_on and self.mode is not IOLinc.Modes.LATCHING:
-            # First remove any pending call, we want to reset the clock
-            if self._momentary_call is not None:
-                self.modem.timed_call.remove(self._momentary_call)
-            # Set timer to turn relay off after momentary time
-            run_time = time.time() + self.momentary_secs
-            LOG.info("IOLinc %s delayed relay update in %s seconds",
-                     self.label, self.momentary_secs)
-            self._momentary_call = \
-                self.modem.timed_call.add(run_time, self._set_relay_is_on,
-                                          False, reason=reason, momentary=True)
-        elif not is_on and self._momentary_call:
-            if self.modem.timed_call.remove(self._momentary_call):
-                LOG.info("IOLinc %s relay off, removing delayed update",
-                         self.label)
-            self._momentary_call = None
+        if group == 1:
+            self._sensor_is_on = bool(is_on)
+        elif group == 2:
+            self._relay_is_on = bool(is_on)
+            # handle latching and momentary functions
+            if is_on and self.mode is not IOLinc.Modes.LATCHING:
+                # First remove any pending call, we want to reset the clock
+                if self._momentary_call is not None:
+                    self.modem.timed_call.remove(self._momentary_call)
+                # Set timer to turn relay off after momentary time
+                run_time = time.time() + self.momentary_secs
+                LOG.info("IOLinc %s delayed relay update in %s seconds",
+                         self.label, self.momentary_secs)
+                self._momentary_call = \
+                    self.modem.timed_call.add(run_time, self._set_state,
+                                              False, group=GROUP_RELAY,
+                                              reason=reason,
+                                              momentary=True)
+            elif not is_on and self._momentary_call:
+                if self.modem.timed_call.remove(self._momentary_call):
+                    LOG.info("IOLinc %s relay off, removing delayed update",
+                             self.label)
+                self._momentary_call = None
 
     #-----------------------------------------------------------------------
     def link_data_to_pretty(self, is_controller, data):

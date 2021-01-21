@@ -117,6 +117,6 @@ class SetTopic(BaseTopic):
             self.device.set(is_on=is_on, level=level, group=group, mode=mode,
                             transition=transition, reason=reason)
         except:
-            LOG.error("Invalid SetTopic command: %s", data)
+            LOG.exception("Invalid SetTopic command: %s", data)
 
     #-----------------------------------------------------------------------

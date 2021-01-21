@@ -58,7 +58,7 @@ EZIO4xx_flags = {
 }
 
 
-class EZIO4O(functions.Set, Base):
+class EZIO4O(functions.SetAndState, Base):
     """Smartenit EZIO4O - 4 relay output device.
 
     This class can be used to model the EZIO4O device which has 4 outputs.
@@ -99,8 +99,6 @@ class EZIO4O(functions.Set, Base):
         # base class defined commands.
         self.cmd_map.update(
             {
-                "on": self.on,
-                "off": self.off,
                 "set_flags": self.set_flags,
             }
         )
@@ -120,6 +118,7 @@ class EZIO4O(functions.Set, Base):
         # The EZIO4O has no inputs and so has no groups to pair to or
         # broadcast messages to process
         # self.group_map.update({})
+        self.responder_groups = [1, 2, 3, 4]
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
@@ -167,87 +166,87 @@ class EZIO4O(functions.Set, Base):
            transition=None, on_done=None):
         """Turn the device on.
 
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
+        This is a wrapper around the SetAndState functions class.
 
         Args:
-          group (int):  The group to send the command to.  Group 1 to 4
-                matching output 1 to 4.
-          level (int):  If non zero, turn the device on.  Should be in the
-                range 0 to 255.  Only dimmers use the intermediate values, all
-                other devices look at level=0 or level>0.
+          group (int):  The group to send the command to.
+          level (int):  If non-zero, turn the device on.  The API is an int
+                to keep a consistent API with other devices.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          transition (int): Transition time in seconds if supported.
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
                  when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("EZIO4O %s grp: %s cmd: on", self.label, group)
-        assert 1 <= group <= 4
-        assert isinstance(mode, on_off.Mode)
-
-        if transition or mode == on_off.Mode.RAMP:
-            LOG.error("Device %s does not support transition.", self.addr)
-            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
-
-        # Use a standard message to send "output on" (0x45) command for the
-        # output
-        msg = Msg.OutStandard.direct(self.addr, 0x45, group - 1)
-
-        # Use the standard command handler which will notify us when
-        # the command is ACK'ed.
-        callback = functools.partial(self.handle_ack, reason=reason)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-
         # See __init__ code comments for what this is for.
         self._which_output.append(group)
-
-        # Send the message to the PLM modem for protocol.
-        self.send(msg, msg_handler)
+        super().on(group=group, level=level, mode=mode, reason=reason,
+                   transition=transition, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
             transition=None, on_done=None):
-        """Turn the device off.
+        """Turn the device on.
 
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
+        This is a wrapper around the SetAndState functions class.
 
         Args:
-          group (int):  The group to send the command to.  Group 1 to 4
-                        matching output 1 to 4.
+          group (int):  The group to send the command to.
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          transition (int): Transition time in seconds if supported.
           reason (str):  This is optional and is used to identify why the
                  command was sent. It is passed through to the output signal
                  when the state changes - nothing else is done with it.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("EZIO4O %s grp: %s cmd: off", self.label, group)
-        assert 1 <= group <= 4
-        assert isinstance(mode, on_off.Mode)
+        # See __init__ code comments for what this is for.
+        self._which_output.append(group)
+        super().off(group=group, mode=mode, reason=reason,
+                    transition=transition, on_done=on_done)
 
+    #-----------------------------------------------------------------------
+    def cmd_on_values(self, mode, level, transition, group):
+        """Calculate Cmd Values for On
+
+        Args:
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          level (int): On level between 0-255.
+          transition (int): Ramp rate for the transition in seconds.
+          group (int): The group number that this state applies to. Defaults
+                       to None.
+        Returns
+          cmd1, cmd2 (int): Value of cmds for this device.
+        """
         if transition or mode == on_off.Mode.RAMP:
             LOG.error("Device %s does not support transition.", self.addr)
             mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
+        if level:
+            LOG.error("Device %s does not support level.", self.addr)
+        cmd1 = 0x45
+        cmd2 = group - 1
+        return (cmd1, cmd2)
 
-        # Use a standard message to send "output off" (0x46) command for the
-        # output
-        msg = Msg.OutStandard.direct(self.addr, 0x46, group - 1)
+    #-----------------------------------------------------------------------
+    def cmd_off_values(self, mode, transition, group):
+        """Calculate Cmd Values for Off
 
-        # Use the standard command handler which will notify us when the
-        # command is ACK'ed.
-        callback = functools.partial(self.handle_ack, reason=reason)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-
-        # See __init__ code comments for what this is for.
-        self._which_output.append(group)
-
-        # Send the message to the PLM modem for protocol.
-        self.send(msg, msg_handler)
+        Args:
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          transition (int): Ramp rate for the transition in seconds.
+          group (int): The group number that this state applies to. Defaults
+                       to None.
+        Returns
+          cmd1, cmd2 (int): Value of cmds for this device.
+        """
+        if transition or mode == on_off.Mode.RAMP:
+            LOG.error("Device %s does not support transition.", self.addr)
+            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
+        cmd1 = 0x46
+        cmd2 = group - 1
+        return (cmd1, cmd2)
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):
@@ -533,32 +532,33 @@ class EZIO4O(functions.Set, Base):
 
                 # State change for output
                 if is_on != self._is_on[i]:
-                    self._set_is_on(i + 1, is_on, reason=on_off.REASON_REFRESH)
+                    self._set_state(group=i + 1, is_on=is_on,
+                                    reason=on_off.REASON_REFRESH)
         else:
             LOG.error("EZIO4O %s unknown refresh response %s", self.label, msg)
 
     #-----------------------------------------------------------------------
-    def handle_ack(self, msg, on_done, reason=""):
+    def decode_on_level(self, cmd1, cmd2):
         """Callback for standard commanded messages.
 
-        This callback is run when we get a reply back from one of our
-        commands to the device.  If the command was ACK'ed, we know it worked
-        so we'll update the internal state of the device and emit the signals
-        to notify others of the state change.
+        Decodes the cmds recevied from the device into is_on, level, and mode
+        to be consumed by _set_state().
 
         Args:
-          msg (message.InpStandard):  The reply message from the device.
-              The on/off level will be in the cmd2 field.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
+          cmd1 (byte): The command 1 value
+          cmd2 (byte): The command 2 value
+        Returns:
+          is_on (bool): Is the device on.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          level (int): On level between 0-255.
+          group (int): The group number that this state applies to. Defaults
+                       to None.
         """
-        assert 0x00 <= msg.cmd2 <= 0x0F
-        assert msg.cmd1 in [0x45, 0x46]
-
-        LOG.debug("EZIO4O %s ACK response %s", self.label, msg)
+        # Default Returns
+        group = None
+        is_on = None
+        level = None
+        mode = on_off.Mode.NORMAL
 
         # Get the last output we were commanding.  The message doesn't tell
         # us which output it was so we have to track it here.  See __init__
@@ -566,28 +566,22 @@ class EZIO4O(functions.Set, Base):
         if not self._which_output:
             LOG.error("EZIO4O %s ACK error.  No output ID's were saved",
                       self.label)
-            on_done(False, "EZIO4O update failed - no ID's saved", None)
-            return
+        else:
+            group = self._which_output.pop(0)
 
-        group = self._which_output.pop(0)
-
-        # If this it the ACK we're expecting, update the internal
-        # state and emit our signals.
-        if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
-            LOG.debug("EZIO4O %s ACK: %s", self.label, msg)
-
+            # Update other groups as reason=refresh
             for i in range(4):
-                is_on = bool(util.bit_get(msg.cmd2, i))
-
+                if i == group - 1:
+                    continue
+                is_on = bool(util.bit_get(cmd2, i))
                 # State change for the output and all outputs with state change
-                if is_on != self._is_on[i] or i == group - 1:
-                    self._set_is_on(i + 1, is_on, reason=on_off.REASON_REFRESH)
-                    on_done(True, "EZIO4O state %s updated to: %s" %
-                            (i + 1, is_on), None)
+                if is_on != self._is_on[i]:
+                    self._set_state(group=i + 1, is_on=is_on,
+                                    reason=on_off.REASON_REFRESH)
+            # Update the requested group as part of normal set process
+            is_on = bool(util.bit_get(cmd2, group))
 
-        elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
-            LOG.error("EZIO4O %s NAK error: %s", self.label, msg)
-            on_done(False, "EZIO4O state %s update failed" % group, None)
+        return (is_on, level, mode, group)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
@@ -622,43 +616,25 @@ class EZIO4O(functions.Set, Base):
         # Handle on/off commands codes.
         if on_off.Mode.is_valid(msg.cmd1):
             is_on, mode = on_off.Mode.decode(msg.cmd1)
-            self._set_is_on(localGroup, is_on, mode, on_off.REASON_SCENE)
+            self._set_state(group=localGroup, is_on=is_on, mode=mode,
+                            reason=on_off.REASON_SCENE)
 
         else:
             LOG.warning("EZIO4O %s unknown group cmd %#04x", self.label,
                         msg.cmd1)
 
     #-----------------------------------------------------------------------
-    def _set_is_on(self, group, is_on, mode=on_off.Mode.NORMAL, reason=""):
-        """Update the device on/off state.
+    def _cache_state(self, group, is_on, level, reason):
+        """Cache the State of the Device
 
-        This will change the internal state and emit the state changed
-        signals.  It is called by whenever we're informed that the device has
-        changed state.
+        Used to help with the EZIO unique functions.
 
         Args:
-          group (int):  The group to update (1 to 4).
-          is_on (bool):  True if the switch is on, False if it isn't.
-          mode (on_off.Mode): The type of on/off that was triggered (normal,
-               fast, etc).
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
+          group (int): The group which this applies
+          is_on (bool): Whether the device is on.
+          level (int): The new device level in the range [0,255].  0 is off.
+          reason (str): Reason string to pass around.
         """
-        is_on = bool(is_on)
-
-        LOG.info(
-            "EZIO4O %s setting grp: %s to %s %s %s",
-            self.label,
-            group,
-            is_on,
-            mode,
-            reason,
-        )
         self._is_on[group - 1] = is_on
-
-        # Notify others that the output state has changed.
-        self.signal_state.emit(self, button=group, is_on=is_on, mode=mode,
-                               reason=reason)
 
     #-----------------------------------------------------------------------

@@ -19,4 +19,5 @@ the list of available functions to inherit from.
 
 from ..Base import Base
 from .Scene import Scene
-from .Set import Set
+from .SetAndState import SetAndState
+from .State import State

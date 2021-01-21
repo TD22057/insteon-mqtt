@@ -318,7 +318,7 @@ class Test_KeypadLinc:
                 ack = IM.message.InpStandard(dev.addr.hex,
                                              dev.modem.addr.hex,
                                              flags, cmd1, cmd2)
-                dev.handle_set_load(ack, IM.util.make_callback(None))
+                dev.handle_ack(ack, IM.util.make_callback(None))
                 assert dev._level == cmd2
 
 #-----------------------------------------------------------------------
@@ -395,7 +395,7 @@ class Test_KeypadLinc:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x2f, 0x08)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -417,7 +417,7 @@ class Test_KeypadLinc:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x2e, 0xf5)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -439,7 +439,7 @@ class Test_KeypadLinc:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x2f, 0x00)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -461,7 +461,7 @@ class Test_KeypadLinc:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x2e, 0x4e)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -483,7 +483,7 @@ class Test_KeypadLinc:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x2f, 0x0d)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -505,7 +505,7 @@ class Test_KeypadLinc:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x2e, 0xfd)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -531,7 +531,7 @@ class Test_KeypadLinc:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x14, 0x00)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -554,7 +554,7 @@ class Test_KeypadLinc:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x21, 0x43)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
         # Check that reported state matches command
         assert len(link.client.pub) == 2
         assert link.client.pub[1] == dict(
@@ -575,7 +575,7 @@ class Test_KeypadLinc:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x14, 0x00)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -598,7 +598,7 @@ class Test_KeypadLinc:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x21, 0x43)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
         # Check that reported state matches command
         assert len(link.client.pub) == 2
         assert link.client.pub[1] == dict(
@@ -790,6 +790,29 @@ class Test_KeypadLinc:
         link.publish("foo/%s/1" % addr.hex, b'asdf', qos, False)
         link.publish("foo/%s/1" % addr.hex, b'{ "on" : "foo", "num" : "bad" }',
                      qos, False)
+
+    #-----------------------------------------------------------------------
+    def test_input_level_detached_load(self, setup):
+        mdev, link, addr, proto, dev = setup.getAll(['mdev', 'link', 'addr',
+                                                     'proto', 'dev'])
+
+        qos = 2
+        config = {'keypad_linc' : {
+            'dimmer_level_topic' : 'foo/{{address}}/1',
+            'dimmer_level_payload' : ('{ "cmd" : "{{json.on.lower()}}",'
+                                      '"level" : "{{json.num}}" }')}}
+        mdev.load_config(config, qos=qos)
+
+        mdev.subscribe(link, qos)
+
+        # Set device in detached load state
+        dev._load_group = 9
+
+        payload = b'{ "on" : "OFF", "num" : 0 }'
+        link.publish("foo/%s/1" % addr.hex, payload, qos, retain=False)
+        # This should still trigger a standard off command
+        assert len(proto.sent) == 1
+        assert proto.sent[0].msg.cmd1 == 0x13
 
     #-----------------------------------------------------------------------
     def test_input_level_reason(self, setup):

@@ -128,6 +128,6 @@ class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
             # Tell the device to change its level.
             self.device.set(is_on=is_on, level=level, mode=mode, reason=reason)
         except:
-            LOG.error("Invalid dimmer command: %s", data)
+            LOG.exception("Invalid dimmer command: %s", data)
 
     #-----------------------------------------------------------------------
