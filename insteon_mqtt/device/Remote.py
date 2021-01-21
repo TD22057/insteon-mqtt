@@ -208,51 +208,6 @@ class Remote(BatterySensor):
         return util.resolve_data3(defaults, data)
 
     #-----------------------------------------------------------------------
-    def link_data_to_pretty(self, is_controller, data):
-        """Converts Link Data1-3 to Human Readable Attributes
-
-        This takes a list of the data values 1-3 and returns a dict with
-        the human readable attibutes as keys and the human readable values
-        as values.
-
-        Args:
-          is_controller (bool): True if the device is the controller, false
-                        if it's the responder.
-          data (list[3]): List of three data values.
-
-        Returns:
-          list[3]:  list, containing a dict of the human readable values
-        """
-        ret = [{'data_1': data[0]}, {'data_2': data[1]}, {'data_3': data[2]}]
-        return ret
-
-    #-----------------------------------------------------------------------
-    def link_data_from_pretty(self, is_controller, data):
-        """Converts Link Data1-3 from Human Readable Attributes
-
-        This takes a dict of the human readable attributes as keys and their
-        associated values and returns a list of the data1-3 values.
-
-        Args:
-          is_controller (bool): True if the device is the controller, false
-                        if it's the responder.
-          data (dict[3]): Dict of three data values.
-
-        Returns:
-          list[3]: List of Data1-3 values
-        """
-        data_1 = None
-        if 'data_1' in data:
-            data_1 = data['data_1']
-        data_2 = None
-        if 'data_2' in data:
-            data_2 = data['data_2']
-        data_3 = None
-        if 'data_3' in data:
-            data_3 = data['data_3']
-        return [data_1, data_2, data_3]
-
-    #-----------------------------------------------------------------------
     def get_extended_flags(self, on_done):
         """Requests the Extended Flags from the Device
 
