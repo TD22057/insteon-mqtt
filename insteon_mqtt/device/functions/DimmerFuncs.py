@@ -1,6 +1,8 @@
 #===========================================================================
 #
-# Dimmer Flag Functions.  Specifically Ramp_Rate and On_Level
+# Dimmer Functions.  Specifically Ramp_Rate and On_Level Flags, plus
+# increment_up and increment_down functions.  Plus other dimmer helper
+# functions
 #
 #===========================================================================
 import functools
@@ -9,13 +11,14 @@ from ... import handler
 from ... import log
 from ... import message as Msg
 from ... import util
+from ... import on_off
 
 
 LOG = log.get_logger()
 
 
-class DimmerFlags(Base):
-    """DimmerFlags Trait Abstract Class
+class DimmerFuncs(Base):
+    """Dimmer Functions Trait Abstract Class
 
     This is an abstract class that provides support for the ramp_rate and
     on_level flags found on dimmer devices.
@@ -41,10 +44,18 @@ class DimmerFlags(Base):
         """
         super().__init__(protocol, modem, address, name)
 
+        # Remote (mqtt) commands mapped to methods calls.  Add to the base
+        # class defined commands.
+        self.cmd_map.update({
+            'increment_up' : self.increment_up,
+            'increment_down' : self.increment_down,
+            })
+
         # Define the flags handled by set_flags()
         self.set_flags_map.update({'on_level': self.set_on_level,
                                    'ramp_rate': self.set_ramp_rate})
 
+    ########## Flags Functions
     #-----------------------------------------------------------------------
     def set_on_level(self, on_done=None, **kwargs):
         """Set the device default on level.
@@ -154,3 +165,116 @@ class DimmerFlags(Base):
         if on_level is None:
             on_level = 0xff
         return on_level
+
+    ########## Increment Functions
+    #-----------------------------------------------------------------------
+    def increment_up(self, reason="", on_done=None):
+        """Increment the current level up.
+
+        Levels increment in units of 8 (32 divisions from off to on).
+
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
+
+        Args:
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.info("Device %s cmd: increment up", self.addr)
+
+        msg = Msg.OutStandard.direct(self.addr, 0x15, 0x00)
+
+        callback = functools.partial(self.handle_increment, delta=+8,
+                                     reason=reason)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def increment_down(self, reason="", on_done=None):
+        """Increment the current level down.
+
+        Levels increment in units of 8 (32 divisions from off to on).
+
+        This will send the command to the device to update it's state.  When
+        we get an ACK of the result, we'll change our internal state and emit
+        the state changed signals.
+
+        Args:
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        LOG.info("Device %s cmd: increment down", self.addr)
+
+        msg = Msg.OutStandard.direct(self.addr, 0x16, 0x00)
+
+        callback = functools.partial(self.handle_increment, delta=-8,
+                                     reason=reason)
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def handle_increment(self, msg, on_done, delta, reason="", group=0x01):
+        """Callback for increment up/down commanded messages.
+
+        This callback is run when we get a reply back from triggering an
+        increment up or down on the device.  If the command was ACK'ed, we
+        know it worked.
+
+        Args:
+          msg (message.InpStandard): The reply message from the device.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+
+          delta (int):  The amount +/- of level to change by.
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
+        """
+        # If this it the ACK we're expecting, update the internal state and
+        # emit our signals.
+        LOG.debug("Device %s ACK: %s", self.addr, msg)
+
+        # Add the delta and bound at [0, 255]
+        level = min(self._level + delta, 255)
+        level = max(level, 0)
+        self._set_state(group=group, level=level, reason=reason)
+
+        s = "Device %s state updated to %s" % (self.addr, self._level)
+        on_done(True, s, msg.cmd2)
+
+    ########### Helper Functions
+    #-----------------------------------------------------------------------
+    def derive_on_level(self, mode):
+        """Calculates the device on level based on the mode and the local
+        on_level set in the flags.
+
+        When a device is turned on using the physical button it will go to the
+        on_level defined in its flags, unless it was a FAST on or the device
+        was already on and was activated again in those cases it always goes to
+        level 0xFF.
+
+        Args:
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+        Returns:
+          level (int)
+        """
+        if mode == on_off.Mode.FAST:
+            # Fast-ON command.  Use full-brightness.
+            level = 0xff
+        else:
+            # Normal/instant ON command.  Use default on-level.
+            # Check if we saved the default on-level in the device
+            # database when setting it.
+            level = self.get_on_level()
+            if self._level == level:
+                # Just like with button presses, if already at default on
+                # level, go to full brightness.
+                level = 0xff
+        return level

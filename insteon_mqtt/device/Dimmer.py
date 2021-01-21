@@ -4,9 +4,8 @@
 # including wall switches, lamp modules, and some remotes.
 #
 #===========================================================================
-import functools
 from .Base import Base
-from .functions import Scene, SetAndState, Backlight, DimmerFlags
+from .functions import Scene, SetAndState, Backlight, DimmerFuncs
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
@@ -18,7 +17,7 @@ from .. import util
 LOG = log.get_logger()
 
 
-class Dimmer(Scene, SetAndState, Backlight, DimmerFlags, Base):
+class Dimmer(Scene, SetAndState, Backlight, DimmerFuncs, Base):
     """Insteon dimmer device.
 
     This class can be used to model any device that acts like a dimmer
@@ -53,13 +52,6 @@ class Dimmer(Scene, SetAndState, Backlight, DimmerFlags, Base):
         # API: func(Device, on_off.Manual mode, str reason)
         self.signal_manual = Signal()
 
-        # Remote (mqtt) commands mapped to methods calls.  Add to the base
-        # class defined commands.
-        self.cmd_map.update({
-            'increment_up' : self.increment_up,
-            'increment_down' : self.increment_down,
-            })
-
         # Update the group map with the groups to be paired and the handler
         # for broadcast messages from this group
         self.group_map.update({0x01: self.handle_on_off})
@@ -79,73 +71,11 @@ class Dimmer(Scene, SetAndState, Backlight, DimmerFlags, Base):
             LOG.error("Device %s does not support transition.", self.addr)
             mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
         if level is None:
-            # Not specified - choose brightness as pressing the button would do
-            if mode == on_off.Mode.FAST:
-                # Fast-ON command.  Use full-brightness.
-                level = 0xff
-            else:
-                # Normal/instant ON command.  Use default on-level.
-                # Check if we saved the default on-level in the device
-                # database when setting it.
-                level = self.get_on_level()
-                if self._level == level:
-                    # Just like with button presses, if already at default on
-                    # level, go to full brightness.
-                    level = 0xff
+            # If level is not specified it uses the level that the device
+            # would go to if the button was physically pressed.
+            level = self.derive_on_level(mode)
         cmd1 = on_off.Mode.encode(True, mode)
         return (cmd1, level)
-
-    #-----------------------------------------------------------------------
-    def increment_up(self, reason="", on_done=None):
-        """Increment the current level up.
-
-        Levels increment in units of 8 (32 divisions from off to on).
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Dimmer %s cmd: increment up", self.addr)
-
-        msg = Msg.OutStandard.direct(self.addr, 0x15, 0x00)
-
-        callback = functools.partial(self.handle_increment, delta=+8,
-                                     reason=reason)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-        self.send(msg, msg_handler)
-
-    #-----------------------------------------------------------------------
-    def increment_down(self, reason="", on_done=None):
-        """Increment the current level down.
-
-        Levels increment in units of 8 (32 divisions from off to on).
-
-        This will send the command to the device to update it's state.  When
-        we get an ACK of the result, we'll change our internal state and emit
-        the state changed signals.
-
-        Args:
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Dimmer %s cmd: increment down", self.addr)
-
-        msg = Msg.OutStandard.direct(self.addr, 0x16, 0x00)
-
-        callback = functools.partial(self.handle_increment, delta=-8,
-                                     reason=reason)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):
@@ -337,22 +267,8 @@ class Dimmer(Scene, SetAndState, Backlight, DimmerFlags, Base):
 
             # For an on command, we can update directly.
             if is_on:
-                # Level isn't provided in the broadcast msg.
-                # What to use depends on which command was received.
-                if mode == on_off.Mode.FAST:
-                    # Fast-ON command.  Use full-brightness.
-                    level = 0xff
-                else:
-                    # Normal/instant ON command.  Use default on-level.
-                    # Check if we saved the default on-level in the device
-                    # database when setting it.
-                    level = self.get_on_level()
-                    if self._level == level:
-                        # Pressing on again when already at the default on
-                        # level causes the device to go to full-brightness.
-                        level = 0xff
+                level = self.derive_on_level(mode)
                 self._set_state(level=level, mode=mode, reason=reason)
-
             else:
                 self._set_state(level=0x00, mode=mode, reason=reason)
 
@@ -372,36 +288,6 @@ class Dimmer(Scene, SetAndState, Backlight, DimmerFlags, Base):
         # states since they will have seen the group broadcast and updated
         # (without sending anything out).
         self.update_linked_devices(msg)
-
-    #-----------------------------------------------------------------------
-    def handle_increment(self, msg, on_done, delta, reason=""):
-        """Callback for increment up/down commanded messages.
-
-        This callback is run when we get a reply back from triggering an
-        increment up or down on the device.  If the command was ACK'ed, we
-        know it worked.
-
-        Args:
-          msg (message.InpStandard): The reply message from the device.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-
-          delta (int):  The amount +/- of level to change by.
-          reason (str):  This is optional and is used to identify why the
-                 command was sent. It is passed through to the output signal
-                 when the state changes - nothing else is done with it.
-        """
-        # If this it the ACK we're expecting, update the internal state and
-        # emit our signals.
-        LOG.debug("Dimmer %s ACK: %s", self.addr, msg)
-
-        # Add the delta and bound at [0, 255]
-        level = min(self._level + delta, 255)
-        level = max(level, 0)
-        self._set_state(level=level, reason=reason)
-
-        s = "Dimmer %s state updated to %s" % (self.addr, self._level)
-        on_done(True, s, msg.cmd2)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

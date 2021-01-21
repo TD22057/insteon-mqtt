@@ -12,14 +12,14 @@ from .. import on_off
 from ..Signal import Signal
 from .. import util
 from .Base import Base
-from .functions import SetAndState, Scene, Backlight, DimmerFlags
+from .functions import SetAndState, Scene, Backlight, DimmerFuncs
 # from . import Dimmer
 
 LOG = log.get_logger()
 
 
 #===========================================================================
-class KeypadLinc(SetAndState, Scene, Backlight, DimmerFlags, Base):
+class KeypadLinc(SetAndState, Scene, Backlight, DimmerFuncs, Base):
     """Insteon KeypadLinc dimmer/switch device.
 
     This class can be used to model a 6 or 8 button KeypadLinc with dimming
@@ -87,12 +87,6 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFlags, Base):
             'set_signal_bits' : self.set_signal_bits,
             'set_nontoggle_bits' : self.set_nontoggle_bits,
             })
-
-        if self.is_dimmer:
-            self.cmd_map.update({
-                'increment_up' : self.increment_up,
-                'increment_down' : self.increment_down,
-                })
 
         # TODO: these fields need to be stored in the database, updated when
         # changed, read on startup, and updated during a forced refresh or if
@@ -255,22 +249,10 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFlags, Base):
         """
         if not self.is_dimmer:
             level = 0xff
-        # TODO this is directly copied from Dimmer, would be better to have
-        # this as shared code.
         elif level is None:
-            # Not specified - choose brightness as pressing the button would do
-            if mode == on_off.Mode.FAST:
-                # Fast-ON command.  Use full-brightness.
-                level = 0xff
-            else:
-                # Normal/instant ON command.  Use default on-level.
-                # Check if we saved the default on-level in the device
-                # database when setting it.
-                level = self.get_on_level()
-                if self._level == level:
-                    # Just like with button presses, if already at default on
-                    # level, go to full brightness.
-                    level = 0xff
+            # If level is not specified it uses the level that the device
+            # would go to if the button was physically pressed.
+            level = self.derive_on_level(mode)
 
         mode, transition = self.mode_transition_supported(mode, transition)
 
@@ -442,14 +424,7 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFlags, Base):
             LOG.error("KeypadLinc %s switch doesn't support increment up "
                       "command", self.addr)
             return
-
-        LOG.info("KeypadLinc %s cmd: increment up", self.addr)
-        msg = Msg.OutStandard.direct(self.addr, 0x15, 0x00)
-
-        callback = functools.partial(self.handle_increment, delta=+8,
-                                     reason=reason)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-        self.send(msg, msg_handler)
+        super().increment_up(reason=reason, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def increment_down(self, reason="", on_done=None):
@@ -472,14 +447,7 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFlags, Base):
             LOG.error("KeypadLinc %s switch doesn't support increment down "
                       "command", self.addr)
             return
-
-        LOG.info("KeypadLinc %s cmd: increment down", self.addr)
-        msg = Msg.OutStandard.direct(self.addr, 0x16, 0x00)
-
-        callback = functools.partial(self.handle_increment, delta=-8,
-                                     reason=reason)
-        msg_handler = handler.StandardCmd(msg, callback, on_done)
-        self.send(msg, msg_handler)
+        super().increment_down(reason=reason, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):
@@ -1218,26 +1186,9 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFlags, Base):
 
             # For an on command, we can update directly.
             if is_on:
-                # Level isn't provided in the broadcast msg.
-                # What to use depends on which command was received.
-                if msg.group != self._load_group:
-                    # Only load group can be a dimmer, use full-on for others
-                    level = 0xff
-                elif mode == on_off.Mode.FAST:
-                    # Fast-ON command.  Use full-brightness.
-                    level = 0xff
-                else:
-                    # Normal/instant ON command.  Use default on-level.
-                    # Check if we saved the default on-level in the device
-                    # database when setting it.
-                    level = self.get_on_level()
-                    if self._level == level:
-                        # Pressing on again when already at the default on
-                        # level causes the device to go to full-brightness.
-                        level = 0xff
+                level = self.derive_on_level(mode)
                 self._set_state(group=msg.group, level=level, mode=mode,
                                 reason=reason)
-
             else:
                 self._set_state(group=msg.group, level=0x00, mode=mode,
                                 reason=reason)
@@ -1291,17 +1242,8 @@ class KeypadLinc(SetAndState, Scene, Backlight, DimmerFlags, Base):
                  command was sent. It is passed through to the output signal
                  when the state changes - nothing else is done with it.
         """
-        # If this it the ACK we're expecting, update the internal state and
-        # emit our signals.
-        LOG.debug("KeypadLinc %s ACK: %s", self.addr, msg)
-
-        # Add the delta and bound at [0, 255]
-        level = min(self._level + delta, 255)
-        level = max(level, 0)
-        self._set_state(group=self._load_group, level=level, reason=reason)
-
-        s = "KeypadLinc %s state updated to %s" % (self.addr, self._level)
-        on_done(True, s, msg.cmd2)
+        super().handle_increment(msg, on_done, delta, reason=reason,
+                                 group=self._load_group)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
