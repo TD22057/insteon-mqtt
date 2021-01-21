@@ -30,7 +30,7 @@ class Broadcast(Base):
     indicates that the device is finished sending messages.  However, as
     broadcast message, it is not guaranteed to be received.  Some devices
     even have a user option to turn off these messages.  These messages
-    contain information about how the success or failure of the broadcast but
+    contain information about the success or failure of the broadcast but
     do not contain the ON/OFF value of the broadcast.
 
     This handler will call device.handle_broadcast(msg) for the device that
