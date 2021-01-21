@@ -45,7 +45,6 @@ class Test_Base_Config():
     @pytest.mark.parametrize("cmd1,expected", [
         (Msg.CmdType.ON, True),
         (Msg.CmdType.OFF, False),
-        (Msg.CmdType.LINK_CLEANUP_REPORT, None),
     ])
     def test_broadcast_1(self, test_device, cmd1, expected):
         with mock.patch.object(Device.BatterySensor, '_set_state') as mocked:
@@ -62,7 +61,6 @@ class Test_Base_Config():
     @pytest.mark.parametrize("cmd1,expected", [
         (Msg.CmdType.ON, True),
         (Msg.CmdType.OFF, False),
-        (Msg.CmdType.LINK_CLEANUP_REPORT, None),
     ])
     def test_broadcast_3(self, test_device, cmd1, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:
@@ -79,7 +77,6 @@ class Test_Base_Config():
     @pytest.mark.parametrize("cmd1,expected", [
         (Msg.CmdType.ON, True),
         (Msg.CmdType.OFF, True),
-        (Msg.CmdType.LINK_CLEANUP_REPORT, None),
     ])
     def test_broadcast_4(self, test_device, cmd1, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:

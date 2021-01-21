@@ -169,15 +169,10 @@ class BatterySensor(functions.State, Base):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-        else:
-            LOG.info("BatterySensor %s on_off broadcast cmd: %s", self.addr,
-                     msg.cmd1)
-            self._set_state(is_on=(msg.cmd1 == Msg.CmdType.ON))
-            self.update_linked_devices(msg)
+        LOG.info("BatterySensor %s on_off broadcast cmd: %s", self.addr,
+                 msg.cmd1)
+        self._set_state(is_on=(msg.cmd1 == Msg.CmdType.ON))
+        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_low_battery(self, msg):
@@ -190,16 +185,11 @@ class BatterySensor(functions.State, Base):
           msg (InpStandard):  Broadcast message from the device.  On/off is
               stored in msg.cmd1.
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-        else:
-            LOG.info("BatterySensor %s low battery broadcast cmd: %s",
-                     self.addr, msg.cmd1)
-            # Send True for low battery, False for regular.
-            self.signal_low_battery.emit(self, msg.cmd1 == Msg.CmdType.ON)
-            self.update_linked_devices(msg)
+        LOG.info("BatterySensor %s low battery broadcast cmd: %s",
+                 self.addr, msg.cmd1)
+        # Send True for low battery, False for regular.
+        self.signal_low_battery.emit(self, msg.cmd1 == Msg.CmdType.ON)
+        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_heartbeat(self, msg):
@@ -211,16 +201,11 @@ class BatterySensor(functions.State, Base):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-        else:
-            LOG.info("BatterySensor %s heartbeat broadcast cmd: %s", self.addr,
-                     msg.cmd1)
-            # Send True for any heart beat message
-            self.signal_heartbeat.emit(self, True)
-            self.update_linked_devices(msg)
+        LOG.info("BatterySensor %s heartbeat broadcast cmd: %s", self.addr,
+                 msg.cmd1)
+        # Send True for any heart beat message
+        self.signal_heartbeat.emit(self, True)
+        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_refresh(self, msg):

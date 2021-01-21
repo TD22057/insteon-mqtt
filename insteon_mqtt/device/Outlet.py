@@ -296,11 +296,8 @@ class Outlet(functions.SetAndState, Base):
           msg (InpStandard):  Broadcast message from the device.
         """
         reason = on_off.REASON_DEVICE
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("Outlet %s broadcast ACK grp: %s", self.addr, msg.group)
-
         # On/off command codes.
-        elif on_off.Mode.is_valid(msg.cmd1):
+        if on_off.Mode.is_valid(msg.cmd1):
             is_on, mode = on_off.Mode.decode(msg.cmd1)
             LOG.info("Outlet %s broadcast grp: %s on: %s mode: %s", self.addr,
                      msg.group, is_on, mode)

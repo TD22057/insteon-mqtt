@@ -44,12 +44,9 @@ class Test_Base_Config():
     @pytest.mark.parametrize("group_num,cmd1,cmd2,expected", [
         (0x01,Msg.CmdType.ON, 0x00,[False]),
         (0x01,Msg.CmdType.OFF, 0x00, [False]),
-        (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
         (0x02,Msg.CmdType.ON, 0x00,[True]),
         (0x02,Msg.CmdType.OFF, 0x00, [True]),
-        (0x02,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
         (0x04,Msg.CmdType.ON, 0x00,[True]),
-        (0x04,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
     ])
     def test_handle_broadcast(self, test_device, group_num, cmd1, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:

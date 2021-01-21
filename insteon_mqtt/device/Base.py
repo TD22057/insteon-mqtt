@@ -1054,10 +1054,9 @@ class Base:
         The broadcast message from a device is sent when the device is
         triggered.  The message has the group ID in it, this uses the class
         attribute group_map to map the group to the handler that should process
-        the message.  This handler should be prepared to receive both broadcast
-        messages and CmdType.LINK_CLEANUP_REPORT messages as well. The handler
-        should likely pass all valid broadcast commands to
-        update_linked_devices() so that the associated devices can be updated.
+        the message.  The handler should likely pass all valid broadcast
+        commands to update_linked_devices() so that the associated devices can
+        be updated.
 
         Args:
           msg (InpStandard): Broadcast message from the device.

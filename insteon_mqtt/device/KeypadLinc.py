@@ -1405,16 +1405,8 @@ class KeypadLinc(functions.SetAndState, functions.Scene, Base):
                  on_off.REASON_DEVICE
         self.broadcast_reason = ""
 
-        # ACK of the broadcast.  Ignore this unless we sent a simulated off
-        # scene in which case run the broadcast done handler.  This is a
-        # weird special case - see scene() for details.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("KeypadLinc %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-            return
-
         # On/off commands.
-        elif on_off.Mode.is_valid(msg.cmd1):
+        if on_off.Mode.is_valid(msg.cmd1):
             is_on, mode = on_off.Mode.decode(msg.cmd1)
             LOG.info("KeypadLinc %s broadcast grp: %s on: %s mode: %s",
                      self.addr, msg.group, is_on, mode)

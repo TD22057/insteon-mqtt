@@ -146,30 +146,25 @@ class Remote(BatterySensor):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-        else:
-            # On/off command codes.
-            if on_off.Mode.is_valid(msg.cmd1):
-                is_on, mode = on_off.Mode.decode(msg.cmd1)
-                LOG.info("Remote %s broadcast grp: %s on: %s mode: %s",
-                         self.addr, msg.group, is_on, mode)
+        # On/off command codes.
+        if on_off.Mode.is_valid(msg.cmd1):
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
+            LOG.info("Remote %s broadcast grp: %s on: %s mode: %s",
+                     self.addr, msg.group, is_on, mode)
 
-                # Notify others that the button was pressed.
-                self.signal_state.emit(self, button=msg.group, is_on=is_on,
-                                       mode=mode)
-                self.update_linked_devices(msg)
+            # Notify others that the button was pressed.
+            self.signal_state.emit(self, button=msg.group, is_on=is_on,
+                                   mode=mode)
+            self.update_linked_devices(msg)
 
-            # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
-            elif on_off.Manual.is_valid(msg.cmd1):
-                manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-                LOG.info("Remote %s manual change group: %s %s", self.addr,
-                         msg.group, manual)
+        # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
+        elif on_off.Manual.is_valid(msg.cmd1):
+            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
+            LOG.info("Remote %s manual change group: %s %s", self.addr,
+                     msg.group, manual)
 
-                self.signal_manual.emit(self, button=msg.group, manual=manual)
-                self.update_linked_devices(msg)
+            self.signal_manual.emit(self, button=msg.group, manual=manual)
+            self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):

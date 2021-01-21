@@ -198,15 +198,10 @@ class Motion(BatterySensor):
           msg (InpStandard):  Broadcast message from the device.
 
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("Motion %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-        else:
-            # Send True for dawn, False for dusk.
-            LOG.info("Motion %s broadcast grp: %s cmd %s", self.addr,
-                     msg.group, msg.cmd1)
-            self.signal_dawn.emit(self, msg.cmd1 == Msg.CmdType.ON)
+        # Send True for dawn, False for dusk.
+        LOG.info("Motion %s broadcast grp: %s cmd %s", self.addr,
+                 msg.group, msg.cmd1)
+        self.signal_dawn.emit(self, msg.cmd1 == Msg.CmdType.ON)
 
     #-----------------------------------------------------------------------
     def set_flags(self, on_done, **kwargs):
