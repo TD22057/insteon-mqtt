@@ -89,7 +89,6 @@ class Motion(BatterySensor):
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
         self.cmd_map.update({
-            'set_flags' : self.set_flags,
             'set_low_battery_voltage': self.set_low_battery_voltage,
             'get_battery_voltage' : self._get_ext_flags,
             })

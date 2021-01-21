@@ -95,14 +95,6 @@ class EZIO4O(SetAndState, Base):
         #           str reason)
         self.signal_state = Signal()
 
-        # Remote (mqtt) commands mapped to methods calls.  Add to the
-        # base class defined commands.
-        self.cmd_map.update(
-            {
-                "set_flags": self.set_flags,
-            }
-        )
-
         # EZIOxx configuration port settings. See set_flags().
         self._flag_value = None
 

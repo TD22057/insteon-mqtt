@@ -58,7 +58,6 @@ class Dimmer(Scene, SetAndState, Backlight, DimmerFlags, Base):
         self.cmd_map.update({
             'increment_up' : self.increment_up,
             'increment_down' : self.increment_down,
-            'set_flags' : self.set_flags,
             })
 
         # Update the group map with the groups to be paired and the handler
