@@ -6,7 +6,6 @@
 from .BatterySensor import BatterySensor
 from .. import log
 from ..Signal import Signal
-from .. import message as Msg
 
 LOG = log.get_logger()
 

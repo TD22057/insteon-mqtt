@@ -55,7 +55,7 @@ class DimmerFuncs(Base):
         self.set_flags_map.update({'on_level': self.set_on_level,
                                    'ramp_rate': self.set_ramp_rate})
 
-    ########## Flags Functions
+    #========= Flags Functions
     #-----------------------------------------------------------------------
     def set_on_level(self, on_done=None, **kwargs):
         """Set the device default on level.
@@ -166,7 +166,7 @@ class DimmerFuncs(Base):
             on_level = 0xff
         return on_level
 
-    ########## Increment Functions
+    #========= Increment Functions
     #-----------------------------------------------------------------------
     def increment_up(self, reason="", on_done=None):
         """Increment the current level up.
@@ -249,7 +249,7 @@ class DimmerFuncs(Base):
         s = "Device %s state updated to %s" % (self.addr, self._level)
         on_done(True, s, msg.cmd2)
 
-    ########### Helper Functions
+    #========= Helper Functions
     #-----------------------------------------------------------------------
     def derive_on_level(self, mode):
         """Calculates the device on level based on the mode and the local

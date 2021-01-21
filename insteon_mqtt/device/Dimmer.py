@@ -269,7 +269,6 @@ class Dimmer(Scene, SetAndState, Backlight, DimmerFuncs, Base):
         if manual == on_off.Manual.STOP:
             self.refresh()
 
-
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):
         """Respond to a group command for this device.

@@ -495,7 +495,7 @@ class EZIO4O(SetAndState, Base):
             on_done(False, "EZIO4O %s flags update failed" % self.label, None)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
+    def handle_refresh(self, msg, group=None):
         """Callback for handling refresh() responses.
 
         This is called when we get a response to the refresh() command.  The

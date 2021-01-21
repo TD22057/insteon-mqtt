@@ -6,7 +6,6 @@
 from .Base import Base
 from .functions import SetAndState, Scene, Backlight
 from .. import log
-from .. import message as Msg
 from .. import on_off
 from ..Signal import Signal
 
