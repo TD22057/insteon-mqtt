@@ -278,3 +278,21 @@ class DimmerFuncs(Base):
                 # level, go to full brightness.
                 level = 0xff
         return level
+
+    #-----------------------------------------------------------------------
+    def derive_off_level(self, mode):
+        """Calculates the device off level based on the mode and the local
+        on_level set in the flags.
+
+        This always returns 0x00 for dimmer devices.  By setting the level to
+        not None, this will cause the mqtt template_data to produce variables
+        based on the level data.  This may be a bit silly, but keeps things
+        compatible with how it previously worked.
+
+        Args:
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+        Returns:
+          level (int)
+        """
+        level = 0x00
+        return level

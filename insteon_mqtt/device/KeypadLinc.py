@@ -937,60 +937,35 @@ class KeypadLinc(SetAndState, Scene, Backlight, Base):
         on_done(True, "Refresh complete", None)
 
     #-----------------------------------------------------------------------
-    def handle_on_off(self, msg):
-        """Handle on_off broadcast messages from this device.
+    def process_manual(self, msg, reason):
+        """Handle Manual Mode Received from the Device
 
-        This is called from base.handle_broadcast using the group_map map.
+        This is called as part of the handle_broadcast response.  It
+        processes the manual mode changes sent by the device.
 
         Args:
-          msg (InpStandard):  Broadcast message from the device.
+          msg (InpStandard):  Broadcast message from the device.  Use
+              msg.group to find the group and msg.cmd1 for the command.
+          reason (str):  The reason string to pass on
         """
-        # Non-group 1 messages are for the scene buttons on keypadlinc.
-        # Treat those the same as the remote control does.  They don't have
-        # levels to find/set but have similar messages to the dimmer load.
+        manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
+        LOG.info("KeypadLinc %s manual change %s", self.addr, manual)
 
-        # If we have a saved reason from a simulated scene command, use that.
-        # Otherwise the device button was pressed.
-        reason = self.broadcast_reason if self.broadcast_reason else \
-                 on_off.REASON_DEVICE
-        self.broadcast_reason = ""
-
-        # On/off commands.
-        if on_off.Mode.is_valid(msg.cmd1):
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
-            LOG.info("KeypadLinc %s broadcast grp: %s on: %s mode: %s",
-                     self.addr, msg.group, is_on, mode)
-
-            # For an on command, we can update directly.
-            if is_on:
-                self._set_state(group=msg.group, level=0xFF, mode=mode,
-                                reason=reason)
-            else:
-                self._set_state(group=msg.group, level=0x00, mode=mode,
+        self.signal_manual.emit(self, button=msg.group, manual=manual,
                                 reason=reason)
 
-        # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
-        elif on_off.Manual.is_valid(msg.cmd1):
-            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-            LOG.info("KeypadLinc %s manual change %s", self.addr, manual)
-
-            self.signal_manual.emit(self, button=msg.group, manual=manual,
-                                    reason=reason)
-
-            # Non-load group buttons don't change state in manual mode. (found
-            # through experiments)
-            if msg.group == self._load_group:
-                # Switches change state when the switch is held.
-                if manual == on_off.Manual.UP:
-                    self._set_state(group=self._load_group, level=0xff,
-                                    mode=on_off.Mode.MANUAL,
-                                    reason=reason)
-                elif manual == on_off.Manual.DOWN:
-                    self._set_state(group=self._load_group, level=0x00,
-                                    mode=on_off.Mode.MANUAL,
-                                    reason=reason)
-
-        self.update_linked_devices(msg)
+        # Non-load group buttons don't change state in manual mode. (found
+        # through experiments)
+        if msg.group == self._load_group:
+            # Switches change state when the switch is held.
+            if manual == on_off.Manual.UP:
+                self._set_state(group=self._load_group, level=0xff,
+                                mode=on_off.Mode.MANUAL,
+                                reason=reason)
+            elif manual == on_off.Manual.DOWN:
+                self._set_state(group=self._load_group, level=0x00,
+                                mode=on_off.Mode.MANUAL,
+                                reason=reason)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

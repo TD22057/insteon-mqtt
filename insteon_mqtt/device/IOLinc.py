@@ -566,23 +566,15 @@ class IOLinc(SetAndState, Base):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # On command.  0x11: on
-        if msg.cmd1 == Msg.CmdType.ON:
-            LOG.info("IOLinc %s broadcast ON grp: %s", self.addr, msg.group)
-            self._set_state(group=GROUP_SENSOR, is_on=True)
-            if self.relay_linked:
-                # If relay_linked is enabled then the relay was triggered
+        # If relay_linked is enabled then the relay was triggered
+        if self.relay_linked:
+            if msg.cmd1 == Msg.CmdType.ON:
                 self._set_state(group=GROUP_RELAY, is_on=True)
-
-        # Off command. 0x13: off
-        elif msg.cmd1 == Msg.CmdType.OFF:
-            LOG.info("IOLinc %s broadcast OFF grp: %s", self.addr, msg.group)
-            self._set_state(group=GROUP_SENSOR, is_on=False)
-            if self.relay_linked:
-                # If relay_linked is enabled then the relay was triggered
+            elif msg.cmd1 == Msg.CmdType.OFF:
                 self._set_state(group=GROUP_RELAY, is_on=False)
 
-        self.update_linked_devices(msg)
+        # Pass to Base to handle the sensor state
+        super().handle_on_off(msg)
 
     #-----------------------------------------------------------------------
     def handle_flags(self, msg, on_done):

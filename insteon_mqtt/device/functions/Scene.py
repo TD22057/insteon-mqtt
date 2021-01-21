@@ -37,10 +37,6 @@ class Scene(Base):
             'scene' : self.scene,
             })
 
-        # Special callback to run when receiving a broadcast clean up.  See
-        # scene() for details.
-        self.broadcast_reason = ""
-
         # NOTE!
         # The class extending this class needs to define the controller groups
         # in the self.group_map.  Only these groups will be valid scene

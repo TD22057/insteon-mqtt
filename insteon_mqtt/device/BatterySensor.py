@@ -160,21 +160,6 @@ class BatterySensor(State, Base):
         self._pop_send_queue()
 
     #-----------------------------------------------------------------------
-    def handle_on_off(self, msg):
-        """Handle sensor activation.
-
-        This is called by the device when a group broadcast on group 01 is
-        sent out by the sensor.
-
-        Args:
-          msg (InpStandard):  Broadcast message from the device.
-        """
-        LOG.info("BatterySensor %s on_off broadcast cmd: %s", self.addr,
-                 msg.cmd1)
-        self._set_state(is_on=(msg.cmd1 == Msg.CmdType.ON))
-        self.update_linked_devices(msg)
-
-    #-----------------------------------------------------------------------
     def handle_low_battery(self, msg):
         """Handle a low battery message.
 

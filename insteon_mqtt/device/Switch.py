@@ -57,54 +57,30 @@ class Switch(SetAndState, Scene, Backlight, Base):
         self.group_map.update({0x01: self.handle_on_off})
 
     #-----------------------------------------------------------------------
-    def handle_on_off(self, msg):
-        """Handle broadcast messages from this device.
+    def process_manual(self, msg, reason):
+        """Handle Manual Mode Received from the Device
 
-        This is called from base.handle_broadcast using the group_cmd map.
+        This is called as part of the handle_broadcast response.  It
+        processes the manual mode changes sent by the device.
 
         Args:
-          msg (InpStandard): Broadcast message from the device.
+          msg (InpStandard):  Broadcast message from the device.  Use
+              msg.group to find the group and msg.cmd1 for the command.
+          reason (str):  The reason string to pass on
         """
-        # If we have a saved reason from a simulated scene command, use that.
-        # Otherwise the device button was pressed.
-        reason = self.broadcast_reason if self.broadcast_reason else \
-                 on_off.REASON_DEVICE
-        self.broadcast_reason = ""
+        manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
+        LOG.info("Switch %s manual change %s", self.addr, manual)
 
-        # On/off command codes.
-        if on_off.Mode.is_valid(msg.cmd1):
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
-            LOG.info("Switch %s broadcast grp: %s on: %s mode: %s", self.addr,
-                     msg.group, is_on, mode)
+        self.signal_manual.emit(self, manual=manual)
 
-            # For an on command, we can update directly.
-            if is_on:
-                self._set_state(is_on=True, mode=mode, reason=reason)
-
-            else:
-                self._set_state(is_on=False, mode=mode, reason=reason)
-
-        # Starting or stopping manual mode.
-        elif on_off.Manual.is_valid(msg.cmd1):
-            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-            LOG.info("Switch %s manual change %s", self.addr, manual)
-
-            self.signal_manual.emit(self, manual=manual)
-
-            # Switches change state when the switch is held (not all devices
-            # do this).
-            if manual == on_off.Manual.UP:
-                self._set_state(is_on=True, mode=on_off.Mode.MANUAL,
-                                reason=reason)
-            elif manual == on_off.Manual.DOWN:
-                self._set_state(is_on=False, mode=on_off.Mode.MANUAL,
-                                reason=reason)
-
-        # This will find all the devices we're the controller of for this
-        # group and call their handle_group_cmd() methods to update their
-        # states since they will have seen the group broadcast and updated
-        # (without sending anything out).
-        self.update_linked_devices(msg)
+        # Switches change state when the switch is held (not all devices
+        # do this).
+        if manual == on_off.Manual.UP:
+            self._set_state(is_on=True, mode=on_off.Mode.MANUAL,
+                            reason=reason)
+        elif manual == on_off.Manual.DOWN:
+            self._set_state(is_on=False, mode=on_off.Mode.MANUAL,
+                            reason=reason)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

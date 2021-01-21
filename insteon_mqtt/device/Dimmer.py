@@ -246,48 +246,29 @@ class Dimmer(Scene, SetAndState, Backlight, DimmerFuncs, Base):
         on_done(True, "Operation complete", msg.data[5])
 
     #-----------------------------------------------------------------------
-    def handle_on_off(self, msg):
-        """Handle broadcast messages from this device.
+    def process_manual(self, msg, reason):
+        """Handle Manual Mode Received from the Device
 
-        This is called from base.handle_broadcast using the group_map map.
+        This is called as part of the handle_broadcast response.  It
+        processes the manual mode changes sent by the device.
+
+        The Base class does nothing with this, classes that extend this
+        should add the necessary functionality here.
 
         Args:
-          msg (InpStandard): Broadcast message from the device.
+          msg (InpStandard):  Broadcast message from the device.  Use
+              msg.group to find the group and msg.cmd1 for the command.
+          reason (str):  The reason string to pass on
         """
-        # If we have a saved reason from a simulated scene command, use that.
-        # Otherwise the device button was pressed.
-        reason = self.broadcast_reason if self.broadcast_reason else \
-                 on_off.REASON_DEVICE
-        self.broadcast_reason = ""
+        manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
+        LOG.info("Dimmer %s manual change %s", self.addr, manual)
 
-        if on_off.Mode.is_valid(msg.cmd1):
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
-            LOG.info("Dimmer %s broadcast grp: %s on: %s mode: %s", self.addr,
-                     msg.group, is_on, mode)
+        self.signal_manual.emit(self, manual=manual, reason=reason)
 
-            # For an on command, we can update directly.
-            if is_on:
-                level = self.derive_on_level(mode)
-                self._set_state(level=level, mode=mode, reason=reason)
-            else:
-                self._set_state(level=0x00, mode=mode, reason=reason)
+        # Refresh to get the new level after the button is released.
+        if manual == on_off.Manual.STOP:
+            self.refresh()
 
-        # Starting or stopping manual mode.
-        elif on_off.Manual.is_valid(msg.cmd1):
-            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-            LOG.info("Dimmer %s manual change %s", self.addr, manual)
-
-            self.signal_manual.emit(self, manual=manual, reason=reason)
-
-            # Refresh to get the new level after the button is released.
-            if manual == on_off.Manual.STOP:
-                self.refresh()
-
-        # This will find all the devices we're the controller of for this
-        # group and call their handle_group_cmd() methods to update their
-        # states since they will have seen the group broadcast and updated
-        # (without sending anything out).
-        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

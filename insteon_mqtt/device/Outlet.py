@@ -187,27 +187,6 @@ class Outlet(SetAndState, Backlight, Base):
                         transition=transition, on_done=on_done)
 
     #-----------------------------------------------------------------------
-    def handle_on_off(self, msg):
-        """Handle broadcast on_off messages from this device.
-
-        This is called via the handle_broadcast and the mapping in group_map.
-
-        Args:
-          msg (InpStandard):  Broadcast message from the device.
-        """
-        reason = on_off.REASON_DEVICE
-        # On/off command codes.
-        if on_off.Mode.is_valid(msg.cmd1):
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
-            LOG.info("Outlet %s broadcast grp: %s on: %s mode: %s", self.addr,
-                     msg.group, is_on, mode)
-
-            self._set_state(group=msg.group, is_on=is_on, mode=mode,
-                            reason=reason)
-
-            self.update_linked_devices(msg)
-
-    #-----------------------------------------------------------------------
     def handle_refresh(self, msg, group=None):
         """Callback for handling refresh() responses.
 

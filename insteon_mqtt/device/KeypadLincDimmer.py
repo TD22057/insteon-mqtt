@@ -3,18 +3,14 @@
 # KeypadLinc Dimmer module
 #
 #===========================================================================
-import functools
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg
 from .. import on_off
-from ..Signal import Signal
 from .. import util
-from .Base import Base
 from .functions import DimmerFuncs
 from .KeypadLinc import KeypadLinc
-# from . import Dimmer
 
 LOG = log.get_logger()
 
@@ -246,67 +242,34 @@ class KeypadLincDimmer(DimmerFuncs, KeypadLinc):
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
-    def handle_on_off(self, msg):
-        """Handle on_off broadcast messages from this device.
+    def process_manual(self, msg, reason):
+        """Handle Manual Mode Received from the Device
 
-        This is called from base.handle_broadcast using the group_map map.
+        This is called as part of the handle_broadcast response.  It
+        processes the manual mode changes sent by the device.
 
         Args:
-          msg (InpStandard):  Broadcast message from the device.
+          msg (InpStandard):  Broadcast message from the device.  Use
+              msg.group to find the group and msg.cmd1 for the command.
+          reason (str):  The reason string to pass on
         """
-        # Non-group 1 messages are for the scene buttons on keypadlinc.
-        # Treat those the same as the remote control does.  They don't have
-        # levels to find/set but have similar messages to the dimmer load.
+        manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
+        LOG.info("KeypadLinc %s manual change %s", self.addr, manual)
 
-        # If we have a saved reason from a simulated scene command, use that.
-        # Otherwise the device button was pressed.
-        reason = self.broadcast_reason if self.broadcast_reason else \
-                 on_off.REASON_DEVICE
-        self.broadcast_reason = ""
-
-        # ACK of the broadcast.  Ignore this unless we sent a simulated off
-        # scene in which case run the broadcast done handler.  This is a
-        # weird special case - see scene() for details.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("KeypadLinc %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-            return
-
-        # On/off commands.
-        elif on_off.Mode.is_valid(msg.cmd1):
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
-            LOG.info("KeypadLinc %s broadcast grp: %s on: %s mode: %s",
-                     self.addr, msg.group, is_on, mode)
-
-            # For an on command, we can update directly.
-            if is_on:
-                level = self.derive_on_level(mode)
-                self._set_state(group=msg.group, level=level, mode=mode,
-                                reason=reason)
-            else:
-                self._set_state(group=msg.group, level=0x00, mode=mode,
+        self.signal_manual.emit(self, button=msg.group, manual=manual,
                                 reason=reason)
 
-        # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
-        elif on_off.Manual.is_valid(msg.cmd1):
-            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-            LOG.info("KeypadLinc %s manual change %s", self.addr, manual)
+        # Non-load group buttons don't change state in manual mode. (found
+        # through experiments)
+        if msg.group == self._load_group:
+            # Ping the device to get the dimmer states - we don't know
+            # what the keypadlinc things the state is - could be on or
+            # off.  Doing a dim down for a long time puts all the other
+            # devices "off" but the keypadlinc can still think that it's
+            # on.  So we have to do a refresh to find out.
+            if manual == on_off.Manual.STOP:
+                self.refresh()
 
-            self.signal_manual.emit(self, button=msg.group, manual=manual,
-                                    reason=reason)
-
-            # Non-load group buttons don't change state in manual mode. (found
-            # through experiments)
-            if msg.group == self._load_group:
-                # Ping the device to get the dimmer states - we don't know
-                # what the keypadlinc things the state is - could be on or
-                # off.  Doing a dim down for a long time puts all the other
-                # devices "off" but the keypadlinc can still think that it's
-                # on.  So we have to do a refresh to find out.
-                if manual == on_off.Manual.STOP:
-                    self.refresh()
-
-        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_group_cmd(self, addr, msg):

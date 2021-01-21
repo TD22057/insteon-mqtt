@@ -221,8 +221,10 @@ class Test_Handles():
             test_iolinc.handle_broadcast(msg)
             calls = IM.Signal.emit.call_args_list
             if linked:
-                assert calls[1][1]['is_on'] == relay
-                assert calls[1][1]['button'] == 2
+                assert calls[0][1]['is_on'] == relay
+                assert calls[0][1]['button'] == 2
+                assert calls[1][1]['is_on'] == sensor
+                assert calls[1][1]['button'] == 1
                 assert IM.Signal.emit.call_count == 2
             elif sensor is not None:
                 assert calls[0][1]['is_on'] == sensor

@@ -38,10 +38,10 @@ class Test_Base_Config():
             assert IM.CommandSeq.add.call_count == 2
 
     @pytest.mark.parametrize("group,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.ON, 0x00,{"is_on":True,"level":None,"mode":IM.on_off.Mode.NORMAL, "button":None, "reason":'device'}),
-        (0x01,Msg.CmdType.OFF, 0x00, {"is_on":False,"level":None,"mode":IM.on_off.Mode.NORMAL, "button":None, "reason":'device'}),
-        (0x01,Msg.CmdType.ON_FAST, 0x00,{"is_on":True,"level":None,"mode":IM.on_off.Mode.FAST, "button":None, "reason":'device'}),
-        (0x01,Msg.CmdType.OFF_FAST, 0x00, {"is_on":False,"level":None,"mode":IM.on_off.Mode.FAST, "button":None, "reason":'device'}),
+        (0x01,Msg.CmdType.ON, 0x00,{"is_on":True,"level":None,"mode":IM.on_off.Mode.NORMAL, "button":1, "reason":'device'}),
+        (0x01,Msg.CmdType.OFF, 0x00, {"is_on":False,"level":None,"mode":IM.on_off.Mode.NORMAL, "button":1, "reason":'device'}),
+        (0x01,Msg.CmdType.ON_FAST, 0x00,{"is_on":True,"level":None,"mode":IM.on_off.Mode.FAST, "button":1, "reason":'device'}),
+        (0x01,Msg.CmdType.OFF_FAST, 0x00, {"is_on":False,"level":None,"mode":IM.on_off.Mode.FAST, "button":1, "reason":'device'}),
         (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
     ])
     def test_handle_on_off(self, test_device, group, cmd1, cmd2, expected):

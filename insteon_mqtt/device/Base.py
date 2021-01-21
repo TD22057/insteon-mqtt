@@ -116,6 +116,10 @@ class Base:
         # Config db is initiated by Scenes
         self.db_config = None
 
+        # Special callback to run when receiving a broadcast clean up.  See
+        # scene() for details.
+        self.broadcast_reason = ""
+
         # Map (mqtt) commands mapped to methods calls.  These are handled in
         # run_command().  Derived classes can add more commands to the dict
         # to expand the list.  Commands should all be lower case (inputs are
@@ -1140,6 +1144,96 @@ class Base:
         else:
             LOG.warning("Device %s has no handler for broadcast group %s",
                         self.label, msg.group)
+
+    #-----------------------------------------------------------------------
+    def handle_on_off(self, msg):
+        """Handle broadcast messages from this device.
+
+        This is called from base.handle_broadcast using the group_cmd map.
+
+        Args:
+          msg (InpStandard): Broadcast message from the device.
+        """
+        # If we have a saved reason from a simulated scene command, use that.
+        # Otherwise the device button was pressed.
+        reason = self.broadcast_reason if self.broadcast_reason else \
+                 on_off.REASON_DEVICE
+        self.broadcast_reason = ""
+
+        # On/off command codes.
+        if on_off.Mode.is_valid(msg.cmd1):
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
+            LOG.info("Device %s broadcast grp: %s on: %s mode: %s", self.addr,
+                     msg.group, is_on, mode)
+
+            # For an on command, we can update directly.
+            if is_on:
+                level = self.derive_on_level(mode)
+                self._set_state(is_on=True, level=level, mode=mode,
+                                group=msg.group, reason=reason)
+            else:
+                level = self.derive_off_level(mode)
+                self._set_state(is_on=False, level=level, mode=mode,
+                                group=msg.group, reason=reason)
+
+        # Starting or stopping manual mode.
+        elif on_off.Manual.is_valid(msg.cmd1):
+            self.process_manual(msg, reason)
+
+        # This will find all the devices we're the controller of for this
+        # group and call their handle_group_cmd() methods to update their
+        # states since they will have seen the group broadcast and updated
+        # (without sending anything out).
+        self.update_linked_devices(msg)
+
+    #-----------------------------------------------------------------------
+    def derive_on_level(self, mode):
+        """Calculates the device on level based on the mode and the local
+        on_level set in the flags.
+
+        For the base class, this always returns a level of None.  Other
+        classes, such as a Dimmer, may alter this return value.
+
+        Args:
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+        Returns:
+          level (int)
+        """
+        level = None
+        return level
+
+    #-----------------------------------------------------------------------
+    def derive_off_level(self, mode):
+        """Calculates the device off level based on the mode and the local
+        on_level set in the flags.
+
+        For the base class, this always returns a level of None.  Other
+        classes, such as a Dimmer, may alter this return value.
+
+        Args:
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+        Returns:
+          level (int)
+        """
+        level = None
+        return level
+
+    #-----------------------------------------------------------------------
+    def process_manual(self, msg, reason):
+        """Handle Manual Mode Received from the Device
+
+        This is called as part of the handle_broadcast response.  It
+        processes the manual mode changes sent by the device.
+
+        The Base class does nothing with this, classes that extend this
+        should add the necessary functionality here.
+
+        Args:
+          msg (InpStandard):  Broadcast message from the device.  Use
+              msg.group to find the group and msg.cmd1 for the command.
+          reason (str):  The reason string to pass on
+        """
+        pass
 
     #-----------------------------------------------------------------------
     def generic_ack_callback(self, text):
