@@ -285,8 +285,8 @@ class Test_Handles():
         assert test_iolinc.momentary_secs == seconds
 
     @pytest.mark.parametrize("cmd2,expected", [
-        (0x00, False),
-        (0Xff, True),
+        (0x00, 0x00),
+        (0Xff, 0xFF),
     ])
     def test_handle_refresh_relay(self, test_iolinc, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit'):
@@ -294,15 +294,15 @@ class Test_Handles():
             from_addr = IM.Address(0x04, 0x05, 0x06)
             flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
             msg = IM.message.InpStandard(from_addr, to_addr, flags, 0x19, cmd2)
-            test_iolinc.handle_refresh_relay(msg)
+            test_iolinc.handle_refresh(msg, group=2)
             calls = IM.Signal.emit.call_args_list
-            assert calls[0][1]['is_on'] == expected
+            assert calls[0][1]['level'] == expected
             assert calls[0][1]['button'] == 2
             assert IM.Signal.emit.call_count == 1
 
     @pytest.mark.parametrize("cmd2,expected", [
-        (0x00, False),
-        (0Xff, True),
+        (0x00, 0x00),
+        (0Xff, 0xff),
     ])
     def test_handle_refresh_sensor(self, test_iolinc, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit'):
@@ -310,9 +310,9 @@ class Test_Handles():
             from_addr = IM.Address(0x04, 0x05, 0x06)
             flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
             msg = IM.message.InpStandard(from_addr, to_addr, flags, 0x19, cmd2)
-            test_iolinc.handle_refresh_sensor(msg)
+            test_iolinc.handle_refresh(msg, group=1)
             calls = IM.Signal.emit.call_args_list
-            assert calls[0][1]['is_on'] == expected
+            assert calls[0][1]['level'] == expected
             assert calls[0][1]['button'] == 1
             assert IM.Signal.emit.call_count == 1
 

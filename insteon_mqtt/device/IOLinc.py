@@ -5,6 +5,7 @@
 #===========================================================================
 import enum
 import time
+import functools
 from .base import ResponderBase
 from ..CommandSeq import CommandSeq
 from .. import handler
@@ -495,8 +496,8 @@ class IOLinc(ResponderBase):
                 device model information even if it is already known.
         """
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
-        msg_handler = handler.DeviceRefresh(self, self.handle_refresh_sensor,
-                                            False, num_retry=3)
+        callback = functools.partial(self.handle_refresh, group=GROUP_SENSOR)
+        msg_handler = handler.DeviceRefresh(self, callback, False, num_retry=3)
         seq.add_msg(msg, msg_handler)
         super().addRefreshData(seq, force=force)
 
@@ -616,42 +617,27 @@ class IOLinc(ResponderBase):
         on_done(True, "Operation complete", None)
 
     #-----------------------------------------------------------------------
-    def handle_refresh_relay(self, msg):
-        """Callback for handling refresh() responses for the relay
+    def refresh(self, force=False, group=None, on_done=None):
+        """Refresh the current device state and database if needed.
 
-        This is called when we get a response to the first refresh() command.
-        The refresh command reply will contain the current device relay state
-        in cmd2 and this updates the device with that value.  It is called by
-        handler.DeviceRefresh when we can an ACK for the refresh command.
+        This sends a ping to the device.  The reply has the current device
+        state (on/off, level, etc) and the current db delta value which is
+        checked against the current db value.  If the current db is out of
+        date, it will trigger a download of the database.
 
-        Args:
-          msg (message.InpStandard):  The refresh message reply.  The current
-              device relay state is in the msg.cmd2 field.
-        """
-        LOG.ui("IOLinc %s refresh relay on=%s", self.label, msg.cmd2 > 0x00)
-
-        # Current on/off level is stored in cmd2 so update our level to
-        # match.
-        self._set_state(group=GROUP_RELAY, is_on=msg.cmd2 > 0x00)
-
-    #-----------------------------------------------------------------------
-    def handle_refresh_sensor(self, msg):
-        """Callback for handling refresh() responses for the sensor.
-
-        This is called when we get a response to the second refresh() command.
-        The refresh command reply will contain the current device sensor state
-        in cmd2 and this updates the device with that value.  It is called by
-        handler.DeviceRefresh when we can an ACK for the refresh command.
+        This will send out an updated signal for the current device status
+        whenever possible (like dimmer levels).
 
         Args:
-          msg (message.InpStandard):  The refresh message reply.  The current
-              device sensor state is in the msg.cmd2 field.
+          force (bool):  If true, will force a refresh of the device database
+                even if the delta value matches as well as a re-query of the
+                device model information even if it is already known.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.ui("IOLinc %s refresh sensor on=%s", self.label, msg.cmd2 > 0x00)
-
-        # Current on/off level is stored in cmd2 so update our level to
-        # match.
-        self._set_state(group=GROUP_SENSOR, is_on=msg.cmd2 > 0x00)
+        # Needed to pass the GROUP_RELAY data to base refresh()
+        group = group if group is not None else GROUP_RELAY
+        super().refresh(force=force, group=group, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def handle_ack(self, msg, on_done, reason=""):
