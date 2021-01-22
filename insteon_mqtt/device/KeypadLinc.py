@@ -426,17 +426,9 @@ class KeypadLinc(Responder, Scene, Backlight, Base):
         Returns:
           list[3]: List of Data1-3 values
         """
-        data_1 = None
-        if 'data_1' in data:
-            data_1 = data['data_1']
-        data_2 = None
-        if 'data_2' in data:
-            data_2 = data['data_2']
-        data_3 = None
-        if 'data_3' in data:
-            data_3 = data['data_3']
-        if 'group' in data:
-            data_3 = data['group']
+        data_1, data_2, data_3 = super().link_data_from_pretty(is_controller,
+                                                               data)
+        data_3 = data.get('group', data_3)
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------

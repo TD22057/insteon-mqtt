@@ -967,15 +967,9 @@ class Base:
           list[3]:  List of Data1-3 values
         """
         # For the base devices this does nothing
-        data_1 = None
-        if 'data_1' in data:
-            data_1 = data['data_1']
-        data_2 = None
-        if 'data_2' in data:
-            data_2 = data['data_2']
-        data_3 = None
-        if 'data_3' in data:
-            data_3 = data['data_3']
+        data_1 = data.get('data_1', None)
+        data_2 = data.get('data_2', None)
+        data_3 = data.get('data_3', None)
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
