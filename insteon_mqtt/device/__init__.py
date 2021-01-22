@@ -26,7 +26,6 @@ first (hold the modem set button, then the device.
 
 #===========================================================================
 
-from .Base import Base
 from .BatterySensor import BatterySensor
 from .Dimmer import Dimmer
 from .EZIO4O import EZIO4O

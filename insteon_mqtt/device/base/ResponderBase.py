@@ -1,10 +1,10 @@
 #===========================================================================
 #
-# Provides Functions for Devices that are Responders
+# Provides the Base Functions for Devices that are Responders
 #
 #===========================================================================
 import functools
-from ..Base import Base
+from .Base import Base
 from ... import message as Msg
 from ... import handler
 from ... import log
@@ -14,7 +14,7 @@ from ... import on_off
 LOG = log.get_logger()
 
 
-class Responder(Base):
+class ResponderBase(Base):
     """Responder Functions Abstract Classes
 
     This is an abstract class that provides support for the the functions used
@@ -22,6 +22,9 @@ class Responder(Base):
     the modem or some other device. BatterSensors are generally not
     responders since they are not awake to hear messages, but generally
     everything else is.
+
+    This class is meant to be extended by other classes including DimmerBase
+    so it should generally be inheritted last.
     """
     def __init__(self, protocol, modem, address, name=None):
         """Constructor

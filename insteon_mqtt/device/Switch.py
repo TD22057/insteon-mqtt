@@ -3,17 +3,15 @@
 # Insteon on/off device
 #
 #===========================================================================
-from .Base import Base
-from .functions import Responder, Scene, Backlight, ManualCtrl
+from .base import ResponderBase
+from .functions import Scene, Backlight, ManualCtrl
 from .. import log
-from .. import on_off
-from ..Signal import Signal
 
 LOG = log.get_logger()
 
 
 #===========================================================================
-class Switch(Scene, Backlight, ManualCtrl, Responder, Base):
+class Switch(Scene, Backlight, ManualCtrl, ResponderBase):
     """Insteon on/off switch device.
 
     This class can be used to model any device that acts like a on/off switch

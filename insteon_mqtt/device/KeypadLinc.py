@@ -9,16 +9,15 @@ from .. import handler
 from .. import log
 from .. import message as Msg
 from .. import on_off
-from ..Signal import Signal
 from .. import util
-from .Base import Base
-from .functions import Responder, Scene, Backlight, ManualCtrl
+from .base import ResponderBase
+from .functions import Scene, Backlight, ManualCtrl
 
 LOG = log.get_logger()
 
 
 #===========================================================================
-class KeypadLinc(Scene, Backlight, ManualCtrl, Responder, Base):
+class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
     """Insteon KeypadLinc dimmer/switch device.
 
     This class can be used to model a 6 or 8 button KeypadLinc with dimming
@@ -202,7 +201,7 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, Responder, Base):
                 even if the delta value matches as well as a re-query of the
                 device model information even if it is already known.
         """
-        Base.addRefreshData(self, seq, force)
+        super().addRefreshData(seq, force)
 
         # TODO: update db.  Only call if needed.
 

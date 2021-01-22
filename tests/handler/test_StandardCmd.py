@@ -144,7 +144,7 @@ class Test_StandardCmd:
         modem = MockModem(tmpdir)
         calls = []
         addr = IM.Address('0a.12.34')
-        device = IM.device.Base(proto, modem, addr)
+        device = IM.device.base.Base(proto, modem, addr)
 
         def callback(success, msg, data):
             calls.append(msg)
@@ -180,7 +180,7 @@ class Test_StandardCmd:
         modem = MockModem(tmpdir)
         calls = []
         addr = IM.Address('0a.12.34')
-        device = IM.device.Base(proto, modem, addr)
+        device = IM.device.base.Base(proto, modem, addr)
 
         def callback(success, msg, data):
             calls.append(msg)

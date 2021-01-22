@@ -7,10 +7,8 @@ import time
 from .BatterySensor import BatterySensor
 from .functions import ManualCtrl
 from .. import log
-from .. import on_off
 from .. import message as Msg
 from .. import handler
-from ..Signal import Signal
 from .. import util
 
 LOG = log.get_logger()

@@ -4,7 +4,7 @@
 #
 #===========================================================================
 import enum
-from .Base import Base
+from .base import Base
 from ..CommandSeq import CommandSeq
 from .. import log
 from .. import message as Msg

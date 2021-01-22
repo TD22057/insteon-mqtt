@@ -4,14 +4,12 @@
 #
 #===========================================================================
 import functools
-from .Base import Base
-from .functions import Responder
+from .base import ResponderBase
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg
 from .. import on_off
-from ..Signal import Signal
 from .. import util
 
 LOG = log.get_logger()
@@ -58,7 +56,7 @@ EZIO4xx_flags = {
 }
 
 
-class EZIO4O(Responder, Base):
+class EZIO4O(ResponderBase):
     """Smartenit EZIO4O - 4 relay output device.
 
     This class can be used to model the EZIO4O device which has 4 outputs.

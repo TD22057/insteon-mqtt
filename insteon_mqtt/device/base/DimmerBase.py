@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# Dimmer Meta Class.  Specifically Ramp_Rate and On_Level Flags,
+# DimmerBase Class.  Specifically Ramp_Rate and On_Level Flags,
 # increment_up and increment_down functions.  Extensions to ManualCtrl
 # Plus other dimmer helper functions
 #
@@ -9,9 +9,9 @@
 #
 #===========================================================================
 import functools
-from .ManualCtrl import ManualCtrl
-from .Responder import Responder
-from ..Base import Base
+from .ResponderBase import ResponderBase
+from .Base import Base
+from ..functions import ManualCtrl
 from ... import handler
 from ... import log
 from ... import message as Msg
@@ -22,7 +22,7 @@ from ... import on_off
 LOG = log.get_logger()
 
 
-class DimmerMeta(ManualCtrl, Responder, Base):
+class DimmerBase(ManualCtrl, ResponderBase, Base):
     """Dimmer Functions Trait Abstract Class
 
     This is an abstract class that provides support for the ramp_rate and

@@ -3,7 +3,7 @@
 # Backlight Functions.
 #
 #===========================================================================
-from ..Base import Base
+from ..base import Base
 from ... import handler
 from ... import log
 from ... import message as Msg

@@ -13,7 +13,7 @@ import insteon_mqtt.db.Device as Device
 import insteon_mqtt.db.DeviceEntry as DeviceEntry
 import insteon_mqtt.db.Modem as ModemDB
 import insteon_mqtt.db.ModemEntry as ModemEntry
-import insteon_mqtt.device.Base as Base
+import insteon_mqtt.device.base.Base as Base
 import insteon_mqtt.device.Dimmer as Dimmer
 import insteon_mqtt.device.FanLinc as FanLinc
 import insteon_mqtt.device.KeypadLinc as KeypadLinc

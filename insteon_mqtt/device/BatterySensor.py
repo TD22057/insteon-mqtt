@@ -4,7 +4,7 @@
 #
 #===========================================================================
 import time
-from .Base import Base
+from .base import Base
 from .. import log
 from .. import message as Msg
 from ..Signal import Signal

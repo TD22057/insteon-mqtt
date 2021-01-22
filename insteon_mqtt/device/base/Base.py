@@ -6,16 +6,16 @@
 import json
 import functools
 import os.path
-from .MsgHistory import MsgHistory
-from ..Address import Address
-from ..CommandSeq import CommandSeq
-from ..Signal import Signal
-from .. import db
-from .. import handler
-from .. import log
-from .. import message as Msg
-from .. import util
-from .. import on_off
+from ..MsgHistory import MsgHistory
+from ...Address import Address
+from ...CommandSeq import CommandSeq
+from ...Signal import Signal
+from ... import db
+from ... import handler
+from ... import log
+from ... import message as Msg
+from ... import util
+from ... import on_off
 
 LOG = log.get_logger()
 

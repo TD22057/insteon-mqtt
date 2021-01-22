@@ -32,7 +32,7 @@ class Test_Broadcast:
 
         # test good broadcat
         assert proto.wait_time == 0
-        device = IM.device.Base(proto, modem, addr, "foo")
+        device = IM.device.base.Base(proto, modem, addr, "foo")
         device.handle_broadcast = calls.append
 
         # add 10 device db entries for this group

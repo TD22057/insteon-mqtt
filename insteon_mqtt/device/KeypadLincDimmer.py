@@ -9,14 +9,14 @@ from .. import log
 from .. import message as Msg
 from .. import on_off
 from .. import util
-from .functions import DimmerMeta
+from .base import DimmerBase
 from .KeypadLinc import KeypadLinc
 
 LOG = log.get_logger()
 
 
 #===========================================================================
-class KeypadLincDimmer(DimmerMeta, KeypadLinc):
+class KeypadLincDimmer(DimmerBase, KeypadLinc):
     """Insteon KeypadLinc Dimmer Device.
 
     This class extends the KeypadLinc device to add dimmer functionality.

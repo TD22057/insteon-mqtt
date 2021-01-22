@@ -159,11 +159,11 @@ class Test_IOLinc_Set():
         (0xff, 0x11),
     ])
     def test_set(self, test_iolinc, level, expected):
-        with mock.patch.object(IM.device.Base, 'send'):
+        with mock.patch.object(IM.device.base.Base, 'send'):
             test_iolinc.set(level)
-            calls = IM.device.Base.send.call_args_list
+            calls = IM.device.base.Base.send.call_args_list
             assert calls[0][0][0].cmd1 == expected
-            assert IM.device.Base.send.call_count == 1
+            assert IM.device.base.Base.send.call_count == 1
 
     @pytest.mark.parametrize("is_on,expected", [
         (True, True),

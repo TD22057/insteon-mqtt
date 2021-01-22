@@ -4,8 +4,8 @@
 # including wall switches, lamp modules, and some remotes.
 #
 #===========================================================================
-from .Base import Base
-from .functions import Scene, Backlight, DimmerMeta
+from .base import DimmerBase
+from .functions import Scene, Backlight
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
@@ -16,7 +16,7 @@ from .. import util
 LOG = log.get_logger()
 
 
-class Dimmer(Scene, Backlight, DimmerMeta, Base):
+class Dimmer(Scene, Backlight, DimmerBase):
     """Insteon dimmer device.
 
     This class can be used to model any device that acts like a dimmer

@@ -3,7 +3,7 @@
 # ManualCtrl Functions.
 #
 #===========================================================================
-from ..Base import Base
+from ..base import Base
 from ... import log
 from ... import on_off
 from ...Signal import Signal
@@ -24,7 +24,10 @@ class ManualCtrl(Base):
     messages, but it does not provide support for responding to manual.
     The abstract support for responding to manual commands is in Responder
     and the main functions for devices that support responding to manual
-    commands is in DimmerFuncs.
+    commands is in DimmerBase.
+
+    DimmerBase inherits from this class.  If an object inherits from
+    DimmerBase, it SHOULD NOT ALSO INHERIT FROM THIS CLASS.
 
     The MQTT topic for manual messages is disabled by default.  But a device
     that has been affected by a manual command will be refresh()'d when the

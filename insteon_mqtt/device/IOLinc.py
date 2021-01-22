@@ -5,14 +5,12 @@
 #===========================================================================
 import enum
 import time
-from .Base import Base
-from .functions import Responder
+from .base import ResponderBase
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg
 from .. import on_off
-from ..Signal import Signal
 from .. import util
 
 LOG = log.get_logger()
@@ -22,7 +20,7 @@ GROUP_SENSOR = 1
 GROUP_RELAY = 2
 
 
-class IOLinc(Responder, Base):
+class IOLinc(ResponderBase):
     """Insteon IOLinc relay/sensor device.
 
     This class can be used to model the IOLinc device which has a sensor and
