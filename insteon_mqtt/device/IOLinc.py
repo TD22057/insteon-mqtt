@@ -41,10 +41,7 @@ class IOLinc(Responder, Base):
 
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
-    the device (like sending MQTT messages).  Supported signals are:
-
-    - signal_state( Device, bool is_on, button int [1=Sensor,2=Relay]):
-      Sent whenever the sensor is turned on or off.
+    the device (like sending MQTT messages).
 
     NOTES:
       - Broadcast messages from the device always* describe the state of the
@@ -137,15 +134,6 @@ class IOLinc(Responder, Base):
         # Used to track the momentary_call that will automatically turn off
         # the relay
         self._momentary_call = None
-
-        # Support on/off style signals for the sensor
-        # API: func(Device, bool is_on)
-        self.signal_state = Signal()
-
-        # Remote (mqtt) commands mapped to methods calls.  Add to the
-        # base class defined commands.
-        # self.cmd_map.update({
-        #     })
 
         # Update the group map with the groups to be paired and the handler
         # for broadcast messages from this group

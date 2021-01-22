@@ -67,12 +67,7 @@ class EZIO4O(Responder, Base):
 
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
-    the device (like sending MQTT messages).  Supported signals are:
-
-    - signal_state( Device, int group, bool is_on, on_off.Mode mode, str
-                     reason ): Sent whenever an output is turned on or off.
-                     Group will be 1 to 4 matching the corresponding device
-                     output.
+    the device (like sending MQTT messages).
     """
 
     def __init__(self, protocol, modem, address, name=None):
@@ -89,11 +84,6 @@ class EZIO4O(Responder, Base):
         super().__init__(protocol, modem, address, name)
 
         self._is_on = [False, False, False, False]  # output state
-
-        # Support on/off style signals.
-        # API: func(Device, int group, bool is_on, on_off.Mode mode,
-        #           str reason)
-        self.signal_state = Signal()
 
         # EZIOxx configuration port settings. See set_flags().
         self._flag_value = None

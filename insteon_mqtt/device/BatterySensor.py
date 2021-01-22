@@ -37,9 +37,6 @@ class BatterySensor(Base):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_state( Device, bool is_on ): Sent when the sensor is tripped
-      (is_on=True) or resets (is_on=False).
-
     - signal_low_battery( Device, bool is_low ): Sent to indicate the current
       battery state.
 

@@ -1204,7 +1204,6 @@ class Base:
             LOG.info("Device %s broadcast grp: %s on: %s mode: %s", self.addr,
                      msg.group, is_on, mode)
 
-            # For an on command, we can update directly.
             if is_on:
                 level = self.derive_on_level(mode)
                 self._set_state(is_on=True, level=level, mode=mode,

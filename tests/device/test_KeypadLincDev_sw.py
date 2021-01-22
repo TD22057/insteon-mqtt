@@ -213,9 +213,7 @@ class Test_KPL():
         (0x01,Msg.CmdType.OFF, 0x00, {"level":None,"mode":IM.on_off.Mode.NORMAL, "is_on": False, "reason":'device', "button":1}),
         (0x01,Msg.CmdType.ON_FAST, 0x00,{"level":None,"mode":IM.on_off.Mode.FAST, "is_on": True, "reason":'device', "button":1}),
         (0x01,Msg.CmdType.OFF_FAST, 0x00, {"level":None,"mode":IM.on_off.Mode.FAST, "is_on": False, "reason":'device', "button":1}),
-        # (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.DOWN, "reason":'device', "button":1}),
-        # (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, {"manual":IM.on_off.Manual.UP, "reason":'device', "button":1}),
-        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP, "reason":'device', "button":1}),
+        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP, "button":1}),
         (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
         (0x02,Msg.CmdType.ON, 0x00,{"level":None,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":2}),
         (0x03,Msg.CmdType.ON, 0x00,{"level":None,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":3}),
@@ -236,3 +234,61 @@ class Test_KPL():
                 mocked.assert_called_once_with(test_device, **expected)
             else:
                 mocked.assert_not_called()
+
+    def test_handle_manual_load(self, test_device):
+        test_device._load_group = 1
+        with mock.patch.object(IM.Signal, 'emit') as mocked:
+            flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+            group = IM.Address(0x00, 0x00, 0x01)
+            addr = IM.Address(0x01, 0x02, 0x03)
+            msg = Msg.InpStandard(addr, group, flags,
+                                  Msg.CmdType.START_MANUAL_CHANGE, 0x00)
+            test_device.handle_broadcast(msg)
+            calls = [
+                call(test_device, manual=IM.on_off.Manual.DOWN, button=1),
+                call(test_device, button=1, level=0x00, is_on=None,
+                     reason='device', mode=IM.on_off.Mode.MANUAL)
+                ]
+            assert mocked.call_count == 2
+            mocked.assert_has_calls(calls, any_order=True)
+        with mock.patch.object(IM.Signal, 'emit') as mocked:
+            flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+            group = IM.Address(0x00, 0x00, 0x01)
+            addr = IM.Address(0x01, 0x02, 0x03)
+            msg = Msg.InpStandard(addr, group, flags,
+                                  Msg.CmdType.START_MANUAL_CHANGE, 0x01)
+            test_device.handle_broadcast(msg)
+            calls = [
+                call(test_device, manual=IM.on_off.Manual.UP, button=1),
+                call(test_device, button=1, is_on=None, level=0xFF,
+                     reason='device', mode=IM.on_off.Mode.MANUAL)
+                ]
+            assert mocked.call_count == 2
+            mocked.assert_has_calls(calls, any_order=True)
+
+    def test_handle_manual_not_load(self, test_device):
+        test_device._load_group = 1
+        with mock.patch.object(IM.Signal, 'emit') as mocked:
+            flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+            group = IM.Address(0x00, 0x00, 0x02)
+            addr = IM.Address(0x01, 0x02, 0x03)
+            msg = Msg.InpStandard(addr, group, flags,
+                                  Msg.CmdType.START_MANUAL_CHANGE, 0x00)
+            test_device.handle_broadcast(msg)
+            calls = [
+                call(test_device, manual=IM.on_off.Manual.DOWN, button=2)
+                ]
+            assert mocked.call_count == 1
+            mocked.assert_has_calls(calls, any_order=True)
+        with mock.patch.object(IM.Signal, 'emit') as mocked:
+            flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+            group = IM.Address(0x00, 0x00, 0x02)
+            addr = IM.Address(0x01, 0x02, 0x03)
+            msg = Msg.InpStandard(addr, group, flags,
+                                  Msg.CmdType.START_MANUAL_CHANGE, 0x01)
+            test_device.handle_broadcast(msg)
+            calls = [
+                call(test_device, manual=IM.on_off.Manual.UP, button=2)
+                ]
+            assert mocked.call_count == 1
+            mocked.assert_has_calls(calls, any_order=True)

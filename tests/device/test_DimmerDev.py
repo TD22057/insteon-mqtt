@@ -57,9 +57,9 @@ class Test_Base_Config():
                 mocked.assert_not_called()
 
     @pytest.mark.parametrize("group,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.DOWN, "reason":'device'}),
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, {"manual":IM.on_off.Manual.UP, "reason":'device'}),
-        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP, "reason":'device'}),
+        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.DOWN, "button":1}),
+        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, {"manual":IM.on_off.Manual.UP, "button":1}),
+        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP, "button":1}),
     ])
     def test_handle_on_off_manual(self, test_device, group, cmd1, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:

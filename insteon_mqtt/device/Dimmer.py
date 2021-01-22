@@ -5,19 +5,18 @@
 #
 #===========================================================================
 from .Base import Base
-from .functions import Scene, Responder, Backlight, DimmerFuncs
+from .functions import Scene, Backlight, DimmerMeta
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg
 from .. import on_off
-from ..Signal import Signal
 from .. import util
 
 LOG = log.get_logger()
 
 
-class Dimmer(Scene, Backlight, DimmerFuncs, Responder, Base):
+class Dimmer(Scene, Backlight, DimmerMeta, Base):
     """Insteon dimmer device.
 
     This class can be used to model any device that acts like a dimmer
@@ -25,15 +24,7 @@ class Dimmer(Scene, Backlight, DimmerFuncs, Responder, Base):
 
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
-    the device (like sending MQTT messages).  Supported signals are:
-
-    - signal_state( Device, int level, on_off.Mode mode, str reason ):
-      Sent whenever the dimmer is turned on or off or changes level.  The
-      level field will be in the range 0-255.
-
-    - signal_manual( Device, on_off.Manual mode, str reason ): Sent when the
-      device starts or stops manual mode (when a button is held down or
-      released).
+    the device (like sending MQTT messages).
     """
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
@@ -47,10 +38,6 @@ class Dimmer(Scene, Backlight, DimmerFuncs, Responder, Base):
           name (str): Nice alias name to use for the device.
         """
         super().__init__(protocol, modem, address, name)
-
-        # Manual mode start up, down, off
-        # API: func(Device, on_off.Manual mode, str reason)
-        self.signal_manual = Signal()
 
         # Update the group map with the groups to be paired and the handler
         # for broadcast messages from this group
@@ -237,29 +224,5 @@ class Dimmer(Scene, Backlight, DimmerFuncs, Responder, Base):
         LOG.ui("Dimmer %s on_level: %s (%.2f%%) ramp rate: %ss", self.label,
                on_level, on_level / 2.55, ramp_rate)
         on_done(True, "Operation complete", msg.data[5])
-
-    #-----------------------------------------------------------------------
-    def process_manual(self, msg, reason):
-        """Handle Manual Mode Received from the Device
-
-        This is called as part of the handle_broadcast response.  It
-        processes the manual mode changes sent by the device.
-
-        The Base class does nothing with this, classes that extend this
-        should add the necessary functionality here.
-
-        Args:
-          msg (InpStandard):  Broadcast message from the device.  Use
-              msg.group to find the group and msg.cmd1 for the command.
-          reason (str):  The reason string to pass on
-        """
-        manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-        LOG.info("Dimmer %s manual change %s", self.addr, manual)
-
-        self.signal_manual.emit(self, manual=manual, reason=reason)
-
-        # Refresh to get the new level after the button is released.
-        if manual == on_off.Manual.STOP:
-            self.refresh()
 
     #-----------------------------------------------------------------------

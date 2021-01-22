@@ -12,13 +12,13 @@ from .. import on_off
 from ..Signal import Signal
 from .. import util
 from .Base import Base
-from .functions import Responder, Scene, Backlight
+from .functions import Responder, Scene, Backlight, ManualCtrl
 
 LOG = log.get_logger()
 
 
 #===========================================================================
-class KeypadLinc(Scene, Backlight, Responder, Base):
+class KeypadLinc(Scene, Backlight, ManualCtrl, Responder, Base):
     """Insteon KeypadLinc dimmer/switch device.
 
     This class can be used to model a 6 or 8 button KeypadLinc with dimming
@@ -36,16 +36,7 @@ class KeypadLinc(Scene, Backlight, Responder, Base):
 
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
-    the device (like sending MQTT messages).  Supported signals are:
-
-    - signal_state( Device, int level, on_off.Mode mode, str reason):
-      Sent whenever the dimmer is turned on or off or changes level.  The
-      level field will be in the range 0-255.  For an on/off switch, this
-      will only emit 0 or 255.
-
-    - signal_manual( Device, on_off.Manual mode, str reason ): Sent when the
-      device starts or stops manual mode (when a button is held down or
-      released).
+    the device (like sending MQTT messages).
     """
 
     #-----------------------------------------------------------------------
@@ -66,14 +57,6 @@ class KeypadLinc(Scene, Backlight, Responder, Base):
 
         # Switch or dimmer type.
         self.type_name = "keypad_linc_sw"
-
-        # Group on/off signal.
-        # API: func(Device, int group, int level, on_off.Mode mode, str reason)
-        self.signal_state = Signal()
-
-        # Manual mode start up, down, off
-        # API: func(Device, int group, on_off.Manual mode, str reason)
-        self.signal_manual = Signal()
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the base
         # class defined commands.
@@ -928,26 +911,21 @@ class KeypadLinc(Scene, Backlight, Responder, Base):
         on_done(True, "Refresh complete", None)
 
     #-----------------------------------------------------------------------
-    def process_manual(self, msg, reason):
-        """Handle Manual Mode Received from the Device
+    def react_to_manual(self, manual, group, reason):
+        """React to Manual Mode Received from the Device
 
-        This is called as part of the handle_broadcast response.  It
-        processes the manual mode changes sent by the device.
+        Non-dimmable devices react immediatly when issueing a manual command
+        while dimmable devices slowly ramp on. This function is here to
+        provide DimmerBase a place to alter the default functionality. This
+        function should call _set_state() at the appropriate times to update
+        the state of the device.
 
         Args:
-          msg (InpStandard):  Broadcast message from the device.  Use
-              msg.group to find the group and msg.cmd1 for the command.
+          manual (on_off.Manual):  The manual command type
+          group (int):  The group sending the command
           reason (str):  The reason string to pass on
         """
-        manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-        LOG.info("KeypadLinc %s manual change %s", self.addr, manual)
-
-        self.signal_manual.emit(self, button=msg.group, manual=manual,
-                                reason=reason)
-
-        # Non-load group buttons don't change state in manual mode. (found
-        # through experiments)
-        if msg.group == self._load_group:
+        if group == self._load_group:
             # Switches change state when the switch is held.
             if manual == on_off.Manual.UP:
                 self._set_state(group=self._load_group, level=0xff,
@@ -957,6 +935,12 @@ class KeypadLinc(Scene, Backlight, Responder, Base):
                 self._set_state(group=self._load_group, level=0x00,
                                 mode=on_off.Mode.MANUAL,
                                 reason=reason)
+        else:
+            # Non-load group buttons don't change state in manual mode. (found
+            # through experiments).  It looks like they turn on from off but
+            # not off from on?? Use refresh to be sure.
+            if manual == on_off.Manual.STOP:
+                self.refresh()
 
     #-----------------------------------------------------------------------
     def group_cmd_local_group(self, entry):

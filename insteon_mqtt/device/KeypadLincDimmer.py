@@ -9,14 +9,14 @@ from .. import log
 from .. import message as Msg
 from .. import on_off
 from .. import util
-from .functions import DimmerFuncs
+from .functions import DimmerMeta
 from .KeypadLinc import KeypadLinc
 
 LOG = log.get_logger()
 
 
 #===========================================================================
-class KeypadLincDimmer(DimmerFuncs, KeypadLinc):
+class KeypadLincDimmer(DimmerMeta, KeypadLinc):
     """Insteon KeypadLinc Dimmer Device.
 
     This class extends the KeypadLinc device to add dimmer functionality.
@@ -35,16 +35,7 @@ class KeypadLincDimmer(DimmerFuncs, KeypadLinc):
 
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
-    the device (like sending MQTT messages).  Supported signals are:
-
-    - signal_state( Device, int level, on_off.Mode mode, str reason):
-      Sent whenever the dimmer is turned on or off or changes level.  The
-      level field will be in the range 0-255.  For an on/off switch, this
-      will only emit 0 or 255.
-
-    - signal_manual( Device, on_off.Manual mode, str reason ): Sent when the
-      device starts or stops manual mode (when a button is held down or
-      released).
+    the device (like sending MQTT messages).
     """
 
     #-----------------------------------------------------------------------
@@ -231,35 +222,6 @@ class KeypadLincDimmer(DimmerFuncs, KeypadLinc):
             if 'on_level' in data:
                 data_1 = int(data['on_level'] * 2.55 + .5)
         return [data_1, data_2, data_3]
-
-    #-----------------------------------------------------------------------
-    def process_manual(self, msg, reason):
-        """Handle Manual Mode Received from the Device
-
-        This is called as part of the handle_broadcast response.  It
-        processes the manual mode changes sent by the device.
-
-        Args:
-          msg (InpStandard):  Broadcast message from the device.  Use
-              msg.group to find the group and msg.cmd1 for the command.
-          reason (str):  The reason string to pass on
-        """
-        manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-        LOG.info("KeypadLinc %s manual change %s", self.addr, manual)
-
-        self.signal_manual.emit(self, button=msg.group, manual=manual,
-                                reason=reason)
-
-        # Non-load group buttons don't change state in manual mode. (found
-        # through experiments)
-        if msg.group == self._load_group:
-            # Ping the device to get the dimmer states - we don't know
-            # what the keypadlinc things the state is - could be on or
-            # off.  Doing a dim down for a long time puts all the other
-            # devices "off" but the keypadlinc can still think that it's
-            # on.  So we have to do a refresh to find out.
-            if manual == on_off.Manual.STOP:
-                self.refresh()
 
     #-----------------------------------------------------------------------
     def group_cmd_on_level(self, entry, is_on):

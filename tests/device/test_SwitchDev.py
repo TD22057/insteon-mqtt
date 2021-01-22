@@ -64,9 +64,9 @@ class Test_Base_Config():
             msg = Msg.InpStandard(addr, group, flags, Msg.CmdType.START_MANUAL_CHANGE, 0x00)
             test_device.handle_broadcast(msg)
             assert mocked.call_count == 2
-            calls = [call(test_device, manual=IM.on_off.Manual.DOWN),
+            calls = [call(test_device, button=1, manual=IM.on_off.Manual.DOWN),
                      call(test_device, is_on=False, level=None,
-                          mode=IM.on_off.Mode.MANUAL, button=None, reason='device')]
+                          mode=IM.on_off.Mode.MANUAL, button=1, reason='device')]
             mocked.assert_has_calls(calls)
         with mock.patch.object(IM.Signal, 'emit') as mocked:
             flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
@@ -75,8 +75,8 @@ class Test_Base_Config():
             msg = Msg.InpStandard(addr, group, flags, Msg.CmdType.START_MANUAL_CHANGE, 0x01)
             test_device.handle_broadcast(msg)
             assert mocked.call_count == 2
-            calls = [call(test_device, manual=IM.on_off.Manual.UP),
-                     call(test_device, is_on=True, button=None, level=None,
+            calls = [call(test_device, button=1, manual=IM.on_off.Manual.UP),
+                     call(test_device, is_on=True, button=1, level=None,
                           mode=IM.on_off.Mode.MANUAL, reason='device')]
             mocked.assert_has_calls(calls)
 

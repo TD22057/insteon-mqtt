@@ -21,4 +21,5 @@ from ..Base import Base
 from .Scene import Scene
 from .Responder import Responder
 from .Backlight import Backlight
-from .DimmerFuncs import DimmerFuncs
+from .DimmerMeta import DimmerMeta
+from .ManualCtrl import ManualCtrl

@@ -25,12 +25,7 @@ class Outlet(Backlight, Responder, Base):
 
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
-    the device (like sending MQTT messages).  Supported signals are:
-
-    - signal_state( Device, int group, bool is_on, on_off.Mode mode, str
-                     reason ): Sent whenever the switch is turned on or off.
-                     Group will be 1 for the top outlet and 2 for the bottom
-                     outlet.
+    the device (like sending MQTT messages).
     """
 
     def __init__(self, protocol, modem, address, name=None):
@@ -47,16 +42,6 @@ class Outlet(Backlight, Responder, Base):
         super().__init__(protocol, modem, address, name)
 
         self._is_on = [False, False]  # top outlet, bottom outlet
-
-        # Support on/off style signals.
-        # API: func(Device, int group, bool is_on, on_off.Mode mode,
-        #           str reason)
-        self.signal_state = Signal()
-
-        # Remote (mqtt) commands mapped to methods calls.  Add to the
-        # base class defined commands.
-        # self.cmd_map.update({
-        #     })
 
         # NOTE: the outlet does NOT include the group in the ACK of an on/off
         # command.  So there is no way to tell which outlet is being ACK'ed

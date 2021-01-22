@@ -1,11 +1,16 @@
 #===========================================================================
 #
-# Dimmer Functions.  Specifically Ramp_Rate and On_Level Flags, plus
-# increment_up and increment_down functions.  Plus other dimmer helper
-# functions
+# Dimmer Meta Class.  Specifically Ramp_Rate and On_Level Flags,
+# increment_up and increment_down functions.  Extensions to ManualCtrl
+# Plus other dimmer helper functions
+#
+# NOTE! This is a meta class that include Responder and ManualCtrl. DO NOT
+# inherit from these classes if you are using this Meta class.
 #
 #===========================================================================
 import functools
+from .ManualCtrl import ManualCtrl
+from .Responder import Responder
 from ..Base import Base
 from ... import handler
 from ... import log
@@ -17,7 +22,7 @@ from ... import on_off
 LOG = log.get_logger()
 
 
-class DimmerFuncs(Base):
+class DimmerMeta(ManualCtrl, Responder, Base):
     """Dimmer Functions Trait Abstract Class
 
     This is an abstract class that provides support for the ramp_rate and
@@ -355,5 +360,26 @@ class DimmerFuncs(Base):
                                 reason=reason)
 
         # If the button is released, refresh to get the final level.
+        if manual == on_off.Manual.STOP:
+            self.refresh()
+
+    #========= Manual Functions
+    #-----------------------------------------------------------------------
+    def react_to_manual(self, manual, group, reason):
+        """React to Manual Mode Received from the Device
+
+        Non-dimmable devices react immediatly when issueing a manual command
+        while dimmable devices slowly ramp on. This function is here to
+        provide DimmerBase a place to alter the default functionality. This
+        function should call _set_state() at the appropriate times to update
+        the state of the device.
+
+        Args:
+          manual (on_off.Manual):  The manual command type
+          group (int):  The group sending the command
+          reason (str):  The reason string to pass on
+        """
+        # Refresh to get the new level after the button is released.
+        # do nothing on UP and DOWN
         if manual == on_off.Manual.STOP:
             self.refresh()

@@ -5,6 +5,7 @@
 #===========================================================================
 import time
 from .BatterySensor import BatterySensor
+from .functions import ManualCtrl
 from .. import log
 from .. import on_off
 from .. import message as Msg
@@ -15,7 +16,7 @@ from .. import util
 LOG = log.get_logger()
 
 
-class Remote(BatterySensor):
+class Remote(ManualCtrl, BatterySensor):
     """Insteon multi-button battery powered mini-remote device.
 
     This class can be used for 1, 4, 6 or 8 (really any number) of battery
@@ -31,14 +32,6 @@ class Remote(BatterySensor):
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
-
-    - signal_state( Device, int group, bool is_on, on_off.Mode mode ):
-      Sent whenever a button is pressed.  The remote will toggle on and off
-      with each button press.
-
-    - signal_manual( Device, int group, on_off.Manual mode ): Sent when the
-      device starts or stops manual mode (when a button is held down or
-      released).
     """
     # This defines what is the minimum time between battery status requests
     # for devices that support it.  Value is in seconds
@@ -74,15 +67,7 @@ class Remote(BatterySensor):
         # symmetry with the rest of the codebase
         self.group_map = {}
         for i in range(1, self.num + 1):
-            self.group_map[i] = self.handle_button
-
-        # Button pressed signal.
-        # API: func(Device, int group, bool on, on_off.Mode mode)
-        self.signal_state = Signal()
-
-        # Manual mode start up, down, off
-        # API: func(Device, int group, on_off.Manual mode)
-        self.signal_manual = Signal()
+            self.group_map[i] = self.handle_on_off
 
         self.cmd_map.update({
             'get_battery_voltage' : self.get_extended_flags,
@@ -135,36 +120,6 @@ class Remote(BatterySensor):
         self.signal_low_battery.emit(self,
                                      batt_volt <= self.BATTERY_VOLTAGE_LOW)
         on_done(True, "Battery voltage is %s" % batt_volt, msg.data[9])
-
-    #-----------------------------------------------------------------------
-    def handle_button(self, msg):
-        """Handle button presses and hold downs
-
-        This is called by the device when a group broadcast is
-        sent out by the sensor.
-
-        Args:
-          msg (InpStandard):  Broadcast message from the device.
-        """
-        # On/off command codes.
-        if on_off.Mode.is_valid(msg.cmd1):
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
-            LOG.info("Remote %s broadcast grp: %s on: %s mode: %s",
-                     self.addr, msg.group, is_on, mode)
-
-            # Notify others that the button was pressed.
-            self.signal_state.emit(self, button=msg.group, is_on=is_on,
-                                   mode=mode)
-            self.update_linked_devices(msg)
-
-        # Starting or stopping manual increment (cmd2 0x00=up, 0x01=down)
-        elif on_off.Manual.is_valid(msg.cmd1):
-            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-            LOG.info("Remote %s manual change group: %s %s", self.addr,
-                     msg.group, manual)
-
-            self.signal_manual.emit(self, button=msg.group, manual=manual)
-            self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):
