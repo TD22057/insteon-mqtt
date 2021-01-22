@@ -105,7 +105,7 @@ class EZIO4O(ResponderBase):
             self.set_flags_map[flag] = self._change_flags
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False, on_done=None):
+    def refresh(self, force=False, group=None, on_done=None):
         """Refresh the current device state and database if needed.
 
         This sends a ping to the device.  The reply has the current device
@@ -122,6 +122,9 @@ class EZIO4O(ResponderBase):
           force (bool):  If true, will force a refresh of the device database
                 even if the delta value matches as well as a re-query of the
                 device model information even if it is already known.
+          group (int): The group being refreshed, it is passed to
+                handle_refresh() so that the state signal is correct. Should
+                generally be None.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """

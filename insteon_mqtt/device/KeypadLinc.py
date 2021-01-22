@@ -4,7 +4,6 @@
 #
 #===========================================================================
 import functools
-from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg

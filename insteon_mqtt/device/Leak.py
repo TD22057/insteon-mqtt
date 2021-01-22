@@ -92,7 +92,7 @@ class Leak(BatterySensor):
         else:
             if group == self.GROUP_WET:
                 self._is_wet = True
-            elif group == self.GROUP_DRY: # The dry group
+            elif group == self.GROUP_DRY:
                 self._is_wet = False
 
     #-----------------------------------------------------------------------

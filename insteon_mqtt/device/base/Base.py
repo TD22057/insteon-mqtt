@@ -472,6 +472,9 @@ class Base:
           force (bool):  If true, will force a refresh of the device database
                 even if the delta value matches as well as a re-query of the
                 device model information even if it is already known.
+          group (int): The group being refreshed, it is passed to
+                handle_refresh() so that the state signal is correct. Should
+                generally be None.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
