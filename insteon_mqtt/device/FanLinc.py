@@ -83,44 +83,28 @@ class FanLinc(Dimmer):
         self.group_map = {}
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False, on_done=None):
-        """Refresh the current device state and database if needed.
+    def addRefreshData(self, seq, force=False):
+        """Add commands to refresh any internal data required.
 
-        This sends a ping to the device.  The reply has the current device
-        state (on/off, level, etc) and the current db delta value which is
-        checked against the current db value.  If the current db is out of
-        date, it will trigger a download of the database.
-
-        This will send out an updated signal for the current device status
-        whenever possible.
+        Send a 0x19 0x03 command to get the fan speed level.  This sends a
+        refresh ping which will respond w/ the fan level and current
+        database delta field.  Pass skip_db here - we'll let the dimmer
+        refresh handler above take care of getting the database updated.
+        Otherwise this handler and the one created in the dimmer refresh
+        would download the database twice.
 
         Args:
+          seq (CommandSeq): The command sequence to add the command to.
           force (bool):  If true, will force a refresh of the device database
                 even if the delta value matches as well as a re-query of the
                 device model information even if it is already known.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("Device %s cmd: fan status refresh", self.addr)
-
-        seq = CommandSeq(self, "Refresh complete", on_done, name="DevRefresh")
-
-        # Send a 0x19 0x03 command to get the fan speed level.  This sends a
-        # refresh ping which will respond w/ the fan level and current
-        # database delta field.  Pass skip_db here - we'll let the dimmer
-        # refresh handler above take care of getting the database updated.
-        # Otherwise this handler and the one created in the dimmer refresh
-        # would download the database twice.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x03)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh_fan,
                                             force=False, num_retry=3,
                                             skip_db=True)
         seq.add_msg(msg, msg_handler)
-
-        # If we get the FAN state correctly, then have the dimmer also get
-        # it's state and update the database if necessary.
-        seq.add(Dimmer.refresh, self, force)
-        seq.run()
+        super().addRefreshData(seq, force=force)
 
     #-----------------------------------------------------------------------
     def fan_on(self, speed=None, reason="", on_done=None):

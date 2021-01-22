@@ -56,10 +56,10 @@ class Test_KPL():
             assert IM.CommandSeq.add_msg.call_count == 3
             # Check the first call
             assert args_list[0][0][0].cmd1 == 0x19
-            assert args_list[0][0][0].cmd2 == 0x01
+            assert args_list[0][0][0].cmd2 == 0x00
             # Check the second call
             assert args_list[1][0][0].cmd1 == 0x19
-            assert args_list[1][0][0].cmd2 == 0x00
+            assert args_list[1][0][0].cmd2 == 0x01
             # Check the third call
             assert args_list[2][0][0].cmd1 == 0x2e
             assert args_list[2][0][0].cmd2 == 0x00

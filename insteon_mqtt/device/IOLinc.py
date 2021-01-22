@@ -482,54 +482,23 @@ class IOLinc(ResponderBase):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False, on_done=None):
-        """Refresh the current device state and database if needed.
+    def addRefreshData(self, seq, force=False):
+        """Add commands to refresh any internal data required.
 
-        This sends a ping to the device.  The reply has the current device
-        state (on/off, level, etc) and the current db delta value which is
-        checked against the current db value.  If the current db is out of
-        date, it will trigger a download of the database.
-
-        This will send out an updated signal for the current device status
-        whenever possible (like dimmer levels).
-
-        This will update the state of both the sensor and the relay.
+        This Checks the sensor state, ignore force refresh here (we just did
+        it in refresh())
 
         Args:
+          seq (CommandSeq): The command sequence to add the command to.
           force (bool):  If true, will force a refresh of the device database
                 even if the delta value matches as well as a re-query of the
                 device model information even if it is already known.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("Device %s cmd: status refresh", self.label)
-
-        # NOTE: IOLinc cmd1=0x00 will report the relay state.  cmd2=0x01
-        # reports the sensor state which is what we want.
-        seq = CommandSeq(self, "Device refreshed", on_done, name="DevRefresh")
-
-        # This sends a refresh ping which will respond w/ the current
-        # database delta field.  The handler checks that against the current
-        # value.  If it's different, it will send a database download command
-        # to the device to update the database.
-        # This handles the relay state
-        msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
-        msg_handler = handler.DeviceRefresh(self, self.handle_refresh_relay,
-                                            force, on_done, num_retry=3)
-        seq.add_msg(msg, msg_handler)
-
-        # This Checks the sensor state, ignore force refresh here (we just did
-        # it above)
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh_sensor,
-                                            False, on_done, num_retry=3)
+                                            False, num_retry=3)
         seq.add_msg(msg, msg_handler)
-
-        # If model number is not known, or force true, run get_model
-        self.addRefreshData(seq, force)
-
-        # Run all the commands.
-        seq.run()
+        super().addRefreshData(seq, force=force)
 
     #-----------------------------------------------------------------------
     def handle_on_off(self, msg):

@@ -127,7 +127,7 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
                     self.db.desc.model == "2334-232")
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False, on_done=None):
+    def refresh(self, force=False, group=None, on_done=None):
         """Refresh the current device state and database if needed.
 
         This sends a ping to the device.  The reply has the current device
@@ -145,45 +145,9 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        # Send a 0x19 0x01 command to get the LED light on/off flags.
-        LOG.info("KeypadLinc %s cmd: keypad status refresh", self.addr)
-
-        seq = CommandSeq(self, "Refresh complete", on_done, name="DevRefresh")
-
-        # TODO: change this to 0x2e get extended which reads on mask, off
-        # mask, on level, led brightness, non-toggle mask, led bit mask (led
-        # on/off), on/off bit mask, etc (see keypadlinc manual)
-
-        # First send a refresh command which get's the state of the LED's by
-        # returning a bit flag.  Pass skip_db here - we'll let the second
-        # refresh handler below take care of getting the database updated.
-        msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
-        msg_handler = handler.DeviceRefresh(self, self.handle_refresh_led,
-                                            force=False, num_retry=3,
-                                            skip_db=True)
-        seq.add_msg(msg, msg_handler)
-
-        # Send a refresh command to get the state of the load.  This may or
-        # may not match the LED state depending on if detached load is set.
-        # This also responds w/ the current database delta field.  The
-        # handler checks that against the current value.  If it's different,
-        # it will send a database download command to the device to update
-        # the database.
-        msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
-        #self._load_group
-        callback = functools.partial(self.handle_refresh,
-                                     group=self._load_group)
-        msg_handler = handler.DeviceRefresh(self, callback, force,
-                                            None, num_retry=3)
-        seq.add_msg(msg, msg_handler)
-
-        # Update any internal configuration data that we don't know (cats,
-        # firmware revisions, etc).  If model number is not known, or force
-        # true, run get_model
-        self.addRefreshData(seq, force)
-
-        # Run all the commands.
-        seq.run()
+        # Needed to pass the _load_group data to base refresh()
+        group = group if group is not None else self._load_group
+        super().refresh(force=force, group=group, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def addRefreshData(self, seq, force=False):
@@ -203,7 +167,18 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
         """
         super().addRefreshData(seq, force)
 
-        # TODO: update db.  Only call if needed.
+        # TODO: change this to 0x2e get extended which reads on mask, off
+        # mask, on level, led brightness, non-toggle mask, led bit mask (led
+        # on/off), on/off bit mask, etc (see keypadlinc manual)
+
+        # First send a refresh command which get's the state of the LED's by
+        # returning a bit flag.  Pass skip_db here - we'll let the second
+        # refresh handler below take care of getting the database updated.
+        msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
+        msg_handler = handler.DeviceRefresh(self, self.handle_refresh_led,
+                                            force=False, num_retry=3,
+                                            skip_db=True)
+        seq.add_msg(msg, msg_handler)
 
         # Get the state of which buttons toggle and the signal they emit.
         # Since the values we are interested in will be returned regardless

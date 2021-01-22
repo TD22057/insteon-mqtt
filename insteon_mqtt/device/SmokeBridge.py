@@ -86,6 +86,8 @@ class SmokeBridge(Base):
         check against our current db.  If the current db is out of date, it
         will trigger a download of the database.
 
+        Smokebridge uses a unique refresh command.
+
         Args:
           force (bool):  If true, will force a refresh of the device database
                 even if the delta value matches as well as a re-query of the

@@ -116,6 +116,8 @@ class EZIO4O(ResponderBase):
         This will send out an updated signal for the current device status
         whenever possible (like dimmer levels).
 
+        EZIO4O uses a completely different refresh command than standard.
+
         Args:
           force (bool):  If true, will force a refresh of the device database
                 even if the delta value matches as well as a re-query of the

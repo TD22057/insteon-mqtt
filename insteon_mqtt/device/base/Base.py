@@ -457,7 +457,7 @@ class Base:
         seq.run()
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False, on_done=None):
+    def refresh(self, force=False, group=None, on_done=None):
         """Refresh the current device state and database if needed.
 
         This sends a ping to the device.  The reply has the current device
@@ -486,7 +486,8 @@ class Base:
         # current value.  If it's different, it will send a database
         # download command to the device to update the database.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x00)
-        msg_handler = handler.DeviceRefresh(self, self.handle_refresh, force,
+        callback = functools.partial(self.handle_refresh, group=group)
+        msg_handler = handler.DeviceRefresh(self, callback, force,
                                             None, num_retry=3)
         seq.add_msg(msg, msg_handler)
 
