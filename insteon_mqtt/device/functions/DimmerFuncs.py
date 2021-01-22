@@ -296,3 +296,64 @@ class DimmerFuncs(Base):
         """
         level = 0x00
         return level
+
+    #-----------------------------------------------------------------------
+    def group_cmd_on_level(self, entry, is_on):
+        """Get the On Level for this Group Command
+
+        For switches, this always returns None as this forces template_data
+        in the MQTT classes to render without level data to comply with prior
+        versions. But dimmers allow for the local on_level to be user defined
+        and stored in the db entry.
+
+        Args:
+          entry (DeviceEntry):  The local db entry for this group command.
+          is_on (bool): Whether the command was ON or OFF
+        Returns:
+          level (int):  The on_level or None
+        """
+        level = entry.data[0] if is_on else 0x00
+        return level
+
+    #-----------------------------------------------------------------------
+    def group_cmd_handle_increment(self, cmd, group, reason):
+        """Process Increment Group Commands
+
+        This should do whatever processing is necessary, including updating
+        the local state in response to an increment group command.  For non
+        dimmable devices this does nothing.
+
+        Args:
+          cmd (Msg.CmdType): The cmd1 value of the message
+          group (int):  The local db entry for this group command.
+          reason (str): Whether the command was ON or OFF
+        """
+        # Increment up 1 unit which is 8 levels.
+        if cmd == Msg.CmdType.BRIGHT:
+            self._set_state(group=group, level=min(0xff, self._level + 8),
+                            reason=reason)
+
+        # Increment down 1 unit which is 8 levels.
+        elif cmd == Msg.CmdType.DIM:
+            self._set_state(group=group, level=max(0x00, self._level - 8),
+                            reason=reason)
+
+    #-----------------------------------------------------------------------
+    def group_cmd_handle_manual(self, manual, group, reason):
+        """Process Manual Group Commands
+
+        This should do whatever processing is necessary, including updating
+        the local state in response to a manual group command.  For non
+        dimmable devices this does nothing.
+
+        Args:
+          manual (on_off.Manual): The manual mode
+          group (int):  The local db entry for this group command.
+          reason (str): Whether the command was ON or OFF
+        """
+        self.signal_manual.emit(self, button=group, manual=manual,
+                                reason=reason)
+
+        # If the button is released, refresh to get the final level.
+        if manual == on_off.Manual.STOP:
+            self.refresh()

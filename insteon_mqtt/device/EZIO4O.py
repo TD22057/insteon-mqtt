@@ -560,44 +560,19 @@ class EZIO4O(Responder, Base):
         return (is_on, level, mode, group)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, msg):
-        """Respond to a group command for this device.
+    def group_cmd_local_group(self, entry):
+        """Get the Local Group Affected by this Group Command
 
-        This is called when this device is a responder to a scene.  The
-        device that received the broadcast message (handle_broadcast) will
-        call this method for every device that is linked to it.  The device
-        should look up the responder entry for the group in it's all link
-        database and update it's state accordingly.
+        For most devices this is group 1, but for multigroup devices such
+        as the KPL, they may need to decode the local group from the
+        entry data.
 
         Args:
-          addr (Address):  The device that sent the message.  This is the
-               controller in the scene.
-          msg (InpStandard):  Broadcast message from the device.  Use
-              msg.group to find the group and msg.cmd1 for the command.
+          entry (DeviceEntry):  The local db entry for this group command.
+        Returns:
+          group (int):  The local group affected
         """
-
-        # Make sure we're really a responder to this message.  This shouldn't
-        # ever occur.
-        entry = self.db.find(addr, msg.group, is_controller=False)
-        if not entry:
-            LOG.error(
-                "EZIO4O %s has no group %s entry from %s",
-                self.label, msg.group, addr
-            )
-            return
-
-        # The local button being modified is stored in the db entry.
-        localGroup = entry.data[2] + 1
-
-        # Handle on/off commands codes.
-        if on_off.Mode.is_valid(msg.cmd1):
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
-            self._set_state(group=localGroup, is_on=is_on, mode=mode,
-                            reason=on_off.REASON_SCENE)
-
-        else:
-            LOG.warning("EZIO4O %s unknown group cmd %#04x", self.label,
-                        msg.cmd1)
+        return entry.data[2] + 1
 
     #-----------------------------------------------------------------------
     def _cache_state(self, group, is_on, level, reason):

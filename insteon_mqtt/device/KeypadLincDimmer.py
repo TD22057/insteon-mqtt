@@ -262,74 +262,24 @@ class KeypadLincDimmer(DimmerFuncs, KeypadLinc):
                 self.refresh()
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, msg):
-        """Respond to a group command for this device.
+    def group_cmd_on_level(self, entry, is_on):
+        """Get the On Level for this Group Command
 
-        This is called when this device is a responder to a scene.  The
-        device that received the broadcast message (handle_broadcast) will
-        call this method for every device that is linked to it.  The device
-        should look up the responder entry for the group in it's all link
-        database and update it's state accordingly.
+        For switches, this always returns None as this forces template_data
+        in the MQTT classes to render without level data to comply with prior
+        versions. But dimmers allow for the local on_level to be user defined
+        and stored in the db entry.
 
         Args:
-          addr (Address):  The device that sent the message.  This is the
-               controller in the scene.
-          msg (InpStandard):  Broadcast message from the device.  Use
-              msg.group to find the group and msg.cmd1 for the command.
+          entry (DeviceEntry):  The local db entry for this group command.
+          is_on (bool): Whether the command was ON or OFF
+        Returns:
+          level (int):  The on_level or None
         """
-        # Make sure we're really a responder to this message.  This shouldn't
-        # ever occur.
-        entry = self.db.find(addr, msg.group, is_controller=False)
-        if not entry:
-            LOG.error("KeypadLinc %s has no group %s entry from %s", self.addr,
-                      msg.group, addr)
-            return
-
-        reason = on_off.REASON_SCENE
-
-        # The local button being modified is stored in the db entry.
-        localGroup = entry.data[2]
-
-        # Handle on/off codes
-        if on_off.Mode.is_valid(msg.cmd1):
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
-
-            # For switches, on/off determines the level.  For dimmers, it's
-            # set by the responder entry in the database.
-            level = 0xff if is_on else 0x00
-            if is_on and localGroup == self._load_group:
-                level = entry.data[0]
-            self._set_state(group=localGroup, level=level, mode=mode,
-                            reason=reason)
-
-        # Increment up 1 unit which is 8 levels.
-        elif msg.cmd1 == 0x15:
-            assert localGroup == self._load_group
-            self._set_state(group=localGroup, level=min(0xff,
-                                                        self._level + 8),
-                            reason=reason)
-
-        # Increment down 1 unit which is 8 levels.
-        elif msg.cmd1 == 0x16:
-            assert msg.group == self._load_group
-            self._set_state(group=localGroup, level=max(0x00,
-                                                        self._level - 8),
-                            reason=reason)
-
-        # Starting/stopping manual increment (cmd2 0x00=up, 0x01=down)
-        elif on_off.Manual.is_valid(msg.cmd1):
-            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
-            self.signal_manual.emit(self, button=localGroup, manual=manual,
-                                    reason=reason)
-
-            # If the button is released, refresh to get the final level in
-            # dimming mode since we don't know where the level stopped.
-            if manual == on_off.Manual.STOP:
-                self.refresh()
-
-        else:
-            LOG.warning("KeypadLinc %s unknown cmd %#04x", self.addr,
-                        msg.cmd1)
+        level = 0xFF if is_on else 0x00
+        if is_on and entry.data[2] == self._load_group:
+            level = entry.data[0]
+        return level
 
     #-----------------------------------------------------------------------
     def get_flags(self, on_done=None):
