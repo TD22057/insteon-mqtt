@@ -41,14 +41,27 @@ class Test_Base_Config():
             IM.CommandSeq.add.assert_has_calls(calls)
             assert IM.CommandSeq.add.call_count == 4
 
-    @pytest.mark.parametrize("group_num,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.ON, 0x00,[False]),
-        (0x01,Msg.CmdType.OFF, 0x00, [False]),
-        (0x02,Msg.CmdType.ON, 0x00,[True]),
-        (0x02,Msg.CmdType.OFF, 0x00, [True]),
-        (0x04,Msg.CmdType.ON, 0x00,[True]),
+    @pytest.mark.parametrize("group_num,cmd1,cmd2,expected,kwargs", [
+        (0x01,Msg.CmdType.ON, 0x00, [], {'button': 1, 'is_on': True,
+                                         'level': None,
+                                         'mode': IM.on_off.Mode.NORMAL,
+                                         'reason': 'device'}),
+        (0x01,Msg.CmdType.OFF, 0x00, [], {'button': 1, 'is_on': False,
+                                          'level': None,
+                                          'mode': IM.on_off.Mode.NORMAL,
+                                          'reason': 'device'}),
+        (0x02,Msg.CmdType.ON, 0x00, [], {'button': 2, 'is_on': True,
+                                         'level': None,
+                                         'mode': IM.on_off.Mode.NORMAL,
+                                         'reason': 'device'}),
+        (0x02,Msg.CmdType.OFF, 0x00, [], {'button': 2, 'is_on': False,
+                                          'level': None,
+                                          'mode': IM.on_off.Mode.NORMAL,
+                                          'reason': 'device'}),
+        (0x04,Msg.CmdType.ON, 0x00, [True], {}),
     ])
-    def test_handle_broadcast(self, test_device, group_num, cmd1, cmd2, expected):
+    def test_handle_broadcast(self, test_device, group_num, cmd1, cmd2,
+                              expected, kwargs):
         with mock.patch.object(IM.Signal, 'emit') as mocked:
             self._is_wet = False
             flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
@@ -56,10 +69,8 @@ class Test_Base_Config():
             addr = IM.Address(0x01, 0x02, 0x03)
             msg = Msg.InpStandard(addr, group, flags, cmd1, cmd2)
             test_device.handle_broadcast(msg)
-            if expected is not None:
-                mocked.assert_called_once_with(test_device, *expected)
-            else:
-                mocked.assert_not_called()
+            mocked.assert_called_once_with(test_device, *expected,
+                                           **kwargs)
 
     def test_handle_heartbeat(self, test_device):
         # tests updating the wet/dry state when heartbeat received
@@ -71,23 +82,27 @@ class Test_Base_Config():
             msg = Msg.InpStandard(addr, group, flags, Msg.CmdType.OFF, 0x00)
             test_device.handle_broadcast(msg)
             assert mocked.call_count == 2
-            calls = [call(test_device, True), call(test_device, True)]
+            calls = [call(test_device, is_on=True, level=None,
+                          mode=IM.on_off.Mode.NORMAL, button=2, reason=''),
+                     call(test_device, True)]
             mocked.assert_has_calls(calls)
 
     def test_handle_refresh_not_wet(self, test_device):
-        with mock.patch.object(test_device, '_set_is_wet') as mocked:
+        with mock.patch.object(test_device, '_set_state') as mocked:
             flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
             group = IM.Address(0x00, 0x00, 0x04)
             addr = IM.Address(0x01, 0x02, 0x03)
             msg = Msg.InpStandard(addr, group, flags, Msg.CmdType.OFF, 0x00)
-            test_device.handle_refresh(msg)
-            mocked.assert_called_once_with(False)
+            test_device.handle_refresh(msg, group=2)
+            mocked.assert_called_once_with(group=2, level=0x00,
+                                           reason='refresh')
 
     def test_handle_refresh_wet(self, test_device):
-        with mock.patch.object(test_device, '_set_is_wet') as mocked:
+        with mock.patch.object(test_device, '_set_state') as mocked:
             flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
             group = IM.Address(0x00, 0x00, 0x04)
             addr = IM.Address(0x01, 0x02, 0x03)
             msg = Msg.InpStandard(addr, group, flags, Msg.CmdType.OFF, 0x11)
-            test_device.handle_refresh(msg)
-            mocked.assert_called_once_with(True)
+            test_device.handle_refresh(msg, group=2)
+            mocked.assert_called_once_with(group=2, level=0x11,
+                                           reason='refresh')
