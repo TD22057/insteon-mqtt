@@ -213,7 +213,7 @@ class Test_KPL():
         (0x01,Msg.CmdType.OFF, 0x00, {"level":None,"mode":IM.on_off.Mode.NORMAL, "is_on": False, "reason":'device', "button":1}),
         (0x01,Msg.CmdType.ON_FAST, 0x00,{"level":None,"mode":IM.on_off.Mode.FAST, "is_on": True, "reason":'device', "button":1}),
         (0x01,Msg.CmdType.OFF_FAST, 0x00, {"level":None,"mode":IM.on_off.Mode.FAST, "is_on": False, "reason":'device', "button":1}),
-        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP, "button":1}),
+        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP, "button":1, "reason":'device'}),
         (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
         (0x02,Msg.CmdType.ON, 0x00,{"level":None,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":2}),
         (0x03,Msg.CmdType.ON, 0x00,{"level":None,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":3}),
@@ -245,7 +245,8 @@ class Test_KPL():
                                   Msg.CmdType.START_MANUAL_CHANGE, 0x00)
             test_device.handle_broadcast(msg)
             calls = [
-                call(test_device, manual=IM.on_off.Manual.DOWN, button=1),
+                call(test_device, manual=IM.on_off.Manual.DOWN, button=1,
+                     reason='device'),
                 call(test_device, button=1, level=0x00, is_on=None,
                      reason='device', mode=IM.on_off.Mode.MANUAL)
                 ]
@@ -259,7 +260,8 @@ class Test_KPL():
                                   Msg.CmdType.START_MANUAL_CHANGE, 0x01)
             test_device.handle_broadcast(msg)
             calls = [
-                call(test_device, manual=IM.on_off.Manual.UP, button=1),
+                call(test_device, manual=IM.on_off.Manual.UP, button=1,
+                     reason='device'),
                 call(test_device, button=1, is_on=None, level=0xFF,
                      reason='device', mode=IM.on_off.Mode.MANUAL)
                 ]
@@ -276,7 +278,8 @@ class Test_KPL():
                                   Msg.CmdType.START_MANUAL_CHANGE, 0x00)
             test_device.handle_broadcast(msg)
             calls = [
-                call(test_device, manual=IM.on_off.Manual.DOWN, button=2)
+                call(test_device, manual=IM.on_off.Manual.DOWN, button=2,
+                     reason='device')
                 ]
             assert mocked.call_count == 1
             mocked.assert_has_calls(calls, any_order=True)
@@ -288,7 +291,8 @@ class Test_KPL():
                                   Msg.CmdType.START_MANUAL_CHANGE, 0x01)
             test_device.handle_broadcast(msg)
             calls = [
-                call(test_device, manual=IM.on_off.Manual.UP, button=2)
+                call(test_device, manual=IM.on_off.Manual.UP, button=2,
+                     reason='device')
                 ]
             assert mocked.call_count == 1
             mocked.assert_has_calls(calls, any_order=True)

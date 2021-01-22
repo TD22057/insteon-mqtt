@@ -94,7 +94,9 @@ class Test_Base_Config():
                                            "reason":'device',
                                            "mode":IM.on_off.Mode.FAST,
                                            "button":1}),
-        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP,"button":1}),
+        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {
+            "manual":IM.on_off.Manual.STOP,"button":1, "reason":'device'}
+        ),
         (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
         (0x02,Msg.CmdType.ON, 0x00,{"is_on":True,"level":None,
                                     "reason":'device',
@@ -140,7 +142,8 @@ class Test_Base_Config():
                                   Msg.CmdType.START_MANUAL_CHANGE, 0x00)
             test_device8.handle_broadcast(msg)
             calls = [
-                call(test_device8, manual=IM.on_off.Manual.DOWN, button=1),
+                call(test_device8, manual=IM.on_off.Manual.DOWN, button=1,
+                     reason='device'),
                 call(test_device8, button=1, is_on=False, level=None,
                      reason='device', mode=IM.on_off.Mode.MANUAL)
                 ]
@@ -153,7 +156,8 @@ class Test_Base_Config():
                                   Msg.CmdType.START_MANUAL_CHANGE, 0x01)
             test_device8.handle_broadcast(msg)
             calls = [
-                call(test_device8, manual=IM.on_off.Manual.UP, button=1),
+                call(test_device8, manual=IM.on_off.Manual.UP, button=1,
+                     reason='device'),
                 call(test_device8, button=1, is_on=True, level=None,
                      reason='device', mode=IM.on_off.Mode.MANUAL)
                 ]

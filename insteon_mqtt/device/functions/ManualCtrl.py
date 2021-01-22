@@ -70,7 +70,8 @@ class ManualCtrl(Base):
         manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
         LOG.info("Device %s grp: %s manual change %s", self.addr, msg.group,
                  manual)
-        self.signal_manual.emit(self, button=msg.group, manual=manual)
+        self.signal_manual.emit(self, button=msg.group, manual=manual,
+                                reason=reason)
         self.react_to_manual(manual, msg.group, reason)
 
     #-----------------------------------------------------------------------
