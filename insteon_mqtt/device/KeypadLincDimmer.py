@@ -16,7 +16,7 @@ LOG = log.get_logger()
 
 
 #===========================================================================
-class KeypadLincDimmer(DimmerBase, KeypadLinc):
+class KeypadLincDimmer(KeypadLinc, DimmerBase):
     """Insteon KeypadLinc Dimmer Device.
 
     This class extends the KeypadLinc device to add dimmer functionality.
@@ -306,3 +306,21 @@ class KeypadLincDimmer(DimmerBase, KeypadLinc):
         LOG.ui("Dimmer %s on_level: %s (%.2f%%) ramp rate: %ss", self.label,
                on_level, on_level / 2.55, ramp_rate)
         on_done(True, "Operation complete", msg.data[5])
+
+    #-----------------------------------------------------------------------
+    def react_to_manual(self, manual, group, reason):
+        """React to Manual Mode Received from the Device
+
+        Non-dimmable devices react immediatly when issueing a manual command
+        while dimmable devices slowly ramp on. This function is here to
+        provide DimmerBase a place to alter the default functionality. This
+        function should call _set_state() at the appropriate times to update
+        the state of the device.
+
+        Args:
+          manual (on_off.Manual):  The manual command type
+          group (int):  The group sending the command
+          reason (str):  The reason string to pass on
+        """
+        # Need to skip over the KeypadLinc Function here
+        DimmerBase.react_to_manual(self, manual, group, reason)
