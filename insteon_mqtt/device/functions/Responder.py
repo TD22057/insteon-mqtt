@@ -1,25 +1,27 @@
 #===========================================================================
 #
-# Provides BOTH the Set and State Functions.
+# Provides Functions for Devices that are Responders
 #
 #===========================================================================
 import functools
+from ..Base import Base
 from ... import message as Msg
 from ... import handler
 from ... import log
 from ... import on_off
-from .State import State
 
 
 LOG = log.get_logger()
 
 
-class SetAndState(State):
-    """Set and State Abstract Classes
+class Responder(Base):
+    """Responder Functions Abstract Classes
 
-    This is an abstract class that provides support for the set and state
-    functions.  A device SHOULD NOT also inherit from the State function if
-    it is using this.  Some devices BatterSensor may only inherit from State.
+    This is an abstract class that provides support for the the functions used
+    by responder devices. Responders are devices that can be controlled by
+    the modem or some other device. BatterSensors are generally not
+    responders since they are not awake to hear messages, but generally
+    everything else is.
     """
     def __init__(self, protocol, modem, address, name=None):
         """Constructor

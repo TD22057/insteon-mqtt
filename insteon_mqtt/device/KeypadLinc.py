@@ -12,14 +12,13 @@ from .. import on_off
 from ..Signal import Signal
 from .. import util
 from .Base import Base
-from .functions import SetAndState, Scene, Backlight
-# from . import Dimmer
+from .functions import Responder, Scene, Backlight
 
 LOG = log.get_logger()
 
 
 #===========================================================================
-class KeypadLinc(SetAndState, Scene, Backlight, Base):
+class KeypadLinc(Responder, Scene, Backlight, Base):
     """Insteon KeypadLinc dimmer/switch device.
 
     This class can be used to model a 6 or 8 button KeypadLinc with dimming
