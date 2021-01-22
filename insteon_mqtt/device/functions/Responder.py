@@ -272,7 +272,7 @@ class Responder(Base):
         # ever occur.
         entry = self.db.find(addr, msg.group, is_controller=False)
         if not entry:
-            LOG.error("Device %s has no group %s entry from %s", self.addr,
+            LOG.error("Device %s has no group %s entry from %s", self.label,
                       msg.group, addr)
             return
 
@@ -281,16 +281,22 @@ class Responder(Base):
 
         # Handle on/off codes
         if on_off.Mode.is_valid(msg.cmd1):
+            LOG.info("Device %s processing on/off group %s cmd from %s",
+                     self.label, msg.group, addr)
             is_on, mode = on_off.Mode.decode(msg.cmd1)
             level = self.group_cmd_on_level(entry, is_on)
             self._set_state(group=localGroup, is_on=is_on, level=level,
                             mode=mode, reason=reason)
 
         elif msg.cmd1 in (0x15, 0x16):
+            LOG.info("Device %s processing increment group %s cmd from %s",
+                     self.label, msg.group, addr)
             self.group_cmd_handle_increment(msg.cmd1, localGroup, reason)
 
         # Starting/stopping manual increment (cmd2 0x00=up, 0x01=down)
         elif on_off.Manual.is_valid(msg.cmd1):
+            LOG.info("Device %s processing manual group %s cmd from %s",
+                     self.label, msg.group, addr)
             manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
             self.group_cmd_handle_manual(manual, localGroup, reason)
 
@@ -344,9 +350,8 @@ class Responder(Base):
           group (int):  The local db entry for this group command.
           reason (str): Whether the command was ON or OFF
         """
-        # TODO I am not sure I am aware of increment group commands.  Is there
-        # some way I can cause one to occur?  I suspect non-dimmable devices
-        # still react in some fashion.
+        # I am not sure I am aware of increment group commands.  Is there
+        # some way I can cause one to occur?
         pass
 
     #-----------------------------------------------------------------------
@@ -355,14 +360,12 @@ class Responder(Base):
 
         This should do whatever processing is necessary, including updating
         the local state in response to a manual group command.  For non
-        dimmable devices this does nothing.
+        dimmable devices this does nothing, as they do not react to manual
+        commands.
 
         Args:
           manual (on_off.Manual): The manual mode
           group (int):  The local db entry for this group command.
           reason (str): Whether the command was ON or OFF
         """
-        # TODO I think this may be wrong, I think non-dimmable devices can
-        # receive such commands and should just turn on or off accordingly
-        # TODO can this be merged with process_manual()??
         pass

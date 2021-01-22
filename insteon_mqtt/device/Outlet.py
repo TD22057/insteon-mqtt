@@ -16,7 +16,7 @@ from ..Signal import Signal
 LOG = log.get_logger()
 
 
-class Outlet(Responder, Backlight, Base):
+class Outlet(Backlight, Responder, Base):
     """Insteon on/off outlet device.
 
     This is used for in-wall on/off outlets.  Each outlet (top and bottom) is

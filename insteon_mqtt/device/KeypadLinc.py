@@ -18,7 +18,7 @@ LOG = log.get_logger()
 
 
 #===========================================================================
-class KeypadLinc(Responder, Scene, Backlight, Base):
+class KeypadLinc(Scene, Backlight, Responder, Base):
     """Insteon KeypadLinc dimmer/switch device.
 
     This class can be used to model a 6 or 8 button KeypadLinc with dimming

@@ -13,7 +13,7 @@ LOG = log.get_logger()
 
 
 #===========================================================================
-class Switch(Responder, Scene, Backlight, Base):
+class Switch(Scene, Backlight, Responder, Base):
     """Insteon on/off switch device.
 
     This class can be used to model any device that acts like a on/off switch
