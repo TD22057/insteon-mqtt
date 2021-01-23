@@ -286,3 +286,55 @@ class Test_Base_Config():
         def on_done(success, msg, data):
             assert success
         test_device.run_command(cmd='print_db', on_done=on_done)
+
+    def test_handle_flags(self, test_device, caplog):
+        def on_done(success, msg, data):
+            assert success
+            assert msg == "Operation complete"
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT, False)
+        group = IM.Address(0x00, 0x00, 0x01)
+        addr = IM.Address(0x01, 0x02, 0x03)
+        msg = Msg.InpStandard(addr, group, flags,
+                              Msg.CmdType.GET_OPERATING_FLAGS, 0x55)
+        with caplog.at_level(logging.DEBUG):
+            test_device.handle_flags(msg, on_done=on_done)
+            assert 'operating flags: 01010101' in caplog.text
+
+    def test_handle_engine_nak(self, test_device, caplog):
+        def on_done(success, msg, data):
+            assert success
+            assert msg == "Operation complete"
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_NAK, False)
+        group = IM.Address(0x00, 0x00, 0x01)
+        addr = IM.Address(0x01, 0x02, 0x03)
+        msg = Msg.InpStandard(addr, group, flags,
+                              Msg.CmdType.GET_ENGINE_VERSION, 0x00)
+        with caplog.at_level(logging.DEBUG):
+            test_device.handle_engine(msg, on_done=on_done)
+            assert 'sent NAK to get engine' in caplog.text
+            assert test_device.db.engine == 2
+
+    def test_handle_model(self, test_device, caplog):
+        def on_done(success, msg, data):
+            assert success
+            assert msg == "Operation complete"
+        flags = Msg.Flags(Msg.Flags.Type.BROADCAST, False)
+        to_addr = IM.Address(0x01, 0x30, 0x45)
+        from_addr = IM.Address(0x01, 0x02, 0x03)
+        msg = Msg.InpStandard(from_addr, to_addr, flags, 0x01, 0x00)
+        with caplog.at_level(logging.DEBUG):
+            test_device.handle_model(msg, on_done=on_done)
+            assert 'received model information' in caplog.text
+            assert '2476D' in test_device.db.desc.model
+
+    def test_handle_model_bad_resp(self, test_device, caplog):
+        def on_done(success, msg, data):
+            assert not success
+            assert "Operation failed" in msg
+        flags = Msg.Flags(Msg.Flags.Type.BROADCAST, False)
+        to_addr = IM.Address(0x01, 0x30, 0x45)
+        from_addr = IM.Address(0x01, 0x02, 0x03)
+        msg = Msg.InpStandard(from_addr, to_addr, flags, 0x05, 0x00)
+        with caplog.at_level(logging.DEBUG):
+            test_device.handle_model(msg, on_done=on_done)
+            assert 'get_model response with wrong cmd' in caplog.text
