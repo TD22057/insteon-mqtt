@@ -232,7 +232,7 @@ class Test_Base_Config():
         # Dry Run, nothing changed
         assert test_device.modem.scenes.data == []
 
-    def test_db_add_ctrl(self, test_device, test_entry_1):
+    def test_db_add_ctrl(self, test_device):
         with mock.patch.object(test_device, '_db_update') as mocked:
             local_group = 0x01
             remote_addr = IM.Address('01.02.03')
@@ -243,7 +243,7 @@ class Test_Base_Config():
                                        True, None,
                                        None, None)
 
-    def test_db_add_resp(self, test_device, test_entry_1):
+    def test_db_add_resp(self, test_device):
         with mock.patch.object(test_device, '_db_update') as mocked:
             local_group = 0x01
             remote_addr = IM.Address('01.02.03')
@@ -254,7 +254,7 @@ class Test_Base_Config():
                                        True, None,
                                        None, None)
 
-    def test_db_del_ctrl(self, test_device, test_entry_1):
+    def test_db_del_ctrl(self, test_device):
         with mock.patch.object(test_device, '_db_delete') as mocked:
             group = 0x01
             addr = IM.Address('01.02.03')
@@ -262,10 +262,27 @@ class Test_Base_Config():
             mocked.assert_called_once_with(addr, group, True, True,
                                            True, None)
 
-    def test_db_del_resp(self, test_device, test_entry_1):
+    def test_db_del_resp(self, test_device):
         with mock.patch.object(test_device, '_db_delete') as mocked:
             group = 0x01
             addr = IM.Address('01.02.03')
             test_device.db_del_resp_of(addr, group)
             mocked.assert_called_once_with(addr, group, False, True,
                                            True, None)
+
+    def test_run_cmd_empty(self, test_device, caplog):
+        test_device.run_command()
+        assert 'Invalid command sent to device' in caplog.text
+
+    def test_run_cmd_bad_cmd(self, test_device, caplog):
+        test_device.run_command(cmd="NoSuchThing")
+        assert 'Invalid command sent to device' in caplog.text
+
+    def test_run_cmd_missing_arg(self, test_device, caplog):
+        test_device.run_command(cmd='print_db')
+        assert 'Invalid command inputs to device' in caplog.text
+
+    def test_run_cmd_good(self, test_device, caplog):
+        def on_done(success, msg, data):
+            assert success
+        test_device.run_command(cmd='print_db', on_done=on_done)
