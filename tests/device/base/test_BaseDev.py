@@ -3,6 +3,7 @@
 # Tests for: insteont_mqtt/device/Base.py
 #
 #===========================================================================
+import logging
 import pytest
 # from pprint import pprint
 from unittest import mock
@@ -16,7 +17,7 @@ import helpers as H
 @pytest.fixture
 def test_device(tmpdir):
     '''
-    Returns a generically configured iolinc for testing
+    Returns a generically configured device for testing
     '''
     protocol = H.main.MockProtocol()
     modem = H.main.MockModem(tmpdir)
@@ -71,3 +72,59 @@ class Test_Base_Config():
         msg = Msg.InpStandard(addr, group, flags, 0x11, 0x00)
         test_device.handle_broadcast(msg)
         assert "has no handler for broadcast" in caplog.text
+
+    def test_join(self, test_device):
+        with mock.patch.object(IM.CommandSeq, 'add') as mocked:
+            test_device.join()
+            calls = [call(test_device.get_engine),
+                     call(test_device._join_device)]
+            mocked.assert_has_calls(calls, any_order=True)
+
+    def test_join_device(self, test_device):
+        test_device.db.engine = 1
+        def on_done(success, msg, data):
+            assert success
+            assert msg == 'Operation Complete.'
+        test_device._join_device(on_done=on_done)
+
+        test_device.db.engine = 2
+        with mock.patch.object(IM.CommandSeq, 'add') as mocked:
+            def fake_link(self):
+                pass
+            test_device.modem.linking = fake_link
+            test_device._join_device()
+            calls = [call(test_device.modem.linking),
+                     call(test_device.linking)]
+            # Must be in this order to get the proper ctrl/resp orientation
+            mocked.assert_has_calls(calls, any_order=False)
+
+    def test_device_linking(self, test_device):
+        msg = Msg.OutExtended.direct(test_device.addr,
+                                     Msg.CmdType.LINKING_MODE, 0x01,
+                                     bytes([0x00] * 14))
+        test_device.linking()
+        sent = test_device.protocol.sent
+        assert len(sent) == 1
+        assert sent[0].msg.to_bytes() == msg.to_bytes()
+
+    def test_get_flags(self, test_device):
+        msg = Msg.OutStandard.direct(test_device.addr,
+                                     Msg.CmdType.GET_OPERATING_FLAGS, 0x00)
+        test_device.get_flags()
+        sent = test_device.protocol.sent
+        assert len(sent) == 1
+        assert sent[0].msg.to_bytes() == msg.to_bytes()
+
+    def test_get_engine(self, test_device):
+        msg = Msg.OutStandard.direct(test_device.addr,
+                                     Msg.CmdType.GET_ENGINE_VERSION, 0x00)
+        test_device.get_engine()
+        sent = test_device.protocol.sent
+        assert len(sent) == 1
+        assert sent[0].msg.to_bytes().hex() == msg.to_bytes().hex()
+        assert isinstance(sent[0].handler, IM.handler.StandardCmdNAK)
+
+    def test_handle_group(self, test_device, caplog):
+        with caplog.at_level(logging.DEBUG):
+            test_device.handle_group_cmd(None, None)
+        assert 'ignoring group cmd - not implemented' in caplog.text
