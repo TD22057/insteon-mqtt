@@ -2,12 +2,14 @@
 #
 # Tests for: insteont_mqtt/device/Base.py
 #
+# pylint: disable=W0621,W0212,
+#
 #===========================================================================
 import logging
-import pytest
 # from pprint import pprint
 from unittest import mock
 from unittest.mock import call
+import pytest
 import insteon_mqtt as IM
 from insteon_mqtt.device.base.Base import Base
 import insteon_mqtt.message as Msg
@@ -21,10 +23,35 @@ def test_device(tmpdir):
     '''
     protocol = H.main.MockProtocol()
     modem = H.main.MockModem(tmpdir)
+    modem.db = IM.db.Modem(None, modem)
+    modem.scenes = IM.Scenes.SceneManager(modem, None)
     addr = IM.Address(0x01, 0x02, 0x03)
     device = Base(protocol, modem, addr)
     return device
 
+@pytest.fixture
+def test_entry_1():
+    addr = IM.Address('12.34.ab')
+    data = bytes([0xff, 0x00, 0x00])
+    group = 0x01
+    in_use = True
+    is_controller = True
+    is_last_rec = False
+    db_flags = Msg.DbFlags(in_use, is_controller, is_last_rec)
+    mem_loc = 1
+    return IM.db.DeviceEntry(addr, group, mem_loc, db_flags, data)
+
+@pytest.fixture
+def test_entry_2():
+    addr = IM.Address('56.78.cd')
+    data = bytes([0xff, 0x00, 0x00])
+    group = 0x01
+    in_use = True
+    is_controller = True
+    is_last_rec = False
+    db_flags = Msg.DbFlags(in_use, is_controller, is_last_rec)
+    mem_loc = 1
+    return IM.db.DeviceEntry(addr, group, mem_loc, db_flags, data)
 
 class Test_Base_Config():
     def test_type(self, test_device):
@@ -56,13 +83,13 @@ class Test_Base_Config():
         assert True
 
     def test_pair(self, test_device):
-        with mock.patch.object(IM.CommandSeq, 'add'):
+        with mock.patch.object(IM.CommandSeq, 'add') as mocked:
             test_device.pair()
             calls = [
                 call(test_device.refresh),
             ]
-            IM.CommandSeq.add.assert_has_calls(calls)
-            assert IM.CommandSeq.add.call_count == 1
+            mocked.assert_has_calls(calls)
+            assert mocked.call_count == 1
 
     def test_broadcast(self, test_device, caplog):
         # test broadcast Messages, Base doesn't handle any
@@ -128,3 +155,79 @@ class Test_Base_Config():
         with caplog.at_level(logging.DEBUG):
             test_device.handle_group_cmd(None, None)
         assert 'ignoring group cmd - not implemented' in caplog.text
+
+    def test_sync_dry_ref(self, test_device):
+        with mock.patch.object(IM.CommandSeq, 'add') as mocked:
+            test_device.sync(dry_run=True, refresh=True)
+            assert mocked.call_count == 2
+            call_args = mocked.call_args_list
+            assert call_args[0].args == (test_device.refresh,)
+            assert call_args[1].args == (test_device.sync, True)
+            assert not call_args[1].kwargs['refresh']
+
+    def test_sync_dry_no_ref(self, test_device, test_entry_1, test_entry_2):
+        # Mock up a DB and DB_Config with differences, see if sync properly
+        # marks these diffs as needing an update.
+        test_device.db.add_entry(test_entry_1)
+        test_device.db_config = IM.db.Device(test_device.addr, None,
+                                             test_device)
+        test_device.db_config.add_entry(test_entry_2)
+        with mock.patch.object(IM.CommandSeq, 'add') as mocked:
+            test_device.sync(dry_run=True, refresh=False)
+            assert mocked.call_count == 2
+            call_args = mocked.call_args_list
+            assert call_args[0].args == (test_device._sync_del, test_entry_1,
+                                         True)
+            assert call_args[1].args == (test_device._sync_add, test_entry_2,
+                                         True)
+
+    def test_sync_del_dry(self, test_device, test_entry_1):
+        def on_done(success, msg, data):
+            assert success
+        test_device._sync_del(test_entry_1, True, on_done=on_done)
+
+    def test_sync_del(self, test_device, test_entry_1):
+        with mock.patch.object(test_device.db, 'delete_on_device') as mocked:
+            test_device._sync_del(test_entry_1, False)
+            mocked.assert_called_once_with(test_entry_1, on_done=None)
+
+    def test_sync_add_dry(self, test_device, test_entry_1):
+        def on_done(success, msg, data):
+            assert success
+        test_device._sync_add(test_entry_1, True, on_done=on_done)
+
+    def test_sync_add(self, test_device, test_entry_1):
+        with mock.patch.object(test_device.db, 'add_on_device') as mocked:
+            test_device._sync_add(test_entry_1, False)
+            mocked.assert_called_once_with(test_entry_1.addr,
+                                           test_entry_1.group,
+                                           test_entry_1.is_controller,
+                                           test_entry_1.data, on_done=None)
+
+    def test_import_scenes_dry(self, test_device, test_entry_1):
+        test_device.db.add_entry(test_entry_1)
+        test_device.db_config = IM.db.Device(test_device.addr, None,
+                                             test_device)
+        test_device.import_scenes()
+        # Dry Run, nothing changed
+        assert test_device.modem.scenes.data == []
+
+    def test_import_scenes(self, test_device, test_entry_1):
+        test_device.db.add_entry(test_entry_1)
+        test_device.db_config = IM.db.Device(test_device.addr, None,
+                                             test_device)
+        test_device.import_scenes(dry_run=False)
+        # Dry Run, nothing changed
+        assert test_device.modem.scenes.data == [{'controllers':
+                                                  [{'01.02.03':
+                                                        {'data_1': 255,
+                                                         'data_3': 0}}],
+                                                  'responders':
+                                                  ['12.34.ab']}]
+
+    def test_import_scenes_none(self, test_device, test_entry_1):
+        test_device.db_config = IM.db.Device(test_device.addr, None,
+                                             test_device)
+        test_device.import_scenes(dry_run=False)
+        # Dry Run, nothing changed
+        assert test_device.modem.scenes.data == []
