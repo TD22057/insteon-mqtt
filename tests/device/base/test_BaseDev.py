@@ -231,3 +231,41 @@ class Test_Base_Config():
         test_device.import_scenes(dry_run=False)
         # Dry Run, nothing changed
         assert test_device.modem.scenes.data == []
+
+    def test_db_add_ctrl(self, test_device, test_entry_1):
+        with mock.patch.object(test_device, '_db_update') as mocked:
+            local_group = 0x01
+            remote_addr = IM.Address('01.02.03')
+            remote_group = 0x01
+            test_device.db_add_ctrl_of(local_group, remote_addr, remote_group)
+        mocked.assert_called_once_with(local_group, True, remote_addr,
+                                       remote_group, True,
+                                       True, None,
+                                       None, None)
+
+    def test_db_add_resp(self, test_device, test_entry_1):
+        with mock.patch.object(test_device, '_db_update') as mocked:
+            local_group = 0x01
+            remote_addr = IM.Address('01.02.03')
+            remote_group = 0x01
+            test_device.db_add_resp_of(local_group, remote_addr, remote_group)
+        mocked.assert_called_once_with(local_group, False, remote_addr,
+                                       remote_group, True,
+                                       True, None,
+                                       None, None)
+
+    def test_db_del_ctrl(self, test_device, test_entry_1):
+        with mock.patch.object(test_device, '_db_delete') as mocked:
+            group = 0x01
+            addr = IM.Address('01.02.03')
+            test_device.db_del_ctrl_of(addr, group)
+            mocked.assert_called_once_with(addr, group, True, True,
+                                           True, None)
+
+    def test_db_del_resp(self, test_device, test_entry_1):
+        with mock.patch.object(test_device, '_db_delete') as mocked:
+            group = 0x01
+            addr = IM.Address('01.02.03')
+            test_device.db_del_resp_of(addr, group)
+            mocked.assert_called_once_with(addr, group, False, True,
+                                           True, None)
