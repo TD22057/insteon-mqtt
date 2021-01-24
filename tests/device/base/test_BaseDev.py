@@ -30,6 +30,19 @@ def test_device(tmpdir):
     return device
 
 @pytest.fixture
+def test_device_2(tmpdir):
+    '''
+    Returns a generically configured device for testing
+    '''
+    protocol = H.main.MockProtocol()
+    modem = H.main.MockModem(tmpdir)
+    modem.db = IM.db.Modem(None, modem)
+    modem.scenes = IM.Scenes.SceneManager(modem, None)
+    addr = IM.Address(0x56, 0x78, 0xcd)
+    device = Base(protocol, modem, addr)
+    return device
+
+@pytest.fixture
 def test_entry_1():
     addr = IM.Address('12.34.ab')
     data = bytes([0xff, 0x00, 0x00])
@@ -338,3 +351,19 @@ class Test_Base_Config():
         with caplog.at_level(logging.DEBUG):
             test_device.handle_model(msg, on_done=on_done)
             assert 'get_model response with wrong cmd' in caplog.text
+
+    def test_update_linked_devices(self, test_device, test_entry_1,
+                                   test_entry_2, test_device_2, caplog):
+        test_device.db.add_entry(test_entry_1)
+        test_device.db.add_entry(test_entry_2)
+        test_device.modem.add(test_device_2)
+        test_device.db_config = IM.db.Device(test_device.addr, None,
+                                             test_device)
+        flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+        group = IM.Address(0x00, 0x00, 0x01)
+        addr = IM.Address(0x01, 0x02, 0x03)
+        msg = Msg.InpStandard(addr, group, flags, 0x11, 0x00)
+        with caplog.at_level(logging.DEBUG):
+            test_device.update_linked_devices(msg)
+            assert 'device 12.34.ab is not in config' in caplog.text
+            assert 'Device 56.78.cd ignoring group cmd' in caplog.text
