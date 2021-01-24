@@ -367,3 +367,51 @@ class Test_Base_Config():
             test_device.update_linked_devices(msg)
             assert 'device 12.34.ab is not in config' in caplog.text
             assert 'Device 56.78.cd ignoring group cmd' in caplog.text
+
+    def test_db_update(self, test_device, test_entry_2,
+                                 test_device_2, caplog):
+        test_device.modem.add(test_device_2)
+        with mock.patch.object(IM.CommandSeq, 'add') as mocked:
+            with caplog.at_level(logging.DEBUG):
+                two_way = True
+                refresh = True
+                test_device._db_update(test_entry_2.group,
+                                       test_entry_2.is_controller,
+                                       test_entry_2.addr,
+                                       test_entry_2.group,
+                                       two_way,
+                                       refresh,
+                                       None,
+                                       bytes([0x00, 0x00, 0x00]),
+                                       test_entry_2.data)
+                assert mocked.call_count == 3
+                calls = [call(test_device.refresh),
+                         call(test_device.db.add_on_device, test_entry_2.addr,
+                              test_entry_2.group, test_entry_2.is_controller,
+                              bytes([0x00, 0x00, 0x00])),
+                         call(test_device_2.db_add_resp_of, test_entry_2.group,
+                              test_device.addr, test_entry_2.group, False,
+                              refresh, local_data=test_entry_2.data)]
+                assert mocked.has_calls(calls)
+
+    def test_db_update_no_remote(self, test_device, test_entry_2, caplog):
+        with mock.patch.object(IM.CommandSeq, 'add') as mocked:
+            with caplog.at_level(logging.DEBUG):
+                two_way = True
+                refresh = True
+                test_device._db_update(test_entry_2.group,
+                                       test_entry_2.is_controller,
+                                       test_entry_2.addr,
+                                       test_entry_2.group,
+                                       two_way,
+                                       refresh,
+                                       None,
+                                       bytes([0x00, 0x00, 0x00]),
+                                       test_entry_2.data)
+                calls = [call(test_device.refresh),
+                         call(test_device.db.add_on_device, test_entry_2.addr,
+                              test_entry_2.group, test_entry_2.is_controller,
+                              bytes([0x00, 0x00, 0x00]))]
+                assert mocked.call_count == 2
+                assert mocked.has_calls(calls)
+                assert "Device db add CTRL can't find remote" in caplog.text
