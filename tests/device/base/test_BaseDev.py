@@ -369,7 +369,7 @@ class Test_Base_Config():
             assert 'Device 56.78.cd ignoring group cmd' in caplog.text
 
     def test_db_update(self, test_device, test_entry_2,
-                                 test_device_2, caplog):
+                       test_device_2, caplog):
         test_device.modem.add(test_device_2)
         with mock.patch.object(IM.CommandSeq, 'add') as mocked:
             with caplog.at_level(logging.DEBUG):
@@ -392,7 +392,33 @@ class Test_Base_Config():
                          call(test_device_2.db_add_resp_of, test_entry_2.group,
                               test_device.addr, test_entry_2.group, False,
                               refresh, local_data=test_entry_2.data)]
-                assert mocked.has_calls(calls)
+                mocked.assert_has_calls(calls)
+
+    def test_db_update_resp(self, test_device, test_entry_2,
+                            test_device_2, caplog):
+        test_device.modem.add(test_device_2)
+        with mock.patch.object(IM.CommandSeq, 'add') as mocked:
+            with caplog.at_level(logging.DEBUG):
+                two_way = True
+                refresh = True
+                test_device._db_update(test_entry_2.group,
+                                       False,
+                                       test_entry_2.addr,
+                                       test_entry_2.group,
+                                       two_way,
+                                       refresh,
+                                       None,
+                                       bytes([0x00, 0x00, 0x00]),
+                                       test_entry_2.data)
+                assert mocked.call_count == 3
+                calls = [call(test_device.refresh),
+                         call(test_device.db.add_on_device, test_entry_2.addr,
+                              test_entry_2.group, False,
+                              bytes([0x00, 0x00, 0x00])),
+                         call(test_device_2.db_add_ctrl_of, test_entry_2.group,
+                              test_device.addr, test_entry_2.group, False,
+                              refresh, local_data=test_entry_2.data)]
+                mocked.assert_has_calls(calls)
 
     def test_db_update_no_remote(self, test_device, test_entry_2, caplog):
         with mock.patch.object(IM.CommandSeq, 'add') as mocked:
@@ -413,5 +439,22 @@ class Test_Base_Config():
                               test_entry_2.group, test_entry_2.is_controller,
                               bytes([0x00, 0x00, 0x00]))]
                 assert mocked.call_count == 2
-                assert mocked.has_calls(calls)
+                mocked.assert_has_calls(calls)
                 assert "Device db add CTRL can't find remote" in caplog.text
+
+    def test_db_delete_no_remote_no_entry(self, test_device, test_entry_2,
+                                          caplog):
+        def on_done(success, msg, data):
+            assert not success
+        with mock.patch.object(IM.CommandSeq, 'add') as mocked:
+            with caplog.at_level(logging.DEBUG):
+                two_way = True
+                refresh = True
+                test_device._db_delete(test_entry_2.addr,
+                                       test_entry_2.group,
+                                       test_entry_2.is_controller,
+                                       two_way,
+                                       refresh,
+                                       on_done)
+                assert mocked.call_count == 0
+                assert "delete no match for 56.78.cd grp 1 CTRL" in caplog.text
