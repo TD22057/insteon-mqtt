@@ -6,6 +6,7 @@
 #
 #===========================================================================
 import logging
+from pathlib import Path
 # from pprint import pprint
 from unittest import mock
 from unittest.mock import call
@@ -61,6 +62,18 @@ def test_entry_2():
     group = 0x01
     in_use = True
     is_controller = True
+    is_last_rec = False
+    db_flags = Msg.DbFlags(in_use, is_controller, is_last_rec)
+    mem_loc = 1
+    return IM.db.DeviceEntry(addr, group, mem_loc, db_flags, data)
+
+@pytest.fixture
+def test_entry_3():
+    addr = IM.Address('56.78.cd')
+    data = bytes([0xff, 0x00, 0x00])
+    group = 0x01
+    in_use = True
+    is_controller = False
     is_last_rec = False
     db_flags = Msg.DbFlags(in_use, is_controller, is_last_rec)
     mem_loc = 1
@@ -458,3 +471,46 @@ class Test_Base_Config():
                                        on_done)
                 assert mocked.call_count == 0
                 assert "delete no match for 56.78.cd grp 1 CTRL" in caplog.text
+
+    def test_db_delete(self, test_device, test_entry_2, test_device_2):
+        test_device.db.add_entry(test_entry_2)
+        test_device.modem.add(test_device_2)
+        with mock.patch.object(IM.CommandSeq, 'add') as mocked:
+            two_way = True
+            refresh = True
+            test_device._db_delete(test_entry_2.addr,
+                                   test_entry_2.group,
+                                   test_entry_2.is_controller,
+                                   two_way,
+                                   refresh,
+                                   None)
+            assert mocked.call_count == 3
+            calls = [call(test_device.refresh),
+                     call(test_device.db.delete_on_device, test_entry_2),
+                     call(test_device_2.db_del_resp_of, test_device.addr,
+                          test_entry_2.group, two_way=False)]
+            mocked.assert_has_calls(calls, any_order=False)
+
+    def test_db_delete_resp(self, test_device, test_entry_3, test_device_2):
+        test_device.db.add_entry(test_entry_3)
+        test_device.modem.add(test_device_2)
+        with mock.patch.object(IM.CommandSeq, 'add') as mocked:
+            two_way = True
+            refresh = True
+            test_device._db_delete(test_entry_3.addr,
+                                   test_entry_3.group,
+                                   test_entry_3.is_controller,
+                                   two_way,
+                                   refresh,
+                                   None)
+            assert mocked.call_count == 3
+            calls = [call(test_device.refresh),
+                     call(test_device.db.delete_on_device, test_entry_3),
+                     call(test_device_2.db_del_ctrl_of, test_device.addr,
+                          test_entry_3.group, two_way=False)]
+            mocked.assert_has_calls(calls, any_order=False)
+
+    def test_load_db_exception(self, test_device, caplog):
+        Path(test_device.db_path()).touch()
+        test_device.load_db()
+        assert 'Error reading file' in caplog.text
