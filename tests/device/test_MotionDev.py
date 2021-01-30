@@ -302,7 +302,6 @@ class Test_Base_Config():
         # Mark awake so messages get sent to protocol
         test_device.awake(on_done)
         test_device._change_flags({'on_only':'bad value'}, on_done=on_done)
-        # should see an ext flag request first
         assert len(test_device.protocol.sent) == 0
         assert 'Invalid on only' in caplog.text
 

@@ -19,7 +19,7 @@ class ResponderBase(Base):
 
     This is an abstract class that provides support for the the functions used
     by responder devices. Responders are devices that can be controlled by
-    the modem or some other device. BatterSensors are generally not
+    the modem or some other device. BatterySensors are generally not
     responders since they are not awake to hear messages, but generally
     everything else is.
 

@@ -170,7 +170,7 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
         # mask, on level, led brightness, non-toggle mask, led bit mask (led
         # on/off), on/off bit mask, etc (see keypadlinc manual)
 
-        # First send a refresh command which get's the state of the LED's by
+        # First send a refresh command which gets the state of the LED's by
         # returning a bit flag.  Pass skip_db here - we'll let the second
         # refresh handler below take care of getting the database updated.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x01)
@@ -320,8 +320,8 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
            D3: the group number on the local device (0x01)
 
         For responders, the default fields are:
-           D1: on level for switches and dimmers (0xff)
-           D2: ramp rate (0x1f, or .1s)
+           D1: on level for switches (0xff)
+           D2: 0x00
            D3: the group number on the local device (0x01)
 
         Args:

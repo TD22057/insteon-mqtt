@@ -417,9 +417,6 @@ class Base:
         This command is used to change internal device flags and states.
         Valid inputs are:
 
-        - on_level=level: Change the default device on level (0-255) See
-          set_on_level for details.
-
         Args:
           kwargs: Key=value pairs of the flags to change.
           on_done: Finished callback.  This is called when the command has
@@ -1191,7 +1188,7 @@ class Base:
     def handle_on_off(self, msg):
         """Handle broadcast messages from this device.
 
-        This is called from base.handle_broadcast using the group_cmd map.
+        This can be called from base.handle_broadcast using the group_map.
 
         Args:
           msg (InpStandard): Broadcast message from the device.

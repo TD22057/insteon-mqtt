@@ -62,9 +62,6 @@ class ManualCtrl(Base):
         This is called as part of the handle_broadcast response.  It
         processes the manual mode changes sent by the device.
 
-        The Base class does nothing with this, classes that extend this
-        should add the necessary functionality here.
-
         Args:
           msg (InpStandard):  Broadcast message from the device.  Use
               msg.group to find the group and msg.cmd1 for the command.
@@ -83,7 +80,7 @@ class ManualCtrl(Base):
 
         Non-dimmable devices react immediatly when issueing a manual command
         while dimmable devices slowly ramp on. This function is here to
-        provide DimmerMeta a place to alter the default functionality. This
+        provide DimmerBase a place to alter the default functionality. This
         function should call _set_state() at the appropriate times to update
         the state of the device.
 

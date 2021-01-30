@@ -118,7 +118,7 @@ class DimmerBase(ManualCtrl, ResponderBase, Base):
             on_done(False, 'Invalid ramp rate.', None)
             return
 
-        LOG.info("Dimmer %s setting ramp rate to %s", self.label, rate)
+        LOG.info("Device %s setting ramp rate to %s", self.label, rate)
 
         data_3 = 0x1c  # the default ramp rate is .5
         for ramp_key, ramp_value in self.ramp_pretty.items():
@@ -279,8 +279,8 @@ class DimmerBase(ManualCtrl, ResponderBase, Base):
             # database when setting it.
             level = self.get_on_level()
             if self._level == level:
-                # Just like with button presses, if already at default on
-                # level, go to full brightness.
+                # Pressing on again when already at the default on
+                # level causes the device to go to full-brightness.
                 level = 0xff
         return level
 

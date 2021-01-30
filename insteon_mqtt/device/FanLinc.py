@@ -87,9 +87,9 @@ class FanLinc(Dimmer):
 
         Send a 0x19 0x03 command to get the fan speed level.  This sends a
         refresh ping which will respond w/ the fan level and current
-        database delta field.  Pass skip_db here - we'll let the dimmer
-        refresh handler above take care of getting the database updated.
-        Otherwise this handler and the one created in the dimmer refresh
+        database delta field.  Pass skip_db here - we'll let the
+        refresh handler take care of getting the database updated.
+        Otherwise this handler and the one created in the Base class refresh
         would download the database twice.
 
         Args:

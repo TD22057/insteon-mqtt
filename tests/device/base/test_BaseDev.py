@@ -86,14 +86,14 @@ class Test_Base_Config():
     def test_no_name(self, test_device):
         protocol = test_device.protocol
         modem = test_device.modem
-        #address is intentionall badly formatted
+        #address is intentionally badly formatted
         device = Base.from_config(["3 2.34:56"], protocol, modem)
         assert device
 
     def test_with_name(self, test_device):
         protocol = test_device.protocol
         modem = test_device.modem
-        #address is intentionall badly formatted
+        #address is intentionally badly formatted
         device = Base.from_config([{"32 34 56": 'test'}], protocol, modem)
         assert device
 
@@ -243,7 +243,6 @@ class Test_Base_Config():
         test_device.db_config = IM.db.Device(test_device.addr, None,
                                              test_device)
         test_device.import_scenes(dry_run=False)
-        # Dry Run, nothing changed
         assert test_device.modem.scenes.data == [{'controllers':
                                                   [{'01.02.03':
                                                         {'data_1': 255,
@@ -255,7 +254,6 @@ class Test_Base_Config():
         test_device.db_config = IM.db.Device(test_device.addr, None,
                                              test_device)
         test_device.import_scenes(dry_run=False)
-        # Dry Run, nothing changed
         assert test_device.modem.scenes.data == []
 
     def test_db_add_ctrl(self, test_device):

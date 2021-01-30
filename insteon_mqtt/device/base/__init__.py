@@ -12,10 +12,10 @@ classes to further extend.  ONLY ONE BASE CLASS SHOULD BE INHERITTED by
 a device class.
 
 Base - Provides very basic support for devices that emit controller signals
-but do not have any responder objects.  This include things like BatterSensors
+but do not have any responder objects.  This include things like BatterySensors
 and SmokeBridge.
 
-ResponderBase - Extendes Base to provide basic functionality for devices that
+ResponderBase - Extends Base to provide basic functionality for devices that
 have simple responder objects.  This includes things like Switches and
 Outlets.
 

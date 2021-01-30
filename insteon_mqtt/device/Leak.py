@@ -26,8 +26,8 @@ class Leak(BatterySensor):
     only respond to the sensor when it sends out a message.
 
     The device will broadcast messages on the following groups:
-      group 01 = wet condition
-      group 02 = dry condition
+      group 01 = dry condition
+      group 02 = wet condition
       group 04 = heartbeat (0x11)
 
     State changes are communicated by emitting signals.  Other classes can
