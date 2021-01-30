@@ -20,6 +20,7 @@ devices = {
     'battery_sensor' : (device.BatterySensor, {}),
     "ezio4o": (device.EZIO4O, {}),
     'fan_linc' : (device.FanLinc, {}),
+    'hidden_door' : (device.HiddenDoor, {}),
     'io_linc' : (device.IOLinc, {}),
     'keypad_linc' : (device.KeypadLinc, {'dimmer' : True}),
     'keypad_linc_sw' : (device.KeypadLinc, {'dimmer' : False}),

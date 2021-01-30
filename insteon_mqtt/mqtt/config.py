@@ -17,6 +17,7 @@ from .BatterySensor import BatterySensor
 from .Dimmer import Dimmer
 from .EZIO4O import EZIO4O
 from .FanLinc import FanLinc
+from .HiddenDoor import HiddenDoor
 from .IOLinc import IOLinc
 from .KeypadLinc import KeypadLinc
 from .Leak import Leak
@@ -35,6 +36,7 @@ devices = {
     device.Dimmer : Dimmer,
     device.EZIO4O : EZIO4O,
     device.FanLinc : FanLinc,
+    device.HiddenDoor : HiddenDoor,
     device.IOLinc : IOLinc,
     device.KeypadLinc : KeypadLinc,
     device.Leak : Leak,
