@@ -19,6 +19,9 @@ to add new devices and features. This is the reason for the jump to 0.8.0.
 
 - Updates hassio config to comply with changes in API keys. ([PR 344][P344])
 
+- Fix small bug in BroadcastCmdResponse handler that likely never affected
+  anyone. ([PR 354][P354])
+
 ## [0.7.6]
 
 A few new features and some significant bug fixes.  A significant refactor of
@@ -612,3 +615,4 @@ will add new features.
 [P352]: https://github.com/TD22057/insteon-mqtt/pull/352
 [P344]: https://github.com/TD22057/insteon-mqtt/pull/344
 [P324]: https://github.com/TD22057/insteon-mqtt/pull/324
+[P354]: https://github.com/TD22057/insteon-mqtt/pull/354
