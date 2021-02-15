@@ -6,11 +6,12 @@
 import functools
 import time
 from .BatterySensor import BatterySensor
-from ..CommandSeq import CommandSeq
 from .. import log
 from .. import handler
 from ..Signal import Signal
 from .. import message as Msg
+from .. import on_off
+from .. import util
 
 LOG = log.get_logger()
 
@@ -103,16 +104,31 @@ class HiddenDoor(BatterySensor):
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
         self.cmd_map.update({
-            'set_flags' : self.set_flags,
             'set_heart_beat_interval': self.set_heart_beat_interval,
             'set_low_battery_voltage': self.set_low_battery_voltage,
-            'get_battery_voltage' : self._get_ext_flags,
-            'get_flags' : self._get_ext_flags,
+            'get_battery_voltage' : self.get_flags,
             })
 
         # This allows for a short timer between sending automatic battery
         # requests.  Otherwise, a request may get queued multiple times
         self._battery_request_time = 0
+
+        # Define the flags handled by set_flags()
+        # Keys are the flag names in lower case.  The value should be the
+        # function to call.  The signature of the function is
+        # function(on_done=None, **kwargs).  Each function will receive all
+        # flags specified in the call and should just ignore those that are
+        # unrelated.  If the value None is used, no function will be called if
+        # that key is the only one passed.  Functions will only be called once
+        # even if the same function is used for multiple flags
+        self.set_flags_map = {"cleanup_report": self._set_cleanup_report,
+                              "led_disable": self._set_led_disable,
+                              "link_to_all": self._set_link_to_all,
+                              "two_groups": self._set_two_groups,
+                              "prog_lock": self._set_prog_lock,
+                              "repeat_closed": self._set_repeat_closed,
+                              "repeat_open": self._set_repeat_open,
+                              "stay_awake": self._set_stay_awake}
 
     #-----------------------------------------------------------------------
     @property
@@ -146,6 +162,7 @@ class HiddenDoor(BatterySensor):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+        voltage = util.input_byte({'voltage': voltage}, 'voltage')
         if voltage is not None:
             LOG.info("Hidden Door %s cmd: set low voltage= %s", self.label,
                      voltage)
@@ -154,6 +171,7 @@ class HiddenDoor(BatterySensor):
             LOG.warning("Hidden Door %s set_low_voltage cmd requires voltage \
                          key.", self.label)
             on_done(False, "Low voltage not specified.", None)
+            return
 
         # Extended message data - see hidden door dev guide page 10
         data = bytes([
@@ -183,6 +201,7 @@ class HiddenDoor(BatterySensor):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
+        interval = util.input_byte({'interval': interval}, 'interval')
         if interval is not None:
             LOG.info("Hidden Door %s cmd: set heart beat interval= %s",
                      self.label, interval)
@@ -191,6 +210,7 @@ class HiddenDoor(BatterySensor):
             LOG.warning("Hidden Door %s heart_beat_interval cmd requires \
                         interval key.", self.label)
             on_done(False, "Interval not specified.", None)
+            return
 
         # Extended message data - see hidden door dev guide page 10
         data = bytes([
@@ -216,94 +236,43 @@ class HiddenDoor(BatterySensor):
         This is called by the device when a group broadcast on group 02 is
         sent out by the sensor.
 
+        This is necessary because an ON command on this group actually means
+        that this device is off or closed.  Otherwise this is copied from
+        Base.handle_on_off()
+
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("Hidden Door Sensor %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-        else:
-            LOG.info("Hidden Door Sensor %s on_off broadcast cmd: %s",
-                     self.addr, msg.cmd1)
-            self._set_is_on(msg.cmd1 == Msg.CmdType.OFF)
-            self.update_linked_devices(msg)
+        # If we have a saved reason from a simulated scene command, use that.
+        # Otherwise the device button was pressed.
+        reason = self.broadcast_reason if self.broadcast_reason else \
+                 on_off.REASON_DEVICE
+        self.broadcast_reason = ""
+
+        # On/off command codes.
+        if on_off.Mode.is_valid(msg.cmd1):
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
+            LOG.info("Device %s broadcast grp: %s on: %s mode: %s", self.addr,
+                     msg.group, is_on, mode)
+
+            if is_on:
+                # Note is_on value is inverted in call to _set_state
+                level = self.derive_on_level(mode)
+                self._set_state(is_on=False, level=level, mode=mode,
+                                group=msg.group, reason=reason)
+            else:
+                level = self.derive_off_level(mode)
+                self._set_state(is_on=True, level=level, mode=mode,
+                                group=msg.group, reason=reason)
+
+        # This will find all the devices we're the controller of for this
+        # group and call their handle_group_cmd() methods to update their
+        # states since they will have seen the group broadcast and updated
+        # (without sending anything out).
+        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
-    def set_flags(self, on_done, **kwargs):
-        """Set internal device flags.
-
-        This command is used to change internal device flags and states.
-        These include turning on/off clean up reports, LED On/Off (off
-        conserves batteries), link to all groups, two group state reporting,
-        local programming lock, repeat of closed commands, repeat of open
-        commands, and stay awake (useful for development but uses battery)
-
-        valid kwargs:
-
-        - cleanup_report = 1/0: tell the device whether or not to send
-        cleanup reports
-
-        - led_disable = 1/0: disables small led on back of device to blink
-        on state change
-
-        - link_to_all = 1/0: links to 0xFF group (all available groups)
-
-        - two_groups = 1/0: Report open/close on group 1 or report open on
-        group 1 and closed on 2
-
-        - prog_lock = 1/0: prevents device from being programmed by local
-        button presses
-
-        - repeat_closed = 1/0: Repeat open command every 5 mins for 50 mins
-
-        - repeat_open = 1/0: Repeat open command every 5 mins for 50 mins
-
-        - stay_awake = 1/0: keeps device awake - but uses a lot of battery
-
-        Args:
-          kwargs: Key=value pairs of the flags to change.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Hidden Door %s cmd: set operation flags", self.label)
-
-        # Check the input flags to make sure only ones we can understand were
-        # passed in.
-        flags = set(["cleanup_report", "led_disable", "link_to_all",
-                     "two_groups", "prog_lock", "repeat_closed",
-                     "repeat_open", "stay_awake"])
-
-        unknown = set(kwargs.keys()).difference(flags)
-        if unknown:
-            raise Exception("Unknown Hidden Door flags input: %s.\n Valid "
-                            "flags are: %s" % (unknown, flags))
-
-        seq = CommandSeq(self, "Hidden Door Set Flags Success", on_done,
-                         name="SetFlags")
-
-        # All flags can be set individually set via direct commands
-        if "cleanup_report" in kwargs.keys():
-            seq.add(self._set_cleanup_report, kwargs["cleanup_report"])
-        if "link_to_all" in kwargs.keys():
-            seq.add(self._set_link_to_all, kwargs["link_to_all"])
-        if "led_disable" in kwargs.keys():
-            seq.add(self._set_led_disable, kwargs["led_disable"])
-        if "prog_lock" in kwargs.keys():
-            seq.add(self._set_prog_lock, kwargs["prog_lock"])
-        if "repeat_closed" in kwargs.keys():
-            seq.add(self._set_repeat_closed, kwargs["repeat_closed"])
-        if "repeat_open" in kwargs.keys():
-            seq.add(self._set_repeat_open, kwargs["repeat_open"])
-        if "stay_awake" in kwargs.keys():
-            seq.add(self._set_stay_awake, kwargs["stay_awake"])
-        if "two_groups" in kwargs.keys():
-            seq.add(self._set_two_groups, kwargs["two_groups"])
-
-        seq.run()
-
-    #-----------------------------------------------------------------------
-    def _get_ext_flags(self, on_done=None):
+    def get_flags(self, on_done=None):
         """Get the Insteon operational extended flags field from the device.
 
         For the hidden door device, these flags include cleanup_report,
@@ -328,7 +297,7 @@ class HiddenDoor(BatterySensor):
 
     #-----------------------------------------------------------------------
     def handle_ext_flags(self, msg, on_done):
-        """Handle replies to the _get_ext_flags command.
+        """Handle replies to the get_flags command.
 
         Data 3 contains the operating flags
         Data 4 contains the battery voltage
@@ -454,9 +423,18 @@ class HiddenDoor(BatterySensor):
         on_done(True, "Heart Beat Interval", None)
 
     #-----------------------------------------------------------------------
-    def _set_cleanup_report(self, cleanup_report, on_done):
+    def _set_cleanup_report(self, on_done=None, **kwargs):
         """Set clean up report on
+
+        - cleanup_report = 1/0: tell the device whether or not to send
+        cleanup reports
         """
+        # Check for valid input
+        cleanup_report = util.input_bool(kwargs, 'cleanup_report')
+        if cleanup_report is None:
+            on_done(False, 'Invalid cleanup_report flag.', None)
+            return
+
         # The dev guide says 0x17 for cleanup report on and 0x16 for off
         cmd = 0x17 if cleanup_report else 0x16
         msg = Msg.OutExtended.direct(self.addr, 0x20, cmd,
@@ -467,11 +445,20 @@ class HiddenDoor(BatterySensor):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def _set_led_disable(self, led_disable, on_done):
+    def _set_led_disable(self, on_done=None, **kwargs):
         """Set LED Disable - LED near back of device will light momentarily
            when changing state
 
+        - led_disable = 1/0: disables small led on back of device to blink
+        on state change
+
         """
+        # Check for valid input
+        led_disable = util.input_bool(kwargs, 'led_disable')
+        if led_disable is None:
+            on_done(False, 'Invalid led_disable flag.', None)
+            return
+
         # The dev guide says 0x02 for LED disable and 0x03 for enable
         cmd = 0x02 if led_disable else 0x03
         msg = Msg.OutExtended.direct(self.addr, 0x20, cmd,
@@ -482,11 +469,19 @@ class HiddenDoor(BatterySensor):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def _set_link_to_all(self, link_to_all, on_done):
+    def _set_link_to_all(self, on_done=None, **kwargs):
         """Set Link to all - This creates a link to the 0xFF group, which is
            is the same as link to your modem on groups
            0x01, 0x02, 0x03, 0x04
+
+        - link_to_all = 1/0: links to 0xFF group (all available groups)
         """
+        # Check for valid input
+        link_to_all = util.input_bool(kwargs, 'link_to_all')
+        if link_to_all is None:
+            on_done(False, 'Invalid link_to_all flag.', None)
+            return
+
         # The dev guide says 0x06 for link to all and 0x07 for link to one
         cmd = 0x06 if link_to_all else 0x07
         msg = Msg.OutExtended.direct(self.addr, 0x20, cmd,
@@ -497,9 +492,18 @@ class HiddenDoor(BatterySensor):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def _set_prog_lock(self, prog_lock, on_done):
+    def _set_prog_lock(self, on_done=None, **kwargs):
         """Set local programming lock
+
+        - prog_lock = 1/0: prevents device from being programmed by local
+        button presses
         """
+        # Check for valid input
+        prog_lock = util.input_bool(kwargs, 'prog_lock')
+        if prog_lock is None:
+            on_done(False, 'Invalid prog_lock flag.', None)
+            return
+
         # The dev guide says 0x00 for locl on and 0x01 for lock off
         cmd = 0x00 if prog_lock else 0x01
         msg = Msg.OutExtended.direct(self.addr, 0x20, cmd,
@@ -510,10 +514,18 @@ class HiddenDoor(BatterySensor):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def _set_repeat_closed(self, repeat_closed, on_done):
+    def _set_repeat_closed(self, on_done=None, **kwargs):
         """Set Repeat Closed - This sets the device to send repeated closed
            messages every 5 mins for 50 mins
+
+        - repeat_closed = 1/0: Repeat open command every 5 mins for 50 mins
         """
+        # Check for valid input
+        repeat_closed = util.input_bool(kwargs, 'repeat_closed')
+        if repeat_closed is None:
+            on_done(False, 'Invalid repeat_closed flag.', None)
+            return
+
         # The dev guide says 0x08 for repeat closed and 0x09 for don't
         # repeat closed
         cmd = 0x08 if repeat_closed else 0x09
@@ -525,10 +537,18 @@ class HiddenDoor(BatterySensor):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def _set_repeat_open(self, repeat_open, on_done):
+    def _set_repeat_open(self, on_done=None, **kwargs):
         """Set Repeat Open - This sets the device to send repeated open
            messages every 5 mins for 50 mins
+
+        - repeat_open = 1/0: Repeat open command every 5 mins for 50 mins
         """
+        # Check for valid input
+        repeat_open = util.input_bool(kwargs, 'repeat_open')
+        if repeat_open is None:
+            on_done(False, 'Invalid repeat_open flag.', None)
+            return
+
         # The dev guide says 0x0A for repeat open and 0x0B for don't
         # repeat open
         cmd = 0x0a if repeat_open else 0x0b
@@ -540,9 +560,17 @@ class HiddenDoor(BatterySensor):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def _set_stay_awake(self, stay_awake, on_done):
+    def _set_stay_awake(self, on_done=None, **kwargs):
         """Set Stay Awake - Do not go to sleep
+
+        - stay_awake = 1/0: keeps device awake - but uses a lot of battery
         """
+        # Check for valid input
+        stay_awake = util.input_bool(kwargs, 'stay_awake')
+        if stay_awake is None:
+            on_done(False, 'Invalid stay_awake flag.', None)
+            return
+
         # The dev guide says 0x0A for repeat open and 0x0B for don't
         # repeat open
         cmd = 0x18 if stay_awake else 0x19
@@ -554,9 +582,18 @@ class HiddenDoor(BatterySensor):
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def _set_two_groups(self, two_groups, on_done):
+    def _set_two_groups(self, on_done=None, **kwargs):
         """Set Two Groups
+
+        - two_groups = 1/0: Report open/close on group 1 or report open on
+        group 1 and closed on 2
         """
+        # Check for valid input
+        two_groups = util.input_bool(kwargs, 'two_groups')
+        if two_groups is None:
+            on_done(False, 'Invalid two_groups flag.', None)
+            return
+
         # The dev guide says 0x04 sets two groups and 0x05 sets one group
         cmd = 0x04 if two_groups else 0x05
         msg = Msg.OutExtended.direct(self.addr, 0x20, cmd,
@@ -582,7 +619,7 @@ class HiddenDoor(BatterySensor):
             self._battery_request_time = time.time()
             LOG.info("Hidden Door %s: Auto requesting battery voltage",
                      self.label)
-            self._get_ext_flags(None)
+            self.get_flags()
 
     #-----------------------------------------------------------------------
     def awake(self, on_done):
