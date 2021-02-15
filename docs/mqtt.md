@@ -30,6 +30,7 @@ be identified by it's address or the string "modem".
    - [Battery Sensors](#battery-sensors)
    - [Dimmers](#dimmers)
    - [FanLinc](#fanlinc)
+   - [Hidden Door Sensors](#hidden-door-sensors)
    - [IOLinc](#iolinc)
    - [KeypadLinc](#keypadlinc)
    - [Leak Sensors](#leak-sensors)
@@ -1057,6 +1058,118 @@ A sample motion sensor topic and payload configuration is:
      dawn_dusk_topic: 'insteon/{{address}}/dawn'
      dawn_dusk_payload: '{{is_dawn_str.upper()}}'
    ```
+
+---
+
+## Hidden Door Sensors
+
+Hidden Door sensors do not accept any input commands in their normal "off"
+state.  If you press and hold the link button for about 3 seconds it will
+beep and its small LED will blink.  It will be awake for about the next 4
+minutes where you can download the db and or configure the units many
+options.  All configuration option offered by this device are available for
+configuration here.  The open/closed (one group) and low battery are
+inherited from the battery sensor inputs.  The hidden door sensor adds
+another possible state change the 2 groups configuration where it will report
+open as ON on group 0x01 and closed as ON on group 0x02.  The raw Insteon
+reported battery voltage level is reported over MQTT.
+
+Note: The Insteon Dev notes provide 4 points for correlation of this raw
+battery level to actual battery voltages.
+
+   61=~1.75V
+   54=~1.6V
+   51=~1.5V
+   40=~1.25V (default low battery mark)
+
+The following variable is available for templating:
+
+   'batt_volt' is the raw Insteon voltage level
+
+A sample hidden door sensor topic and payload configuration is:
+
+   ```
+   hidden_door:
+     battery_voltage_topic: 'insteon/{{address}}/battery_voltage'
+     battery_voltage_payload: '{"voltage" : {{batt_volt}}}'
+   ```
+
+To set configuration option on the device, first press and hold the device link
+button until it beeps and the LED starts flashing.  Next tell insteon-mqtt the
+device is awake with:
+
+   ```
+   { "cmd" : "awake" }
+   ```
+
+This will tell insteon-mqtt to send commands right away rather than queuing
+until the deice is awake.
+
+View Current configuration in log:
+
+   ```
+   { "cmd" : "get_flags" }
+   ```
+
+This configuration can be changed with the following command:
+
+   ```
+   { "cmd" : "set_flags", "key" : value }
+
+   ```
+
+An example to turn on two groups:
+
+   ```
+   { "cmd" : "set_flags", "two_groups" : 1 }'
+   ```
+
+Configuration is available for the following options:
+
+The following key/value pairs are available:
+
+   - cleanup_report = 1/0: tell the device whether or not to send cleanup
+   reports
+
+   - led_disable = 1/0: disables small led on back of device to blink on
+   state change
+
+   - link_to_all = 1/0: links to 0xFF group (all available groups)
+
+   - two_groups = 1/0: Report open/close on group 1 or report open on group 1
+   and closed on 2
+
+   - prog_lock = 1/0: prevents device from being programmed by local button
+   presses
+
+   - repeat_closed = 1/0: Repeat open command every 5 mins for 50 mins
+
+   - repeat_open = 1/0: Repeat open command every 5 mins for 50 mins
+
+   - stay_awake = 1/0: keeps device awake - but uses a lot of battery
+
+Beyond these flags there are two additional settings:
+
+   - Low Battery threshold.  This is the raw Insteon voltage level that where
+   the device will trigger a group 0x03 low battery warning. Example to set to
+   64 below:
+   
+   ```
+   { "cmd" : "set_low_battery_voltage", "voltage" : 64 }
+   ```
+
+   - Heart Beat Interval.  The sensor will send a heartbeat to prove that it is
+   functional at a configurable interval.  The more frequent it wakes up to
+   this group 0x04 message the faster the battery will deplete.
+   The time between heartbeats sent is 5 minutes x this setting.  So setting
+   this value to 24 would be 24 x 5 mins = 120 mins.  this can be set from
+   0 -> 255.  Setting to 0 = 24 hours or 1440 minutes.  Example: to set to 10
+   minutes below:
+
+   ```
+   { "cmd" : "set_heart_beat_interval", "interval" : 2 }
+   ```
+
 
 ---
 
