@@ -79,7 +79,7 @@ class HiddenDoor(BatterySensor):
     # This defines what is the minimum time between battery status requests
     # for devices that support it.  Value is in seconds
     # Currently set at 3 hours
-    BATTERY_TIME = (60 * 60) *3
+    BATTERY_TIME = (60 * 60) * 3
 
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
@@ -358,17 +358,16 @@ class HiddenDoor(BatterySensor):
             LOG.ui("\tSend Open on Group 1 ON and Closed on Group 2 ON")
         else:
             LOG.ui("\tSend both Open and Closed on Group 1 [On=Open and "
-                     "Off=Closed]")
+                   "Off=Closed]")
         # Bit 2
         if rawflags & 0b00000100 == 4:
-            LOG.ui("\tSend Repeated Open Commands [Every 5 mins for 50 "
-                     "mins]")
+            LOG.ui("\tSend Repeated Open Commands [Every 5 mins for 50 mins]")
         else:
             LOG.ui("\tDon't Send Repeated Open Commands")
         # Bit 3
         if rawflags & 0b00001000 == 8:
             LOG.ui("\tSend Repeated Closed Commands [Every 5 mins for 50 "
-                     "mins]")
+                   "mins]")
         else:
             LOG.ui("\tDon't Send Repeated Closed Commands")
         # Bit 4
@@ -400,7 +399,7 @@ class HiddenDoor(BatterySensor):
         else:
             hb_interval_minutes = 24 * 60 # convert 24 hours to minutes
         LOG.ui("\tHeart beat interval raw level is %s or %s minutes ",
-                 hb_interval, hb_interval_minutes)
+               hb_interval, hb_interval_minutes)
 
         # D7 Low Battery Level
         lb_level = msg.data[6]
@@ -409,7 +408,7 @@ class HiddenDoor(BatterySensor):
         # D4 Current Battery Level
         batt_volt = msg.data[3]
         LOG.ui("Hidden door sensor %s Battery voltage is %s", self.addr,
-                 batt_volt)
+               batt_volt)
 
         self.battery_voltage_time = time.time()
 
