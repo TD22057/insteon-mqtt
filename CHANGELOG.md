@@ -10,6 +10,8 @@ to add new devices and features. This is the reason for the jump to 0.8.0.
 
 ### Additions
 
+- Added support for hidden door sensors.  (thanks @tommycw1) ([PR 324][P324])
+
 ### Fixes
 
 - Fixed an error where setting the MQTT id would prevent subscribing to
@@ -609,3 +611,4 @@ will add new features.
 [P326]: https://github.com/TD22057/insteon-mqtt/pull/326
 [P352]: https://github.com/TD22057/insteon-mqtt/pull/352
 [P344]: https://github.com/TD22057/insteon-mqtt/pull/344
+[P324]: https://github.com/TD22057/insteon-mqtt/pull/324
