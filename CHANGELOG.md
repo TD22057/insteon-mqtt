@@ -15,6 +15,8 @@ to add new devices and features. This is the reason for the jump to 0.8.0.
 - Fixed an error where setting the MQTT id would prevent subscribing to
   MQTT topics. (thanks @kpfleming)([PR 352][P352])
 
+- Updates hassio config to comply with changes in API keys. ([PR 344][P344])
+
 ## [0.7.6]
 
 A few new features and some significant bug fixes.  A significant refactor of
@@ -606,3 +608,4 @@ will add new features.
 [P213]: https://github.com/TD22057/insteon-mqtt/pull/213
 [P326]: https://github.com/TD22057/insteon-mqtt/pull/326
 [P352]: https://github.com/TD22057/insteon-mqtt/pull/352
+[P344]: https://github.com/TD22057/insteon-mqtt/pull/344
