@@ -94,7 +94,7 @@ class Test_Base_Config():
             addr = IM.Address(0x01, 0x02, 0x03)
             msg = Msg.InpStandard(addr, group, flags, Msg.CmdType.OFF, 0x00)
             test_device.handle_refresh(msg, group=2)
-            mocked.assert_called_once_with(group=2, level=0x00,
+            mocked.assert_called_once_with(group=2, is_on=False,
                                            reason='refresh')
 
     def test_handle_refresh_wet(self, test_device):
@@ -104,5 +104,5 @@ class Test_Base_Config():
             addr = IM.Address(0x01, 0x02, 0x03)
             msg = Msg.InpStandard(addr, group, flags, Msg.CmdType.OFF, 0x11)
             test_device.handle_refresh(msg, group=2)
-            mocked.assert_called_once_with(group=2, level=0x11,
+            mocked.assert_called_once_with(group=2, is_on=True,
                                            reason='refresh')

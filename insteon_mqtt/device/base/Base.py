@@ -1088,7 +1088,7 @@ class Base:
         LOG.ui("Device %s refresh cmd2 %s", self.addr, msg.cmd2)
 
         # Level works for most things can add a derive state if needed.
-        self._set_state(level=msg.cmd2, group=group,
+        self._set_state(is_on=(msg.cmd2 != 0x00), group=group,
                         reason=on_off.REASON_REFRESH)
 
     #-----------------------------------------------------------------------
