@@ -43,8 +43,10 @@ class Test_Base_Config():
             assert mocked.call_count == 4
 
     @pytest.mark.parametrize("cmd1,expected", [
-        (Msg.CmdType.ON, True),
-        (Msg.CmdType.OFF, False),
+        (Msg.CmdType.ON, {"is_on":True, "level":None, "group":1, "reason":'device',
+         "mode":IM.on_off.Mode.NORMAL}),
+        (Msg.CmdType.OFF, {"is_on":False, "level":None, "group":1, "reason":'device',
+         "mode":IM.on_off.Mode.NORMAL}),
     ])
     def test_broadcast_1(self, test_device, cmd1, expected):
         with mock.patch.object(Device.BatterySensor, '_set_state') as mocked:
@@ -54,7 +56,7 @@ class Test_Base_Config():
             msg = Msg.InpStandard(addr, group, flags, cmd1, 0x00)
             test_device.handle_broadcast(msg)
             if expected is not None:
-                mocked.assert_called_once_with(is_on=expected)
+                mocked.assert_called_once_with(**expected)
             else:
                 mocked.assert_not_called()
 

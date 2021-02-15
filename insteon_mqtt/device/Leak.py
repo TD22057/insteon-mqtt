@@ -5,8 +5,6 @@
 #===========================================================================
 from .BatterySensor import BatterySensor
 from .. import log
-from ..Signal import Signal
-from .. import message as Msg
 
 LOG = log.get_logger()
 
@@ -28,8 +26,8 @@ class Leak(BatterySensor):
     only respond to the sensor when it sends out a message.
 
     The device will broadcast messages on the following groups:
-      group 01 = wet condition
-      group 02 = dry condition
+      group 01 = dry condition
+      group 02 = wet condition
       group 04 = heartbeat (0x11)
 
     State changes are communicated by emitting signals.  Other classes can
@@ -43,6 +41,8 @@ class Leak(BatterySensor):
       heartbeat signal.
     """
     type_name = "leak_sensor"
+    GROUP_DRY = 1
+    GROUP_WET = 2
 
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
@@ -57,15 +57,12 @@ class Leak(BatterySensor):
         """
         super().__init__(protocol, modem, address, name)
 
-        # Wet/dry signal.  API: func( Device, bool is_wet )
-        self.signal_wet = Signal()
-
         # Maps Insteon groups to message type for this sensor.
         self.group_map = {
             # Dry event on group 1.
-            0x01 : self.handle_dry,
+            0x01 : self.handle_on_off,
             # Wet event on group 2.
-            0x02 : self.handle_wet,
+            0x02 : self.handle_on_off,
             # Heartbeat is on group 4
             0x04 : self.handle_heartbeat,
             }
@@ -73,32 +70,30 @@ class Leak(BatterySensor):
         self._is_wet = False
 
     #-----------------------------------------------------------------------
-    def handle_dry(self, msg):
-        """Handle a dry message.
+    def _cache_state(self, group, is_on, level, reason):
+        """Cache the State of the Device
 
-        This is called by the device when a leak is cleared and the device is
-        dry.
-
-        Args:
-          msg (InpStandard):  Broadcast message from the device.
-        """
-        LOG.info("LeakSensor %s received is-dry message", self.label)
-        self._set_is_wet(False)
-        self.update_linked_devices(msg)
-
-    #-----------------------------------------------------------------------
-    def handle_wet(self, msg):
-        """Handle a wet message.
-
-        This is called by the device when a leak is detected and the device
-        is wet.
+        Used to help with the unique device functions.
 
         Args:
-          msg (InpStandard):  Broadcast message from the device.
+          group (int): The group which this applies
+          is_on (bool): Whether the device is on.
+          level (int): The new device level in the range [0,255].  0 is off.
+          reason (str): Reason string to pass around.
         """
-        LOG.info("LeakSensor %s received is-wet message", self.label)
-        self._set_is_wet(True)
-        self.update_linked_devices(msg)
+        # Handle_Refresh sends level and not is_on
+        if is_on is None:
+            if level is not None:
+                is_on = level > 0
+            else:
+                return  # No on data?
+        if not is_on:
+            self._is_wet = False
+        else:
+            if group == self.GROUP_WET:
+                self._is_wet = True
+            elif group == self.GROUP_DRY:
+                self._is_wet = False
 
     #-----------------------------------------------------------------------
     def handle_heartbeat(self, msg):
@@ -117,46 +112,33 @@ class Leak(BatterySensor):
         # Update the wet/dry state using the heartbeat if needed.
         is_wet = msg.cmd1 == 0x13
         if self._is_wet != is_wet:
-            self._set_is_wet(is_wet)
+            self._set_state(group=self.GROUP_WET, is_on=is_wet)
 
         # Send True for any heart beat message
         self.signal_heartbeat.emit(self, True)
         self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
-        """Callback for handling refresh() responses.
+    def refresh(self, force=False, group=None, on_done=None):
+        """Refresh the current device state and database if needed.
 
-        This is called when we get a response to the refresh() command.  The
-        refresh command reply will contain the current device state in cmd2
-        and this updates the device with that value.  It is called by
-        handler.DeviceRefresh when we can an ACK for the refresh command.
+        This sends a ping to the device.  The reply has the current device
+        state (on/off, level, etc) and the current db delta value which is
+        checked against the current db value.  If the current db is out of
+        date, it will trigger a download of the database.
 
-        NOTE: refresh() will not work if the device is asleep.
-
-        Args:
-          msg (message.InpStandard):  The refresh message reply.  The current
-              device state is in the msg.cmd2 field.
-        """
-        LOG.ui("LeakSensor %s refresh on = %s", self.addr, msg.cmd2 != 0x00)
-
-        # Current wet/dry level is stored in cmd2.  Non-zero == wet.
-        self._set_is_wet(msg.cmd2 != 0x00)
-
-    #-----------------------------------------------------------------------
-    def _set_is_wet(self, is_wet):
-        """Update the device wet/dry state.
-
-        This will change the internal state and emit the state changed
-        signals.  It is called by whenever we're informed that the device has
-        changed state.
+        This will send out an updated signal for the current device status
+        whenever possible (like dimmer levels).
 
         Args:
-          is_wet (bool):  True if Leak is detected, False if it isn't.
+          force (bool):  If true, will force a refresh of the device database
+                even if the delta value matches as well as a re-query of the
+                device model information even if it is already known.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("Setting device %s on:%s", self.label, is_wet)
-        self._is_wet = is_wet
-
-        self.signal_wet.emit(self, self._is_wet)
+        # Needed to pass the GROUP_WET data to base refresh()
+        group = group if group is not None else self.GROUP_WET
+        super().refresh(force=force, group=group, on_done=on_done)
 
     #-----------------------------------------------------------------------

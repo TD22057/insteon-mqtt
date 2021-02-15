@@ -19,6 +19,7 @@ from .EZIO4O import EZIO4O
 from .FanLinc import FanLinc
 from .IOLinc import IOLinc
 from .KeypadLinc import KeypadLinc
+from .KeypadLincDimmer import KeypadLincDimmer
 from .Leak import Leak
 from .Modem import Modem as MqttModem
 from .Motion import Motion
@@ -37,6 +38,7 @@ devices = {
     device.FanLinc : FanLinc,
     device.IOLinc : IOLinc,
     device.KeypadLinc : KeypadLinc,
+    device.KeypadLincDimmer : KeypadLincDimmer,
     device.Leak : Leak,
     device.Motion : Motion,
     device.Outlet : Outlet,

@@ -4,14 +4,12 @@
 #
 #===========================================================================
 import functools
-from .Base import Base
-from . import functions
+from .base import ResponderBase
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg
 from .. import on_off
-from ..Signal import Signal
 from .. import util
 
 LOG = log.get_logger()
@@ -58,7 +56,7 @@ EZIO4xx_flags = {
 }
 
 
-class EZIO4O(functions.SetAndState, Base):
+class EZIO4O(ResponderBase):
     """Smartenit EZIO4O - 4 relay output device.
 
     This class can be used to model the EZIO4O device which has 4 outputs.
@@ -67,12 +65,7 @@ class EZIO4O(functions.SetAndState, Base):
 
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
-    the device (like sending MQTT messages).  Supported signals are:
-
-    - signal_state( Device, int group, bool is_on, on_off.Mode mode, str
-                     reason ): Sent whenever an output is turned on or off.
-                     Group will be 1 to 4 matching the corresponding device
-                     output.
+    the device (like sending MQTT messages).
     """
 
     def __init__(self, protocol, modem, address, name=None):
@@ -89,19 +82,6 @@ class EZIO4O(functions.SetAndState, Base):
         super().__init__(protocol, modem, address, name)
 
         self._is_on = [False, False, False, False]  # output state
-
-        # Support on/off style signals.
-        # API: func(Device, int group, bool is_on, on_off.Mode mode,
-        #           str reason)
-        self.signal_state = Signal()
-
-        # Remote (mqtt) commands mapped to methods calls.  Add to the
-        # base class defined commands.
-        self.cmd_map.update(
-            {
-                "set_flags": self.set_flags,
-            }
-        )
 
         # EZIOxx configuration port settings. See set_flags().
         self._flag_value = None
@@ -120,8 +100,12 @@ class EZIO4O(functions.SetAndState, Base):
         # self.group_map.update({})
         self.responder_groups = [1, 2, 3, 4]
 
+        # Define the flags handled by set_flags()
+        for flag in EZIO4xx_flags:
+            self.set_flags_map[flag] = self._change_flags
+
     #-----------------------------------------------------------------------
-    def refresh(self, force=False, on_done=None):
+    def refresh(self, force=False, group=None, on_done=None):
         """Refresh the current device state and database if needed.
 
         This sends a ping to the device.  The reply has the current device
@@ -132,10 +116,15 @@ class EZIO4O(functions.SetAndState, Base):
         This will send out an updated signal for the current device status
         whenever possible (like dimmer levels).
 
+        EZIO4O uses a completely different refresh command than standard.
+
         Args:
           force (bool):  If true, will force a refresh of the device database
                 even if the delta value matches as well as a re-query of the
                 device model information even if it is already known.
+          group (int): The group being refreshed, it is passed to
+                handle_refresh() so that the state signal is correct. Should
+                generally be None.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -329,15 +318,8 @@ class EZIO4O(functions.SetAndState, Base):
         Returns:
           list[3]: List of Data1-3 values
         """
-        data_1 = None
-        if "data_1" in data:
-            data_1 = data["data_1"]
-        data_2 = None
-        if "data_2" in data:
-            data_2 = data["data_2"]
-        data_3 = None
-        if "data_3" in data:
-            data_3 = data["data_3"]
+        data_1, data_2, data_3 = super().link_data_from_pretty(is_controller,
+                                                               data)
         if "group" in data:
             if is_controller:
                 data_3 = data["group"]
@@ -346,7 +328,7 @@ class EZIO4O(functions.SetAndState, Base):
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------
-    def set_flags(self, on_done, **kwargs):
+    def _change_flags(self, on_done, **kwargs):
         """Set internal device flags.
 
         This command is used to change EZIOxx Configuration Port settings.
@@ -381,8 +363,6 @@ class EZIO4O(functions.SetAndState, Base):
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("EZIO4O %s cmd: set flags", self.label)
-
         # TODO initialize flags on first run
         # Initialise flag value by reading the device Configuration Port
         # settings
@@ -393,20 +373,9 @@ class EZIO4O(functions.SetAndState, Base):
             )
             return
 
-        # Check the input flags to make sure only ones we can understand were
-        # passed in.
-        valid_flags = EZIO4xx_flags.keys()
-        flags_to_set = kwargs.keys()
-
-        unknown = set(flags_to_set).difference(valid_flags)
-        if unknown:
-            LOG.error(
-                "EZIO4O Unknown flags input: %s.\n Valid "
-                "flags are: %s", unknown, valid_flags
-            )
-
         # Construct the flag register to write
         new_flag_value = self._flag_value
+        flags_to_set = kwargs.keys()
 
         for field in list(flags_to_set):
             if True in EZIO4xx_flags[field]["options"]:
@@ -512,7 +481,7 @@ class EZIO4O(functions.SetAndState, Base):
             on_done(False, "EZIO4O %s flags update failed" % self.label, None)
 
     #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
+    def handle_refresh(self, msg, group=None):
         """Callback for handling refresh() responses.
 
         This is called when we get a response to the refresh() command.  The
@@ -584,44 +553,19 @@ class EZIO4O(functions.SetAndState, Base):
         return (is_on, level, mode, group)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, msg):
-        """Respond to a group command for this device.
+    def group_cmd_local_group(self, entry):
+        """Get the Local Group Affected by this Group Command
 
-        This is called when this device is a responder to a scene.  The
-        device that received the broadcast message (handle_broadcast) will
-        call this method for every device that is linked to it.  The device
-        should look up the responder entry for the group in it's all link
-        database and update it's state accordingly.
+        For most devices this is group 1, but for multigroup devices such
+        as the KPL, they may need to decode the local group from the
+        entry data.
 
         Args:
-          addr (Address):  The device that sent the message.  This is the
-               controller in the scene.
-          msg (InpStandard):  Broadcast message from the device.  Use
-              msg.group to find the group and msg.cmd1 for the command.
+          entry (DeviceEntry):  The local db entry for this group command.
+        Returns:
+          group (int):  The local group affected
         """
-
-        # Make sure we're really a responder to this message.  This shouldn't
-        # ever occur.
-        entry = self.db.find(addr, msg.group, is_controller=False)
-        if not entry:
-            LOG.error(
-                "EZIO4O %s has no group %s entry from %s",
-                self.label, msg.group, addr
-            )
-            return
-
-        # The local button being modified is stored in the db entry.
-        localGroup = entry.data[2] + 1
-
-        # Handle on/off commands codes.
-        if on_off.Mode.is_valid(msg.cmd1):
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
-            self._set_state(group=localGroup, is_on=is_on, mode=mode,
-                            reason=on_off.REASON_SCENE)
-
-        else:
-            LOG.warning("EZIO4O %s unknown group cmd %#04x", self.label,
-                        msg.cmd1)
+        return entry.data[2] + 1
 
     #-----------------------------------------------------------------------
     def _cache_state(self, group, is_on, level, reason):

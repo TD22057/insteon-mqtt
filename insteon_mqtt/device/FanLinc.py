@@ -6,7 +6,6 @@
 import enum
 import functools
 from .Dimmer import Dimmer
-from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg
@@ -83,44 +82,28 @@ class FanLinc(Dimmer):
         self.group_map = {}
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False, on_done=None):
-        """Refresh the current device state and database if needed.
+    def addRefreshData(self, seq, force=False):
+        """Add commands to refresh any internal data required.
 
-        This sends a ping to the device.  The reply has the current device
-        state (on/off, level, etc) and the current db delta value which is
-        checked against the current db value.  If the current db is out of
-        date, it will trigger a download of the database.
-
-        This will send out an updated signal for the current device status
-        whenever possible.
+        Send a 0x19 0x03 command to get the fan speed level.  This sends a
+        refresh ping which will respond w/ the fan level and current
+        database delta field.  Pass skip_db here - we'll let the
+        refresh handler take care of getting the database updated.
+        Otherwise this handler and the one created in the Base class refresh
+        would download the database twice.
 
         Args:
+          seq (CommandSeq): The command sequence to add the command to.
           force (bool):  If true, will force a refresh of the device database
                 even if the delta value matches as well as a re-query of the
                 device model information even if it is already known.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("Device %s cmd: fan status refresh", self.addr)
-
-        seq = CommandSeq(self, "Refresh complete", on_done, name="DevRefresh")
-
-        # Send a 0x19 0x03 command to get the fan speed level.  This sends a
-        # refresh ping which will respond w/ the fan level and current
-        # database delta field.  Pass skip_db here - we'll let the dimmer
-        # refresh handler above take care of getting the database updated.
-        # Otherwise this handler and the one created in the dimmer refresh
-        # would download the database twice.
         msg = Msg.OutStandard.direct(self.addr, 0x19, 0x03)
         msg_handler = handler.DeviceRefresh(self, self.handle_refresh_fan,
                                             force=False, num_retry=3,
                                             skip_db=True)
         seq.add_msg(msg, msg_handler)
-
-        # If we get the FAN state correctly, then have the dimmer also get
-        # it's state and update the database if necessary.
-        seq.add(Dimmer.refresh, self, force)
-        seq.run()
+        super().addRefreshData(seq, force=force)
 
     #-----------------------------------------------------------------------
     def fan_on(self, speed=None, reason="", on_done=None):
@@ -391,8 +374,8 @@ class FanLinc(Dimmer):
                    {'group': data[2]}]
             if data[2] <= 0x01:
                 ramp = 0x1f  # default
-                if data[1] in Dimmer.ramp_pretty:
-                    ramp = Dimmer.ramp_pretty[data[1]]
+                if data[1] in self.ramp_pretty:
+                    ramp = self.ramp_pretty[data[1]]
                 ret = [{'on_level': int((data[0] / .255) + .5) / 10},
                        {'ramp_rate': ramp},
                        {'group': data[2]}]
@@ -413,21 +396,14 @@ class FanLinc(Dimmer):
         Returns:
           list[3]: List of Data1-3 values
         """
-        data_1 = None
-        if 'data_1' in data:
-            data_1 = data['data_1']
-        data_2 = None
-        if 'data_2' in data:
-            data_2 = data['data_2']
-        data_3 = None
-        if 'data_3' in data:
-            data_3 = data['data_3']
+        data_1, data_2, data_3 = super().link_data_from_pretty(is_controller,
+                                                               data)
         if not is_controller:
             if 'group' in data:
                 data_3 = data['group']
             if 'ramp_rate' in data and (data_3 is None or data_3 <= 0x01):
                 data_2 = 0x1f
-                for ramp_key, ramp_value in Dimmer.ramp_pretty.items():
+                for ramp_key, ramp_value in self.ramp_pretty.items():
                     if data['ramp_rate'] >= ramp_value:
                         data_2 = ramp_key
                         break

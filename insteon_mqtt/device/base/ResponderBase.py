@@ -1,25 +1,30 @@
 #===========================================================================
 #
-# Provides BOTH the Set and State Functions.
+# Provides the Base Functions for Devices that are Responders
 #
 #===========================================================================
 import functools
+from .Base import Base
 from ... import message as Msg
 from ... import handler
 from ... import log
 from ... import on_off
-from .State import State
 
 
 LOG = log.get_logger()
 
 
-class SetAndState(State):
-    """Set and State Abstract Classes
+class ResponderBase(Base):
+    """Responder Functions Abstract Classes
 
-    This is an abstract class that provides support for the set and state
-    functions.  A device SHOULD NOT also inherit from the State function if
-    it is using this.  Some devices BatterSensor may only inherit from State.
+    This is an abstract class that provides support for the the functions used
+    by responder devices. Responders are devices that can be controlled by
+    the modem or some other device. BatterySensors are generally not
+    responders since they are not awake to hear messages, but generally
+    everything else is.
+
+    This class is meant to be extended by other classes including DimmerBase
+    so it should generally be inheritted last.
     """
     def __init__(self, protocol, modem, address, name=None):
         """Constructor
@@ -249,3 +254,143 @@ class SetAndState(State):
         is_on, mode = on_off.Mode.decode(cmd1)
         level = on_off.Mode.decode_level(cmd1, cmd2)
         return (is_on, level, mode, None)
+
+    #-----------------------------------------------------------------------
+    def handle_group_cmd(self, addr, msg):
+        """Respond to a group command for this device.
+
+        This is called when this device is a responder to a scene.  The
+        device that received the broadcast message (handle_broadcast) will
+        call this method for every device that is linked to it.  The device
+        should look up the responder entry for the group in it's all link
+        database and update it's state accordingly.
+
+        Args:
+          addr (Address):  The device that sent the message.  This is the
+               controller in the scene.
+          msg (InpStandard):  Broadcast message from the device.  Use
+              msg.group to find the group and msg.cmd1 for the command.
+        """
+        # Make sure we're really a responder to this message.  This shouldn't
+        # ever occur.
+        entry = self.db.find(addr, msg.group, is_controller=False)
+        if not entry:
+            LOG.error("Device %s has no group %s entry from %s", self.label,
+                      msg.group, addr)
+            return
+
+        reason = on_off.REASON_SCENE
+        localGroup = self.group_cmd_local_group(entry)
+
+        # Handle on/off codes
+        if on_off.Mode.is_valid(msg.cmd1):
+            LOG.info("Device %s processing on/off group %s cmd from %s",
+                     self.label, msg.group, addr)
+            is_on, mode = on_off.Mode.decode(msg.cmd1)
+            level = self.group_cmd_on_level(entry, is_on)
+            self._set_state(group=localGroup, is_on=is_on, level=level,
+                            mode=mode, reason=reason)
+
+        elif msg.cmd1 in (0x15, 0x16):
+            LOG.info("Device %s processing increment group %s cmd from %s",
+                     self.label, msg.group, addr)
+            self.group_cmd_handle_increment(msg.cmd1, localGroup, reason)
+
+        # Starting/stopping manual increment (cmd2 0x00=up, 0x01=down)
+        elif on_off.Manual.is_valid(msg.cmd1):
+            LOG.info("Device %s processing manual group %s cmd from %s",
+                     self.label, msg.group, addr)
+            manual = on_off.Manual.decode(msg.cmd1, msg.cmd2)
+            self.group_cmd_handle_manual(manual, localGroup, reason)
+
+        else:
+            LOG.warning("Device %s unknown cmd %#04x", self.addr,
+                        msg.cmd1)
+
+    #-----------------------------------------------------------------------
+    def handle_refresh(self, msg, group=None):
+        """Callback for handling refresh() responses.
+
+        This is called when we get a response to the refresh() command.  The
+        refresh command reply will contain the current device state in cmd2
+        and this updates the device with that value.  It is called by
+        handler.DeviceRefresh when we can an ACK for the refresh command.
+
+        Overrides Base.handle_refresh in order to add the level key to
+        _set_state().
+
+        Args:
+          msg (message.InpStandard): The refresh message reply.  The current
+              device state is in the msg.cmd2 field.
+        """
+        LOG.ui("Device %s refresh cmd2 %s", self.addr, msg.cmd2)
+
+        # Level works for most things can add a derive state if needed.
+        self._set_state(level=msg.cmd2, group=group,
+                        reason=on_off.REASON_REFRESH)
+
+    #-----------------------------------------------------------------------
+    def group_cmd_local_group(self, entry):
+        """Get the Local Group Affected by this Group Command
+
+        For most devices this is group 1, but for multigroup devices such
+        as the KPL, they may need to decode the local group from the
+        entry data.
+
+        Args:
+          entry (DeviceEntry):  The local db entry for this group command.
+        Returns:
+          group (int):  The local group affected
+        """
+        return 0x01
+
+    #-----------------------------------------------------------------------
+    def group_cmd_on_level(self, entry, is_on):
+        """Get the On Level for this Group Command
+
+        For switches, this always returns None as this forces template_data
+        in the MQTT classes to render without level data to comply with prior
+        versions. But dimmers allow for the local on_level to be user defined
+        and stored in the db entry.
+
+        Args:
+          entry (DeviceEntry):  The local db entry for this group command.
+          is_on (bool): Whether the command was ON or OFF
+        Returns:
+          level (int):  The on_level or None
+        """
+        level = None
+        return level
+
+    #-----------------------------------------------------------------------
+    def group_cmd_handle_increment(self, cmd, group, reason):
+        """Process Increment Group Commands
+
+        This should do whatever processing is necessary, including updating
+        the local state in response to an increment group command.  For non
+        dimmable devices this does nothing.
+
+        Args:
+          cmd (Msg.CmdType): The cmd1 value of the message
+          group (int):  The local db entry for this group command.
+          reason (str): Whether the command was ON or OFF
+        """
+        # I am not sure I am aware of increment group commands.  Is there
+        # some way I can cause one to occur?
+        pass
+
+    #-----------------------------------------------------------------------
+    def group_cmd_handle_manual(self, manual, group, reason):
+        """Process Manual Group Commands
+
+        This should do whatever processing is necessary, including updating
+        the local state in response to a manual group command.  For non
+        dimmable devices this does nothing, as they do not react to manual
+        commands.
+
+        Args:
+          manual (on_off.Manual): The manual mode
+          group (int):  The local db entry for this group command.
+          reason (str): Whether the command was ON or OFF
+        """
+        pass

@@ -38,10 +38,10 @@ class Test_Base_Config():
             assert IM.CommandSeq.add.call_count == 2
 
     @pytest.mark.parametrize("group,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.ON, 0x00,{"level":255,"is_on":None,"mode":IM.on_off.Mode.NORMAL, "button":None, "reason":'device'}),
-        (0x01,Msg.CmdType.OFF, 0x00, {"level":0,"is_on":None,"mode":IM.on_off.Mode.NORMAL, "button":None, "reason":'device'}),
-        (0x01,Msg.CmdType.ON_FAST, 0x00,{"level":255,"is_on":None,"mode":IM.on_off.Mode.FAST, "button":None, "reason":'device'}),
-        (0x01,Msg.CmdType.OFF_FAST, 0x00, {"level":0,"is_on":None,"mode":IM.on_off.Mode.FAST, "button":None, "reason":'device'}),
+        (0x01,Msg.CmdType.ON, 0x00,{"level":255,"is_on":True,"mode":IM.on_off.Mode.NORMAL, "button":1, "reason":'device'}),
+        (0x01,Msg.CmdType.OFF, 0x00, {"level":0,"is_on":False,"mode":IM.on_off.Mode.NORMAL, "button":1, "reason":'device'}),
+        (0x01,Msg.CmdType.ON_FAST, 0x00,{"level":255,"is_on":True,"mode":IM.on_off.Mode.FAST, "button":1, "reason":'device'}),
+        (0x01,Msg.CmdType.OFF_FAST, 0x00, {"level":0,"is_on":False,"mode":IM.on_off.Mode.FAST, "button":1, "reason":'device'}),
         (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
     ])
     def test_handle_on_off(self, test_device, group, cmd1, cmd2, expected):
@@ -57,9 +57,9 @@ class Test_Base_Config():
                 mocked.assert_not_called()
 
     @pytest.mark.parametrize("group,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.DOWN, "reason":'device'}),
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, {"manual":IM.on_off.Manual.UP, "reason":'device'}),
-        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP, "reason":'device'}),
+        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.DOWN, "button":1, "reason":'device'}),
+        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, {"manual":IM.on_off.Manual.UP, "button":1, "reason":'device'}),
+        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP, "button":1, "reason":'device'}),
     ])
     def test_handle_on_off_manual(self, test_device, group, cmd1, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:
@@ -84,14 +84,14 @@ class Test_Base_Config():
             return data
         assert(test_device.get_on_level() == 255)
         for params in ([1, 0x01], [127, 127], [255, 0xFF]):
-            test_device.set_on_level(params[0])
+            test_device.set_on_level(on_level=params[0])
             assert len(test_device.protocol.sent) == 1
             assert test_device.protocol.sent[0].msg.cmd1 == 0x2e
             assert (test_device.protocol.sent[0].msg.data ==
                     level_bytes(params[1]))
             test_device.protocol.clear()
 
-        test_device.set_on_level(64)
+        test_device.set_on_level(on_level=64)
 
         # Fake having completed the set_on_level(64) request
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
@@ -106,23 +106,23 @@ class Test_Base_Config():
         # default on-level then to full brightness, as expected.
         # Fast-on should always go to full brightness.
         params = [
-            (Msg.CmdType.ON, 0x00, {"level":64, "is_on":None, "mode":IM.on_off.Mode.NORMAL, "button":None, "reason":'device'}),
-            (Msg.CmdType.ON, 0x00, {"level":255, "is_on":None, "mode":IM.on_off.Mode.NORMAL, "button":None, "reason":'device'}),
-            (Msg.CmdType.ON, 0x00, {"level":64, "is_on":None, "mode":IM.on_off.Mode.NORMAL, "button":None, "reason":'device'}),
-            (Msg.CmdType.OFF, 0x00, {"level":0, "is_on":None, "mode":IM.on_off.Mode.NORMAL, "button":None, "reason":'device'}),
-            (Msg.CmdType.ON_FAST, 0x00, {"level":255, "is_on":None,
+            (Msg.CmdType.ON, 0x00, {"level":64, "is_on":True, "mode":IM.on_off.Mode.NORMAL, "button":1, "reason":'device'}),
+            (Msg.CmdType.ON, 0x00, {"level":255, "is_on":True, "mode":IM.on_off.Mode.NORMAL, "button":1, "reason":'device'}),
+            (Msg.CmdType.ON, 0x00, {"level":64, "is_on":True, "mode":IM.on_off.Mode.NORMAL, "button":1, "reason":'device'}),
+            (Msg.CmdType.OFF, 0x00, {"level":0, "is_on":False, "mode":IM.on_off.Mode.NORMAL, "button":1, "reason":'device'}),
+            (Msg.CmdType.ON_FAST, 0x00, {"level":255, "is_on":True,
                                          "mode":IM.on_off.Mode.FAST,
-                                         "button":None, "reason":'device'}),
-            (Msg.CmdType.ON_FAST, 0x00, {"level":255, "is_on":None,
+                                         "button":1, "reason":'device'}),
+            (Msg.CmdType.ON_FAST, 0x00, {"level":255, "is_on":True,
                                          "mode":IM.on_off.Mode.FAST,
-                                         "button":None, "reason":'device'}),
-            (Msg.CmdType.OFF_FAST, 0x00, {"level":0, "is_on":None, "mode":IM.on_off.Mode.FAST, "button":None, "reason":'device'}),
+                                         "button":1, "reason":'device'}),
+            (Msg.CmdType.OFF_FAST, 0x00, {"level":0, "is_on":False, "mode":IM.on_off.Mode.FAST, "button":1, "reason":'device'}),
             (Msg.CmdType.ON_INSTANT, 0x00,
-                {"level":64, "is_on":None, "mode":IM.on_off.Mode.INSTANT, "button":None, "reason":'device'}),
+                {"level":64, "is_on":True, "mode":IM.on_off.Mode.INSTANT, "button":1, "reason":'device'}),
             (Msg.CmdType.ON_INSTANT, 0x00,
-                {"level":255, "is_on":None, "mode": IM.on_off.Mode.INSTANT, "button":None, "reason":'device'}),
+                {"level":255, "is_on":True, "mode": IM.on_off.Mode.INSTANT, "button":1, "reason":'device'}),
             (Msg.CmdType.ON_INSTANT, 0x00,
-                {"level":64, "is_on":None, "mode":IM.on_off.Mode.INSTANT, "button":None, "reason":'device'})]
+                {"level":64, "is_on":True, "mode":IM.on_off.Mode.INSTANT, "button":1, "reason":'device'})]
         for cmd1, cmd2, expected in params:
             with mock.patch.object(IM.Signal, 'emit') as mocked:
                 print("Trying:", "[%x, %x]" % (cmd1, cmd2))
@@ -163,7 +163,7 @@ class Test_Base_Config():
 
     def test_set_backlight(self, test_device):
         # set_backlight(self, level, on_done=None)
-        test_device.set_backlight(0)
+        test_device.set_backlight(backlight=0)
         assert len(test_device.protocol.sent) == 1
         assert test_device.protocol.sent[0].msg.cmd1 == 0x20
         assert test_device.protocol.sent[0].msg.cmd2 == 0x08
@@ -179,7 +179,7 @@ class Test_Base_Config():
 
         for params in ([1, 0x01], [255, 0xFF], [127, 127]):
             with mock.patch.object(IM.CommandSeq, 'add_msg'):
-                test_device.set_backlight(params[0])
+                test_device.set_backlight(backlight=params[0])
                 args_list = IM.CommandSeq.add_msg.call_args_list
                 assert IM.CommandSeq.add_msg.call_count == 2
                 # Check the first call
@@ -192,7 +192,7 @@ class Test_Base_Config():
 
         with mock.patch.object(IM.CommandSeq, 'add_msg'):
             # test backlight off
-            test_device.set_backlight(0)
+            test_device.set_backlight(backlight=0)
             args_list = IM.CommandSeq.add_msg.call_args_list
             assert IM.CommandSeq.add_msg.call_count == 1
             # Check the first call

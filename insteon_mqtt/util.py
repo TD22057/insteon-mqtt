@@ -201,7 +201,7 @@ def input_bool(inputs, field):
         # only true/false or 1/0 is allowed.
         return bool(int(value))
     except ValueError:
-        msg = "Invalid %s input.  Valid inputs are 1/0 or True/False" % input
+        msg = "Invalid %s input.  Valid inputs are 1/0 or True/False" % field
         LOG.exception(msg)
 
 
@@ -239,7 +239,7 @@ def input_integer(inputs, field):
         else:
             return int(value)
     except ValueError:
-        msg = "Invalid %s input.  Valid inputs are integer values." % input
+        msg = "Invalid %s input.  Valid inputs are integer values." % field
         LOG.exception(msg)
 
 
@@ -281,7 +281,7 @@ def input_byte(inputs, field):
 
         return v
     except ValueError:
-        msg = "Invalid %s input.  Valid inputs are 0-255" % input
+        msg = "Invalid %s input.  Valid inputs are 0-255" % field
         LOG.exception(msg)
 
 
@@ -314,5 +314,5 @@ def input_float(inputs, field):
         else:
             return float(value)
     except ValueError:
-        msg = "Invalid %s input.  Valid inputs are float values." % input
+        msg = "Invalid %s input.  Valid inputs are float values." % field
         LOG.exception(msg)

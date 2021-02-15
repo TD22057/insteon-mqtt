@@ -4,20 +4,18 @@
 #
 #===========================================================================
 import functools
-from .Base import Base
-from . import functions
+from .base import ResponderBase
+from .functions import Backlight
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg
 from .. import on_off
-from ..Signal import Signal
-from .. import util
 
 LOG = log.get_logger()
 
 
-class Outlet(functions.SetAndState, Base):
+class Outlet(Backlight, ResponderBase):
     """Insteon on/off outlet device.
 
     This is used for in-wall on/off outlets.  Each outlet (top and bottom) is
@@ -26,12 +24,7 @@ class Outlet(functions.SetAndState, Base):
 
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
-    the device (like sending MQTT messages).  Supported signals are:
-
-    - signal_state( Device, int group, bool is_on, on_off.Mode mode, str
-                     reason ): Sent whenever the switch is turned on or off.
-                     Group will be 1 for the top outlet and 2 for the bottom
-                     outlet.
+    the device (like sending MQTT messages).
     """
 
     def __init__(self, protocol, modem, address, name=None):
@@ -48,17 +41,6 @@ class Outlet(functions.SetAndState, Base):
         super().__init__(protocol, modem, address, name)
 
         self._is_on = [False, False]  # top outlet, bottom outlet
-
-        # Support on/off style signals.
-        # API: func(Device, int group, bool is_on, on_off.Mode mode,
-        #           str reason)
-        self.signal_state = Signal()
-
-        # Remote (mqtt) commands mapped to methods calls.  Add to the
-        # base class defined commands.
-        self.cmd_map.update({
-            'set_flags' : self.set_flags,
-            })
 
         # NOTE: the outlet does NOT include the group in the ACK of an on/off
         # command.  So there is no way to tell which outlet is being ACK'ed
@@ -77,7 +59,7 @@ class Outlet(functions.SetAndState, Base):
         self.responder_groups = [0x01, 0x02]
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False, on_done=None):
+    def refresh(self, force=False, group=None, on_done=None):
         """Refresh the current device state and database if needed.
 
         This sends a ping to the device.  The reply has the current device
@@ -88,10 +70,16 @@ class Outlet(functions.SetAndState, Base):
         This will send out an updated signal for the current device status
         whenever possible (like dimmer levels).
 
+        Outlet uses a unique refresh command in order to get the state of
+        both outlets.
+
         Args:
           force (bool):  If true, will force a refresh of the device database
                 even if the delta value matches as well as a re-query of the
                 device model information even if it is already known.
+          group (int): The group being refreshed, it is passed to
+                handle_refresh() so that the state signal is correct. Should
+                generally be None.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -189,126 +177,7 @@ class Outlet(functions.SetAndState, Base):
                         transition=transition, on_done=on_done)
 
     #-----------------------------------------------------------------------
-    def set_backlight(self, level, on_done=None):
-        """Set the device backlight level.
-
-        This changes the level of the LED back light that is used by the
-        device status LED's (dimmer levels, KeypadLinc buttons, etc).
-
-        The default factory level is 0x1f.
-
-        Per page 157 of insteon dev guide range is between 0x11 and 0x7F,
-        however in practice backlight can be incremented from 0x00 to at least
-        0x7f.
-
-        Args:
-          level (int):  The backlight level in the range [0,255]
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        seq = CommandSeq(self, "Outlet set backlight complete", on_done,
-                         name="SetBacklight")
-
-        # First set the backlight on or off depending on level value
-        is_on = level > 0
-        LOG.info("Outlet %s setting backlight to %s", self.label, is_on)
-        cmd = 0x09 if is_on else 0x08
-        msg = Msg.OutExtended.direct(self.addr, 0x20, cmd, bytes([0x00] * 14))
-        msg_handler = handler.StandardCmd(msg, self.handle_backlight, on_done)
-        seq.add_msg(msg, msg_handler)
-
-        if is_on:
-            # Second set the level only if on
-            LOG.info("Outlet %s setting backlight to %s", self.label, level)
-
-            # Extended message data - see Insteon dev guide p156.
-            data = bytes([
-                0x01,   # D1 must be group 0x01
-                0x07,   # D2 set global led brightness
-                level,  # D3 brightness level
-                ] + [0x00] * 11)
-
-            msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-            msg_handler = handler.StandardCmd(msg, self.handle_backlight,
-                                              on_done)
-            seq.add_msg(msg, msg_handler)
-
-        seq.run()
-
-    #-----------------------------------------------------------------------
-    def set_flags(self, on_done, **kwargs):
-        """Set internal device flags.
-
-        This command is used to change internal device flags and states.
-        Valid inputs are:
-
-        - backlight=level:  Change the backlight LED level (0-255).  See
-          set_backlight() for details.
-
-        Args:
-          kwargs: Key=value pairs of the flags to change.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        LOG.info("Outlet %s cmd: set flags", self.label)
-
-        # Check the input flags to make sure only ones we can understand were
-        # passed in.
-        FLAG_BACKLIGHT = "backlight"
-        flags = set([FLAG_BACKLIGHT])
-        unknown = set(kwargs.keys()).difference(flags)
-        if unknown:
-            LOG.error("Unknown Outlet flags input: %s.\n Valid flags "
-                      "are: %s", unknown, flags)
-
-        # Start a command sequence so we can call the flag methods in series.
-        seq = CommandSeq(self, "Outlet set_flags complete", on_done,
-                         name="DevSetFlags")
-
-        if FLAG_BACKLIGHT in kwargs:
-            backlight = util.input_byte(kwargs, FLAG_BACKLIGHT)
-            seq.add(self.set_backlight, backlight)
-
-        seq.run()
-
-    #-----------------------------------------------------------------------
-    def handle_backlight(self, msg, on_done):
-        """Callback for handling set_backlight() responses.
-
-        This is called when we get a response to the set_backlight() command.
-        We don't need to do anything - just call the on_done callback with
-        the status.
-
-        Args:
-          msg (InpStandard):  The response message from the command.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
-        """
-        on_done(True, "Backlight level updated", None)
-
-    #-----------------------------------------------------------------------
-    def handle_on_off(self, msg):
-        """Handle broadcast on_off messages from this device.
-
-        This is called via the handle_broadcast and the mapping in group_map.
-
-        Args:
-          msg (InpStandard):  Broadcast message from the device.
-        """
-        reason = on_off.REASON_DEVICE
-        # On/off command codes.
-        if on_off.Mode.is_valid(msg.cmd1):
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
-            LOG.info("Outlet %s broadcast grp: %s on: %s mode: %s", self.addr,
-                     msg.group, is_on, mode)
-
-            self._set_state(group=msg.group, is_on=is_on, mode=mode,
-                            reason=reason)
-
-            self.update_linked_devices(msg)
-
-    #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
+    def handle_refresh(self, msg, group=None):
         """Callback for handling refresh() responses.
 
         This is called when we get a response to the refresh() command.  The
@@ -380,44 +249,19 @@ class Outlet(functions.SetAndState, Base):
         return (is_on, level, mode, group)
 
     #-----------------------------------------------------------------------
-    def handle_group_cmd(self, addr, msg):
-        """Respond to a group command for this device.
+    def group_cmd_local_group(self, entry):
+        """Get the Local Group Affected by this Group Command
 
-        This is called when this device is a responder to a scene.  The
-        device that received the broadcast message (handle_broadcast) will
-        call this method for every device that is linked to it.  The device
-        should look up the responder entry for the group in it's all link
-        database and update it's state accordingly.
+        For most devices this is group 1, but for multigroup devices such
+        as the KPL, they may need to decode the local group from the
+        entry data.
 
         Args:
-          addr (Address):  The device that sent the message.  This is the
-               controller in the scene.
-          msg (InpStandard):  Broadcast message from the device.  Use
-              msg.group to find the group and msg.cmd1 for the command.
+          entry (DeviceEntry):  The local db entry for this group command.
+        Returns:
+          group (int):  The local group affected
         """
-        # Make sure we're really a responder to this message.  This shouldn't
-        # ever occur.
-        entry = self.db.find(addr, msg.group, is_controller=False)
-        if not entry:
-            LOG.error("Outlet %s has no group %s entry from %s", self.addr,
-                      msg.group, addr)
-            return
-
-        # The local button being modified is stored in the db entry.
-        localGroup = entry.data[2]
-
-        # Handle on/off commands codes.
-        if on_off.Mode.is_valid(msg.cmd1):
-            is_on, mode = on_off.Mode.decode(msg.cmd1)
-            self._set_state(group=localGroup, is_on=is_on, mode=mode,
-                            reason=on_off.REASON_SCENE)
-
-        # Note: I don't believe the on/off switch can participate in manual
-        # mode stopping commands since it changes state when the button is
-        # held, not when it's released.
-        else:
-            LOG.warning("Outlet %s unknown group cmd %#04x", self.addr,
-                        msg.cmd1)
+        return entry.data[2]
 
     #-----------------------------------------------------------------------
     def _cache_state(self, group, is_on, level, reason):

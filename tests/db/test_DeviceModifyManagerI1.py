@@ -15,7 +15,7 @@ class Test_Device:
         protocol = MockProto()
         modem = MockModem()
         addr = IM.Address(0x01, 0x02, 0x03)
-        device = IM.device.Base(protocol, modem, addr)
+        device = IM.device.base.Base(protocol, modem, addr)
 
         # Create the new entry at the current last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=True,
@@ -38,7 +38,7 @@ class Test_Device:
         protocol = MockProto()
         modem = MockModem()
         addr = IM.Address(0x01, 0x02, 0x03)
-        device = IM.device.Base(protocol, modem, addr)
+        device = IM.device.base.Base(protocol, modem, addr)
 
         # Create the new entry at the current last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=True,
@@ -65,7 +65,7 @@ class Test_Device:
         protocol = MockProto()
         modem = MockModem()
         addr = IM.Address(0x01, 0x02, 0x03)
-        device = IM.device.Base(protocol, modem, addr)
+        device = IM.device.base.Base(protocol, modem, addr)
 
         # Create the new entry at the current last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=True,
@@ -97,7 +97,7 @@ class Test_Device:
         protocol = MockProto()
         modem = MockModem()
         addr = IM.Address(0x01, 0x02, 0x03)
-        device = IM.device.Base(protocol, modem, addr)
+        device = IM.device.base.Base(protocol, modem, addr)
 
         # Create the new entry at the current last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=True,
@@ -129,7 +129,7 @@ class Test_Device:
         protocol = MockProto()
         modem = MockModem()
         addr = IM.Address(0x01, 0x02, 0x03)
-        device = IM.device.Base(protocol, modem, addr)
+        device = IM.device.base.Base(protocol, modem, addr)
 
         # Create the new entry at the current last memory location.
         db_flags = Msg.DbFlags(in_use=True, is_controller=True,
@@ -154,7 +154,7 @@ class Test_Device:
         protocol = MockProto()
         modem = MockModem()
         addr = IM.Address(0x01, 0x02, 0x03)
-        device = IM.device.Base(protocol, modem, addr)
+        device = IM.device.base.Base(protocol, modem, addr)
         calls = []
         def callback(success, msg, data):
             calls.append(msg)

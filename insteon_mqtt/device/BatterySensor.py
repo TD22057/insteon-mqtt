@@ -4,8 +4,7 @@
 #
 #===========================================================================
 import time
-from .Base import Base
-from . import functions
+from .base import Base
 from .. import log
 from .. import message as Msg
 from ..Signal import Signal
@@ -13,7 +12,7 @@ from ..Signal import Signal
 LOG = log.get_logger()
 
 
-class BatterySensor(functions.State, Base):
+class BatterySensor(Base):
     """Insteon battery powered sensor.
 
     Battery powered sensors send basic on/off commands, low battery warnings,
@@ -37,9 +36,6 @@ class BatterySensor(functions.State, Base):
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
-
-    - signal_state( Device, bool is_on ): Sent when the sensor is tripped
-      (is_on=True) or resets (is_on=False).
 
     - signal_low_battery( Device, bool is_low ): Sent to indicate the current
       battery state.
@@ -160,21 +156,6 @@ class BatterySensor(functions.State, Base):
         self._pop_send_queue()
 
     #-----------------------------------------------------------------------
-    def handle_on_off(self, msg):
-        """Handle sensor activation.
-
-        This is called by the device when a group broadcast on group 01 is
-        sent out by the sensor.
-
-        Args:
-          msg (InpStandard):  Broadcast message from the device.
-        """
-        LOG.info("BatterySensor %s on_off broadcast cmd: %s", self.addr,
-                 msg.cmd1)
-        self._set_state(is_on=(msg.cmd1 == Msg.CmdType.ON))
-        self.update_linked_devices(msg)
-
-    #-----------------------------------------------------------------------
     def handle_low_battery(self, msg):
         """Handle a low battery message.
 
@@ -206,25 +187,6 @@ class BatterySensor(functions.State, Base):
         # Send True for any heart beat message
         self.signal_heartbeat.emit(self, True)
         self.update_linked_devices(msg)
-
-    #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
-        """Handle replies to the refresh command.
-
-        The refresh command reply will contain the current device
-        state in cmd2 and this updates the device with that value.
-
-        NOTE: refresh() will not work if the device is asleep.
-
-        Args:
-          msg (message.InpStandard):  The refresh message reply.  The current
-              device state is in the msg.cmd2 field.
-        """
-        LOG.ui("BatterySensor %s refresh on = %s", self.addr, msg.cmd2 != 0x00)
-
-        # Current on/off level is stored in cmd2 so update our state
-        # to match.
-        self._set_state(is_on=(msg.cmd2 != 0x00))
 
     #-----------------------------------------------------------------------
     def awake(self, on_done):

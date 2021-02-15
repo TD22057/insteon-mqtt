@@ -12,8 +12,9 @@ except ImportError:
     from unittest import mock
 from unittest.mock import call
 import insteon_mqtt as IM
-import insteon_mqtt.device.IOLinc as IOLinc
+from insteon_mqtt.device.IOLinc import IOLinc
 import insteon_mqtt.message as Msg
+import helpers as H
 
 
 @pytest.fixture
@@ -21,8 +22,8 @@ def test_iolinc(tmpdir):
     '''
     Returns a generically configured iolinc for testing
     '''
-    protocol = MockProto()
-    modem = MockModem(tmpdir)
+    protocol = H.main.MockProtocol()
+    modem = H.main.MockModem(tmpdir)
     addr = IM.Address(0x01, 0x02, 0x03)
     iolinc = IOLinc(protocol, modem, addr)
     return iolinc
@@ -74,14 +75,13 @@ class Test_IOLinc_Set_Flags():
         with mock.patch.object(IM.CommandSeq, 'add_msg'):
             test_iolinc.set_flags(None, Unknown=1)
             assert IM.CommandSeq.add_msg.call_count == 0
-            assert 'Unknown IOLinc flags input' in caplog.text
+            assert 'Unknown set flags input' in caplog.text
 
     @pytest.mark.parametrize("mode,expected", [
         ("latching", [0x07, 0x13, 0x15]),
         ("momentary_a", [0x06, 0x13, 0x15]),
         ("momentary_b", [0x06, 0x12, 0x15]),
         ("momentary_c", [0x06, 0x12, 0x14]),
-        ("bad-mode", [0x07, 0x13, 0x15]),
     ])
     def test_set_flags_mode(self, test_iolinc, mode, expected):
         self.mode = IM.device.IOLinc.Modes.LATCHING
@@ -107,17 +107,13 @@ class Test_IOLinc_Set_Flags():
         assert "Bad value BadModes.BAD, for mode on IOLinc" in caplog.text
 
     @pytest.mark.parametrize("flag,expected", [
-        ({"trigger_reverse": 0},   [0x20, 0x0f]),
-        ({"trigger_reverse": 1},   [0x20, 0x0e]),
-        ({"relay_linked": 0},      [0x20, 0x05]),
-        ({"relay_linked": 1},      [0x20, 0x04]),
         ({"momentary_secs": .1},   [0x2e, 0x00, 0x01, 0x01]),
         ({"momentary_secs": 26},   [0x2e, 0x00, 0x1a, 0x0a]),
         ({"momentary_secs": 260},  [0x2e, 0x00, 0x1a, 0x64]),
         ({"momentary_secs": 3000}, [0x2e, 0x00, 0x96, 0xc8]),
         ({"momentary_secs": 6300}, [0x2e, 0x00, 0xfc, 0xfa]),
     ])
-    def test_set_flags_other(self, test_iolinc, flag, expected):
+    def test_set_flags_momentary(self, test_iolinc, flag, expected):
         test_iolinc.momentary_secs = 0
         test_iolinc.relay_linked = 0
         test_iolinc.trigger_reverse = 0
@@ -125,6 +121,7 @@ class Test_IOLinc_Set_Flags():
             test_iolinc.set_flags(None, **flag)
             # Check that the first call is for standard flags
             # Call#, Args, First Arg
+            assert IM.CommandSeq.add_msg.call_count == 2
             calls = IM.CommandSeq.add_msg.call_args_list
             assert calls[0][0][0].cmd1 == expected[0]
             assert calls[0][0][0].cmd2 == expected[1]
@@ -137,6 +134,23 @@ class Test_IOLinc_Set_Flags():
             else:
                 assert IM.CommandSeq.add_msg.call_count == 1
 
+    @pytest.mark.parametrize("flag,expected", [
+        ({"trigger_reverse": 0},   [0x20, 0x0f]),
+        ({"trigger_reverse": 1},   [0x20, 0x0e]),
+        ({"relay_linked": 0},      [0x20, 0x05]),
+        ({"relay_linked": 1},      [0x20, 0x04]),
+    ])
+    def test_set_flags_other(self, test_iolinc, flag, expected):
+        test_iolinc.momentary_secs = 0
+        test_iolinc.relay_linked = 0
+        test_iolinc.trigger_reverse = 0
+        test_iolinc.set_flags(None, **flag)
+        # Check that the first call is for standard flags
+        # Call#, Args, First Arg
+        assert len(test_iolinc.protocol.sent) == 1
+        assert test_iolinc.protocol.sent[0].msg.cmd1 == expected[0]
+        assert test_iolinc.protocol.sent[0].msg.cmd2 == expected[1]
+
 
 class Test_IOLinc_Set():
     @pytest.mark.parametrize("level,expected", [
@@ -145,11 +159,11 @@ class Test_IOLinc_Set():
         (0xff, 0x11),
     ])
     def test_set(self, test_iolinc, level, expected):
-        with mock.patch.object(IM.device.Base, 'send'):
+        with mock.patch.object(IM.device.base.Base, 'send'):
             test_iolinc.set(level)
-            calls = IM.device.Base.send.call_args_list
+            calls = IM.device.base.Base.send.call_args_list
             assert calls[0][0][0].cmd1 == expected
-            assert IM.device.Base.send.call_count == 1
+            assert IM.device.base.Base.send.call_count == 1
 
     @pytest.mark.parametrize("is_on,expected", [
         (True, True),
@@ -207,8 +221,10 @@ class Test_Handles():
             test_iolinc.handle_broadcast(msg)
             calls = IM.Signal.emit.call_args_list
             if linked:
-                assert calls[1][1]['is_on'] == relay
-                assert calls[1][1]['button'] == 2
+                assert calls[0][1]['is_on'] == relay
+                assert calls[0][1]['button'] == 2
+                assert calls[1][1]['is_on'] == sensor
+                assert calls[1][1]['button'] == 1
                 assert IM.Signal.emit.call_count == 2
             elif sensor is not None:
                 assert calls[0][1]['is_on'] == sensor
@@ -268,18 +284,9 @@ class Test_Handles():
         test_iolinc.handle_get_momentary(msg, lambda success, msg, cmd: True)
         assert test_iolinc.momentary_secs == seconds
 
-    def test_handle_set_flags(self, test_iolinc):
-        # Dummy Test, nothing to do here
-        to_addr = test_iolinc.addr
-        from_addr = IM.Address(0x04, 0x05, 0x06)
-        flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
-        msg = IM.message.InpStandard(from_addr, to_addr, flags, 0x00, 0x00)
-        test_iolinc.handle_set_flags(msg, lambda success, msg, cmd: True)
-        assert True == True
-
     @pytest.mark.parametrize("cmd2,expected", [
-        (0x00, False),
-        (0Xff, True),
+        (0x00, 0x00),
+        (0Xff, 0xFF),
     ])
     def test_handle_refresh_relay(self, test_iolinc, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit'):
@@ -287,15 +294,15 @@ class Test_Handles():
             from_addr = IM.Address(0x04, 0x05, 0x06)
             flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
             msg = IM.message.InpStandard(from_addr, to_addr, flags, 0x19, cmd2)
-            test_iolinc.handle_refresh_relay(msg)
+            test_iolinc.handle_refresh(msg, group=2)
             calls = IM.Signal.emit.call_args_list
-            assert calls[0][1]['is_on'] == expected
+            assert calls[0][1]['level'] == expected
             assert calls[0][1]['button'] == 2
             assert IM.Signal.emit.call_count == 1
 
     @pytest.mark.parametrize("cmd2,expected", [
-        (0x00, False),
-        (0Xff, True),
+        (0x00, 0x00),
+        (0Xff, 0xff),
     ])
     def test_handle_refresh_sensor(self, test_iolinc, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit'):
@@ -303,9 +310,9 @@ class Test_Handles():
             from_addr = IM.Address(0x04, 0x05, 0x06)
             flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
             msg = IM.message.InpStandard(from_addr, to_addr, flags, 0x19, cmd2)
-            test_iolinc.handle_refresh_sensor(msg)
+            test_iolinc.handle_refresh(msg, group=1)
             calls = IM.Signal.emit.call_args_list
-            assert calls[0][1]['is_on'] == expected
+            assert calls[0][1]['level'] == expected
             assert calls[0][1]['button'] == 1
             assert IM.Signal.emit.call_count == 1
 
@@ -393,32 +400,3 @@ class Test_IOLinc_Link_Data:
                                                   'data_2': 0x00,
                                                   'data_3': 0x00})
         assert ugly[0] == data_1
-
-
-class MockModem:
-    def __init__(self, path):
-        self.save_path = str(path)
-        self.addr = IM.Address(0x0A, 0x0B, 0x0C)
-        self.timed_call = MockTimedCall()
-
-
-class MockTimedCall:
-    def add(self, *args, **kwargs):
-        pass
-
-    def remove(self, *args, **kwargs):
-        pass
-
-class MockProto:
-    def __init__(self):
-        self.msgs = []
-        self.wait = None
-
-    def add_handler(self, *args):
-        pass
-
-    def send(self, msg, msg_handler, high_priority=False, after=None):
-        self.msgs.append(msg)
-
-    def set_wait_time(self, time):
-        self.wait = time

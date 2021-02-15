@@ -27,12 +27,12 @@ def setup(mock_paho_mqtt, tmpdir):
     modem = H.main.MockModem(tmpdir)
     addr = IM.Address(1, 2, 3)
     name = "device name"
-    dev = IM.device.KeypadLinc(proto, modem, addr, name, dimmer=True)
+    dev = IM.device.KeypadLincDimmer(proto, modem, addr, name)
 
     link = IM.network.Mqtt()
     mqttModem = H.mqtt.MockModem()
     mqtt = IM.mqtt.Mqtt(link, mqttModem)
-    mdev = IM.mqtt.KeypadLinc(mqtt, dev)
+    mdev = IM.mqtt.KeypadLincDimmer(mqtt, dev)
 
     return H.Data(addr=addr, name=name, dev=dev, mdev=mdev, link=link,
                   proto=proto, modem=modem)

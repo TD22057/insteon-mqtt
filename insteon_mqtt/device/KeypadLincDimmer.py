@@ -1,47 +1,88 @@
 #===========================================================================
 #
-# Dimmer device module.  Used for anything that acts like a dimmer
-# including wall switches, lamp modules, and some remotes.
+# KeypadLinc Dimmer module
 #
 #===========================================================================
-from .base import DimmerBase
-from .functions import Scene, Backlight
 from ..CommandSeq import CommandSeq
 from .. import handler
 from .. import log
 from .. import message as Msg
 from .. import on_off
 from .. import util
+from .base import DimmerBase
+from .KeypadLinc import KeypadLinc
 
 LOG = log.get_logger()
 
 
-class Dimmer(Scene, Backlight, DimmerBase):
-    """Insteon dimmer device.
+#===========================================================================
+class KeypadLincDimmer(KeypadLinc, DimmerBase):
+    """Insteon KeypadLinc Dimmer Device.
 
-    This class can be used to model any device that acts like a dimmer
-    including wall switches, lamp modules, and some remotes.
+    This class extends the KeypadLinc device to add dimmer functionality.
+
+    This class can be used to model a 6 or 8 button KeypadLinc with dimming
+    functionality.  The buttons are numbered 1...8.  In the 6 button, model,
+    the top and bottom buttons are combined (so buttons 2 and 7 are unused).
+    If the load is detached (meaning button 1 is not controlling the load),
+    then a virtual button 9 is used to control the load.
+
+    If a button is not controlling the load then it's on/off state only
+    relates to whether or not the button LED is on or off.  For example,
+    setting button group 3 to on just turns the LED on.  In many cases, a
+    scene command to button 3 is what you want (to simulate pressing the
+    button).
 
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).
     """
-    def __init__(self, protocol, modem, address, name=None):
+
+    #-----------------------------------------------------------------------
+    def __init__(self, protocol, modem, address, name):
         """Constructor
 
         Args:
-          protocol (Protocol): The Protocol object used to communicate
-                   with the Insteon network.  This is needed to allow the
-                   device to send messages to the PLM modem.
-          modem (Modem): The Insteon modem used to find other devices.
-          address (Address): The address of the device.
-          name (str): Nice alias name to use for the device.
+          protocol:    (Protocol) The Protocol object used to communicate
+                       with the Insteon network.  This is needed to allow
+                       the device to send messages to the PLM modem.
+          modem:       (Modem) The Insteon modem used to find other devices.
+          address:     (Address) The address of the device.
+          name:        (str) Nice alias name to use for the device.
+          dimmer:      (bool) True if the device supports dimming - False if
+                       it's a regular switch.
         """
         super().__init__(protocol, modem, address, name)
 
-        # Update the group map with the groups to be paired and the handler
-        # for broadcast messages from this group
-        self.group_map.update({0x01: self.handle_on_off})
+        # Switch or dimmer type.
+        # Here for compatibility purposes can likely be removed eventually.
+        self.type_name = "keypad_linc"
+
+    #-----------------------------------------------------------------------
+    def mode_transition_supported(self, mode, transition):
+        """Adjust Mode and Transition based on Device Support
+
+        Args:
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          transition (int): Ramp rate for the transition in seconds.
+        Returns
+          mode, transition: The adjusted values.
+        """
+        # Ignore RAMP mode / transition if command not supported
+        if mode == on_off.Mode.RAMP or transition is not None:
+            if not self.on_off_ramp_supported:
+                if self.db.desc is None:
+                    LOG.error("Model info not in DB - ignoring ramp "
+                              "rate.  Use 'get_model %s' to retrieve.",
+                              self.addr)
+                else:
+                    LOG.error("Light ON at Ramp Rate not supported with "
+                              "%s devices - ignoring specified ramp rate.",
+                              self.db.desc.model)
+                transition = None
+                if mode == on_off.Mode.RAMP:
+                    mode = on_off.Mode.NORMAL
+        return (mode, transition)
 
     #-----------------------------------------------------------------------
     def cmd_on_values(self, mode, level, transition, group):
@@ -51,18 +92,39 @@ class Dimmer(Scene, Backlight, DimmerBase):
           mode (on_off.Mode): The type of command to send (normal, fast, etc).
           level (int): On level between 0-255.
           transition (int): Ramp rate for the transition in seconds.
+          group (int): The group number that this state applies to. Defaults
+                       to None.
         Returns
           cmd1, cmd2 (int): Value of cmds for this device.
         """
-        if transition or mode == on_off.Mode.RAMP:
-            LOG.error("Device %s does not support transition.", self.addr)
-            mode = on_off.Mode.NORMAL if mode == on_off.Mode.RAMP else mode
         if level is None:
             # If level is not specified it uses the level that the device
             # would go to if the button was physically pressed.
             level = self.derive_on_level(mode)
+
+        mode, transition = self.mode_transition_supported(mode, transition)
+
         cmd1 = on_off.Mode.encode(True, mode)
-        return (cmd1, level)
+        cmd2 = on_off.Mode.encode_cmd2(True, mode, level, transition)
+        return (cmd1, cmd2)
+
+    #-----------------------------------------------------------------------
+    def cmd_off_values(self, mode, transition, group):
+        """Calculate Cmd Values for Off
+
+        Args:
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          transition (int): Ramp rate for the transition in seconds.
+          group (int): The group number that this state applies to. Defaults
+                       to None.
+        Returns
+          cmd1, cmd2 (int): Value of cmds for this device.
+        """
+        # Ignore RAMP mode / transition if command not supported
+        mode, transition = self.mode_transition_supported(mode, transition)
+        cmd1 = on_off.Mode.encode(False, mode)
+        cmd2 = on_off.Mode.encode_cmd2(True, mode, 0, transition)
+        return (cmd1, cmd2)
 
     #-----------------------------------------------------------------------
     def link_data(self, is_controller, group, data=None):
@@ -96,12 +158,12 @@ class Dimmer(Scene, Backlight, DimmerBase):
         """
         # Most of this is from looking through Misterhouse bug reports.
         if is_controller:
-            defaults = [0x03, 0x00, 0x01]
+            defaults = [0x03, 0x00, group]
 
         # Responder data is always link dependent.  Since nothing was given,
         # assume the user wants to turn the device on (0xff).
         else:
-            defaults = [0xff, 0x1f, 0x01]
+            defaults = [0xff, 0x1f, group]
 
         # For each field, use the input if not -1, else the default.
         return util.resolve_data3(defaults, data)
@@ -122,7 +184,7 @@ class Dimmer(Scene, Backlight, DimmerBase):
         Returns:
           list[3]:  list, containing a dict of the human readable values
         """
-        ret = [{'data_1': data[0]}, {'data_2': data[1]}, {'data_3': data[2]}]
+        ret = [{'data_1': data[0]}, {'data_2': data[1]}, {'group': data[2]}]
         if not is_controller:
             ramp = 0x1f  # default
             if data[1] in self.ramp_pretty:
@@ -130,7 +192,7 @@ class Dimmer(Scene, Backlight, DimmerBase):
             on_level = int((data[0] / .255) + .5) / 10
             ret = [{'on_level': on_level},
                    {'ramp_rate': ramp},
-                   {'data_3': data[2]}]
+                   {'group': data[2]}]
         return ret
 
     #-----------------------------------------------------------------------
@@ -160,6 +222,26 @@ class Dimmer(Scene, Backlight, DimmerBase):
             if 'on_level' in data:
                 data_1 = int(data['on_level'] * 2.55 + .5)
         return [data_1, data_2, data_3]
+
+    #-----------------------------------------------------------------------
+    def group_cmd_on_level(self, entry, is_on):
+        """Get the On Level for this Group Command
+
+        For switches, this always returns None as this forces template_data
+        in the MQTT classes to render without level data to comply with prior
+        versions. But dimmers allow for the local on_level to be user defined
+        and stored in the db entry.
+
+        Args:
+          entry (DeviceEntry):  The local db entry for this group command.
+          is_on (bool): Whether the command was ON or OFF
+        Returns:
+          level (int):  The on_level or None
+        """
+        level = 0xFF if is_on else 0x00
+        if is_on and entry.data[2] == self._load_group:
+            level = entry.data[0]
+        return level
 
     #-----------------------------------------------------------------------
     def get_flags(self, on_done=None):
@@ -226,3 +308,19 @@ class Dimmer(Scene, Backlight, DimmerBase):
         on_done(True, "Operation complete", msg.data[5])
 
     #-----------------------------------------------------------------------
+    def react_to_manual(self, manual, group, reason):
+        """React to Manual Mode Received from the Device
+
+        Non-dimmable devices react immediatly when issueing a manual command
+        while dimmable devices slowly ramp on. This function is here to
+        provide DimmerBase a place to alter the default functionality. This
+        function should call _set_state() at the appropriate times to update
+        the state of the device.
+
+        Args:
+          manual (on_off.Manual):  The manual command type
+          group (int):  The group sending the command
+          reason (str):  The reason string to pass on
+        """
+        # Need to skip over the KeypadLinc Function here
+        DimmerBase.react_to_manual(self, manual, group, reason)
