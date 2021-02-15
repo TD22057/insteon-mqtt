@@ -59,8 +59,19 @@ class Mqtt(Link):
         self._reconnect_dt = reconnect_dt
         self._fd = None
 
-        # Create the MQTT client and set the callbacks to our methods.
-        self.client = paho.Client(client_id=self.id, clean_session=False)
+        self.setup_client()
+
+    #-----------------------------------------------------------------------
+    def setup_client(self):
+        """ Create or reinitialise the MQTT client and set the callbacks.
+        """
+
+        client_args = {'client_id': self.id, 'clean_session': False}
+
+        if not hasattr(self, 'client'):
+            self.client = paho.Client(**client_args)
+        else:
+            self.client.reinitialise(**client_args)
         self.client.on_connect = self._on_connect
         self.client.on_disconnect = self._on_disconnect
         self.client.on_message = self._on_message
@@ -91,7 +102,7 @@ class Mqtt(Link):
         id = config.get("id")
         if id is not None:
             self.id = id
-            self.client.reinitialise(client_id=self.id, clean_session=False)
+            self.setup_client()
 
         username = config.get('username', None)
         if username is not None:
