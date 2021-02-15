@@ -2,6 +2,12 @@
 
 ## [0.8.0]
 
+This update is the culmination of a significant refactor of the underlying
+code including PRs #308, #320, #325, #330, and #334 as well as other smaller
+PRs.  These changes began back in 0.7.6 and should be transparent to the end
+user.  But they should make the underlying code easier to maintain and simpler
+to add new devices and features. This is the reason for the jump to 0.8.0.
+
 ### Additions
 
 ### Fixes
