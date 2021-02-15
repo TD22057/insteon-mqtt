@@ -120,10 +120,9 @@ class HiddenDoor(BatterySensor):
         """Returns the timestamp of the last battery voltage report from the
         saved metadata
         """
-        meta = self.db.get_meta('HDS')
-        ret = 0
-        if isinstance(meta, dict) and 'battery_voltage_time' in meta:
-            ret = meta['battery_voltage_time']
+        ret = self.db.get_meta('battery_voltage_time')
+        if ret is None:
+            ret = 0
         return ret
 
     #-----------------------------------------------------------------------
@@ -134,13 +133,7 @@ class HiddenDoor(BatterySensor):
         Args:
           val:    (timestamp) time.time() value
         """
-        meta = {'battery_voltage_time': val}
-        existing = self.db.get_meta('HDS')
-        if isinstance(existing, dict):
-            existing.update(meta)
-            self.db.set_meta('HDS', existing)
-        else:
-            self.db.set_meta('HDS', meta)
+        self.db.set_meta('battery_voltage_time', val)
 
     #-----------------------------------------------------------------------
     def set_low_battery_voltage(self, on_done, voltage=None):
