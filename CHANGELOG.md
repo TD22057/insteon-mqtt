@@ -1,5 +1,14 @@
 # Revision Change History
 
+## [0.8.0]
+
+### Additions
+
+### Fixes
+
+- Fixed an error where setting the MQTT id would prevent subscribing to
+  MQTT topics. (thanks @kpfleming)([PR 352][P352])
+
 ## [0.7.6]
 
 A few new features and some significant bug fixes.  A significant refactor of
@@ -590,3 +599,4 @@ will add new features.
 [P313]: https://github.com/TD22057/insteon-mqtt/pull/313
 [P213]: https://github.com/TD22057/insteon-mqtt/pull/213
 [P326]: https://github.com/TD22057/insteon-mqtt/pull/326
+[P352]: https://github.com/TD22057/insteon-mqtt/pull/352
