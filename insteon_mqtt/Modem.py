@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import functools
+import insteon_mqtt
 from .Address import Address
 from .CommandSeq import CommandSeq
 from . import config
@@ -89,7 +90,8 @@ class Modem:
             'sync_all' : self.sync_all,
             'sync' : self.sync,
             'import_scenes': self.import_scenes,
-            'import_scenes_all': self.import_scenes_all
+            'import_scenes_all': self.import_scenes_all,
+            'version': self.version
             }
 
         # Add a generic read handler for any broadcast messages initiated by
@@ -244,6 +246,16 @@ class Modem:
         msg = Msg.OutModemInfo()
         msg_handler = handler.ModemInfo(self, on_done)
         self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def version(self, on_done=None):
+        """ Returns the version of insteon_mqtt
+
+        Used by the MQTT command:
+          Default Topic: 'insteon/command/modem'
+          Payload: '{"cmd": "version"}'
+        """
+        on_done(True, insteon_mqtt.__version__, None)
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
