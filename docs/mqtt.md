@@ -99,6 +99,27 @@ Alternatively you can use the nice names from the config.yaml file too:
    insteon/command/NICE NAME
    ```
 
+### Print the Version of Insteon-MQTT
+
+Supported: modem
+
+If requesting help or submitting a bug, you can use this command to get the
+version of Insteon-MQTT that you are running:
+
+  The default topic location is:
+
+  `insteon/command/modem`
+
+  ```
+  { "cmd" : "version"}
+  ```
+
+This command can also be run from the command line:
+
+  ```
+  insteon-mqtt -v
+  ```
+
 ### Join a New Device to the Network
 
 Supported: devices
@@ -1153,7 +1174,7 @@ Beyond these flags there are two additional settings:
    - Low Battery threshold.  This is the raw Insteon voltage level that where
    the device will trigger a group 0x03 low battery warning. Example to set to
    64 below:
-   
+
    ```
    { "cmd" : "set_low_battery_voltage", "voltage" : 64 }
    ```

@@ -12,6 +12,10 @@ to add new devices and features. This is the reason for the jump to 0.8.0.
 
 - Added support for hidden door sensors.  (thanks @tommycw1) ([PR 324][P324])
 
+- Adds a version command to the modem command topic `{"cmd":"version"}` and
+  to the command line `insteon-mqtt config.yaml -v`.  Both will return the
+  version of Insteon-MQTT. ([PR 355][P355])
+
 ### Fixes
 
 - Fixed an error where setting the MQTT id would prevent subscribing to
@@ -616,3 +620,4 @@ will add new features.
 [P344]: https://github.com/TD22057/insteon-mqtt/pull/344
 [P324]: https://github.com/TD22057/insteon-mqtt/pull/324
 [P354]: https://github.com/TD22057/insteon-mqtt/pull/354
+[P355]: https://github.com/TD22057/insteon-mqtt/pull/355
