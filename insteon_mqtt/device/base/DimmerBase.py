@@ -363,6 +363,28 @@ class DimmerBase(ManualCtrl, ResponderBase, Base):
         if manual == on_off.Manual.STOP:
             self.refresh()
 
+    #-----------------------------------------------------------------------
+    def handle_refresh(self, msg, group=None):
+        """Callback for handling refresh() responses.
+
+        This is called when we get a response to the refresh() command.  The
+        refresh command reply will contain the current device state in cmd2
+        and this updates the device with that value.  It is called by
+        handler.DeviceRefresh when we can an ACK for the refresh command.
+
+        Overrides Base.handle_refresh in order to add the level key to
+        _set_state().
+
+        Args:
+          msg (message.InpStandard): The refresh message reply.  The current
+              device state is in the msg.cmd2 field.
+        """
+        LOG.ui("Device %s refresh cmd2 %s", self.addr, msg.cmd2)
+
+        # Level works for most things can add a derive state if needed.
+        self._set_state(level=msg.cmd2, group=group,
+                        reason=on_off.REASON_REFRESH)
+
     #========= Manual Functions
     #-----------------------------------------------------------------------
     def react_to_manual(self, manual, group, reason):
