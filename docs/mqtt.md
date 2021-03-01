@@ -453,7 +453,19 @@ commands.
 
 ### Get and set operating flags.
 
-Supported: devices
+Supported: devices, modem (get_flags only)
+
+To request the current flag settings on a device:
+
+  ```
+  insteon-mqtt config.yaml get-flags aa.bb.cc
+  ```
+
+The MQTT format of the command is:
+
+  ```
+  { "cmd" : "get_flags"}
+  ```
 
 This command gets and sets various Insteon device flags.  The set of
 supported flags depends on the device type.  The command line tool accepts an

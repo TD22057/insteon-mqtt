@@ -44,6 +44,7 @@ from .ModemInfo import ModemInfo
 from .ModemLinkComplete import ModemLinkComplete
 from .ModemLinkStart import ModemLinkStart
 from .ModemReset import ModemReset
+from .ModemGetFlags import ModemGetFlags
 from .ModemScene import ModemScene
 from .StandardCmd import StandardCmd
 from .StandardCmdNAK import StandardCmdNAK

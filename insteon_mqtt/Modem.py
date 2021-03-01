@@ -87,6 +87,7 @@ class Modem:
             'linking' : self.linking,
             'scene' : self.scene,
             'factory_reset' : self.factory_reset,
+            'get_flags' : self.get_flags,
             'sync_all' : self.sync_all,
             'sync' : self.sync,
             'import_scenes': self.import_scenes,
@@ -710,6 +711,18 @@ class Modem:
         LOG.warning("Modem being reset.  All data will be lost")
         msg = Msg.OutResetModem()
         msg_handler = handler.ModemReset(self, on_done)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def get_flags(self, on_done=None):
+        """Queries and Prints the Modem Flags to the Log
+
+        Args:
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+        """
+        msg = Msg.OutGetModemFlags()
+        msg_handler = handler.ModemGetFlags(self, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
