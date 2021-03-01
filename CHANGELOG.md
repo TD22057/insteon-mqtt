@@ -16,6 +16,9 @@ to add new devices and features. This is the reason for the jump to 0.8.0.
   to the command line `insteon-mqtt config.yaml -v`.  Both will return the
   version of Insteon-MQTT. ([PR 355][P355])
 
+- Adds get_flags suppport to the modem.  Only needed for debugging.
+  ([PR 359][P359])
+
 ### Fixes
 
 - Fixed an error where setting the MQTT id would prevent subscribing to
@@ -621,3 +624,4 @@ will add new features.
 [P324]: https://github.com/TD22057/insteon-mqtt/pull/324
 [P354]: https://github.com/TD22057/insteon-mqtt/pull/354
 [P355]: https://github.com/TD22057/insteon-mqtt/pull/355
+[P359]: https://github.com/TD22057/insteon-mqtt/pull/359
