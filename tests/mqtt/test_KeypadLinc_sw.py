@@ -27,7 +27,7 @@ def setup(mock_paho_mqtt, tmpdir):
     modem = H.main.MockModem(tmpdir)
     addr = IM.Address(1, 2, 3)
     name = "device name"
-    dev = IM.device.KeypadLinc(proto, modem, addr, name, dimmer=False)
+    dev = IM.device.KeypadLinc(proto, modem, addr, name)
 
     link = IM.network.Mqtt()
     mqttModem = H.mqtt.MockModem()
@@ -233,7 +233,7 @@ class Test_KeypadLinc_sw:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x13, 0x00)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -255,7 +255,7 @@ class Test_KeypadLinc_sw:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x11, 0xff)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -277,7 +277,7 @@ class Test_KeypadLinc_sw:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x13, 0x00)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -299,7 +299,7 @@ class Test_KeypadLinc_sw:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x11, 0xff)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -321,7 +321,7 @@ class Test_KeypadLinc_sw:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x13, 0x00)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -343,7 +343,7 @@ class Test_KeypadLinc_sw:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x11, 0xff)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -369,7 +369,7 @@ class Test_KeypadLinc_sw:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x14, 0x00)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -392,7 +392,7 @@ class Test_KeypadLinc_sw:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x21, 0xff)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
         # Check that reported state matches command
         assert len(link.client.pub) == 2
         assert link.client.pub[1] == dict(
@@ -413,7 +413,7 @@ class Test_KeypadLinc_sw:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x14, 0x00)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
 
         # Check that reported state matches command
         assert len(link.client.pub) == 2
@@ -436,7 +436,7 @@ class Test_KeypadLinc_sw:
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
         ack = IM.message.InpStandard(setup.addr.hex, modem.addr.hex, flags,
                                      0x21, 0xff)
-        dev.handle_set_load(ack, IM.util.make_callback(None))
+        dev.handle_ack(ack, IM.util.make_callback(None))
         # Check that reported state matches command
         assert len(link.client.pub) == 2
         assert link.client.pub[1] == dict(

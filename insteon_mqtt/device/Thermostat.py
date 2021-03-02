@@ -4,7 +4,7 @@
 #
 #===========================================================================
 import enum
-from .Base import Base
+from .base import Base
 from ..CommandSeq import CommandSeq
 from .. import log
 from .. import message as Msg
@@ -181,50 +181,26 @@ class Thermostat(Base):
         seq.run()
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False, on_done=None):
-        """Refresh the current device state and database if needed.
+    def addRefreshData(self, seq, force=False):
+        """Add commands to refresh any internal data required.
 
-        This sends a ping to the device.  The reply has the current device
-        state (on/off, level, etc) and the current db delta value which is
-        checked against the current db value.  If the current db is out of
-        date, it will trigger a download of the database.
+        The base class uses this update the device catalog ID's and firmware
+        if we don't know what they are.
 
-        This will send out an updated signal for the current device status
-        whenever possible.
+        This is split out of refresh() so derived classes that override
+        refresh can also get this information.
 
-        In addition, this also runs the 'get_status' command as well, which
-        asks the thermostat for the current state of its attributes as well
-        the current units selected on the device.  If you are seeing errors
-        in temperatures that look like C and F are reversed, running a refresh
-        may fix the issue.
+        The base refresh only checks the DB value for a thermostat, all other
+        states are determined by get_status()
 
         Args:
+          seq (CommandSeq): The command sequence to add the command to.
           force (bool):  If true, will force a refresh of the device database
                 even if the delta value matches as well as a re-query of the
                 device model information even if it is already known.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
         """
-        LOG.info("Device %s cmd: fan status refresh", self.addr)
-
-        seq = CommandSeq(self, "Refresh complete", on_done, name="DevRefresh")
-
-        # Send a 0x19 0x03 command to get the fan speed level.  This sends a
-        # refresh ping which will respond w/ the fan level and current
-        # database delta field.  Pass skip_db here - we'll let the dimmer
-        # refresh handler above take care of getting the database updated.
-        # Otherwise this handler and the one created in the dimmer refresh
-        # would download the database twice.
-        msg = Msg.OutStandard.direct(self.addr, 0x19, 0x03)
-        msg_handler = handler.DeviceRefresh(self, self.handle_refresh,
-                                            force=False, num_retry=3,
-                                            skip_db=True)
-        seq.add_msg(msg, msg_handler)
-
-        # If we get the FAN state correctly, then have the dimmer also get
-        # it's state and update the database if necessary.
         seq.add(self.get_status)
-        seq.run()
+        super().addRefreshData(seq, force=force)
 
     #-----------------------------------------------------------------------
     def get_status(self, on_done=None):
@@ -419,8 +395,8 @@ class Thermostat(Base):
         """
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00,
                                      bytes([0x00] + [0x08] + [0x00] * 12))
-        msg_handler = handler.StandardCmd(msg, self.handle_generic_ack,
-                                          on_done, num_retry=3)
+        callback = self.generic_ack_callback("Thermostate broadcast enabled")
+        msg_handler = handler.StandardCmd(msg, callback, on_done, num_retry=3)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -436,11 +412,7 @@ class Thermostat(Base):
         Args:
           msg (InpStandard): Broadcast message from the device.
         """
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("Thermostat %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-            return
-        elif msg.cmd1 in [Msg.CmdType.ON, Msg.CmdType.OFF]:
+        if msg.cmd1 in [Msg.CmdType.ON, Msg.CmdType.OFF]:
             LOG.info("Thermostat %s broadcast %s grp: %s", self.addr, msg.cmd1,
                      msg.group)
 

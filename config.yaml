@@ -89,9 +89,13 @@ insteon:
       - 48.3d.46
       - 48.b0.ad: 'dim1'
 
-    # Battery powered sensors (door, hidden door, window).
+    # Battery powered sensors (door, window).
     battery_sensor:
       - 94.a9.12
+
+    # Battery powered hidden door sensors
+    hidden_door:
+      - 32.a0.4b: 'back'
 
     # Battery powered motion sensors.
     motion:
@@ -448,6 +452,32 @@ mqtt:
     #   state = 'dawn'/'dusk'
     dawn_dusk_topic: 'insteon/{{address}}/dawn'
     dawn_dusk_payload: '{{is_dawn_str.upper()}}'
+
+  #------------------------------------------------------------------------
+  # Hidden Door Sensors
+  #------------------------------------------------------------------------
+
+  # Hidden Door Sensors will use the state and low battery configuration
+  # inputs from battery_sensor and add battery voltage which is configured
+  # here.
+  #
+  # To register the hidden door sensor in Home Assistant use MQTT binary
+  # sensor with a configuration like:
+  #   binary_sensor:
+  #     - platform: mqtt
+  #       state_topic: 'insteon/aa.bb.cc//battery_voltage'
+  #TODO       device_class: 'light'
+  hidden_door:
+    # Output topic and payload.  This message is sent
+    # whenever the device is polled and a new voltage, low battery voltage
+    # or heart beat interval is obtained from the device.
+    # Available variables for templating are:
+    #   address = 'aa.bb.cc'
+    #   name = 'device name'
+    #   batt_volt = raw insteon voltage level
+  
+    battery_voltage_topic: 'insteon/{{address}}/battery_voltage'
+    battery_voltage_payload: '{"voltage" : {{batt_volt}}}'
 
   #------------------------------------------------------------------------
   # Leak sensors

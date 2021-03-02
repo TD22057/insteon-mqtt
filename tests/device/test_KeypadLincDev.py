@@ -20,7 +20,7 @@ def test_device(tmpdir):
     protocol = H.main.MockProtocol()
     modem = H.main.MockModem(tmpdir)
     addr = IM.Address(0x01, 0x02, 0x03)
-    device = IM.device.KeypadLinc(protocol, modem, addr, 'test_device')
+    device = IM.device.KeypadLincDimmer(protocol, modem, addr, 'test_device')
     return device
 
 class Test_KPL():
@@ -56,10 +56,10 @@ class Test_KPL():
             assert IM.CommandSeq.add_msg.call_count == 3
             # Check the first call
             assert args_list[0][0][0].cmd1 == 0x19
-            assert args_list[0][0][0].cmd2 == 0x01
+            assert args_list[0][0][0].cmd2 == 0x00
             # Check the second call
             assert args_list[1][0][0].cmd1 == 0x19
-            assert args_list[1][0][0].cmd2 == 0x00
+            assert args_list[1][0][0].cmd2 == 0x01
             # Check the third call
             assert args_list[2][0][0].cmd1 == 0x2e
             assert args_list[2][0][0].cmd2 == 0x00
@@ -106,26 +106,12 @@ class Test_KPL():
 
     def test_increment_up(self, test_device):
         # increment_up(self, reason="", on_done=None)
-        # Switch shouldn't do anything
-        test_device.is_dimmer = False
-        test_device.increment_up()
-        assert len(test_device.protocol.sent) == 0
-
-        # dimmer
-        test_device.is_dimmer = True
         test_device.increment_up()
         assert len(test_device.protocol.sent) == 1
         assert test_device.protocol.sent[0].msg.cmd1 == 0x15
 
     def test_increment_down(self, test_device):
         # increment_up(self, reason="", on_done=None)
-        # Switch shouldn't do anything
-        test_device.is_dimmer = False
-        test_device.increment_down()
-        assert len(test_device.protocol.sent) == 0
-
-        # dimmer
-        test_device.is_dimmer = True
         test_device.increment_down()
         assert len(test_device.protocol.sent) == 1
         assert test_device.protocol.sent[0].msg.cmd1 == 0x16
@@ -178,7 +164,7 @@ class Test_KPL():
 
     def test_set_backlight(self, test_device):
         # set_backlight(self, level, on_done=None)
-        test_device.set_backlight(0)
+        test_device.set_backlight(backlight=0)
         assert len(test_device.protocol.sent) == 1
         assert test_device.protocol.sent[0].msg.cmd1 == 0x20
         assert test_device.protocol.sent[0].msg.cmd2 == 0x08
@@ -194,7 +180,7 @@ class Test_KPL():
 
         for params in ([1, 0x01], [255, 0xFF], [127, 127]):
             with mock.patch.object(IM.CommandSeq, 'add_msg'):
-                test_device.set_backlight(params[0])
+                test_device.set_backlight(backlight=params[0])
                 args_list = IM.CommandSeq.add_msg.call_args_list
                 assert IM.CommandSeq.add_msg.call_count == 2
                 # Check the first call
@@ -207,7 +193,7 @@ class Test_KPL():
 
         with mock.patch.object(IM.CommandSeq, 'add_msg'):
             # test backlight off
-            test_device.set_backlight(0)
+            test_device.set_backlight(backlight=0)
             args_list = IM.CommandSeq.add_msg.call_args_list
             assert IM.CommandSeq.add_msg.call_count == 1
             # Check the first call
@@ -216,13 +202,6 @@ class Test_KPL():
 
     def test_set_ramp_rate(self, test_device):
         # set_ramp_rate(self, rate, on_done=None)
-        # Test switch
-        test_device.is_dimmer = False
-        test_device.set_ramp_rate(5)
-        assert len(test_device.protocol.sent) == 0
-
-        # Test dimmer
-        test_device.is_dimmer = True
         def level_bytes(level):
             data = bytes([
                 0x01,   # D1 must be group 0x01
@@ -231,7 +210,7 @@ class Test_KPL():
                 ] + [0x00] * 11)
             return data
         for params in ([.1, 0x1f], [540, 0x00], [600, 0x00], [.0001, 0x1c]):
-            test_device.set_ramp_rate(params[0])
+            test_device.set_ramp_rate(ramp_rate=params[0])
             assert len(test_device.protocol.sent) == 1
             assert test_device.protocol.sent[0].msg.cmd1 == 0x2e
             assert test_device.protocol.sent[0].msg.data == level_bytes(params[1])
@@ -239,13 +218,6 @@ class Test_KPL():
 
     def test_set_on_level(self, test_device):
         # set_on_level(self, level, on_done=None)
-        # Test switch
-        test_device.is_dimmer = False
-        test_device.set_on_level(5)
-        assert len(test_device.protocol.sent) == 0
-
-        # Test dimmer
-        test_device.is_dimmer = True
         assert(test_device.get_on_level() == 255)
 
         def level_bytes(level):
@@ -256,14 +228,14 @@ class Test_KPL():
                 ] + [0x00] * 11)
             return data
         for params in ([1, 0x01], [127, 127], [255, 0xFF]):
-            test_device.set_on_level(params[0])
+            test_device.set_on_level(on_level=params[0])
             assert len(test_device.protocol.sent) == 1
             assert test_device.protocol.sent[0].msg.cmd1 == 0x2e
             assert (test_device.protocol.sent[0].msg.data ==
                     level_bytes(params[1]))
             test_device.protocol.clear()
 
-        test_device.set_on_level(64)
+        test_device.set_on_level(on_level=64)
 
         # Fake having completed the set_on_level(64) request
         flags = IM.message.Flags(IM.message.Flags.Type.DIRECT_ACK, False)
@@ -278,19 +250,19 @@ class Test_KPL():
         # default on-level then to full brightness, as expected.
         # Fast-on should always go to full brightness.
         params = [
-            (Msg.CmdType.ON, 0x00, {"level":64, "mode":IM.on_off.Mode.NORMAL, "reason":'device', "button":1}),
-            (Msg.CmdType.ON, 0x00, {"level":255, "mode":IM.on_off.Mode.NORMAL, "reason":'device', "button":1}),
-            (Msg.CmdType.ON, 0x00, {"level":64, "mode":IM.on_off.Mode.NORMAL, "reason":'device', "button":1}),
-            (Msg.CmdType.OFF, 0x00, {"level":0, "mode":IM.on_off.Mode.NORMAL, "reason":'device', "button":1}),
-            (Msg.CmdType.ON_FAST, 0x00, {"level":255, "mode":IM.on_off.Mode.FAST, "reason":'device', "button":1}),
-            (Msg.CmdType.ON_FAST, 0x00, {"level":255, "mode":IM.on_off.Mode.FAST, "reason":'device', "button":1}),
-            (Msg.CmdType.OFF_FAST, 0x00, {"level":0, "mode":IM.on_off.Mode.FAST, "reason":'device', "button":1}),
+            (Msg.CmdType.ON, 0x00, {"level":64, "mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":1}),
+            (Msg.CmdType.ON, 0x00, {"level":255, "mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":1}),
+            (Msg.CmdType.ON, 0x00, {"level":64, "mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":1}),
+            (Msg.CmdType.OFF, 0x00, {"level":0, "mode":IM.on_off.Mode.NORMAL, "is_on": False, "reason":'device', "button":1}),
+            (Msg.CmdType.ON_FAST, 0x00, {"level":255, "mode":IM.on_off.Mode.FAST, "is_on": True, "reason":'device', "button":1}),
+            (Msg.CmdType.ON_FAST, 0x00, {"level":255, "mode":IM.on_off.Mode.FAST, "is_on": True, "reason":'device', "button":1}),
+            (Msg.CmdType.OFF_FAST, 0x00, {"level":0, "mode":IM.on_off.Mode.FAST, "is_on": False, "reason":'device', "button":1}),
             (Msg.CmdType.ON_INSTANT, 0x00,
-                {"level":64, "mode":IM.on_off.Mode.INSTANT, "reason":'device', "button":1}),
+                {"level":64, "mode":IM.on_off.Mode.INSTANT, "is_on": True, "reason":'device', "button":1}),
             (Msg.CmdType.ON_INSTANT, 0x00,
-                {"level":255, "mode":IM.on_off.Mode.INSTANT, "reason":'device', "button":1}),
+                {"level":255, "mode":IM.on_off.Mode.INSTANT, "is_on": True, "reason":'device', "button":1}),
             (Msg.CmdType.ON_INSTANT, 0x00,
-                {"level":64, "mode":IM.on_off.Mode.INSTANT, "reason":'device', "button":1})]
+                {"level":64, "mode":IM.on_off.Mode.INSTANT, "is_on": True, "reason":'device', "button":1})]
         for cmd1, cmd2, expected in params:
             with mock.patch.object(IM.Signal, 'emit') as mocked:
                 print("Trying:", "[%x, %x]" % (cmd1, cmd2))
@@ -323,7 +295,7 @@ class Test_KPL():
                 args_list = IM.CommandSeq.add.call_args_list
                 assert IM.CommandSeq.add.call_count == 1
                 assert args_list[0][0][0] == params[1]
-                assert args_list[0][0][1] == params[2]
+                assert args_list[0][1] == params[0]
 
     def test_handle_refresh_state(self, test_device):
         # handle_refresh_state(self, msg, on_done):
@@ -336,23 +308,24 @@ class Test_KPL():
 
 
     @pytest.mark.parametrize("group_num,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "reason":'device', "button":1}),
-        (0x01,Msg.CmdType.OFF, 0x00, {"level":0,"mode":IM.on_off.Mode.NORMAL, "reason":'device', "button":1}),
-        (0x01,Msg.CmdType.ON_FAST, 0x00,{"level":255,"mode":IM.on_off.Mode.FAST, "reason":'device', "button":1}),
-        (0x01,Msg.CmdType.OFF_FAST, 0x00, {"level":0,"mode":IM.on_off.Mode.FAST, "reason":'device', "button":1}),
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.DOWN, "reason":'device', "button":1}),
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, {"manual":IM.on_off.Manual.UP, "reason":'device', "button":1}),
-        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP, "reason":'device', "button":1}),
+        (0x01,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":1}),
+        (0x01,Msg.CmdType.OFF, 0x00, {"level":0,"mode":IM.on_off.Mode.NORMAL, "is_on": False, "reason":'device', "button":1}),
+        (0x01,Msg.CmdType.ON_FAST, 0x00,{"level":255,"mode":IM.on_off.Mode.FAST, "is_on": True, "reason":'device', "button":1}),
+        (0x01,Msg.CmdType.OFF_FAST, 0x00, {"level":0,"mode":IM.on_off.Mode.FAST, "is_on": False, "reason":'device', "button":1}),
+        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.DOWN, "button":1, "reason":'device'}),
+        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, {"manual":IM.on_off.Manual.UP, "button":1, "reason":'device'}),
+        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP, "button":1, "reason":'device'}),
         (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
-        (0x02,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "reason":'device', "button":2}),
-        (0x03,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "reason":'device', "button":3}),
-        (0x04,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "reason":'device', "button":4}),
-        (0x05,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "reason":'device', "button":5}),
-        (0x06,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "reason":'device', "button":6}),
-        (0x07,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "reason":'device', "button":7}),
-        (0x08,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "reason":'device', "button":8}),
+        (0x02,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":2}),
+        (0x03,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":3}),
+        (0x04,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":4}),
+        (0x05,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":5}),
+        (0x06,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":6}),
+        (0x07,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":7}),
+        (0x08,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":8}),
     ])
     def test_handle_on_off(self, test_device, group_num, cmd1, cmd2, expected):
+        test_device._load_group = 1
         with mock.patch.object(IM.Signal, 'emit') as mocked:
             flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
             group = IM.Address(0x00, 0x00, group_num)

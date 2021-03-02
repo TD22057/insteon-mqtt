@@ -22,7 +22,6 @@ class Test_Broadcast:
 
         r = handler.msg_received(proto, "dummy")
         assert r == Msg.UNKNOWN
-        assert len(calls) == 0
 
         flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
         msg = Msg.InpStandard(addr, broadcast_to_addr, flags, 0x11, 0x01)
@@ -30,11 +29,11 @@ class Test_Broadcast:
         # no device
         r = handler.msg_received(proto, msg)
         assert r == Msg.UNKNOWN
-        assert len(calls) == 0
 
         # test good broadcat
         assert proto.wait_time == 0
-        device = IM.device.Base(proto, modem, addr, "foo")
+        device = IM.device.base.Base(proto, modem, addr, "foo")
+        device.handle_broadcast = calls.append
 
         # add 10 device db entries for this group
         for count in range(10):
@@ -45,7 +44,6 @@ class Test_Broadcast:
                                       bytes([0x01, 0x02, 0x03]))
             device.db.add_entry(entry)
 
-        device.handle_broadcast = calls.append
         modem.add(device)
         r = handler.msg_received(proto, msg)
 
@@ -76,33 +74,37 @@ class Test_Broadcast:
         assert r == Msg.CONTINUE
         assert len(calls) == 2
 
+        # A direct message should be unknown
         flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
         msg = Msg.InpStandard(addr, addr, flags, 0x11, 0x01)
         r = handler.msg_received(proto, msg)
         assert r == Msg.UNKNOWN
+        assert len(calls) == 2
 
-        # Success Report Broadcast
+        # Success Report Broadcast, should not be sent to device
         pre_success_time = proto.wait_time
         flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
         success_report_to_addr = IM.Address(0x11, 1, 0x1)
-        msg = Msg.InpStandard(addr, addr, flags, 0x06, 0x00)
+        msg = Msg.InpStandard(addr, addr, flags,
+                              Msg.CmdType.LINK_CLEANUP_REPORT, 0x00)
         r = handler.msg_received(proto, msg)
 
         assert r == Msg.CONTINUE
-        assert len(calls) == 3
+        assert len(calls) == 2
         # wait time should be cleared
         assert proto.wait_time < pre_success_time
 
-        # Failure Report Broadcast
+        # Failure Report Broadcast, should not be sent to device
         pre_success_time = proto.wait_time
         flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
         success_report_to_addr = IM.Address(0x11, 1, 0x1)
-        msg = Msg.InpStandard(addr, addr, flags, 0x06, 0x01)
+        msg = Msg.InpStandard(addr, addr, flags,
+                              Msg.CmdType.LINK_CLEANUP_REPORT, 0x01)
         r = handler.msg_received(proto, msg)
 
         assert 'Cleanup report for 0a.12.34, grp 52 had 1 fails.' in caplog.text
         assert r == Msg.CONTINUE
-        assert len(calls) == 4
+        assert len(calls) == 2
 
         # Pretend that a new broadcast message dropped / not received by PLM
 
@@ -112,7 +114,7 @@ class Test_Broadcast:
         r = handler.msg_received(proto, msg)
 
         assert r == Msg.CONTINUE
-        assert len(calls) == 5
+        assert len(calls) == 3
 
     #-----------------------------------------------------------------------
 

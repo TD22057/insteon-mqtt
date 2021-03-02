@@ -4,7 +4,7 @@
 #
 #===========================================================================
 import enum
-from .Base import Base
+from .base import Base
 from ..CommandSeq import CommandSeq
 from .. import log
 from .. import message as Msg
@@ -78,7 +78,7 @@ class SmokeBridge(Base):
                                })
 
     #-----------------------------------------------------------------------
-    def refresh(self, force=False, on_done=None):
+    def refresh(self, force=False, group=None, on_done=None):
         """Refresh the current device state and database if needed.
 
         This sends a ping to the device.  Smoke bridge can't report it's
@@ -86,10 +86,15 @@ class SmokeBridge(Base):
         check against our current db.  If the current db is out of date, it
         will trigger a download of the database.
 
+        Smokebridge uses a unique refresh command.
+
         Args:
           force (bool):  If true, will force a refresh of the device database
                 even if the delta value matches as well as a re-query of the
                 device model information even if it is already known.
+          group (int): The group being refreshed, it is passed to
+                handle_refresh() so that the state signal is correct. Should
+                generally be None.
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -120,15 +125,10 @@ class SmokeBridge(Base):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("Smoke bridge %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-
         # 0x11 ON command for the smoke bridge means the error is active.
         # NOTE: there is no off command - that seems to be handled by the
         # bridge sending the CLEAR condition group.
-        elif msg.cmd1 == Msg.CmdType.ON:
+        if msg.cmd1 == Msg.CmdType.ON:
             LOG.info("Smoke bridge %s broadcast ON grp: %s", self.addr,
                      msg.group)
 

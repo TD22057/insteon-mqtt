@@ -87,7 +87,7 @@ class Test_ModemEntry:
         db = MockDB(modem)
         addr = IM.Address(0x03, 0x04, 0x05)
         obj = IM.db.ModemEntry(addr, 0x03, False, data, db=db)
-        device = IM.device.Base(protocol, modem, addr, name="Awesomesauce")
+        device = IM.device.base.Base(protocol, modem, addr, name="Awesomesauce")
         modem.set_linked_device(device)
 
         assert obj.label == "03.04.05 (Awesomesauce)"

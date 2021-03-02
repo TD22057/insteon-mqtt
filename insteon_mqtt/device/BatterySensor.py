@@ -4,7 +4,7 @@
 #
 #===========================================================================
 import time
-from .Base import Base
+from .base import Base
 from .. import log
 from .. import message as Msg
 from ..Signal import Signal
@@ -37,9 +37,6 @@ class BatterySensor(Base):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).  Supported signals are:
 
-    - signal_state( Device, bool is_on ): Sent when the sensor is tripped
-      (is_on=True) or resets (is_on=False).
-
     - signal_low_battery( Device, bool is_low ): Sent to indicate the current
       battery state.
 
@@ -61,8 +58,6 @@ class BatterySensor(Base):
         """
         super().__init__(protocol, modem, address, name)
 
-        # Sensor on/off signal.  API: func( Device, bool is_on )
-        self.signal_state = Signal()
         # Sensor low battery signal.  API: func( Device, bool is_low )
         self.signal_low_battery = Signal()
         # Sensor heartbeat signal.  API: func( Device, True )
@@ -83,7 +78,6 @@ class BatterySensor(Base):
             0x04 : self.handle_heartbeat,
             })
 
-        self._is_on = False
         self._send_queue = []
         self.cmd_map.update({
             'awake' : self.awake
@@ -124,12 +118,6 @@ class BatterySensor(Base):
             self._send_queue.append([msg, msg_handler, high_priority, after])
 
     #-----------------------------------------------------------------------
-    def is_on(self):
-        """Return if sensor has been tripped.
-        """
-        return self._is_on
-
-    #-----------------------------------------------------------------------
     def handle_finished(self, msg):
         """Handle write messages that are marked FINISHED
 
@@ -168,26 +156,6 @@ class BatterySensor(Base):
         self._pop_send_queue()
 
     #-----------------------------------------------------------------------
-    def handle_on_off(self, msg):
-        """Handle sensor activation.
-
-        This is called by the device when a group broadcast on group 01 is
-        sent out by the sensor.
-
-        Args:
-          msg (InpStandard):  Broadcast message from the device.
-        """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-        else:
-            LOG.info("BatterySensor %s on_off broadcast cmd: %s", self.addr,
-                     msg.cmd1)
-            self._set_is_on(msg.cmd1 == Msg.CmdType.ON)
-            self.update_linked_devices(msg)
-
-    #-----------------------------------------------------------------------
     def handle_low_battery(self, msg):
         """Handle a low battery message.
 
@@ -198,16 +166,11 @@ class BatterySensor(Base):
           msg (InpStandard):  Broadcast message from the device.  On/off is
               stored in msg.cmd1.
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-        else:
-            LOG.info("BatterySensor %s low battery broadcast cmd: %s",
-                     self.addr, msg.cmd1)
-            # Send True for low battery, False for regular.
-            self.signal_low_battery.emit(self, msg.cmd1 == Msg.CmdType.ON)
-            self.update_linked_devices(msg)
+        LOG.info("BatterySensor %s low battery broadcast cmd: %s",
+                 self.addr, msg.cmd1)
+        # Send True for low battery, False for regular.
+        self.signal_low_battery.emit(self, msg.cmd1 == Msg.CmdType.ON)
+        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def handle_heartbeat(self, msg):
@@ -219,35 +182,11 @@ class BatterySensor(Base):
         Args:
           msg (InpStandard):  Broadcast message from the device.
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("BatterySensor %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-        else:
-            LOG.info("BatterySensor %s heartbeat broadcast cmd: %s", self.addr,
-                     msg.cmd1)
-            # Send True for any heart beat message
-            self.signal_heartbeat.emit(self, True)
-            self.update_linked_devices(msg)
-
-    #-----------------------------------------------------------------------
-    def handle_refresh(self, msg):
-        """Handle replies to the refresh command.
-
-        The refresh command reply will contain the current device
-        state in cmd2 and this updates the device with that value.
-
-        NOTE: refresh() will not work if the device is asleep.
-
-        Args:
-          msg (message.InpStandard):  The refresh message reply.  The current
-              device state is in the msg.cmd2 field.
-        """
-        LOG.ui("BatterySensor %s refresh on = %s", self.addr, msg.cmd2 != 0x00)
-
-        # Current on/off level is stored in cmd2 so update our state
-        # to match.
-        self._set_is_on(msg.cmd2 != 0x00)
+        LOG.info("BatterySensor %s heartbeat broadcast cmd: %s", self.addr,
+                 msg.cmd1)
+        # Send True for any heart beat message
+        self.signal_heartbeat.emit(self, True)
+        self.update_linked_devices(msg)
 
     #-----------------------------------------------------------------------
     def awake(self, on_done):
@@ -273,20 +212,6 @@ class BatterySensor(Base):
         #Empty the queue
         self._send_queue = []
         on_done(True, "Complete", None)
-
-    #-----------------------------------------------------------------------
-    def _set_is_on(self, is_on):
-        """Set the device on/off state.
-
-        This will change the internal state and emit the state changed
-        signal.
-
-        Args:
-          is_on (bool):  True if motion is active, False if it isn't.
-        """
-        LOG.info("Setting device %s on:%s", self.label, is_on)
-        self._is_on = is_on
-        self.signal_state.emit(self, is_on=self._is_on)
 
     #-----------------------------------------------------------------------
     def _pop_send_queue(self):

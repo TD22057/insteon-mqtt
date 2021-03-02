@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import functools
+import insteon_mqtt
 from .Address import Address
 from .CommandSeq import CommandSeq
 from . import config
@@ -86,10 +87,12 @@ class Modem:
             'linking' : self.linking,
             'scene' : self.scene,
             'factory_reset' : self.factory_reset,
+            'get_flags' : self.get_flags,
             'sync_all' : self.sync_all,
             'sync' : self.sync,
             'import_scenes': self.import_scenes,
-            'import_scenes_all': self.import_scenes_all
+            'import_scenes_all': self.import_scenes_all,
+            'version': self.version
             }
 
         # Add a generic read handler for any broadcast messages initiated by
@@ -244,6 +247,16 @@ class Modem:
         msg = Msg.OutModemInfo()
         msg_handler = handler.ModemInfo(self, on_done)
         self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def version(self, on_done=None):
+        """ Returns the version of insteon_mqtt
+
+        Used by the MQTT command:
+          Default Topic: 'insteon/command/modem'
+          Payload: '{"cmd": "version"}'
+        """
+        on_done(True, insteon_mqtt.__version__, None)
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
@@ -701,6 +714,18 @@ class Modem:
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
+    def get_flags(self, on_done=None):
+        """Queries and Prints the Modem Flags to the Log
+
+        Args:
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+        """
+        msg = Msg.OutGetModemFlags()
+        msg_handler = handler.ModemGetFlags(self, on_done)
+        self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
     def send(self, msg, msg_handler, high_priority=False, after=None):
         """Send a message to the modem.
 
@@ -1026,15 +1051,9 @@ class Modem:
           list[3]:  List of Data1-3 values
         """
         # For the base devices this does nothing
-        data_1 = None
-        if 'data_1' in data:
-            data_1 = data['data_1']
-        data_2 = None
-        if 'data_2' in data:
-            data_2 = data['data_2']
-        data_3 = None
-        if 'data_3' in data:
-            data_3 = data['data_3']
+        data_1 = data.get('data_1', None)
+        data_2 = data.get('data_2', None)
+        data_3 = data.get('data_3', None)
         return [data_1, data_2, data_3]
 
     #-----------------------------------------------------------------------

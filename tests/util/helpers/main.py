@@ -18,6 +18,7 @@ class MockModem:
         self.scenes = []
         self.devices = {}
         self.device_names = {}
+        self.timed_call = MockTimedCall()
 
     def add(self, device):
         self.devices[device.addr.id] = device
@@ -25,7 +26,10 @@ class MockModem:
             self.device_names[device.name] = device
 
     def find(self, addr):
-        device = self.devices.get(addr.id, None)
+        if isinstance(addr, str):
+            device = self.device_names.get(addr, None)
+        else:
+            device = self.devices.get(addr.id, None)
         return device
 
     def remove(self, device):
@@ -36,6 +40,8 @@ class MockModem:
     def scene(self, is_on, group, num_retry=3, on_done=None, reason=""):
         self.scenes.append((is_on, group, reason))
 
+    def clear_db_config(self):
+        pass
 
 #===========================================================================
 class MockProtocol:
@@ -88,6 +94,12 @@ class MockTimedCall:
     """Mock insteon_mqtt/network/TimedCall class
     """
     def __init__(self):
+        pass
+
+    def add(self, *args, **kwargs):
+        pass
+
+    def remove(self, *args, **kwargs):
         pass
 
 #===========================================================================

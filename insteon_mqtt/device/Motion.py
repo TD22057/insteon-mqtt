@@ -45,10 +45,7 @@ class Motion(BatterySensor):
 
     State changes are communicated by emitting signals.  Other classes can
     connect to these signals to perform an action when a change is made to
-    the device (like sending MQTT messages).  Supported signals are:
-
-    - signal_state( Device, bool is_on ): Sent when the sensor is tripped
-      (is_on=True) or resets (is_on=False).
+    the device (like sending MQTT messages).
 
     - signal_low_battery( Device, bool is_low ): Sent to indicate the current
       battery state.
@@ -89,7 +86,6 @@ class Motion(BatterySensor):
         # Remote (mqtt) commands mapped to methods calls.  Add to the
         # base class defined commands.
         self.cmd_map.update({
-            'set_flags' : self.set_flags,
             'set_low_battery_voltage': self.set_low_battery_voltage,
             'get_battery_voltage' : self._get_ext_flags,
             })
@@ -103,6 +99,13 @@ class Motion(BatterySensor):
         # This allows for a short timer between sending automatic battery
         # requests.  Otherwise, a request may get queued multiple times
         self._battery_request_time = 0
+
+        # Define the flags handled by set_flags()
+        self.set_flags_map.update({"led_on": self.update_flags,
+                                   "night_only": self.update_flags,
+                                   "on_only": self.update_flags,
+                                   "timeout": self._set_timeout,
+                                   "light_sensitivity": self._set_light_sens})
 
     #-----------------------------------------------------------------------
     @property
@@ -198,95 +201,57 @@ class Motion(BatterySensor):
           msg (InpStandard):  Broadcast message from the device.
 
         """
-        # ACK of the broadcast - ignore this.
-        if msg.cmd1 == Msg.CmdType.LINK_CLEANUP_REPORT:
-            LOG.info("Motion %s broadcast ACK grp: %s", self.addr,
-                     msg.group)
-        else:
-            # Send True for dawn, False for dusk.
-            LOG.info("Motion %s broadcast grp: %s cmd %s", self.addr,
-                     msg.group, msg.cmd1)
-            self.signal_dawn.emit(self, msg.cmd1 == Msg.CmdType.ON)
+        # Send True for dawn, False for dusk.
+        LOG.info("Motion %s broadcast grp: %s cmd %s", self.addr,
+                 msg.group, msg.cmd1)
+        self.signal_dawn.emit(self, msg.cmd1 == Msg.CmdType.ON)
 
     #-----------------------------------------------------------------------
-    def set_flags(self, on_done, **kwargs):
-        """Set internal device flags.
-
-        This command is used to change internal device flags and states.
-        These include LED On/Off (off conserves batteries), Timeout (seconds
-        between state updates), Light Sensitivity (Percentage of light for
-        night sensitivity), Night Only Mode and On Only Mode:
-
-        valid kwargs:
-        - led_on = 1/0: Should led flash on motion?
-
-        - night_only = 1/0: Should motion only be reported at night?
-
-        - on_only = 1/0: Should only on motions be reported?
-
-        - timeout = seconds between state updates (The older 2842  models
-        allow between 30 seconds to over 4 hours in 30 second intervals,
-        the 2844 models allow between 10 seconds and 40 minutes in 10
-        second intervals)
-
-        - light_sensitivity = 1-255:  Amount of darkness required for night
-        to be triggered.
-
-        Args:
-          kwargs: Key=value pairs of the flags to change.
-          on_done: Finished callback.  This is called when the command has
-                   completed.  Signature is: on_done(success, msg, data)
+    def update_flags(self, on_done=None, **kwargs):
+        """Change the operating flags.
         """
-        LOG.info("Motion %s cmd: set operation flags", self.label)
-
-        # Check the input flags to make sure only ones we can understand were
-        # passed in.
-        flags = set(["led_on", "night_only", "on_only", "timeout",
-                     "light_sensitivity"])
-        unknown = set(kwargs.keys()).difference(flags)
-        if unknown:
-            LOG.error("Unknown Motion flags input: %s.\n Valid flags "
-                      "are: %s", unknown, flags)
-
         seq = CommandSeq(self, "Motion Set Flags Success", on_done,
-                         name="SetFlags")
-
-        # For some flags we need to know the existing bit before we change it.
-        # So to insure that we are starting from the correct values, get the
-        # current bits and pass that to the callback which will update them to
-        # make the changes.
-        flags = set(["led_on", "night_only", "on_only"])
-        if any(x in kwargs.keys() for x in flags):
-            seq.add(self._get_ext_flags)
-            seq.add(self._change_flags, kwargs)
-        if "light_sensitivity" in kwargs.keys():
-            seq.add(self._set_light_sens, kwargs["light_sensitivity"])
-        if "timeout" in kwargs.keys():
-            seq.add(self._set_timeout, kwargs["timeout"])
-
+                         name="UpdateFlags")
+        seq.add(self._get_ext_flags)
+        seq.add(self._change_flags, kwargs)
         seq.run()
 
     #-----------------------------------------------------------------------
-    def _change_flags(self, flags, on_done):
+    def _change_flags(self, flags, on_done=None):
         """Change the operating flags.
 
         See the set_flags() code for details.
         """
+        # Check for valid input
+        if 'led_on' in flags:
+            led_on = util.input_bool(flags, 'led_on')
+            if led_on is None:
+                LOG.error("Invalid led on.")
+                on_done(False, 'Invalid led on.', None)
+                return
+        else:
+            led_on = self.led_on
+        if 'night_only' in flags:
+            night_only = util.input_bool(flags, 'night_only')
+            if night_only is None:
+                LOG.error("Invalid night only.")
+                on_done(False, 'Invalid night only.', None)
+                return
+        else:
+            night_only = self.night_only
+        if 'on_only' in flags:
+            on_only = util.input_bool(flags, 'on_only')
+            if on_only is None:
+                LOG.error("Invalid on only.")
+                on_done(False, 'Invalid on only.', None)
+                return
+        else:
+            on_only = self.on_only
 
         # Generate the value of the combined flags.
         value = 0
-        value = util.bit_set(value, 3, flags.get("led_on", self.led_on))
-        night_only = flags.get("night_only", None)
-        if night_only is None:
-            night_only = self.night_only
-        else:
-            night_only ^= 1
+        value = util.bit_set(value, 3, led_on)
         value = util.bit_set(value, 2, night_only)
-        on_only = flags.get("on_only", None)
-        if on_only is None:
-            on_only = self.on_only
-        else:
-            on_only ^= 1
         value = util.bit_set(value, 1, on_only)
 
         # Push the flags value to the device.
@@ -296,8 +261,8 @@ class Motion(BatterySensor):
             value,  # D3 = the flag value
             ] + [0x00] * 11)
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-        msg_handler = handler.StandardCmd(msg, self.handle_ext_cmd,
-                                          on_done)
+        callback = self.generic_ack_callback("Flags updated.")
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
@@ -366,19 +331,17 @@ class Motion(BatterySensor):
         on_done(True, "Operation complete", msg.data[5])
 
     #-----------------------------------------------------------------------
-    def handle_ext_cmd(self, msg, on_done):
-        """Handle replies to the set_flags command.
-        Nothing to do, any NAK of failure is caught by the message handler
-        """
-        on_done(True, "Operation complete", None)
-
-    #-----------------------------------------------------------------------
-    def _set_light_sens(self, sensitivity, on_done):
+    def _set_light_sens(self, on_done=None, **kwargs):
         """Change the light sensitivity amount.
 
         See the set_flags() code for details.
         """
-        assert 1 <= int(sensitivity) <= 255
+        # Check for valid input
+        sensitivity = util.input_byte(kwargs, 'light_sensitivity')
+        if sensitivity is None:
+            LOG.error("Invalid light sensitivity.")
+            on_done(False, 'Invalid light sensitivity.', None)
+            return
 
         # Push the flags value to the device.
         data = bytes([
@@ -387,12 +350,12 @@ class Motion(BatterySensor):
             int(sensitivity),  # D3 = the sensitivity value
             ] + [0x00] * 11)
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-        msg_handler = handler.StandardCmd(msg, self.handle_ext_cmd,
-                                          on_done)
+        callback = self.generic_ack_callback("Light sensitivity updated.")
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
-    def _set_timeout(self, timeout, on_done):
+    def _set_timeout(self, on_done=None, **kwargs):
         """Change the timeout in seconds.
 
         This will automatically change the timeout requested to fit within the
@@ -400,7 +363,13 @@ class Motion(BatterySensor):
 
         See the set_flags() code for details.
         """
-        timeout = int(timeout)
+        # Check for valid input
+        timeout = util.input_integer(kwargs, 'timeout')
+        if timeout is None:
+            LOG.error("Invalid timeout.")
+            on_done(False, 'Invalid timeout.', None)
+            return
+
         # The calculation of the timeout value is stored differently on the
         # older 2842 and the newer 2844 motion sensors.  We will assume the
         # newer style as a default.
@@ -434,8 +403,8 @@ class Motion(BatterySensor):
             timeout,  # D3 = the sensitivity value
             ] + [0x00] * 11)
         msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-        msg_handler = handler.StandardCmd(msg, self.handle_ext_cmd,
-                                          on_done)
+        callback = self.generic_ack_callback("Motion timeout updated.")
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------

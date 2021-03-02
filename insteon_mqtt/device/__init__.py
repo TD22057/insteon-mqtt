@@ -26,13 +26,14 @@ first (hold the modem set button, then the device.
 
 #===========================================================================
 
-from .Base import Base
 from .BatterySensor import BatterySensor
 from .Dimmer import Dimmer
 from .EZIO4O import EZIO4O
 from .FanLinc import FanLinc
+from .HiddenDoor import HiddenDoor
 from .IOLinc import IOLinc
 from .KeypadLinc import KeypadLinc
+from .KeypadLincDimmer import KeypadLincDimmer
 from .Leak import Leak
 from .MsgHistory import MsgHistory
 from .Motion import Motion

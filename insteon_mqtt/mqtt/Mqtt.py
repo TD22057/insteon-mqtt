@@ -6,6 +6,7 @@
 import functools
 import json
 import logging
+import insteon_mqtt
 from .. import log
 from . import config
 from .MsgTemplate import MsgTemplate

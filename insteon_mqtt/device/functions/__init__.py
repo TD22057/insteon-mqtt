@@ -17,6 +17,6 @@ the list of available functions to inherit from.
 
 #===========================================================================
 
-from ..Base import Base
 from .Scene import Scene
-from .Set import Set
+from .Backlight import Backlight
+from .ManualCtrl import ManualCtrl

@@ -52,6 +52,7 @@ from .OutModemInfo import OutModemInfo
 from .OutModemLinking import OutModemLinking
 from .OutModemScene import OutModemScene
 from .OutResetModem import OutResetModem
+from .OutGetModemFlags import OutGetModemFlags
 from .OutStandard import OutStandard, OutExtended
 
 # Hub Messages
@@ -85,6 +86,7 @@ types = {
     0x69 : OutAllLinkGetFirst,
     0x6a : OutAllLinkGetNext,
     0x6f : OutAllLinkUpdate,
+    0x73 : OutGetModemFlags,
 
     # Hub Messages
     0x7f : HubRFUnknown,

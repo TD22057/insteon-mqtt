@@ -45,9 +45,10 @@ class Test_Base_Config():
             assert IM.CommandSeq.add.call_count == 5
 
     @pytest.mark.parametrize("group_num,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.ON, 0x00,{"is_on":True}),
-        (0x01,Msg.CmdType.OFF, 0x00, {"is_on":False}),
-        (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
+        (0x01,Msg.CmdType.ON, 0x00,{"is_on":True, "level":None, "button":1, "reason":'device',
+         "mode":IM.on_off.Mode.NORMAL}),
+        (0x01,Msg.CmdType.OFF, 0x00, {"is_on":False, "level":None, "button":1, "reason":'device',
+         "mode":IM.on_off.Mode.NORMAL}),
     ])
     def test_handle_broadcast_state(self, test_device, group_num, cmd1, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:
@@ -65,13 +66,10 @@ class Test_Base_Config():
     @pytest.mark.parametrize("group_num,cmd1,cmd2,expected", [
         (0x02,Msg.CmdType.ON, 0x00,[True]),
         (0x02,Msg.CmdType.OFF, 0x00, [False]),
-        (0x02,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
         (0x03,Msg.CmdType.ON, 0x00,[True]),
         (0x03,Msg.CmdType.OFF, 0x00, [False]),
-        (0x03,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
         (0x04,Msg.CmdType.ON, 0x00,[True]),
         (0x04,Msg.CmdType.OFF, 0x00, [True]),
-        (0x04,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
     ])
     def test_handle_broadcast(self, test_device, group_num, cmd1, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:
@@ -234,3 +232,122 @@ class Test_Base_Config():
         test_device.auto_check_battery()
         sent = test_device.protocol.sent
         assert len(sent) == 0
+
+    def test_set_flags_extended(self, test_device):
+        def on_done(*args):
+            pass
+        # Mark awake so messages get sent to protocol
+        test_device.awake(on_done)
+        test_device.set_flags(None, led_on=1)
+        # should see an ext flag request first
+        assert len(test_device.protocol.sent) == 1
+        assert test_device.protocol.sent[0].msg.cmd1 == Msg.CmdType.EXTENDED_SET_GET
+        assert test_device.protocol.sent[0].msg.cmd2 == 0x00
+        # already test extended flags above
+
+    def test_change_flags_led_on(self, test_device):
+        test_device.led_on = 1
+        test_device.night_only = 1
+        test_device.on_only = 1
+        def on_done(*args):
+            pass
+        # Mark awake so messages get sent to protocol
+        test_device.awake(on_done)
+        test_device._change_flags({'led_on':0})
+        # should see an ext flag request first
+        assert len(test_device.protocol.sent) == 1
+        assert test_device.protocol.sent[0].msg.cmd1 == Msg.CmdType.EXTENDED_SET_GET
+        assert test_device.protocol.sent[0].msg.cmd2 == 0x00
+        assert test_device.protocol.sent[0].msg.data[1] == 0x05  # Set flags
+        assert test_device.protocol.sent[0].msg.data[2] == 0x06
+
+    def test_change_flags_night_only(self, test_device):
+        test_device.led_on = 1
+        test_device.night_only = 1
+        test_device.on_only = 1
+        def on_done(*args):
+            pass
+        # Mark awake so messages get sent to protocol
+        test_device.awake(on_done)
+        test_device._change_flags({'night_only':0})
+        # should see an ext flag request first
+        assert len(test_device.protocol.sent) == 1
+        assert test_device.protocol.sent[0].msg.cmd1 == Msg.CmdType.EXTENDED_SET_GET
+        assert test_device.protocol.sent[0].msg.cmd2 == 0x00
+        assert test_device.protocol.sent[0].msg.data[1] == 0x05  # Set flags
+        assert test_device.protocol.sent[0].msg.data[2] == 0x0A
+
+    def test_change_flags_on_only(self, test_device):
+        test_device.led_on = 1
+        test_device.night_only = 1
+        test_device.on_only = 1
+        def on_done(*args):
+            pass
+        # Mark awake so messages get sent to protocol
+        test_device.awake(on_done)
+        test_device._change_flags({'on_only':0})
+        # should see an ext flag request first
+        assert len(test_device.protocol.sent) == 1
+        assert test_device.protocol.sent[0].msg.cmd1 == Msg.CmdType.EXTENDED_SET_GET
+        assert test_device.protocol.sent[0].msg.cmd2 == 0x00
+        assert test_device.protocol.sent[0].msg.data[1] == 0x05  # Set flags
+        assert test_device.protocol.sent[0].msg.data[2] == 0x0C
+
+    def test_change_flags_bad(self, test_device, caplog):
+        test_device.led_on = 1
+        test_device.night_only = 1
+        test_device.on_only = 1
+        def on_done(*args):
+            pass
+        # Mark awake so messages get sent to protocol
+        test_device.awake(on_done)
+        test_device._change_flags({'on_only':'bad value'}, on_done=on_done)
+        assert len(test_device.protocol.sent) == 0
+        assert 'Invalid on only' in caplog.text
+
+    def test_set_timeout(self, test_device):
+        def on_done(*args):
+            pass
+        # Mark awake so messages get sent to protocol
+        test_device.awake(on_done)
+        test_device._set_timeout(timeout=20)
+        # should see an ext flag request first
+        assert len(test_device.protocol.sent) == 1
+        assert test_device.protocol.sent[0].msg.cmd1 == Msg.CmdType.EXTENDED_SET_GET
+        assert test_device.protocol.sent[0].msg.cmd2 == 0x00
+        assert test_device.protocol.sent[0].msg.data[1] == 0x03  # Set timeout
+        assert test_device.protocol.sent[0].msg.data[2] == 0x02
+
+    def test_set_timeout_bad(self, test_device, caplog):
+        def on_done(*args):
+            pass
+        # Mark awake so messages get sent to protocol
+        test_device.awake(on_done)
+        test_device._set_timeout(timeout='not a number', on_done=on_done)
+        # should see an ext flag request first
+        assert len(test_device.protocol.sent) == 0
+        assert 'Invalid timeout' in caplog.text
+
+    def test_sensitivity(self, test_device):
+        def on_done(*args):
+            pass
+        # Mark awake so messages get sent to protocol
+        test_device.awake(on_done)
+        test_device._set_light_sens(light_sensitivity=20)
+        # should see an ext flag request first
+        assert len(test_device.protocol.sent) == 1
+        assert test_device.protocol.sent[0].msg.cmd1 == Msg.CmdType.EXTENDED_SET_GET
+        assert test_device.protocol.sent[0].msg.cmd2 == 0x00
+        assert test_device.protocol.sent[0].msg.data[1] == 0x04  # Set timeout
+        assert test_device.protocol.sent[0].msg.data[2] == 0x14
+
+    def test_sensitivity_bad(self, test_device, caplog):
+        def on_done(*args):
+            pass
+        # Mark awake so messages get sent to protocol
+        test_device.awake(on_done)
+        test_device._set_light_sens(light_sensitivity='not a number',
+                                    on_done=on_done)
+        # should see an ext flag request first
+        assert len(test_device.protocol.sent) == 0
+        assert 'Invalid light sensitivity' in caplog.text

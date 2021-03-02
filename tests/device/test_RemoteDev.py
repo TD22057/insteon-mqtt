@@ -8,7 +8,7 @@ import pytest
 from unittest import mock
 from unittest.mock import call
 import insteon_mqtt as IM
-import insteon_mqtt.device.Remote as Remote
+from insteon_mqtt.device.Remote import Remote
 import insteon_mqtt.message as Msg
 import insteon_mqtt.util as util
 import helpers as H
@@ -79,21 +79,46 @@ class Test_Base_Config():
             assert IM.CommandSeq.add.call_count == 9
 
     @pytest.mark.parametrize("group_num,cmd1,cmd2,expected", [
-        (0x01,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":1}),
-        (0x01,Msg.CmdType.OFF, 0x00, {"is_on":False,"mode":IM.on_off.Mode.NORMAL,"button":1}),
-        (0x01,Msg.CmdType.ON_FAST, 0x00,{"is_on":True,"mode":IM.on_off.Mode.FAST,"button":1}),
-        (0x01,Msg.CmdType.OFF_FAST, 0x00, {"is_on":False,"mode":IM.on_off.Mode.FAST,"button":1}),
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.DOWN,"button":1}),
-        (0x01,Msg.CmdType.START_MANUAL_CHANGE, 0x01, {"manual":IM.on_off.Manual.UP,"button":1}),
-        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {"manual":IM.on_off.Manual.STOP,"button":1}),
+        (0x01,Msg.CmdType.ON, 0x00,{"is_on":True,"level":None,
+                                    "reason":'device',
+                                    "mode":IM.on_off.Mode.NORMAL,"button":1}),
+        (0x01,Msg.CmdType.OFF, 0x00, {"is_on":False,"level":None,
+                                      "reason":'device',
+                                      "mode":IM.on_off.Mode.NORMAL,
+                                      "button":1}),
+        (0x01,Msg.CmdType.ON_FAST, 0x00,{"is_on":True,"level":None,
+                                         "reason":'device',
+                                         "mode":IM.on_off.Mode.FAST,
+                                         "button":1}),
+        (0x01,Msg.CmdType.OFF_FAST, 0x00, {"is_on":False,"level":None,
+                                           "reason":'device',
+                                           "mode":IM.on_off.Mode.FAST,
+                                           "button":1}),
+        (0x01,Msg.CmdType.STOP_MANUAL_CHANGE, 0x00, {
+            "manual":IM.on_off.Manual.STOP,"button":1, "reason":'device'}
+        ),
         (0x01,Msg.CmdType.LINK_CLEANUP_REPORT, 0x00, None),
-        (0x02,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":2}),
-        (0x03,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":3}),
-        (0x04,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":4}),
-        (0x05,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":5}),
-        (0x06,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":6}),
-        (0x07,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":7}),
-        (0x08,Msg.CmdType.ON, 0x00,{"is_on":True,"mode":IM.on_off.Mode.NORMAL,"button":8}),
+        (0x02,Msg.CmdType.ON, 0x00,{"is_on":True,"level":None,
+                                    "reason":'device',
+                                    "mode":IM.on_off.Mode.NORMAL,"button":2}),
+        (0x03,Msg.CmdType.ON, 0x00,{"is_on":True,"level":None,
+                                    "reason":'device',
+                                    "mode":IM.on_off.Mode.NORMAL,"button":3}),
+        (0x04,Msg.CmdType.ON, 0x00,{"is_on":True,"level":None,
+                                    "reason":'device',
+                                    "mode":IM.on_off.Mode.NORMAL,"button":4}),
+        (0x05,Msg.CmdType.ON, 0x00,{"is_on":True,"level":None,
+                                    "reason":'device',
+                                    "mode":IM.on_off.Mode.NORMAL,"button":5}),
+        (0x06,Msg.CmdType.ON, 0x00,{"is_on":True,"level":None,
+                                    "reason":'device',
+                                    "mode":IM.on_off.Mode.NORMAL,"button":6}),
+        (0x07,Msg.CmdType.ON, 0x00,{"is_on":True,"level":None,
+                                    "reason":'device',
+                                    "mode":IM.on_off.Mode.NORMAL,"button":7}),
+        (0x08,Msg.CmdType.ON, 0x00,{"is_on":True,"level":None,
+                                    "reason":'device',
+                                    "mode":IM.on_off.Mode.NORMAL,"button":8}),
     ])
     def test_handle_on_off(self, test_device8, group_num, cmd1, cmd2, expected):
         with mock.patch.object(IM.Signal, 'emit') as mocked:
@@ -106,3 +131,34 @@ class Test_Base_Config():
                 mocked.assert_called_once_with(test_device8, **expected)
             else:
                 mocked.assert_not_called()
+
+
+    def test_handle_manual(self, test_device8):
+        with mock.patch.object(IM.Signal, 'emit') as mocked:
+            flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+            group = IM.Address(0x00, 0x00, 0x01)
+            addr = IM.Address(0x01, 0x02, 0x03)
+            msg = Msg.InpStandard(addr, group, flags,
+                                  Msg.CmdType.START_MANUAL_CHANGE, 0x00)
+            test_device8.handle_broadcast(msg)
+            calls = [
+                call(test_device8, manual=IM.on_off.Manual.DOWN, button=1,
+                     reason='device'),
+                call(test_device8, button=1, is_on=False, level=None,
+                     reason='device', mode=IM.on_off.Mode.MANUAL)
+                ]
+            mocked.assert_has_calls(calls, any_order=True)
+        with mock.patch.object(IM.Signal, 'emit') as mocked:
+            flags = Msg.Flags(Msg.Flags.Type.ALL_LINK_BROADCAST, False)
+            group = IM.Address(0x00, 0x00, 0x01)
+            addr = IM.Address(0x01, 0x02, 0x03)
+            msg = Msg.InpStandard(addr, group, flags,
+                                  Msg.CmdType.START_MANUAL_CHANGE, 0x01)
+            test_device8.handle_broadcast(msg)
+            calls = [
+                call(test_device8, manual=IM.on_off.Manual.UP, button=1,
+                     reason='device'),
+                call(test_device8, button=1, is_on=True, level=None,
+                     reason='device', mode=IM.on_off.Mode.MANUAL)
+                ]
+            mocked.assert_has_calls(calls, any_order=True)

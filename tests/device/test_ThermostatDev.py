@@ -47,7 +47,7 @@ class Test_Thermostat:
         # Lightly test pairing and I mean light.  Most of this testing is
         # handled by other tests
         thermo.pair()
-        msg = Msg.OutStandard.direct(addr, 0x19, 0x03)
+        msg = Msg.OutStandard.direct(addr, 0x19, 0x00)
         test_msg = protocol.msgs.pop(0)
         assert test_msg.to_bytes() == msg.to_bytes()
 

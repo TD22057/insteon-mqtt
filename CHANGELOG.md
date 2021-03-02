@@ -1,5 +1,34 @@
 # Revision Change History
 
+## [0.8.0]
+
+This update is the culmination of a significant refactor of the underlying
+code including PRs #308, #320, #325, #330, and #334 as well as other smaller
+PRs.  These changes began back in 0.7.6 and should be transparent to the end
+user.  But they should make the underlying code easier to maintain and simpler
+to add new devices and features. This is the reason for the jump to 0.8.0.
+
+### Additions
+
+- Added support for hidden door sensors.  (thanks @tommycw1) ([PR 324][P324])
+
+- Adds a version command to the modem command topic `{"cmd":"version"}` and
+  to the command line `insteon-mqtt config.yaml -v`.  Both will return the
+  version of Insteon-MQTT. ([PR 355][P355])
+
+- Adds get_flags suppport to the modem.  Only needed for debugging.
+  ([PR 359][P359])
+
+### Fixes
+
+- Fixed an error where setting the MQTT id would prevent subscribing to
+  MQTT topics. (thanks @kpfleming)([PR 352][P352])
+
+- Updates hassio config to comply with changes in API keys. ([PR 344][P344])
+
+- Fix small bug in BroadcastCmdResponse handler that likely never affected
+  anyone. ([PR 354][P354])
+
 ## [0.7.6]
 
 A few new features and some significant bug fixes.  A significant refactor of
@@ -590,3 +619,9 @@ will add new features.
 [P313]: https://github.com/TD22057/insteon-mqtt/pull/313
 [P213]: https://github.com/TD22057/insteon-mqtt/pull/213
 [P326]: https://github.com/TD22057/insteon-mqtt/pull/326
+[P352]: https://github.com/TD22057/insteon-mqtt/pull/352
+[P344]: https://github.com/TD22057/insteon-mqtt/pull/344
+[P324]: https://github.com/TD22057/insteon-mqtt/pull/324
+[P354]: https://github.com/TD22057/insteon-mqtt/pull/354
+[P355]: https://github.com/TD22057/insteon-mqtt/pull/355
+[P359]: https://github.com/TD22057/insteon-mqtt/pull/359

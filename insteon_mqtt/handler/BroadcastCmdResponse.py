@@ -16,8 +16,9 @@ class BroadcastCmdResponse(Base):
     This class handles responses from the device where the device sends an
     ACK but a subsequent broadcast message is sent with the requested payload.
 
-    The handler watches for the proper standard length ACK, returns
-    a continue and then waits for the broadcast payload.
+    The handler watches for the proper PLM ACK, followed by a standard length
+    ACK from the device, and then only after these two prior ACKs have been
+    received, will it call the callback with a broadcast message received.
     """
     def __init__(self, msg, callback, on_done=None, num_retry=3):
         """Constructor
@@ -37,6 +38,7 @@ class BroadcastCmdResponse(Base):
         self.addr = msg.to_addr
         self.cmd = msg.cmd1
         self.callback = callback
+        self._device_ACK = False
 
     #-----------------------------------------------------------------------
     def msg_received(self, protocol, msg):
@@ -83,6 +85,7 @@ class BroadcastCmdResponse(Base):
             if msg.flags.type == Msg.Flags.Type.DIRECT_ACK:
                 LOG.info("%s device ACK response, waiting for broadcast "
                          "payload", msg.from_addr)
+                self._device_ACK = True
                 return Msg.CONTINUE
 
             elif msg.flags.type == Msg.Flags.Type.DIRECT_NAK:
@@ -102,9 +105,11 @@ class BroadcastCmdResponse(Base):
                 LOG.warning("%s device unexpected msg: %s", msg.from_addr, msg)
                 return Msg.UNKNOWN
 
-        # Process the payload reply.
+        # Process the broadcast payload reply only if PLM and device ACKs
+        # received previously
         elif (isinstance(msg, Msg.InpStandard) and
-              msg.flags.type == Msg.Flags.Type.BROADCAST and self._PLM_ACK):
+              msg.flags.type == Msg.Flags.Type.BROADCAST and self._PLM_ACK and
+              self._device_ACK):
             # Filter by address and command.
             if msg.from_addr == self.addr:
                 # Run the callback - it's up to the callback to check if this
