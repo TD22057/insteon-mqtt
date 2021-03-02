@@ -10,7 +10,7 @@ __doc__ = """Insteon <-> MQTT bridge package
 For docs, see: https://www.github.com/TD22057/insteon-mqtt
 """
 
-__version__ = "0.7.6"
+__version__ = "0.8.0"
 
 #===========================================================================
 

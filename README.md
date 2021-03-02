@@ -9,7 +9,7 @@ My initial intent with this package is better integrate Insteon into
 Home Assistant and make it easier and more understandable to add new
 features and devices.
 
-Version: 0.7.6  ([History](CHANGELOG.md))
+Version: 0.8.0  ([History](CHANGELOG.md))
 
 ### Recent Breaking Changes
 
