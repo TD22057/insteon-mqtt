@@ -23,8 +23,7 @@ class OutAllLinkUpdate(Base):
     # The modem developers guide is wrong regarding much of this.  There are
     # no alternative commands such as 'add or modify' as stated in the
     # document. All commands do one function only.  Additionally, the entry
-    # matching includes the ctrl/resp status except on Delete(which requires
-    # the db_flags to be 0x00).
+    # matching includes the ctrl/resp status.
     #
     # The following is what each control code does based on testing.
     # 0x00 - FIND FIRST - Searches for an entry matching addr, group, but not
@@ -47,10 +46,12 @@ class OutAllLinkUpdate(Base):
     #        Will produce a NACK if a responder record matching the addr,
     #        group, AND ctrl/resp already exists.  Will also nack if the entry
     #        in the command is not a responder entry.
-    # 0x80 - DELETE - Searches for an entry matching addr, group, but not
-    #        ctrl/resp, indeed the db_flags need to be 0x00 otherwise the
-    #        search will NACK.  The first matching entry (ctrl or resp) will
-    #        be deleted. If no entry can be found a NACK will be returned.
+    # 0x80 - DELETE - Searches for an entry matching ctrl/resp, addr, and
+    #        group, but ignores any values on Data1-3. Any matching entry will
+    #        be deleted. The modem only allows a single ctrl/resp + group +
+    #        addr entry.  For example you cannot have multiple resp entries
+    #        for the same group and addr with different data1-3 values.
+    #        If no matching entry can be found a NACK will be returned.
 
     # Valid command codes
     class Cmd(enum.IntEnum):
@@ -125,9 +126,7 @@ class OutAllLinkUpdate(Base):
         """
         o = io.BytesIO()
         o.write(bytes([0x02, self.msg_code, self.cmd.value]))
-        # db_flags must be 0x00 for a modem delete
-        o.write(self.db_flags.to_bytes(
-            modem_delete=self.cmd == self.Cmd.DELETE))
+        o.write(self.db_flags.to_bytes())
         o.write(bytes([self.group]))
         o.write(self.addr.to_bytes())
         o.write(self.data)

@@ -91,10 +91,15 @@ class ModemDbModify(Base):
 
         # If we get a NAK message, signal an error and stop.
         if not msg.is_ack:
-            if msg.cmd == Msg.OutAllLinkUpdate.Cmd.DELETE or self.is_retry:
-                # We should never fail on a DELETE.  If this is a retry then
-                # the matching add/update already failed, which also should not
-                # happen.
+            if msg.cmd == Msg.OutAllLinkUpdate.Cmd.DELETE:
+                # A failed delete only happens.
+                LOG.error("Modem db delete failed: %s", msg)
+                self.on_done(False, "Delete entry from Modem db failed, " +
+                             "entry likely doesn't exist, try running " +
+                             "`refresh modem`", self.entry)
+
+            elif self.is_retry:
+                # A failed retry, stop to prevent infinite looping
                 LOG.error("Modem db update failed: %s", msg)
                 self.on_done(False, "Write to Modem db failed, try running " +
                              "`refresh modem`", self.entry)
