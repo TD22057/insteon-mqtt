@@ -26,7 +26,7 @@ def test_device():
 
 class Test_Base_Config():
     def test_load_config_no_addr(self, test_device):
-        cfg = IM.config.load('config.yaml')
+        cfg = IM.config.load('config-example.yaml')
         test_device.load_config(cfg)
         # Protocol should load
         test_device.protocol.load_config.assert_called_once_with(cfg)
@@ -37,20 +37,20 @@ class Test_Base_Config():
         assert isinstance(arg_list.args[1], IM.handler.ModemInfo)
 
     def test_load_config_addr(self, test_device):
-        cfg = IM.config.load('config.yaml')
+        cfg = IM.config.load('config-example.yaml')
         cfg['address'] = '44.85.11'
         test_device.load_config(cfg)
         assert test_device.addr == IM.Address('44.85.11')
 
     def test_load_config_step2_fail_no_addr(self, test_device, tmpdir):
-        cfg = IM.config.load('config.yaml')
+        cfg = IM.config.load('config-example.yaml')
         cfg['storage'] = tmpdir
         with mock.patch('sys.exit') as mocked:
             test_device.load_config_step2(False, 'message', None, cfg)
             mocked.assert_called_once()
 
     def test_load_config_step2_fail_addr(self, test_device, tmpdir, caplog):
-        cfg = IM.config.load('config.yaml')
+        cfg = IM.config.load('config-example.yaml')
         cfg['storage'] = tmpdir
         test_device.addr = IM.Address('44.85.11')
         test_device.load_config_step2(False, 'message', None, cfg)
@@ -58,7 +58,7 @@ class Test_Base_Config():
 
     def test_load_config_step2_success_addr_same(self, test_device, tmpdir,
                                                  caplog):
-        cfg = IM.config.load('config.yaml')
+        cfg = IM.config.load('config-example.yaml')
         cfg['storage'] = tmpdir
         test_device.addr = IM.Address('44.85.11')
         msg = Msg.OutModemInfo(addr=test_device.addr, dev_cat=None,
@@ -69,7 +69,7 @@ class Test_Base_Config():
 
     def test_load_config_step2_success_addr_diff(self, test_device, tmpdir,
                                                  caplog):
-        cfg = IM.config.load('config.yaml')
+        cfg = IM.config.load('config-example.yaml')
         cfg['storage'] = tmpdir
         test_device.addr = IM.Address('44.85.11')
         msg = Msg.OutModemInfo(addr=IM.Address('44.85.12'), dev_cat=None,
@@ -79,7 +79,7 @@ class Test_Base_Config():
 
     def test_load_config_step2_success_no_addr(self, test_device, tmpdir,
                                                caplog):
-        cfg = IM.config.load('config.yaml')
+        cfg = IM.config.load('config-example.yaml')
         cfg['storage'] = tmpdir
         msg = Msg.OutModemInfo(addr=IM.Address('44.85.12'), dev_cat=None,
                                sub_cat=None, firmware=None, is_ack=True)
