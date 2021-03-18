@@ -8,6 +8,9 @@
   some were not able to delete a link on the Modem.  (thanks @zimmer62)
   ([PR 363][P363])
 
+- Change the name of the example config file to avoid warnings with Home
+  Assistant Supervisor. ([PR 363][P363])
+
 ## [0.8.0]
 
 This update is the culmination of a significant refactor of the underlying
