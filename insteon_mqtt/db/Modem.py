@@ -11,7 +11,6 @@ from .. import handler
 from .. import log
 from .. import message as Msg
 from .. import util
-from ..CommandSeq import CommandSeq
 from .ModemEntry import ModemEntry
 from .DbDiff import DbDiff
 
