@@ -18,8 +18,8 @@ Tests can be performed on stack.written_msgs and stack.published_topics
 Each test function will create and tear down a full stack fixture.  So use
 sparingly to decrease testing times.
 
-The test devices are created from the sample config.yaml file included in the
-base directory
+The test devices are created from the sample config-example.yaml file included
+in the base directory
 
 """
 from unittest.mock import patch
@@ -78,7 +78,7 @@ class Patch_Stack():
 
         @patch('insteon_mqtt.network.Mqtt.subscribe', self._mqtt_subscribe)
         @patch('insteon_mqtt.config.apply', self._config_apply)
-        @patch('sys.argv', ["", "config.yaml", "start"])
+        @patch('sys.argv', ["", "config-example.yaml", "start"])
         @patch.object(IM.network.Manager, 'active', return_value=False)
         @patch.object(log, 'initialize')
         def start(*args):
