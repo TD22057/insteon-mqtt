@@ -47,8 +47,8 @@ This package assumes that you:
    pip install .
    ```
 
-3) Edit the configuration file `config.yaml`.  You may want to make a
-   copy and place it in the virtual env directory or somewhere like
+3) Edit the example configuration file `config-example.yaml`.  You may want to
+   make a copy and place it in the virtual env directory or somewhere like
    /etc/insteon-mqtt.yaml.
 
    - Set the Insteon port to be the USB port or address of the PLM modem.

@@ -2,6 +2,15 @@
 #
 # Insteon <-> MQTT bridge configuration file.
 #
+# THIS IS JUST AN EXAMPLE FILE!
+#
+# At minimum, you need to make the following edits to use this as your
+# config file:
+# 1. Set the Modem attributes, including port
+# 2. Remove the example devices
+# 3. Add your insteon devices
+# 4. Confirm your MQTT broker settings
+#
 # NOTE: the loader supports using a !include tag to load other as a
 # item entry so you can do things like this:
 #
@@ -475,7 +484,7 @@ mqtt:
     #   address = 'aa.bb.cc'
     #   name = 'device name'
     #   batt_volt = raw insteon voltage level
-  
+
     battery_voltage_topic: 'insteon/{{address}}/battery_voltage'
     battery_voltage_payload: '{"voltage" : {{batt_volt}}}'
 

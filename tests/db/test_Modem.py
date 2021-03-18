@@ -149,98 +149,25 @@ class Test_Modem:
     def test_delete_on_device_update_resp(self, test_device,
                                           test_entry_dev1_resp,
                                           test_entry_dev1_ctrl):
-        # add_on_device(self, entry, on_done=None)
-        # test calling delete to ensure that search happens
+        # test calling delete
         test_device.add_entry(test_entry_dev1_resp)
         test_device.add_entry(test_entry_dev1_ctrl)
-        assert len(test_device) == 2
-        with mock.patch.object(IM.CommandSeq, 'add_msg') as mocked:
-            test_device.delete_on_device(test_entry_dev1_resp)
-            assert len(test_device) == 0
-            assert mocked.call_count == 1
-            assert (mocked.call_args.args[0].cmd ==
-                    Msg.OutAllLinkUpdate.Cmd.EXISTS)
-        with mock.patch.object(IM.CommandSeq, 'add') as mocked:
-            test_device.delete_on_device(test_entry_dev1_resp)
-            assert len(test_device) == 0
-            assert mocked.call_count == 1
-            calls = [call(test_device._delete_on_device_post_search,
-                          test_entry_dev1_resp)]
-            mocked.assert_has_calls(calls)
-
-    #-----------------------------------------------------------------------
-    def test_delete_post_empty(self, test_device, test_entry_dev1_ctrl,
-                               caplog):
-        # add_on_device(self, entry, on_done=None)
-        # test delete where no entry is on modem
-        test_device._delete_on_device_post_search(test_entry_dev1_ctrl)
-        assert "Entry was not on modem" in caplog.text
-
-    #-----------------------------------------------------------------------
-    def test_delete_post_one(self, test_device, test_entry_dev1_ctrl,
-                             caplog):
-        # add_on_device(self, entry, on_done=None)
-        # test delete of a single entry
-        test_device.add_entry(test_entry_dev1_ctrl)
-        test_device._delete_on_device_post_search(test_entry_dev1_ctrl)
+        test_device.delete_on_device(test_entry_dev1_resp)
+        test_device.delete_on_device(test_entry_dev1_ctrl)
         assert (test_device.device.protocol.sent[0].msg.cmd ==
                 Msg.OutAllLinkUpdate.Cmd.DELETE)
-        db_flags = Msg.DbFlags.from_bytes(bytes(1))
-        assert (test_device.device.protocol.sent[0].msg.to_bytes() ==
-                Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.DELETE, db_flags,
-                                     test_entry_dev1_ctrl.group,
-                                     test_entry_dev1_ctrl.addr,
-                                     bytes(3)).to_bytes())
-
-    #-----------------------------------------------------------------------
-    def test_delete_post_two_first(self, test_device, test_entry_dev1_ctrl,
-                                   test_entry_dev1_resp, caplog):
-        # add_on_device(self, entry, on_done=None)
-        # test deleting the first of two entries
-        test_device.add_entry(test_entry_dev1_ctrl)
-        test_device.add_entry(test_entry_dev1_resp)
-        test_device._delete_on_device_post_search(test_entry_dev1_ctrl)
-        assert (test_device.device.protocol.sent[0].msg.cmd ==
+        assert (test_device.device.protocol.sent[0].msg.db_flags.to_bytes() ==
+                Msg.DbFlags(in_use=True, is_controller=False,
+                            is_last_rec=False).to_bytes())
+        assert (test_device.device.protocol.sent[0].msg.addr ==
+                test_entry_dev1_resp.addr)
+        assert (test_device.device.protocol.sent[0].msg.group ==
+                test_entry_dev1_resp.group)
+        assert (test_device.device.protocol.sent[1].msg.cmd ==
                 Msg.OutAllLinkUpdate.Cmd.DELETE)
-        db_flags = Msg.DbFlags.from_bytes(bytes(1))
-        sent = test_device.device.protocol.sent[0]
-        assert (sent.msg.to_bytes() ==
-                Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.DELETE, db_flags,
-                                     test_entry_dev1_ctrl.group,
-                                     test_entry_dev1_ctrl.addr,
-                                     bytes(3)).to_bytes())
-        assert len(sent.handler.next) == 0
+        assert (test_device.device.protocol.sent[1].msg.db_flags.to_bytes() ==
+                Msg.DbFlags(in_use=True, is_controller=True,
+                            is_last_rec=False).to_bytes())
 
-    #-----------------------------------------------------------------------
-    def test_delete_post_two_second(self, test_device, test_entry_dev1_ctrl,
-                                    test_entry_dev1_resp, caplog):
-        # add_on_device(self, entry, on_done=None)
-        # test deleting the second of two entries
-        test_device.add_entry(test_entry_dev1_ctrl)
-        test_device.add_entry(test_entry_dev1_resp)
-        test_device._delete_on_device_post_search(test_entry_dev1_resp)
-        assert (test_device.device.protocol.sent[0].msg.cmd ==
-                Msg.OutAllLinkUpdate.Cmd.DELETE)
-        db_flags = Msg.DbFlags.from_bytes(bytes(1))
-        sent = test_device.device.protocol.sent[0]
-        assert (sent.msg.to_bytes() ==
-                Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.DELETE, db_flags,
-                                     test_entry_dev1_resp.group,
-                                     test_entry_dev1_resp.addr,
-                                     bytes(3)).to_bytes())
-        assert len(sent.handler.next) == 2
-        assert (sent.handler.next[0][0].to_bytes() ==
-                Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.DELETE, db_flags,
-                                     test_entry_dev1_resp.group,
-                                     test_entry_dev1_resp.addr,
-                                     bytes(3)).to_bytes())
-        db_flags = Msg.DbFlags(in_use=True,
-                               is_controller=test_entry_dev1_ctrl.is_controller,
-                               is_last_rec=False)
-        assert (sent.handler.next[1][0].to_bytes() ==
-                Msg.OutAllLinkUpdate(Msg.OutAllLinkUpdate.Cmd.ADD_CONTROLLER,
-                                     db_flags, test_entry_dev1_ctrl.group,
-                                     test_entry_dev1_ctrl.addr,
-                                     test_entry_dev1_ctrl.data).to_bytes())
 
     #-----------------------------------------------------------------------

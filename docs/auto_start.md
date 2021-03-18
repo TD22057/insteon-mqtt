@@ -53,13 +53,13 @@ can be ignored.
    pip3 install .
    ```
 
-Copy the configuration file to the install location.  Edit it to add
+Copy the example configuration file to the install location.  Edit it to add
 your insteon devices and configure your MQTT settings.  Also update
 the storage directory to point at '/opt/insteon-mqtt/data'.  You may
 also want to update the log file locations as well.
 
    ```
-   cp config.yaml /opt/insteon-mqtt/config.yaml
+   cp config-example.yaml /opt/insteon-mqtt/config.yaml
    cd /opt/insteon-mqtt/
    mkdir data
    nano config.yaml
@@ -101,8 +101,8 @@ If everything looks OK, enable the service to start at the next boot.
    ```
    sudo systemctl enable insteon-mqtt
    ```
-You can view the system logs for the process after the service is 
-enabled with this journalctl command (or by manually looking at the 
+You can view the system logs for the process after the service is
+enabled with this journalctl command (or by manually looking at the
 log file).
 
    ```
