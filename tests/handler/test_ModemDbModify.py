@@ -134,7 +134,7 @@ class Test_ModemDbModify:
                                    data=None, is_ack=False)
         handler.msg_received(test_db.device.protocol, msg)
         assert len(test_db) == 1
-        assert "db update failed" in caplog.text
+        assert "db delete failed" in caplog.text
 
     def test_update(self, test_db, test_entry_dev1_ctrl,
                     test_entry_dev1_ctrl_mod):

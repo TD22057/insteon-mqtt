@@ -1,5 +1,13 @@
 # Revision Change History
 
+## [0.8.1]
+
+### Fixes
+
+- Alters the link delete functionality on the Modem.  Solves an issue where
+  some were not able to delete a link on the Modem.  (thanks @zimmer62)
+  ([PR 363][P363])
+
 ## [0.8.0]
 
 This update is the culmination of a significant refactor of the underlying
@@ -625,3 +633,4 @@ will add new features.
 [P354]: https://github.com/TD22057/insteon-mqtt/pull/354
 [P355]: https://github.com/TD22057/insteon-mqtt/pull/355
 [P359]: https://github.com/TD22057/insteon-mqtt/pull/359
+[P363]: https://github.com/TD22057/insteon-mqtt/pull/363
