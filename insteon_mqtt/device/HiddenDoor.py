@@ -366,7 +366,7 @@ class HiddenDoor(BatterySensor):
         if hb_interval > 0:
             hb_interval_minutes = hb_interval * 5
         else:
-            hb_interval_minutes = 24 * 60 # convert 24 hours to minutes
+            hb_interval_minutes = 24 * 60  # convert 24 hours to minutes
         LOG.ui("\tHeart beat interval raw level is %s or %s minutes ",
                hb_interval, hb_interval_minutes)
 
