@@ -25,7 +25,8 @@
 #
 #==========================================================================
 logging:
-  # 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR
+  # 5=VERBOSE, 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR
+  # VERBOSE only adds logging of MQTT ping requests to DEBUG
   level: 10
 
   # Print messages to the screen.
