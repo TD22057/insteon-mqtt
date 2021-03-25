@@ -202,6 +202,9 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
         we get an ACK of the result, we'll change our internal state and emit
         the state changed signals.
 
+        This exists here in this class solely to override the default group
+        value in the passed arguments.
+
         Args:
           is_on (bool): True to turn on, False for off
           level (int): If non zero, turn the device on.  Should be in the
@@ -286,6 +289,29 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
             # This is a regular on command pass to SetAndState class
             super().off(group=group, mode=mode, reason=reason,
                         transition=transition, on_done=on_done)
+
+    #-----------------------------------------------------------------------
+    def decode_on_level(self, cmd1, cmd2):
+        """Callback for standard commanded messages.
+
+        Decodes the cmds recevied from the device into is_on, level, and mode
+        to be consumed by _set_state().
+
+        This overrides the base function to insert the correct group number.
+
+        Args:
+          cmd1 (byte): The command 1 value
+          cmd2 (byte): The command 2 value
+        Returns:
+          is_on (bool): Is the device on.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          level (int): On level between 0-255.
+          group (int): The group number that this state applies to. Defaults
+                       to None.
+        """
+        is_on, level, mode, group = super().decode_on_level(cmd1, cmd2)
+        group = self._load_group
+        return (is_on, level, mode, group)
 
     #-----------------------------------------------------------------------
     def mode_transition_supported(self, mode, transition):

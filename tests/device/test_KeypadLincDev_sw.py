@@ -235,6 +235,27 @@ class Test_KPL():
             else:
                 mocked.assert_not_called()
 
+    @pytest.mark.parametrize("load_group,cmd1,cmd2,expected", [
+        (0x01,Msg.CmdType.ON, 0xff,{"level":255,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'command', "button":1}),
+        (0x01,Msg.CmdType.OFF, 0x00, {"level":0,"mode":IM.on_off.Mode.NORMAL, "is_on": False, "reason":'command', "button":1}),
+        (0x09,Msg.CmdType.ON, 0xff,{"level":255,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'command', "button":9}),
+        (0x09,Msg.CmdType.OFF, 0x00, {"level":0,"mode":IM.on_off.Mode.NORMAL, "is_on": False, "reason":'command', "button":9}),
+    ])
+    def test_on_off_ack(self, test_device, load_group, cmd1, cmd2, expected):
+        def on_done(success, *args):
+            pass
+        with mock.patch.object(IM.Signal, 'emit') as mocked:
+            test_device._load_group = load_group
+            flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
+            from_addr = test_device.addr
+            addr = IM.Address(0x01, 0x02, 0x03)
+            msg = Msg.InpStandard(addr, from_addr, flags, cmd1, cmd2)
+            test_device.handle_ack(msg, on_done)
+            if expected is not None:
+                mocked.assert_called_once_with(test_device, **expected)
+            else:
+                mocked.assert_not_called()
+
     def test_handle_manual_load(self, test_device):
         test_device._load_group = 1
         with mock.patch.object(IM.Signal, 'emit') as mocked:
