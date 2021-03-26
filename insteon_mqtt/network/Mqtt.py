@@ -348,10 +348,17 @@ class Mqtt(Link):
           level (int):  Logging level.
           buf (str):  The message to log.
         """
-        # Send a very low level logging message so we can turn on level 5
-        # logging at the top level to see what is happening in the MQTT
-        # client.
-        LOG.log(5, buf)
+        # Pass on the majority of paho client logging messages at the same
+        # level.
+        # However, the ping messages are a bit verbose and cause 2 log entries
+        # every thirty seconds.  To see these messages set the debug to level
+        # 5
+        verbose = ["Sending PINGREQ", "Sending PINGRESP", "Received PINGREQ",
+                   "Received PINGRESP"]
+        if buf not in verbose:
+            LOG.log(paho.LOGGING_LEVEL[level], buf)
+        else:
+            LOG.log(5, buf)
 
     #-----------------------------------------------------------------------
     def __str__(self):

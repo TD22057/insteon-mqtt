@@ -1,5 +1,16 @@
 # Revision Change History
 
+## [0.8.2]
+
+### Fixes
+
+- Corrects a bug which prevented Keypadlincs of the Switch variety from
+  reporting their state via the MQTT state topic.  ([PR 368][P368])
+
+### Additions
+
+- Adds logging of Paho MQTT client.  ([PR 369][P339])
+
 ## [0.8.1]
 
 ### Fixes
@@ -637,3 +648,5 @@ will add new features.
 [P355]: https://github.com/TD22057/insteon-mqtt/pull/355
 [P359]: https://github.com/TD22057/insteon-mqtt/pull/359
 [P363]: https://github.com/TD22057/insteon-mqtt/pull/363
+[P368]: https://github.com/TD22057/insteon-mqtt/pull/368
+[P369]: https://github.com/TD22057/insteon-mqtt/pull/369
