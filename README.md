@@ -1,13 +1,11 @@
 # Insteon PLM <-> MQTT bridge
 
 This is a Python 3 package that communicates with an Insteon PLM modem
-(USB and serial) and converts Insteon state changes to MQTT and MQTT
+(USB and serial) or an Insteon Hub and converts Insteon state changes to MQTT and MQTT
 commands to Insteon commands.  It allows an Insteon network to be
 integrated into and controlled from anything that can use MQTT.
 
-My initial intent with this package is better integrate Insteon into
-Home Assistant and make it easier and more understandable to add new
-features and devices.
+This package works well with HomeAssistant and can be easily installed as an addon using the HomeAssistant Supervisor.
 
 Version: 0.8.2  ([History](CHANGELOG.md))
 
@@ -60,6 +58,8 @@ what they are and how to interpret messages from them.
   - Motion sensors
   - Smoke bridge
   - Thermostats
+  - Hidden Door sensors
+  - EZIO4O 4 relay device
 - Automatically link new devices to the modem.  The system will
   correctly link all the Insteon groups for a device (like the smoke
   bridge which has 7 groups).
@@ -76,6 +76,7 @@ what they are and how to interpret messages from them.
 - Scene/Link Management
   - Add or delete links on devices from a defined configuration
   - Import scenes defined on the network into a file for backup
+- If using HomeAssistant Supervisor, a web based GUI for easy configuration and testing
 
 
 # Detailed Documentation
@@ -84,11 +85,16 @@ what they are and how to interpret messages from them.
   Consult the [device documentation page](docs/mqtt.md) for details
   on each those commands.
 
+- [Guide to Templating](docs/Templating.md) - A short primer on Jinja templates
+
 - [Full system install and automatically starting the server](docs/auto_start.md) on startup.
 
 - [Scene/Link Management](docs/scenes.md)
 
 - [Development Guide](docs/CONTRIBUTING.md)
+
+- [HomeAssistant Supervisor Development](docs/hassio_development.md)
+- [Release Delivery Notes](docs/delivery.md)
 
 
 # Future Work
