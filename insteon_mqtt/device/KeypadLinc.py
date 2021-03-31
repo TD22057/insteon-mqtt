@@ -38,7 +38,7 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
     """
 
     #-----------------------------------------------------------------------
-    def __init__(self, protocol, modem, address, name):
+    def __init__(self, protocol, modem, address, name=None, config_extra=None):
         """Constructor
 
         Args:
@@ -48,10 +48,9 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
           modem:       (Modem) The Insteon modem used to find other devices.
           address:     (Address) The address of the device.
           name:        (str) Nice alias name to use for the device.
-          dimmer:      (bool) True if the device supports dimming - False if
-                       it's a regular switch.
+          config_extra (dict) Extra configuration settings
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config_extra)
 
         # Switch or dimmer type.
         self.type_name = "keypad_linc_sw"

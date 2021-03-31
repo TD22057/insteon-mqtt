@@ -44,7 +44,7 @@ class Leak(BatterySensor):
     GROUP_DRY = 1
     GROUP_WET = 2
 
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config_extra=None):
         """Constructor
 
         Args:
@@ -54,8 +54,9 @@ class Leak(BatterySensor):
           modem (Modem):  The Insteon modem used to find other devices.
           address (Address):  The address of the device.
           name (str):  Nice alias name to use for the device.
+          config_extra (dict): Extra configuration settings
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config_extra)
 
         # Maps Insteon groups to message type for this sensor.
         self.group_map = {

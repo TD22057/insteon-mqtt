@@ -45,7 +45,7 @@ class BatterySensor(Base):
     """
     type_name = "battery_sensor"
 
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config_extra=None):
         """Constructor
 
         Args:
@@ -55,8 +55,9 @@ class BatterySensor(Base):
           modem (Modem):  The Insteon modem used to find other devices.
           address (Address):  The address of the device.
           name (str):  Nice alias name to use for the device.
+          config_extra (dict): Extra configuration settings
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config_extra)
 
         # Sensor low battery signal.  API: func( Device, bool is_low )
         self.signal_low_battery = Signal()

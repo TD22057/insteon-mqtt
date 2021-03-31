@@ -20,7 +20,7 @@ class Backlight(Base):
     This is an abstract class that provides support for controlling the
     backlight on devices.
     """
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config_extra=None):
         """Constructor
 
         Args:
@@ -30,8 +30,9 @@ class Backlight(Base):
           modem (Modem): The Insteon modem used to find other devices.
           address (Address): The address of the device.
           name (str): Nice alias name to use for the device.
+          config_extra (dict): Extra configuration settings
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config_extra)
 
         # Define the flags handled by set_flags()
         self.set_flags_map.update({'backlight': self.set_backlight})

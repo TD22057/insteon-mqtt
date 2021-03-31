@@ -26,7 +26,7 @@ class ResponderBase(Base):
     This class is meant to be extended by other classes including DimmerBase
     so it should generally be inheritted last.
     """
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config_extra=None):
         """Constructor
 
         Args:
@@ -36,8 +36,9 @@ class ResponderBase(Base):
           modem (Modem): The Insteon modem used to find other devices.
           address (Address): The address of the device.
           name (str): Nice alias name to use for the device.
+          config_extra (dict): Extra configuration settings
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config_extra)
 
         self.cmd_map.update({
             'on' : self.on,

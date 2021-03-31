@@ -21,7 +21,7 @@ class Switch(Scene, Backlight, ManualCtrl, ResponderBase):
     connect to these signals to perform an action when a change is made to
     the device (like sending MQTT messages).
     """
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config_extra=None):
         """Constructor
 
         Args:
@@ -31,8 +31,9 @@ class Switch(Scene, Backlight, ManualCtrl, ResponderBase):
           modem (Modem):  The Insteon modem used to find other devices.
           address (Address):  The address of the device.
           name (str):  Nice alias name to use for the device.
+          config_extra (dict): Extra configuration settings
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config_extra)
 
         # Update the group map with the groups to be paired and the handler
         # for broadcast messages from this group

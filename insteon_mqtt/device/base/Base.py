@@ -60,29 +60,58 @@ class Base:
 
         # Loop over the configuration data.
         for config in values:
+            name = None
+            config_extra = None
             # If it's a dict, it's got a nice name set.
             if isinstance(config, dict):
-                assert len(config) == 1
-                addr, name = next(iter(config.items()))
-                if name:
-                    name = name.lower()
+                if len(config) == 1:
+                    # This has no config_extra values
+                    addr, name = next(iter(config.items()))
+                    if name:
+                        name = name.lower()
+                elif len(config) > 1:
+                    # This has config_extra values
+                    # Loop through each key.  One and only one should be a
+                    # valid address.
+                    addrs_found = []
+                    for key in config:
+                        try:
+                            Address(key)
+                        except:
+                            # not a valid address
+                            pass
+                        else:
+                            # a valid address
+                            addrs_found.append(key)
+                    if len(addrs_found) == 1:
+                        addr = addrs_found[0]
+                        name = config[addr]
+                        config_extra = config.copy()
+                        del config_extra[addr]
+                    elif len(addrs_found) > 1:
+                        LOG.error("Multiple insteon address found in config "
+                                  "for entry: %s",
+                                  config)
+                    else:
+                        LOG.error("No insteon address found in config "
+                                  "for entry: %s",
+                                  config)
 
             # Otherwise it's just the address
             else:
                 addr = config
-                name = None
 
             # Create the device using the class constructor.  Use kwargs
             # syntax so any extra keyword args don't have to be at the end of
             # the arg list.
             device = cls(protocol=protocol, modem=modem, address=addr,
-                         name=name, **kwargs)
+                         name=name, config_extra=config_extra, **kwargs)
             devices.append(device)
 
         return devices
 
     #-----------------------------------------------------------------------
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config_extra=None):
         """Constructor
 
         This initializes common code for all the device types.  Derived types
@@ -95,11 +124,15 @@ class Base:
           modem (Modem):  The Insteon modem used to find other devices.
           address (Address):  The address of the device.
           name (str):  Nice alias name to use for the device.
+          config_extra (dict): Extra configuration settings
         """
         self.protocol = protocol
         self.modem = modem
         self.addr = Address(address)
         self.name = name
+        self.config_extra = {}
+        if config_extra is not None:
+            self.config_extra = config_extra
 
         # Moving window history of messages that are received from the
         # device.  Used for optimal hop computations.
@@ -226,7 +259,12 @@ class Base:
                 this.
         """
         if isinstance(msg, Msg.OutStandard):  # handles OutExtended as well
-            msg.flags.set_hops(self.history.avg_hops())
+            hops = self.history.avg_hops()
+            min_hops = self.config_extra.get('min_hops', 0)
+            if min_hops > hops:
+                hops = min(min_hops, 3)
+
+            msg.flags.set_hops(hops)
 
         self.protocol.send(msg, msg_handler, high_priority, after)
 

@@ -82,7 +82,7 @@ class HiddenDoor(BatterySensor):
     # Currently set at 3 hours
     BATTERY_TIME = (60 * 60) * 3
 
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config_extra=None):
         """Constructor
 
         Args:
@@ -92,8 +92,9 @@ class HiddenDoor(BatterySensor):
           modem (Modem):  The Insteon modem used to find other devices.
           address (Address): The address of the device.
           name (str):  Nice alias name to use for the device.
+          config_extra (dict): Extra configuration settings
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config_extra)
 
         self.signal_voltage = Signal()
 
