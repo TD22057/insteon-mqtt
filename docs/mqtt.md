@@ -41,37 +41,8 @@ be identified by it's address or the string "modem".
    - [Switches](#switches)
    - [Thermostat](#thermostat)
 
-
 ## Required Device Initialization
-
-When adding a new device or after performing a factory reset on a device it
-is necessary to perform a three step process to setup the device to work
-properly with insteon-mqtt.  The steps are 1) Join, 2) Pair, and 3) Sync
-(only if you have scenes defined for this device in a scenes.yaml file).  
-The Join and Pair commands can be re-run at anytime without harm.  You can also
-run sync in dry-run mode at any time to see what changes would be made.
-
-From the command line these actions can be performed as follows:
-
-```
-insteon-mqtt config.yaml join aa.bb.cc
-insteon-mqtt config.yaml pair aa.bb.cc
-insteon-mqtt config.yaml sync aa.bb.cc
-```
-
-These commands can also be performed using the mqtt interface by publishing
-the following separate commands to the command topic (discussed below):
-
-   ```
-   { "cmd" : "join"}
-   { "cmd" : "pair"}
-   { "cmd" : "sync"}
-   ```
-
-See the following discussion of management commands for a more detailed
-explanation of these actions.
-
----
+> See [device initialization](initialization.md) for a discussion about the steps required when setting up a new or factory reset device.
 
 ## Management commands
 
@@ -124,132 +95,39 @@ This command can also be run from the command line:
 
 Supported: devices
 
-New devices<sup>1</sup> will refuse to communicate with the modem until the
-device has been specifically told to respond to the modem.  This can be done by
-running the 'join' command on the device
-
-The command payload is:
-
-   ```
-   { "cmd" : "join"}
-   ```
-
-This command can also be run from the command line:
-
-   ```
-   insteon-mqtt config.yaml join aa.bb.cc
-   ```
-
-<sup>1</sup> Specifically devices that have version I2CS of the engine, which
-have been available since March 2012, and are the only devices sold as new
-since about 2015.  Older I1 and I2 devices do not require this step, however
-they will not be adversely affected by this command.
+See [initialization](initializing.md) for a discussion of `join`.
 
 
 ### Pair a Device to the Modem
 
 Supported: devices
 
-This performs the default initialization of the device and in particular tells
-the device that it should inform the modem whenever its state changes. This
-includes devices that have multiple states to track such as KeypadLincs.
-
-The command payload is:
-
-   ```
-   { "cmd" : "pair"}
-   ```
-
-This command can also be run from the command line:
-
-   ```
-   insteon-mqtt config.yaml pair aa.bb.cc
-   ```
+See [initialization](initializing.md) for a discussion of `pair`.
 
 
 ### Sync Device Links
 
 Supported: modem, device
 
-This function will alter the device's link database to match the scenes
-defined in the scenes.yaml file.  This includes adding new links as well as
-deleting un-defined links.  Details can be found in [Scene Management](scenes.md)
-
-The command payload is below.  Setting the dry_run flag to true will cause the
-changes to be made to the device, the default false will only report what would
-happen:
-
-  ```
-  { "cmd" : "sync", ["dry_run" : true/false]}
-  ```
-
-  This command can also be run from the command line:
-
-   ```
-   insteon-mqtt config.yaml sync aa.bb.cc
-   ```
+See [scenes](scenes.md) for a detailed description of `sync`.
 
 ### Sync All Device Links
 
 Supported: modem
 
-This function will perform the sync command on all devices.
-
-The command payload is as follows.  Setting the dry_run flag to true will cause
-the changes to be made to the device, the default false will only report what
-would happen:
-
-  ```
-  { "cmd" : "sync_all", ["dry_run" : true/false]}
-  ```
-
- This command can also be run from the command line:
-
-  ```
-  insteon-mqtt config.yaml sync-all
-  ```
+See [scenes](scenes.md) for a detailed description of `sync_all`.
 
 ### Import Device Links
 
 Supported: modem, device
 
-The 'import-scenes' function will take the links defined on each device and
-parse them into a scene which can be saved to the scenes.yaml file.  Please
-read the in [Scene Management](scenes.md)
+See [scenes](scenes.md) for a detailed description of `import_scenes`.
 
-The command payload is below.  Setting the dry_run flag to true will cause the
-changes to be made to the file, the default false will only report what would
-happen:
-
-  ```
-  { "cmd" : "import_scenes", ["dry_run" : true/false]}
-  ```
-
-  This command can also be run from the command line:
-
-   ```
-   insteon-mqtt config.yaml import-scenes aa.bb.cc
-   ```
-
-### Sync All Device Links
+### Import All Device Links
 
 Supported: modem
 
-This function will perform the import-scenes command on all devices.
-
-The command payload is as follows.  Setting the dry_run flag to true will cause
-the changes to be made to the file, the default false will only report what
-would happen:
-
-  ```
-  { "cmd" : "import_scenes_all", ["dry_run" : true/false]}
-  ```
-
- This command can also be run from the command line:
-
-  ```
-  insteon-mqtt config.yaml import-scenes-all
-  ```
+See [scenes](scenes.md) for a detailed description of `import_scenes_all`.
 
 ### Activate all linking mode
 
@@ -289,34 +167,13 @@ to know when to update the database.
 
 Supported: modem, devices
 
-If this is sent to the modem, it will trigger an all link database
-download.  If it's sent to a device, the device state (on/off, dimmer
-level, etc) will be updated and the database will be downloaded if
-it's out of date.  The model information of the device will also be
-queried if it is not known. Setting the force flag to true will download
-the database even if it's not out of date and will recheck the model
-information even if known.  The command payload is:
-
-
-   ```
-   { "cmd" : "refresh", ["force" : true/false] }
-   ```
-
-If the device reports a state change because of the refresh command the
-reason string will be set to "refresh".
+See [initialization](initializing.md) for a discussion of `refresh`.
 
 ### Refresh all devices
 
 Supported: modem
 
-The modem will send a refresh command to each device that it knows
-about (i.e. devices defined in the config file).  If the battery flag is false
-or not present, battery operated devices will be skipped. The command payload
-is:
-
-   ```
-   { "cmd" : "refresh_all", ["battery" : true/false, "force" : true/false] }
-   ```
+See [initialization](initializing.md) for a discussion of `refresh-all`.
 
 
 ### Get device model information
@@ -361,7 +218,7 @@ defined in the config file).  If the battery flag is false or not present,
 battery operated devices will be skipped. The command payload is:
 
   ```
-  { "cmd" : "get_engine", ["battery": true/false]}
+  { "cmd" : "get_engine_all", ["battery": true/false]}
   ```
 
 ### Add the device as a controller of another device.
@@ -563,7 +420,7 @@ This command triggers scenes from a device, as though the button on the
 device has been pressed.  The group is the button number and this will
 simulate pressing the button on the device.  This will cause all linked
 responders to react to the ON/OFF command. The reason field is optional and
-will be passed through to the output state change payload.
+will be passed through to the output state change payload, see [reason](reason.md).
 
 Args:
 - group = Will default to 1 and can generally be omitted for most devices.
@@ -571,7 +428,7 @@ Args:
 on or an off command.  The target device will treat off as level = 0x00 and
 on as the level defined on the device on_level unless level is passed.
 - level = If present, the target device will change to this on_level
-- reason = Will be passed through to the output state, defaults to 'device'
+- reason = Will be passed through to the output state, defaults to 'device' See [reason](reason.md)
 
    ```
    { "cmd": "scene", "group" : group, "is_on" : 0/1, ["level": 0-255],
@@ -598,24 +455,7 @@ Args:
 
 Supported: battery devices only
 
-Normally battery devices are sleeping and will not respond to commands.  So
-normally, the program queues messages for these devices and attempts to send
-them when the device is awake.  Usually this happens for a short period of time
-after the device sends a message.  But some battery devices do not even respond
-to commands during this time.
-
-You can manually wake a battery device by up by holding in their set buttons
-until their light flashes.  At this point they will stay awake for
-approximately 3 minutes.
-
-If you manually wake up a device using this method, then call this command
-so that the program knows that it can send messages to the device for the
-next three minutes.
-
-  ```
-  { "cmd": "awake" }
-  ```
-
+Please see [Battery Devices](battery_devices.md) for information about the `awake` command.
 
 ### Force a Battery Voltage Check
 
@@ -695,11 +535,7 @@ which can be used in the templates:
    - 'mode' is the on/off mode: 'normal', 'fast', or instant'
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
-   - 'reason' is the reason for the change.  'device' if a button was pressed
-     on the device.  'scene' if the device is responding to a scene trigger.
-     'refresh' if the update is from a refresh'.  'command' if the device is
-     responding to an on/off command.  Or an arbitrary string if one was
-     passed in via the scene or on/off style command inputs.
+   - 'reason' is the reason for the change.  See [reason](reason.md)
 
 Manual state output is invoked when a button on the device is held down.
 Manual mode flags are UP or DOWN (when the on or off button is pressed and
@@ -777,11 +613,7 @@ which can be used in the templates:
    - 'mode' is the on/off mode: 'normal', 'fast', or instant'
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
-   - 'reason' is the reason for the change.  'device' if a button was pressed
-     on the device.  'scene' if the device is responding to a scene trigger.
-     'refresh' if the update is from a refresh'.  'command' if the device is
-     responding to an on/off command.  Or an arbitrary string if one was
-     passed in via the scene or on/off style command inputs.
+   - 'reason' is the reason for the change.  See [reason](reason.md)
 
 Manual state output is invoked when a button on the device is held down.
 Manual mode flags are UP or DOWN (when the on or off button is pressed and
@@ -870,11 +702,7 @@ which can be used in the templates:
    - 'level' is the integer speed level 0-3 for off (0), low (1), medium (2),
       and high (3)
    - 'level_str' is the speed level 'off', 'low', 'medium', or 'high'.
-   - 'reason' is the reason for the change.  'device' if a button was pressed
-     on the device.  'scene' if the device is responding to a scene trigger.
-     'refresh' if the update is from a refresh'.  'command' if the device is
-     responding to an on/off command.  Or an arbitrary string if one was
-     passed in via the scene or on/off style command inputs.
+   - 'reason' is the reason for the change.  See [reason](reason.md)
 
 Input state change messages have the following variables defined which
 can be used in the templates:
@@ -951,11 +779,7 @@ The button change defines the following variables for templates:
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
    - 'transition' is the ramp rate in seconds.
-   - 'reason' is the reason for the change.  'device' if a button was pressed
-     on the device.  'scene' if the device is responding to a scene trigger.
-     'refresh' if the update is from a refresh'.  'command' if the device is
-     responding to an on/off command.  Or an arbitrary string if one was
-     passed in via the scene or on/off style command inputs.
+   - 'reason' is the reason for the change.  See [reason](reason.md)
 
 The optional transition flag can be used to specify a ramp rate.  If 'ramp'
 mode is specified but no transition value, a ramp rate of 2 seconds is used.
@@ -980,7 +804,7 @@ name, address, and:
    - 'manual_str' = 'up'/'off'/'down'
    - 'manual' = 1/0/-1
    - 'manual_openhab' = 2/1/0
-   - 'reason' (see above)
+   - 'reason' See [reason](reason.md)
 
 A sample remote control topic and payload configuration is:
 
@@ -1320,11 +1144,7 @@ which can be used in the templates:
    - 'mode' is the on/off mode: 'normal', 'fast', or instant'
    - 'fast' is 1 if the mode is fast, 0 otherwise
    - 'instant' is 1 if the mode is instant, 0 otherwise
-   - 'reason' is the reason for the change.  'device' if a button was pressed
-     on the device.  'scene' if the device is responding to a scene trigger.
-     'refresh' if the update is from a refresh'.  'command' if the device is
-     responding to an on/off command.  Or an arbitrary string if one was
-     passed in via the scene or on/off style command inputs.
+   - 'reason' is the reason for the change.  See [reason](reason.md)
 
 Input state change messages have the following variables defined which
 can be used in the templates:
