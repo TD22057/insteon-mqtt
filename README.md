@@ -5,7 +5,7 @@ This is a Python 3 package that communicates with an Insteon PLM modem
 commands to Insteon commands.  It allows an Insteon network to be
 integrated into and controlled from anything that can use MQTT.
 
-This package works well with HomeAssistant and can be easily installed as an addon using the HomeAssistant Supervisor.
+This package works well with HomeAssistant and can be easily [installed as an addon](docs/HA_Addon_Instructions.md) using the HomeAssistant Supervisor.
 
 Version: 0.8.2  ([History](CHANGELOG.md))
 
@@ -33,8 +33,24 @@ serial/USB/network connection to an Insteon PLM modem.  Devices must
 be set up in the input configuration file for the system to understand
 what they are and how to interpret messages from them.
 
+## Supported Devices
+- On/off switches (lamp modules, appliance modules, etc.)
+- Dimmer switches (lamp modules, dimmer switches, etc.)
+- On/off outlets
+- FanLinc dimmer and fan controller
+- KeypadLinc on/off and dimmer and scene controller
+- IOLinc relay and sensor module
+- Mini-remotes (4 and 8 button battery powered scene controllers)
+- Battery powered sensors (door, hidden door, window, etc.)
+- Leak sensors
+- Motion sensors
+- Smoke bridge
+- Thermostats
+- Hidden Door sensors
+- EZIO4O 4 relay device
 
-# Supported Features
+
+## Supported Features
 
 - Command Insteon devices using MQTT messages.  Topics and payloads
   can be customized using Jinja templates.
@@ -45,21 +61,6 @@ what they are and how to interpret messages from them.
   scene is triggered including normal, fast, and manual modes.
 - State changes can be tagged with arbitrary reason strings to allow
   automations to change behavior based on context.
-- Currently supported Insteon devices
-  - On/off switches (lamp modules, appliance modules, etc.)
-  - Dimmer switches (lamp modules, dimmer switches, etc.)
-  - On/off outlets
-  - FanLinc dimmer and fan controller
-  - KeypadLinc on/off and dimmer and scene controller
-  - IOLinc relay and sensor module
-  - Mini-remotes (4 and 8 button battery powered scene controllers)
-  - Battery powered sensors (door, hidden door, window, etc.)
-  - Leak sensors
-  - Motion sensors
-  - Smoke bridge
-  - Thermostats
-  - Hidden Door sensors
-  - EZIO4O 4 relay device
 - Automatically link new devices to the modem.  The system will
   correctly link all the Insteon groups for a device (like the smoke
   bridge which has 7 groups).
