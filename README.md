@@ -82,18 +82,20 @@ what they are and how to interpret messages from them.
 
 # Detailed Documentation
 
-- Each device supports and publishes a different set of MQTT commands.
-  Consult the [device documentation page](docs/mqtt.md) for details
-  on each those commands.
-
+- [Installation Guide](docs/quick_start.md) - Install direclty on a machine
+- [HomeAssistant Addon](docs/HA_Addon_Instructions.md) - Install in HomeAssistant
+- [Configuring](docs/configuration.md) - The base configuration requirements
+- [Initializing](docs/initializing.md) - Setting up your Insteon Devices
+- [User Interfaces](docs/user_interface.md) - Three available user interfaces.
+- [Device Documentation](docs/mqtt.md) - Each device supports and publishes a different set of MQTT commands.
 - [Guide to Templating](docs/Templating.md) - A short primer on Jinja templates
-
+- [Scene/Link Management](docs/scenes.md) - Creating a `scenes.yaml` file
+- [Debugging](docs/debugging.md) - Need help?  Look here!
 - [Full system install and automatically starting the server](docs/auto_start.md) on startup.
 
-- [Scene/Link Management](docs/scenes.md)
+## Developers
 
 - [Development Guide](docs/CONTRIBUTING.md)
-
 - [HomeAssistant Supervisor Development](docs/hassio_development.md)
 - [Release Delivery Notes](docs/delivery.md)
 
