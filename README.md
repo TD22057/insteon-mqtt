@@ -26,6 +26,19 @@ start guide](docs/quick_start.md)
 Using Home Assistant Supervisor?
 [Install Insteon-MQTT as an Add-on](docs/HA_Addon_Instructions.md)
 
+# Documentation
+
+- [Installation Guide](docs/quick_start.md) - Install from the command line
+- [Startup Script](docs/auto_start.md) - Running InsteonMQTT on startup.
+- [Install as a HomeAssistant Addon](docs/HA_Addon_Instructions.md) - Install in HomeAssistant
+- [Configuration](docs/configuration.md) - The base configuration requirements
+- [Initialize your Devices](docs/initializing.md) - Setting up your Insteon Devices
+- [User Interface Options](docs/user_interface.md) - Three available user interfaces.
+- [Device Documentation](docs/mqtt.md) - Each device supports and publishes a different set of MQTT commands.
+- [Guide to Templating](docs/Templating.md) - A short primer on Jinja templates
+- [Scene/Link Management](docs/scenes.md) - Creating links between devices and creating a `scenes.yaml` file
+- [Help and Debugging](docs/debugging.md) - Need help?  Look here!
+
 # Overview
 
 The bridge runs as a server listening to an MQTT broker and to a
@@ -80,20 +93,7 @@ what they are and how to interpret messages from them.
 - If using HomeAssistant Supervisor, a web based GUI for easy configuration and testing
 
 
-# Detailed Documentation
-
-- [Installation Guide](docs/quick_start.md) - Install direclty on a machine
-- [HomeAssistant Addon](docs/HA_Addon_Instructions.md) - Install in HomeAssistant
-- [Configuring](docs/configuration.md) - The base configuration requirements
-- [Initializing](docs/initializing.md) - Setting up your Insteon Devices
-- [User Interfaces](docs/user_interface.md) - Three available user interfaces.
-- [Device Documentation](docs/mqtt.md) - Each device supports and publishes a different set of MQTT commands.
-- [Guide to Templating](docs/Templating.md) - A short primer on Jinja templates
-- [Scene/Link Management](docs/scenes.md) - Creating a `scenes.yaml` file
-- [Debugging](docs/debugging.md) - Need help?  Look here!
-- [Full system install and automatically starting the server](docs/auto_start.md) on startup.
-
-## Developers
+## Developer Documentations
 
 - [Development Guide](docs/CONTRIBUTING.md)
 - [HomeAssistant Supervisor Development](docs/hassio_development.md)
