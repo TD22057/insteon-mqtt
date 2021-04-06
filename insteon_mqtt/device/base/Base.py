@@ -89,13 +89,15 @@ class Base:
                         config_extra = config.copy()
                         del config_extra[addr]
                     elif len(addrs_found) > 1:
-                        LOG.error("Multiple insteon address found in config "
+                        LOG.error("Multiple insteon addresses found in config "
                                   "for entry: %s",
                                   config)
+                        continue
                     else:
                         LOG.error("No insteon address found in config "
                                   "for entry: %s",
                                   config)
+                        continue
 
             # Otherwise it's just the address
             else:
