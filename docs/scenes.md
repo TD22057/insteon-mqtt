@@ -72,87 +72,83 @@ of lights simultaneously.  While, all modem controller entries require a group
 number, you __should not__ specify one.  A group number will be added
 automatically for you when the scenes file is processed.
 
-### The 'Import-Scenes' Function
-NOTE: Because the 'import-scenes' function may make direct writes to your
-scenes.yaml file. It is recommended that you **backup your scenes.yaml file
-before running 'import-scenes'** to be sure no data is lost.
+### Unexpected Sync Changes
+The prudent thing to do before performing a sync, is to perform a *dry-run* sync (which is the default) and look at all of the changes that will be made.  It can be helpful to also run the print_db command on the relevant devices to see what we know about the current state of the device database.
 
-The 'import-scenes' function will take the links defined on each device and
-parse them into a scene which can be saved to the scenes.yaml file.  The
-'import-scenes' function relies on the locally cached version of each device's
-link database.  As such, it is recommended that you **run the 'refresh' command
-on the device before running 'import-scenes'.**
+Unexpected additions may be as a result of 1) devices that were not refreshed such as battery powered devices or 2) small changes in the on_level or ramp_rates.  Unexpected deletions may be the result of 1) duplicate entries (the entry exists more than once on the device), 2) small changes in the on_level or ramp_rate, 3) links from devices that are no longer present on your network.
 
-The 'import-scenes' function will attempt to keep the order and all comments
-in the scenes.yaml file when writing to the file.  However, because scenes
-may be combined or split in the process of importing, **it is not always possible
-to maintain comments and ordering in the scenes.yaml file.**
+It is also possible that our understanding of the device database is wrong. It is not uncommon for corrupt insteon messages to exist, in this case we may believe that the device database is different than it actually is.  Try forcing a refresh of the device database and running a *dry-run* sync on the device again to see if the changes are still necessary.
 
-Much like other insteon-mqtt command.  The 'import-scenes' command can be run
-from either the command line or from mqtt.  Help running [commands from the
-command line](quick_start.md), you can also run `insteon-mqtt config.yaml
-import-scenes -h` for help from the command line.  Help running [mqtt
-commands](mqtt.md).  It is important to note, that by default, the command
-will perform a *dry-run* and will only report the changes that would be made
-unless you tell it to write the changes to disk.
+## Functions
 
-### The 'Import-Scenes-All' Function
-The 'import-scenes-all' function will perform the 'import-scenes' function on
-all devices in the network.  The same caveats about 'import-scenes' apply to
-this function as well.
+### `import-scenes`
+> Because the 'import-scenes' function may make direct writes to your scenes.yaml file. It is recommended that you **backup your scenes.yaml file before running 'import-scenes'** to be sure no data is lost.
 
-In addition, the 'import-scenes-all' function can take quite a while to
-complete particularly if you have a lot of devices and scenes and/or a slow
-computer. For reference 85 devices on a raspberry pi takes about 20 seconds
-to complete.  This may cause the command line to time out before the command
-completes.  The command should continue to run and complete in the background
-however, you will not see the results printed to the screen.  You can solve this
-by editing the file (../insteon_mqtt/cmd_line/util.py) and changing the line at
-the top from `TIME_OUT = 10` to something like `TIME_OUT = 30`.
+The `import-scenes` function will take the links defined on each device and parse them into a scene which can be saved to the scenes.yaml file.  The `import-scenes` function relies on the locally cached version of each device's link database.  As such, it is recommended that you **run the `refresh` command on the device before running `import-scenes`.**
 
-You can run `insteon-mqtt config.yaml import-scenes-all -h` for help from the
-command line.  Help running [mqtt commands](mqtt.md).
+The `import-scenes` function will attempt to keep the order and all comments in the scenes.yaml file when writing to the file.  However, because scenes may be combined or split in the process of importing, **it is not always possible to maintain comments and ordering in the scenes.yaml file.**
+ - `dry_run` or `run` - This flag will write the changes to the `scenes.yaml` file.  By default, the command will perform a *dry-run* and will only report the changes that would be made unless you tell it to write the changes.
 
-### The 'Sync' Function
-The 'sync' function will alter the device's link database to match the scenes
-defined in the scenes.yaml file.  This includes adding new links as well as
-deleting un-defined links.  To repeat, **the 'sync' function will delete links
-on the device that are not present in the scenes.yaml config file.**  By
-default, the command will perform a *dry-run* and will only report the changes
-that would be made unless you tell it to write the changes to the device.
+  _Command Line_
+   ```
+   insteon-mqtt config.yaml import-scenes aa.bb.cc [--run]
+   ```
 
-The changes will only be made to the device on which this command is called.  So
-if the user creates a new scene the 'sync' function needs to be called on all
-controllers and responders in order for the scene to work properly.
+  _MQTT_
+  ```
+  Topic: /insteon/command/aa.bb.cc
+  Payload: { "cmd" : "import_scenes", ["dry_run" : true/false]}
+  ```
 
-Links created by the 'pair' or 'join' command will not be deleted or added by
-the 'sync' command.
+### `import-scenes-all`
+The `import-scenes-all` function will perform the `import-scenes` function on all devices in the network.  The same caveats about `import-scenes` apply to this function as well.
 
-You can run `insteon-mqtt config.yaml sync -h` for help from the command line.
-Help running [mqtt commands](mqtt.md).
+> The `import-scenes-all` function can take quite a while to complete particularly if you have a lot of devices and scenes and/or a slow computer. For reference 85 devices on a raspberry pi takes about 20 seconds to complete.  This may cause the command line to time out before the command completes.  The command should continue to run and complete in the background however, you will not see the results printed to the screen.  You can solve this by editing the file (../insteon_mqtt/cmd_line/util.py) and changing the line at the top from `TIME_OUT = 10` to something like `TIME_OUT = 30`.
 
-#### Unexpected Sync Changes
-The prudent thing to do before performing a sync, is to perform a *dry-run*
-sync and look at all of the changes that will be made.  It can be helpful to
-also run the print_db command on the relevant devices to see what we know about
-the current state of the device database.
+ - `dry_run` or `run` - This flag will write the changes to the `scenes.yaml` file.  By default, the command will perform a *dry-run* and will only report the changes that would be made unless you tell it to write the changes.
 
-Unexpected additions may be as a result of 1) devices that were not refreshed
-such as battery powered devices or 2) small changes in the on_level or
-ramp_rates.  Unexpected deletions may be the result of 1) duplicate entries
-(the entry exists more than once on the device), 2) small changes in the
-on_level or ramp_rate, 3) links from devices that are no longer present on your
-network.
+  _Command Line_
+  ```
+  insteon-mqtt config.yaml import-scenes-all [--run]
+  ```
 
-It is also possible that our understanding of the device database is wrong.
-It is not uncommon for corrupt insteon messages to exist, in this case we may
-believe that the device database is different than it actually is.  Try forcing
-a refresh of the device database and running a *dry-run* sync on the device
-again to see if the changes are still necessary.
+  _MQTT_
+  ```
+  Topic: /insteon/command/modem
+  Payload: { "cmd" : "import_scenes_all", ["dry_run" : true/false]}
+  ```
 
-### The 'Sync-All' Function
-The 'sync-all' function will perform the 'sync' function on all devices in the
-network.  The same caveats about 'sync' apply to this function as well.
 
-You can run `insteon-mqtt config.yaml sync-all -h` for help from the command
-line. Help running [mqtt commands](mqtt.md).
+### `sync`
+The 'sync' function will alter the device's link database to match the scenes defined in the scenes.yaml file.  This includes adding new links as well as deleting un-defined links.
+> The 'sync' function will delete links on the device that are not present in the scenes.yaml config file.
+
+> Links created by the 'pair' or 'join' command will not be deleted or added by the 'sync' command.
+
+The changes will only be made to the device on which this command is called.  So if the user creates a new scene the 'sync' function needs to be _called on all controllers and responders in order for the scene to work properly_.
+ - `dry_run` or `run` - This flag will write the sync changes to the device.  By default, the command will perform a *dry-run* and will only report the changes that would be made unless you tell it to write the changes to the device.
+
+ _Command Line_
+ ```
+ insteon-mqtt config.yaml sync aa.bb.cc [--run]
+ ```
+
+ _MQTT_
+ ```
+ Topic: /insteon/command/aa.bb.cc
+ Payload: { "cmd" : "sync", ["dry_run" : true/false]}
+ ```
+
+### `sync-all`
+The `sync-all` function will perform the `sync` function on all devices in the network.  The same caveats about `sync` apply to this function as well.
+
+  _Command Line_
+  ```
+  insteon-mqtt config.yaml sync-all [--run]
+  ```
+
+  _MQTT_
+  ```
+  Topic: /insteon/command/modem
+  Payload: { "cmd" : "sync_all", ["dry_run" : true/false]}
+  ```

@@ -1,10 +1,10 @@
-# Insteon-MQTT Quick Start for Home Assistant users
+# Quick Start for Home Assistant users
 
 ## Prerequisites
 
 These instructions assume that you:
 
-- Have a Home Assistant installation with Home Assistant Supervisor up and
+- Have a Home Assistant installation with Home Assistant __Supervisor__ up and
   running.  Installing using the instructions in the Home Assistant
   [Getting Started Guide](https://www.home-assistant.io/getting-started/)
   or the slightly more advanced
@@ -33,31 +33,15 @@ These instructions assume that you:
 7. Click __Install__
 8. Click __Start__ to start the Add-on, this will create your initial config
    files.
-9. Edit `/config/insteon-mqtt/config.yaml` as appropriate.
+9. Edit `/config/insteon-mqtt/config.yaml` as appropriate. See [configuration](configuration.md) for detailed instructions.
 
-   - Set the Insteon port to be the USB port or address of the PLM modem OR
-     if using an Insteon Hub set its address, username, and password.
-   - Set the modem Insteon hex address (printed on the back of the modem).
-   - Edit the Insteon device section and enter the hex addresses of all
-     the devices you have.
-
-10. Restart the insteon-mqtt addon to pick up the changes.
-11. Join and Pair each device in your network.  This can be accomplished
-    using the Web Command Line interface, which is accessible from the Add-on
-    page via the __Open Web UI__ button.
-
-    - Type `-h` to get a list of commands.
-    - You do not need to type the `insteon-mqtt config.yaml` portion, that will
-    be added for you.
-    - For example to join a device named `hallway light` you would type
-    `join 'hallway light'` and hit enter.  To pair the same device you would
-    type `pair 'hallway light'`.
-    - Do this for all of your devices.
+10. Restart the insteon-mqtt addon to pick up the changes to the `config.yaml` file.
+11. Initialize your devices as discussed in [initializing](initializing.md).
 12. Edit your Home Assistant configuration to add your devices as MQTT devices
     to Home Assistant.  In the __mqtt__ section of the initial config.yaml
     file, there are examples of Home Assistant configurations for each device
     type.
-13. See the [command documentation](mqtt.md) for additional commands.
+13. See the [device documentation](mqtt.md) for additional commands.
 
 ## Backing up your Data
 
@@ -71,15 +55,11 @@ be careful, this can get quite large.
 
 Check the supervisor page periodically for updates to Insteon-MQTT
 
-## Questions
+## Additional Resources
 
-If you have questions, please look on the
-[Discussions](https://github.com/TD22057/insteon-mqtt/discussions) page
-to see if it has been asked and answered before.  If not, feel free to ask.
+- [User Interfaces](user_interface.md) for information on how to interact with Insteon-MQTT
 
-## Issues
+- [Debugging](debugging.md) for information on how to diagnose problems.
 
-If you have found a bug, or wish to request a new feature, please look on the
-[Issues](https://github.com/TD22057/insteon-mqtt/issues) page to see if the
-issue or feature request has been already identified.  If not, feel free to
-add it.
+- [Device documentation](mqtt.md) for information on
+  device configuration and available MQTT commands and options.
