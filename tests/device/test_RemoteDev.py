@@ -21,7 +21,7 @@ def test_device4(tmpdir):
     protocol = H.main.MockProtocol()
     modem = H.main.MockModem(tmpdir)
     addr = IM.Address(0x01, 0x02, 0x03)
-    device = Remote(protocol, modem, addr, "4button", 4)
+    device = Remote(protocol, modem, addr, "4button", None, 4)
     return device
 
 @pytest.fixture
@@ -32,7 +32,7 @@ def test_device8(tmpdir):
     protocol = H.main.MockProtocol()
     modem = H.main.MockModem(tmpdir)
     addr = IM.Address(0x01, 0x02, 0x03)
-    device = Remote(protocol, modem, addr, "8button", 8)
+    device = Remote(protocol, modem, addr, "8button", None, 8)
     return device
 
 class Test_Base_Config():

@@ -15,7 +15,7 @@ class Test_config:
         addr = IM.Address(1, 2, 3)
 
         types = ["BatterySensor", "Dimmer", "EZIO4O", "FanLinc", "IOLinc",
-                "KeypadLinc","Leak", "Motion", "Outlet", "SmokeBridge", 
+                "KeypadLinc","Leak", "Motion", "Outlet", "SmokeBridge",
                 "Switch","Thermostat"]
         instances = []
         for t in types:
@@ -25,7 +25,7 @@ class Test_config:
             instances.append(inst)
 
         types.append("Remote")
-        inst = IM.device.Remote(proto, modem, addr, "dummy", 3)
+        inst = IM.device.Remote(proto, modem, addr, "dummy", None, 3)
         instances.append(inst)
 
         types.append("Modem")

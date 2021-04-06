@@ -27,7 +27,7 @@ def setup(mock_paho_mqtt, tmpdir):
     modem = H.main.MockModem(tmpdir)
     addr = IM.Address(1, 2, 3)
     name = "device name"
-    dev = IM.device.Remote(proto, modem, addr, name, 6)
+    dev = IM.device.Remote(proto, modem, addr, name, None, 6)
 
     link = IM.network.Mqtt()
     mqttModem = H.mqtt.MockModem()

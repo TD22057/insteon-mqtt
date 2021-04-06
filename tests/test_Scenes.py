@@ -512,7 +512,8 @@ class Test_Scenes:
 
     def test_mini_remote_button_config_no_data3(self):
         modem = MockModem()
-        remote = Remote(modem.protocol, modem, Address("11.22.33"), "Remote", 4)
+        remote = Remote(modem.protocol, modem, Address("11.22.33"), "Remote",
+                        None, 4)
         modem.devices[str(remote.addr)] = remote
         device = modem.find(Address("aa.bb.cc"))
         modem.devices[device.label] = device
@@ -543,7 +544,8 @@ class Test_Scenes:
 
     def test_mini_remote_button_config_with_data3(self):
         modem = MockModem()
-        remote = Remote(modem.protocol, modem, Address("11.22.33"), "Remote", 4)
+        remote = Remote(modem.protocol, modem, Address("11.22.33"), "Remote",
+                        None, 4)
         modem.devices[str(remote.addr)] = remote
         device = modem.find(Address("aa.bb.cc"))
         modem.devices[device.label] = device
