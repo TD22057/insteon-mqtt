@@ -15,7 +15,7 @@ class Test_config:
         addr = IM.Address(1, 2, 3)
 
         types = ["BatterySensor", "Dimmer", "EZIO4O", "FanLinc", "IOLinc",
-                "KeypadLinc","Leak", "Motion", "Outlet", "SmokeBridge",
+                "KeypadLinc", "Leak", "Motion", "Outlet", "SmokeBridge",
                 "Switch","Thermostat"]
         instances = []
         for t in types:

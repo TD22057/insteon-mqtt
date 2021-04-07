@@ -85,7 +85,7 @@ class Base:
                             addrs_found.append(key)
                     if len(addrs_found) == 1:
                         addr = addrs_found[0]
-                        name = config[addr]
+                        name = config[addr].lower()
                         config_extra = config.copy()
                         del config_extra[addr]
                     elif len(addrs_found) > 1:
