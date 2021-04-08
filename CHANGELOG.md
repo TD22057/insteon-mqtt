@@ -1,5 +1,17 @@
 # Revision Change History
 
+## [0.8.3]
+
+### Additions
+
+- Adds and advanced option for setting the minimum hop count
+  for specific devices.  See [min_hops][config_extra]
+
+- Adds a bunch of documentation including [Templating Guide][TGuide] 
+  and [Debugging][DbgGuide] as well as additions to other existing pages.
+  Also reorganized the documentation to try and make it easier
+  to find.
+
 ## [0.8.2]
 
 ### Fixes
@@ -650,3 +662,6 @@ will add new features.
 [P363]: https://github.com/TD22057/insteon-mqtt/pull/363
 [P368]: https://github.com/TD22057/insteon-mqtt/pull/368
 [P369]: https://github.com/TD22057/insteon-mqtt/pull/369
+[TGuide]: https://github.com/TD22057/insteon-mqtt/blob/master/docs/Templating.md
+[DbgGuide]: https://github.com/TD22057/insteon-mqtt/blob/master/docs/debugging.md
+[config_extra]: https://github.com/TD22057/insteon-mqtt/blob/master/docs/config_extra.md
