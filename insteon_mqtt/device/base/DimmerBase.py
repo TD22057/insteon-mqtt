@@ -36,7 +36,7 @@ class DimmerBase(ManualCtrl, ResponderBase, Base):
                    0x15: 23.5, 0x16: 21.5, 0x17: 19, 0x18: 8.5, 0x19: 6.5,
                    0x1a: 4.5, 0x1b: 2, 0x1c: .5, 0x1d: .3, 0x1e: .2, 0x1f: .1}
 
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config_extra=None):
         """Constructor
 
         Args:
@@ -46,8 +46,9 @@ class DimmerBase(ManualCtrl, ResponderBase, Base):
           modem (Modem): The Insteon modem used to find other devices.
           address (Address): The address of the device.
           name (str): Nice alias name to use for the device.
+          config_extra (dict): Extra configuration settings
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config_extra)
 
         # Remote (mqtt) commands mapped to methods calls.  Add to the base
         # class defined commands.

@@ -38,7 +38,7 @@ class ManualCtrl(Base):
       device starts or stops manual mode (when a button is held down or
       released).
     """
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config_extra=None):
         """Constructor
 
         Args:
@@ -48,8 +48,9 @@ class ManualCtrl(Base):
           modem (Modem): The Insteon modem used to find other devices.
           address (Address): The address of the device.
           name (str): Nice alias name to use for the device.
+          config_extra (dict): Extra configuration settings
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config_extra)
 
         # Manual mode start up, down, off
         # API: func(Device, on_off.Manual mode, str reason)

@@ -19,3 +19,6 @@ The device storage folder contains a json file for each device that is used to c
 #### `mqtt` - device templates
 
 Insteon-MQTT uses Jinja2 templates for the greatest interoperability.  Each device category `modem`, `modem`, `switch`, `dimmer`, ... uses templates for defining the mqtt topic and payload for each message type.  See [Templating](templating.md) for help with Jinja2 templates.
+
+#### Device Specific Configuration Settings
+See [Device Specific Configuration Settings](config_extra.md)

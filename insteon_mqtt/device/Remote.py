@@ -43,7 +43,8 @@ class Remote(ManualCtrl, BatterySensor):
     # I also tried to drain the battery of one of my devices
     BATTERY_VOLTAGE_LOW = 3.4
 
-    def __init__(self, protocol, modem, address, name, num_button):
+    def __init__(self, protocol, modem, address, name, config_extra,
+                 num_button):
         """Constructor
 
         Args:
@@ -53,10 +54,11 @@ class Remote(ManualCtrl, BatterySensor):
           modem (Modem):  The Insteon modem used to find other devices.
           address (Address):  The address of the device.
           name (str):  Nice alias name to use for the device.
+          config_extra (dict): Extra configuration settings
           num_button (int):  Number of buttons on the remote.
         """
         assert num_button > 0
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config_extra)
 
         self.num = num_button
         self.type_name = "mini_remote_%d" % self.num

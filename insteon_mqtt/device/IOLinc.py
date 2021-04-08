@@ -113,7 +113,7 @@ class IOLinc(ResponderBase):
         MOMENTARY_B = 0x02
         MOMENTARY_C = 0x03
 
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config_extra=None):
         """Constructor
 
         Args:
@@ -123,8 +123,9 @@ class IOLinc(ResponderBase):
           modem:       (Modem) The Insteon modem used to find other devices.
           address:     (Address) The address of the device.
           name         (str) Nice alias name to use for the device.
+          config_extra (dict): Extra configuration settings
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config_extra)
 
         # Used to track the state of sensor and relay
         self._sensor_is_on = False

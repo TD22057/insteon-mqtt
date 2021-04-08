@@ -97,6 +97,30 @@ class Test_Base_Config():
         device = Base.from_config([{"32 34 56": 'test'}], protocol, modem)
         assert device
 
+    def test_load_config_extra_good(self, test_device, caplog):
+        protocol = test_device.protocol
+        modem = test_device.modem
+        device = Base.from_config([{"11.22.33": 'test', "min_hops": 1}],
+                                  protocol, modem)
+        assert device
+        assert device[0].config_extra['min_hops'] == 1
+
+    def test_load_config_extra_no_addr(self, test_device, caplog):
+        protocol = test_device.protocol
+        modem = test_device.modem
+        device = Base.from_config([{"not_addr": 'test', "min_hops": 1}],
+                                  protocol, modem)
+        assert 'No insteon address found in config' in caplog.text
+        assert len(device) == 0
+
+    def test_load_config_extra_two_addr(self, test_device, caplog):
+        protocol = test_device.protocol
+        modem = test_device.modem
+        device = Base.from_config([{"11.22.33": 'test', "aa.bb.cc": 1}],
+                                  protocol, modem)
+        assert 'Multiple insteon addresses found in config' in caplog.text
+        assert len(device) == 0
+
     def test_info_entry(self, test_device):
         assert test_device.info_entry() == {'01.02.03':
                                             {'label': None,

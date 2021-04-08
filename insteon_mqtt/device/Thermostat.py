@@ -85,7 +85,7 @@ class Thermostat(Base):
     FARENHEIT = 0
     CELSIUS = 1
 
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config_extra=None):
         """Constructor
 
         Args:
@@ -95,11 +95,10 @@ class Thermostat(Base):
           modem:       (Modem) The Insteon modem used to find other devices.
           address:     (Address) The address of the device.
           name:        (str) Nice alias name to use for the device.
-          dimmer:      (bool) True if the device supports dimming - False if
-                       it's a regular switch.
+          config_extra (dict) Extra configuration settings
         """
         # Set default values to attributes, may be overwritten by saved values
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config_extra)
 
         self.cmd_map.update({
             'get_status' : self.get_status

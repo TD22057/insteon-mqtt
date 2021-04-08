@@ -64,7 +64,7 @@ class Motion(BatterySensor):
     # Currently set at 4 Days
     BATTERY_TIME = (60 * 60) * 24 * 4
 
-    def __init__(self, protocol, modem, address, name=None):
+    def __init__(self, protocol, modem, address, name=None, config_extra=None):
         """Constructor
 
         Args:
@@ -74,8 +74,9 @@ class Motion(BatterySensor):
           modem (Modem):  The Insteon modem used to find other devices.
           address (Address): The address of the device.
           name (str):  Nice alias name to use for the device.
+          config_extra (dict): Extra configuration settings
         """
-        super().__init__(protocol, modem, address, name)
+        super().__init__(protocol, modem, address, name, config_extra)
 
         self.signal_dawn = Signal()  # (Device, bool is_dawn)
 
