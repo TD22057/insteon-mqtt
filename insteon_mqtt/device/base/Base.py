@@ -67,8 +67,6 @@ class Base:
                 if len(config) == 1:
                     # This has no config_extra values
                     addr, name = next(iter(config.items()))
-                    if name:
-                        name = name.lower()
                 elif len(config) > 1:
                     # This has config_extra values
                     # Loop through each key.  One and only one should be a
@@ -85,7 +83,7 @@ class Base:
                             addrs_found.append(key)
                     if len(addrs_found) == 1:
                         addr = addrs_found[0]
-                        name = config[addr].lower()
+                        name = config[addr]
                         config_extra = config.copy()
                         del config_extra[addr]
                     elif len(addrs_found) > 1:
@@ -131,7 +129,8 @@ class Base:
         self.protocol = protocol
         self.modem = modem
         self.addr = Address(address)
-        self.name = name
+        self.name_user_case = name
+        self.name = name.lower()
         self.config_extra = {}
         if config_extra is not None:
             self.config_extra = config_extra
