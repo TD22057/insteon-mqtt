@@ -2,10 +2,19 @@
 
 ## [0.8.3]
 
+### Breaking Change in HomeAssistant
+
+- HomeAssistant version 2021.4.0 now only supports percentages for fan
+  speeds.  This means any fan entities in HomeAssistant that were configured
+  to use "low", "medium", and "high" for the fan speed will no longer work.
+  See [config-example.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/config-example.yaml) 
+  under the `mqtt -> fan` section for a suggest configuration in
+  HomeAssistant.  Thanks @Juggler00 ([PR 378][P378])
+
 ### Additions
 
 - Adds and advanced option for setting the minimum hop count
-  for specific devices.  See [min_hops][config_extra]
+  for specific devices.  See [min_hops][config_extra] ([PR 376][P376])
 
 - Adds a bunch of documentation including [Templating Guide][TGuide] 
   and [Debugging][DbgGuide] as well as additions to other existing pages.
@@ -21,7 +30,7 @@
 
 ### Additions
 
-- Adds logging of Paho MQTT client.  ([PR 369][P339])
+- Adds logging of Paho MQTT client.  ([PR 369][P369])
 
 ## [0.8.1]
 
@@ -32,7 +41,7 @@
   ([PR 363][P363])
 
 - Change the name of the example config file to avoid warnings with Home
-  Assistant Supervisor. ([PR 363][P363])
+  Assistant Supervisor. ([PR 364][P364])
 
 ## [0.8.0]
 
@@ -660,8 +669,11 @@ will add new features.
 [P355]: https://github.com/TD22057/insteon-mqtt/pull/355
 [P359]: https://github.com/TD22057/insteon-mqtt/pull/359
 [P363]: https://github.com/TD22057/insteon-mqtt/pull/363
+[P364]: https://github.com/TD22057/insteon-mqtt/pull/364
 [P368]: https://github.com/TD22057/insteon-mqtt/pull/368
 [P369]: https://github.com/TD22057/insteon-mqtt/pull/369
 [TGuide]: https://github.com/TD22057/insteon-mqtt/blob/master/docs/Templating.md
 [DbgGuide]: https://github.com/TD22057/insteon-mqtt/blob/master/docs/debugging.md
 [config_extra]: https://github.com/TD22057/insteon-mqtt/blob/master/docs/config_extra.md
+[P376]: https://github.com/TD22057/insteon-mqtt/pull/376
+[P378]: https://github.com/TD22057/insteon-mqtt/pull/378
