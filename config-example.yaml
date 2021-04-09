@@ -716,8 +716,29 @@ mqtt:
   #   - platform: mqtt
   #     command_topic: 'insteon/aa.bb.cc/fan/set'
   #     state_topic: 'insteon/aa.bb.cc/fan/state'
-  #     speed_command_topic: 'insteon/aa.bb.cc/fan/speed/set'
-  #     speed_state_topic: 'insteon/aa.bb.cc/fan/state'
+  #     percentage_command_topic: 'insteon/aa.bb.cc/fan/speed/set'
+  #     percentage_command_template: >
+  #       {% if value < 10 %}
+  #         off
+  #       {% elif value < 40 %}
+  #         low
+  #       {% elif value < 75 %}
+  #         medium
+  #       {% else %}
+  #         high 
+  #       {% endif %}
+  #     percentage_state_topic: 'insteon/aa.bb.cc/fan/speed/state'
+  #     percentage_value_template: >
+  #       {% if value == 'low' %}
+  #         33
+  #       {% elif value == 'medium' %}
+  #         67
+  #       {% elif value == 'high' %}
+  #         100
+  #       {% else %}
+  #         0
+  #       {% endif %}
+
   fan_linc:
     # Output fan state change topic and payload.  This message is sent
     # whenever the fan state changes for any reason.  Available

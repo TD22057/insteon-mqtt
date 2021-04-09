@@ -724,8 +724,11 @@ speed payload template must convert the input message into the format
    { "cmd" : SPEED }
    ```
 
-Here is a sample configuration that accepts and publishes messages
-matching the Home Assistant MQTT fan configuration.
+Here is a sample configuration.  HomeAssistant starting in version 2021.4.0
+dropped support for the off/low/medium/high fan speeds.  See 
+[config-example.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/config-example.yaml) 
+in the mqtt -> fan section for an example HomeAssistant config that works
+with InsteonMQTT.
 
    ```
    fan_linc:
