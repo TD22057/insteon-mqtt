@@ -11,6 +11,12 @@ Version: 0.8.2  ([History](CHANGELOG.md))
 
 ### Recent Breaking Changes
 
+- 0.8.3 - HomeAssistant version 2021.4.0 now only supports percentages for fan
+  speeds.  This means any fan entities in HomeAssistant that were configured
+  to use "low", "medium", and "high" for the fan speed will no longer work.
+  See [config-example.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/config-example.yaml) 
+  under the `mqtt -> fan` section for a suggest configuration in
+  HomeAssistant.  __Users not using HomeAssistant are unaffected.__
 - 0.7.4 - IOLinc, the scene_topic has been elimited, please see the documentation
   for the replaces functionality.
 - 0.7.2 - KeypadLinc now supports both dimmer and on/off device types.  This required
