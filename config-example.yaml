@@ -190,6 +190,17 @@ mqtt:
   cmd_topic: 'insteon/command'
 
 
+  # Home Assistant implements mqtt device discovery as outlined at:
+  # https://www.home-assistant.io/docs/mqtt/discovery
+  # if discover_topic_base is defined, devices (as defined in config.yaml)
+  # announce themselves to Home Assistant. Announcing occurs once
+  # upon startup of insteon-mqtt and based on request (see announce command on
+  # modem)
+  #
+  # TO DISABLE THE DISCOVERY SERVICE: Comment out the line below by placing a
+  # hash character # at the start of the line.
+  discovery_topic_base: 'homeassistant'
+
   # Trigger modem virtual scenes.  Modem scenes are where the modem is a
   # controller and emits a scene broadcast with the specified group number.
   # There is no state topic since the scene doesn't have an on/off state.
@@ -725,7 +736,7 @@ mqtt:
   #       {% elif value < 75 %}
   #         medium
   #       {% else %}
-  #         high 
+  #         high
   #       {% endif %}
   #     percentage_state_topic: 'insteon/aa.bb.cc/fan/speed/state'
   #     percentage_value_template: >
