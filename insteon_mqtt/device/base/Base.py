@@ -130,7 +130,9 @@ class Base:
         self.modem = modem
         self.addr = Address(address)
         self.name_user_case = name
-        self.name = name.lower()
+        self.name = name
+        if name is not None:
+            self.name = name.lower()
         self.config_extra = {}
         if config_extra is not None:
             self.config_extra = config_extra
