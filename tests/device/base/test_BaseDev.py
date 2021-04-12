@@ -97,6 +97,14 @@ class Test_Base_Config():
         device = Base.from_config([{"32 34 56": 'test'}], protocol, modem)
         assert device
 
+    def test_with_name_case(self, test_device):
+        protocol = test_device.protocol
+        modem = test_device.modem
+        #address is intentionally badly formatted
+        device = Base.from_config([{"32 34 56": 'tEst'}], protocol, modem)
+        assert device[0].name == 'test'
+        assert device[0].name_user_case == 'tEst'
+
     def test_load_config_extra_good(self, test_device, caplog):
         protocol = test_device.protocol
         modem = test_device.modem

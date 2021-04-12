@@ -251,7 +251,7 @@ class Test_Scenes:
         assert len(scenes.entries) == 1
         assert len(scenes.data[0]['controllers']) == 2
         assert len(scenes.data[0]['responders']) == 1
-        assert scenes.data[0]['responders'][0]['Dimmer']['ramp_rate'] == 19
+        assert scenes.data[0]['responders'][0]['dimmer']['ramp_rate'] == 19
 
     def test_Dimmer_scenes_different_ramp_rates(self):
         modem = MockModem()
@@ -325,7 +325,7 @@ class Test_Scenes:
         assert len(scenes.entries) == 1
         assert len(scenes.data[0]['controllers']) == 2
         assert len(scenes.data[0]['responders']) == 1
-        assert scenes.data[0]['responders'][0]['FanLinc']['ramp_rate'] == 19
+        assert scenes.data[0]['responders'][0]['fanlinc']['ramp_rate'] == 19
 
     def test_FanLinc_scenes_different_ramp_rates(self):
         modem = MockModem()
@@ -400,7 +400,7 @@ class Test_Scenes:
         assert len(scenes.entries) == 1
         assert len(scenes.data[0]['controllers']) == 2
         assert len(scenes.data[0]['responders']) == 1
-        assert scenes.data[0]['responders'][0]['KeypadLinc']['ramp_rate'] == 19
+        assert scenes.data[0]['responders'][0]['keypadlinc']['ramp_rate'] == 19
 
     def test_KeypadLinc_scenes_different_ramp_rates(self):
         modem = MockModem()
@@ -573,8 +573,8 @@ class Test_Scenes:
         assert scenes.entries[0].controllers[0].group == 2
         assert scenes.entries[0].controllers[0].link_data == [3, 0, 2]
         assert scenes.entries[0].controllers[0].style == 0
-        assert scenes.data[0]['controllers'][0]['Remote']['group'] == 2
-        assert scenes.data[0]['controllers'][0]['Remote']['data_3'] == 2
+        assert scenes.data[0]['controllers'][0]['remote']['group'] == 2
+        assert scenes.data[0]['controllers'][0]['remote']['data_3'] == 2
 
     def test_foreign_hub_keypad_button_backlights_scene(self):
         modem = MockModem()

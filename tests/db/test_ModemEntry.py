@@ -90,7 +90,7 @@ class Test_ModemEntry:
         device = IM.device.base.Base(protocol, modem, addr, name="Awesomesauce")
         modem.set_linked_device(device)
 
-        assert obj.label == "03.04.05 (Awesomesauce)"
+        assert obj.label == "03.04.05 (awesomesauce)"
 
     #-----------------------------------------------------------------------
 
