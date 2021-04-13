@@ -189,7 +189,8 @@ mqtt:
   # send these low level commands.
   cmd_topic: 'insteon/command'
 
-
+  ### Discovery Settings
+  #
   # Home Assistant implements mqtt device discovery as outlined at:
   # https://www.home-assistant.io/docs/mqtt/discovery
   # if discover_topic_base is defined, devices (as defined in config.yaml)
@@ -200,6 +201,12 @@ mqtt:
   # TO DISABLE THE DISCOVERY SERVICE: Comment out the line below by placing a
   # hash character # at the start of the line.
   discovery_topic_base: 'homeassistant'
+
+  # The mqtt topic to monitor for HomeAssistant status.  This likely doesn't
+  # need to be changed unless you have altered it.  When the message 'online'
+  # is received on this topic, InsteonMQTT will publish the discovery
+  # entities.  See https://www.home-assistant.io/docs/mqtt/birth_will/
+  discovery_ha_status: 'homeassistant/status'
 
   # Trigger modem virtual scenes.  Modem scenes are where the modem is a
   # controller and emits a scene broadcast with the specified group number.
