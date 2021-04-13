@@ -59,6 +59,11 @@ class SceneTopic(BaseTopic):
         # Update the MQTT topics and payloads from the config file.
         self.msg_scene.load_config(data, topic, payload, qos)
 
+        # Add ourselves to the list of topics
+        self.topics['on_off_topic'] = self.msg_scene.render_topic(
+            self.base_template_data()
+        )
+
     #-----------------------------------------------------------------------
     def scene_subscribe(self, link, qos, group=None):
         """Subscribe to any MQTT topics the object needs.

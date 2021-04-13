@@ -432,8 +432,8 @@ mqtt:
           {
             "uniq_id": "{{address}}_light",
             "name": "{{name_user_case}}",
-            "cmd_t": "",
-            "stat_t": "",
+            "cmd_t": "{{level_topic}}",
+            "stat_t": "{{state_topic}}",
             "brightness": true,
             "schema": "json",
             "device": {{device_info_template}}

@@ -99,9 +99,14 @@ class DiscoveryTopic(BaseTopic):
                  firmware = device firmware version
                  modem_addr = hexadecimal address of modem as a string
                  device_info_template = a template defined in config.yaml
+                 <<topics>> = topic keys as defined in the config.yaml file
+                      are available as variables
         """
         # Set up the variables that can be used in the templates.
         data = self.base_template_data(**kwargs)
+
+        # Insert Topics from topic classes
+        data.update(self.topics)
 
         data['name_user_case'] = self.device.addr.hex
         if self.device.name_user_case:

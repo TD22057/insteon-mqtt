@@ -103,6 +103,20 @@ class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
         self.scene_unsubscribe(link)
 
     #-----------------------------------------------------------------------
+    def discovery_template_data(self, **kwargs):
+        """This extends the template data variables defined in the base class
+
+        Returns the dict from the base class plus these additional keys that
+        contain the topic as defined in the config.yaml if any:
+          state_topic, on_off_topic, level_topic, scene_topic,
+          manual_state_topic
+        """
+        # Set up the variables that can be used in the templates.
+        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
+        data['level_topic'] = self.msg_level.render_topic(data)
+        return data
+
+    #-----------------------------------------------------------------------
     def _input_set_level(self, client, data, message):
         """Handle an input level change MQTT message.
 
