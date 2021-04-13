@@ -20,6 +20,7 @@ class BaseTopic:
         """
         self.mqtt = mqtt
         self.device = device
+        self.class_name = None  # This should be amended by each class
 
     #-----------------------------------------------------------------------
     def base_template_data(self, **kwargs):

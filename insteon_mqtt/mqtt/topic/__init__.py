@@ -12,6 +12,7 @@ topics.  They should be extended by an MQTT device object.
 """
 
 from .BaseTopic import BaseTopic
+from .DiscoveryTopic import DiscoveryTopic
 from .ManualTopic import ManualTopic
 from .SceneTopic import SceneTopic
 from .SetTopic import SetTopic
