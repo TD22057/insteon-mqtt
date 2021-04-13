@@ -71,6 +71,9 @@ class Mqtt:
         # The HomeAssistant status topic to use.
         self._ha_status_topic = None
 
+        # The device_info_template
+        self.device_info_template = ""
+
         # MQTT message parameters.  These get loaded via the config.
         self.qos = 1
         self.retain = True
@@ -111,6 +114,11 @@ class Mqtt:
             self._ha_status_topic = MsgTemplate.clean_topic(
                 data['discovery_ha_status']
             )
+
+        # Load the device_info_template if defined this is a variable shared
+        # by all devices
+        if 'device_info_template' in data:
+            self.device_info_template = data['device_info_template']
 
         # MQTT message parameters.
         self.qos = data.get('qos', self.qos)

@@ -97,6 +97,8 @@ class DiscoveryTopic(BaseTopic):
                  engine = device engine version (i1, i2, i2cs)
                  model = device model string
                  firmware = device firmware version
+                 modem_addr = hexadecimal address of modem as a string
+                 device_info_template = a template defined in config.yaml
         """
         # Set up the variables that can be used in the templates.
         data = self.base_template_data(**kwargs)
@@ -109,6 +111,17 @@ class DiscoveryTopic(BaseTopic):
         data['engine'] = engine_map.get(self.device.db.engine, 'Unknown')
         data['model'] = self.device.db.desc
         data['firmware'] = self.device.db.firmware
+        data['modem_addr'] = self.device.modem.addr.hex
+
+        # Finally, render the device_info_template
+        device_info_template = jinja2.Template(self.mqtt.device_info_template)
+        try:
+            data['device_info_template'] = device_info_template.render(data)
+        except jinja2.exceptions.UndefinedError as exc:
+            LOG.error("Error rendering device_info_template: %s", exc)
+            LOG.error("Template was: \n%s",
+                      self.mqtt.device_info_template.strip())
+            LOG.error("Data passed was: %s", data)
 
         return data
 
