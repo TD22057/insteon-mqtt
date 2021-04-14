@@ -195,8 +195,14 @@ mqtt:
   # https://www.home-assistant.io/docs/mqtt/discovery
   # if discover_topic_base is defined, devices (as defined in config.yaml)
   # announce themselves to Home Assistant. Announcing occurs once
-  # upon startup of insteon-mqtt and based on request (see announce command on
-  # modem)
+  # upon startup of insteon-mqtt and whenever HomeAssistant restart.
+  #
+  # The details of discovery_entities and how to define your own discovery
+  # templates can be found here:
+  # https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery.md
+  #
+  # Any additional variables that a specific device may offer are documented
+  # in the comments below under that device class.
   #
   # TO DISABLE THE DISCOVERY SERVICE: Comment out the line below by placing a
   # hash character # at the start of the line.

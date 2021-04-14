@@ -20,7 +20,8 @@ class DiscoveryTopic(BaseTopic):
     All devices that support MQTT discovery should inherit this.
 
     Note that a call to load_discovery_data will need to be made from the
-    extended classes load_config method.
+    extended classes load_config method.  Plus any devices adding additional
+    variables should extend discovery_template_data.
     """
     def __init__(self, mqtt, device, **kwargs):
         """Discovery Topic Constructor
@@ -140,7 +141,9 @@ class DiscoveryTopic(BaseTopic):
             if isinstance(self.device.db.desc.dev_cat, Category):
                 data['dev_cat_name'] = self.device.db.desc.dev_cat.name
             data['sub_cat'] = self.device.db.desc.sub_cat
-        data['firmware'] = self.device.db.firmware
+        data['firmware'] = 0
+        if self.device.db.firmware is not None:
+            data['firmware'] = self.device.db.firmware
         data['modem_addr'] = self.device.modem.addr.hex
 
         # Finally, render the device_info_template
@@ -179,13 +182,14 @@ class DiscoveryTopic(BaseTopic):
     def _get_unique_id(self, config):
         """Extracts the unique id from the rendered payload.
 
-        This renders the discovery payload, the decodes the json payload
+        This renders the discovery payload, then decodes the json payload
         back into a dict and extracts the unique_id.  This may seem a little
         circuitous, but any solution requires rendering of the config and
-        json parsing if we want to know the unique_id.
+        json parsing if we want to know the unique_id without requiring the
+        user to enter it twice.
 
         Args:
-          config (dict):  The mqtt section of the config dict.
+          config (dict):  A single entity from the discovery_entities key.
 
         Returns:
           unique_id (str) or None if there was an error.
@@ -203,7 +207,6 @@ class DiscoveryTopic(BaseTopic):
             LOG.error("Data passed was: %s", data)
         else:
             # Second, parse rendered result as json
-            # config_str = config_rendered.decode('utf-8')
             try:
                 config_json = json.loads(config_rendered)
             except json.JSONDecodeError as exc:

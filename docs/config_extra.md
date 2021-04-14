@@ -19,6 +19,15 @@ Some device types have additional settings.
 
 > No such settings yet.
 
+## Settings
+
+### `discovery_class` - Discovery Template Class
+This key can be used to define a custom discovery template for this device.
+The value of this setting should be a subkey under the `mqtt` key in the yaml
+config file.  This subkey must contain a `discovery_entities` list of each of
+the discovery entities.  For more details and examples see
+[Discovery](https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery.md).
+
 ## Advanced Settings
 These settings can be used with all device types, but should be considered advanced.  These settings may cause undesirable effects.
 
