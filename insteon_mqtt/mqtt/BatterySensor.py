@@ -11,7 +11,7 @@ from . import topic
 LOG = log.get_logger()
 
 
-class BatterySensor(topic.StateTopic):
+class BatterySensor(topic.StateTopic, topic.DiscoveryTopic):
     """MQTT interface to an Insteon general battery powered sensor.
 
     This class connects to a device.BatterySensor object and converts it's
@@ -44,6 +44,9 @@ class BatterySensor(topic.StateTopic):
         device.signal_low_battery.connect(self._insteon_low_battery)
         device.signal_heartbeat.connect(self._insteon_heartbeat)
 
+        # This defines the default discovery_class for these devices
+        self.class_name = "battery_sensor"
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -53,6 +56,9 @@ class BatterySensor(topic.StateTopic):
                  config is stored in config['battery_sensor'].
           qos (int):  The default quality of service level to use.
         """
+        # The discovery topic needs the full config
+        self.load_discovery_data(config, qos)
+
         data = config.get("battery_sensor", None)
         if not data:
             return
@@ -118,6 +124,18 @@ class BatterySensor(topic.StateTopic):
             data["is_heartbeat_str"] = "on" if is_heartbeat else "off"
             data["heartbeat_time"] = time.time() if is_heartbeat else 0
 
+        return data
+
+    #-----------------------------------------------------------------------
+    def discovery_template_data(self, **kwargs):
+        """This extends the template data variables defined in the base class
+
+        Adds in low_battery_topic and heartbeat_topic topics.
+        """
+        # Set up the variables that can be used in the templates.
+        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
+        data['low_battery_topic'] = self.msg_battery.render_topic(data)
+        data['heartbeat_topic'] = self.msg_heartbeat.render_topic(data)
         return data
 
     #-----------------------------------------------------------------------

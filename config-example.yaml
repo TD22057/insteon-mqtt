@@ -467,7 +467,10 @@ mqtt:
 
   #------------------------------------------------------------------------
   # Battery powered sensors
-  #    door sensors, hidden door sensors, window sensors
+  #    door sensors, window sensors
+  #
+  #    Other devices (motion, leak, hidden_door, and remote) inherit the
+  #    topics defined here and then add a few more.
   #------------------------------------------------------------------------
 
   # In Home Assistant use MQTT binary sensor with a configuration like:
@@ -510,6 +513,39 @@ mqtt:
     # the leak sensor is known to provide this data
     heartbeat_topic: 'insteon/{{address}}/heartbeat'
     heartbeat_payload: '{{heartbeat_time}}'
+
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    # this only applies to devices defined as battery_sensor.  Devices that
+    # extend this class (motion, hidden_door, leak, and remote) all have their
+    # own discovery_entities
+    discovery_entities:
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_door",
+            "name": "{{name_user_case}} door",
+            "stat_t": "{{state_topic}}",
+            "device_class": "door",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_battery",
+            "name": "{{name_user_case}} battery",
+            "stat_t": "{{low_battery_topic}}",
+            "device_class": "battery",
+            "device": {{device_info_template}}
+          }
+      - component: 'sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_heartbeat",
+            "name": "{{name_user_case}} heartbeat",
+            "stat_t": "{{heartbeat_topic}}",
+            "device_class": "timestamp",
+            "device": {{device_info_template}}
+          }
 
   #------------------------------------------------------------------------
   # Motion sensors
