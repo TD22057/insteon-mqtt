@@ -575,6 +575,45 @@ mqtt:
     dawn_dusk_topic: 'insteon/{{address}}/dawn'
     dawn_dusk_payload: '{{is_dawn_str.upper()}}'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_motion",
+            "name": "{{name_user_case}} motion",
+            "stat_t": "{{state_topic}}",
+            "device_class": "motion",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_battery",
+            "name": "{{name_user_case}} battery",
+            "stat_t": "{{low_battery_topic}}",
+            "device_class": "battery",
+            "device": {{device_info_template}}
+          }
+      - component: 'sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_heartbeat",
+            "name": "{{name_user_case}} heartbeat",
+            "stat_t": "{{heartbeat_topic}}",
+            "device_class": "timestamp",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_dusk",
+            "name": "{{name_user_case}} dusk",
+            "stat_t": "{{dawn_dusk_topic}}",
+            "device_class": "light",
+            "device": {{device_info_template}}
+          }
+
   #------------------------------------------------------------------------
   # Hidden Door Sensors
   #------------------------------------------------------------------------

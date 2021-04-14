@@ -36,6 +36,9 @@ class Motion(BatterySensor):
 
         device.signal_dawn.connect(self._insteon_dawn)
 
+        # This defines the default discovery_class for these devices
+        self.class_name = "motion"
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -85,6 +88,17 @@ class Motion(BatterySensor):
             data["is_dusk_str"] = "off" if is_dawn else "on"
             data["state"] = "dawn" if is_dawn else "dusk"
 
+        return data
+
+    #-----------------------------------------------------------------------
+    def discovery_template_data(self, **kwargs):
+        """This extends the template data variables defined in the base class
+
+        Adds in dawn_dusk_topic topic.
+        """
+        # Set up the variables that can be used in the templates.
+        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
+        data['dawn_dusk_topic'] = self.msg_dawn.render_topic(data)
         return data
 
     #-----------------------------------------------------------------------
