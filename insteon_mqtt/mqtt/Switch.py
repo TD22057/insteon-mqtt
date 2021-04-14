@@ -10,7 +10,7 @@ LOG = log.get_logger()
 
 
 class Switch(topic.SetTopic, topic.StateTopic, topic.SceneTopic,
-             topic.ManualTopic):
+             topic.ManualTopic, topic.DiscoveryTopic):
     """MQTT interface to an Insteon on/off switch.
 
     This class connects to a device.Switch object and converts it's
@@ -30,6 +30,9 @@ class Switch(topic.SetTopic, topic.StateTopic, topic.SceneTopic,
         # Setup the Topics
         super().__init__(mqtt, device)
 
+        # This defines the default discovery_class for these devices
+        self.class_name = "switch"
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -39,6 +42,9 @@ class Switch(topic.SetTopic, topic.StateTopic, topic.SceneTopic,
                  config is stored in config['switch'].
           qos (int):  The default quality of service level to use.
         """
+        # The discovery topic needs the full config
+        self.load_discovery_data(config, qos)
+
         data = config.get("switch", None)
         if not data:
             return
