@@ -17,6 +17,10 @@ class DiscoveryTopic(BaseTopic):
     """MQTT interface to the Discovery Topic
 
     This is an abstract class that provides support for the Discovery topic.
+    All devices that support MQTT discovery should inherit this.
+
+    Note that a call to load_discovery_data will need to be made from the
+    extended classes load_config method.
     """
     def __init__(self, mqtt, device, **kwargs):
         """Discovery Topic Constructor
@@ -35,15 +39,13 @@ class DiscoveryTopic(BaseTopic):
     def load_discovery_data(self, config, qos=None):
         """Load values from a configuration data object.
 
+        This should be called inside the device load_config() method.  Note
+        that it takes the full mqtt config, not just the device subsection.
+
         Args:
           config (dict):  The mqtt section of the config dict.
           qos (int):  The default quality of service level to use.
         """
-        # First check to see that discovery_topic_base is set in config
-        discovery_topic_base = config.get('discovery_topic_base', None)
-        if discovery_topic_base is None:
-            LOG.debug("Discovery disabled, discovery_topic_base not defined.")
-
         # Get the device specific discovery class
         disc_class = self.device.config_extra.get('discovery_class',
                                                   self.class_name)
@@ -75,7 +77,7 @@ class DiscoveryTopic(BaseTopic):
             # Allowing topic to be settable in yaml, but I don't think users
             # should worry about this, there is no utility in changing it
             unique_id = self._get_unique_id(payload)
-            default_topic = "%s/%s/%s/%s/config" % (discovery_topic_base,
+            default_topic = "%s/%s/%s/%s/config" % (self.mqtt.discovery_topic_base,
                                                     component,
                                                     self.device.addr.hex,
                                                     unique_id)
@@ -85,9 +87,14 @@ class DiscoveryTopic(BaseTopic):
 
     #-----------------------------------------------------------------------
     def discovery_template_data(self, **kwargs):
-        """Create the Jinja templating data variables for on/off messages.
+        """Create the Jinja templating data variables for discovery messages.
 
-        kwargs are empty.  Only here for conformity with base class.
+        This should be extended by specific devices when adding additional
+        variables is needed, particularly when adding unique topics from
+        the yaml file.
+
+        kwargs are pass from the publish_discovery method and are not used
+        in this class.
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -149,16 +156,19 @@ class DiscoveryTopic(BaseTopic):
         return data
 
     #-----------------------------------------------------------------------
-    def publish_discovery(self, device, **kwargs):
+    def publish_discovery(self, **kwargs):
         """Device on/off callback.
 
-        This is triggered via ...
+        This is triggered from the MQTT handler.
+
+        No kwargs are currently sent from the MQTT handler, it is a little
+        hard to imagine how any such arguments could be provided but left here
+        for potential use.
 
         Args:
-          device (device):   The Insteon device that changed.
           kwargs (dict): The arguments to pass to discovery_template_data
         """
-        LOG.info("MQTT received discovery %s on: %s", device.label, kwargs)
+        LOG.info("MQTT received discovery %s on: %s", self.device.label, kwargs)
 
         data = self.discovery_template_data(**kwargs)
 
