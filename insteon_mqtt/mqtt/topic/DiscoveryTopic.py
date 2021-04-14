@@ -78,6 +78,10 @@ class DiscoveryTopic(BaseTopic):
             # Allowing topic to be settable in yaml, but I don't think users
             # should worry about this, there is no utility in changing it
             unique_id = self._get_unique_id(payload)
+            if unique_id is None:
+                LOG.error("%s - Error getting unique_id, skipping entry",
+                          self.device.label)
+                continue
             default_topic = "%s/%s/%s/%s/config" % (self.mqtt.discovery_topic_base,
                                                     component,
                                                     self.device.addr.hex,

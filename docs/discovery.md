@@ -164,7 +164,7 @@ mqtt:
               {%- endif -%}",
       "sw": "0x{{'%0x' % firmware|int }} - {{engine}}",
       "name": "{{name_user_case}}",
-      "via_device": "{{modem_addr}}",
+      "via_device": "{{modem_addr}}"
     }
 ```
 
@@ -185,7 +185,7 @@ as:
     "mdl": "2477D - SwitchLinc Dimmer (Dual-Band)",
     "sw": "0x45 - i2cs",
     "name": "my dimmer",
-    "via_device": "41.ee.e6",
+    "via_device": "41.ee.e6"
   }
 }
 ```

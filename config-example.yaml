@@ -237,7 +237,7 @@ mqtt:
               {%- endif -%}",
       "sw": "0x{{'%0x' % firmware|int }} - {{engine}}",
       "name": "{{name_user_case}}",
-      "via_device": "{{modem_addr}}",
+      "via_device": "{{modem_addr}}"
     }
 
   # Trigger modem virtual scenes.  Modem scenes are where the modem is a
