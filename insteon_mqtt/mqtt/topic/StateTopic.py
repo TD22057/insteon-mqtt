@@ -91,6 +91,15 @@ class StateTopic(BaseTopic):
             if payload_1 is None:
                 payload_1 = 'dimmer_state_payload'
             self.msg_state_1.load_config(data, topic_1, payload_1, qos)
+            # Add ourselves to the list of topics
+            self.topics['dimmer_state_topic'] = self.msg_state_1.render_topic(
+                self.base_template_data()
+            )
+
+        # Add ourselves to the list of topics
+        self.topics['state_topic'] = self.msg_state.render_topic(
+            self.base_template_data()
+        )
 
     #-----------------------------------------------------------------------
     def state_template_data(self, **kwargs):

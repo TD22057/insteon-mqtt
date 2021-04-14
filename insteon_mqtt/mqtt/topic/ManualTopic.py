@@ -75,6 +75,11 @@ class ManualTopic(BaseTopic):
         # Update the MQTT topics and payloads from the config file.
         self.msg_manual_state.load_config(data, topic, payload, qos)
 
+        # Add ourselves to the list of topics
+        self.topics['manual_state_topic'] = self.msg_manual_state.render_topic(
+            self.base_template_data()
+        )
+
     #-----------------------------------------------------------------------
     def publish_manual(self, device, **kwargs):
         """Device Manual Change Callback.

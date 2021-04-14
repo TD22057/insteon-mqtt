@@ -13,7 +13,7 @@ LOG = log.get_logger()
 
 
 class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
-             topic.SetTopic):
+             topic.SetTopic, topic.DiscoveryTopic):
     """MQTT interface to an Insteon dimmer switch.
 
     This class connects to a device.Dimmer object and converts it's output
@@ -35,6 +35,9 @@ class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
                          state_payload='{ "state" : "{{on_str.lower()}}", '
                                        '"brightness" : {{level_255}} }')
 
+        # This defines the default discovery_class for these devices
+        self.class_name = "dimmer"
+
         # Input level command template.
         self.msg_level = MsgTemplate(
             topic='insteon/{{address}}/level',
@@ -50,7 +53,10 @@ class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
                  config is stored in config['dimmer'].
           qos (int):  The default quality of service level to use.
         """
-        data = config.get("dimmer", None)
+        # The discovery topic needs the full config
+        self.load_discovery_data(config, qos)
+
+        data = config.get(self.class_name, None)
         if not data:
             return
 
@@ -95,6 +101,20 @@ class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
         link.unsubscribe(topic_str)
 
         self.scene_unsubscribe(link)
+
+    #-----------------------------------------------------------------------
+    def discovery_template_data(self, **kwargs):
+        """This extends the template data variables defined in the base class
+
+        Returns the dict from the base class plus these additional keys that
+        contain the topic as defined in the config.yaml if any:
+          state_topic, on_off_topic, level_topic, scene_topic,
+          manual_state_topic
+        """
+        # Set up the variables that can be used in the templates.
+        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
+        data['level_topic'] = self.msg_level.render_topic(data)
+        return data
 
     #-----------------------------------------------------------------------
     def _input_set_level(self, client, data, message):

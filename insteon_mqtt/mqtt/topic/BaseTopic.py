@@ -20,6 +20,11 @@ class BaseTopic:
         """
         self.mqtt = mqtt
         self.device = device
+        self.class_name = None  # This should be amended by each class
+        # Any topics added here are available in discovery templates using the
+        # key as the variable name.  The key should be the yaml key for the
+        # topic
+        self.topics = {}
 
     #-----------------------------------------------------------------------
     def base_template_data(self, **kwargs):

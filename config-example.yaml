@@ -189,6 +189,42 @@ mqtt:
   # send these low level commands.
   cmd_topic: 'insteon/command'
 
+  ### Discovery Settings
+  #
+  # Home Assistant implements mqtt device discovery as outlined at:
+  # https://www.home-assistant.io/docs/mqtt/discovery
+  # if discover_topic_base is defined, devices (as defined in config.yaml)
+  # announce themselves to Home Assistant. Announcing occurs once
+  # upon startup of insteon-mqtt and based on request (see announce command on
+  # modem)
+  #
+  # TO DISABLE THE DISCOVERY SERVICE: Comment out the line below by placing a
+  # hash character # at the start of the line.
+  discovery_topic_base: 'homeassistant'
+
+  # The mqtt topic to monitor for HomeAssistant status.  This likely doesn't
+  # need to be changed unless you have altered it.  When the message 'online'
+  # is received on this topic, InsteonMQTT will publish the discovery
+  # entities.  See https://www.home-assistant.io/docs/mqtt/birth_will/
+  discovery_ha_status: 'homeassistant/status'
+
+  # This is a variable that is available for use in all templates, as
+  # {{device_info_template}}.  It is envisioned that it would be used to set
+  # the device map information, see e.g.
+  # https://www.home-assistant.io/integrations/switch.mqtt/#device
+  # While the identifiers or (ids) section is listed as optional, it has been
+  # my experience that it is required.
+  # This device section describes the parent device that all sub-entities are
+  # grouped under
+  device_info_template: |-
+    {
+      "ids": "{{address}}",
+      "mf": "Insteon",
+      "mdl": "{{model}}",
+      "sw": "{{firmware}}",
+      "name": "{{name_user_case}}",
+      "via_device": "{{modem_addr}}"
+    }
 
   # Trigger modem virtual scenes.  Modem scenes are where the modem is a
   # controller and emits a scene broadcast with the specified group number.
@@ -388,6 +424,20 @@ mqtt:
                           , "level" : {{json.brightness}}
                       {% endif %}
                     }'
+
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'light'
+        config: |-
+          {
+            "uniq_id": "{{address}}_light",
+            "name": "{{name_user_case}}",
+            "cmd_t": "{{level_topic}}",
+            "stat_t": "{{state_topic}}",
+            "brightness": true,
+            "schema": "json",
+            "device": {{device_info_template}}
+          }
 
   #------------------------------------------------------------------------
   # Battery powered sensors
@@ -725,7 +775,7 @@ mqtt:
   #       {% elif value < 75 %}
   #         medium
   #       {% else %}
-  #         high 
+  #         high
   #       {% endif %}
   #     percentage_state_topic: 'insteon/aa.bb.cc/fan/speed/state'
   #     percentage_value_template: >

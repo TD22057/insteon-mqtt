@@ -40,6 +40,9 @@ class Mqtt:
     implements for various things.  The payload for these messages is always
     a json data object that will get passed to the Insteon device for
     handling
+
+    This class also handles the HomeAssistant status topic and triggers the
+    devices to publish their discovery entities when necessary.
     """
     def __init__(self, mqtt_link, modem):
         """Constructor
@@ -64,6 +67,12 @@ class Mqtt:
 
         # The command topic template (MstTemplate) to use.
         self._cmd_topic = None
+
+        # The HomeAssistant status topic to use.
+        self._ha_status_topic = None
+
+        # The device_info_template
+        self.device_info_template = ""
 
         # MQTT message parameters.  These get loaded via the config.
         self.qos = 1
@@ -100,6 +109,17 @@ class Mqtt:
         # Create a template for prcessing messages on the command topic.
         self._cmd_topic = MsgTemplate.clean_topic(data['cmd_topic'])
 
+        # Create a template for prcessing HomeAssistant status messages.
+        if 'discovery_ha_status' in data:
+            self._ha_status_topic = MsgTemplate.clean_topic(
+                data['discovery_ha_status']
+            )
+
+        # Load the device_info_template if defined this is a variable shared
+        # by all devices
+        if 'device_info_template' in data:
+            self.device_info_template = data['device_info_template']
+
         # MQTT message parameters.
         self.qos = data.get('qos', self.qos)
         self.retain = data.get('retain', self.retain)
@@ -109,7 +129,7 @@ class Mqtt:
 
         # Subscribe to the new topics.
         if self.link.connected:
-            self._subscribe()
+            self._startup()
 
     #-----------------------------------------------------------------------
     def publish(self, topic, payload, qos=None, retain=None):
@@ -152,7 +172,7 @@ class Mqtt:
           connected (bool):  True if connected, False if disconnected.
         """
         if self.link.connected:
-            self._subscribe()
+            self._startup()
 
     #-----------------------------------------------------------------------
     def handle_new_device(self, modem, device):
@@ -185,8 +205,12 @@ class Mqtt:
         self.devices[device.addr.id] = obj
 
         # If we are already connected we need to subscribe this device
+        # and publish its discovery entities
         if self.link.connected:
             obj.subscribe(self.link, self.qos)
+            if (hasattr(obj, 'publish_discovery') and
+                    callable(obj.publish_discovery)):
+                obj.publish_discovery(obj.device)
 
     #-----------------------------------------------------------------------
     def handle_cmd(self, client, userdata, message):
@@ -325,21 +349,68 @@ class Mqtt:
         self.link.publish(topic, payload)
 
     #-----------------------------------------------------------------------
-    def _subscribe(self):
-        """Subscribe to the command and set topics.
+    def handle_ha_status(self, client, userdata, message):
+        """HomeAssistant Status Topic Monitoring
+
+        See https://www.home-assistant.io/docs/mqtt/birth_will/
+        This monitors an MQTT topic where HomeAssistant publishes 'online'
+        and 'offline' status messages.  When a 'online' message is received
+        it signals that HomeAssistant was restarted and requires the
+        Discovery Entities to be published againe.  When 'online' is
+        received this method will trigger all devices to re-publish their
+        Discovery Entities.
+
+        Args:
+          client (paho.Client):  The paho mqtt client (self.link).
+          data:  Optional user data (unused).
+          message:  MQTT message - has attrs: topic, payload, qos, retain.
+        """
+        LOG.info("MQTT message %s %s", message.topic, message.payload)
+
+        payload = message.payload.decode("utf-8").strip().lower()
+        if payload == 'online':
+            self._publish_discovery()
+        elif payload != 'offline':
+            LOG.warning("Unexpected HomeAssistant status message %s %s",
+                        message.topic, message.payload)
+
+    #-----------------------------------------------------------------------
+    def _publish_discovery(self):
+        """Trigger each device to publish its discovery entities
+
+        Loops all devices and if they have the functionality, causes them to
+        publish their Discovery Entities
+        """
+        for device in self.devices.values():
+            if (hasattr(device, 'publish_discovery') and
+                    callable(device.publish_discovery)):
+                device.publish_discovery(device.device)
+
+    #-----------------------------------------------------------------------
+    def _startup(self):
+        """Startup Process When MQTT Broker Comes Online
 
         This will subscribe to the command topic and tell all the MQTT
         devices to subscribe to their command topics.
+
+        It will also subscribe to the HomeAssistant status topic and trigger
+        all devices to publish their discovery entities
         """
         if self._cmd_topic:
             self.link.subscribe(self._cmd_topic + "/+", self.qos,
                                 self.handle_cmd)
 
+        if self._ha_status_topic:
+            self.link.subscribe(self._ha_status_topic, self.qos,
+                                self.handle_ha_status)
+
         for device in self.devices.values():
             device.subscribe(self.link, self.qos)
 
+        self._publish_discovery()
+
     #-----------------------------------------------------------------------
-    def _unsubscribe(self):
+    def _shutdown(self):
         """Unsubscribe to the command and set topics.
 
         This will unsubscribe from all the topics.
