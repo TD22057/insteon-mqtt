@@ -6,6 +6,7 @@
 import json
 import jinja2
 from ... import log
+from ...catalog import Category
 from ..MsgTemplate import MsgTemplate
 from .BaseTopic import BaseTopic
 
@@ -91,16 +92,22 @@ class DiscoveryTopic(BaseTopic):
         Returns:
           dict:  Returns a dict with the variables available for templating.
                  including:
-                 name = device name in lower case
-                 address = hexadecimal address of device as a string
-                 name_user_case = device name in the case entered by the user
-                 engine = device engine version (i1, i2, i2cs)
-                 model = device model string
-                 firmware = device firmware version
-                 modem_addr = hexadecimal address of modem as a string
-                 device_info_template = a template defined in config.yaml
-                 <<topics>> = topic keys as defined in the config.yaml file
-                      are available as variables
+                 name = (str) device name in lower case
+                 address = (str) hexadecimal address of device as a string
+                 name_user_case = (str) device name in the case entered by
+                                  the user
+                 engine = (str) device engine version (e.g. i1, i2, i2cs)
+                 model_number = (str) device model number (e.g. 2476D)
+                 model_description = (str) description (e.g. SwitchLinc Dimmer)
+                 firmware = (int) device firmware version
+                 dev_cat = (int) device category
+                 dev_cat_name = (str) device category name
+                 sub_cat = (int) device sub-category
+                 modem_addr = (str) hexadecimal address of modem as a string
+                 device_info_template = (jinja template) a template defined in
+                                        config.yaml
+                 <<topics>> = (str) topic keys as defined in the config.yaml
+                              file are available as variables
         """
         # Set up the variables that can be used in the templates.
         data = self.base_template_data(**kwargs)
@@ -114,7 +121,18 @@ class DiscoveryTopic(BaseTopic):
 
         engine_map = {0: 'i1', 1: 'i2', 2: 'i2cs'}
         data['engine'] = engine_map.get(self.device.db.engine, 'Unknown')
-        data['model'] = self.device.db.desc
+        data['model_number'] = 'Unknown'
+        data['model_description'] = 'Unknown'
+        data['dev_cat'] = 0
+        data['dev_cat_name'] = 'Unknown'
+        data['sub_cat'] = 0
+        if self.device.db.desc is not None:
+            data['model_number'] = self.device.db.desc.model
+            data['model_description'] = self.device.db.desc.description
+            data['dev_cat'] = int(self.device.db.desc.dev_cat)
+            if isinstance(self.device.db.desc.dev_cat, Category):
+                data['dev_cat_name'] = self.device.db.desc.dev_cat.name
+            data['sub_cat'] = self.device.db.desc.sub_cat
         data['firmware'] = self.device.db.firmware
         data['modem_addr'] = self.device.modem.addr.hex
 
