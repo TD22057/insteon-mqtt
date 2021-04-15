@@ -622,12 +622,12 @@ mqtt:
   # inputs from battery_sensor and add battery voltage which is configured
   # here.
   #
-  # To register the hidden door sensor in Home Assistant use MQTT binary
+  # To register the battery voltage sensor in Home Assistant use MQTT
   # sensor with a configuration like:
-  #   binary_sensor:
+  #   sensor:
   #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc//battery_voltage'
-  #TODO       device_class: 'light'
+  #       state_topic: 'insteon/aa.bb.cc/battery_voltage'
+  #       device_class: 'voltage'
   hidden_door:
     # Output topic and payload.  This message is sent
     # whenever the device is polled and a new voltage, low battery voltage
@@ -639,6 +639,45 @@ mqtt:
 
     battery_voltage_topic: 'insteon/{{address}}/battery_voltage'
     battery_voltage_payload: '{"voltage" : {{batt_volt}}}'
+
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_door",
+            "name": "{{name_user_case}} door",
+            "stat_t": "{{state_topic}}",
+            "device_class": "door",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_battery",
+            "name": "{{name_user_case}} battery",
+            "stat_t": "{{low_battery_topic}}",
+            "device_class": "battery",
+            "device": {{device_info_template}}
+          }
+      - component: 'sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_heartbeat",
+            "name": "{{name_user_case}} heartbeat",
+            "stat_t": "{{heartbeat_topic}}",
+            "device_class": "timestamp",
+            "device": {{device_info_template}}
+          }
+      - component: 'sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_voltage",
+            "name": "{{name_user_case}} voltage",
+            "stat_t": "{{battery_voltage_topic}}",
+            "device_class": "voltage",
+            "device": {{device_info_template}}
+          }
 
   #------------------------------------------------------------------------
   # Leak sensors

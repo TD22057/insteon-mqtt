@@ -39,6 +39,9 @@ class HiddenDoor(BatterySensor):
 
         device.signal_voltage.connect(self._insteon_voltage)
 
+        # This defines the default discovery_class for these devices
+        self.class_name = "hidden_door"
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -81,6 +84,19 @@ class HiddenDoor(BatterySensor):
             voltage = int(batt_volt)
             data["voltage"] = voltage
 
+        return data
+
+    #-----------------------------------------------------------------------
+    def discovery_template_data(self, **kwargs):
+        """This extends the template data variables defined in the base class
+
+        Adds in battery_voltage_topic topic.
+        """
+        # Set up the variables that can be used in the templates.
+        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
+        data['battery_voltage_topic'] = self.msg_battery_voltage.render_topic(
+            data
+        )
         return data
 
     #-----------------------------------------------------------------------
