@@ -714,6 +714,27 @@ mqtt:
     wet_dry_topic: 'insteon/{{address}}/wet'
     wet_dry_payload: '{{is_wet_str.upper()}}'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_wet",
+            "name": "{{name_user_case}} leak",
+            "stat_t": "{{state_topic}}",
+            "device_class": "moisture",
+            "device": {{device_info_template}}
+          }
+      - component: 'sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_heartbeat",
+            "name": "{{name_user_case}} heartbeat",
+            "stat_t": "{{heartbeat_topic}}",
+            "device_class": "timestamp",
+            "device": {{device_info_template}}
+          }
+
   #------------------------------------------------------------------------
   # Mini remotes
   #------------------------------------------------------------------------

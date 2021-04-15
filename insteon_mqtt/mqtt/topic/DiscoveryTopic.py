@@ -101,6 +101,11 @@ class DiscoveryTopic(BaseTopic):
         kwargs are pass from the publish_discovery method and are not used
         in this class.
 
+        This is run in load_discovery_data() to get the unique_id which is
+        before the topics are created, so the topic variables cannot be used as
+        part of the unique_id.  This is fine, but be prepared to gracefully
+        handle the absence of topics in any extension of this method.
+
         Returns:
           dict:  Returns a dict with the variables available for templating.
                  including:

@@ -27,6 +27,9 @@ class Leak(BatterySensor):
                          state_topic='insteon/{{address}}/wet',
                          state_payload='{{is_wet_str.lower()}}')
 
+        # This defines the default discovery_class for these devices
+        self.class_name = "leak"
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -95,3 +98,17 @@ class Leak(BatterySensor):
         data["state"] = "wet" if is_wet else "dry"
 
         return data
+
+    #-----------------------------------------------------------------------
+    def discovery_template_data(self, **kwargs):
+        """This extends the template data variables defined in the base class
+
+        The wet_dry_topic is just the state topic
+        """
+        # Set up the variables that can be used in the templates.
+        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
+        if 'state_topic' in data:
+            data['wet_dry_topic'] = data.pop('state_topic')
+        return data
+
+    #-----------------------------------------------------------------------
