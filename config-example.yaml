@@ -195,8 +195,14 @@ mqtt:
   # https://www.home-assistant.io/docs/mqtt/discovery
   # if discover_topic_base is defined, devices (as defined in config.yaml)
   # announce themselves to Home Assistant. Announcing occurs once
-  # upon startup of insteon-mqtt and based on request (see announce command on
-  # modem)
+  # upon startup of insteon-mqtt and whenever HomeAssistant restart.
+  #
+  # The details of discovery_entities and how to define your own discovery
+  # templates can be found here:
+  # https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery.md
+  #
+  # Any additional variables that a specific device may offer are documented
+  # in the comments below under that device class.
   #
   # TO DISABLE THE DISCOVERY SERVICE: Comment out the line below by placing a
   # hash character # at the start of the line.
@@ -220,10 +226,18 @@ mqtt:
     {
       "ids": "{{address}}",
       "mf": "Insteon",
-      "mdl": "{{model}}",
-      "sw": "{{firmware}}",
+      "mdl": "{%- if model_number != 'Unknown' -%}
+                {{model_number}} - {{model_description}}
+              {%- elif dev_cat_name != 'Unknown' -%}
+                {{dev_cat_name}} - 0x{{'%0x' % sub_cat|int }}
+              {%- elif dev_cat == 0 and sub_cat == 0 -%}
+                No Info
+              {%- else -%}
+                0x{{'%0x' % dev_cat|int }} - 0x{{'%0x' % sub_cat|int }}
+              {%- endif -%}",
+      "sw": "0x{{'%0x' % firmware|int }} - {{engine}}",
       "name": "{{name_user_case}}",
-      "via_device": "{{modem_addr}}"
+      "via_device": "{{modem_addr}}",
     }
 
   # Trigger modem virtual scenes.  Modem scenes are where the modem is a

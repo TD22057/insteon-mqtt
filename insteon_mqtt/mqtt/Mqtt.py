@@ -74,6 +74,9 @@ class Mqtt:
         # The device_info_template
         self.device_info_template = ""
 
+        # The discovery base topic, None if not enabled
+        self.discovery_topic_base = None
+
         # MQTT message parameters.  These get loaded via the config.
         self.qos = 1
         self.retain = True
@@ -119,6 +122,11 @@ class Mqtt:
         # by all devices
         if 'device_info_template' in data:
             self.device_info_template = data['device_info_template']
+
+        # Check to see that discovery_topic_base is set in config
+        self.discovery_topic_base = data.get('discovery_topic_base', None)
+        if self.discovery_topic_base is None:
+            LOG.debug("Discovery disabled, discovery_topic_base not defined.")
 
         # MQTT message parameters.
         self.qos = data.get('qos', self.qos)
@@ -208,9 +216,7 @@ class Mqtt:
         # and publish its discovery entities
         if self.link.connected:
             obj.subscribe(self.link, self.qos)
-            if (hasattr(obj, 'publish_discovery') and
-                    callable(obj.publish_discovery)):
-                obj.publish_discovery(obj.device)
+            self._publish_device_discovery(obj)
 
     #-----------------------------------------------------------------------
     def handle_cmd(self, client, userdata, message):
@@ -369,22 +375,26 @@ class Mqtt:
 
         payload = message.payload.decode("utf-8").strip().lower()
         if payload == 'online':
-            self._publish_discovery()
+            for device in self.devices.values():
+                self._publish_device_discovery(device)
         elif payload != 'offline':
             LOG.warning("Unexpected HomeAssistant status message %s %s",
                         message.topic, message.payload)
 
     #-----------------------------------------------------------------------
-    def _publish_discovery(self):
-        """Trigger each device to publish its discovery entities
+    def _publish_device_discovery(self, device):
+        """Trigger a device to publish its discovery entities
 
-        Loops all devices and if they have the functionality, causes them to
-        publish their Discovery Entities
+        Checks that discovery is enabled and that the device supports
+        discovery.
+
+        Args:
+          device: the device to send the publish discovery command
         """
-        for device in self.devices.values():
+        if self.discovery_topic_base is not None:
             if (hasattr(device, 'publish_discovery') and
                     callable(device.publish_discovery)):
-                device.publish_discovery(device.device)
+                device.publish_discovery()
 
     #-----------------------------------------------------------------------
     def _startup(self):
@@ -406,8 +416,7 @@ class Mqtt:
 
         for device in self.devices.values():
             device.subscribe(self.link, self.qos)
-
-        self._publish_discovery()
+            self._publish_device_discovery(device)
 
     #-----------------------------------------------------------------------
     def _shutdown(self):
