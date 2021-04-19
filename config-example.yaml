@@ -909,6 +909,45 @@ mqtt:
     error_topic: 'insteon/{{address}}/error'
     error_payload: '{{on_str.upper()}}'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_smoke",
+            "name": "{{name_user_case}} smoke",
+            "stat_t": "{{smoke_topic}}",
+            "device_class": "smoke",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_battery",
+            "name": "{{name_user_case}} battery",
+            "stat_t": "{{battery_topic}}",
+            "device_class": "battery",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_co",
+            "name": "{{name_user_case}} co",
+            "stat_t": "{{co_topic}}",
+            "device_class": "gas",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_error",
+            "name": "{{name_user_case}} error",
+            "stat_t": "{{error_topic}}",
+            "device_class": "problem",
+            "device": {{device_info_template}}
+          }
+
   #------------------------------------------------------------------------
   # Thermostat
   #------------------------------------------------------------------------
