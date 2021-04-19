@@ -1042,6 +1042,36 @@ mqtt:
     cool_sp_command_topic: 'insteon/{{address}}/cool_sp_command'
     cool_sp_payload: '{ "temp_f" : {{value}} }'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'climate'
+        config: |-
+          {
+            "uniq_id": "{{address}}_thermo",
+            "name": "{{name_user_case}} thermo",
+            "act_t": "{{status_state_topic}}",
+            "curr_temp_t": "{{ambient_temp_topic}}",
+            "curr_temp_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}",
+            "device": {{device_info_template}},
+            "fan_mode_cmd_t": "{{fan_command_topic}}",
+            "fan_mode_stat_t": "{{fan_state_topic}}",
+            "fan_modes": ["auto", "on"],
+            "hold_stat_t": "{{hold_state_topic}}",
+            "mode_cmd_t": "{{mode_command_topic}}",
+            "mode_stat_t": "{{mode_state_topic}}",
+            "modes": ["off", "cool", "heat", "auto"],
+            "precision": 1.0,
+            "temp_hi_cmd_t": "{{cool_sp_command_topic}}",
+            "temp_hi_stat_t": "{{cool_sp_state_topic}}",
+            "temp_hi_stat_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}",
+            "temp_lo_cmd_t": "{{heat_sp_command_topic}}",
+            "temp_lo_stat_t": "{{heat_sp_state_topic}}",
+            "temp_lo_stat_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}",
+            "temperature_unit": "F"
+          }
+
+
+
   #------------------------------------------------------------------------
   # Fan Linc
   #------------------------------------------------------------------------

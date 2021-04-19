@@ -109,6 +109,28 @@ Additional variables may be offered by specific devices classes.  Those
 variables are defined in the `config-example.yaml` file under the relevant
 `mqtt` device keys.
 
+#### Passing Jinja Templates as Values
+HomeAssistant uses jinja templates as well, and in a number of cases entities
+have configuration settings that contain a template.  If you attempt to enter a
+template as a value, it will be rendered by InsteonMQTT, which in this case
+would likely result with an empty value.
+
+To pass an unrendered template on to HomeAssistant __you must escape the
+template__.  The template can be escaped using the `{% raw %} {{escaped_stuff}} {% endraw %}`
+format.  For example:
+
+```yaml
+mqtt:
+  climate:
+    discovery_entities:
+      - component: "climate"
+        config: |-
+          {
+          .... # other settings
+          "temp_lo_stat_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}",
+          }
+```
+
 #### Example `discovery_entities` templates
 
 ```yaml
