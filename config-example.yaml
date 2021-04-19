@@ -768,6 +768,103 @@ mqtt:
     #manual_state_topic: 'insteon/{{address}}/manual_state'
     #manual_state_payload: '{{manual_str.upper()}}'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    #
+    # The remote class includes additional topics for the state of the various
+    # buttons, these state topics are:
+    #   state_topic_N
+    #
+    # Where N is in the range of [1-8] representing the button group numbers
+    # 1-8
+    # The default setup below includes state topics for all 8 buttons.  If you
+    # have a single button or a 4 button remote, you may want to review the
+    # instructions at:
+    # https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery.md
+    # for details about how to define a custom class for your devices.
+    discovery_entities:
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_1",
+            "name": "{{name_user_case}} btn 1",
+            "stat_t": "{{state_topic_1}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_2",
+            "name": "{{name_user_case}} btn 2",
+            "stat_t": "{{state_topic_2}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_3",
+            "name": "{{name_user_case}} btn 3",
+            "stat_t": "{{state_topic_3}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_4",
+            "name": "{{name_user_case}} btn 4",
+            "stat_t": "{{state_topic_4}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_5",
+            "name": "{{name_user_case}} btn 5",
+            "stat_t": "{{state_topic_5}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_6",
+            "name": "{{name_user_case}} btn 6",
+            "stat_t": "{{state_topic_6}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_7",
+            "name": "{{name_user_case}} btn 7",
+            "stat_t": "{{state_topic_7}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_8",
+            "name": "{{name_user_case}} btn 8",
+            "stat_t": "{{state_topic_8}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_battery",
+            "name": "{{name_user_case}} battery",
+            "stat_t": "{{low_battery_topic}}",
+            "device_class": "battery",
+            "device": {{device_info_template}}
+          }
+      - component: 'sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_heartbeat",
+            "name": "{{name_user_case}} heartbeat",
+            "stat_t": "{{heartbeat_topic}}",
+            "device_class": "timestamp",
+            "device": {{device_info_template}}
+          }
+
   #------------------------------------------------------------------------
   # Smoke Bridge
   #------------------------------------------------------------------------

@@ -189,3 +189,50 @@ as:
   }
 }
 ```
+
+## Sample Templates for Custom Discovery Classes
+
+### Single Button Remote
+
+The default remote configuration exposes entities for all eight
+buttons.  However, if you have a single button remote, you likely
+only want to see an entity for that single button.  The following
+sample configuration settings will enable that:
+
+```yaml
+insteon:
+  device:
+    mini_remote1::
+      - dd.ee.ff: my_remote
+        discovery_class: remote_1  # < note no dash at start of line
+
+mqtt:
+  remote_1:  # < Note the class name
+    discovery_entities:
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_btn",
+            "name": "{{name_user_case}} btn",
+            "stat_t": "{{state_topic_1}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_battery",
+            "name": "{{name_user_case}} battery",
+            "stat_t": "{{low_battery_topic}}",
+            "device_class": "battery",
+            "device": {{device_info_template}}
+          }
+      - component: 'sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_heartbeat",
+            "name": "{{name_user_case}} heartbeat",
+            "stat_t": "{{heartbeat_topic}}",
+            "device_class": "timestamp",
+            "device": {{device_info_template}}
+          }
+```

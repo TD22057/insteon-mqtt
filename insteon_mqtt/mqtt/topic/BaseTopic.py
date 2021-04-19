@@ -26,6 +26,10 @@ class BaseTopic:
         # topic
         self.topics = {}
 
+        # Set the list of state and command topics to generate for the
+        # discovery platform
+        self.group_topic_nums = []
+
     #-----------------------------------------------------------------------
     def base_template_data(self, **kwargs):
         """Create the Jinja templating data variables for use in topics.

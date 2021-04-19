@@ -96,10 +96,19 @@ class StateTopic(BaseTopic):
                 self.base_template_data()
             )
 
-        # Add ourselves to the list of topics
-        self.topics['state_topic'] = self.msg_state.render_topic(
-            self.base_template_data()
-        )
+        if len(self.group_topic_nums) > 0:
+            # This device has multiple state topics for multiple buttons
+            data = self.base_template_data()
+            for btn in self.group_topic_nums:
+                data['button'] = btn
+                self.topics['state_topic_' + str(btn)] = self.msg_state.render_topic(
+                    data
+                )
+        else:
+            # Add ourselves to the list of topics
+            self.topics['state_topic'] = self.msg_state.render_topic(
+                self.base_template_data()
+            )
 
     #-----------------------------------------------------------------------
     def state_template_data(self, **kwargs):
