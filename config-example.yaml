@@ -1070,8 +1070,6 @@ mqtt:
             "temperature_unit": "F"
           }
 
-
-
   #------------------------------------------------------------------------
   # Fan Linc
   #------------------------------------------------------------------------
@@ -1115,6 +1113,9 @@ mqtt:
   #       {% else %}
   #         0
   #       {% endif %}
+  #     preset_mode_state_topic: "insteon/aa.bb.cc/fan/speed/state"
+  #     preset_mode_command_topic: "insteon/aa.bb.cc/fan/speed/set"
+  #     preset_modes: ["off", "low", "medium", "high"]
 
   fan_linc:
     # Output fan state change topic and payload.  This message is sent
@@ -1166,6 +1167,35 @@ mqtt:
     #          a variable from a json payload.
     fan_speed_set_topic: 'insteon/{{address}}/fan/speed/set'
     fan_speed_set_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'fan'
+        config: |-
+          {
+            "uniq_id": "{{address}}_fan",
+            "name": "{{name_user_case}} thermo",
+            "device": {{device_info_template}},
+            "cmd_t": "{{fan_on_off_topic}}",
+            "pct_cmd_t": "{{fan_speed_set_topic}}",
+            "pct_cmd_tpl": "{% raw %}{% if value < 10 %}off{% elif value < 40 %}low{% elif value < 75 %}medium{% else %}high{% endif %}{% endraw %}",
+            "pct_stat_t": "{{fan_speed_topic}}",
+            "pct_val_tpl": "{% raw %}{% if value == 'low' %}33{% elif value == 'medium' %}67{% elif value == 'high' %}100{% else %}0{% endif %}{% endraw %}",
+            "pr_mode_stat_t": "{{fan_speed_topic}}",
+            "pr_mode_cmd_t": "{{fan_speed_set_topic}}",
+            "pr_modes": ["off", "low", "medium", "high"]
+          }
+      - component: 'light'
+        config: |-
+          {
+            "uniq_id": "{{address}}_light",
+            "name": "{{name_user_case}}",
+            "cmd_t": "{{level_topic}}",
+            "stat_t": "{{state_topic}}",
+            "brightness": true,
+            "schema": "json",
+            "device": {{device_info_template}}
+          }
 
   #------------------------------------------------------------------------
   # Keypad Linc

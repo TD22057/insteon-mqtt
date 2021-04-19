@@ -38,6 +38,9 @@ class FanLinc(Dimmer):
         # Initialize the dimmer.
         super().__init__(mqtt, device)
 
+        # This defines the default discovery_class for these devices
+        self.class_name = "fan_linc"
+
         # Output fan state change reporting template.
         self.msg_fan_state = MsgTemplate(
             topic='insteon/{{address}}/fan/state',
@@ -67,7 +70,7 @@ class FanLinc(Dimmer):
           qos (int):  The default quality of service level to use.
         """
         # Load the dimmer configuration from the dimmer area, not the fanlinc
-        # area.
+        # area.  This will also load discovery items.
         super().load_config(config, qos)
 
         # Now load the fan control configuration.
@@ -162,6 +165,20 @@ class FanLinc(Dimmer):
             data["level_str"] = level.name.lower()
             data["reason"] = reason if reason is not None else ""
 
+        return data
+
+    #-----------------------------------------------------------------------
+    def discovery_template_data(self, **kwargs):
+        """This extends the template data variables defined in the base class
+
+        Adds fan special topics.
+        """
+        # Set up the variables that can be used in the templates.
+        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
+        data['fan_state_topic'] = self.msg_fan_state.render_topic(data)
+        data['fan_on_off_topic'] = self.msg_fan_on_off.render_topic(data)
+        data['fan_speed_topic'] = self.msg_fan_speed_state.render_topic(data)
+        data['fan_speed_set_topic'] = self.msg_fan_speed.render_topic(data)
         return data
 
     #-----------------------------------------------------------------------

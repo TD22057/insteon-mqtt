@@ -64,7 +64,7 @@ Each entry `discovery_entities` is an associative array with the __required__
 keys `component` and `config`.
 - `component` - (String) One of the supported HomeAssistant MQTT components,
 eg. `binary_sensor`, `light`, `switch`
-- `config` - (jinja template) The template must produce a json string that is
+- `config` - (jinja template) The template must produce a __json__ string that is
 acceptable to HomeAssistant.  The contents of what is required in this json
 string are defined by the
 [HomeAssistant Discovery Platform](https://www.home-assistant.io/docs/mqtt/discovery/).
@@ -75,6 +75,10 @@ recommended__ that you use the the device address as part of this unique id.
 The recommended format is `{{address}}_suffix` where the suffix is something
 that plainly describes the nature of this enity.  Devices with only a single
 entity do not need a suffix, but it is still good practice to use one.
+
+> The `config` json template __must generate valid json_.  This is a good json
+[validator](https://jsonformatter.curiousconcept.com/).  __Notably__ json strings
+cannot contain raw newline characters, they can however be represented by `\n`
 
 The `config` template has a number of variables available to it.  For all
 devices this includes at minimum the following, devices may also add
