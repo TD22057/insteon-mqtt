@@ -1524,6 +1524,26 @@ mqtt:
     on_off_topic: 'insteon/{{address}}/set'
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_relay",
+            "name": "{{name_user_case}}",
+            "cmd_t": "{{on_off_topic}}",
+            "stat_t": "{{relay_state_topic}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_sensor",
+            "name": "{{name_user_case}} sensor",
+            "stat_t": "{{sensor_state_topic}}",
+            "device": {{device_info_template}}
+          }
+
   #------------------------------------------------------------------------
   # On/off outlets
   #------------------------------------------------------------------------
