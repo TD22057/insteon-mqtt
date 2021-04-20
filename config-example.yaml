@@ -1592,12 +1592,12 @@ mqtt:
 
     # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
     #
-    # The keypad_linc class includes additional topics for the various buttons,
+    # The outlet class includes additional topics for the two outlets,
     # these topics are:
     #   btn_state_topic_N
     #   btn_on_off_topic_N
     #
-    # Where N is in the range of [1-2] representing the button group numbers
+    # Where N is in the range of [1-2] representing the outlet group numbers
     # 1-2
     # The default setup below includes topics for both outlets. If you have a
     # single outlet model, you may want to review the instructions at:
@@ -1667,5 +1667,56 @@ mqtt:
     #          a variable from a json payload.
     on_off_topic: "insteon/{{address}}/set/{{button}}"
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    #
+    # The ezio4 class includes additional topics for the various relays,
+    # these topics are:
+    #   btn_state_topic_N
+    #   btn_on_off_topic_N
+    #
+    # Where N is in the range of [1-4] representing the relay group numbers
+    # 1-4
+    # The default setup below includes topics for all relays. You may want to
+    # review the instructions at:
+    # https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery.md
+    # for details about how to define a custom class for your devices.
+    discovery_entities:
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_1",
+            "name": "{{name_user_case}} relay 1",
+            "cmd_t": "{{on_off_topic_1}}",
+            "stat_t": "{{state_topic_1}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_2",
+            "name": "{{name_user_case}} relay 2",
+            "cmd_t": "{{on_off_topic_2}}",
+            "stat_t": "{{state_topic_2}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_3",
+            "name": "{{name_user_case}} relay 3",
+            "cmd_t": "{{on_off_topic_3}}",
+            "stat_t": "{{state_topic_3}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_4",
+            "name": "{{name_user_case}} relay 4",
+            "cmd_t": "{{on_off_topic_4}}",
+            "stat_t": "{{state_topic_4}}",
+            "device": {{device_info_template}}
+          }
 
 #----------------------------------------------------------------
