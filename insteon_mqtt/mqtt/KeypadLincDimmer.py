@@ -54,6 +54,13 @@ class KeypadLincDimmer(KeypadLinc):
         self.msg_dimmer_level.load_config(data, 'dimmer_level_topic',
                                           'dimmer_level_payload', qos)
 
+        # Add our unique topics to the discovery topic map
+        topics = {}
+        topics['dimmer_level_topic'] = self.msg_dimmer_level.render_topic(
+            self.base_template_data()
+        )
+        self.rendered_topic_map.update(topics)
+
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos, start_group=1):
         """Subscribe to any MQTT topics the object needs.

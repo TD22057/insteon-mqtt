@@ -8,6 +8,23 @@ HomeAssistant configuration.
 
 Read more about the [HomeAssistant Discovery Platform](https://www.home-assistant.io/docs/mqtt/discovery/).
 
+<!-- TOC -->
+
+- [MQTT Discovery Platform](#mqtt-discovery-platform)
+  - [Customization](#customization)
+    - [Default Device Templates](#default-device-templates)
+    - [Using a Custom Device Template](#using-a-custom-device-template)
+    - [Writing a `discovery_entities` Template](#writing-a-discovery_entities-template)
+      - [JSON Dangers](#json-dangers)
+      - [Passing Jinja Templates as Values](#passing-jinja-templates-as-values)
+      - [Example `discovery_entities` templates](#example-discovery_entities-templates)
+    - [The Special `device_info_template` Variable](#the-special-device_info_template-variable)
+  - [Sample Templates for Custom Discovery Classes](#sample-templates-for-custom-discovery-classes)
+    - [Single Button Remote](#single-button-remote)
+    - [Six Button Keypadlinc](#six-button-keypadlinc)
+
+<!-- /TOC -->
+
 ## Customization
 
 Of course, all of us will likely want to tweak or edit the default
@@ -76,10 +93,6 @@ The recommended format is `{{address}}_suffix` where the suffix is something
 that plainly describes the nature of this enity.  Devices with only a single
 entity do not need a suffix, but it is still good practice to use one.
 
-> The `config` json template __must generate valid json_.  This is a good json
-[validator](https://jsonformatter.curiousconcept.com/).  __Notably__ json strings
-cannot contain raw newline characters, they can however be represented by `\n`
-
 The `config` template has a number of variables available to it.  For all
 devices this includes at minimum the following, devices may also add
 additional variables unique to these devices:
@@ -112,6 +125,19 @@ will be ignored.
 Additional variables may be offered by specific devices classes.  Those
 variables are defined in the `config-example.yaml` file under the relevant
 `mqtt` device keys.
+
+#### JSON Dangers
+
+> The `config` json template __must generate valid json_.  This is a good json
+[validator](https://jsonformatter.curiousconcept.com/).
+
+__Notable Gotchas__
+
+1. __Newline Characters__ - JSON strings cannot contain raw newline characters,
+they can however be represented by `\n`
+2. __Trailing Commas__ - JSON cannot include trailing commas.  The last item
+in a list or the last key:value pair in an object __cannot__ be followed by a
+comma.
 
 #### Passing Jinja Templates as Values
 HomeAssistant uses jinja templates as well, and in a number of cases entities
@@ -261,4 +287,79 @@ mqtt:
             "device_class": "timestamp",
             "device": {{device_info_template}}
           }
+```
+
+### Six Button Keypadlinc
+
+The default Keypad_linc configuration exposes entities for all eight
+buttons.  However, if you have a six button keypad_linc, you likely
+only want to see entities for those six buttons.  The following
+sample configuration settings will enable that:
+
+```yaml
+insteon:
+  device:
+    keypad_linc::
+      - 11.22.33: my_6_button_kpl
+        discovery_class: kpl_6  # < note no dash at start of line
+
+mqtt:
+  kpl_6:  # < Note the class name
+  discovery_entities:
+    - component: 'light'
+      config: |-
+        {
+          "uniq_id": "{{address}}_1",
+          "name": "{{name_user_case}} btn 1",
+          "device": {{device_info_template}},
+          "brightness": {{is_dimmable|lower()}},
+          "cmd_t": "{%- if is_dimmable -%}
+                      {{dimmer_level_topic}}
+                    {%- else -%}
+                      {{btn_on_off_topic_1}}
+                    {%- endif -%}",
+          "schema": "json",
+          "stat_t": "{%- if is_dimmable -%}
+                      {{dimmer_state_topic}}
+                    {%- else -%}
+                      {{btn_state_topic_1}}
+                    {%- endif -%}"
+        }
+    - component: 'switch'  # No button 2 on 6 button devices
+      config: |-
+        {
+          "uniq_id": "{{address}}_3",
+          "name": "{{name_user_case}} btn 3",
+          "device": {{device_info_template}},
+          "cmd_t": "{{btn_on_off_topic_3}}",
+          "stat_t": "{{btn_on_off_topic_3}}",
+        }
+    - component: 'switch'
+      config: |-
+        {
+          "uniq_id": "{{address}}_4",
+          "name": "{{name_user_case}} btn 4",
+          "device": {{device_info_template}},
+          "cmd_t": "{{btn_on_off_topic_4}}",
+          "stat_t": "{{btn_on_off_topic_4}}",
+        }
+    - component: 'switch'
+      config: |-
+        {
+          "uniq_id": "{{address}}_5",
+          "name": "{{name_user_case}} btn 5",
+          "device": {{device_info_template}},
+          "cmd_t": "{{btn_on_off_topic_5}}",
+          "stat_t": "{{btn_on_off_topic_5}}",
+        }
+    - component: 'switch'
+      config: |-
+        {
+          "uniq_id": "{{address}}_6",
+          "name": "{{name_user_case}} btn 6",
+          "device": {{device_info_template}},
+          "cmd_t": "{{btn_on_off_topic_6}}",
+          "stat_t": "{{btn_on_off_topic_6}}",
+        }
+      # No buttons 7-9 on 6 button devices
 ```
