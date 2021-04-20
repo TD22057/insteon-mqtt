@@ -30,10 +30,10 @@ class BaseTopic:
         # topic
         self.rendered_topic_map = {}
 
-        # This should be a list of group numbers for which state and
-        # command topics will be generated such as state_topic_1, if empty
+        # This should be a list of group numbers for which state, set, and
+        # scene topics will be generated such as state_topic_1, if empty
         # only the default state topics and command topics will be generated
-        self.group_state_list = []
+        self.extra_topic_nums = []
 
     #-----------------------------------------------------------------------
     def base_template_data(self, **kwargs):
