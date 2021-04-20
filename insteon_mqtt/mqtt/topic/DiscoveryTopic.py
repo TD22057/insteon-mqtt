@@ -137,7 +137,9 @@ class DiscoveryTopic(BaseTopic):
             data['name_user_case'] = self.device.name_user_case
 
         engine_map = {0: 'i1', 1: 'i2', 2: 'i2cs'}
-        data['engine'] = engine_map.get(self.device.db.engine, 'Unknown')
+        data['engine'] = 'Unknown'
+        if hasattr(self.device.db, 'engine'):
+            data['engine'] = engine_map.get(self.device.db.engine, 'Unknown')
         data['model_number'] = 'Unknown'
         data['model_description'] = 'Unknown'
         data['dev_cat'] = 0
@@ -153,7 +155,9 @@ class DiscoveryTopic(BaseTopic):
         data['firmware'] = 0
         if self.device.db.firmware is not None:
             data['firmware'] = self.device.db.firmware
-        data['modem_addr'] = self.device.modem.addr.hex
+        data['modem_addr'] = data['address']
+        if hasattr(self.device, 'modem'):
+            data['modem_addr'] = self.device.modem.addr.hex
 
         # Finally, render the device_info_template
         device_info_template = jinja2.Template(self.mqtt.device_info_template)
@@ -169,7 +173,7 @@ class DiscoveryTopic(BaseTopic):
 
     #-----------------------------------------------------------------------
     def publish_discovery(self, **kwargs):
-        """Device on/off callback.
+        """Publish the Discovery Message
 
         This is triggered from the MQTT handler.
 

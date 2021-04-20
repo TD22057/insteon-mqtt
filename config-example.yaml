@@ -274,6 +274,40 @@ mqtt:
                       "group" : {{json.group}}
                     }'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    #
+    # The modem has 253 possible scenes from scene 2-254.  The modem ONLY
+    # ACCEPTS A SINGLE entity template.  This template will be used for each of
+    # the scenes.
+    #
+    # This is the only place where you can set the template for the modem, it
+    # does NOT use the `discovery_class` extra configuration setting.
+    #
+    # Special variables:
+    #  {{scene}} - will be replaced with the scene number of the scene.
+    #  {{scene_name}} - will be replaced with the name of the scene as defined
+    #                   in a scenes.yaml file if used.
+    #  {{scene_topic}} - will be replaced by the scene topic for this scene.
+    #
+    # Only scenes that appear in the GroupMap list when printing the modem db
+    # will be included.  These are the only scenes for which the modem is
+    # listed as a controller.  Run `refresh modem` if the entities list
+    # appears incomplete to you.
+    discovery_entities:
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_{{scene}}",
+            "name": "{%- if scene_name != "" -%}
+                       {{scene_name}}
+                     {%- else -%}
+                       Modem Scene {{scene}}
+                     {%- endif -%}",
+            "cmd_t": "{{scene_topic}}",
+            "device": {{device_info_template}},
+            "payload_on": "{\"cmd\": \"on\", \"group\": \"{{scene}}\"}",
+            "payload_off": "{\"cmd\": \"off\", \"group\": \"{{scene}}\"}"
+          }
 
   # IMPORTANT: all devices must have the pair() command run one time to make
   # sure that the all the necessary controller/responder links are defined

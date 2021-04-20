@@ -138,6 +138,8 @@ they can however be represented by `\n`
 2. __Trailing Commas__ - JSON cannot include trailing commas.  The last item
 in a list or the last key:value pair in an object __cannot__ be followed by a
 comma.
+3. __Single Quotes__ - JSON requires doubles quotes, you __cannot__ use single
+quotes to define a string.  You can escape double quotes with `\"`
 
 #### Passing Jinja Templates as Values
 HomeAssistant uses jinja templates as well, and in a number of cases entities
