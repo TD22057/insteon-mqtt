@@ -67,6 +67,13 @@ class Motion(BatterySensor):
             self.msg_battery.load_config(data, 'low_battery_topic',
                                          'low_battery_payload', qos)
 
+        # Add our unique topics to the discovery topic map
+        topics = {}
+        topics['dawn_dusk_topic'] = self.msg_dawn.render_topic(
+            self.base_template_data()
+        )
+        self.rendered_topic_map.update(topics)
+
     #-----------------------------------------------------------------------
     def template_data_motion(self, is_dawn=None):
         """Create the Jinja templating data variables.
@@ -88,17 +95,6 @@ class Motion(BatterySensor):
             data["is_dusk_str"] = "off" if is_dawn else "on"
             data["state"] = "dawn" if is_dawn else "dusk"
 
-        return data
-
-    #-----------------------------------------------------------------------
-    def discovery_template_data(self, **kwargs):
-        """This extends the template data variables defined in the base class
-
-        Adds in dawn_dusk_topic topic.
-        """
-        # Set up the variables that can be used in the templates.
-        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
-        data['dawn_dusk_topic'] = self.msg_dawn.render_topic(data)
         return data
 
     #-----------------------------------------------------------------------

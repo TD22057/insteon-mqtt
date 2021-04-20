@@ -87,6 +87,19 @@ class FanLinc(Dimmer):
         self.msg_fan_speed.load_config(data, 'fan_speed_set_topic',
                                        'fan_speed_set_payload', qos)
 
+        # Add our unique topics to the discovery topic map
+        topics = {}
+        var_data = self.base_template_data()
+        topics['fan_state_topic'] = self.msg_fan_state.render_topic(var_data)
+        topics['fan_on_off_topic'] = self.msg_fan_on_off.render_topic(var_data)
+        topics['fan_speed_topic'] = self.msg_fan_speed_state.render_topic(
+            var_data
+        )
+        topics['fan_speed_set_topic'] = self.msg_fan_speed.render_topic(
+            var_data
+        )
+        self.rendered_topic_map.update(topics)
+
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
         """Subscribe to any MQTT topics the object needs.
@@ -165,20 +178,6 @@ class FanLinc(Dimmer):
             data["level_str"] = level.name.lower()
             data["reason"] = reason if reason is not None else ""
 
-        return data
-
-    #-----------------------------------------------------------------------
-    def discovery_template_data(self, **kwargs):
-        """This extends the template data variables defined in the base class
-
-        Adds fan special topics.
-        """
-        # Set up the variables that can be used in the templates.
-        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
-        data['fan_state_topic'] = self.msg_fan_state.render_topic(data)
-        data['fan_on_off_topic'] = self.msg_fan_on_off.render_topic(data)
-        data['fan_speed_topic'] = self.msg_fan_speed_state.render_topic(data)
-        data['fan_speed_set_topic'] = self.msg_fan_speed.render_topic(data)
         return data
 
     #-----------------------------------------------------------------------

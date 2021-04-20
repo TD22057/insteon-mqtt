@@ -72,15 +72,3 @@ class Remote(BatterySensor, topic.ManualTopic):
                                          'low_battery_payload', qos)
 
     #-----------------------------------------------------------------------
-    def discovery_template_data(self, **kwargs):
-        """This extends the template data variables defined in the base class
-
-        Adds the state_topics
-        """
-        # Set up the variables that can be used in the templates.
-        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
-        if 'state_topic' in data:
-            data['wet_dry_topic'] = data.pop('state_topic')
-        return data
-
-    #-----------------------------------------------------------------------

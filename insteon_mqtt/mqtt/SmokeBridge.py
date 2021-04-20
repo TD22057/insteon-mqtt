@@ -72,6 +72,15 @@ class SmokeBridge(topic.DiscoveryTopic):
                                      qos)
         self.msg_error.load_config(data, 'error_topic', 'error_payload', qos)
 
+        # Add our unique topics to the discovery topic map
+        topics = {}
+        var_data = self.base_template_data()
+        topics['smoke_topic'] = self.msg_smoke.render_topic(var_data)
+        topics['co_topic'] = self.msg_co.render_topic(var_data)
+        topics['battery_topic'] = self.msg_battery.render_topic(var_data)
+        topics['error_topic'] = self.msg_error.render_topic(var_data)
+        self.rendered_topic_map.update(topics)
+
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
         """Subscribe to any MQTT topics the object needs.
@@ -117,20 +126,6 @@ class SmokeBridge(topic.DiscoveryTopic):
             "type" : type.name.lower(),
             }
 
-        return data
-
-    #-----------------------------------------------------------------------
-    def discovery_template_data(self, **kwargs):
-        """This extends the template data variables defined in the base class
-
-        Adds special topics for the smoke bridge.
-        """
-        # Set up the variables that can be used in the templates.
-        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
-        data['smoke_topic'] = self.msg_smoke.render_topic(data)
-        data['co_topic'] = self.msg_co.render_topic(data)
-        data['battery_topic'] = self.msg_battery.render_topic(data)
-        data['error_topic'] = self.msg_error.render_topic(data)
         return data
 
     #-----------------------------------------------------------------------

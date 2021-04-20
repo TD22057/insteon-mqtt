@@ -61,6 +61,14 @@ class HiddenDoor(BatterySensor):
         self.msg_battery_voltage.load_config(data, 'battery_voltage_topic',
                                              'battery_voltage_payload', qos)
 
+        # Add our unique topics to the discovery topic map
+        topics = {}
+        bat_volt = self.msg_battery_voltage
+        topics['battery_voltage_topic'] = bat_volt.render_topic(
+            self.base_template_data()
+        )
+        self.rendered_topic_map.update(topics)
+
     #-----------------------------------------------------------------------
     def template_data_hidden_door(self, is_dawn=None, batt_volt=None,
                                   low_batt_volt=None, hb_interval=None):
@@ -84,19 +92,6 @@ class HiddenDoor(BatterySensor):
             voltage = int(batt_volt)
             data["voltage"] = voltage
 
-        return data
-
-    #-----------------------------------------------------------------------
-    def discovery_template_data(self, **kwargs):
-        """This extends the template data variables defined in the base class
-
-        Adds in battery_voltage_topic topic.
-        """
-        # Set up the variables that can be used in the templates.
-        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
-        data['battery_voltage_topic'] = self.msg_battery_voltage.render_topic(
-            data
-        )
         return data
 
     #-----------------------------------------------------------------------

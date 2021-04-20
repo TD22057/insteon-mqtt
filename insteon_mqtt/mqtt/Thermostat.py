@@ -131,6 +131,32 @@ class Thermostat(topic.DiscoveryTopic):
         self.cool_sp_command.load_config(data, 'cool_sp_command_topic',
                                          'cool_sp_command_payload', qos)
 
+        # Add our unique topics to the discovery topic map
+        topics = {}
+        var_data = self.base_template_data()
+        topics['ambient_temp_topic'] = self.ambient_temp.render_topic(var_data)
+        topics['fan_state_topic'] = self.fan_state.render_topic(var_data)
+        topics['mode_state_topic'] = self.mode_state.render_topic(var_data)
+        topics['cool_sp_state_topic'] = self.cool_sp_state.render_topic(
+            var_data
+        )
+        topics['heat_sp_state_topic'] = self.heat_sp_state.render_topic(
+            var_data
+        )
+        topics['humid_state_topic'] = self.humid_state.render_topic(var_data)
+        topics['status_state_topic'] = self.status_state.render_topic(var_data)
+        topics['hold_state_topic'] = self.hold_state.render_topic(var_data)
+        topics['energy_state_topic'] = self.energy_state.render_topic(var_data)
+        topics['mode_command_topic'] = self.mode_command.render_topic(var_data)
+        topics['fan_command_topic'] = self.fan_command.render_topic(var_data)
+        topics['heat_sp_command_topic'] = self.heat_sp_command.render_topic(
+            var_data
+        )
+        topics['cool_sp_command_topic'] = self.cool_sp_command.render_topic(
+            var_data
+        )
+        self.rendered_topic_map.update(topics)
+
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
         """Subscribe to any MQTT topics the object needs.
@@ -186,29 +212,6 @@ class Thermostat(topic.DiscoveryTopic):
                      else self.device.addr.hex
             }
 
-        return data
-
-    #-----------------------------------------------------------------------
-    def discovery_template_data(self, **kwargs):
-        """This extends the template data variables defined in the base class
-
-        Adds the many thermostat topics.
-        """
-        # Set up the variables that can be used in the templates.
-        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
-        data['ambient_temp_topic'] = self.ambient_temp.render_topic(data)
-        data['fan_state_topic'] = self.fan_state.render_topic(data)
-        data['mode_state_topic'] = self.mode_state.render_topic(data)
-        data['cool_sp_state_topic'] = self.cool_sp_state.render_topic(data)
-        data['heat_sp_state_topic'] = self.heat_sp_state.render_topic(data)
-        data['humid_state_topic'] = self.humid_state.render_topic(data)
-        data['status_state_topic'] = self.status_state.render_topic(data)
-        data['hold_state_topic'] = self.hold_state.render_topic(data)
-        data['energy_state_topic'] = self.energy_state.render_topic(data)
-        data['mode_command_topic'] = self.mode_command.render_topic(data)
-        data['fan_command_topic'] = self.fan_command.render_topic(data)
-        data['heat_sp_command_topic'] = self.heat_sp_command.render_topic(data)
-        data['cool_sp_command_topic'] = self.cool_sp_command.render_topic(data)
         return data
 
     #-----------------------------------------------------------------------

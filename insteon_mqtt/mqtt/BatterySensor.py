@@ -71,6 +71,13 @@ class BatterySensor(topic.StateTopic, topic.DiscoveryTopic):
         self.msg_heartbeat.load_config(data, 'heartbeat_topic',
                                        'heartbeat_payload', qos)
 
+        # Add our unique topics to the discovery topic map
+        topics = {}
+        var_data = self.base_template_data()
+        topics['low_battery_topic'] = self.msg_battery.render_topic(var_data)
+        topics['heartbeat_topic'] = self.msg_heartbeat.render_topic(var_data)
+        self.rendered_topic_map.update(topics)
+
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
         """Subscribe to any MQTT topics the object needs.
@@ -124,18 +131,6 @@ class BatterySensor(topic.StateTopic, topic.DiscoveryTopic):
             data["is_heartbeat_str"] = "on" if is_heartbeat else "off"
             data["heartbeat_time"] = time.time() if is_heartbeat else 0
 
-        return data
-
-    #-----------------------------------------------------------------------
-    def discovery_template_data(self, **kwargs):
-        """This extends the template data variables defined in the base class
-
-        Adds in low_battery_topic and heartbeat_topic topics.
-        """
-        # Set up the variables that can be used in the templates.
-        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
-        data['low_battery_topic'] = self.msg_battery.render_topic(data)
-        data['heartbeat_topic'] = self.msg_heartbeat.render_topic(data)
         return data
 
     #-----------------------------------------------------------------------

@@ -56,6 +56,12 @@ class Leak(BatterySensor):
             self.msg_heartbeat.load_config(data, 'heartbeat_topic',
                                            'heartbeat_payload', qos)
 
+        # Add our unique topics to the discovery topic map
+        # The state_topic uses a different name on the leak sensor
+        if 'state_topic' in self.rendered_topic_map:
+            rendered_topic = self.rendered_topic_map.pop('state_topic')
+            self.rendered_topic_map['wet_dry_topic'] = rendered_topic
+
     #-----------------------------------------------------------------------
     def state_template_data(self, **kwargs):
         """Create the Jinja templating data variables for on/off messages.
@@ -97,18 +103,6 @@ class Leak(BatterySensor):
         data["is_dry_str"] = "off" if is_wet else "on"
         data["state"] = "wet" if is_wet else "dry"
 
-        return data
-
-    #-----------------------------------------------------------------------
-    def discovery_template_data(self, **kwargs):
-        """This extends the template data variables defined in the base class
-
-        The wet_dry_topic is just the state topic
-        """
-        # Set up the variables that can be used in the templates.
-        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
-        if 'state_topic' in data:
-            data['wet_dry_topic'] = data.pop('state_topic')
         return data
 
     #-----------------------------------------------------------------------
