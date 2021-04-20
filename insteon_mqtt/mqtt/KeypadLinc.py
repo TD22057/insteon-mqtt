@@ -109,10 +109,11 @@ class KeypadLinc(topic.SetTopic, topic.SceneTopic, topic.StateTopic,
                  including:
         """
         # Get the default variables
-        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
+        # pylint:disable=E1101
+        data = super().discovery_template_data(**kwargs)
         data['is_dimmable'] = False
         if isinstance(self.device, DimmerBase):
             data['is_dimmable'] = True
         return data
 
-        #-----------------------------------------------------------------------
+    #-----------------------------------------------------------------------

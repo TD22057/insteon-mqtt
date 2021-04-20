@@ -168,16 +168,17 @@ class Thermostat(topic.DiscoveryTopic):
           link (network.Mqtt):  The MQTT network client to use.
           qos (int):  The quality of service to use.
         """
-        rendered_topic = self.mode_command.render_topic(self.template_data())
+        data = self.template_data()
+        rendered_topic = self.mode_command.render_topic(data)
         link.subscribe(rendered_topic, qos, self._input_mode)
 
-        rendered_topic = self.fan_command.render_topic(self.template_data())
+        rendered_topic = self.fan_command.render_topic(data)
         link.subscribe(rendered_topic, qos, self._input_fan)
 
-        rendered_topic = self.heat_sp_command.render_topic(self.template_data())
+        rendered_topic = self.heat_sp_command.render_topic(data)
         link.subscribe(rendered_topic, qos, self._input_heat_setpoint)
 
-        rendered_topic = self.cool_sp_command.render_topic(self.template_data())
+        rendered_topic = self.cool_sp_command.render_topic(data)
         link.subscribe(rendered_topic, qos, self._input_cool_setpoint)
 
     #-----------------------------------------------------------------------
@@ -187,16 +188,17 @@ class Thermostat(topic.DiscoveryTopic):
         Args:
           link (network.Mqtt):  The MQTT network client to use.
         """
-        rendered_topic = self.mode_command.render_topic(self.template_data())
+        data = self.template_data()
+        rendered_topic = self.mode_command.render_topic(data)
         link.unsubscribe(rendered_topic)
 
-        rendered_topic = self.fan_command.render_topic(self.template_data())
+        rendered_topic = self.fan_command.render_topic(data)
         link.unsubscribe(rendered_topic)
 
-        rendered_topic = self.heat_sp_command.render_topic(self.template_data())
+        rendered_topic = self.heat_sp_command.render_topic(data)
         link.unsubscribe(rendered_topic)
 
-        rendered_topic = self.cool_sp_command.render_topic(self.template_data())
+        rendered_topic = self.cool_sp_command.render_topic(data)
         link.unsubscribe(rendered_topic)
 
     #-----------------------------------------------------------------------

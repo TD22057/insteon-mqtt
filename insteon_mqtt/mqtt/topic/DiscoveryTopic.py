@@ -56,7 +56,8 @@ class DiscoveryTopic(BaseTopic):
                       self.device.label, disc_class)
             return
 
-        # Loop all of the discovery entities and append them to self.rendered_topic_map
+        # Loop all of the discovery entities and append them to
+        # self.rendered_topic_map
         entities = class_config.get('discovery_entities', None)
         if entities is None or not isinstance(entities, list):
             LOG.error("%s - No discovery_entities defined, or not a list %s",
@@ -82,7 +83,8 @@ class DiscoveryTopic(BaseTopic):
                 LOG.error("%s - Error getting unique_id, skipping entry",
                           self.device.label)
                 continue
-            default_topic = "%s/%s/%s/%s/config" % (self.mqtt.discovery_topic_base,
+            topic_base = self.mqtt.discovery_topic_base
+            default_topic = "%s/%s/%s/%s/config" % (topic_base,
                                                     component,
                                                     self.device.addr.hex,
                                                     unique_id)
@@ -184,7 +186,8 @@ class DiscoveryTopic(BaseTopic):
         Args:
           kwargs (dict): The arguments to pass to discovery_template_data
         """
-        LOG.info("MQTT received discovery %s on: %s", self.device.label, kwargs)
+        LOG.info("MQTT received discovery %s on: %s",
+                 self.device.label, kwargs)
 
         data = self.discovery_template_data(**kwargs)
 

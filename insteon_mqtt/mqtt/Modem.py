@@ -88,7 +88,7 @@ class Modem(topic.SceneTopic, topic.DiscoveryTopic):
         Args:
           kwargs (dict): The arguments to pass to discovery_template_data
         """
-        LOG.info("MQTT received discovery %s on: %s", self.device.label, kwargs)
+        LOG.info("MQTT discovery %s on: %s", self.device.label, kwargs)
 
         data = self.discovery_template_data(**kwargs)
 
