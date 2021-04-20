@@ -60,7 +60,7 @@ class SceneTopic(BaseTopic):
         self.msg_scene.load_config(data, topic, payload, qos)
 
         # Add ourselves to the list of topics
-        self.topics['on_off_topic'] = self.msg_scene.render_topic(
+        self.rendered_topic_map['on_off_topic'] = self.msg_scene.render_topic(
             self.base_template_data()
         )
 

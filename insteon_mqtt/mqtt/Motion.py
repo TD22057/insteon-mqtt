@@ -37,7 +37,7 @@ class Motion(BatterySensor):
         device.signal_dawn.connect(self._insteon_dawn)
 
         # This defines the default discovery_class for these devices
-        self.class_name = "motion"
+        self.default_discovery_cls = "motion"
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):

@@ -85,7 +85,7 @@ class Thermostat(topic.DiscoveryTopic):
         device.signal_energy_change.connect(self._insteon_energy_change)
 
         # This defines the default discovery_class for these devices
-        self.class_name = "thermostat"
+        self.default_discovery_cls = "thermostat"
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):

@@ -47,7 +47,7 @@ class SmokeBridge(topic.DiscoveryTopic):
         device.signal_on_off.connect(self._insteon_change)
 
         # This defines the default discovery_class for these devices
-        self.class_name = "smoke_bridge"
+        self.default_discovery_cls = "smoke_bridge"
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):

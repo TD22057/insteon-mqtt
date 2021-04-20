@@ -45,7 +45,7 @@ class BatterySensor(topic.StateTopic, topic.DiscoveryTopic):
         device.signal_heartbeat.connect(self._insteon_heartbeat)
 
         # This defines the default discovery_class for these devices
-        self.class_name = "battery_sensor"
+        self.default_discovery_cls = "battery_sensor"
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):

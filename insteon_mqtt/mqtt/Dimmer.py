@@ -36,7 +36,7 @@ class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
                                        '"brightness" : {{level_255}} }')
 
         # This defines the default discovery_class for these devices
-        self.class_name = "dimmer"
+        self.default_discovery_cls = "dimmer"
 
         # Input level command template.
         self.msg_level = MsgTemplate(
@@ -56,7 +56,7 @@ class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
         # The discovery topic needs the full config
         self.load_discovery_data(config, qos)
 
-        data = config.get(self.class_name, None)
+        data = config.get("dimmer", None)
         if not data:
             return
 

@@ -57,7 +57,7 @@ class SetTopic(BaseTopic):
         self.msg_set.load_config(data, topic, payload, qos)
 
         # Add ourselves to the list of topics
-        self.topics['on_off_topic'] = self.msg_set.render_topic(
+        self.rendered_topic_map['on_off_topic'] = self.msg_set.render_topic(
             self.base_template_data()
         )
 

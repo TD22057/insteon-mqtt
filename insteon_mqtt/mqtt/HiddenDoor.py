@@ -40,7 +40,7 @@ class HiddenDoor(BatterySensor):
         device.signal_voltage.connect(self._insteon_voltage)
 
         # This defines the default discovery_class for these devices
-        self.class_name = "hidden_door"
+        self.default_discovery_cls = "hidden_door"
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):

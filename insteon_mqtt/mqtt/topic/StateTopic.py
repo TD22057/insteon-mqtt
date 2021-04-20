@@ -92,21 +92,21 @@ class StateTopic(BaseTopic):
                 payload_1 = 'dimmer_state_payload'
             self.msg_state_1.load_config(data, topic_1, payload_1, qos)
             # Add ourselves to the list of topics
-            self.topics['dimmer_state_topic'] = self.msg_state_1.render_topic(
+            self.rendered_topic_map['dimmer_state_topic'] = self.msg_state_1.render_topic(
                 self.base_template_data()
             )
 
-        if len(self.group_topic_nums) > 0:
+        if len(self.group_state_list) > 0:
             # This device has multiple state topics for multiple buttons
             data = self.base_template_data()
-            for btn in self.group_topic_nums:
+            for btn in self.group_state_list:
                 data['button'] = btn
-                self.topics['state_topic_' + str(btn)] = self.msg_state.render_topic(
+                self.rendered_topic_map['state_topic_' + str(btn)] = self.msg_state.render_topic(
                     data
                 )
         else:
             # Add ourselves to the list of topics
-            self.topics['state_topic'] = self.msg_state.render_topic(
+            self.rendered_topic_map['state_topic'] = self.msg_state.render_topic(
                 self.base_template_data()
             )
 

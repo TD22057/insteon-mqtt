@@ -49,14 +49,14 @@ class DiscoveryTopic(BaseTopic):
         """
         # Get the device specific discovery class
         disc_class = self.device.config_extra.get('discovery_class',
-                                                  self.class_name)
+                                                  self.default_discovery_cls)
         class_config = config.get(disc_class, None)
         if class_config is None:
             LOG.error("%s - Unable to find discovery class %s",
                       self.device.label, disc_class)
             return
 
-        # Loop all of the discovery entities and append them to self.topics
+        # Loop all of the discovery entities and append them to self.rendered_topic_map
         entities = class_config.get('discovery_entities', None)
         if entities is None or not isinstance(entities, list):
             LOG.error("%s - No discovery_entities defined, or not a list %s",
@@ -130,7 +130,7 @@ class DiscoveryTopic(BaseTopic):
         data = self.base_template_data(**kwargs)
 
         # Insert Topics from topic classes
-        data.update(self.topics)
+        data.update(self.rendered_topic_map)
 
         data['name_user_case'] = self.device.addr.hex
         if self.device.name_user_case:

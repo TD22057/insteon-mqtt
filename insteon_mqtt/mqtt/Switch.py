@@ -31,7 +31,7 @@ class Switch(topic.SetTopic, topic.StateTopic, topic.SceneTopic,
         super().__init__(mqtt, device)
 
         # This defines the default discovery_class for these devices
-        self.class_name = "switch"
+        self.default_discovery_cls = "switch"
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):

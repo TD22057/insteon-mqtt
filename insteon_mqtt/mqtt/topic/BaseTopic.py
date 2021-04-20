@@ -20,15 +20,20 @@ class BaseTopic:
         """
         self.mqtt = mqtt
         self.device = device
-        self.class_name = None  # This should be amended by each class
+
+        # This defines the default class name that is used when searching for
+        # discovery templates.
+        self.default_discovery_cls = None
+
         # Any topics added here are available in discovery templates using the
         # key as the variable name.  The key should be the yaml key for the
         # topic
-        self.topics = {}
+        self.rendered_topic_map = {}
 
-        # Set the list of state and command topics to generate for the
-        # discovery platform
-        self.group_topic_nums = []
+        # This should be a list of group numbers for which state and
+        # command topics will be generated such as state_topic_1, if empty
+        # only the default state topics and command topics will be generated
+        self.group_state_list = []
 
     #-----------------------------------------------------------------------
     def base_template_data(self, **kwargs):

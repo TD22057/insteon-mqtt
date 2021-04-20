@@ -41,10 +41,10 @@ class Remote(BatterySensor, topic.ManualTopic):
         self.state_retain = False
 
         # This defines the default discovery_class for these devices
-        self.class_name = "remote"
+        self.default_discovery_cls = "remote"
 
         # Set the groups for discovery topic generation
-        self.group_topic_nums = range(1, 9)
+        self.group_state_list = range(1, 9)
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):

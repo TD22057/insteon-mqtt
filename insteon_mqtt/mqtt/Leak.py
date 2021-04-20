@@ -28,7 +28,7 @@ class Leak(BatterySensor):
                          state_payload='{{is_wet_str.lower()}}')
 
         # This defines the default discovery_class for these devices
-        self.class_name = "leak"
+        self.default_discovery_cls = "leak"
 
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):

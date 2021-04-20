@@ -39,7 +39,7 @@ class FanLinc(Dimmer):
         super().__init__(mqtt, device)
 
         # This defines the default discovery_class for these devices
-        self.class_name = "fan_linc"
+        self.default_discovery_cls = "fan_linc"
 
         # Output fan state change reporting template.
         self.msg_fan_state = MsgTemplate(
