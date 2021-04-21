@@ -98,7 +98,7 @@ class Mqtt:
         - broker:    (str) The broker host to connect to.
         - port:      (int) Thr broker port to connect to.
         - username:  (str) Optional user name to log in with.
-        - passord:   (str) Optional password to log in with.
+        - password:  (str) Optional password to log in with.
 
         - qos:         (int) QOS level to use for sent messages (Default 1).
         - retain:      (bool) Retain sent messages (Default True)
