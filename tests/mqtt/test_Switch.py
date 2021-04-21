@@ -111,6 +111,21 @@ class Test_Switch:
         assert len(link.client.pub) == 0
 
     #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        mdev.load_config({"switch": {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "switch"
+        assert mdev.rendered_topic_map == {
+            'manual_state_topic': None,
+            'on_off_topic': 'insteon/01.02.03/set',
+            'scene_topic': 'insteon/01.02.03/scene',
+            'state_topic': 'insteon/01.02.03/state'
+        }
+        assert len(mdev.extra_topic_nums) == 0
+
+    #-----------------------------------------------------------------------
     def test_config(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
 
