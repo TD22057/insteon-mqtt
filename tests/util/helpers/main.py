@@ -77,7 +77,8 @@ class MockDevice:
         self.protocol = protocol
         self.modem = modem
         self.addr = IM.Address(address)
-        self.name = name
+        self.name = name.lower()
+        self.name_user_case = name
 
     def send(self, msg, msg_handler, high_priority=False, after=None):
         self.protocol.send(msg, msg_handler, high_priority, after)
