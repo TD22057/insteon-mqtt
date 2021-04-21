@@ -176,3 +176,23 @@ class Test_DiscoveryTopic:
         data = discovery.discovery_template_data()
         assert 'Error rendering device_info_template' in caplog.text
         caplog.clear()
+
+    #-----------------------------------------------------------------------
+    def test_publish(self, discovery, caplog):
+        discovery.entries.append(mock.Mock())
+        discovery.publish_discovery()
+        data = {'address': '11.22.33',
+                'name': '11.22.33',
+                'name_user_case': '11.22.33',
+                'engine': 'Unknown',
+                'model_number': 'Unknown',
+                'model_description': 'Unknown',
+                'dev_cat': 0,
+                'dev_cat_name': 'Unknown',
+                'sub_cat': 0,
+                'firmware': 0,
+                'modem_addr': '20.30.40',
+                'device_info_template': ''}
+        discovery.entries[0].publish.assert_called_once_with(discovery.mqtt,
+                                                             data,
+                                                             retain=False)
