@@ -36,7 +36,7 @@ class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
                                        '"brightness" : {{level_255}} }')
 
         # This defines the default discovery_class for these devices
-        self.class_name = "dimmer"
+        self.default_discovery_cls = "dimmer"
 
         # Input level command template.
         self.msg_level = MsgTemplate(
@@ -56,7 +56,7 @@ class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
         # The discovery topic needs the full config
         self.load_discovery_data(config, qos)
 
-        data = config.get(self.class_name, None)
+        data = config.get("dimmer", None)
         if not data:
             return
 
@@ -68,6 +68,11 @@ class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
 
         # Update the MQTT topics and payloads from the config file.
         self.msg_level.load_config(data, 'level_topic', 'level_payload', qos)
+
+        # Add our unique topics to the discovery topic map
+        self.rendered_topic_map['level_topic'] = self.msg_level.render_topic(
+            self.base_template_data()
+        )
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
@@ -101,17 +106,6 @@ class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
         link.unsubscribe(topic_str)
 
         self.scene_unsubscribe(link)
-
-    #-----------------------------------------------------------------------
-    def discovery_template_data(self, **kwargs):
-        """This extends the template data variables defined in the base class
-
-        Adds in level_topic for dimmers.
-        """
-        # Set up the variables that can be used in the templates.
-        data = super().discovery_template_data(**kwargs)  # pylint:disable=E1101
-        data['level_topic'] = self.msg_level.render_topic(data)
-        return data
 
     #-----------------------------------------------------------------------
     def _input_set_level(self, client, data, message):

@@ -9,7 +9,7 @@ from . import topic
 LOG = log.get_logger()
 
 
-class Outlet(topic.SetTopic, topic.StateTopic):
+class Outlet(topic.SetTopic, topic.StateTopic, topic.DiscoveryTopic):
     """MQTT interface to an Insteon on/off outlet.
 
     This class connects to a device.Outlet object and converts it's
@@ -31,6 +31,12 @@ class Outlet(topic.SetTopic, topic.StateTopic):
                          state_topic='insteon/{{address}}/state/{{button}}',
                          set_topic='insteon/{{address}}/set/{{button}}')
 
+        # This defines the default discovery_class for these devices
+        self.default_discovery_cls = "outlet"
+
+        # Set the groups for discovery topic generation
+        self.extra_topic_nums = (1, 2)
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -40,6 +46,9 @@ class Outlet(topic.SetTopic, topic.StateTopic):
                  config is stored in config['outlet'].
           qos (int):  The default quality of service level to use.
         """
+        # The discovery topic needs the full config
+        self.load_discovery_data(config, qos)
+
         data = config.get("outlet", None)
         if not data:
             return

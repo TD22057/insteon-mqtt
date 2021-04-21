@@ -40,6 +40,12 @@ class Remote(BatterySensor, topic.ManualTopic):
         # retained message? - KRKeegan 2021-01-10
         self.state_retain = False
 
+        # This defines the default discovery_class for these devices
+        self.default_discovery_cls = "remote"
+
+        # Set the groups for discovery topic generation
+        self.extra_topic_nums = range(1, 9)
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.

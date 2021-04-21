@@ -8,6 +8,23 @@ HomeAssistant configuration.
 
 Read more about the [HomeAssistant Discovery Platform](https://www.home-assistant.io/docs/mqtt/discovery/).
 
+<!-- TOC -->
+
+- [MQTT Discovery Platform](#mqtt-discovery-platform)
+  - [Customization](#customization)
+    - [Default Device Templates](#default-device-templates)
+    - [Using a Custom Device Template](#using-a-custom-device-template)
+    - [Writing a `discovery_entities` Template](#writing-a-discovery_entities-template)
+      - [JSON Dangers](#json-dangers)
+      - [Passing Jinja Templates as Values](#passing-jinja-templates-as-values)
+      - [Example `discovery_entities` templates](#example-discovery_entities-templates)
+    - [The Special `device_info_template` Variable](#the-special-device_info_template-variable)
+  - [Sample Templates for Custom Discovery Classes](#sample-templates-for-custom-discovery-classes)
+    - [Single Button Remote](#single-button-remote)
+    - [Six Button Keypadlinc](#six-button-keypadlinc)
+
+<!-- /TOC -->
+
 ## Customization
 
 Of course, all of us will likely want to tweak or edit the default
@@ -64,7 +81,7 @@ Each entry `discovery_entities` is an associative array with the __required__
 keys `component` and `config`.
 - `component` - (String) One of the supported HomeAssistant MQTT components,
 eg. `binary_sensor`, `light`, `switch`
-- `config` - (jinja template) The template must produce a json string that is
+- `config` - (jinja template) The template must produce a __json__ string that is
 acceptable to HomeAssistant.  The contents of what is required in this json
 string are defined by the
 [HomeAssistant Discovery Platform](https://www.home-assistant.io/docs/mqtt/discovery/).
@@ -108,6 +125,43 @@ will be ignored.
 Additional variables may be offered by specific devices classes.  Those
 variables are defined in the `config-example.yaml` file under the relevant
 `mqtt` device keys.
+
+#### JSON Dangers
+
+> The `config` json template __must generate valid json_.  This is a good json
+[validator](https://jsonformatter.curiousconcept.com/).
+
+__Notable Gotchas__
+
+1. __Newline Characters__ - JSON strings cannot contain raw newline characters,
+they can however be represented by `\n`
+2. __Trailing Commas__ - JSON cannot include trailing commas.  The last item
+in a list or the last key:value pair in an object __cannot__ be followed by a
+comma.
+3. __Single Quotes__ - JSON requires doubles quotes, you __cannot__ use single
+quotes to define a string.  You can escape double quotes with `\"`
+
+#### Passing Jinja Templates as Values
+HomeAssistant uses jinja templates as well, and in a number of cases entities
+have configuration settings that contain a template.  If you attempt to enter a
+template as a value, it will be rendered by InsteonMQTT, which in this case
+would likely result with an empty value.
+
+To pass an unrendered template on to HomeAssistant __you must escape the
+template__.  The template can be escaped using the `{% raw %} {{escaped_stuff}} {% endraw %}`
+format.  For example:
+
+```yaml
+mqtt:
+  climate:
+    discovery_entities:
+      - component: "climate"
+        config: |-
+          {
+          .... # other settings
+          "temp_lo_stat_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}",
+          }
+```
 
 #### Example `discovery_entities` templates
 
@@ -164,7 +218,7 @@ mqtt:
               {%- endif -%}",
       "sw": "0x{{'%0x' % firmware|int }} - {{engine}}",
       "name": "{{name_user_case}}",
-      "via_device": "{{modem_addr}}",
+      "via_device": "{{modem_addr}}"
     }
 ```
 
@@ -185,7 +239,129 @@ as:
     "mdl": "2477D - SwitchLinc Dimmer (Dual-Band)",
     "sw": "0x45 - i2cs",
     "name": "my dimmer",
-    "via_device": "41.ee.e6",
+    "via_device": "41.ee.e6"
   }
 }
+```
+
+## Sample Templates for Custom Discovery Classes
+
+### Single Button Remote
+
+The default remote configuration exposes entities for all eight
+buttons.  However, if you have a single button remote, you likely
+only want to see an entity for that single button.  The following
+sample configuration settings will enable that:
+
+```yaml
+insteon:
+  device:
+    mini_remote1::
+      - dd.ee.ff: my_remote
+        discovery_class: remote_1  # < note no dash at start of line
+
+mqtt:
+  remote_1:  # < Note the class name
+    discovery_entities:
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_btn",
+            "name": "{{name_user_case}} btn",
+            "stat_t": "{{state_topic_1}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_battery",
+            "name": "{{name_user_case}} battery",
+            "stat_t": "{{low_battery_topic}}",
+            "device_class": "battery",
+            "device": {{device_info_template}}
+          }
+      - component: 'sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_heartbeat",
+            "name": "{{name_user_case}} heartbeat",
+            "stat_t": "{{heartbeat_topic}}",
+            "device_class": "timestamp",
+            "device": {{device_info_template}}
+          }
+```
+
+### Six Button Keypadlinc
+
+The default Keypad_linc configuration exposes entities for all eight
+buttons.  However, if you have a six button keypad_linc, you likely
+only want to see entities for those six buttons.  The following
+sample configuration settings will enable that:
+
+```yaml
+insteon:
+  device:
+    keypad_linc::
+      - 11.22.33: my_6_button_kpl
+        discovery_class: kpl_6  # < note no dash at start of line
+
+mqtt:
+  kpl_6:  # < Note the class name
+  discovery_entities:
+    - component: 'light'
+      config: |-
+        {
+          "uniq_id": "{{address}}_1",
+          "name": "{{name_user_case}} btn 1",
+          "device": {{device_info_template}},
+          "brightness": {{is_dimmable|lower()}},
+          "cmd_t": "{%- if is_dimmable -%}
+                      {{dimmer_level_topic}}
+                    {%- else -%}
+                      {{btn_on_off_topic_1}}
+                    {%- endif -%}",
+          "schema": "json",
+          "stat_t": "{%- if is_dimmable -%}
+                      {{dimmer_state_topic}}
+                    {%- else -%}
+                      {{btn_state_topic_1}}
+                    {%- endif -%}"
+        }
+    - component: 'switch'  # No button 2 on 6 button devices
+      config: |-
+        {
+          "uniq_id": "{{address}}_3",
+          "name": "{{name_user_case}} btn 3",
+          "device": {{device_info_template}},
+          "cmd_t": "{{btn_on_off_topic_3}}",
+          "stat_t": "{{btn_on_off_topic_3}}",
+        }
+    - component: 'switch'
+      config: |-
+        {
+          "uniq_id": "{{address}}_4",
+          "name": "{{name_user_case}} btn 4",
+          "device": {{device_info_template}},
+          "cmd_t": "{{btn_on_off_topic_4}}",
+          "stat_t": "{{btn_on_off_topic_4}}",
+        }
+    - component: 'switch'
+      config: |-
+        {
+          "uniq_id": "{{address}}_5",
+          "name": "{{name_user_case}} btn 5",
+          "device": {{device_info_template}},
+          "cmd_t": "{{btn_on_off_topic_5}}",
+          "stat_t": "{{btn_on_off_topic_5}}",
+        }
+    - component: 'switch'
+      config: |-
+        {
+          "uniq_id": "{{address}}_6",
+          "name": "{{name_user_case}} btn 6",
+          "device": {{device_info_template}},
+          "cmd_t": "{{btn_on_off_topic_6}}",
+          "stat_t": "{{btn_on_off_topic_6}}",
+        }
+      # No buttons 7-9 on 6 button devices
 ```

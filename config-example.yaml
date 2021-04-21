@@ -237,7 +237,7 @@ mqtt:
               {%- endif -%}",
       "sw": "0x{{'%0x' % firmware|int }} - {{engine}}",
       "name": "{{name_user_case}}",
-      "via_device": "{{modem_addr}}",
+      "via_device": "{{modem_addr}}"
     }
 
   # Trigger modem virtual scenes.  Modem scenes are where the modem is a
@@ -274,6 +274,40 @@ mqtt:
                       "group" : {{json.group}}
                     }'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    #
+    # The modem has 253 possible scenes from scene 2-254.  The modem ONLY
+    # ACCEPTS A SINGLE entity template.  This template will be used for each of
+    # the scenes.
+    #
+    # This is the only place where you can set the template for the modem, it
+    # does NOT use the `discovery_class` extra configuration setting.
+    #
+    # Special variables:
+    #  {{scene}} - will be replaced with the scene number of the scene.
+    #  {{scene_name}} - will be replaced with the name of the scene as defined
+    #                   in a scenes.yaml file if used.
+    #  {{scene_topic}} - will be replaced by the scene topic for this scene.
+    #
+    # Only scenes that appear in the GroupMap list when printing the modem db
+    # will be included.  These are the only scenes for which the modem is
+    # listed as a controller.  Run `refresh modem` if the entities list
+    # appears incomplete to you.
+    discovery_entities:
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_{{scene}}",
+            "name": "{%- if scene_name != "" -%}
+                       {{scene_name}}
+                     {%- else -%}
+                       Modem Scene {{scene}}
+                     {%- endif -%}",
+            "cmd_t": "{{scene_topic}}",
+            "device": {{device_info_template}},
+            "payload_on": "{\"cmd\": \"on\", \"group\": \"{{scene}}\"}",
+            "payload_off": "{\"cmd\": \"off\", \"group\": \"{{scene}}\"}"
+          }
 
   # IMPORTANT: all devices must have the pair() command run one time to make
   # sure that the all the necessary controller/responder links are defined
@@ -336,6 +370,18 @@ mqtt:
                           , "level" : {{json.brightness}}
                       {% endif %}
                     }'
+
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_switch",
+            "name": "{{name_user_case}}",
+            "cmd_t": "{{on_off_topic}}",
+            "stat_t": "{{state_topic}}",
+            "device": {{device_info_template}}
+          }
 
   #------------------------------------------------------------------------
   # Dimmers
@@ -455,7 +501,10 @@ mqtt:
 
   #------------------------------------------------------------------------
   # Battery powered sensors
-  #    door sensors, hidden door sensors, window sensors
+  #    door sensors, window sensors
+  #
+  #    Other devices (motion, leak, hidden_door, and remote) inherit the
+  #    topics defined here and then add a few more.
   #------------------------------------------------------------------------
 
   # In Home Assistant use MQTT binary sensor with a configuration like:
@@ -499,6 +548,39 @@ mqtt:
     heartbeat_topic: 'insteon/{{address}}/heartbeat'
     heartbeat_payload: '{{heartbeat_time}}'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    # this only applies to devices defined as battery_sensor.  Devices that
+    # extend this class (motion, hidden_door, leak, and remote) all have their
+    # own discovery_entities
+    discovery_entities:
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_door",
+            "name": "{{name_user_case}} door",
+            "stat_t": "{{state_topic}}",
+            "device_class": "door",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_battery",
+            "name": "{{name_user_case}} battery",
+            "stat_t": "{{low_battery_topic}}",
+            "device_class": "battery",
+            "device": {{device_info_template}}
+          }
+      - component: 'sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_heartbeat",
+            "name": "{{name_user_case}} heartbeat",
+            "stat_t": "{{heartbeat_topic}}",
+            "device_class": "timestamp",
+            "device": {{device_info_template}}
+          }
+
   #------------------------------------------------------------------------
   # Motion sensors
   #------------------------------------------------------------------------
@@ -527,6 +609,45 @@ mqtt:
     dawn_dusk_topic: 'insteon/{{address}}/dawn'
     dawn_dusk_payload: '{{is_dawn_str.upper()}}'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_motion",
+            "name": "{{name_user_case}} motion",
+            "stat_t": "{{state_topic}}",
+            "device_class": "motion",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_battery",
+            "name": "{{name_user_case}} battery",
+            "stat_t": "{{low_battery_topic}}",
+            "device_class": "battery",
+            "device": {{device_info_template}}
+          }
+      - component: 'sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_heartbeat",
+            "name": "{{name_user_case}} heartbeat",
+            "stat_t": "{{heartbeat_topic}}",
+            "device_class": "timestamp",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_dusk",
+            "name": "{{name_user_case}} dusk",
+            "stat_t": "{{dawn_dusk_topic}}",
+            "device_class": "light",
+            "device": {{device_info_template}}
+          }
+
   #------------------------------------------------------------------------
   # Hidden Door Sensors
   #------------------------------------------------------------------------
@@ -535,12 +656,12 @@ mqtt:
   # inputs from battery_sensor and add battery voltage which is configured
   # here.
   #
-  # To register the hidden door sensor in Home Assistant use MQTT binary
+  # To register the battery voltage sensor in Home Assistant use MQTT
   # sensor with a configuration like:
-  #   binary_sensor:
+  #   sensor:
   #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc//battery_voltage'
-  #TODO       device_class: 'light'
+  #       state_topic: 'insteon/aa.bb.cc/battery_voltage'
+  #       device_class: 'voltage'
   hidden_door:
     # Output topic and payload.  This message is sent
     # whenever the device is polled and a new voltage, low battery voltage
@@ -552,6 +673,45 @@ mqtt:
 
     battery_voltage_topic: 'insteon/{{address}}/battery_voltage'
     battery_voltage_payload: '{"voltage" : {{batt_volt}}}'
+
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_door",
+            "name": "{{name_user_case}} door",
+            "stat_t": "{{state_topic}}",
+            "device_class": "door",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_battery",
+            "name": "{{name_user_case}} battery",
+            "stat_t": "{{low_battery_topic}}",
+            "device_class": "battery",
+            "device": {{device_info_template}}
+          }
+      - component: 'sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_heartbeat",
+            "name": "{{name_user_case}} heartbeat",
+            "stat_t": "{{heartbeat_topic}}",
+            "device_class": "timestamp",
+            "device": {{device_info_template}}
+          }
+      - component: 'sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_voltage",
+            "name": "{{name_user_case}} voltage",
+            "stat_t": "{{battery_voltage_topic}}",
+            "device_class": "voltage",
+            "device": {{device_info_template}}
+          }
 
   #------------------------------------------------------------------------
   # Leak sensors
@@ -588,6 +748,27 @@ mqtt:
     wet_dry_topic: 'insteon/{{address}}/wet'
     wet_dry_payload: '{{is_wet_str.upper()}}'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_wet",
+            "name": "{{name_user_case}} leak",
+            "stat_t": "{{state_topic}}",
+            "device_class": "moisture",
+            "device": {{device_info_template}}
+          }
+      - component: 'sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_heartbeat",
+            "name": "{{name_user_case}} heartbeat",
+            "stat_t": "{{heartbeat_topic}}",
+            "device_class": "timestamp",
+            "device": {{device_info_template}}
+          }
+
   #------------------------------------------------------------------------
   # Mini remotes
   #------------------------------------------------------------------------
@@ -620,6 +801,103 @@ mqtt:
     #   manual_openhab = 2/1/0
     #manual_state_topic: 'insteon/{{address}}/manual_state'
     #manual_state_payload: '{{manual_str.upper()}}'
+
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    #
+    # The remote class includes additional topics for the state of the various
+    # buttons, these state topics are:
+    #   state_topic_N
+    #
+    # Where N is in the range of [1-8] representing the button group numbers
+    # 1-8
+    # The default setup below includes state topics for all 8 buttons.  If you
+    # have a single button or a 4 button remote, you may want to review the
+    # instructions at:
+    # https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery.md
+    # for details about how to define a custom class for your devices.
+    discovery_entities:
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_1",
+            "name": "{{name_user_case}} btn 1",
+            "stat_t": "{{state_topic_1}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_2",
+            "name": "{{name_user_case}} btn 2",
+            "stat_t": "{{state_topic_2}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_3",
+            "name": "{{name_user_case}} btn 3",
+            "stat_t": "{{state_topic_3}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_4",
+            "name": "{{name_user_case}} btn 4",
+            "stat_t": "{{state_topic_4}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_5",
+            "name": "{{name_user_case}} btn 5",
+            "stat_t": "{{state_topic_5}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_6",
+            "name": "{{name_user_case}} btn 6",
+            "stat_t": "{{state_topic_6}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_7",
+            "name": "{{name_user_case}} btn 7",
+            "stat_t": "{{state_topic_7}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_8",
+            "name": "{{name_user_case}} btn 8",
+            "stat_t": "{{state_topic_8}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_battery",
+            "name": "{{name_user_case}} battery",
+            "stat_t": "{{low_battery_topic}}",
+            "device_class": "battery",
+            "device": {{device_info_template}}
+          }
+      - component: 'sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_heartbeat",
+            "name": "{{name_user_case}} heartbeat",
+            "stat_t": "{{heartbeat_topic}}",
+            "device_class": "timestamp",
+            "device": {{device_info_template}}
+          }
 
   #------------------------------------------------------------------------
   # Smoke Bridge
@@ -664,6 +942,45 @@ mqtt:
 
     error_topic: 'insteon/{{address}}/error'
     error_payload: '{{on_str.upper()}}'
+
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_smoke",
+            "name": "{{name_user_case}} smoke",
+            "stat_t": "{{smoke_topic}}",
+            "device_class": "smoke",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_battery",
+            "name": "{{name_user_case}} battery",
+            "stat_t": "{{battery_topic}}",
+            "device_class": "battery",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_co",
+            "name": "{{name_user_case}} co",
+            "stat_t": "{{co_topic}}",
+            "device_class": "gas",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_error",
+            "name": "{{name_user_case}} error",
+            "stat_t": "{{error_topic}}",
+            "device_class": "problem",
+            "device": {{device_info_template}}
+          }
 
   #------------------------------------------------------------------------
   # Thermostat
@@ -759,6 +1076,34 @@ mqtt:
     cool_sp_command_topic: 'insteon/{{address}}/cool_sp_command'
     cool_sp_payload: '{ "temp_f" : {{value}} }'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'climate'
+        config: |-
+          {
+            "uniq_id": "{{address}}_thermo",
+            "name": "{{name_user_case}} thermo",
+            "act_t": "{{status_state_topic}}",
+            "curr_temp_t": "{{ambient_temp_topic}}",
+            "curr_temp_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}",
+            "device": {{device_info_template}},
+            "fan_mode_cmd_t": "{{fan_command_topic}}",
+            "fan_mode_stat_t": "{{fan_state_topic}}",
+            "fan_modes": ["auto", "on"],
+            "hold_stat_t": "{{hold_state_topic}}",
+            "mode_cmd_t": "{{mode_command_topic}}",
+            "mode_stat_t": "{{mode_state_topic}}",
+            "modes": ["off", "cool", "heat", "auto"],
+            "precision": 1.0,
+            "temp_hi_cmd_t": "{{cool_sp_command_topic}}",
+            "temp_hi_stat_t": "{{cool_sp_state_topic}}",
+            "temp_hi_stat_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}",
+            "temp_lo_cmd_t": "{{heat_sp_command_topic}}",
+            "temp_lo_stat_t": "{{heat_sp_state_topic}}",
+            "temp_lo_stat_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}",
+            "temperature_unit": "F"
+          }
+
   #------------------------------------------------------------------------
   # Fan Linc
   #------------------------------------------------------------------------
@@ -802,6 +1147,9 @@ mqtt:
   #       {% else %}
   #         0
   #       {% endif %}
+  #     preset_mode_state_topic: "insteon/aa.bb.cc/fan/speed/state"
+  #     preset_mode_command_topic: "insteon/aa.bb.cc/fan/speed/set"
+  #     preset_modes: ["off", "low", "medium", "high"]
 
   fan_linc:
     # Output fan state change topic and payload.  This message is sent
@@ -853,6 +1201,35 @@ mqtt:
     #          a variable from a json payload.
     fan_speed_set_topic: 'insteon/{{address}}/fan/speed/set'
     fan_speed_set_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'fan'
+        config: |-
+          {
+            "uniq_id": "{{address}}_fan",
+            "name": "{{name_user_case}} thermo",
+            "device": {{device_info_template}},
+            "cmd_t": "{{fan_on_off_topic}}",
+            "pct_cmd_t": "{{fan_speed_set_topic}}",
+            "pct_cmd_tpl": "{% raw %}{% if value < 10 %}off{% elif value < 40 %}low{% elif value < 75 %}medium{% else %}high{% endif %}{% endraw %}",
+            "pct_stat_t": "{{fan_speed_topic}}",
+            "pct_val_tpl": "{% raw %}{% if value == 'low' %}33{% elif value == 'medium' %}67{% elif value == 'high' %}100{% else %}0{% endif %}{% endraw %}",
+            "pr_mode_stat_t": "{{fan_speed_topic}}",
+            "pr_mode_cmd_t": "{{fan_speed_set_topic}}",
+            "pr_modes": ["off", "low", "medium", "high"]
+          }
+      - component: 'light'
+        config: |-
+          {
+            "uniq_id": "{{address}}_light",
+            "name": "{{name_user_case}}",
+            "cmd_t": "{{level_topic}}",
+            "stat_t": "{{state_topic}}",
+            "brightness": true,
+            "schema": "json",
+            "device": {{device_info_template}}
+          }
 
   #------------------------------------------------------------------------
   # Keypad Linc
@@ -995,6 +1372,117 @@ mqtt:
                           {% endif %}
                         }'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    #
+    # This class includes an additional variable `is_dimmable` which is set
+    # to True if btn 1 on the device is dimmable otherwise it returns False
+    #
+    # The keypad_linc class includes additional topics for the various buttons,
+    # these topics are:
+    #   btn_state_topic_N
+    #   btn_on_off_topic_N
+    #   btn_scene_topic_N
+    #
+    # Where N is in the range of [1-9] representing the button group numbers
+    # 1-9
+    # The default setup below includes topics for all 8 buttons plus the
+    # the detached load setup.  If you have a six button keypad_linc, you may
+    # want to review the instructions at:
+    # https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery.md
+    # for details about how to define a custom class for your devices.
+    discovery_entities:
+      - component: 'light'
+        config: |-
+          {
+            "uniq_id": "{{address}}_1",
+            "name": "{{name_user_case}} btn 1",
+            "device": {{device_info_template}},
+            "brightness": {{is_dimmable|lower()}},
+            "cmd_t": "{%- if is_dimmable -%}
+                        {{dimmer_level_topic}}
+                      {%- else -%}
+                        {{btn_on_off_topic_1}}
+                      {%- endif -%}",
+            "schema": "json",
+            "stat_t": "{%- if is_dimmable -%}
+                        {{dimmer_state_topic}}
+                      {%- else -%}
+                        {{btn_state_topic_1}}
+                      {%- endif -%}"
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_2",
+            "name": "{{name_user_case}} btn 2",
+            "device": {{device_info_template}},
+            "cmd_t": "{{btn_on_off_topic_2}}",
+            "stat_t": "{{btn_on_off_topic_2}}",
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_3",
+            "name": "{{name_user_case}} btn 3",
+            "device": {{device_info_template}},
+            "cmd_t": "{{btn_on_off_topic_3}}",
+            "stat_t": "{{btn_on_off_topic_3}}",
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_4",
+            "name": "{{name_user_case}} btn 4",
+            "device": {{device_info_template}},
+            "cmd_t": "{{btn_on_off_topic_4}}",
+            "stat_t": "{{btn_on_off_topic_4}}",
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_5",
+            "name": "{{name_user_case}} btn 5",
+            "device": {{device_info_template}},
+            "cmd_t": "{{btn_on_off_topic_5}}",
+            "stat_t": "{{btn_on_off_topic_5}}",
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_6",
+            "name": "{{name_user_case}} btn 6",
+            "device": {{device_info_template}},
+            "cmd_t": "{{btn_on_off_topic_6}}",
+            "stat_t": "{{btn_on_off_topic_6}}",
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_7",
+            "name": "{{name_user_case}} btn 7",
+            "device": {{device_info_template}},
+            "cmd_t": "{{btn_on_off_topic_7}}",
+            "stat_t": "{{btn_on_off_topic_7}}",
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_8",
+            "name": "{{name_user_case}} btn 8",
+            "device": {{device_info_template}},
+            "cmd_t": "{{btn_on_off_topic_8}}",
+            "stat_t": "{{btn_on_off_topic_8}}",
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_9",
+            "name": "{{name_user_case}} btn 9",
+            "device": {{device_info_template}},
+            "cmd_t": "{{btn_on_off_topic_9}}",
+            "stat_t": "{{btn_on_off_topic_9}}",
+          }
+
   #------------------------------------------------------------------------
   # IO Linc relay controllers
   #------------------------------------------------------------------------
@@ -1070,6 +1558,26 @@ mqtt:
     on_off_topic: 'insteon/{{address}}/set'
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    discovery_entities:
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_relay",
+            "name": "{{name_user_case}} relay",
+            "cmd_t": "{{on_off_topic}}",
+            "stat_t": "{{relay_state_topic}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'binary_sensor'
+        config: |-
+          {
+            "uniq_id": "{{address}}_sensor",
+            "name": "{{name_user_case}} sensor",
+            "stat_t": "{{sensor_state_topic}}",
+            "device": {{device_info_template}}
+          }
+
   #------------------------------------------------------------------------
   # On/off outlets
   #------------------------------------------------------------------------
@@ -1116,6 +1624,39 @@ mqtt:
     on_off_topic: 'insteon/{{address}}/set/{{button}}'
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
 
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    #
+    # The outlet class includes additional topics for the two outlets,
+    # these topics are:
+    #   btn_state_topic_N
+    #   btn_on_off_topic_N
+    #
+    # Where N is in the range of [1-2] representing the outlet group numbers
+    # 1-2
+    # The default setup below includes topics for both outlets. If you have a
+    # single outlet model, you may want to review the instructions at:
+    # https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery.md
+    # for details about how to define a custom class for your devices.
+    discovery_entities:
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_1",
+            "name": "{{name_user_case}} top",
+            "cmd_t": "{{on_off_topic_1}}",
+            "stat_t": "{{state_topic_1}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_2",
+            "name": "{{name_user_case}} bottom",
+            "cmd_t": "{{on_off_topic_2}}",
+            "stat_t": "{{state_topic_2}}",
+            "device": {{device_info_template}}
+          }
+
   #------------------------------------------------------------------------
   # EZIO4O 4 relay output module
   #------------------------------------------------------------------------
@@ -1160,5 +1701,56 @@ mqtt:
     #          a variable from a json payload.
     on_off_topic: "insteon/{{address}}/set/{{button}}"
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+
+    # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
+    #
+    # The ezio4 class includes additional topics for the various relays,
+    # these topics are:
+    #   btn_state_topic_N
+    #   btn_on_off_topic_N
+    #
+    # Where N is in the range of [1-4] representing the relay group numbers
+    # 1-4
+    # The default setup below includes topics for all relays. You may want to
+    # review the instructions at:
+    # https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery.md
+    # for details about how to define a custom class for your devices.
+    discovery_entities:
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_1",
+            "name": "{{name_user_case}} relay 1",
+            "cmd_t": "{{on_off_topic_1}}",
+            "stat_t": "{{state_topic_1}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_2",
+            "name": "{{name_user_case}} relay 2",
+            "cmd_t": "{{on_off_topic_2}}",
+            "stat_t": "{{state_topic_2}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_3",
+            "name": "{{name_user_case}} relay 3",
+            "cmd_t": "{{on_off_topic_3}}",
+            "stat_t": "{{state_topic_3}}",
+            "device": {{device_info_template}}
+          }
+      - component: 'switch'
+        config: |-
+          {
+            "uniq_id": "{{address}}_4",
+            "name": "{{name_user_case}} relay 4",
+            "cmd_t": "{{on_off_topic_4}}",
+            "stat_t": "{{state_topic_4}}",
+            "device": {{device_info_template}}
+          }
 
 #----------------------------------------------------------------

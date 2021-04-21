@@ -36,6 +36,9 @@ class Motion(BatterySensor):
 
         device.signal_dawn.connect(self._insteon_dawn)
 
+        # This defines the default discovery_class for these devices
+        self.default_discovery_cls = "motion"
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -63,6 +66,13 @@ class Motion(BatterySensor):
         if "low_battery_topic" in data:
             self.msg_battery.load_config(data, 'low_battery_topic',
                                          'low_battery_payload', qos)
+
+        # Add our unique topics to the discovery topic map
+        topics = {}
+        topics['dawn_dusk_topic'] = self.msg_dawn.render_topic(
+            self.base_template_data()
+        )
+        self.rendered_topic_map.update(topics)
 
     #-----------------------------------------------------------------------
     def template_data_motion(self, is_dawn=None):

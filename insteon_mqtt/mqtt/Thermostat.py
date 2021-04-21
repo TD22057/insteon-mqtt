@@ -4,12 +4,13 @@
 #
 #===========================================================================
 from .. import log
+from . import topic
 from .MsgTemplate import MsgTemplate
 
 LOG = log.get_logger()
 
 
-class Thermostat:
+class Thermostat(topic.DiscoveryTopic):
     """MQTT interface to an Insteon thermostat switch.
 
     This class connects to a device.Thermostat and converts it's output
@@ -23,8 +24,8 @@ class Thermostat:
           mqtt (mqtt.Mqtt):  The MQTT main interface.
           device (device.Thermostat):  The Insteon object to link to.
         """
-        self.mqtt = mqtt
-        self.device = device
+        # Setup the BaseTopic
+        super().__init__(mqtt, device)
 
         # Set up the default templates for the MQTT messages and payloads.
         # Templates for states
@@ -83,6 +84,9 @@ class Thermostat:
         device.signal_hold_change.connect(self._insteon_hold_change)
         device.signal_energy_change.connect(self._insteon_energy_change)
 
+        # This defines the default discovery_class for these devices
+        self.default_discovery_cls = "thermostat"
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -92,6 +96,9 @@ class Thermostat:
                  config is stored in config['thermostat'].
           qos (int):  The default quality of service level to use.
         """
+        # The discovery topic needs the full config
+        self.load_discovery_data(config, qos)
+
         data = config.get("thermostat", None)
         if not data:
             return
@@ -124,6 +131,32 @@ class Thermostat:
         self.cool_sp_command.load_config(data, 'cool_sp_command_topic',
                                          'cool_sp_command_payload', qos)
 
+        # Add our unique topics to the discovery topic map
+        topics = {}
+        var_data = self.base_template_data()
+        topics['ambient_temp_topic'] = self.ambient_temp.render_topic(var_data)
+        topics['fan_state_topic'] = self.fan_state.render_topic(var_data)
+        topics['mode_state_topic'] = self.mode_state.render_topic(var_data)
+        topics['cool_sp_state_topic'] = self.cool_sp_state.render_topic(
+            var_data
+        )
+        topics['heat_sp_state_topic'] = self.heat_sp_state.render_topic(
+            var_data
+        )
+        topics['humid_state_topic'] = self.humid_state.render_topic(var_data)
+        topics['status_state_topic'] = self.status_state.render_topic(var_data)
+        topics['hold_state_topic'] = self.hold_state.render_topic(var_data)
+        topics['energy_state_topic'] = self.energy_state.render_topic(var_data)
+        topics['mode_command_topic'] = self.mode_command.render_topic(var_data)
+        topics['fan_command_topic'] = self.fan_command.render_topic(var_data)
+        topics['heat_sp_command_topic'] = self.heat_sp_command.render_topic(
+            var_data
+        )
+        topics['cool_sp_command_topic'] = self.cool_sp_command.render_topic(
+            var_data
+        )
+        self.rendered_topic_map.update(topics)
+
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
         """Subscribe to any MQTT topics the object needs.
@@ -135,17 +168,18 @@ class Thermostat:
           link (network.Mqtt):  The MQTT network client to use.
           qos (int):  The quality of service to use.
         """
-        topic = self.mode_command.render_topic(self.template_data())
-        link.subscribe(topic, qos, self._input_mode)
+        data = self.template_data()
+        rendered_topic = self.mode_command.render_topic(data)
+        link.subscribe(rendered_topic, qos, self._input_mode)
 
-        topic = self.fan_command.render_topic(self.template_data())
-        link.subscribe(topic, qos, self._input_fan)
+        rendered_topic = self.fan_command.render_topic(data)
+        link.subscribe(rendered_topic, qos, self._input_fan)
 
-        topic = self.heat_sp_command.render_topic(self.template_data())
-        link.subscribe(topic, qos, self._input_heat_setpoint)
+        rendered_topic = self.heat_sp_command.render_topic(data)
+        link.subscribe(rendered_topic, qos, self._input_heat_setpoint)
 
-        topic = self.cool_sp_command.render_topic(self.template_data())
-        link.subscribe(topic, qos, self._input_cool_setpoint)
+        rendered_topic = self.cool_sp_command.render_topic(data)
+        link.subscribe(rendered_topic, qos, self._input_cool_setpoint)
 
     #-----------------------------------------------------------------------
     def unsubscribe(self, link):
@@ -154,17 +188,18 @@ class Thermostat:
         Args:
           link (network.Mqtt):  The MQTT network client to use.
         """
-        topic = self.mode_command.render_topic(self.template_data())
-        link.unsubscribe(topic)
+        data = self.template_data()
+        rendered_topic = self.mode_command.render_topic(data)
+        link.unsubscribe(rendered_topic)
 
-        topic = self.fan_command.render_topic(self.template_data())
-        link.unsubscribe(topic)
+        rendered_topic = self.fan_command.render_topic(data)
+        link.unsubscribe(rendered_topic)
 
-        topic = self.heat_sp_command.render_topic(self.template_data())
-        link.unsubscribe(topic)
+        rendered_topic = self.heat_sp_command.render_topic(data)
+        link.unsubscribe(rendered_topic)
 
-        topic = self.cool_sp_command.render_topic(self.template_data())
-        link.unsubscribe(topic)
+        rendered_topic = self.cool_sp_command.render_topic(data)
+        link.unsubscribe(rendered_topic)
 
     #-----------------------------------------------------------------------
     def template_data(self):

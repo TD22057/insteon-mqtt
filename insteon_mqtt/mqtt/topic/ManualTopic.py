@@ -76,7 +76,7 @@ class ManualTopic(BaseTopic):
         self.msg_manual_state.load_config(data, topic, payload, qos)
 
         # Add ourselves to the list of topics
-        self.topics['manual_state_topic'] = self.msg_manual_state.render_topic(
+        self.rendered_topic_map[topic] = self.msg_manual_state.render_topic(
             self.base_template_data()
         )
 

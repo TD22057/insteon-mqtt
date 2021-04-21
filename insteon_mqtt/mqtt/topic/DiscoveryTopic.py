@@ -49,14 +49,15 @@ class DiscoveryTopic(BaseTopic):
         """
         # Get the device specific discovery class
         disc_class = self.device.config_extra.get('discovery_class',
-                                                  self.class_name)
+                                                  self.default_discovery_cls)
         class_config = config.get(disc_class, None)
         if class_config is None:
             LOG.error("%s - Unable to find discovery class %s",
                       self.device.label, disc_class)
             return
 
-        # Loop all of the discovery entities and append them to self.topics
+        # Loop all of the discovery entities and append them to
+        # self.rendered_topic_map
         entities = class_config.get('discovery_entities', None)
         if entities is None or not isinstance(entities, list):
             LOG.error("%s - No discovery_entities defined, or not a list %s",
@@ -78,7 +79,12 @@ class DiscoveryTopic(BaseTopic):
             # Allowing topic to be settable in yaml, but I don't think users
             # should worry about this, there is no utility in changing it
             unique_id = self._get_unique_id(payload)
-            default_topic = "%s/%s/%s/%s/config" % (self.mqtt.discovery_topic_base,
+            if unique_id is None:
+                LOG.error("%s - Error getting unique_id, skipping entry",
+                          self.device.label)
+                continue
+            topic_base = self.mqtt.discovery_topic_base
+            default_topic = "%s/%s/%s/%s/config" % (topic_base,
                                                     component,
                                                     self.device.addr.hex,
                                                     unique_id)
@@ -96,6 +102,11 @@ class DiscoveryTopic(BaseTopic):
 
         kwargs are pass from the publish_discovery method and are not used
         in this class.
+
+        This is run in load_discovery_data() to get the unique_id which is
+        before the topics are created, so the topic variables cannot be used as
+        part of the unique_id.  This is fine, but be prepared to gracefully
+        handle the absence of topics in any extension of this method.
 
         Returns:
           dict:  Returns a dict with the variables available for templating.
@@ -121,14 +132,16 @@ class DiscoveryTopic(BaseTopic):
         data = self.base_template_data(**kwargs)
 
         # Insert Topics from topic classes
-        data.update(self.topics)
+        data.update(self.rendered_topic_map)
 
         data['name_user_case'] = self.device.addr.hex
         if self.device.name_user_case:
             data['name_user_case'] = self.device.name_user_case
 
         engine_map = {0: 'i1', 1: 'i2', 2: 'i2cs'}
-        data['engine'] = engine_map.get(self.device.db.engine, 'Unknown')
+        data['engine'] = 'Unknown'
+        if hasattr(self.device.db, 'engine'):
+            data['engine'] = engine_map.get(self.device.db.engine, 'Unknown')
         data['model_number'] = 'Unknown'
         data['model_description'] = 'Unknown'
         data['dev_cat'] = 0
@@ -144,7 +157,9 @@ class DiscoveryTopic(BaseTopic):
         data['firmware'] = 0
         if self.device.db.firmware is not None:
             data['firmware'] = self.device.db.firmware
-        data['modem_addr'] = self.device.modem.addr.hex
+        data['modem_addr'] = data['address']
+        if hasattr(self.device, 'modem'):
+            data['modem_addr'] = self.device.modem.addr.hex
 
         # Finally, render the device_info_template
         device_info_template = jinja2.Template(self.mqtt.device_info_template)
@@ -160,7 +175,7 @@ class DiscoveryTopic(BaseTopic):
 
     #-----------------------------------------------------------------------
     def publish_discovery(self, **kwargs):
-        """Device on/off callback.
+        """Publish the Discovery Message
 
         This is triggered from the MQTT handler.
 
@@ -171,7 +186,8 @@ class DiscoveryTopic(BaseTopic):
         Args:
           kwargs (dict): The arguments to pass to discovery_template_data
         """
-        LOG.info("MQTT received discovery %s on: %s", self.device.label, kwargs)
+        LOG.info("MQTT received discovery %s on: %s",
+                 self.device.label, kwargs)
 
         data = self.discovery_template_data(**kwargs)
 

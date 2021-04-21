@@ -9,7 +9,7 @@ from . import topic
 LOG = log.get_logger()
 
 
-class EZIO4O(topic.StateTopic, topic.SetTopic):
+class EZIO4O(topic.StateTopic, topic.SetTopic, topic.DiscoveryTopic):
     """MQTT interface to Smartenit EZIO4O 4 relay output device.
 
     This class connects to a device.EZIO4O object and converts it's
@@ -32,6 +32,12 @@ class EZIO4O(topic.StateTopic, topic.SetTopic):
                          state_topic='insteon/{{address}}/state/{{button}}',
                          set_topic="insteon/{{address}}/set/{{button}}")
 
+        # This defines the default discovery_class for these devices
+        self.default_discovery_cls = "ezio4o"
+
+        # Set the groups for discovery topic generation
+        self.extra_topic_nums = range(1, 5)
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -41,6 +47,9 @@ class EZIO4O(topic.StateTopic, topic.SetTopic):
                  config is stored in config['ezio4o'].
           qos (int):  The default quality of service level to use.
         """
+        # The discovery topic needs the full config
+        self.load_discovery_data(config, qos)
+
         data = config.get("ezio4o", None)
         if not data:
             return
