@@ -162,10 +162,12 @@ class DiscoveryTopic(BaseTopic):
             data['modem_addr'] = self.device.modem.addr.hex
 
         # Finally, render the device_info_template
-        device_info_template = jinja2.Template(self.mqtt.device_info_template)
         try:
+            device_info_template = jinja2.Template(
+                self.mqtt.device_info_template
+            )
             data['device_info_template'] = device_info_template.render(data)
-        except jinja2.exceptions.UndefinedError as exc:
+        except jinja2.exceptions.TemplateError as exc:
             LOG.error("Error rendering device_info_template: %s", exc)
             LOG.error("Template was: \n%s",
                       self.mqtt.device_info_template.strip())
@@ -210,13 +212,13 @@ class DiscoveryTopic(BaseTopic):
         Returns:
           unique_id (str) or None if there was an error.
         """
-        config_template = jinja2.Template(config)
         data = self.discovery_template_data()
         ret = None
         # First render template
         try:
+            config_template = jinja2.Template(config)
             config_rendered = config_template.render(data)
-        except jinja2.exceptions.UndefinedError as exc:
+        except jinja2.exceptions.TemplateError as exc:
             LOG.error("Error rendering config template: %s", exc)
             LOG.error("Template was: \n%s",
                       config.strip())

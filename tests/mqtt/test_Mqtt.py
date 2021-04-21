@@ -1,12 +1,12 @@
 #===========================================================================
 #
-# Tests for: insteont_mqtt/mqtt/Mqtt.py
+# Tests for: insteon_mqtt/mqtt/Mqtt.py
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
 import logging
-import pytest
 from unittest import mock
+import pytest
 import insteon_mqtt as IM
 import helpers as H
 
