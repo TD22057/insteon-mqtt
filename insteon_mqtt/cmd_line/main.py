@@ -5,11 +5,11 @@
 #===========================================================================
 import argparse
 import sys
-import insteon_mqtt
 from .. import config
 from . import device
 from . import modem
 from . import start
+from ..version import __version__
 
 
 def parse_args(args):
@@ -19,7 +19,7 @@ def parse_args(args):
     p = argparse.ArgumentParser(prog="insteon-mqtt",
                                 description="Insteon<->MQTT tool")
     p.add_argument('-v', '--version', action='version', version='%(prog)s ' +
-                   insteon_mqtt.__version__)
+                   __version__)
     p.add_argument("config", metavar="config.yaml", help="Configuration "
                    "file to use.")
     sub = p.add_subparsers(help="Command help")
