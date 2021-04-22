@@ -161,6 +161,36 @@ class Test_FanLinc:
             payload='off', qos=0, retain=True)
 
     #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        # Fan doesn't have default values for fan_speed_topic or
+        # fan_speed_set_topic
+        mdev.load_config({
+            "fan_linc": {
+                "fan_speed_set_topic": "insteon/{{address}}/fan/speed/set",
+                "fan_speed_topic": "insteon/{{address}}/fan/speed/state"
+            },
+            "dimmer": {
+                "junk": "junk",
+            }
+        })
+        assert mdev.default_discovery_cls == "fan_linc"
+        assert mdev.rendered_topic_map == {
+            'manual_state_topic': None,
+            'on_off_topic': 'insteon/01.02.03/set',
+            'scene_topic': 'insteon/01.02.03/scene',
+            'state_topic': 'insteon/01.02.03/state',
+            'level_topic': 'insteon/01.02.03/level',
+            'fan_on_off_topic': 'insteon/01.02.03/fan/set',
+            'fan_speed_set_topic': 'insteon/01.02.03/fan/speed/set',
+            'fan_speed_topic': 'insteon/01.02.03/fan/speed/state',
+            'fan_state_topic': 'insteon/01.02.03/fan/state'
+        }
+        assert len(mdev.extra_topic_nums) == 0
+
+    #-----------------------------------------------------------------------
     def test_config(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
 
