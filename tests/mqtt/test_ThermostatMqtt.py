@@ -5,10 +5,28 @@
 # pylint: disable=protected-access, too-many-statements
 #===========================================================================
 import enum
+import pytest
+import helpers as H
 import insteon_mqtt as IM
 from insteon_mqtt.Signal import Signal
 from insteon_mqtt.mqtt.MsgTemplate import MsgTemplate
 
+
+@pytest.fixture
+def setup(mock_paho_mqtt, tmpdir):
+    proto = H.main.MockProtocol()
+    modem = H.main.MockModem(tmpdir)
+    addr = IM.Address(1, 2, 3)
+    name = "device name"
+    dev = IM.device.Thermostat(proto, modem, addr, name, None)
+
+    link = IM.network.Mqtt()
+    mqttModem = H.mqtt.MockModem()
+    mqtt = IM.mqtt.Mqtt(link, mqttModem)
+    mdev = IM.mqtt.Thermostat(mqtt, dev)
+
+    return H.Data(addr=addr, name=name, dev=dev, mdev=mdev, link=link,
+                  proto=proto)
 
 class Test_ThermostatMqtt:
     def test_basic(self):
@@ -171,6 +189,29 @@ class Test_ThermostatMqtt:
         thermo._input_cool_setpoint(None, None, message)
         assert round(device.cool_sp, 1) == 30
 
+    #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        mdev.load_config({"thermostat": {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "thermostat"
+        assert mdev.rendered_topic_map == {
+            'ambient_temp_topic': 'insteon/01.02.03/ambient_temp',
+            'cool_sp_command_topic': 'insteon/01.02.03/cool_sp_command',
+            'cool_sp_state_topic': 'insteon/01.02.03/cool_sp_state',
+            'energy_state_topic': 'insteon/01.02.03/energy_state',
+            'fan_command_topic': 'insteon/01.02.03/fan_command',
+            'fan_state_topic': 'insteon/01.02.03/fan_state',
+            'heat_sp_command_topic': 'insteon/01.02.03/heat_sp_command',
+            'heat_sp_state_topic': 'insteon/01.02.03/heat_sp_state',
+            'hold_state_topic': 'insteon/01.02.03/hold_state',
+            'humid_state_topic': 'insteon/01.02.03/humid_state',
+            'mode_command_topic': 'insteon/01.02.03/mode_command',
+            'mode_state_topic': 'insteon/01.02.03/mode_state',
+            'status_state_topic': 'insteon/01.02.03/status_state'
+        }
+        assert len(mdev.extra_topic_nums) == 0
 
 #===========================================================================
 class MockMqtt:
