@@ -31,6 +31,7 @@ class Test_DiscoveryTopic:
     #-----------------------------------------------------------------------
     def test_load_discovery_data(self, discovery, caplog):
         # This also fully tests _get_unique_id()
+        discovery.mqtt.discovery_enabled = True
 
         # test lack of discovery class
         config = {}

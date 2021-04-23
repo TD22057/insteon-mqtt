@@ -47,6 +47,10 @@ class DiscoveryTopic(BaseTopic):
           config (dict):  The mqtt section of the config dict.
           qos (int):  The default quality of service level to use.
         """
+        # Skip is discovery not enabled
+        if not self.mqtt.discovery_enabled:
+            return
+
         # Get the device specific discovery class
         disc_class = self.device.config_extra.get('discovery_class',
                                                   self.default_discovery_cls)
