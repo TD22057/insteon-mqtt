@@ -34,7 +34,7 @@ class DiscoveryTopic(BaseTopic):
 
         # This is a list of all of the discovery entries published by this
         # device
-        self.entries = []
+        self.disc_templates = []
 
     #-----------------------------------------------------------------------
     def load_discovery_data(self, config, qos=None):
@@ -89,8 +89,10 @@ class DiscoveryTopic(BaseTopic):
                                                     self.device.addr.hex,
                                                     unique_id)
             topic = entity.get('topic', default_topic)
-            self.entries.append(MsgTemplate(topic=topic, payload=payload,
-                                            qos=qos, retain=False))
+            self.disc_templates.append(MsgTemplate(topic=topic,
+                                                   payload=payload,
+                                                   qos=qos,
+                                                   retain=False))
 
     #-----------------------------------------------------------------------
     def discovery_template_data(self, **kwargs):
@@ -162,10 +164,12 @@ class DiscoveryTopic(BaseTopic):
             data['modem_addr'] = self.device.modem.addr.hex
 
         # Finally, render the device_info_template
-        device_info_template = jinja2.Template(self.mqtt.device_info_template)
         try:
+            device_info_template = jinja2.Template(
+                self.mqtt.device_info_template
+            )
             data['device_info_template'] = device_info_template.render(data)
-        except jinja2.exceptions.UndefinedError as exc:
+        except jinja2.exceptions.TemplateError as exc:
             LOG.error("Error rendering device_info_template: %s", exc)
             LOG.error("Template was: \n%s",
                       self.mqtt.device_info_template.strip())
@@ -191,7 +195,7 @@ class DiscoveryTopic(BaseTopic):
 
         data = self.discovery_template_data(**kwargs)
 
-        for entry in self.entries:
+        for entry in self.disc_templates:
             entry.publish(self.mqtt, data, retain=False)
 
     #-----------------------------------------------------------------------
@@ -210,13 +214,13 @@ class DiscoveryTopic(BaseTopic):
         Returns:
           unique_id (str) or None if there was an error.
         """
-        config_template = jinja2.Template(config)
         data = self.discovery_template_data()
         ret = None
         # First render template
         try:
+            config_template = jinja2.Template(config)
             config_rendered = config_template.render(data)
-        except jinja2.exceptions.UndefinedError as exc:
+        except jinja2.exceptions.TemplateError as exc:
             LOG.error("Error rendering config template: %s", exc)
             LOG.error("Template was: \n%s",
                       config.strip())

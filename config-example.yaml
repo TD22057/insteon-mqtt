@@ -204,8 +204,12 @@ mqtt:
   # Any additional variables that a specific device may offer are documented
   # in the comments below under that device class.
   #
-  # TO DISABLE THE DISCOVERY SERVICE: Comment out the line below by placing a
-  # hash character # at the start of the line.
+  # TO ENABLE THE DISCOVERY PLATFORM: Set the following to true
+  enable_discovery: false
+
+  # This defines the base topic for publishing discovery messages, likely
+  # does not need to be changed unless you changed your setting in
+  # HomeAssistant
   discovery_topic_base: 'homeassistant'
 
   # The mqtt topic to monitor for HomeAssistant status.  This likely doesn't

@@ -68,6 +68,9 @@ class Mqtt:
         # The command topic template (MstTemplate) to use.
         self._cmd_topic = None
 
+        # Enable discovery service
+        self.discovery_enabled = False
+
         # The HomeAssistant status topic to use.
         self._ha_status_topic = None
 
@@ -95,7 +98,7 @@ class Mqtt:
         - broker:    (str) The broker host to connect to.
         - port:      (int) Thr broker port to connect to.
         - username:  (str) Optional user name to log in with.
-        - passord:   (str) Optional password to log in with.
+        - password:  (str) Optional password to log in with.
 
         - qos:         (int) QOS level to use for sent messages (Default 1).
         - retain:      (bool) Retain sent messages (Default True)
@@ -124,9 +127,13 @@ class Mqtt:
             self.device_info_template = data['device_info_template']
 
         # Check to see that discovery_topic_base is set in config
-        self.discovery_topic_base = data.get('discovery_topic_base', None)
-        if self.discovery_topic_base is None:
-            LOG.debug("Discovery disabled, discovery_topic_base not defined.")
+        self.discovery_topic_base = data.get('discovery_topic_base',
+                                             "homeassistant")
+
+        # Check if discovery enabled
+        self.discovery_enabled = data.get('enable_discovery', False)
+        if not self.discovery_enabled:
+            LOG.debug("Discovery disabled via config setting.")
 
         # MQTT message parameters.
         self.qos = data.get('qos', self.qos)
@@ -391,7 +398,7 @@ class Mqtt:
         Args:
           device: the device to send the publish discovery command
         """
-        if self.discovery_topic_base is not None:
+        if self.discovery_enabled:
             if (hasattr(device, 'publish_discovery') and
                     callable(device.publish_discovery)):
                 device.publish_discovery()

@@ -50,6 +50,11 @@ class Modem(topic.SceneTopic, topic.DiscoveryTopic):
 
         self.load_scene_data(data, qos)
 
+        # Strip out the scene_topic, it is used in a different manner in the
+        # modem and is generated below in publish_discovery()
+        if 'scene_topic' in self.rendered_topic_map:
+            del self.rendered_topic_map['scene_topic']
+
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
         """Subscribe to any MQTT topics the object needs.
@@ -105,6 +110,7 @@ class Modem(topic.SceneTopic, topic.DiscoveryTopic):
                 # scene does not have a name
                 data['scene_name'] = ""
             data['scene'] = scene
-            self.entries[0].publish(self.mqtt, data, retain=False)
+            self.disc_templates[0].publish(self.mqtt, data.copy(),
+                                           retain=False)
 
     #-----------------------------------------------------------------------

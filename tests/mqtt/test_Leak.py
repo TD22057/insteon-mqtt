@@ -110,6 +110,22 @@ class Test_Leak:
         pytest.approx(t0, hb, 5)
 
     #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        mdev.load_config({"leak": {"junk": "junk"},
+                          "battery_sensor" : {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "leak"
+        assert mdev.rendered_topic_map == {
+            'wet_dry_topic': 'insteon/01.02.03/wet',
+            'heartbeat_topic': 'insteon/01.02.03/heartbeat',
+            'low_battery_topic': 'insteon/01.02.03/battery'
+        }
+        assert len(mdev.extra_topic_nums) == 0
+
+
+    #-----------------------------------------------------------------------
     def test_refresh_data(self, setup):
         # handle refresh will pass the level and not an is_on
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])

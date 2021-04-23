@@ -112,6 +112,22 @@ class Test_Motion:
             topic='%s/battery' % topic, payload='on', qos=0, retain=True)
 
     #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        mdev.load_config({"motion": {"junk": "junk"},
+                          "battery_sensor" : {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "motion"
+        assert mdev.rendered_topic_map == {
+            'dawn_dusk_topic': 'insteon/01.02.03/dawn',
+            'state_topic': 'insteon/01.02.03/state',
+            'heartbeat_topic': 'insteon/01.02.03/heartbeat',
+            'low_battery_topic': 'insteon/01.02.03/battery'
+        }
+        assert len(mdev.extra_topic_nums) == 0
+
+    #-----------------------------------------------------------------------
     def test_config(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
 
