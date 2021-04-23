@@ -8,61 +8,89 @@ All of these functions are idempotent, they can be run multiple times without ca
 
 > __Note__ Battery devices (e.g. motion sensors, remotes, etc) are normally sleeping and will not respond to commands sent to them.  If the commands below are sent to a battery device, the command will be queued and will attempt to be run the next time the device is awake. For more details, see [battery devices](battery_devices.md)
 
-1. __Join__ - This is necessary to allow the modem to talk to the device.  This needs to be done first on any new device or device that has been factory reset.  If you are seeing the error `Senders ID not in responders db. Try running 'join' again.`  You need to run `join`.
+1. __Join__ This is necessary to allow the modem to talk to the device.  This needs to be done first on any new device or device that has been factory reset.  If you are seeing the error `Senders ID not in responders db. Try running 'join' again.`
+   - To join a __single device__ run `join`.
 
-  _Command Line_
-  ```
-  insteon-mqtt config.yaml join aa.bb.cc
-  ```
-  _MQTT_
-  ```
-  Topic: /insteon/command/aa.bb.cc
-  Payload: { "cmd" : "join" }
-  ```
+    _Command Line_
+    ```
+    insteon-mqtt config.yaml join aa.bb.cc
+    ```
+    _MQTT_
+    ```
+    Topic: /insteon/command/aa.bb.cc
+    Payload: { "cmd" : "join" }
+    ```
+
+   - To join __all__ devices run `join_all`.  This may be necesary when first setting up a network.
+
+     _Command Line_
+     ```
+     insteon-mqtt config.yaml join-all
+     ```
+     _MQTT_
+     ```
+     Topic: /insteon/command/modem
+     Payload: { "cmd" : "join_all" }
+     ```
 
 2. __Pair__ - This adds links to the device so that the device knows to notify the modem of state changes.  If you do not see any activity in Insteon-MQTT when you manually activate a device, you should try running `pair` again.
 
-  _Command Line_
-  ```
-  insteon-mqtt config.yaml pair aa.bb.cc
-  ```
-  _MQTT_
-  ```
-  Topic: /insteon/command/aa.bb.cc
-  Payload: { "cmd" : "pair" }
-  ```
+   - To pair a __single device__ run `pair`.
 
-3. __Refresh__ - This downloads the 1) device link database, if necessary; 2) model information, if necessary; 3) the current state (e.g. on/off); and 4) other relevant details from the device.
+    _Command Line_
+    ```
+    insteon-mqtt config.yaml pair aa.bb.cc
+    ```
+    _MQTT_
+    ```
+    Topic: /insteon/command/aa.bb.cc
+    Payload: { "cmd" : "pair" }
+    ```
+
+   - To pair __all__ devices run `pair_all`.  This may be necesary when first setting up a network.
+
+      _Command Line_
+      ```
+      insteon-mqtt config.yaml pair-all
+      ```
+      _MQTT_
+      ```
+      Topic: /insteon/command/modem
+      Payload: { "cmd" : "pair_all" }
+      ```
+
+3. __Refresh__ - This downloads the 1) device link database, if necessary; 2) model information, if necessary; 3) the current state (e.g. on/off); and 4) other relevant details from the device.  It may take a few seconds per device to complete all of these steps.
   - `force` - this flag will cause the link database of to be refreshed even if it appears that our cached data is current.
 
   >If the device state is updated as a result of a `refresh` command the [reason](reason.md) string will be set to 'refresh'
 
-  _Command Line_
-  ```
-  insteon-mqtt config.yaml refresh aa.bb.cc [--force]
-  ```
-
-  _MQTT_
-   ```
-   Topic: /insteon/command/aa.bb.cc
-   Payload: { "cmd" : "refresh", ["force" : true/false] }
-   ```
-
  > If you manually add links to the device (e.g. by using some other device such as an ISY, or by using the set buttons on the device) you will need to run `refresh` again so that Insteon-MQTT can learn about these links.
 
-4. __Refresh-All__ - This is the same as the `refresh` command but it will be run on all devices configured in your `config.yaml` file. It is useful when first setting up a new network. This may take a while and __battery devices__ (motion sensors, remotes, etc) __will be refreshed the next time they wake up, if possible__.
-  - `force` - this flag will cause the link database of to be refreshed even if it appears that our cached data is current.
+   - To refresh a __single device__ run `refresh`.
 
-  _Command Line_
-   ```
-   insteon-mqtt config.yaml refresh-all [--force]
-   ```
+    _Command Line_
+    ```
+    insteon-mqtt config.yaml refresh aa.bb.cc [--force]
+    ```
 
-  _MQTT_
-   ```
-   Topic: /insteon/command/modem
-   Payload: { "cmd" : "refresh_all", ["force" : true/false] }
-   ```
+    _MQTT_
+     ```
+     Topic: /insteon/command/aa.bb.cc
+     Payload: { "cmd" : "refresh", ["force" : true/false] }
+     ```
+
+   - To refresh __all__ devices run `refresh_all`.  This may be necesary when first setting up a network.  __This may take a while to complete__
+
+    _Command Line_
+     ```
+     insteon-mqtt config.yaml refresh-all [--force]
+     ```
+
+    _MQTT_
+     ```
+     Topic: /insteon/command/modem
+     Payload: { "cmd" : "refresh_all", ["force" : true/false] }
+     ```
 
 ## Scene Commands
 

@@ -97,6 +97,11 @@ Supported: devices
 
 See [initialization](initializing.md) for a discussion of `join`.
 
+### Join all devices
+
+Supported: modem
+
+See [initialization](initializing.md) for a discussion of `join-all`.
 
 ### Pair a Device to the Modem
 
@@ -104,6 +109,11 @@ Supported: devices
 
 See [initialization](initializing.md) for a discussion of `pair`.
 
+### Pair all devices
+
+Supported: modem
+
+See [initialization](initializing.md) for a discussion of `pair-all`.
 
 ### Sync Device Links
 
