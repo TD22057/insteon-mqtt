@@ -84,6 +84,21 @@ class Test_SmokeBridge:
         link.client.clear()
 
     #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        mdev.load_config({"smoke_bridge": {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "smoke_bridge"
+        assert mdev.rendered_topic_map == {
+            'battery_topic': 'insteon/01.02.03/battery',
+            'co_topic': 'insteon/01.02.03/co',
+            'error_topic': 'insteon/01.02.03/error',
+            'smoke_topic': 'insteon/01.02.03/smoke'
+        }
+        assert len(mdev.extra_topic_nums) == 0
+
+    #-----------------------------------------------------------------------
     def test_config(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
 
