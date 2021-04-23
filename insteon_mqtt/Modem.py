@@ -420,7 +420,7 @@ class Modem:
         return device
 
     #-----------------------------------------------------------------------
-    def refresh_all(self, battery=False, force=False, on_done=None):
+    def refresh_all(self, force=False, on_done=None):
         """Refresh all the all link databases.
 
         This forces a refresh of the modem and device databases.  This can
@@ -447,18 +447,13 @@ class Modem:
 
         # Reload all the device databases.
         for device in self.devices.values():
-            if not battery and isinstance(device, (DevClass.BatterySensor,
-                                                   DevClass.Leak,
-                                                   DevClass.Remote)):
-                LOG.ui("Refresh all, skipping battery device %s", device.label)
-                continue
             seq.add(device.refresh, force)
 
         # Start the command sequence.
         seq.run()
 
     #-----------------------------------------------------------------------
-    def get_engine_all(self, battery=False, on_done=None):
+    def get_engine_all(self, on_done=None):
         """Run Get Engine on all the devices, except Modem
 
         Devices are assumed to be i2cs, which all new devices are.  If you
@@ -479,12 +474,6 @@ class Modem:
 
         # Reload all the device databases.
         for device in self.devices.values():
-            if not battery and isinstance(device, (DevClass.BatterySensor,
-                                                   DevClass.Leak,
-                                                   DevClass.Remote)):
-                LOG.ui("Get engine all, skipping battery device %s",
-                       device.label)
-                continue
             seq.add(device.get_engine)
 
         # Start the command sequence.
@@ -1155,18 +1144,8 @@ class Modem:
           { 'cmd' : 'COMMAND', ...args }
 
         where COMMAND is the command name and any additional arguments to the
-        command are other dictionary keywords.  Valid commands are:
-
-          getdb:  No arguments.  Download the PLM modem all link database
-                  and save it to file.
-
-          reload_all: No arguments.  Reloads the modem database and tells
-                      every device to reload it's database as well.
-
-          factory_reset: No arguments.  Full factory reset of the modem.
-
-          set_btn: Optional time_out argument (in seconds).  Simulates pressing
-                   the modem set button to put the modem in linking mode.
+        command are other dictionary keywords.  Valid commands are defined in
+        self.cmd_map.
 
         Args:
           kwargs:  Command dictionary containing the arguments.

@@ -50,19 +50,18 @@ All of these functions are idempotent, they can be run multiple times without ca
 
  > If you manually add links to the device (e.g. by using some other device such as an ISY, or by using the set buttons on the device) you will need to run `refresh` again so that Insteon-MQTT can learn about these links.
 
-4. __Refresh-All__ - This is the same as the `refresh` command but it will be run on all devices configured in your `config.yaml` file. It is useful when first setting up a new network. This may take a while and __battery devices__ (motion sensors, remotes, etc) __will be skipped__ by default.
+4. __Refresh-All__ - This is the same as the `refresh` command but it will be run on all devices configured in your `config.yaml` file. It is useful when first setting up a new network. This may take a while and __battery devices__ (motion sensors, remotes, etc) __will be refreshed the next time they wake up, if possible__.
   - `force` - this flag will cause the link database of to be refreshed even if it appears that our cached data is current.
-  - `battery` - this flag will cause battery devices to be refreshed. If a battery device is not awake, the message will be queued.
 
   _Command Line_
    ```
-   insteon-mqtt config.yaml refresh-all [--force] [--battery]
+   insteon-mqtt config.yaml refresh-all [--force]
    ```
 
   _MQTT_
    ```
    Topic: /insteon/command/modem
-   Payload: { "cmd" : "refresh_all", ["battery" : true/false, "force" : true/false] }
+   Payload: { "cmd" : "refresh_all", ["force" : true/false] }
    ```
 
 ## Scene Commands
