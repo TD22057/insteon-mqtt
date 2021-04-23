@@ -7,7 +7,7 @@ import json
 import os
 import sys
 import functools
-from .version import __version__
+from .const import __version__
 from .Address import Address
 from .CommandSeq import CommandSeq
 from . import config

@@ -25,7 +25,7 @@ from . import network
 from . import on_off
 from . import util
 
-from .version import __version__
+from .const import __version__
 
 from .Address import Address
 from .CommandSeq import CommandSeq

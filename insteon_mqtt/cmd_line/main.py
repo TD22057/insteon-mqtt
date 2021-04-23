@@ -9,7 +9,7 @@ from .. import config
 from . import device
 from . import modem
 from . import start
-from ..version import __version__
+from ..const import __version__
 
 
 def parse_args(args):
