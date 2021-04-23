@@ -4,7 +4,6 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
-import logging
 from unittest import mock
 import pytest
 import insteon_mqtt as IM
@@ -71,8 +70,8 @@ class Test_DiscoveryTopic:
         }]}
         discovery.load_discovery_data(config)
         expected_topic = "homeassistant/switch/11.22.33/unique/config"
-        assert discovery.entries[0].topic_str == expected_topic
-        discovery.entries = []
+        assert discovery.disc_templates[0].topic_str == expected_topic
+        discovery.disc_templates = []
 
         # test with uniq_id
         config['fake_dev'] = {'discovery_entities': [{
@@ -81,8 +80,8 @@ class Test_DiscoveryTopic:
         }]}
         discovery.load_discovery_data(config)
         expected_topic = "homeassistant/switch/11.22.33/unique2/config"
-        assert discovery.entries[0].topic_str == expected_topic
-        discovery.entries = []
+        assert discovery.disc_templates[0].topic_str == expected_topic
+        discovery.disc_templates = []
 
         # test bad json
         config['fake_dev'] = {'discovery_entities': [{
@@ -179,7 +178,7 @@ class Test_DiscoveryTopic:
 
     #-----------------------------------------------------------------------
     def test_publish(self, discovery, caplog):
-        discovery.entries.append(mock.Mock())
+        discovery.disc_templates.append(mock.Mock())
         discovery.publish_discovery()
         data = {'address': '11.22.33',
                 'name': '11.22.33',
@@ -193,6 +192,8 @@ class Test_DiscoveryTopic:
                 'firmware': 0,
                 'modem_addr': '20.30.40',
                 'device_info_template': ''}
-        discovery.entries[0].publish.assert_called_once_with(discovery.mqtt,
-                                                             data,
-                                                             retain=False)
+        discovery.disc_templates[0].publish.assert_called_once_with(
+            discovery.mqtt,
+            data,
+            retain=False
+        )
