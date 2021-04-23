@@ -81,6 +81,22 @@ def parse_args(args):
     sp.set_defaults(func=modem.get_engine_all)
 
     #---------------------------------------
+    # modem.join_all command
+    sp = sub.add_parser("join-all", help="Call join all on the devices "
+                        "in the configuration.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=modem.join_all)
+
+    #---------------------------------------
+    # modem.pair_all command
+    sp = sub.add_parser("pair-all", help="Call pair all on the devices "
+                        "in the configuration.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=modem.pair_all)
+
+    #---------------------------------------
     # modem.factory_reset command
     sp = sub.add_parser("factory-reset", help="Perform a remote factory "
                         "reset.  Currently only supported on the modem.")

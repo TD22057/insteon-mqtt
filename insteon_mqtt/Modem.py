@@ -83,6 +83,8 @@ class Modem:
             'refresh' : self.refresh,
             'refresh_all' : self.refresh_all,
             'get_engine_all' : self.get_engine_all,
+            'join_all' : self.join_all,
+            'pair_all' : self.pair_all,
             'get_model' : self.get_model,
             'linking' : self.linking,
             'scene' : self.scene,
@@ -429,8 +431,6 @@ class Modem:
         activity is expected on the network.
 
         Args:
-          battery (bool): If true, will scan battery devices as well, by
-                default they are skipped.
           force (bool):  Force flag passed to devices.  If True, devices
                 will refresh their Insteon db's even if they think the db
                 is up to date.
@@ -462,8 +462,6 @@ class Modem:
         this.
 
         Args:
-          battery (bool):  If True, will run on battery devices as well,
-                           defaults to skipping them.
           on_done:  Finished callback.  This is called when the command has
                     completed.  Signature is: on_done(success, msg, data)
         """
@@ -475,6 +473,52 @@ class Modem:
         # Reload all the device databases.
         for device in self.devices.values():
             seq.add(device.get_engine)
+
+        # Start the command sequence.
+        seq.run()
+
+    #-----------------------------------------------------------------------
+    def join_all(self, on_done=None):
+        """Call Join on all Devices
+
+        This calls join on all the devices.  This can take a little time.  It
+        is helpful when first setting up a network or replacing a PLM.
+
+        Args:
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+        """
+        # Set the error stop to false so a failed join doesn't stop the
+        # sequence from trying to join other devices.
+        seq = CommandSeq(self, "Join all complete", on_done,
+                         error_stop=False, name="JoinAll")
+
+        # Join all the device databases.
+        for device in self.devices.values():
+            seq.add(device.join)
+
+        # Start the command sequence.
+        seq.run()
+
+    #-----------------------------------------------------------------------
+    def pair_all(self, on_done=None):
+        """Call Pair on all Devices
+
+        This calls pair on all the devices.  This can take a little time.  It
+        is helpful when first setting up a network or replacing a PLM.
+
+        Args:
+          on_done:  Finished callback.  This is called when the command has
+                    completed.  Signature is: on_done(success, msg, data)
+        """
+        # Set the error stop to false so a failed pair doesn't stop the
+        # sequence from trying to pair other devices.
+        seq = CommandSeq(self, "Pair all complete", on_done,
+                         error_stop=False, name="PairAll")
+
+        # Pair all the device databases.
+        for device in self.devices.values():
+            seq.add(device.pair)
 
         # Start the command sequence.
         seq.run()
