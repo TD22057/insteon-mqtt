@@ -105,6 +105,7 @@ class Modem(topic.SceneTopic, topic.DiscoveryTopic):
                 # scene does not have a name
                 data['scene_name'] = ""
             data['scene'] = scene
-            self.entries[0].publish(self.mqtt, data, retain=False)
+            self.disc_templates[0].publish(self.mqtt, data.copy(),
+                                           retain=False)
 
     #-----------------------------------------------------------------------
