@@ -137,6 +137,9 @@ class DiscoveryTopic(BaseTopic):
         # Set up the variables that can be used in the templates.
         data = self.base_template_data(**kwargs)
 
+        # Remove periods from address
+        data['address'] = data['address'].replace(".", "_")
+
         # Insert Topics from topic classes
         data.update(self.rendered_topic_map)
 
