@@ -90,7 +90,7 @@ class DiscoveryTopic(BaseTopic):
             topic_base = self.mqtt.discovery_topic_base
             default_topic = "%s/%s/%s/%s/config" % (topic_base,
                                                     component,
-                                                    self.device.addr.hex,
+                                                    self.device.addr.hex.replace(".", "_"),
                                                     unique_id)
             topic = entity.get('topic', default_topic)
             self.disc_templates.append(MsgTemplate(topic=topic,
