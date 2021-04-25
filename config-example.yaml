@@ -759,7 +759,7 @@ mqtt:
           {
             "uniq_id": "{{address}}_wet",
             "name": "{{name_user_case}} leak",
-            "stat_t": "{{state_topic}}",
+            "stat_t": "{{wet_dry_topic}}",
             "device_class": "moisture",
             "device": {{device_info_template}}
           }
