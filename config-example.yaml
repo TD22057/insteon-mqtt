@@ -291,7 +291,7 @@ mqtt:
     #  {{scene}} - will be replaced with the scene number of the scene.
     #  {{scene_name}} - will be replaced with the name of the scene as defined
     #                   in a scenes.yaml file if used.
-    #  {{scene_topic}} - will be replaced by the scene topic for this scene.
+    #  {{scene_topic}} - is the modem scene topic
     #
     # Only scenes that appear in the GroupMap list when printing the modem db
     # will be included.  These are the only scenes for which the modem is
