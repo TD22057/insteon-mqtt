@@ -3,8 +3,10 @@
 # MQTT PLM modem device
 #
 #===========================================================================
+import re
 from .. import log
 from . import topic
+from .MsgTemplate import MsgTemplate
 LOG = log.get_logger()
 
 
@@ -41,19 +43,71 @@ class Modem(topic.SceneTopic, topic.DiscoveryTopic):
                  config is stored in config['modem'].
           qos (int):  The default quality of service level to use.
         """
-        # The discovery topic needs the full config
-        self.load_discovery_data(config, qos)
-
         data = config.get("modem", None)
         if not data:
             return
 
         self.load_scene_data(data, qos)
 
-        # Strip out the scene_topic, it is used in a different manner in the
-        # modem and is generated below in publish_discovery()
-        if 'scene_topic' in self.rendered_topic_map:
-            del self.rendered_topic_map['scene_topic']
+        # Load Discovery Data, Modem uses a slightly different process than
+        # all other devices.  It only uses a single template, but needs to
+        # pass a variable in the topic
+        if not self.mqtt.discovery_enabled:
+            return
+
+        class_config = config.get(self.default_discovery_cls, None)
+        if class_config is None:
+            LOG.error("%s - Unable to find discovery class %s",
+                      self.device.label, self.default_discovery_cls)
+            return
+
+        # Loop all of the discovery entities and append them to
+        # self.rendered_topic_map
+        entities = class_config.get('discovery_entities', None)
+        if entities is None or not isinstance(entities, list):
+            LOG.error("%s - No discovery_entities defined, or not a list %s",
+                      self.device.label, entities)
+            return
+
+        if len(entities) > 1:
+            LOG.warning("%s - Modem only uses the first discovery_entity, "
+                        "ignoring the rest %s", self.device.label, entities)
+
+        entity = entities[0]
+        component = entity.get('component', None)
+        if component is None:
+            LOG.error("%s - No component specified in discovery entity %s",
+                      self.device.label, entity)
+            return
+
+        payload = entity.get('config', None)
+        if payload is None:
+            LOG.error("%s - No config specified in discovery entity %s",
+                      self.device.label, entity)
+            return
+
+        # Get Unique ID from payload to use in topic
+        unique_id = self._get_unique_id(payload)
+        if unique_id is None:
+            LOG.error("%s - Error getting unique_id, skipping entry",
+                      self.device.label)
+            return
+
+        # HA's implementation of discovery only allows a very limited
+        # range of characters in the node_id and object_id fields.
+        # See line #30 of /homeassistant/components/mqtt/discovery.py
+        # Replace any not-allowed character with underscore
+        topic_base = self.mqtt.discovery_topic_base
+        address_safe = re.sub(r'[^a-zA-Z0-9_-]', '_', self.device.addr.hex)
+        unique_id_safe = re.sub(r'[^a-zA-Z0-9_-]', '_', unique_id)
+        default_topic = "%s/%s/%s/%s/config" % (topic_base,
+                                                component,
+                                                address_safe,
+                                                unique_id_safe + "_{{scene}}")
+        self.disc_templates.append(MsgTemplate(topic=default_topic,
+                                               payload=payload,
+                                               qos=qos,
+                                               retain=False))
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):

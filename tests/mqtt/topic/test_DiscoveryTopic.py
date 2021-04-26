@@ -31,6 +31,7 @@ class Test_DiscoveryTopic:
     #-----------------------------------------------------------------------
     def test_load_discovery_data(self, discovery, caplog):
         # This also fully tests _get_unique_id()
+        discovery.mqtt.discovery_enabled = True
 
         # test lack of discovery class
         config = {}
@@ -69,7 +70,7 @@ class Test_DiscoveryTopic:
             "config": '{"unique_id": "unique"}'
         }]}
         discovery.load_discovery_data(config)
-        expected_topic = "homeassistant/switch/11.22.33/unique/config"
+        expected_topic = "homeassistant/switch/11_22_33/unique/config"
         assert discovery.disc_templates[0].topic_str == expected_topic
         discovery.disc_templates = []
 
@@ -79,7 +80,7 @@ class Test_DiscoveryTopic:
             "config": '{"uniq_id": "unique2"}'
         }]}
         discovery.load_discovery_data(config)
-        expected_topic = "homeassistant/switch/11.22.33/unique2/config"
+        expected_topic = "homeassistant/switch/11_22_33/unique2/config"
         assert discovery.disc_templates[0].topic_str == expected_topic
         discovery.disc_templates = []
 
@@ -89,7 +90,7 @@ class Test_DiscoveryTopic:
             "config": "{'no_single': 'quotes'}"
         }]}
         discovery.load_discovery_data(config)
-        expected_topic = "homeassistant/switch/11.22.33/unique2/config"
+        expected_topic = "homeassistant/switch/11_22_33/unique2/config"
         assert 'Error parsing config as json' in caplog.text
         caplog.clear()
 
@@ -99,7 +100,7 @@ class Test_DiscoveryTopic:
             "config": "{% if bad_format = 1 %}"
         }]}
         discovery.load_discovery_data(config)
-        expected_topic = "homeassistant/switch/11.22.33/unique2/config"
+        expected_topic = "homeassistant/switch/11_22_33/unique2/config"
         assert 'Error rendering config template' in caplog.text
         caplog.clear()
 

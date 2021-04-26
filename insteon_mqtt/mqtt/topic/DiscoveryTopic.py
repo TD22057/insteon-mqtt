@@ -3,6 +3,7 @@
 # MQTT Discovery Topic
 #
 #===========================================================================
+import re
 import json
 import jinja2
 from ... import log
@@ -47,6 +48,10 @@ class DiscoveryTopic(BaseTopic):
           config (dict):  The mqtt section of the config dict.
           qos (int):  The default quality of service level to use.
         """
+        # Skip is discovery not enabled
+        if not self.mqtt.discovery_enabled:
+            return
+
         # Get the device specific discovery class
         disc_class = self.device.config_extra.get('discovery_class',
                                                   self.default_discovery_cls)
@@ -76,20 +81,25 @@ class DiscoveryTopic(BaseTopic):
                           self.device.label, entity)
                 continue
 
-            # Allowing topic to be settable in yaml, but I don't think users
-            # should worry about this, there is no utility in changing it
+            # Get Unique ID from payload to use in topic
             unique_id = self._get_unique_id(payload)
             if unique_id is None:
                 LOG.error("%s - Error getting unique_id, skipping entry",
                           self.device.label)
                 continue
+
+            # HA's implementation of discovery only allows a very limited
+            # range of characters in the node_id and object_id fields.
+            # See line #30 of /homeassistant/components/mqtt/discovery.py
+            # Replace any not-allowed character with underscore
             topic_base = self.mqtt.discovery_topic_base
+            address_safe = re.sub(r'[^a-zA-Z0-9_-]', '_', self.device.addr.hex)
+            unique_id_safe = re.sub(r'[^a-zA-Z0-9_-]', '_', unique_id)
             default_topic = "%s/%s/%s/%s/config" % (topic_base,
                                                     component,
-                                                    self.device.addr.hex,
-                                                    unique_id)
-            topic = entity.get('topic', default_topic)
-            self.disc_templates.append(MsgTemplate(topic=topic,
+                                                    address_safe,
+                                                    unique_id_safe)
+            self.disc_templates.append(MsgTemplate(topic=default_topic,
                                                    payload=payload,
                                                    qos=qos,
                                                    retain=False))

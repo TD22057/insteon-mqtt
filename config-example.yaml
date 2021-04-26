@@ -274,7 +274,7 @@ mqtt:
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
     scene_topic: 'insteon/modem/scene'
-    scene_payload: '{ "cmd" : "{{json.cmd.lower()}}",
+    scene_payload: '{ "cmd" : "{{json.state.lower()}}",
                       "group" : {{json.group}}
                     }'
 
@@ -291,7 +291,7 @@ mqtt:
     #  {{scene}} - will be replaced with the scene number of the scene.
     #  {{scene_name}} - will be replaced with the name of the scene as defined
     #                   in a scenes.yaml file if used.
-    #  {{scene_topic}} - will be replaced by the scene topic for this scene.
+    #  {{scene_topic}} - is the modem scene topic
     #
     # Only scenes that appear in the GroupMap list when printing the modem db
     # will be included.  These are the only scenes for which the modem is
@@ -483,7 +483,7 @@ mqtt:
     # in the same way clicking the button would.  The inputs are the same as
     # those for the on_off topic and payload.
     scene_topic: 'insteon/{{address}}/scene'
-    scene_payload: '{ "cmd" : "{{json.cmd.lower()}}"
+    scene_payload: '{ "cmd" : "{{json.state.lower()}}"
                       {% if json.brightness is defined %}
                           , "level" : {{json.brightness}}
                       {% endif %}
@@ -633,15 +633,6 @@ mqtt:
             "device_class": "battery",
             "device": {{device_info_template}}
           }
-      - component: 'sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_heartbeat",
-            "name": "{{name_user_case}} heartbeat",
-            "stat_t": "{{heartbeat_topic}}",
-            "device_class": "timestamp",
-            "device": {{device_info_template}}
-          }
       - component: 'binary_sensor'
         config: |-
           {
@@ -759,7 +750,7 @@ mqtt:
           {
             "uniq_id": "{{address}}_wet",
             "name": "{{name_user_case}} leak",
-            "stat_t": "{{state_topic}}",
+            "stat_t": "{{wet_dry_topic}}",
             "device_class": "moisture",
             "device": {{device_info_template}}
           }
@@ -893,15 +884,6 @@ mqtt:
             "device_class": "battery",
             "device": {{device_info_template}}
           }
-      - component: 'sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_heartbeat",
-            "name": "{{name_user_case}} heartbeat",
-            "stat_t": "{{heartbeat_topic}}",
-            "device_class": "timestamp",
-            "device": {{device_info_template}}
-          }
 
   #------------------------------------------------------------------------
   # Smoke Bridge
@@ -1028,10 +1010,10 @@ mqtt:
     #   fan_mode = "on", "off"
     #   is_fan_on = 0/1
     fan_state_topic: 'insteon/{{address}}/fan_state'
-    fan_state_payload: '{{fan_mode.upper()}}'
+    fan_state_payload: '{{fan_mode.lower()}}'
     #   mode = 'off', 'auto', 'heat', 'cool', 'program'
     mode_state_topic: 'insteon/{{address}}/mode_state'
-    mode_state_payload: '{{mode.upper()}}'
+    mode_state_payload: '{{mode.lower()}}'
     #   humid = humidity percentage
     humid_state_topic: 'insteon/{{address}}/humid_state'
     humid_state_payload: '{{humid}}'
@@ -1039,7 +1021,7 @@ mqtt:
     #   is_heating = 0/1
     #   is_cooling = 0/1
     status_state_topic: 'insteon/{{address}}/status_state'
-    status_state_payload: '{{status.upper()}}'
+    status_state_payload: '{{status.lower()}}'
     # Caution, there is no push update for the hold or energy state.  ie, if
     # you press hold on the physical device, you will not get any notice of
     # this unless you run get_status().  There is also no way to programatically
@@ -1047,12 +1029,12 @@ mqtt:
     #   hold_str = 'off', 'temp'
     #   is_hold = 0/1
     hold_state_topic: 'insteon/{{address}}/hold_state'
-    hold_state_payload: '{{hold_str.upper()}}'
+    hold_state_payload: '{{hold_str.lower()}}'
     # See caution in hold state above
     #   energy_str = 'off', 'on'
     #   is_energy = 0/1
     energy_state_topic: 'insteon/{{address}}/energ_state'
-    energy_state_payload: '{{energy_str.upper()}}'
+    energy_state_payload: '{{energy_str.lower()}}'
 
     # Command Topics
     # Available variables for templating all of these commands are:
@@ -1212,7 +1194,7 @@ mqtt:
         config: |-
           {
             "uniq_id": "{{address}}_fan",
-            "name": "{{name_user_case}} thermo",
+            "name": "{{name_user_case}} fan",
             "device": {{device_info_template}},
             "cmd_t": "{{fan_on_off_topic}}",
             "pct_cmd_t": "{{fan_speed_set_topic}}",
@@ -1421,7 +1403,7 @@ mqtt:
             "name": "{{name_user_case}} btn 2",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_2}}",
-            "stat_t": "{{btn_on_off_topic_2}}",
+            "stat_t": "{{btn_on_off_topic_2}}"
           }
       - component: 'switch'
         config: |-
@@ -1430,7 +1412,7 @@ mqtt:
             "name": "{{name_user_case}} btn 3",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_3}}",
-            "stat_t": "{{btn_on_off_topic_3}}",
+            "stat_t": "{{btn_on_off_topic_3}}"
           }
       - component: 'switch'
         config: |-
@@ -1439,7 +1421,7 @@ mqtt:
             "name": "{{name_user_case}} btn 4",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_4}}",
-            "stat_t": "{{btn_on_off_topic_4}}",
+            "stat_t": "{{btn_on_off_topic_4}}"
           }
       - component: 'switch'
         config: |-
@@ -1448,7 +1430,7 @@ mqtt:
             "name": "{{name_user_case}} btn 5",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_5}}",
-            "stat_t": "{{btn_on_off_topic_5}}",
+            "stat_t": "{{btn_on_off_topic_5}}"
           }
       - component: 'switch'
         config: |-
@@ -1457,7 +1439,7 @@ mqtt:
             "name": "{{name_user_case}} btn 6",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_6}}",
-            "stat_t": "{{btn_on_off_topic_6}}",
+            "stat_t": "{{btn_on_off_topic_6}}"
           }
       - component: 'switch'
         config: |-
@@ -1466,7 +1448,7 @@ mqtt:
             "name": "{{name_user_case}} btn 7",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_7}}",
-            "stat_t": "{{btn_on_off_topic_7}}",
+            "stat_t": "{{btn_on_off_topic_7}}"
           }
       - component: 'switch'
         config: |-
@@ -1475,7 +1457,7 @@ mqtt:
             "name": "{{name_user_case}} btn 8",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_8}}",
-            "stat_t": "{{btn_on_off_topic_8}}",
+            "stat_t": "{{btn_on_off_topic_8}}"
           }
       - component: 'switch'
         config: |-
@@ -1484,7 +1466,7 @@ mqtt:
             "name": "{{name_user_case}} btn 9",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_9}}",
-            "stat_t": "{{btn_on_off_topic_9}}",
+            "stat_t": "{{btn_on_off_topic_9}}"
           }
 
   #------------------------------------------------------------------------
@@ -1527,7 +1509,7 @@ mqtt:
     #   sensor_on_str = 'off'/'on'
     #   relay_on_str = 'off'/'on'
     state_topic: 'insteon/{{address}}/state'
-    state_payload: '{ "sensor" : "{{sensor_on_str.upper()}}", "relay" : {{relay_on_str.upper()}} }'
+    state_payload: '{ "sensor" : "{{sensor_on_str.lower()}}", "relay" : {{relay_on_str.lower()}} }'
 
     # Output relay state change topic and template.  This message is sent
     # whenever the device relay state changes.  Available variables for
@@ -1537,7 +1519,7 @@ mqtt:
     #   relay_on = 0/1
     #   relay_on_str = 'off'/'on'
     relay_state_topic: 'insteon/{{address}}/relay'
-    relay_state_payload: '{{relay_on_str.upper()}}'
+    relay_state_payload: '{{relay_on_str.lower()}}'
 
     # Output sensor state change topic and template.  This message is sent
     # whenever the device sensor state changes.  Available variables for
@@ -1547,7 +1529,7 @@ mqtt:
     #   sensor_on = 0/1
     #   sensor_on = 'off'/'on'
     sensor_state_topic: 'insteon/{{address}}/sensor'
-    sensor_state_payload: '{{sensor_on_str.upper()}}'
+    sensor_state_payload: '{{sensor_on_str.lower()}}'
 
     # Input on/off command.  This forces the relay on/off and ignores the
     # momentary-A,B,C setting.  Use this to force the relay to respond.

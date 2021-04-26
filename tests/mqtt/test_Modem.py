@@ -103,7 +103,9 @@ class Test_Modem:
         # Modem with no scenes should have no discovery topics
         mdev.load_config({"modem": {"junk": "junk"}})
         assert mdev.default_discovery_cls == "modem"
-        assert mdev.rendered_topic_map == {}
+        assert mdev.rendered_topic_map == {
+            'scene_topic': 'insteon/modem/scene'
+        }
         assert len(mdev.extra_topic_nums) == 0
 
     #-----------------------------------------------------------------------
