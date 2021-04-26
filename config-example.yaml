@@ -1212,7 +1212,7 @@ mqtt:
         config: |-
           {
             "uniq_id": "{{address}}_fan",
-            "name": "{{name_user_case}} thermo",
+            "name": "{{name_user_case}} fan",
             "device": {{device_info_template}},
             "cmd_t": "{{fan_on_off_topic}}",
             "pct_cmd_t": "{{fan_speed_set_topic}}",
