@@ -3,6 +3,7 @@
 # MQTT PLM modem device
 #
 #===========================================================================
+import re
 from .. import log
 from . import topic
 from .MsgTemplate import MsgTemplate
@@ -85,18 +86,24 @@ class Modem(topic.SceneTopic, topic.DiscoveryTopic):
                       self.device.label, entity)
             return
 
+        # Get Unique ID from payload to use in topic
         unique_id = self._get_unique_id(payload)
         if unique_id is None:
             LOG.error("%s - Error getting unique_id, skipping entry",
                       self.device.label)
             return
 
+        # HA's implementation of discovery only allows a very limited
+        # range of characters in the node_id and object_id fields.
+        # See line #30 of /homeassistant/components/mqtt/discovery.py
+        # Replace any not-allowed character with underscore
         topic_base = self.mqtt.discovery_topic_base
-        address_under = self.device.addr.hex.replace(".", "_")
+        address_safe = re.sub(r'[^a-zA-Z0-9_-]', '_', self.device.addr.hex)
+        unique_id_safe = re.sub(r'[^a-zA-Z0-9_-]', '_', unique_id)
         default_topic = "%s/%s/%s/%s/config" % (topic_base,
                                                 component,
-                                                address_under,
-                                                address_under + "_{{scene}}")
+                                                address_safe,
+                                                unique_id_safe + "_{{scene}}")
         self.disc_templates.append(MsgTemplate(topic=default_topic,
                                                payload=payload,
                                                qos=qos,
