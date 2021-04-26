@@ -5,7 +5,7 @@
 #===========================================================================
 from .. import log
 from . import topic
-from . import MsgTemplate
+from .MsgTemplate import MsgTemplate
 LOG = log.get_logger()
 
 
