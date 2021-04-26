@@ -5,6 +5,7 @@
 #===========================================================================
 from .. import log
 from . import topic
+from . import MsgTemplate
 LOG = log.get_logger()
 
 
@@ -41,14 +42,65 @@ class Modem(topic.SceneTopic, topic.DiscoveryTopic):
                  config is stored in config['modem'].
           qos (int):  The default quality of service level to use.
         """
-        # The discovery topic needs the full config
-        self.load_discovery_data(config, qos)
-
         data = config.get("modem", None)
         if not data:
             return
 
         self.load_scene_data(data, qos)
+
+        # Load Discovery Data, Modem uses a slightly different process than
+        # all other devices.  It only uses a single template, but needs to
+        # pass a variable in the topic
+        if not self.mqtt.discovery_enabled:
+            return
+
+        class_config = config.get(self.default_discovery_cls, None)
+        if class_config is None:
+            LOG.error("%s - Unable to find discovery class %s",
+                      self.device.label, self.default_discovery_cls)
+            return
+
+        # Loop all of the discovery entities and append them to
+        # self.rendered_topic_map
+        entities = class_config.get('discovery_entities', None)
+        if entities is None or not isinstance(entities, list):
+            LOG.error("%s - No discovery_entities defined, or not a list %s",
+                      self.device.label, entities)
+            return
+
+        if len(entities) > 1:
+            LOG.warning("%s - Modem only uses the first discovery_entity, "
+                        "ignoring the rest %s", self.device.label, entities)
+
+        entity = entities[0]
+        component = entity.get('component', None)
+        if component is None:
+            LOG.error("%s - No component specified in discovery entity %s",
+                      self.device.label, entity)
+            return
+
+        payload = entity.get('config', None)
+        if payload is None:
+            LOG.error("%s - No config specified in discovery entity %s",
+                      self.device.label, entity)
+            return
+
+        unique_id = self._get_unique_id(payload)
+        if unique_id is None:
+            LOG.error("%s - Error getting unique_id, skipping entry",
+                      self.device.label)
+            return
+
+        topic_base = self.mqtt.discovery_topic_base
+        address_under = self.device.addr.hex.replace(".", "_")
+        default_topic = "%s/%s/%s/%s/config" % (topic_base,
+                                                component,
+                                                address_under,
+                                                address_under + "_{{scene}}")
+        self.disc_templates.append(MsgTemplate(topic=default_topic,
+                                               payload=payload,
+                                               qos=qos,
+                                               retain=False))
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):
