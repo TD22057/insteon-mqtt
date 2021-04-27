@@ -4,6 +4,7 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
+import time
 import pytest
 import insteon_mqtt as IM
 import helpers as H
@@ -107,6 +108,8 @@ class Test_KeypadLinc:
 
         data = mdev.base_template_data(button=5)
         right = {"address" : addr.hex, "name" : name, "button" : 5}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=3, level=255, reason="something",
@@ -117,6 +120,7 @@ class Test_KeypadLinc:
                  "level_255" : 255, "level_100" : 100,
                  "mode" : "fast", "fast" : 1, "instant" : 0,
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=1, level=128,
@@ -125,6 +129,7 @@ class Test_KeypadLinc:
                  "on" : 1, "on_str" : "on", "reason" : "",
                  "level_255" : 128, "level_100" : 50,
                  "mode" : "instant", "fast" : 0, "instant" : 1}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=2, level=0, reason="foo")
@@ -132,6 +137,7 @@ class Test_KeypadLinc:
                  "on" : 0, "on_str" : "off", "reason" : "foo",
                  "level_255" : 0, "level_100" : 0,
                  "mode" : "normal", "fast" : 0, "instant" : 0}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=2, manual=IM.on_off.Manual.UP,
@@ -139,6 +145,7 @@ class Test_KeypadLinc:
         right = {"address" : addr.hex, "name" : name, "button" : 2,
                  "reason" : "HELLO", "manual_str" : "up", "manual" : 1,
                  "manual_openhab" : 2}
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------

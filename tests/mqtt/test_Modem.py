@@ -4,6 +4,7 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
+import time
 import pytest
 import insteon_mqtt as IM
 import helpers as H
@@ -58,6 +59,8 @@ class Test_Modem:
 
         data = mdev.base_template_data()
         right = {"address" : addr.hex, "name" : name}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------

@@ -4,6 +4,7 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
+import time
 import pytest
 import insteon_mqtt as IM
 import helpers as H
@@ -57,6 +58,8 @@ class Test_Remote:
 
         data = mdev.base_template_data(button=3)
         right = {"address" : addr.hex, "name" : name, "button" : 3}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=4, is_on=True,
@@ -67,6 +70,7 @@ class Test_Remote:
                  "mode" : "fast", "fast" : 1, "instant" : 0,
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1,
                  "reason": ''}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=4, is_on=False)
@@ -74,12 +78,14 @@ class Test_Remote:
                  "on" : 0, "on_str" : "off",
                  "mode" : "normal", "fast" : 0, "instant" : 0,
                  "reason": ''}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=5, manual=IM.on_off.Manual.UP)
         right = {"address" : addr.hex, "name" : name, "button" : 5,
                  "manual_str" : "up", "manual" : 1, "manual_openhab" : 2,
                  "reason": ''}
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------
