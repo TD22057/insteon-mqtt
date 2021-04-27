@@ -1403,7 +1403,7 @@ mqtt:
             "name": "{{name_user_case}} btn 2",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_2}}",
-            "stat_t": "{{btn_on_off_topic_2}}"
+            "stat_t": "{{btn_state_topic_2}}"
           }
       - component: 'switch'
         config: |-
@@ -1412,7 +1412,7 @@ mqtt:
             "name": "{{name_user_case}} btn 3",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_3}}",
-            "stat_t": "{{btn_on_off_topic_3}}"
+            "stat_t": "{{btn_state_topic_3}}"
           }
       - component: 'switch'
         config: |-
@@ -1421,7 +1421,7 @@ mqtt:
             "name": "{{name_user_case}} btn 4",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_4}}",
-            "stat_t": "{{btn_on_off_topic_4}}"
+            "stat_t": "{{btn_state_topic_4}}"
           }
       - component: 'switch'
         config: |-
@@ -1430,7 +1430,7 @@ mqtt:
             "name": "{{name_user_case}} btn 5",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_5}}",
-            "stat_t": "{{btn_on_off_topic_5}}"
+            "stat_t": "{{btn_state_topic_5}}"
           }
       - component: 'switch'
         config: |-
@@ -1439,7 +1439,7 @@ mqtt:
             "name": "{{name_user_case}} btn 6",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_6}}",
-            "stat_t": "{{btn_on_off_topic_6}}"
+            "stat_t": "{{btn_state_topic_6}}"
           }
       - component: 'switch'
         config: |-
@@ -1448,7 +1448,7 @@ mqtt:
             "name": "{{name_user_case}} btn 7",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_7}}",
-            "stat_t": "{{btn_on_off_topic_7}}"
+            "stat_t": "{{btn_state_topic_7}}"
           }
       - component: 'switch'
         config: |-
@@ -1457,7 +1457,7 @@ mqtt:
             "name": "{{name_user_case}} btn 8",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_8}}",
-            "stat_t": "{{btn_on_off_topic_8}}"
+            "stat_t": "{{btn_state_topic_8}}"
           }
       - component: 'switch'
         config: |-
@@ -1466,7 +1466,7 @@ mqtt:
             "name": "{{name_user_case}} btn 9",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_9}}",
-            "stat_t": "{{btn_on_off_topic_9}}"
+            "stat_t": "{{btn_state_topic_9}}"
           }
 
   #------------------------------------------------------------------------
