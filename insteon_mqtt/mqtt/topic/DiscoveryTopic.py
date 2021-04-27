@@ -200,7 +200,7 @@ class DiscoveryTopic(BaseTopic):
         Args:
           kwargs (dict): The arguments to pass to discovery_template_data
         """
-        LOG.info("MQTT received discovery %s on: %s",
+        LOG.info("Publishing discovery for %s kwargs: %s",
                  self.device.label, kwargs)
 
         data = self.discovery_template_data(**kwargs)
