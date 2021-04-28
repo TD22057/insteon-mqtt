@@ -333,6 +333,7 @@ mqtt:
     # the device state changes for any reason.  Available variables for
     # templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off'/'on'
@@ -408,6 +409,7 @@ mqtt:
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off'/'on'
@@ -438,6 +440,7 @@ mqtt:
     #             ["fast" : 1/0], ["instant" : 1/0], ["reason" : "..."] }
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
@@ -460,6 +463,7 @@ mqtt:
     #   LEVEL = 0->255 dimmer level
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
@@ -525,6 +529,7 @@ mqtt:
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off'/'on'
@@ -535,6 +540,7 @@ mqtt:
     # whenever the device detects a low battery. Available variables
     # for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   is_low = 0/1
     #   is_low_str = 'off'/'on'
@@ -544,6 +550,7 @@ mqtt:
     # Output heartbeat topic and payload.  This message is sent
     # every 24 hours. Available variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   is_heartbeat = 0/1
     #   heartbeat_time = UNIX time float of the last heartbeat
@@ -604,6 +611,7 @@ mqtt:
     # whenever the device light sensor detects dawn or dusk changes.
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   is_dawn = 0/1
     #   is_dawn_str = 'off'/'on'
@@ -663,6 +671,7 @@ mqtt:
     # or heart beat interval is obtained from the device.
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   batt_volt = raw insteon voltage level
 
@@ -734,6 +743,7 @@ mqtt:
     # whenever the device changes state to wet or dry.
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   is_wet = 0/1
     #   is_wet_str = 'off'/'on'
@@ -777,6 +787,7 @@ mqtt:
     # Output state change topic and template.  This message is sent
     # whenever a button is pressed.  Available variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   button = 1...n  (button number 1-8 depending on configuration)
     #   on = 0/1
@@ -913,6 +924,7 @@ mqtt:
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off'/'on'
@@ -996,6 +1008,7 @@ mqtt:
     # Output state change topic and payload.  Available variables for
     # templating in all cases are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     # The following specific variables only apply to the topics listed
     # directly below
@@ -1039,6 +1052,7 @@ mqtt:
     # Command Topics
     # Available variables for templating all of these commands are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
@@ -1142,6 +1156,7 @@ mqtt:
     # whenever the fan state changes for any reason.  Available
     # variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off'/'on'
@@ -1158,6 +1173,7 @@ mqtt:
     #   { "cmd" : "on"/"off", ["reason" : "..."] }
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
@@ -1181,6 +1197,7 @@ mqtt:
     #      or = "off"/"low"/"medium"/"high"
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
@@ -1260,6 +1277,7 @@ mqtt:
     # whenever one of the on/off buttons is pressed.  It will not be sent for
     # button 1 if it's a dimmer.  Available variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   button = 1-8
     #   on = 0/1
@@ -1275,6 +1293,7 @@ mqtt:
     # message is sent whenever the device dimmer state changes for any
     # reason.  Available variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   on = 0/1
     #   on_str = 'off'/'on'
@@ -1326,6 +1345,7 @@ mqtt:
     #   LEVEL = 0->255 dimmer level
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
@@ -1503,6 +1523,7 @@ mqtt:
     # the device sensor or device relay state changes.  Available variables for
     # templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   sensor_on = 0/1
     #   relay_on = 0/1
@@ -1515,6 +1536,7 @@ mqtt:
     # whenever the device relay state changes.  Available variables for
     # templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   relay_on = 0/1
     #   relay_on_str = 'off'/'on'
@@ -1525,6 +1547,7 @@ mqtt:
     # whenever the device sensor state changes.  Available variables for
     # templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   sensor_on = 0/1
     #   sensor_on = 'off'/'on'
@@ -1585,6 +1608,7 @@ mqtt:
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   button = 1 (top outlet) or 2 (bottom outlet)
     #   on = 0/1
@@ -1663,6 +1687,7 @@ mqtt:
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
     #   address = 'aa.bb.cc'
+    #   timestamp = the current timestamp
     #   name = 'device name'
     #   button = 1 to 4 (relay number)
     #   on = 0/1

@@ -4,6 +4,7 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
+import time
 import pytest
 import insteon_mqtt as IM
 import helpers as H
@@ -81,6 +82,8 @@ class Test_EZIO4O:
 
         data = mdev.base_template_data()
         right = {"address": addr.hex, "name": name}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(
@@ -97,6 +100,7 @@ class Test_EZIO4O:
             "fast": 1,
             "instant": 0,
         }
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(is_on=False, button=2)
@@ -111,6 +115,7 @@ class Test_EZIO4O:
             "fast": 0,
             "instant": 0,
         }
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(is_on=False, button=3)
@@ -125,6 +130,7 @@ class Test_EZIO4O:
             "fast": 0,
             "instant": 0,
         }
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(is_on=False, button=4)
@@ -139,6 +145,7 @@ class Test_EZIO4O:
             "fast": 0,
             "instant": 0,
         }
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------

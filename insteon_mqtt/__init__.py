@@ -10,7 +10,7 @@ __doc__ = """Insteon <-> MQTT bridge package
 For docs, see: https://www.github.com/TD22057/insteon-mqtt
 """
 
-__version__ = "0.8.3"
+#  __version__ is found in const.py
 
 #===========================================================================
 
@@ -24,6 +24,8 @@ from . import mqtt
 from . import network
 from . import on_off
 from . import util
+
+from .const import __version__
 
 from .Address import Address
 from .CommandSeq import CommandSeq

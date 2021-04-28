@@ -4,6 +4,7 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
+import time
 import pytest
 import insteon_mqtt as IM
 import helpers as H
@@ -56,16 +57,20 @@ class Test_Motion:
 
         data = mdev.template_data()
         right = {"address" : addr.hex, "name" : name}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         data = mdev.template_data(is_on=True, is_low=False)
         right = {"address" : addr.hex, "name" : name,
                  "on" : 1, "on_str" : "on",
                  "is_low" : 0, "is_low_str" : "off"}
+        del data['timestamp']
         assert data == right
 
         data = mdev.template_data_motion()
         right = {"address" : addr.hex, "name" : name}
+        del data['timestamp']
         assert data == right
 
         data = mdev.template_data_motion(is_dawn=True)
@@ -73,6 +78,7 @@ class Test_Motion:
                  "is_dawn" : 1, "is_dawn_str" : "on",
                  "is_dusk" : 0, "is_dusk_str" : "off",
                  "state": "dawn"}
+        del data['timestamp']
         assert data == right
 
         data = mdev.template_data_motion(is_dawn=False)
@@ -80,6 +86,7 @@ class Test_Motion:
                  "is_dawn" : 0, "is_dawn_str" : "off",
                  "is_dusk" : 1, "is_dusk_str" : "on",
                  "state": "dusk"}
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------

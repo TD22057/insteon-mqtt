@@ -4,6 +4,7 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
+import time
 import pytest
 import insteon_mqtt as IM
 import helpers as H
@@ -72,6 +73,8 @@ class Test_FanLinc:
 
         data = mdev.base_template_data()
         right = {"address" : addr.hex, "name" : name}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(level=0x55, mode=IM.on_off.Mode.FAST,
@@ -82,6 +85,7 @@ class Test_FanLinc:
                  "level_255" : 85, "level_100" : 33,
                  "mode" : "fast", "fast" : 1, "instant" : 0,
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(level=0x00)
@@ -89,11 +93,13 @@ class Test_FanLinc:
                  "on" : 0, "on_str" : "off", "reason" : "",
                  "level_255" : 0, "level_100" : 0,
                  "mode" : "normal", "fast" : 0, "instant" : 0}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(manual=IM.on_off.Manual.UP)
         right = {"address" : addr.hex, "name" : name, "reason" : "",
                  "manual_str" : "up", "manual" : 1, "manual_openhab" : 2}
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------
@@ -102,30 +108,36 @@ class Test_FanLinc:
 
         data = mdev.fan_template_data()
         right = {"address" : addr.hex, "name" : name}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         data = mdev.fan_template_data(level=dev.Speed.OFF, reason="hello")
         right = {"address" : addr.hex, "name" : name,
                  "on" : 0, "on_str" : "off", "reason" : "hello",
                  "level" : 0, "level_str" : 'off'}
+        del data['timestamp']
         assert data == right
 
         data = mdev.fan_template_data(level=dev.Speed.LOW)
         right = {"address" : addr.hex, "name" : name,
                  "on" : 1, "on_str" : "on", "reason" : "",
                  "level" : 1, "level_str" : 'low'}
+        del data['timestamp']
         assert data == right
 
         data = mdev.fan_template_data(level=dev.Speed.MEDIUM)
         right = {"address" : addr.hex, "name" : name,
                  "on" : 1, "on_str" : "on", "reason" : "",
                  "level" : 2, "level_str" : 'medium'}
+        del data['timestamp']
         assert data == right
 
         data = mdev.fan_template_data(level=dev.Speed.HIGH, reason="foo")
         right = {"address" : addr.hex, "name" : name,
                  "on" : 1, "on_str" : "on", "reason" : "foo",
                  "level" : 3, "level_str" : 'high'}
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------

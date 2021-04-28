@@ -4,6 +4,7 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
+import time
 import pytest
 import insteon_mqtt as IM
 import helpers as H
@@ -61,6 +62,8 @@ class Test_IOLinc:
 
         data = mdev.base_template_data()
         right = {"address" : addr.hex, "name" : name}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=1, is_on=True)
@@ -69,6 +72,7 @@ class Test_IOLinc:
                  "fast": 0, "instant": 0, "mode": "normal", "on": 1,
                  "on_str": "on", "reason": "", "relay_on": 0,
                  "relay_on_str" : "off"}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=2, is_on=True)
@@ -77,6 +81,7 @@ class Test_IOLinc:
                  "fast": 0, "instant": 0, "mode": "normal", "on": 1,
                  "on_str": "on", "reason": "", "relay_on": 1,
                  "relay_on_str" : "on"}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=1, is_on=False)
@@ -85,6 +90,7 @@ class Test_IOLinc:
                  "fast": 0, "instant": 0, "mode": "normal", "on": 0,
                  "on_str": "off", "reason": "", "relay_on": 0,
                  "relay_on_str" : "off"}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=2, is_on=False)
@@ -93,6 +99,7 @@ class Test_IOLinc:
                  "fast": 0, "instant": 0, "mode": "normal", "on": 0,
                  "on_str": "off", "reason": "", "relay_on": 0,
                  "relay_on_str" : "off"}
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------

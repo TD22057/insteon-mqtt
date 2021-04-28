@@ -5,11 +5,11 @@
 #===========================================================================
 import argparse
 import sys
-import insteon_mqtt
 from .. import config
 from . import device
 from . import modem
 from . import start
+from ..const import __version__
 
 
 def parse_args(args):
@@ -19,7 +19,7 @@ def parse_args(args):
     p = argparse.ArgumentParser(prog="insteon-mqtt",
                                 description="Insteon<->MQTT tool")
     p.add_argument('-v', '--version', action='version', version='%(prog)s ' +
-                   insteon_mqtt.__version__)
+                   __version__)
     p.add_argument("config", metavar="config.yaml", help="Configuration "
                    "file to use.")
     sub = p.add_subparsers(help="Command help")
@@ -42,9 +42,6 @@ def parse_args(args):
                         "in the configuration.")
     sp.add_argument("-f", "--force", action="store_true",
                     help="Force the modem/device database to be downloaded.")
-    sp.add_argument("--battery", action="store_true",
-                    help="Refresh battery devices too, by default they are "
-                    "skipped.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
     sp.set_defaults(func=modem.refresh_all)
@@ -79,12 +76,25 @@ def parse_args(args):
     # modem.get_engine_all command
     sp = sub.add_parser("get-engine-all", help="Call get-engine on the "
                         "devices in the configuration.")
-    sp.add_argument("--battery", action="store_true",
-                    help="Run get-engine on battery devices too, by default "
-                         "they are skipped.")
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
     sp.set_defaults(func=modem.get_engine_all)
+
+    #---------------------------------------
+    # modem.join_all command
+    sp = sub.add_parser("join-all", help="Call join all on the devices "
+                        "in the configuration.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=modem.join_all)
+
+    #---------------------------------------
+    # modem.pair_all command
+    sp = sub.add_parser("pair-all", help="Call pair all on the devices "
+                        "in the configuration.")
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=modem.pair_all)
 
     #---------------------------------------
     # modem.factory_reset command

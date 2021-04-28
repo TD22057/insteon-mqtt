@@ -57,6 +57,8 @@ class Test_Leak:
 
         data = mdev.template_data()
         right = {"address" : addr.hex, "name" : name}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         t0 = time.time()
@@ -64,6 +66,7 @@ class Test_Leak:
         right = {"address" : addr.hex, "name" : name,
                  "is_heartbeat" : 1, "is_heartbeat_str" : "on"}
         hb = data.pop('heartbeat_time')
+        del data['timestamp']
         assert data == right
         pytest.approx(t0, hb, 5)
 
@@ -73,6 +76,7 @@ class Test_Leak:
                  "is_dry" : 1, "is_dry_str" : "on", "button": 2,
                  "fast": 0, "instant": 0, "mode": 'normal', "on": 0,
                  "on_str": 'off', "reason": ''}
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------

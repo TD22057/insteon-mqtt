@@ -4,6 +4,7 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
+import time
 import pytest
 import insteon_mqtt as IM
 import helpers as H
@@ -56,12 +57,15 @@ class Test_BatterySensor:
 
         data = mdev.template_data()
         right = {"address" : addr.hex, "name" : name}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         data = mdev.template_data(is_on=True, is_low=False)
         right = {"address" : addr.hex, "name" : name,
                  "on" : 1, "on_str" : "on",
                  "is_low" : 0, "is_low_str" : "off"}
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------
