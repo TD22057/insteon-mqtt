@@ -7,7 +7,7 @@ import json
 import os
 import sys
 import functools
-import insteon_mqtt
+from .const import __version__
 from .Address import Address
 from .CommandSeq import CommandSeq
 from . import config
@@ -256,7 +256,7 @@ class Modem:
           Default Topic: 'insteon/command/modem'
           Payload: '{"cmd": "version"}'
         """
-        on_done(True, insteon_mqtt.__version__, None)
+        on_done(True, __version__, None)
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, on_done=None):
