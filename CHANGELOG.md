@@ -1,5 +1,35 @@
 # Revision Change History
 
+## [0.9.0]
+
+### Discovery Platform!
+
+- Added support for the [HomeAssistant Discovery Protocol](https://www.home-assistant.io/docs/mqtt/discovery/).
+  This allows users to avoid defining insteon entities in their
+  HomeAssistant configuration.
+
+  __NOTE__ Migrating from a functional installation to the Discovery Platform
+  will be __tedious__ and may not add much functionality.  The next minor
+  release of InsteonMQTT should improve this slightly, as it will apply
+  default config settings, so you won't have to do as much copy and pasting.
+  It may be worth waiting until then if you are interested in migrating.
+
+### Additions
+
+- Added `join_all` and `pair_all` commands to improve the experience when
+  initializing a network or setting up many devices.  Note, the
+  _skip battery devices_ option was __removed__ from the `refresh_all` and
+  `get_engine_all` commands.  ([PR 389][P389])
+- Add a `{{timestamp}}` variable to templating.  Will output the current
+  timestamp.  Useful for testing whether a received state change was triggered
+  by a change, or is simply a retained mqtt message that has been resent
+  because of a restart. ([PR 393][P393])
+
+### Fixes
+
+- Fix cyclic import error([PR 388][P388])
+- Save DB Delta on Refresh([PR 392][P392])
+
 ## [0.8.3]
 
 ### Breaking Change in HomeAssistant
@@ -7,7 +37,7 @@
 - HomeAssistant version 2021.4.0 now only supports percentages for fan
   speeds.  This means any fan entities in HomeAssistant that were configured
   to use "low", "medium", and "high" for the fan speed will no longer work.
-  See [config-example.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/config-example.yaml) 
+  See [config-example.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/config-example.yaml)
   under the `mqtt -> fan` section for a suggest configuration in
   HomeAssistant.  Thanks @Juggler00 ([PR 378][P378])
 
@@ -16,7 +46,7 @@
 - Adds and advanced option for setting the minimum hop count
   for specific devices.  See [min_hops][config_extra] ([PR 376][P376])
 
-- Adds a bunch of documentation including [Templating Guide][TGuide] 
+- Adds a bunch of documentation including [Templating Guide][TGuide]
   and [Debugging][DbgGuide] as well as additions to other existing pages.
   Also reorganized the documentation to try and make it easier
   to find.
@@ -124,7 +154,7 @@ the program.
   [Hub Instructions](https://github.com/TD22057/insteon-mqtt/blob/dev/docs/hub.md)
   ([PR 201][P201])
 
-- Significantly improved Home Assistant Add-on installation!  
+- Significantly improved Home Assistant Add-on installation!
   [Instructions](docs/HA_Addon_Instructions.md) Includes update notifications,
   nicer icons, and better integration into Home Assistant. [PR 290][P290]
 
@@ -219,7 +249,7 @@ the program.
   (thanks @tstabrawa)([PR 234][P234])
 
 - Database delta is updated on database writes.  This eliminates a number of
-  unnecessary refresh requirements, particularly around pairing.  
+  unnecessary refresh requirements, particularly around pairing.
   ([PR 248][P248])
 
 - Minor fix to the calculation of hops on resent messages.  ([PR 259][P259])
@@ -677,3 +707,8 @@ will add new features.
 [config_extra]: https://github.com/TD22057/insteon-mqtt/blob/master/docs/config_extra.md
 [P376]: https://github.com/TD22057/insteon-mqtt/pull/376
 [P378]: https://github.com/TD22057/insteon-mqtt/pull/378
+[P388]: https://github.com/TD22057/insteon-mqtt/pull/388
+[P389]: https://github.com/TD22057/insteon-mqtt/pull/389
+[P390]: https://github.com/TD22057/insteon-mqtt/pull/390
+[P392]: https://github.com/TD22057/insteon-mqtt/pull/392
+[P393]: https://github.com/TD22057/insteon-mqtt/pull/393
