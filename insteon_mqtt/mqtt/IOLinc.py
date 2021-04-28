@@ -10,7 +10,7 @@ from . import topic
 LOG = log.get_logger()
 
 
-class IOLinc(topic.StateTopic, topic.SetTopic):
+class IOLinc(topic.StateTopic, topic.SetTopic, topic.DiscoveryTopic):
     """MQTT interface to an Insteon IOLinc device.
 
     This class connects to a device.IOLinc object and converts it's
@@ -40,6 +40,9 @@ class IOLinc(topic.StateTopic, topic.SetTopic):
 
         device.signal_state.connect(self._insteon_on_off)
 
+        # This defines the default discovery_class for these devices
+        self.default_discovery_cls = "io_linc"
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -49,6 +52,9 @@ class IOLinc(topic.StateTopic, topic.SetTopic):
                  config is stored in config['io_linc'].
           qos (int):  The default quality of service level to use.
         """
+        # The discovery topic needs the full config
+        self.load_discovery_data(config, qos)
+
         data = config.get("io_linc", None)
         if not data:
             return
@@ -59,6 +65,17 @@ class IOLinc(topic.StateTopic, topic.SetTopic):
         self.msg_sensor_state.load_config(data, 'sensor_state_topic',
                                           'sensor_state_payload', qos)
         self.load_set_data(data, qos)
+
+        # Add our unique topics to the discovery topic map
+        topics = {}
+        var_data = self.base_template_data()
+        topics['relay_state_topic'] = self.msg_relay_state.render_topic(
+            var_data
+        )
+        topics['sensor_state_topic'] = self.msg_sensor_state.render_topic(
+            var_data
+        )
+        self.rendered_topic_map.update(topics)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):

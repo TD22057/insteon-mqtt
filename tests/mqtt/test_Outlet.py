@@ -103,6 +103,21 @@ class Test_Outlet:
         link.client.clear()
 
     #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        mdev.load_config({"outlet": {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "outlet"
+        assert mdev.rendered_topic_map == {
+            'on_off_topic_1': 'insteon/01.02.03/set/1',
+            'on_off_topic_2': 'insteon/01.02.03/set/2',
+            'state_topic_1': 'insteon/01.02.03/state/1',
+            'state_topic_2': 'insteon/01.02.03/state/2'
+        }
+        assert len(mdev.extra_topic_nums) == 2
+
+    #-----------------------------------------------------------------------
     def test_config(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
 

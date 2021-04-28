@@ -80,7 +80,7 @@ class Test_DeviceEntry:
         device = IM.device.base.Base(protocol, modem, addr, name="Awesomesauce")
         modem.set_linked_device(device)
 
-        assert obj.label == "12.34.ab (Awesomesauce)"
+        assert obj.label == "12.34.ab (awesomesauce)"
 
     #-----------------------------------------------------------------------
     def test_repr(self):

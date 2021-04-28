@@ -112,6 +112,13 @@ class Modem:
         # to each device.
         self.protocol.signal_received.connect(self.handle_received)
 
+        # For compatibility with devices, this is empty.  The Modem does not
+        # use config_extra settings.
+        self.config_extra = {}
+
+        # A prettier name for the modem
+        self.name_user_case = "Modem"
+
     #-----------------------------------------------------------------------
     def clear_db_config(self):
         """Clears and initializes the device config database

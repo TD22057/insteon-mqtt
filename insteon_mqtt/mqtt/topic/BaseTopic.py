@@ -22,6 +22,20 @@ class BaseTopic:
         self.mqtt = mqtt
         self.device = device
 
+        # This defines the default class name that is used when searching for
+        # discovery templates.
+        self.default_discovery_cls = None
+
+        # Any topics added here are available in discovery templates using the
+        # key as the variable name.  The key should be the yaml key for the
+        # topic
+        self.rendered_topic_map = {}
+
+        # This should be a list of group numbers for which state, set, and
+        # scene topics will be generated such as state_topic_1, if empty
+        # only the default state topics and command topics will be generated
+        self.extra_topic_nums = []
+
     #-----------------------------------------------------------------------
     def base_template_data(self, **kwargs):
         """Create the Jinja templating data variables for use in topics.

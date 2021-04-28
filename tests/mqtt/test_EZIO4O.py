@@ -177,6 +177,25 @@ class Test_EZIO4O:
         link.client.clear()
 
     #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        mdev.load_config({"ezio4o": {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "ezio4o"
+        assert mdev.rendered_topic_map == {
+            'on_off_topic_1': 'insteon/01.02.03/set/1',
+            'on_off_topic_2': 'insteon/01.02.03/set/2',
+            'on_off_topic_3': 'insteon/01.02.03/set/3',
+            'on_off_topic_4': 'insteon/01.02.03/set/4',
+            'state_topic_1': 'insteon/01.02.03/state/1',
+            'state_topic_2': 'insteon/01.02.03/state/2',
+            'state_topic_3': 'insteon/01.02.03/state/3',
+            'state_topic_4': 'insteon/01.02.03/state/4'
+        }
+        assert len(mdev.extra_topic_nums) == 4
+
+    #-----------------------------------------------------------------------
     def test_config(self, setup):
         mdev, dev, link = setup.getAll(["mdev", "dev", "link"])
 

@@ -4,7 +4,7 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
-import time
+from unittest import mock
 import pytest
 import insteon_mqtt as IM
 import helpers as H
@@ -54,13 +54,12 @@ class Test_Modem:
             topic='insteon/modem/scene')
 
     #-----------------------------------------------------------------------
+    @mock.patch('time.time', mock.MagicMock(return_value=12345))
     def test_template(self, setup):
         mdev, addr, name = setup.getAll(['mdev', 'addr', 'name'])
 
         data = mdev.base_template_data()
-        right = {"address" : addr.hex, "name" : name}
-        assert data['timestamp'] - time.time() <= 1
-        del data['timestamp']
+        right = {"address" : addr.hex, "name" : name, "timestamp": 12345}
         assert data == right
 
     #-----------------------------------------------------------------------
@@ -96,6 +95,94 @@ class Test_Modem:
 
         # test error payload
         link.publish(topic, b'asdf', qos, False)
+
+    #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, link = setup.getAll(['mdev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        # Modem with no scenes should have no discovery topics
+        mdev.load_config({"modem": {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "modem"
+        assert mdev.rendered_topic_map == {
+            'scene_topic': 'insteon/modem/scene'
+        }
+        assert len(mdev.extra_topic_nums) == 0
+
+    #-----------------------------------------------------------------------
+    @mock.patch('time.time', mock.MagicMock(return_value=12345))
+    def test_discovery_publish(self, setup):
+        mdev, link = setup.getAll(['mdev', 'link'])
+
+        # First generate our discovery template
+        unique_id = "{{address}}_{{scene}}"
+        topic = "homeassistant/switch/%s/%s/config" % (
+            setup.addr.hex,
+            unique_id
+        )
+        payload = """
+          {
+            "uniq_id": "{{address}}_{{scene}}",
+            "name": "{%- if scene_name != "" -%}
+                       {{scene_name}}
+                     {%- else -%}
+                       Modem Scene {{scene}}
+                     {%- endif -%}",
+            "cmd_t": "{{scene_topic}}",
+            "device": {{device_info_template}},
+            "payload_on": "{\"cmd\": \"on\", \"group\": \"{{scene}}\"}",
+            "payload_off": "{\"cmd\": \"off\", \"group\": \"{{scene}}\"}"
+          }
+        """
+        mdev.disc_templates.append(IM.mqtt.MsgTemplate(topic=topic,
+                                                       payload=payload,
+                                                       qos=1,
+                                                       retain=False))
+
+        # Second add some fake groups
+        mdev.device.db.groups[1] = ['junk']
+        mdev.device.db.groups[2] = ['junk']
+        mdev.device.db.groups[0x10] = ['junk']
+
+        # Third add a name to one of the fake groups
+        mdev.device.scene_map['test_name'] = 0x10
+
+        # Fourth, mock the publish call on MsgTemplate
+        mdev.disc_templates[0].publish = mock.Mock()
+        mocked = mdev.disc_templates[0].publish
+
+        # Finally call publish_discovery() and test results
+        mdev.publish_discovery()
+        assert mocked.call_count == 2
+
+        # The expected template data
+        data = {
+            'address': '20.30.40',
+            'dev_cat': 0,
+            'dev_cat_name': 'Unknown',
+            'device_info_template': '',
+            'engine': 'Unknown',
+            'firmware': 0,
+            'model_description': 'Unknown',
+            'model_number': 'Unknown',
+            'modem_addr': '20.30.40',
+            'name': 'modem',
+            'name_user_case': 'Modem',
+            'scene': 0,
+            'scene_name': '',
+            'sub_cat': 0,
+            'timestamp': 12345
+        }
+
+
+        # One call should be group 2 with no name
+        data['scene'] = 2
+        mocked.assert_any_call(mdev.mqtt, data, retain=False)
+
+        # Other call should be group 16 with name of 'test_name'
+        data['scene'] = 16
+        data['scene_name'] = 'test_name'
+        mocked.assert_any_call(mdev.mqtt, data, retain=False)
 
 
 #===========================================================================

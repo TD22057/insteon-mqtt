@@ -112,6 +112,29 @@ class Test_Remote:
         assert len(link.client.pub) == 0
 
     #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        mdev.load_config({"remote": {"junk": "junk"},
+                          "battery_sensor" : {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "remote"
+        assert mdev.rendered_topic_map == {
+            'heartbeat_topic': 'insteon/01.02.03/heartbeat',
+            'low_battery_topic': 'insteon/01.02.03/battery',
+            'manual_state_topic': None,
+            'state_topic_1': 'insteon/01.02.03/state/1',
+            'state_topic_2': 'insteon/01.02.03/state/2',
+            'state_topic_3': 'insteon/01.02.03/state/3',
+            'state_topic_4': 'insteon/01.02.03/state/4',
+            'state_topic_5': 'insteon/01.02.03/state/5',
+            'state_topic_6': 'insteon/01.02.03/state/6',
+            'state_topic_7': 'insteon/01.02.03/state/7',
+            'state_topic_8': 'insteon/01.02.03/state/8'
+        }
+        assert len(mdev.extra_topic_nums) == 8
+
+    #-----------------------------------------------------------------------
     def test_config(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
 

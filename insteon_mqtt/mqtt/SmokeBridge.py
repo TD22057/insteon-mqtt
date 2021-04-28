@@ -5,12 +5,13 @@
 #===========================================================================
 from .. import log
 from .. import device as IDev
+from . import topic
 from .MsgTemplate import MsgTemplate
 
 LOG = log.get_logger()
 
 
-class SmokeBridge:
+class SmokeBridge(topic.DiscoveryTopic):
     """MQTT interface to an Insteon smoke bridge.
 
     This class connects to a device.SmokeBridge object and converts it's
@@ -25,8 +26,8 @@ class SmokeBridge:
           mqtt (mqtt.Mqtt):  The MQTT main interface.
           device (device.SmokeBridge):  The Insteon object to link to.
         """
-        self.mqtt = mqtt
-        self.device = device
+        # Setup the BaseTopic
+        super().__init__(mqtt, device)
 
         # Set up the default templates for the MQTT messages and payloads.
         self.msg_smoke = MsgTemplate(
@@ -45,6 +46,9 @@ class SmokeBridge:
         # Receive notifications from the Insteon device when it changes.
         device.signal_on_off.connect(self._insteon_change)
 
+        # This defines the default discovery_class for these devices
+        self.default_discovery_cls = "smoke_bridge"
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -54,6 +58,9 @@ class SmokeBridge:
                  config is stored in config['smoke_bridge'].
           qos (int):  The default quality of service level to use.
         """
+        # The discovery topic needs the full config
+        self.load_discovery_data(config, qos)
+
         data = config.get("smoke_bridge", None)
         if not data:
             return
@@ -64,6 +71,15 @@ class SmokeBridge:
         self.msg_battery.load_config(data, 'battery_topic', 'battery_payload',
                                      qos)
         self.msg_error.load_config(data, 'error_topic', 'error_payload', qos)
+
+        # Add our unique topics to the discovery topic map
+        topics = {}
+        var_data = self.base_template_data()
+        topics['smoke_topic'] = self.msg_smoke.render_topic(var_data)
+        topics['co_topic'] = self.msg_co.render_topic(var_data)
+        topics['battery_topic'] = self.msg_battery.render_topic(var_data)
+        topics['error_topic'] = self.msg_error.render_topic(var_data)
+        self.rendered_topic_map.update(topics)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):

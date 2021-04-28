@@ -142,6 +142,22 @@ class Test_IOLinc:
         link.client.clear()
 
     #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        mdev.load_config({"io_linc": {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "io_linc"
+        assert mdev.rendered_topic_map == {
+            'on_off_topic': 'insteon/01.02.03/set',
+            'relay_state_topic': 'insteon/01.02.03/relay',
+            'sensor_state_topic': 'insteon/01.02.03/sensor',
+            'state_topic': 'insteon/01.02.03/state'
+        }
+        assert len(mdev.extra_topic_nums) == 0
+
+
+    #-----------------------------------------------------------------------
     def test_config(self, setup):
         mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
 

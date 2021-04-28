@@ -5,12 +5,13 @@
 #===========================================================================
 from .. import log
 from . import topic
+from ..device.base import DimmerBase
 
 LOG = log.get_logger()
 
 
 class KeypadLinc(topic.SetTopic, topic.SceneTopic, topic.StateTopic,
-                 topic.ManualTopic):
+                 topic.ManualTopic, topic.DiscoveryTopic):
     """MQTT interface to an Insteon KeypadLinc switch.
 
     This class connects to a device.KeypadLinc object and converts it's output
@@ -31,6 +32,12 @@ class KeypadLinc(topic.SetTopic, topic.SceneTopic, topic.StateTopic,
                          set_topic='insteon/{{address}}/set/{{button}}',
                          **kwargs)
 
+        # This defines the default discovery_class for these devices
+        self.default_discovery_cls = "keypad_linc"
+
+        # Set the groups for discovery topic generation
+        self.extra_topic_nums = range(1, 10)
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -40,6 +47,9 @@ class KeypadLinc(topic.SetTopic, topic.SceneTopic, topic.StateTopic,
                  config is stored in config['keypad_linc'].
           qos (int):  The default quality of service level to use.
         """
+        # The discovery topic needs the full config
+        self.load_discovery_data(config, qos)
+
         data = config.get("keypad_linc", None)
         if not data:
             return
@@ -86,3 +96,24 @@ class KeypadLinc(topic.SetTopic, topic.SceneTopic, topic.StateTopic,
         for group in range(1, 9):
             self.set_unsubscribe(link, group=group)
             self.scene_unsubscribe(link, group=group)
+
+    #-----------------------------------------------------------------------
+    def discovery_template_data(self, **kwargs):
+        """Create the Jinja templating data variables for discovery messages.
+
+        This extends the default dict with additional variables supported
+        by this device
+
+        Returns:
+          dict:  Returns a dict with the variables available for templating.
+                 including:
+        """
+        # Get the default variables
+        # pylint:disable=E1101
+        data = super().discovery_template_data(**kwargs)
+        data['is_dimmable'] = False
+        if isinstance(self.device, DimmerBase):
+            data['is_dimmable'] = True
+        return data
+
+    #-----------------------------------------------------------------------
