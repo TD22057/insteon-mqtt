@@ -1,17 +1,21 @@
 # MQTT Discovery Platform
 
-HomeAssistant allows for entities to be defined through an MQTT discovery topic.
-This means, that for general installations, a user need only setup InsteonMQTT
-following the [Configuration Instructions](https://github.com/TD22057/insteon-mqtt/blob/master/docs/configuration.md)
-and HomeAssistant should just work!  No need to add individual entities to the
-HomeAssistant configuration.
-
-Read more about the [HomeAssistant Discovery Platform](https://www.home-assistant.io/docs/mqtt/discovery/).
+HomeAssistant allows for InsteonMQTT to define entities using a discovery
+protocol. This means, that for general installations, a user need only setup
+InsteonMQTT following the
+[Configuration Instructions](https://github.com/TD22057/insteon-mqtt/blob/master/docs/configuration.md)
+and then follow the brief enabling instructions below to get Insteon working
+in HomeAssistant.
 
 <!-- TOC -->
 
 - [MQTT Discovery Platform](#mqtt-discovery-platform)
+  - [Enabling the Discovery Platform](#enabling-the-discovery-platform)
   - [Customization](#customization)
+    - [Altering entities in HomeAssistant](#altering-entities-in-homeassistant)
+    - [Disabling Entities in HomeAssistant](#disabling-entities-in-homeassistant)
+    - [Deleting Entities in HomeAssistant](#deleting-entities-in-homeassistant)
+  - [Writing your own templates](#writing-your-own-templates)
     - [Default Device Templates](#default-device-templates)
     - [Using a Custom Device Template](#using-a-custom-device-template)
     - [Writing a `discovery_entities` Template](#writing-a-discovery_entities-template)
@@ -22,20 +26,93 @@ Read more about the [HomeAssistant Discovery Platform](https://www.home-assistan
   - [Sample Templates for Custom Discovery Classes](#sample-templates-for-custom-discovery-classes)
     - [Single Button Remote](#single-button-remote)
     - [Six Button Keypadlinc](#six-button-keypadlinc)
+    - [Setting Switches as Lights](#setting-switches-as-lights)
 
 <!-- /TOC -->
 
+## Enabling the Discovery Platform
+
+Enabling the discovery platform for new installations is very easy.  All you
+need to do is set the following configuration setting:
+to true:
+
+```YAML
+mqtt:
+  enable_discovery: true
+```
+
+The config-example.yaml file that ships with InsteonMQTT contains the initial
+templates for all Insteon devices.
+
+> __If you installed InsteonMQTT starting with version 0.8.3 or earlier__, you will
+need to read the [Migrating to Discovery](migrating.md) page for instructions on how to
+incorporate the changes to the `config.yaml` file into your configuration.
+
 ## Customization
 
-Of course, all of us will likely want to tweak or edit the default
-configuration and this can be done using [Jinja templates](https://github.com/TD22057/insteon-mqtt/blob/master/docs/Templating.md).
+If the default entities defined by InsteonMQTT do not suit your needs, you may
+be able to alter the entities within HomeAssistant.
+
+### Altering entities in HomeAssistant
+
+To do this, go to
+`Configuration -> Integrations` find the MQTT integration and click on the
+entities link.
+
+This page will contain a list of all of the defined entities. Find the one you
+wish to alter and click on it.  This settings page allows you to change the
+name (only used in the UI) of the entity, the icon used in the UI, and the
+entity ID that is used when referencing the entity in automations and in the
+frontend.  Under advanced settings, you can also change the area of the Device.
+Click update to save your changes.
+
+### Disabling Entities in HomeAssistant
+
+It may also be the case that InsteonMQTT has defined a number of entities that
+you do not need.  For example, your keypadlinc may only have 6 buttons but 9
+are defined.
+
+To remove the extra buttons, go to
+`Configuration -> Integrations` find the MQTT integration and click on the
+entities link.  This page will contain a list of all of the defined entities.
+Find the one you wish to disable and click on it.
+
+To remove the extra buttons, simply toggle tne `enable entity` setting.  The
+device will now no longer be listed in the UI, and will not show up in the
+logbook or history.
+
+### Deleting Entities in HomeAssistant
+
+If you remove a device from your insteon network, or in some cases change how
+it is defined, you will end up with old entities in HomeAssistant.  To remove
+an abandoned entity, make sure you remove it from the `devices` section of the
+InsteonMQTT `yaml` config file.  Then restart InsteonMQTT.  You then need to
+restart HomeAssistant.
+
+Then go to, `Configuration -> Integrations` find the MQTT integration and
+click on the entities link.  This page will contain a list of all of the
+defined entities. Find the one you wish to delete and click on it.  Abandoned
+devices are easy to find because of the red icon on the right side.
+
+Inside, the settings page, click the Delete button.  If the delete button is
+disabled, then you have not 1) removed the device from your InsteonMQTT config,
+2) restarted InsteonMQTT, OR 3) restared HomeAssistant.
+
+## Writing your own templates
+
+To understand how HomeAssistant discovery works, read more about the
+[HomeAssistant Discovery Protocol](https://www.home-assistant.io/docs/mqtt/discovery/).
+
+Tweaking, editing, or adding to the default
+configuration and can be done using [Jinja templates](https://github.com/TD22057/insteon-mqtt/blob/master/docs/Templating.md).
 
 ### Default Device Templates
 
-By default,
-a device will look to its corresponding subkey in the `mqtt` key.  So for
-example, a dimmer device will by default look the the `dimmer` subkey under
-the `mqtt` key:
+Discovery Device Templates are contained in your `yaml` config file. They are
+defined using the `discovery_entities` key. By
+default, a device will look to its corresponding subkey under the `mqtt` key.
+So for example, a dimmer device will by default look to the `dimmer` subkey
+under the `mqtt` key:
 
 ```YAML
 insteon:
@@ -60,7 +137,7 @@ insteon:
   device:
     dimmer:
       - dd.ee.ff: my_dimmer
-        discovery_class: my_discovery_class
+        discovery_class: my_discovery_class  # < Note the lack of hyphen
 
 mqtt:
   my_discovery_class:  # < Note the class name
@@ -77,7 +154,7 @@ The `discovery_entities` key should contain a list.  Each list entry will
 generate an entity in HomeAssistant.  Some devices may only have one entity,
 other devices may have multiple entities.
 
-Each entry `discovery_entities` is an associative array with the __required__
+Each entry in `discovery_entities` is an associative array with the __required__
 keys `component` and `config`.
 - `component` - (String) One of the supported HomeAssistant MQTT components,
 eg. `binary_sensor`, `light`, `switch`
@@ -128,13 +205,17 @@ variables are defined in the `config-example.yaml` file under the relevant
 
 #### JSON Dangers
 
-> The `config` json template __must generate valid json_.  This is a good json
+> The `config` json template __must generate valid json__.  This is a good json
 [validator](https://jsonformatter.curiousconcept.com/).
 
 __Notable Gotchas__
 
 1. __Newline Characters__ - JSON strings cannot contain raw newline characters,
-they can however be represented by `\n`
+they can however be represented by `\n`. Keep in mind that the config template
+is first injested from yaml.  You can read about
+[how yaml handles whitespace](https://yaml-multiline.info/).  Second, the
+config template is rendered through Jinja.  You can read about
+[how jinja handles whitespace](https://tedboy.github.io/jinja2/templ6.html).
 2. __Trailing Commas__ - JSON cannot include trailing commas.  The last item
 in a list or the last key:value pair in an object __cannot__ be followed by a
 comma.
@@ -365,3 +446,40 @@ mqtt:
         }
       # No buttons 7-9 on 6 button devices
 ```
+
+### Setting Switches as Lights
+
+Switchlincs are by default defined as `switch` components in HomeAssistant.
+However, you may prefer to define them as `light` components without the
+dimming feature. This has a few benefits, 1) the component classification may
+better match the actual use, 2) you get the nice lightbulb icon automatically,
+3) when the entities are linked to devices such as Google Home or Amazon Alexa
+HomeAssistant, they will appear within these platforms as lights.
+
+To do this, define a new custom `discovery_class` as follows:
+
+```yaml
+mqtt:
+  switch_as_light:
+  # Maps a switch to a light, which is nicer in HA for actual lights
+  discovery_entities:
+    - component: "light"
+      config: >-
+        {
+          "uniq_id": "{{address}}_light",
+          "name": "{{name_user_case|title}}",
+          "cmd_t": "{{on_off_topic}}",
+          "stat_t": "{{state_topic}}",
+          "brightness": false,
+          "schema": "json",
+          "device": {{device_info_template}}
+        }
+```
+
+Then for each device just add the discovery class:
+
+```yaml
+devices:
+  switch:
+    - aa.bb.cc: My Light
+      discovery_class: switch_as_light
