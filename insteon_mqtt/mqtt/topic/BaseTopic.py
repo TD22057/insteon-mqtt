@@ -3,6 +3,7 @@
 # MQTT Base Topic
 #
 #===========================================================================
+import time
 from ... import log
 
 LOG = log.get_logger()
@@ -26,7 +27,7 @@ class BaseTopic:
         """Create the Jinja templating data variables for use in topics.
 
         As the base template, this provides the immutable values such as
-        address and name.
+        address, name, and timestamp.
 
         Args:
           button (int):  The button (group) ID (1-8) of the Insteon button
@@ -36,7 +37,8 @@ class BaseTopic:
           dict:  Returns a dict with the variables available for templating.
         """
         data = {"address" : self.device.addr.hex,
-                "name" : self.device.addr.hex}
+                "name" : self.device.addr.hex,
+                "timestamp": int(time.time())}
         if self.device.name:
             data['name'] = self.device.name
         if 'button' in kwargs and kwargs['button'] is not None:

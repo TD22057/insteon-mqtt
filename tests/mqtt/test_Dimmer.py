@@ -4,6 +4,7 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
+import time
 import pytest
 import insteon_mqtt as IM
 import helpers as H
@@ -68,6 +69,8 @@ class Test_Dimmer:
 
         data = mdev.base_template_data()
         right = {"address" : addr.hex, "name" : name}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(level=0x55, mode=IM.on_off.Mode.FAST,
@@ -78,6 +81,7 @@ class Test_Dimmer:
                  "level_255" : 85, "level_100" : 33,
                  "mode" : "fast", "fast" : 1, "instant" : 0,
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(level=0x00)
@@ -85,12 +89,14 @@ class Test_Dimmer:
                  "on" : 0, "on_str" : "off", "reason" : "",
                  "level_255" : 0, "level_100" : 0,
                  "mode" : "normal", "fast" : 0, "instant" : 0}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(manual=IM.on_off.Manual.UP,
                                         reason="foo")
         right = {"address" : addr.hex, "name" : name, "reason" : "foo",
                  "manual_str" : "up", "manual" : 1, "manual_openhab" : 2}
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------
