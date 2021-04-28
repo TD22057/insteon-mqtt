@@ -178,6 +178,7 @@ class Test_DiscoveryTopic:
         caplog.clear()
 
     #-----------------------------------------------------------------------
+    @mock.patch('time.time', mock.MagicMock(return_value=12345))
     def test_publish(self, discovery, caplog):
         discovery.disc_templates.append(mock.Mock())
         discovery.publish_discovery()
@@ -192,7 +193,8 @@ class Test_DiscoveryTopic:
                 'sub_cat': 0,
                 'firmware': 0,
                 'modem_addr': '20.30.40',
-                'device_info_template': ''}
+                'device_info_template': '',
+                'timestamp': 12345}
         discovery.disc_templates[0].publish.assert_called_once_with(
             discovery.mqtt,
             data,

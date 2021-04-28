@@ -4,7 +4,6 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
-import time
 from unittest import mock
 import pytest
 import insteon_mqtt as IM
@@ -55,13 +54,12 @@ class Test_Modem:
             topic='insteon/modem/scene')
 
     #-----------------------------------------------------------------------
+    @mock.patch('time.time', mock.MagicMock(return_value=12345))
     def test_template(self, setup):
         mdev, addr, name = setup.getAll(['mdev', 'addr', 'name'])
 
         data = mdev.base_template_data()
-        right = {"address" : addr.hex, "name" : name}
-        assert data['timestamp'] - time.time() <= 1
-        del data['timestamp']
+        right = {"address" : addr.hex, "name" : name, "timestamp": 12345}
         assert data == right
 
     #-----------------------------------------------------------------------
@@ -112,6 +110,7 @@ class Test_Modem:
         assert len(mdev.extra_topic_nums) == 0
 
     #-----------------------------------------------------------------------
+    @mock.patch('time.time', mock.MagicMock(return_value=12345))
     def test_discovery_publish(self, setup):
         mdev, link = setup.getAll(['mdev', 'link'])
 
@@ -171,7 +170,8 @@ class Test_Modem:
             'name_user_case': 'Modem',
             'scene': 0,
             'scene_name': '',
-            'sub_cat': 0
+            'sub_cat': 0,
+            'timestamp': 12345
         }
 
 
