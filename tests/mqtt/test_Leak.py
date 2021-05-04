@@ -57,6 +57,8 @@ class Test_Leak:
 
         data = mdev.template_data()
         right = {"address" : addr.hex, "name" : name}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         t0 = time.time()
@@ -64,6 +66,7 @@ class Test_Leak:
         right = {"address" : addr.hex, "name" : name,
                  "is_heartbeat" : 1, "is_heartbeat_str" : "on"}
         hb = data.pop('heartbeat_time')
+        del data['timestamp']
         assert data == right
         pytest.approx(t0, hb, 5)
 
@@ -73,6 +76,7 @@ class Test_Leak:
                  "is_dry" : 1, "is_dry_str" : "on", "button": 2,
                  "fast": 0, "instant": 0, "mode": 'normal', "on": 0,
                  "on_str": 'off', "reason": ''}
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------
@@ -108,6 +112,22 @@ class Test_Leak:
         del m['payload']
         assert m == dict(topic='%s/heartbeat' % topic, qos=0, retain=True)
         pytest.approx(t0, hb, 5)
+
+    #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        mdev.load_config({"leak": {"junk": "junk"},
+                          "battery_sensor" : {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "leak"
+        assert mdev.rendered_topic_map == {
+            'wet_dry_topic': 'insteon/01.02.03/wet',
+            'heartbeat_topic': 'insteon/01.02.03/heartbeat',
+            'low_battery_topic': 'insteon/01.02.03/battery'
+        }
+        assert len(mdev.extra_topic_nums) == 0
+
 
     #-----------------------------------------------------------------------
     def test_refresh_data(self, setup):

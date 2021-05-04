@@ -4,6 +4,7 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
+import time
 import pytest
 import insteon_mqtt as IM
 import helpers as H
@@ -69,6 +70,8 @@ class Test_KeypadLinc_sw:
 
         data = mdev.base_template_data(button=5)
         right = {"address" : addr.hex, "name" : name, "button" : 5}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=3, level=1,
@@ -79,6 +82,7 @@ class Test_KeypadLinc_sw:
                  "level_255" : 1, "level_100" : 0,
                  "mode" : "fast", "fast" : 1, "instant" : 0,
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=1, level=0)
@@ -86,12 +90,14 @@ class Test_KeypadLinc_sw:
                  "on" : 0, "on_str" : "off", "reason" : "",
                  "level_255" : 0, "level_100" : 0,
                  "mode" : "normal", "fast" : 0, "instant" : 0}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=2, manual=IM.on_off.Manual.UP)
         right = {"address" : addr.hex, "name" : name, "button" : 2,
                  "reason" : "", "manual_str" : "up", "manual" : 1,
                  "manual_openhab" : 2}
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------
@@ -116,6 +122,45 @@ class Test_KeypadLinc_sw:
         dev.signal_manual.emit(dev, button=3, manual=IM.on_off.Manual.DOWN)
         dev.signal_manual.emit(dev, button=4, manual=IM.on_off.Manual.STOP)
         assert len(link.client.pub) == 0
+
+    #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        mdev.load_config({"keypad_linc": {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "keypad_linc"
+        assert mdev.rendered_topic_map == {
+            'btn_on_off_topic_1': 'insteon/01.02.03/set/1',
+            'btn_on_off_topic_2': 'insteon/01.02.03/set/2',
+            'btn_on_off_topic_3': 'insteon/01.02.03/set/3',
+            'btn_on_off_topic_4': 'insteon/01.02.03/set/4',
+            'btn_on_off_topic_5': 'insteon/01.02.03/set/5',
+            'btn_on_off_topic_6': 'insteon/01.02.03/set/6',
+            'btn_on_off_topic_7': 'insteon/01.02.03/set/7',
+            'btn_on_off_topic_8': 'insteon/01.02.03/set/8',
+            'btn_on_off_topic_9': 'insteon/01.02.03/set/9',
+            'btn_scene_topic_1': 'insteon/01.02.03/scene/1',
+            'btn_scene_topic_2': 'insteon/01.02.03/scene/2',
+            'btn_scene_topic_3': 'insteon/01.02.03/scene/3',
+            'btn_scene_topic_4': 'insteon/01.02.03/scene/4',
+            'btn_scene_topic_5': 'insteon/01.02.03/scene/5',
+            'btn_scene_topic_6': 'insteon/01.02.03/scene/6',
+            'btn_scene_topic_7': 'insteon/01.02.03/scene/7',
+            'btn_scene_topic_8': 'insteon/01.02.03/scene/8',
+            'btn_scene_topic_9': 'insteon/01.02.03/scene/9',
+            'btn_state_topic_1': 'insteon/01.02.03/state/1',
+            'btn_state_topic_2': 'insteon/01.02.03/state/2',
+            'btn_state_topic_3': 'insteon/01.02.03/state/3',
+            'btn_state_topic_4': 'insteon/01.02.03/state/4',
+            'btn_state_topic_5': 'insteon/01.02.03/state/5',
+            'btn_state_topic_6': 'insteon/01.02.03/state/6',
+            'btn_state_topic_7': 'insteon/01.02.03/state/7',
+            'btn_state_topic_8': 'insteon/01.02.03/state/8',
+            'btn_state_topic_9': 'insteon/01.02.03/state/9',
+            'manual_state_topic': None
+        }
+        assert len(mdev.extra_topic_nums) == 9
 
     #-----------------------------------------------------------------------
     def test_config(self, setup):

@@ -11,7 +11,7 @@ from . import topic
 LOG = log.get_logger()
 
 
-class BatterySensor(topic.StateTopic):
+class BatterySensor(topic.StateTopic, topic.DiscoveryTopic):
     """MQTT interface to an Insteon general battery powered sensor.
 
     This class connects to a device.BatterySensor object and converts it's
@@ -44,6 +44,9 @@ class BatterySensor(topic.StateTopic):
         device.signal_low_battery.connect(self._insteon_low_battery)
         device.signal_heartbeat.connect(self._insteon_heartbeat)
 
+        # This defines the default discovery_class for these devices
+        self.default_discovery_cls = "battery_sensor"
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -53,6 +56,9 @@ class BatterySensor(topic.StateTopic):
                  config is stored in config['battery_sensor'].
           qos (int):  The default quality of service level to use.
         """
+        # The discovery topic needs the full config
+        self.load_discovery_data(config, qos)
+
         data = config.get("battery_sensor", None)
         if not data:
             return
@@ -64,6 +70,13 @@ class BatterySensor(topic.StateTopic):
                                      'low_battery_payload', qos)
         self.msg_heartbeat.load_config(data, 'heartbeat_topic',
                                        'heartbeat_payload', qos)
+
+        # Add our unique topics to the discovery topic map
+        topics = {}
+        var_data = self.base_template_data()
+        topics['low_battery_topic'] = self.msg_battery.render_topic(var_data)
+        topics['heartbeat_topic'] = self.msg_heartbeat.render_topic(var_data)
+        self.rendered_topic_map.update(topics)
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):

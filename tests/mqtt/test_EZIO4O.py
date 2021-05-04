@@ -4,6 +4,7 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
+import time
 import pytest
 import insteon_mqtt as IM
 import helpers as H
@@ -81,6 +82,8 @@ class Test_EZIO4O:
 
         data = mdev.base_template_data()
         right = {"address": addr.hex, "name": name}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(
@@ -97,6 +100,7 @@ class Test_EZIO4O:
             "fast": 1,
             "instant": 0,
         }
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(is_on=False, button=2)
@@ -111,6 +115,7 @@ class Test_EZIO4O:
             "fast": 0,
             "instant": 0,
         }
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(is_on=False, button=3)
@@ -125,6 +130,7 @@ class Test_EZIO4O:
             "fast": 0,
             "instant": 0,
         }
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(is_on=False, button=4)
@@ -139,6 +145,7 @@ class Test_EZIO4O:
             "fast": 0,
             "instant": 0,
         }
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------
@@ -168,6 +175,25 @@ class Test_EZIO4O:
             topic="%s/state/4" % topic, payload="off", qos=0, retain=True
         )
         link.client.clear()
+
+    #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        mdev.load_config({"ezio4o": {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "ezio4o"
+        assert mdev.rendered_topic_map == {
+            'on_off_topic_1': 'insteon/01.02.03/set/1',
+            'on_off_topic_2': 'insteon/01.02.03/set/2',
+            'on_off_topic_3': 'insteon/01.02.03/set/3',
+            'on_off_topic_4': 'insteon/01.02.03/set/4',
+            'state_topic_1': 'insteon/01.02.03/state/1',
+            'state_topic_2': 'insteon/01.02.03/state/2',
+            'state_topic_3': 'insteon/01.02.03/state/3',
+            'state_topic_4': 'insteon/01.02.03/state/4'
+        }
+        assert len(mdev.extra_topic_nums) == 4
 
     #-----------------------------------------------------------------------
     def test_config(self, setup):

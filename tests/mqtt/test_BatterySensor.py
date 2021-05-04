@@ -4,6 +4,7 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
+import time
 import pytest
 import insteon_mqtt as IM
 import helpers as H
@@ -56,12 +57,15 @@ class Test_BatterySensor:
 
         data = mdev.template_data()
         right = {"address" : addr.hex, "name" : name}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         data = mdev.template_data(is_on=True, is_low=False)
         right = {"address" : addr.hex, "name" : name,
                  "on" : 1, "on_str" : "on",
                  "is_low" : 0, "is_low_str" : "off"}
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------
@@ -91,6 +95,20 @@ class Test_BatterySensor:
             topic='%s/battery' % topic, payload='off', qos=0, retain=True)
         assert link.client.pub[1] == dict(
             topic='%s/battery' % topic, payload='on', qos=0, retain=True)
+
+    #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        mdev.load_config({"battery_sensor": {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "battery_sensor"
+        assert mdev.rendered_topic_map == {
+            'state_topic': 'insteon/01.02.03/state',
+            'low_battery_topic': 'insteon/01.02.03/battery',
+            'heartbeat_topic': 'insteon/01.02.03/heartbeat',
+        }
+        assert len(mdev.extra_topic_nums) == 0
 
     #-----------------------------------------------------------------------
     def test_config(self, setup):

@@ -11,7 +11,6 @@ def refresh_all(args, config):
     topic = "%s/modem" % (args.topic)
     payload = {
         "cmd" : "refresh_all",
-        "battery" : args.battery,
         "force" : args.force,
         }
 
@@ -49,12 +48,30 @@ def get_engine_all(args, config):
     topic = "%s/modem" % (args.topic)
     payload = {
         "cmd" : "get_engine_all",
-        "battery" : args.battery,
         }
 
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]
 
+#===========================================================================
+def join_all(args, config):
+    topic = "%s/modem" % (args.topic)
+    payload = {
+        "cmd" : "join_all",
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
+
+#===========================================================================
+def pair_all(args, config):
+    topic = "%s/modem" % (args.topic)
+    payload = {
+        "cmd" : "pair_all",
+        }
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 
 #===========================================================================
 def factory_reset(args, config):

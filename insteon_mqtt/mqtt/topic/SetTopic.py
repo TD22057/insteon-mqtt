@@ -56,6 +56,23 @@ class SetTopic(BaseTopic):
         # Update the MQTT topics and payloads from the config file.
         self.msg_set.load_config(data, topic, payload, qos)
 
+        # Add ourselves to the list of topics
+        if len(self.extra_topic_nums) > 0:
+            # This device has multiple set topics for multiple buttons
+            data = self.base_template_data()
+            topics = {}
+            for btn in self.extra_topic_nums:
+                data['button'] = btn
+                topics[topic + "_" + str(btn)] = self.msg_set.render_topic(
+                    data
+                )
+            self.rendered_topic_map.update(topics)
+        else:
+            # Add ourselves to the list of topics
+            self.rendered_topic_map[topic] = self.msg_set.render_topic(
+                self.base_template_data()
+            )
+
     #-----------------------------------------------------------------------
     def set_subscribe(self, link, qos, group=None):
         """Subscribe to any MQTT topics the object needs.

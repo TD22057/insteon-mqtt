@@ -13,7 +13,7 @@ LOG = log.get_logger()
 
 
 class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
-             topic.SetTopic):
+             topic.SetTopic, topic.DiscoveryTopic):
     """MQTT interface to an Insteon dimmer switch.
 
     This class connects to a device.Dimmer object and converts it's output
@@ -35,6 +35,9 @@ class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
                          state_payload='{ "state" : "{{on_str.lower()}}", '
                                        '"brightness" : {{level_255}} }')
 
+        # This defines the default discovery_class for these devices
+        self.default_discovery_cls = "dimmer"
+
         # Input level command template.
         self.msg_level = MsgTemplate(
             topic='insteon/{{address}}/level',
@@ -50,6 +53,9 @@ class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
                  config is stored in config['dimmer'].
           qos (int):  The default quality of service level to use.
         """
+        # The discovery topic needs the full config
+        self.load_discovery_data(config, qos)
+
         data = config.get("dimmer", None)
         if not data:
             return
@@ -62,6 +68,11 @@ class Dimmer(topic.StateTopic, topic.SceneTopic, topic.ManualTopic,
 
         # Update the MQTT topics and payloads from the config file.
         self.msg_level.load_config(data, 'level_topic', 'level_payload', qos)
+
+        # Add our unique topics to the discovery topic map
+        self.rendered_topic_map['level_topic'] = self.msg_level.render_topic(
+            self.base_template_data()
+        )
 
     #-----------------------------------------------------------------------
     def subscribe(self, link, qos):

@@ -97,6 +97,11 @@ Supported: devices
 
 See [initialization](initializing.md) for a discussion of `join`.
 
+### Join all devices
+
+Supported: modem
+
+See [initialization](initializing.md) for a discussion of `join-all`.
 
 ### Pair a Device to the Modem
 
@@ -104,6 +109,11 @@ Supported: devices
 
 See [initialization](initializing.md) for a discussion of `pair`.
 
+### Pair all devices
+
+Supported: modem
+
+See [initialization](initializing.md) for a discussion of `pair-all`.
 
 ### Sync Device Links
 
@@ -214,11 +224,10 @@ data.
 Supported: modem
 
 This will cause a get_engine command to be sent to each device (i.e. devices
-defined in the config file).  If the battery flag is false or not present,
-battery operated devices will be skipped. The command payload is:
+defined in the config file).  The command payload is:
 
   ```
-  { "cmd" : "get_engine_all", ["battery": true/false]}
+  { "cmd" : "get_engine_all"}
   ```
 
 ### Add the device as a controller of another device.
@@ -725,8 +734,8 @@ speed payload template must convert the input message into the format
    ```
 
 Here is a sample configuration.  HomeAssistant starting in version 2021.4.0
-dropped support for the off/low/medium/high fan speeds.  See 
-[config-example.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/config-example.yaml) 
+dropped support for the off/low/medium/high fan speeds.  See
+[config-example.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/config-example.yaml)
 in the mqtt -> fan section for an example HomeAssistant config that works
 with InsteonMQTT.
 

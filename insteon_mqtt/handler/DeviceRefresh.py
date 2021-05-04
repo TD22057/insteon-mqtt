@@ -111,6 +111,7 @@ class DeviceRefresh(Base):
                     def on_done(success, message, data):
                         if success:
                             self.device.db.delta = msg.cmd1
+                            self.device.db.save()
                             LOG.ui("%s database download complete\n%s",
                                    self.addr, self.device.db)
                         self.on_done(success, message, data)

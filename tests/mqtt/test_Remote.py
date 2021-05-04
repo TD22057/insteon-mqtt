@@ -4,6 +4,7 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
+import time
 import pytest
 import insteon_mqtt as IM
 import helpers as H
@@ -57,6 +58,8 @@ class Test_Remote:
 
         data = mdev.base_template_data(button=3)
         right = {"address" : addr.hex, "name" : name, "button" : 3}
+        assert data['timestamp'] - time.time() <= 1
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=4, is_on=True,
@@ -67,6 +70,7 @@ class Test_Remote:
                  "mode" : "fast", "fast" : 1, "instant" : 0,
                  "manual_str" : "stop", "manual" : 0, "manual_openhab" : 1,
                  "reason": ''}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=4, is_on=False)
@@ -74,12 +78,14 @@ class Test_Remote:
                  "on" : 0, "on_str" : "off",
                  "mode" : "normal", "fast" : 0, "instant" : 0,
                  "reason": ''}
+        del data['timestamp']
         assert data == right
 
         data = mdev.state_template_data(button=5, manual=IM.on_off.Manual.UP)
         right = {"address" : addr.hex, "name" : name, "button" : 5,
                  "manual_str" : "up", "manual" : 1, "manual_openhab" : 2,
                  "reason": ''}
+        del data['timestamp']
         assert data == right
 
     #-----------------------------------------------------------------------
@@ -104,6 +110,29 @@ class Test_Remote:
         dev.signal_manual.emit(dev, button=1, manual=IM.on_off.Manual.DOWN)
         dev.signal_manual.emit(dev, button=1, manual=IM.on_off.Manual.STOP)
         assert len(link.client.pub) == 0
+
+    #-----------------------------------------------------------------------
+    def test_discovery(self, setup):
+        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
+        topic = "insteon/%s" % setup.addr.hex
+
+        mdev.load_config({"remote": {"junk": "junk"},
+                          "battery_sensor" : {"junk": "junk"}})
+        assert mdev.default_discovery_cls == "remote"
+        assert mdev.rendered_topic_map == {
+            'heartbeat_topic': 'insteon/01.02.03/heartbeat',
+            'low_battery_topic': 'insteon/01.02.03/battery',
+            'manual_state_topic': None,
+            'state_topic_1': 'insteon/01.02.03/state/1',
+            'state_topic_2': 'insteon/01.02.03/state/2',
+            'state_topic_3': 'insteon/01.02.03/state/3',
+            'state_topic_4': 'insteon/01.02.03/state/4',
+            'state_topic_5': 'insteon/01.02.03/state/5',
+            'state_topic_6': 'insteon/01.02.03/state/6',
+            'state_topic_7': 'insteon/01.02.03/state/7',
+            'state_topic_8': 'insteon/01.02.03/state/8'
+        }
+        assert len(mdev.extra_topic_nums) == 8
 
     #-----------------------------------------------------------------------
     def test_config(self, setup):

@@ -39,6 +39,9 @@ class HiddenDoor(BatterySensor):
 
         device.signal_voltage.connect(self._insteon_voltage)
 
+        # This defines the default discovery_class for these devices
+        self.default_discovery_cls = "hidden_door"
+
     #-----------------------------------------------------------------------
     def load_config(self, config, qos=None):
         """Load values from a configuration data object.
@@ -57,6 +60,14 @@ class HiddenDoor(BatterySensor):
 
         self.msg_battery_voltage.load_config(data, 'battery_voltage_topic',
                                              'battery_voltage_payload', qos)
+
+        # Add our unique topics to the discovery topic map
+        topics = {}
+        bat_volt = self.msg_battery_voltage
+        topics['battery_voltage_topic'] = bat_volt.render_topic(
+            self.base_template_data()
+        )
+        self.rendered_topic_map.update(topics)
 
     #-----------------------------------------------------------------------
     def template_data_hidden_door(self, is_dawn=None, batt_volt=None,
