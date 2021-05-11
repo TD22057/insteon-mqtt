@@ -32,7 +32,7 @@
 #
 # Scene Device Format
 # A scene device can be defined in a number of ways:
-# - As a string of the device address such as aa.bbb.cc
+# - As a string of the device address such as aa.bb.cc
 # - As a string of the device name as specified in the config file
 # - As a dict, where the key is the device name or address and the value is
 #      the group as an int
@@ -125,7 +125,7 @@
 
 # Latching
 #   On and off commands to the scene will turn the relay on and off
-# Momentary_A  
+# Momentary_A
 #   Only on commands will turn the relay on.
 # Momentary_B
 #   Either on or off will turn on the relay.
@@ -142,7 +142,7 @@
 
 # Latching
 #   On and off commands to the scene will turn the relay on and off
-# Momentary_A  
+# Momentary_A
 #   Only off commands will turn the relay on.
 # Momentary_B
 #   Either on or off will turn on the relay.
