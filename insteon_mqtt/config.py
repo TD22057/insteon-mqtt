@@ -379,7 +379,7 @@ class IMValidator(Validator):
         # See if valid string form
         if not valid:
             addr = re.search(
-                r"[A-F0-9]{2}[ \.:]?[A-F0-9]{2}[ \.:]?[A-F0-9]{2}",
+                r"^[A-F0-9]{2}[ \.:]?[A-F0-9]{2}[ \.:]?[A-F0-9]{2}$",
                 str(value), flags=re.IGNORECASE
             )
             if addr is not None:

@@ -40,8 +40,16 @@ insteon:
         # If hub_enabled require hub fields, else require PLM port
         - allowed: [True]
           dependencies: ['hub_ip', 'hub_user', 'hub_password']
+          meta:
+            allowed_error: use_hub must be True
         - allowed: [False]
           dependencies: ['port']
+          meta:
+            allowed_error: use_hub must be False
+      meta:
+        oneof_error: >-
+          Required PLM or Hub fields are not properly configured.  One of the
+          two following definitions must be satisfied.
     hub_ip:
       type: string
       check_with: valid_ip
