@@ -82,6 +82,9 @@ class FanLinc(Dimmer):
         # This is necessary to override the dimmer group_map of 0x01
         self.group_map = {}
 
+        # List of responder group numbers
+        self.responder_groups = [0x01, 0x02]
+
     #-----------------------------------------------------------------------
     def addRefreshData(self, seq, force=False):
         """Add commands to refresh any internal data required.
