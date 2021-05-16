@@ -20,12 +20,18 @@
 
 logging:
   type: dict
+  allow_unknown: True
   schema:
     level:
       type: integer
       min: 5
       max: 40
+    file:
+      type: string
+    screen:
+      type: boolean
 insteon:
+  allow_unknown: True
   type: dict
   schema:
     port:
@@ -78,6 +84,7 @@ insteon:
     scenes:  # Scene file is validated in a separate schema
       type: string
     devices:
+      allow_unknown: False
       type: dict
       keysrules:
         type: string
