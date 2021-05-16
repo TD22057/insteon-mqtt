@@ -7,14 +7,16 @@ integrated into and controlled from anything that can use MQTT.
 
 This package works well with HomeAssistant and can be easily [installed as an addon](docs/HA_Addon_Instructions.md) using the HomeAssistant Supervisor.
 
-Version: 0.9.0  ([History](CHANGELOG.md))
+Version: 0.9.1  ([History](CHANGELOG.md))
 
 ### Recent Breaking Changes
 
+- 0.9.1 - A Yaml validation routine was added.  If you have an error in your
+  config.yaml file, you will get an error on startup.
 - 0.8.3 - HomeAssistant version 2021.4.0 now only supports percentages for fan
   speeds.  This means any fan entities in HomeAssistant that were configured
   to use "low", "medium", and "high" for the fan speed will no longer work.
-  See [config-example.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/config-example.yaml) 
+  See [config-example.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/config-example.yaml)
   under the `mqtt -> fan` section for a suggest configuration in
   HomeAssistant.  __Users not using HomeAssistant are unaffected.__
 - 0.7.4 - IOLinc, the scene_topic has been elimited, please see the documentation
@@ -112,8 +114,6 @@ There is still more work to do and here are a some of my plans for
 future enhancements:
 
 - Full suite of unit tests.
-- YAML input configuration validation.
-
 
 # Thanks
 

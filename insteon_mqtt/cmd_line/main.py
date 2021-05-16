@@ -430,6 +430,11 @@ def parse_args(args):
 def main(mqtt_converter=None):
     args = parse_args(sys.argv[1:])
 
+    # Validate the configuration file
+    val_errors = config.validate(args.config)
+    if val_errors != "":
+        return val_errors
+
     # Load the configuration file.
     cfg = config.load(args.config)
 
