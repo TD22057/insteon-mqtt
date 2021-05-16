@@ -9,6 +9,11 @@
   ** Potential Breaking Change ** If you have an error in your config.yaml
   file you will get an error when trying to startup after upgrading.
 
+### Fixes
+
+- Add support for `on` and `off` command for the fan group on fan_linc devices
+  Thanks @lnr0626 ([PR 399][P399],[PR 400][P400])
+
 ## [0.9.0]
 
 ### Discovery Platform!
@@ -722,3 +727,5 @@ will add new features.
 [P392]: https://github.com/TD22057/insteon-mqtt/pull/392
 [P393]: https://github.com/TD22057/insteon-mqtt/pull/393
 [P397]: https://github.com/TD22057/insteon-mqtt/pull/397
+[P399]: https://github.com/TD22057/insteon-mqtt/pull/399
+[P400]: https://github.com/TD22057/insteon-mqtt/pull/400
