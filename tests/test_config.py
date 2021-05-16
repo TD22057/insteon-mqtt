@@ -6,6 +6,8 @@
 #===========================================================================
 import os
 import pytest
+from unittest import mock
+from unittest.mock import call
 import insteon_mqtt as IM
 
 
@@ -63,6 +65,72 @@ class Test_config:
         with pytest.raises(Exception):
             IM.config.load(file)
 
+    #-----------------------------------------------------------------------
+    def test_validate_good(self):
+        file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'configs', 'basic.yaml')
+        val = IM.config.validate(file)
+        assert val == ""
+
+    #-----------------------------------------------------------------------
+    def test_validate_bad(self):
+        file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'configs', 'bad_plm.yaml')
+        val = IM.config.validate(file)
+        assert val != ""
+
+    #-----------------------------------------------------------------------
+    def test_validate_example(self):
+        file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            '..', 'config-example.yaml')
+        val = IM.config.validate(file)
+        assert val == ""
+
+    #-----------------------------------------------------------------------
+    def test_good_hub(self):
+        file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'configs', 'good_hub.yaml')
+        val = IM.config.validate(file)
+        assert val == ""
+
+    #-----------------------------------------------------------------------
+    def test_validate_addr(self):
+        validator = IM.config.IMValidator()
+        validator._error = mock.Mock()
+
+        # Good
+        validator._check_with_valid_insteon_addr('test_field', 'aabbcc')
+        validator._error.assert_not_called()
+
+        # Also good
+        validator._check_with_valid_insteon_addr('test_field', 'aa.bb.cc')
+        validator._error.assert_not_called()
+
+        # Also good
+        validator._check_with_valid_insteon_addr('test_field', 'aa bb cc')
+        validator._error.assert_not_called()
+
+        # Also good
+        validator._check_with_valid_insteon_addr('test_field', 'aa:bb:cc')
+        validator._error.assert_not_called()
+
+        # Also good
+        validator._check_with_valid_insteon_addr('test_field', 'aa:bb.cc')
+        validator._error.assert_not_called()
+
+        # Also good
+        validator._check_with_valid_insteon_addr('test_field', '5522')
+        validator._error.assert_not_called()
+
+        # Also bad
+        validator._check_with_valid_insteon_addr('test_field', 'Error')
+        validator._error.assert_called_once()
+        validator._error.reset_mock()
+
+        # Also bad
+        validator._check_with_valid_insteon_addr('test_field', 'aabbbcc')
+        validator._error.assert_called_once()
+        validator._error.reset_mock()
 
 #===========================================================================
 class MockManager:
