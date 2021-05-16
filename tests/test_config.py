@@ -87,6 +87,13 @@ class Test_config:
         assert val == ""
 
     #-----------------------------------------------------------------------
+    def test_good_hub(self):
+        file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'configs', 'good_hub.yaml')
+        val = IM.config.validate(file)
+        assert val == ""
+
+    #-----------------------------------------------------------------------
     def test_validate_addr(self):
         validator = IM.config.IMValidator()
         validator._error = mock.Mock()
