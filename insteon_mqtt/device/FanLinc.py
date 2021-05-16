@@ -20,7 +20,7 @@ class FanLinc(Dimmer):
     """Insteon FanLinc fan speed control device.
 
     This class can be used to model a FanLinc module which is used to control
-    a ciling fan.  The FanLinc can be on or off and supports three speeds
+    a ceiling fan.  The FanLinc can be on or off and supports three speeds
     (LOW, MED, HIGH).  The FanLinc is also a dimmer switch and has the same
     signals and methods as that class (Dimmer).
 
@@ -186,6 +186,61 @@ class FanLinc(Dimmer):
         callback = functools.partial(self.handle_speed, reason=reason)
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
+
+    #-----------------------------------------------------------------------
+    def on(self, group=0x01, level=None, mode=on_off.Mode.NORMAL, reason="",
+           transition=None, on_done=None):
+        """This extends the method in ResponderBase to handle the fan group.
+
+        Args:
+          group (int):  The group to send the command to.
+          level (int):  If non-zero, turn the device on.  The API is an int
+                to keep a consistent API with other devices.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          transition (int): Transition time in seconds if supported.
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        # If group 2, then this is for Fan
+        if group == 0x02:
+            speed = None
+            if level is not None:
+                if level >= 0 and level <= 85:
+                    speed = FanLinc.Speed.LOW
+                elif level > 85 and level <= 170:
+                    speed = FanLinc.Speed.MEDIUM
+                elif level > 170:
+                    speed = FanLinc.Speed.HIGH
+            self.fan_on(speed=speed, reason=reason, on_done=on_done)
+        else:
+            # This is a regular on command pass to ResponderBase
+            super().on(group=group, level=level, mode=mode, reason=reason,
+                       transition=transition, on_done=on_done)
+
+    #-----------------------------------------------------------------------
+    def off(self, group=0x01, mode=on_off.Mode.NORMAL, reason="",
+            transition=None, on_done=None):
+        """This extends the method in ResponderBase to handle the fan group.
+
+        Args:
+          group (int):  The group to send the command to.
+          mode (on_off.Mode): The type of command to send (normal, fast, etc).
+          reason (str):  This is optional and is used to identify why the
+                 command was sent. It is passed through to the output signal
+                 when the state changes - nothing else is done with it.
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        # If group 2, then this is for Fan
+        if group == 0x02:
+            self.fan_off(reason=reason, on_done=on_done)
+        else:
+            # This is a regular on command pass to ResponderBase
+            super().off(group=group, mode=mode, reason=reason,
+                        transition=transition, on_done=on_done)
 
     #-----------------------------------------------------------------------
     def fan_set(self, speed, reason="", on_done=None):
