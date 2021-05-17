@@ -10,7 +10,6 @@ __doc__ = """Configuration file utilties
 #===========================================================================
 import os.path
 import re
-import ipaddress
 import yaml
 from cerberus import Validator
 from cerberus.errors import BasicErrorHandler
