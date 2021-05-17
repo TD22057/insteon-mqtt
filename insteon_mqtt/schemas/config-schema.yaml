@@ -58,7 +58,6 @@ insteon:
           two following definitions must be satisfied.
     hub_ip:
       type: string
-      check_with: valid_ip
     hub_port:
       type: integer
       min: 0
@@ -140,8 +139,6 @@ insteon:
 
 mqtt:
   type: dict
-  meta:
-    schema_error: unknown field
   allow_unknown:
     ## The only unknown keys are user defined discovery_class settings
     type: dict
@@ -164,7 +161,6 @@ mqtt:
   schema:
     broker:
       type: string
-      check_with: valid_ip
       required: True
     port:
       type: integer

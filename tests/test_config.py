@@ -94,6 +94,13 @@ class Test_config:
         assert val == ""
 
     #-----------------------------------------------------------------------
+    def test_dns(self):
+        file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'configs', 'use_dns.yaml')
+        val = IM.config.validate(file)
+        assert val == ""
+
+    #-----------------------------------------------------------------------
     def test_validate_addr(self):
         validator = IM.config.IMValidator()
         validator._error = mock.Mock()
