@@ -73,6 +73,16 @@ class Test_Base_Config():
             else:
                 mocked.assert_not_called()
 
+    def test_set_resume_dim(self, test_device):
+        # set_resume_dim(self, resume_dim, on_done=None)
+        for params in ([True, 0x04], [False, 0x05]):
+            test_device.set_resume_dim(resume_dim=params[0])
+            assert len(test_device.protocol.sent) == 1
+            assert test_device.protocol.sent[0].msg.cmd1 == 0x20
+            assert test_device.protocol.sent[0].msg.cmd2 == params[1]
+            assert test_device.protocol.sent[0].msg.data == bytes([0x00] * 14)
+            test_device.protocol.clear()
+
     def test_set_on_level(self, test_device):
         # set_on_level(self, level, on_done=None)
         def level_bytes(level):
