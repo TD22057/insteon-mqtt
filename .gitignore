@@ -4,3 +4,7 @@ __pycache__
 .cache
 .coverage
 htmlcov
+
+# files created by tests
+data/
+01.02.03.json
