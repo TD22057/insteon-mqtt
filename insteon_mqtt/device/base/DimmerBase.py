@@ -109,7 +109,7 @@ class DimmerBase(ManualCtrl, ResponderBase, Base):
         minutes.
 
         Args:
-          rate (float): Ramp rate in in the range [0.1, 540] seconds
+          ramp_rate (float): Ramp rate in in the range [0.1, 540] seconds
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
@@ -155,7 +155,7 @@ class DimmerBase(ManualCtrl, ResponderBase, Base):
         brightness if needed.
 
         Args:
-          enabled (bool): resume dim is enabled
+          resume_dim (bool): resume dim is enabled
           on_done: Finished callback.  This is called when the command has
                    completed.  Signature is: on_done(success, msg, data)
         """
