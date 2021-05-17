@@ -1,5 +1,16 @@
 # Revision Change History
 
+## [0.9.2]
+
+## Hotfix
+
+- Allows the use of domain names for the broker and hub addresses.  I created a
+  bug in 0.9.1, my fault for thinking of this. ([PR 404][P404])
+
+## Fixes
+
+- Adjusts the docker build script to one that works. ([PR 402][P402])
+
 ## [0.9.1]
 
 ### Additions
@@ -729,3 +740,5 @@ will add new features.
 [P397]: https://github.com/TD22057/insteon-mqtt/pull/397
 [P399]: https://github.com/TD22057/insteon-mqtt/pull/399
 [P400]: https://github.com/TD22057/insteon-mqtt/pull/400
+[P404]: https://github.com/TD22057/insteon-mqtt/pull/404
+[P402]: https://github.com/TD22057/insteon-mqtt/pull/402
