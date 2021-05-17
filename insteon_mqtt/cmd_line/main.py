@@ -423,6 +423,25 @@ def parse_args(args):
                     help="Don't print any command results to the screen.")
     sp.set_defaults(func=device.set_low_battery_voltage)
 
+    auto_int = lambda x: int(x, 0)
+
+    #---------------------------------------
+    # device.raw_message
+    sp = sub.add_parser("raw-message", help="Sends a raw message to a configured device")
+    sp.add_argument("address", help="Device address or name.")
+    sp.add_argument("cmd1", type=auto_int, help="cmd1 byte")
+    sp.add_argument("cmd2", type=auto_int, help="cmd2 byte")
+    sp.add_argument("--ext-req", action="store_true", help="Send message "
+    "as an extended message")
+    sp.add_argument("--ext-resp", action="store_true", help="Receive response "
+    "as an extended message")
+    sp.add_argument("-d", "--data", type=auto_int, default=None, nargs="*", 
+    help="the extended message data")
+    sp.add_argument("--crc", type=str, choices=["D14", "CRC"])
+    sp.add_argument("-q", "--quiet", action="store_true",
+                    help="Don't print any command results to the screen.")
+    sp.set_defaults(func=device.send_raw_message)
+
     return p.parse_args(args)
 
 
