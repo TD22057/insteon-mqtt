@@ -380,6 +380,9 @@ Switch, KeypadLinc, and Dimmer all support the flags:
 
    - ramp_rate: float in the range of 0.5 to 540 seconds which sets the default ramp
      rate that will be used when the button is pressed
+   - resume_dim: bool indicating if the device's on level should be determined from
+     the configured on_level flag, or based on the last on level (currently this will
+     only effect manually pressing the button and not commands send through insteon-mqtt)
 
 IOLinc supports the flags:
 
