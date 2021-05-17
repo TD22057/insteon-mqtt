@@ -347,16 +347,6 @@ class MetaErrorHandler(BasicErrorHandler):
 class IMValidator(Validator):
     """ Adds a few check_with functions to validate specific settings
     """
-    def _check_with_valid_ip(self, field, value):
-        """ Tests whether value is a valid ipv4 or ipv6 address
-
-        Uses the library ipaddress for accuracy
-        """
-        try:
-            ipaddress.ip_address(value)
-        except ValueError:
-            self._error(field, "Invalid IP Address")
-
     def _check_with_valid_insteon_addr(self, field, value):
         """ Tests whether value is a valid Insteon Address for Insteon MQTT
 
