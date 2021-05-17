@@ -1,0 +1,9 @@
+insteon:
+  use_hub: True
+  hub_ip: insteon.example.com
+  hub_user: username
+  hub_password: password
+
+mqtt:
+  broker: broker.example.com
+  port: 1883
