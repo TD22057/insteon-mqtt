@@ -1,5 +1,17 @@
 # Revision Change History
 
+## [0.9.3]
+
+## Fixes
+
+- Fix failure to create initial `config.yaml` file in HomeAssistant
+  Supervisor installation.  Thanks @lnr0626 ([PR 406][P406])
+- Update .gitignore to skip files created by testing. Thanks @lnr0626
+  ([PR 407][P407])
+- Adds a file necessary for a unit test that was accidentally left out.
+  Thanks @lnr0626 ([PR 410][P410])
+
+
 ## [0.9.2]
 
 ## Hotfix
@@ -742,3 +754,6 @@ will add new features.
 [P400]: https://github.com/TD22057/insteon-mqtt/pull/400
 [P404]: https://github.com/TD22057/insteon-mqtt/pull/404
 [P402]: https://github.com/TD22057/insteon-mqtt/pull/402
+[P406]: https://github.com/TD22057/insteon-mqtt/pull/406
+[P407]: https://github.com/TD22057/insteon-mqtt/pull/407
+[P410]: https://github.com/TD22057/insteon-mqtt/pull/410
