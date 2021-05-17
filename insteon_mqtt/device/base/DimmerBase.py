@@ -1,6 +1,6 @@
 #===========================================================================
 #
-# DimmerBase Class.  Specifically Ramp_Rate and On_Level Flags,
+# DimmerBase Class.  Specifically Resume_Dim, Ramp_Rate and On_Level Flags,
 # increment_up and increment_down functions.  Extensions to ManualCtrl
 # Plus other dimmer helper functions
 #
@@ -59,7 +59,8 @@ class DimmerBase(ManualCtrl, ResponderBase, Base):
 
         # Define the flags handled by set_flags()
         self.set_flags_map.update({'on_level': self.set_on_level,
-                                   'ramp_rate': self.set_ramp_rate})
+                                   'ramp_rate': self.set_ramp_rate,
+                                   'resume_dim': self.set_resume_dim})
 
     #========= Flags Functions
     #-----------------------------------------------------------------------
@@ -139,6 +140,43 @@ class DimmerBase(ManualCtrl, ResponderBase, Base):
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.
         callback = self.generic_ack_callback("Button ramp rate updated")
+        msg_handler = handler.StandardCmd(msg, callback, on_done)
+        self.send(msg, msg_handler)
+
+    def set_resume_dim(self, on_done=None, **kwargs):
+        """Set the device resume dim operating flag on/off
+
+        This enables or disabled the resume dim level functionality
+        and is used in conjuction with the configured on level to determine
+        the default on level for 'normal' speeds.  If this is enabled, the
+        device will resume it's previous level when turned on; otherwise
+        it will return to the configured on level.  This can be very useful
+        because a double-tap (fast-on) will the turn the device to full
+        brightness if needed.
+
+        Args:
+          enabled (bool): resume dim is enabled
+          on_done: Finished callback.  This is called when the command has
+                   completed.  Signature is: on_done(success, msg, data)
+        """
+        resume_dim = util.input_bool(kwargs, 'resume_dim')
+
+        # These values were pulled from the insteon command tables pdf
+        # page 8
+        # 0x04 - Enables resume dim
+        # 0x05 - Disables resume dim
+        if resume_dim:
+            LOG.info("Device %s enabling resume dim", self.label)
+            cmd2=0x04
+        else:
+            LOG.info("Device %s disabling resume dim", self.label)
+            cmd2=0x05
+
+        msg = Msg.OutStandard.direct(self.addr, Msg.CmdType.SET_OPERATING_FLAGS, cmd2)
+
+        # Use the standard command handler which will notify us when the
+        # command is ACK'ed.
+        callback = self.generic_ack_callback("Button resume dim updated")
         msg_handler = handler.StandardCmd(msg, callback, on_done)
         self.send(msg, msg_handler)
 
