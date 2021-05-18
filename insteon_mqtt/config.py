@@ -82,7 +82,7 @@ def validate_file(document, schema_file, name):
     """
     basepath = os.path.dirname(__file__)
     schema = None
-    schema_file_path = os.path.join(basepath, 'schemas', schema_file)
+    schema_file_path = os.path.join(basepath, 'data', schema_file)
     with open(schema_file_path, "r") as f:
         schema = yaml.load(f, Loader=yaml.Loader)
 
