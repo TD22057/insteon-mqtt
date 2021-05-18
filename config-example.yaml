@@ -1,0 +1,181 @@
+#==========================================================================
+#
+# Insteon <-> MQTT bridge configuration file.
+#
+# THIS IS JUST AN EXAMPLE FILE!
+#
+# At minimum, you need to make the following edits to use this as your
+# config file:
+# 1. Set the Modem port (or if using a hub hub_ip, hub_user, hub_password)
+# 2. Remove the example devices
+# 3. Add your insteon devices
+# 4. Confirm your MQTT broker settings
+#
+# NOTE: the loader supports using a !include tag to load other as a
+# item entry so you can do things like this:
+#
+# insteon:
+#    devices: !include devices.yaml
+#
+# Your config settings will be applied over the base settings.  Any setting
+# you do not define, will use the base values.  You can view the base config
+# in insteon_mqtt/data/config-base.yaml
+#
+#==========================================================================
+
+#==========================================================================
+#
+# Optional logging configuration (can also be set via the command line)
+#
+#==========================================================================
+logging:
+  # 5=VERBOSE, 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR
+  # VERBOSE only adds logging of MQTT ping requests to DEBUG
+  #level: 40
+
+#==========================================================================
+#
+# Insteon configuration
+#
+#==========================================================================
+insteon:
+  ###### Modem
+  # You can use either a PLM Modem or an Insteon Hub, but not both.
+
+  # PLM Modem option (Serial or USB)
+  port: '/dev/insteon'
+
+  # Insteon Hub option
+  # See https://github.com/TD22057/insteon-mqtt/blob/master/docs/hub.md
+  # for a discussion of the details of using a Hub as your modem.
+  # If set to true, will use the Hub settings below and ignore the Serial
+  # settings above
+  use_hub: False
+  hub_ip: 192.168.1.1
+  hub_user: username  # Can be found on the underside of your hub
+  hub_password: password  # Can be found on the underside of your hub
+
+  ######
+
+  # Device database file storage location.
+  #storage: 'data'
+
+  # Path to Scenes Definition file (Optional)
+  # The path can be specified either as an absolute path or as a relative path
+  # using the !rel_path directive.  Where the path is relative to the
+  # config.yaml location
+  #
+  #scenes: /home/user/insteon_mqtt/scenes.yaml
+  #scenes: !rel_path scenes.yaml
+
+  #------------------------------------------------------------------------
+  # Devices require the Insteon hex address and an optional name. Note
+  # that MQTT address topics are always the lower case hex address or
+  # the input name depending on how they are configured below.
+  devices:
+    # On/off switch devices (outlets, wall switches, appliance modules, etc).
+    switch:
+      - 3a.29.84: 'xmas tree'
+      - 26.48.ff: 'xmas stairs'
+      - 37.2d.20: 'deck'
+
+    # Dimming devices (outlets, wall switches, lamp modules, etc).
+    dimmer:
+      - 12.29.84: 'lamp2'
+      - 48.3d.46
+      - 48.b0.ad: 'dim1'
+
+    # Battery powered sensors (door, window).
+    battery_sensor:
+      - 94.a9.12
+
+    # Battery powered hidden door sensors
+    hidden_door:
+      - 32.a0.4b: 'back'
+
+    # Battery powered motion sensors.
+    motion:
+      - 21.d6.d9: 'door'
+
+    # Battery powered mini remotes.
+    mini_remote1:  # Single Button Remotes
+      - 12.34.56: 'remote switch'
+
+    mini_remote4:  # Remotes with 4 Buttons
+      - 3f.12.d4: 'remote4'
+
+    mini_remote8:  # Remotes with 8 Buttons
+      - 3f.07.d4: 'remote1'
+
+    # Smoke bridge module.
+    smoke_bridge:
+      - 44.a3.79: 'smoke alarm'
+
+    # FanLinc fan controller (dimmer+fan).
+    fan_linc:
+     - 9a.a1.b3
+
+    # KeypadLinc dimmers (dimmer+scene controller).
+    keypad_linc:
+      - 46.7b.bc: 'porch'
+
+    # KeypadLinc switches (on/off+scene controller).
+    keypad_linc_sw:
+      - 3c.42.9b: 'kp2'
+
+    # Leak sensors.
+    leak:
+     - 21.d8.d9: 'bathroom'
+
+    # IOLinc relay controllers
+    io_linc:
+      - 45.33.d4: 'garage'
+
+    # On/off outlets
+    outlet:
+     - aa.11.cc: 'outlet'
+
+    # Thermostatus
+    thermostat:
+     - aa.bb.cc: 'downstairs'
+
+    # EZIO4O 4 output relay modules
+    ezio4o:
+     - 22.bb.cc: 'relays'
+
+#==========================================================================
+#
+# MQTT configuration
+#
+#==========================================================================
+mqtt:
+  broker: 127.0.0.1
+  #port: 1883
+  # Optional broker login data.
+  #username:
+  #password:
+
+  # Outbound messages configuration.  Retain should generally be 1
+  # so that the current state is available when someone subscribes.
+  #qos: 1
+  #retain: 1
+
+  ### Discovery Settings
+  #
+  # Home Assistant implements mqtt device discovery as outlined at:
+  # https://www.home-assistant.io/docs/mqtt/discovery
+  # if discover_topic_base is defined, devices (as defined in config.yaml)
+  # announce themselves to Home Assistant. Announcing occurs once
+  # upon startup of insteon-mqtt and whenever HomeAssistant restart.
+  #
+  # The details of discovery_entities and how to define your own discovery
+  # templates can be found here:
+  # https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery.md
+  #
+  # Any additional variables that a specific device may offer are documented
+  # in the comments below under that device class.
+  #
+  # TO ENABLE THE DISCOVERY PLATFORM: Set the following to true
+  enable_discovery: false
+
+#----------------------------------------------------------------
