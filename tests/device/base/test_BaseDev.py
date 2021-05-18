@@ -200,6 +200,22 @@ class Test_Base_Config():
         assert len(sent) == 1
         assert sent[0].msg.to_bytes() == msg.to_bytes()
 
+    def test_send_std_raw_command(self, test_device):
+        msg = Msg.OutStandard.direct(test_device.addr, 0x32, 0x43)
+        test_device.raw_command(0x32, 0x43)
+        sent = test_device.protocol.sent
+        assert len(sent) == 1
+        assert sent[0].msg.to_bytes() == msg.to_bytes()
+
+    def test_send_ext_raw_command(self, test_device):
+        crc="D14"
+        data = [i for i in range(0, 20)]
+        msg = Msg.OutExtended.direct(test_device.addr, 0x32, 0x43, bytes(data[:14]), crc_type=crc)
+        test_device.raw_command(0x32, 0x43, data, crc_type=crc)
+        sent = test_device.protocol.sent
+        assert len(sent) == 1
+        assert sent[0].msg.to_bytes() == msg.to_bytes()
+
     def test_get_engine(self, test_device):
         msg = Msg.OutStandard.direct(test_device.addr,
                                      Msg.CmdType.GET_ENGINE_VERSION, 0x00)
