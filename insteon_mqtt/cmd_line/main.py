@@ -440,7 +440,7 @@ def parse_args(args):
     sp.add_argument("--crc", type=str, choices=["D14", "CRC"])
     sp.add_argument("-q", "--quiet", action="store_true",
                     help="Don't print any command results to the screen.")
-    sp.set_defaults(func=device.send_raw_message)
+    sp.set_defaults(func=device.send_raw_command)
 
     return p.parse_args(args)
 

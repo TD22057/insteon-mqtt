@@ -346,7 +346,7 @@ def set_low_battery_voltage(args, config):
 
 
 #===========================================================================
-def send_raw_message(args, config):
+def send_raw_command(args, config):
     topic = "%s/%s" % (args.topic, args.address)
     payload = {
         "cmd" : "raw_command",
