@@ -52,9 +52,7 @@ def validate(path):
     error = ""
 
     # Check the main config file first
-    document = None
-    with open(path, "r") as f:
-        document = yaml.load(f, Loader)
+    document = load(path)
     error += validate_file(document, 'config-schema.yaml', 'configuration')
 
     # Check the Scenes file

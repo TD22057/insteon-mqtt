@@ -31,7 +31,7 @@
 logging:
   # 5=VERBOSE, 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR
   # VERBOSE only adds logging of MQTT ping requests to DEBUG
-  #level: 40
+  level: 40
 
 #==========================================================================
 #
@@ -150,7 +150,7 @@ insteon:
 #==========================================================================
 mqtt:
   broker: 127.0.0.1
-  #port: 1883
+  port: 1883
   # Optional broker login data.
   #username:
   #password:
