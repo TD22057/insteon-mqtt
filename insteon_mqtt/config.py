@@ -170,11 +170,10 @@ def overlay(base_config, user_config):
                 # This is a new unique key, just push into base
                 base_copy[key] = user_config[key]
             elif isinstance(user_config[key], dict):
-                # The value of the key in user is a dict, recursively process this
+                # The value of the key in user is a dict, recursively process
                 base_copy[key] = overlay(base_copy[key], user_config[key])
             else:
-                # The value of the key in user is not a dict, overwrite value in
-                # base
+                # The value of the key in user is not a dict, overwrite base
                 base_copy[key] = user_config[key]
     else:
         # base is not a dict, so push user value into base
