@@ -509,13 +509,13 @@ class Base:
             msg = Msg.OutExtended.direct(self.addr, cmd1, cmd2, bytes(padded_and_trimmed_data), crc_type)
 
         if ext_resp:
-            # Use the standard command handler which will notify us when the
-            # command is ACK'ed.
-            msg_handler = handler.StandardCmd(msg, self.handle_std_raw_message, on_done)
-        else:
             # Use the extended response command handler which will notify us when the
             # command is ACK'ed.
-            msg_handler = handler.ExtendedCmdResponse(msg, self.handle_ext_raw_message, on_done)
+            msg_handler = handler.ExtendedCmdResponse(msg, self.handle_raw_command, on_done)
+        else:
+            # Use the standard command handler which will notify us when the
+            # command is ACK'ed.
+            msg_handler = handler.StandardCmd(msg, self.handle_raw_command, on_done)
 
         self.send(msg, msg_handler)
 
@@ -1175,12 +1175,7 @@ class Base:
         on_done(True, "Operation complete", msg.cmd2)
 
     #-----------------------------------------------------------------------
-    def handle_std_raw_message(self, msg, on_done):
-        LOG.ui("Device %s raw message response: %s", self.addr, msg)
-        on_done(True, "Raw Message complete", None)
-
-    #-----------------------------------------------------------------------
-    def handle_ext_raw_message(self, msg, on_done):
+    def handle_raw_command(self, msg, on_done):
         LOG.ui("Device %s raw message response: %s", self.addr, msg)
         on_done(True, "Raw Message complete", None)
 
