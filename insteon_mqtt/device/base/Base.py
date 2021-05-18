@@ -494,8 +494,10 @@ class Base:
             seq.add(function, **kwargs)
 
         seq.run()
+
     #-----------------------------------------------------------------------
-    def raw_command(self, cmd1, cmd2, data=None, crc_type=None, ext_resp=False, on_done=None):
+    def raw_command(self, cmd1, cmd2, data=None, crc_type=None, ext_resp=False,
+                    on_done=None):
         """Send a raw message to this device
 
         This can be used to send commands that aren't supported directly
@@ -506,16 +508,19 @@ class Base:
             msg = Msg.OutStandard.direct(self.addr, cmd1, cmd2)
         else:
             padded_and_trimmed_data = bytes(data + ([0] * 14))[:14]
-            msg = Msg.OutExtended.direct(self.addr, cmd1, cmd2, padded_and_trimmed_data, crc_type)
+            msg = Msg.OutExtended.direct(self.addr, cmd1, cmd2,
+                                            padded_and_trimmed_data, crc_type)
 
         if ext_resp:
-            # Use the extended response command handler which will notify us when the
-            # command is ACK'ed.
-            msg_handler = handler.ExtendedCmdResponse(msg, self.handle_raw_command, on_done)
+            # Use the extended response command handler which will notify us
+            # when the command is ACK'ed.
+            msg_handler = handler.ExtendedCmdResponse(
+                msg, self.handle_raw_command, on_done)
         else:
             # Use the standard command handler which will notify us when the
             # command is ACK'ed.
-            msg_handler = handler.StandardCmd(msg, self.handle_raw_command, on_done)
+            msg_handler = handler.StandardCmd(
+                msg, self.handle_raw_command, on_done)
 
         self.send(msg, msg_handler)
 
