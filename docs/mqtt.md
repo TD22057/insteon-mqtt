@@ -498,6 +498,47 @@ below the expected value
   { "cmd": "set_low_battery_voltage", "voltage": 7.0 }
     ```
 
+### Send a raw insteon command.
+
+Supported: devices
+
+Send a raw insteon command to devices. Any changes as a result of this
+command won't be kept in sync automatically, so use this at your risk.
+This command is intended to help developing and debugging insteon-mqtt,
+and is as low level as it gets. It supports standard and extended direct
+messages.
+
+#### Standard Direct message payload
+
+A standard message requires the cmd1 and cmd2 attributes - allowed values are
+`0x00` (0) -> `0xFF` (255).
+
+   ```
+   { "cmd": "raw_command", "cmd1": 31, "cmd2": 0 }
+   ```
+
+#### Extended Direct message payload
+
+To send an extended message, simply provide the data property (a list of numbers).
+It's value will be right padded with 0s and trimmed to 14 digits, then converted
+to bytes. The allowed values cmd1, cmd2, and elements within the data array are
+`0x00` (0) -> `0xFF` (255). The payload also allows specifying the crc type, with
+the allowed values of `D14`, `CRC`. If the type is not supplied the data array
+will be sent as is without calculating a CRC.
+
+   ```
+   { "cmd": "raw_command", "cmd1": 32, "cmd2": 4, data: [], crc_type: "D14" }
+   ```
+
+#### Insteon command tables
+
+You can find insteon command tables online; however, they are usually out
+dated. Most modern devices (since ~2012) run the i2cs engine, which is an
+extension on the i2 engine and updated certain commands to require the 
+D14 crc. If you try commands from an old command table and recieve a
+response that indicates an invalid checksum for a standard command, you
+can try it as an extended command with the D14 checksum.
+
 ---
 
 # State change commands
