@@ -343,4 +343,27 @@ def set_low_battery_voltage(args, config):
 
     reply = util.send(config, topic, payload, args.quiet)
     return reply["status"]
+
+
+#===========================================================================
+def send_raw_command(args, config):
+    topic = "%s/%s" % (args.topic, args.address)
+    payload = {
+        "cmd" : "raw_command",
+        "cmd1": args.cmd1,
+        "cmd2": args.cmd2,
+        "ext_resp": args.ext_resp
+        }
+
+    if args.ext_req:
+        payload["data"] = []
+
+    if args.data:
+        payload["data"] = args.data[:14]
+
+    if args.crc:
+        payload["crc_type"] = args.crc
+
+    reply = util.send(config, topic, payload, args.quiet)
+    return reply["status"]
 #===========================================================================
