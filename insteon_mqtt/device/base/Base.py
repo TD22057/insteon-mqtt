@@ -185,7 +185,7 @@ class Base:
             'get_model' : self.get_model,
             'sync': self.sync,
             'import_scenes': self.import_scenes,
-            'raw_message': self.raw_message
+            'raw_command': self.raw_command
             }
 
         # Device database delta.  The delta tells us if the database is
@@ -495,9 +495,7 @@ class Base:
 
         seq.run()
     #-----------------------------------------------------------------------
-    # TODO: remove this? i'm adding it to make it easier for me to test commands
-    # or extend it to support extended commands?
-    def raw_message(self, cmd1, cmd2, data=None, crc_type=None, ext_resp=False, on_done=None):
+    def raw_command(self, cmd1, cmd2, data=None, crc_type=None, ext_resp=False, on_done=None):
         """Send a raw message to this device
 
         This can be used to send commands that aren't supported directly

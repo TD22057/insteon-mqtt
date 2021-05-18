@@ -427,7 +427,7 @@ def parse_args(args):
 
     #---------------------------------------
     # device.raw_message
-    sp = sub.add_parser("raw-message", help="Sends a raw message to a configured device")
+    sp = sub.add_parser("raw-command", help="Sends a raw message to a configured device")
     sp.add_argument("address", help="Device address or name.")
     sp.add_argument("cmd1", type=auto_int, help="cmd1 byte")
     sp.add_argument("cmd2", type=auto_int, help="cmd2 byte")
