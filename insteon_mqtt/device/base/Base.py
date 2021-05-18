@@ -505,8 +505,8 @@ class Base:
         if data is None:
             msg = Msg.OutStandard.direct(self.addr, cmd1, cmd2)
         else:
-            padded_and_trimmed_data = (data + ([0] * 14))[:14]
-            msg = Msg.OutExtended.direct(self.addr, cmd1, cmd2, bytes(padded_and_trimmed_data), crc_type)
+            padded_and_trimmed_data = bytes(data + ([0] * 14))[:14]
+            msg = Msg.OutExtended.direct(self.addr, cmd1, cmd2, padded_and_trimmed_data, crc_type)
 
         if ext_resp:
             # Use the extended response command handler which will notify us when the
