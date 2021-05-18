@@ -356,10 +356,10 @@ def send_raw_message(args, config):
         }
 
     if args.ext_req:
-        payload["data"] = [0] * 14
+        payload["data"] = []
 
     if args.data:
-        payload["data"] = (args.data + ([0] * 14))[:14]
+        payload["data"] = args.data[:14]
 
     if args.crc:
         payload["crc_type"] = args.crc
