@@ -1335,12 +1335,15 @@ mqtt:
             "cmd_t": "{{fan_on_off_topic}}",
             "pct_cmd_t": "{{fan_speed_set_topic}}",
             "pct_cmd_tpl": "{% raw %}{% if value < 10 %}off{% elif value < 40 %}low{% elif value < 75 %}medium{% else %}high{% endif %}{% endraw %}",
-            "pct_stat_t": "{{fan_state_topic}}",
-            "pct_val_tpl": "{% raw %}{% if value_json.level == 'low' %}33{% elif value_json.level == 'medium' %}67{% elif value_json.level == 'high' %}100{% else %}0{% endif %}{% endraw %}",
-            "pr_mode_stat_t": "{{fan_state_topic}}",
+            "pct_stat_t": "{{fan_speed_topic}}",
+            "pct_val_tpl": "{% raw %}{% if value == 'low' %}33{% elif value == 'medium' %}67{% elif value == 'high' %}100{% else %}0{% endif %}{% endraw %}",
+            "pr_mode_stat_t": "{{fan_speed_topic}}",
             "pr_mode_cmd_t": "{{fan_speed_set_topic}}",
-            "pr_mode_val_tpl": "{% raw %}{{value_json.level}}{% endraw %}",
-            "pr_modes": ["off", "low", "medium", "high"]
+            "pr_modes": ["off", "low", "medium", "high"],
+            "json_attr_t": "{{fan_state_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}"
           }
       - component: 'light'
         config: |-
