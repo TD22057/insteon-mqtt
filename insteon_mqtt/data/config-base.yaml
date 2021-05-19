@@ -1281,7 +1281,7 @@ mqtt:
     fan_state_topic: 'insteon/{{address}}/fan/state'
     fan_state_payload: >-
       { "state" : "{{on_str.upper()}}",
-        "level" : {{level_str}},
+        "level" : "{{level_str}}",
         "timestamp" : {{timestamp}},
         "reason" : "{{reason}}" }
 
