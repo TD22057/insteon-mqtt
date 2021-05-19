@@ -6,5 +6,5 @@ __pycache__
 htmlcov
 
 # files created by tests
-data/
+/data/
 01.02.03.json

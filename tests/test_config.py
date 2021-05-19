@@ -5,6 +5,7 @@
 # pylint: disable=attribute-defined-outside-init
 #===========================================================================
 import os
+import yaml
 import pytest
 from unittest import mock
 from unittest.mock import call
@@ -138,6 +139,31 @@ class Test_config:
         validator._check_with_valid_insteon_addr('test_field', 'aabbbcc')
         validator._error.assert_called_once()
         validator._error.reset_mock()
+
+    #-----------------------------------------------------------------------
+    def test_overlay(self):
+        base = """
+                root:
+                  string: string
+                  dict:
+                    value1: value1
+                    value2: value2
+                absent: here"""
+        user = """
+                root:
+                  string: new-string
+                  dict:
+                    value1: value1
+                    value2:
+                      new-sub: value2
+                  new: new-key"""
+        config = IM.config.overlay(yaml.load(base, yaml.SafeLoader),
+                                   yaml.load(user, yaml.SafeLoader))
+        assert config['root']['string'] == 'new-string'
+        assert config['root']['dict']['value1'] == 'value1'
+        assert config['root']['dict']['value2']['new-sub'] == 'value2'
+        assert config['root']['new'] == 'new-key'
+        assert config['absent'] == 'here'
 
 #===========================================================================
 class MockManager:

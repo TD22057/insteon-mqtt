@@ -3,3 +3,7 @@ insteon:
   hub_ip: 192.168.1.1
   hub_user: username
   hub_password: password
+
+mqtt:
+  broker: 127.0.0.1
+  port: 1883
