@@ -33,6 +33,11 @@ logging:
   # VERBOSE only adds logging of MQTT ping requests to DEBUG
   level: 40
 
+  # Print messages to the screen.
+  #screen: False
+
+  # Print messages to a file.
+  #file: /var/log/insteon_mqtt.log
 #==========================================================================
 #
 # Insteon configuration
