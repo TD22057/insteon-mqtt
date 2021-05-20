@@ -282,8 +282,8 @@ mqtt:
                      {%- endif -%}",
             "cmd_t": "{{scene_topic}}",
             "device": {{device_info_template}},
-            "payload_on": "{\"cmd\": \"on\", \"group\": \"{{scene}}\"}",
-            "payload_off": "{\"cmd\": \"off\", \"group\": \"{{scene}}\"}"
+            "payload_on": "{\"state\": \"on\", \"group\": \"{{scene}}\"}",
+            "payload_off": "{\"state\": \"off\", \"group\": \"{{scene}}\"}"
           }
 
   # IMPORTANT: all devices must have the pair() command run one time to make
@@ -352,7 +352,7 @@ mqtt:
     # in the same way clicking the button would.  The inputs are the same as
     # those for the on_off topic and payload.
     scene_topic: 'insteon/{{address}}/scene'
-    scene_payload: '{ "cmd" : "{{json.cmd.lower()}}"
+    scene_payload: '{ "cmd" : "{{json.state.lower()}}"
                       {% if json.brightness is defined %}
                           , "level" : {{json.brightness}}
                       {% endif %}
@@ -1512,7 +1512,7 @@ mqtt:
     # in the same way clicking the button would.  The inputs are the same as
     # those for the btn_on_off topic and payload.
     btn_scene_topic: 'insteon/{{address}}/scene/{{button}}'
-    btn_scene_payload: '{ "cmd" : "{{json.cmd.lower()}}"
+    btn_scene_payload: '{ "cmd" : "{{json.state.lower()}}"
                           {% if json.brightness is defined %}
                               , "level" : {{json.brightness}}
                           {% endif %}
