@@ -88,7 +88,7 @@ class Test_Hub:
     #-----------------------------------------------------------------------
     @pytest.mark.parametrize("write,t,expected,buffer,calls", [
         (None, None, None, 0, 0),
-        (bytes([0x00]), time.time(), bytes([0x00]), 0, 1),
+        (bytes([0x00]), time.time() - 1, bytes([0x00]), 0, 1),
         (bytes([0x00]), time.time() + 10, None, 1, 0),
     ])
     def test_write(self, test_hub, write, t, expected, buffer, calls):
