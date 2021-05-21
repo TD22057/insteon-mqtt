@@ -140,6 +140,7 @@ insteon:
 mqtt:
   type: dict
   allow_unknown:
+    allow_unknown: False
     ## The only unknown keys are user defined discovery_class settings
     type: dict
     schema:
