@@ -7,6 +7,7 @@ With the addition of the Discovery Platform in the last minor release, the impro
 ### Additions
 
 - There is now a base config file that will be updated as part of the distribution.  Now, the only settings you need to define in your config.yaml, are those that are unique to your installation, or those settings you wish to override.  For most users, you config.yaml file can now be 10x smaller! ([PR 414][P414])
+- The base config file has been updated to provide device attributes in the state topics for devices.  Similarly, the default discovery entity configurations have also been updated so that device attributes are now ingested into Home Assistant.  Attributes such as `reason`, `mode`, `timestamp`, and others added in the future, are now available in HomeAssistant using the default InsteonMQTT setup. ([PR 417][P417])
 - Adds Resume_Dim feature.  For dimmable devices when this flag is enabled, when the device is turned on from its button, it will resume the same brightness level it previously had before being turned off.  Currently only works on i2CS devices, will be extended to i2 devices in the future. Thanks @lnr0626 ([PR 411][P411])
 - Adds the ability to send arbitrary insteon messages to a device for development purposes.  This is a huge win for development. Thanks @lnr0626 ([PR 413][P413])
 
@@ -768,3 +769,4 @@ will add new features.
 [P411]: https://github.com/TD22057/insteon-mqtt/pull/411
 [P413]: https://github.com/TD22057/insteon-mqtt/pull/413
 [P414]: https://github.com/TD22057/insteon-mqtt/pull/414
+[P417]: https://github.com/TD22057/insteon-mqtt/pull/417

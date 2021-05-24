@@ -126,6 +126,22 @@ class SetTopic(BaseTopic):
         # Parse the input MQTT message.
         data = self.msg_set.to_json(message.payload)
         LOG.info("SetTopic input command: %s", data)
+        self._input_set_device(data, group)
+
+    #-----------------------------------------------------------------------
+    def _input_set_device(self, data, group):
+        """Update the Device State Based on Set Command.
+
+        This is called by _input_set() and was pulled out of that method
+        so that KeypadLinc dimmers, which use a distinct dimmer topic and
+        payload, can parse the mqtt data differently from the normal
+        command topic.
+
+        Args:
+          client (paho.Client):  The paho mqtt client (self.link).
+          data:  Optional user data (unused).
+          message:  MQTT message - has attrs: topic, payload, qos, retain.
+        """
         try:
             # Tell the device to update its state.
             is_on, mode, transition = util.parse_on_off(data)

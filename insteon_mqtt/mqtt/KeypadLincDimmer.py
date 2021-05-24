@@ -136,19 +136,13 @@ class KeypadLincDimmer(KeypadLinc):
             return
 
         LOG.info("KeypadLinc input command: %s", data)
-        level_str = data.get('level', None)
-        if level_str is None or level_str == "":
-            # Dimmer and command topic can be the same
-            # If this lacks a level command it is meant for on/off
-            self._input_set(client, data, message)
-        else:
-            try:
-                is_on, mode, transition = util.parse_on_off(data)
-                level = '0' if not is_on else data.get('level', None)
-                if level is not None:
-                    level = int(level)
-                reason = data.get("reason", "")
-                self.device.set(is_on=is_on, level=level, mode=mode,
-                                reason=reason, transition=transition)
-            except:
-                LOG.error("Invalid KeypadLinc level command: %s", data)
+        try:
+            is_on, mode, transition = util.parse_on_off(data)
+            level = '0' if not is_on else data.get('level', None)
+            if level is not None:
+                level = int(level)
+            reason = data.get("reason", "")
+            self.device.set(is_on=is_on, level=level, mode=mode,
+                            reason=reason, transition=transition)
+        except:
+            LOG.error("Invalid KeypadLinc level command: %s", data)
