@@ -17,7 +17,6 @@ from . import log
 from . import message as Msg
 from . import util
 from . import Scenes
-from . import device as DevClass
 from .Signal import Signal
 
 LOG = log.get_logger()

@@ -10,7 +10,6 @@ __doc__ = """Configuration file utilties
 #===========================================================================
 import os.path
 import re
-import ipaddress
 import yaml
 from cerberus import Validator
 from cerberus.errors import BasicErrorHandler
@@ -53,9 +52,7 @@ def validate(path):
     error = ""
 
     # Check the main config file first
-    document = None
-    with open(path, "r") as f:
-        document = yaml.load(f, Loader)
+    document = load(path)
     error += validate_file(document, 'config-schema.yaml', 'configuration')
 
     # Check the Scenes file
@@ -83,7 +80,7 @@ def validate_file(document, schema_file, name):
     """
     basepath = os.path.dirname(__file__)
     schema = None
-    schema_file_path = os.path.join(basepath, 'schemas', schema_file)
+    schema_file_path = os.path.join(basepath, 'data', schema_file)
     with open(schema_file_path, "r") as f:
         schema = yaml.load(f, Loader=yaml.Loader)
 
@@ -126,14 +123,62 @@ def parse_validation_errors(errors, indent=0):
 def load(path):
     """Load the configuration file.
 
+    This will first load the base config and then overlay the user config
+    on top of this
+
     Args:
       path:  The file to load
 
     Returns:
       dict: Returns the configuration dictionary.
     """
+    basepath = os.path.dirname(__file__)
+    base_config_path = os.path.join(basepath, 'data', 'config-base.yaml')
+    base_config = {}
+    user_config = {}
+
+    with open(base_config_path, "r") as f:
+        base_config = yaml.load(f, Loader)
+
     with open(path, "r") as f:
-        return yaml.load(f, Loader)
+        user_config = yaml.load(f, Loader)
+
+    return overlay(base_config, user_config)
+
+
+#===========================================================================
+def overlay(base_config, user_config):
+    """This overlays a user config file on top of the base config file
+
+    This essentially merges the two yaml files into a single config using the
+    following rules
+
+    1. Any unique key found in user_config will be added to the base_config.
+    2. Any value in user_config that __is not__ an instance of dict, will be
+       copied to the same key in base_config.
+    3. Any value in user_config that __is__ a dict, will be recursively
+       examined applying these same rules.
+
+    Returns:
+      (dict): the merged config
+
+    """
+    if isinstance(base_config, dict):
+        base_copy = base_config.copy()
+        for key in user_config:
+            if key not in base_copy:
+                # This is a new unique key, just push into base
+                base_copy[key] = user_config[key]
+            elif isinstance(user_config[key], dict):
+                # The value of the key in user is a dict, recursively process
+                base_copy[key] = overlay(base_copy[key], user_config[key])
+            else:
+                # The value of the key in user is not a dict, overwrite base
+                base_copy[key] = user_config[key]
+    else:
+        # base is not a dict, so push user value into base
+        base_copy = user_config
+    return base_copy
 
 
 #===========================================================================

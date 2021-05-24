@@ -40,7 +40,10 @@ def test_set_on_functions(stack):
     stack.write_to_modem('02623a29840f11ff06')
     # Return the device ACK
     stack.write_to_modem('02503a298441eee62b11ff')
-    assert stack.published_topics['insteon/3a.29.84/state'] == 'ON'
+    response = json.loads(stack.published_topics['insteon/3a.29.84/state'])
+    assert response['state'] == 'ON'
+    assert response['mode'] == 'NORMAL'
+    assert response['reason'] == 'command'
 
     #-----------------------
     # Test the level command
@@ -52,8 +55,9 @@ def test_set_on_functions(stack):
     stack.write_to_modem('02621229840f117f06')
     # Return the device ACK   1229840f117f06
     stack.write_to_modem('025012298441eee62b117f')
-    assert (stack.published_topics['insteon/12.29.84/state'] ==
-            '{ "state" : "ON", "brightness" : 127 }')
+    response = json.loads(stack.published_topics['insteon/12.29.84/state'])
+    assert response['state'] == 'ON'
+    assert response['brightness'] == 127
 
 
 # ===============================================================

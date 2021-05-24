@@ -184,7 +184,8 @@ class Base:
             'get_engine' : self.get_engine,
             'get_model' : self.get_model,
             'sync': self.sync,
-            'import_scenes': self.import_scenes
+            'import_scenes': self.import_scenes,
+            'raw_command': self.raw_command
             }
 
         # Device database delta.  The delta tells us if the database is
@@ -493,6 +494,35 @@ class Base:
             seq.add(function, **kwargs)
 
         seq.run()
+
+    #-----------------------------------------------------------------------
+    def raw_command(self, cmd1, cmd2, data=None, crc_type=None, ext_resp=False,
+                    on_done=None):
+        """Send a raw message to this device
+
+        This can be used to send commands that aren't supported directly
+        by insteon-mqtt yet. This is as low level as it gets, use at your
+        own risk
+        """
+        if data is None:
+            msg = Msg.OutStandard.direct(self.addr, cmd1, cmd2)
+        else:
+            padded_and_trimmed_data = bytes(data + ([0] * 14))[:14]
+            msg = Msg.OutExtended.direct(self.addr, cmd1, cmd2,
+                                            padded_and_trimmed_data, crc_type)
+
+        if ext_resp:
+            # Use the extended response command handler which will notify us
+            # when the command is ACK'ed.
+            msg_handler = handler.ExtendedCmdResponse(
+                msg, self.handle_raw_command, on_done)
+        else:
+            # Use the standard command handler which will notify us when the
+            # command is ACK'ed.
+            msg_handler = handler.StandardCmd(
+                msg, self.handle_raw_command, on_done)
+
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def refresh(self, force=False, group=None, on_done=None):
@@ -1148,6 +1178,11 @@ class Base:
         LOG.ui("Device %s operating flags: %s", self.addr,
                "{:08b}".format(msg.cmd2))
         on_done(True, "Operation complete", msg.cmd2)
+
+    #-----------------------------------------------------------------------
+    def handle_raw_command(self, msg, on_done):
+        LOG.ui("Device %s raw message response: %s", self.addr, msg)
+        on_done(True, "Raw Message complete", None)
 
     #-----------------------------------------------------------------------
     def handle_engine(self, msg, on_done):

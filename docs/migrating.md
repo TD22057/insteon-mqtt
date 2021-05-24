@@ -1,18 +1,12 @@
 # Migrating to Discovery for Installations 0.8.3 and Earlier
 
-The current design of InsteonMQTT uses a single configuration file.  Sadly
-this means that when new additions are added to the configuration file, you
-need to copy them from the sample configuration file into your own file.
+Prior to version 1.0.0 InsteonMQTT used a single configuration file.  Starting in version 1.0.0, the base configuration settings are contained in a base configuration file that ships with InsteonMQTT.  You can view the contents of this file here: [config-base.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/insteon_mqtt/data/config-base.yaml)
 
-## Arguments Against Migrating
+As described in [configuration](configuration.md), the settings in this base configuration file can be overwritten using your user configuration file.
 
-Upgrading your config file to use the discovery platform and switching from
-yaml defined entities in HomeAssistant o use the discovery platform will
-require a little bit
-of work.  Depending on your installation, this could take __hours of work__.
-So please consider whether this is worth it for you.
+As a result, the easiest way to upgrade is to start a new `config.yaml` file as described below.  However, before changing, consider if the Discovery Platform is worth it to you.
 
-### Does Not Offer New InsteonMQTT Functionality
+### Does Not In Itself Offer New InsteonMQTT Functionality
 
 The discovery platform is a __great feature for new users__.  It allows them to
 define insteon devices once and get HomeAssistant entities with zero effort.
@@ -29,57 +23,32 @@ through the `Configuration -> Integrations` page in HomeAssistant.  This allows
 the user to change items using a graphical user interface, but all of the same
 items can be modified using yaml defintions as well.
 
-### Upgrading Is Currently Time Consuming (Future releases should improve this)
+### May Offer Access to Future InsteonMQTT Features or Fixes via Upgrades
 
-The next minor release of InsteonMQTT intends to solve issues #383 and #391
-This should decrease the amount of copy and pasting that you have to do.
-It is up to you, __but it may be easier to wait for the next minor release__
-before switching to the discovery platform.
-
-## Arguments for Migrating
-
-The discovery platform is a clear win for new users.
-
-For existing users, the only real benefit, is likely to be minor tweaks and
-improvements to the HomeAssistant interaction.  It is clear, that HomeAssistant
-is heading away from the yaml configuration style and towards a more gui based
-configuration.
+Starting in version 1.0.0, now that the base config file is pushed as part of each upgrade, tweaks or fixes to the templates can be sent directly to you.  Depending on your personality, this may be a good or a bad thing.
 
 # How to Migrate to the Discovery Platform
 
 As noted, this could take some time, it isn't really something that you can
 do in steps, so be sure you have enough time set aside.
 
-1. Make a backup copy of your InsteonMQTT config.yaml file.
+1. Move your InsteonMQTT config.yaml file to config-backup.yaml.
 2. Make a backup copy of all HomeAssistant configurations that define insteon
 entities.
-3. Copy the discovery settings in the `mqtt` key from the config-example.yaml
-file.  Specifically, the `enable_discovery`, `discovery_topic_base`, `discovery_ha_status` and `device_info_template` keys.
-4. Under each of the device subkeys (e.g. `modem`, `switch`, `dimmer` ...) copy
-the `discovery_entities` from the config-example.yaml into your config file.
-
->The above steps can be completed without affecting your installation.  The
-following steps make changes that must either be completed or reverted to
-enable things to work.
-
-5. Check to see if any of your `*_payload` entries differs from the suggested
-entry defined in the config-example.yaml.  The best way to do this is using a
-diff tool.  If they are different, either update your `*_payload` defintion, or
-amend the `discovery_entities` as necessary.  For example, if your
-`state_payload` generates a json payload, the `discovery_entities` needs to be
-defined to expect a json payload.
-6.Remove or comment out the inston entities in your HomeAssistant
+3. Rename `config-yaml.default` to `config.yaml`.
+4. Follow the insstructions [Configuration Instructions](https://github.com/TD22057/insteon-mqtt/blob/master/docs/configuration.md) copying the details of your modem, devices, and mqtt broker from your backup file.
+5.Remove or comment out the insteon entities in your HomeAssistant
 configuration.
-7. Restart HomeAssistant (your front end will likely be filled with yellow triangles).
-8. Make sure `enable_discovery` is set to `true` in your InsteonMQTT config.
-9. Restart InsteonMQTT.
-10. Using `Configuration -> Integrations` in HomeAssistant rename and adjust
+6. Restart HomeAssistant (your front end will likely be filled with yellow triangles).
+7. Make sure `enable_discovery` is set to `true` in your InsteonMQTT config.
+8. Restart InsteonMQTT.
+9. Using `Configuration -> Integrations` in HomeAssistant rename and adjust
 the entity ID of the discovered insteon entities to match your prior
 installation.  You can hover over the yellow triangles in your fron end to see
 the missing Entity IDs.  Once the Entity ID has been fixed, the yellow triangle
 will go away.  You can also review your old insteon entity defintions one by
 one to verify that your entities have been created and are correctly identified.
-11. Check the HomeAssistant log and the InsteonMQTT log for any errors.
+10. Check the HomeAssistant log and the InsteonMQTT log for any errors.
 
 > If you make changes to your InsteonMQTT config, you will need to restart
 InsteonMQTT for them to take effect.  It seems like in some cases, you may

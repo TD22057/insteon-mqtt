@@ -41,8 +41,7 @@ mqtt:
   enable_discovery: true
 ```
 
-The config-example.yaml file that ships with InsteonMQTT contains the initial
-templates for all Insteon devices.
+The base configuration file that ships inside InsteonMQTT contains the initial templates for all Insteon devices.
 
 > __If you installed InsteonMQTT starting with version 0.8.3 or earlier__, you will
 need to read the [Migrating to Discovery](migrating.md) page for instructions on how to
@@ -126,6 +125,8 @@ mqtt:
       # This is where device aa.bb.cc will look to find its template by
       # default
 ```
+
+If you review the contents of the base configuration file, under the `mqtt` section, you will see many examples of the `discovery_entities` setting. [config-base.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/insteon_mqtt/data/config-base.yaml)
 
 ### Using a Custom Device Template
 
@@ -278,6 +279,8 @@ of this key should be a template that when rendered produces the device_info
 relevant to the majority of your devices.  This template can then be inserted
 into any of the `discovery_entities` by using the `device_info_template`
 variable.
+
+You can view the default template in [config-base.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/insteon_mqtt/data/config-base.yaml)
 
 For example, the following a complex template that produces a nice device
 info:

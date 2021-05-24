@@ -1,13 +1,34 @@
 # Revision Change History
 
+## [1.0.0]
+
+With the addition of the Discovery Platform in the last minor release, the improved config file design added by this release, and the numerous other additions and fixes added by everyone, it seemed about time to call this a version 1 product. 🎉 🎉 🎉
+
+### Additions
+
+- There is now a base config file that will be updated as part of the distribution.  Now, the only settings you need to define in your config.yaml, are those that are unique to your installation, or those settings you wish to override.  For most users, you config.yaml file can now be 10x smaller! ([PR 414][P414])
+- The base config file has been updated to provide device attributes in the state topics for devices.  Similarly, the default discovery entity configurations have also been updated so that device attributes are now ingested into Home Assistant.  Attributes such as `reason`, `mode`, `timestamp`, and others added in the future, are now available in HomeAssistant using the default InsteonMQTT setup. ([PR 417][P417])
+- Adds Resume_Dim feature.  For dimmable devices when this flag is enabled, when the device is turned on from its button, it will resume the same brightness level it previously had before being turned off.  Currently only works on i2CS devices, will be extended to i2 devices in the future. Thanks @lnr0626 ([PR 411][P411])
+- Adds the ability to send arbitrary insteon messages to a device for development purposes.  This is a huge win for development. Thanks @lnr0626 ([PR 413][P413])
+
+### Fixes
+
+- Fix failure to create initial `config.yaml` file in HomeAssistant
+  Supervisor installation.  Thanks @lnr0626 ([PR 406][P406])
+- Update .gitignore to skip files created by testing. Thanks @lnr0626
+  ([PR 407][P407])
+- Adds a file necessary for a unit test that was accidentally left out.
+  Thanks @lnr0626 ([PR 410][P410])
+
+
 ## [0.9.2]
 
-## Hotfix
+### Hotfix
 
 - Allows the use of domain names for the broker and hub addresses.  I created a
-  bug in 0.9.1, my fault for thinking of this. ([PR 404][P404])
+  bug in 0.9.1, my fault for not thinking of this. ([PR 404][P404])
 
-## Fixes
+### Fixes
 
 - Adjusts the docker build script to one that works. ([PR 402][P402])
 
@@ -742,3 +763,10 @@ will add new features.
 [P400]: https://github.com/TD22057/insteon-mqtt/pull/400
 [P404]: https://github.com/TD22057/insteon-mqtt/pull/404
 [P402]: https://github.com/TD22057/insteon-mqtt/pull/402
+[P406]: https://github.com/TD22057/insteon-mqtt/pull/406
+[P407]: https://github.com/TD22057/insteon-mqtt/pull/407
+[P410]: https://github.com/TD22057/insteon-mqtt/pull/410
+[P411]: https://github.com/TD22057/insteon-mqtt/pull/411
+[P413]: https://github.com/TD22057/insteon-mqtt/pull/413
+[P414]: https://github.com/TD22057/insteon-mqtt/pull/414
+[P417]: https://github.com/TD22057/insteon-mqtt/pull/417
