@@ -282,8 +282,8 @@ mqtt:
                      {%- endif -%}",
             "cmd_t": "{{scene_topic}}",
             "device": {{device_info_template}},
-            "payload_on": "{\"cmd\": \"on\", \"group\": \"{{scene}}\"}",
-            "payload_off": "{\"cmd\": \"off\", \"group\": \"{{scene}}\"}"
+            "payload_on": "{\"state\": \"on\", \"group\": \"{{scene}}\"}",
+            "payload_off": "{\"state\": \"off\", \"group\": \"{{scene}}\"}"
           }
 
   # IMPORTANT: all devices must have the pair() command run one time to make
@@ -315,7 +315,11 @@ mqtt:
     #   instant = 0/1
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
     state_topic: 'insteon/{{address}}/state'
-    state_payload: '{{on_str.upper()}}'
+    state_payload: >-
+      { "state" : "{{on_str.upper()}}",
+        "mode" : "{{mode.upper()}}",
+        "timestamp" : {{timestamp}},
+        "reason" : "{{reason}}" }
 
     # Manual mode (holding down a button) is triggered once when the button
     # is held and once when it's released.  Available variables for
@@ -337,13 +341,18 @@ mqtt:
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
     on_off_topic: 'insteon/{{address}}/set'
-    on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+    on_off_payload: >
+      { "cmd" : {%- if json is defined and json -%}
+                  "{{json.state.lower()}}"
+                {%- else -%}
+                  "{{value.lower()}}"
+                {%- endif -%}}
 
     # Scene on/off command.  This triggers the scene broadcast on the switch
     # in the same way clicking the button would.  The inputs are the same as
     # those for the on_off topic and payload.
     scene_topic: 'insteon/{{address}}/scene'
-    scene_payload: '{ "cmd" : "{{json.cmd.lower()}}"
+    scene_payload: '{ "cmd" : "{{json.state.lower()}}"
                       {% if json.brightness is defined %}
                           , "level" : {{json.brightness}}
                       {% endif %}
@@ -358,7 +367,12 @@ mqtt:
             "name": "{{name_user_case}}",
             "cmd_t": "{{on_off_topic}}",
             "stat_t": "{{state_topic}}",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "json_attr_t": "{{state_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
 
   #------------------------------------------------------------------------
@@ -393,8 +407,12 @@ mqtt:
     #   instant = 0/1
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
     state_topic: 'insteon/{{address}}/state'
-    state_payload: >
-       { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
+    state_payload: >-
+      { "state" : "{{on_str.upper()}}",
+        "brightness" : {{level_255}},
+        "mode" : "{{mode.upper()}}",
+        "timestamp" : {{timestamp}},
+        "reason" : "{{reason}}" }
 
     # Manual mode (holding down a button) is triggered once when the button
     # is held and once when it's released.  Available variables for
@@ -477,7 +495,11 @@ mqtt:
             "stat_t": "{{state_topic}}",
             "brightness": true,
             "schema": "json",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "json_attr_t": "{{state_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}"
           }
 
   #------------------------------------------------------------------------
@@ -507,7 +529,11 @@ mqtt:
     #   on = 0/1
     #   on_str = 'off'/'on'
     state_topic: 'insteon/{{address}}/state'
-    state_payload: '{{on_str.upper()}}'
+    state_payload: >-
+      { "state" : "{{on_str.upper()}}",
+        "mode" : "{{mode.upper()}}",
+        "timestamp" : {{timestamp}},
+        "reason" : "{{reason}}" }
 
     # Output low battery topic and payload.  This message is sent
     # whenever the device detects a low battery. Available variables
@@ -518,7 +544,9 @@ mqtt:
     #   is_low = 0/1
     #   is_low_str = 'off'/'on'
     low_battery_topic: 'insteon/{{address}}/battery'
-    low_battery_payload: '{{is_low_str.upper()}}'
+    low_battery_payload: >-
+      { "state" : "{{is_low_str.upper()}}",
+        "timestamp" : {{timestamp}} }
 
     # Output heartbeat topic and payload.  This message is sent
     # every 24 hours. Available variables for templating are:
@@ -544,7 +572,13 @@ mqtt:
             "name": "{{name_user_case}} door",
             "stat_t": "{{state_topic}}",
             "device_class": "door",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{state_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'binary_sensor'
         config: |-
@@ -553,7 +587,13 @@ mqtt:
             "name": "{{name_user_case}} battery",
             "stat_t": "{{low_battery_topic}}",
             "device_class": "battery",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{low_battery_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}} }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'sensor'
         config: |-
@@ -562,7 +602,8 @@ mqtt:
             "name": "{{name_user_case}} heartbeat",
             "stat_t": "{{heartbeat_topic}}",
             "device_class": "timestamp",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true
           }
 
   #------------------------------------------------------------------------
@@ -592,7 +633,9 @@ mqtt:
     #   is_dusk_str = 'off'/'on'
     #   state = 'dawn'/'dusk'
     dawn_dusk_topic: 'insteon/{{address}}/dawn'
-    dawn_dusk_payload: '{{is_dawn_str.upper()}}'
+    dawn_dusk_payload: >-
+      { "state" : "{{is_dawn_str.upper()}}",
+        "timestamp" : {{timestamp}} }
 
     # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
     discovery_entities:
@@ -603,7 +646,13 @@ mqtt:
             "name": "{{name_user_case}} motion",
             "stat_t": "{{state_topic}}",
             "device_class": "motion",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{state_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'binary_sensor'
         config: |-
@@ -612,7 +661,13 @@ mqtt:
             "name": "{{name_user_case}} battery",
             "stat_t": "{{low_battery_topic}}",
             "device_class": "battery",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{low_battery_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}} }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'binary_sensor'
         config: |-
@@ -621,7 +676,13 @@ mqtt:
             "name": "{{name_user_case}} dusk",
             "stat_t": "{{dawn_dusk_topic}}",
             "device_class": "light",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{dawn_dusk_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}} }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
 
   #------------------------------------------------------------------------
@@ -649,7 +710,9 @@ mqtt:
     #   batt_volt = raw insteon voltage level
 
     battery_voltage_topic: 'insteon/{{address}}/battery_voltage'
-    battery_voltage_payload: '{"voltage" : {{batt_volt}}}'
+    battery_voltage_payload: >-
+      { "voltage" : {{batt_volt}},
+        "timestamp" : {{timestamp}} }
 
     # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
     discovery_entities:
@@ -660,7 +723,13 @@ mqtt:
             "name": "{{name_user_case}} door",
             "stat_t": "{{state_topic}}",
             "device_class": "door",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{state_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'binary_sensor'
         config: |-
@@ -669,7 +738,13 @@ mqtt:
             "name": "{{name_user_case}} battery",
             "stat_t": "{{low_battery_topic}}",
             "device_class": "battery",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{low_battery_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}} }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'sensor'
         config: |-
@@ -678,7 +753,8 @@ mqtt:
             "name": "{{name_user_case}} heartbeat",
             "stat_t": "{{heartbeat_topic}}",
             "device_class": "timestamp",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true
           }
       - component: 'sensor'
         config: |-
@@ -687,7 +763,13 @@ mqtt:
             "name": "{{name_user_case}} voltage",
             "stat_t": "{{battery_voltage_topic}}",
             "device_class": "voltage",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{battery_voltage_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}} }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.voltage}}{% endraw %}"
           }
 
   #------------------------------------------------------------------------
@@ -724,7 +806,9 @@ mqtt:
     #   is_dry_str = 'off'/'on'
     #   state = 'wet'/'dry'
     wet_dry_topic: 'insteon/{{address}}/wet'
-    wet_dry_payload: '{{is_wet_str.upper()}}'
+    wet_dry_payload: >-
+      { "state" : "{{is_wet_str.upper()}}",
+        "timestamp" : {{timestamp}} }
 
     # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
     discovery_entities:
@@ -735,7 +819,13 @@ mqtt:
             "name": "{{name_user_case}} leak",
             "stat_t": "{{wet_dry_topic}}",
             "device_class": "moisture",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{wet_dry_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}} }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'sensor'
         config: |-
@@ -769,7 +859,11 @@ mqtt:
     #   fast = 0/1
     #   instant = 0/1
     state_topic: 'insteon/{{address}}/state/{{button}}'
-    state_payload: '{{on_str.upper()}}'
+    state_payload: >-
+      { "state" : "{{on_str.upper()}}",
+        "mode" : "{{mode.upper()}}",
+        "timestamp" : {{timestamp}},
+        "reason" : "{{reason}}" }
 
     # Manual mode (holding down a button) is triggered once when the button
     # is held and once when it's released.  Available variables for
@@ -801,7 +895,13 @@ mqtt:
             "uniq_id": "{{address}}_1",
             "name": "{{name_user_case}} btn 1",
             "stat_t": "{{state_topic_1}}",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{state_topic_1}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'binary_sensor'
         config: |-
@@ -809,7 +909,13 @@ mqtt:
             "uniq_id": "{{address}}_2",
             "name": "{{name_user_case}} btn 2",
             "stat_t": "{{state_topic_2}}",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{state_topic_2}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'binary_sensor'
         config: |-
@@ -817,7 +923,13 @@ mqtt:
             "uniq_id": "{{address}}_3",
             "name": "{{name_user_case}} btn 3",
             "stat_t": "{{state_topic_3}}",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{state_topic_3}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'binary_sensor'
         config: |-
@@ -825,7 +937,13 @@ mqtt:
             "uniq_id": "{{address}}_4",
             "name": "{{name_user_case}} btn 4",
             "stat_t": "{{state_topic_4}}",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{state_topic_4}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'binary_sensor'
         config: |-
@@ -833,7 +951,13 @@ mqtt:
             "uniq_id": "{{address}}_5",
             "name": "{{name_user_case}} btn 5",
             "stat_t": "{{state_topic_5}}",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{state_topic_5}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'binary_sensor'
         config: |-
@@ -841,7 +965,11 @@ mqtt:
             "uniq_id": "{{address}}_6",
             "name": "{{name_user_case}} btn 6",
             "stat_t": "{{state_topic_6}}",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'binary_sensor'
         config: |-
@@ -849,7 +977,11 @@ mqtt:
             "uniq_id": "{{address}}_7",
             "name": "{{name_user_case}} btn 7",
             "stat_t": "{{state_topic_7}}",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'binary_sensor'
         config: |-
@@ -857,7 +989,11 @@ mqtt:
             "uniq_id": "{{address}}_8",
             "name": "{{name_user_case}} btn 8",
             "stat_t": "{{state_topic_8}}",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'binary_sensor'
         config: |-
@@ -866,7 +1002,13 @@ mqtt:
             "name": "{{name_user_case}} battery",
             "stat_t": "{{low_battery_topic}}",
             "device_class": "battery",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "force_update": true,
+            "json_attr_t": "{{low_battery_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}} }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
 
   #------------------------------------------------------------------------
@@ -1137,7 +1279,11 @@ mqtt:
     #   level_str = 'off'/'low'/'medium'/'high'
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
     fan_state_topic: 'insteon/{{address}}/fan/state'
-    fan_state_payload: '{{on_str.upper()}}'
+    fan_state_payload: >-
+      { "state" : "{{on_str.upper()}}",
+        "level" : "{{level_str}}",
+        "timestamp" : {{timestamp}},
+        "reason" : "{{reason}}" }
 
     # Fan on/off command.  Similar functionality to the cmd_topic but only
     # for turning the device on and off.  If reason is input, is will be
@@ -1193,7 +1339,11 @@ mqtt:
             "pct_val_tpl": "{% raw %}{% if value == 'low' %}33{% elif value == 'medium' %}67{% elif value == 'high' %}100{% else %}0{% endif %}{% endraw %}",
             "pr_mode_stat_t": "{{fan_speed_topic}}",
             "pr_mode_cmd_t": "{{fan_speed_set_topic}}",
-            "pr_modes": ["off", "low", "medium", "high"]
+            "pr_modes": ["off", "low", "medium", "high"],
+            "json_attr_t": "{{fan_state_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}"
           }
       - component: 'light'
         config: |-
@@ -1204,7 +1354,11 @@ mqtt:
             "stat_t": "{{state_topic}}",
             "brightness": true,
             "schema": "json",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "json_attr_t": "{{state_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}"
           }
 
   #------------------------------------------------------------------------
@@ -1260,7 +1414,11 @@ mqtt:
     #   instant = 0/1
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
     btn_state_topic: 'insteon/{{address}}/state/{{button}}'
-    btn_state_payload: '{{on_str.upper()}}'
+    btn_state_payload: >-
+      { "state" : "{{on_str.upper()}}",
+        "mode" : "{{mode.upper()}}",
+        "timestamp" : {{timestamp}},
+        "reason" : "{{reason}}" }
 
     # Dimmer output state change topic and payload for button 1.  This
     # message is sent whenever the device dimmer state changes for any
@@ -1277,8 +1435,12 @@ mqtt:
     #   instant = 0/1
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
     dimmer_state_topic: 'insteon/{{address}}/state/1'
-    dimmer_state_payload: >
-       { "state" : "{{on_str.upper()}}", "brightness" : {{level_255}} }
+    dimmer_state_payload: >-
+      { "state" : "{{on_str.upper()}}",
+        "brightness" : {{level_255}},
+        "mode" : "{{mode.upper()}}",
+        "timestamp" : {{timestamp}},
+        "reason" : "{{reason}}" }
 
     # Manual mode (holding down a button) is triggered once when the button
     # is held and once when it's released.  Available variables for
@@ -1302,7 +1464,12 @@ mqtt:
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
     btn_on_off_topic: 'insteon/{{address}}/set/{{button}}'
-    btn_on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
+    btn_on_off_payload: >-
+      { "cmd" : {%- if json is defined and json -%}
+                  "{{json.state.lower()}}"
+                {%- else -%}
+                  "{{value.lower()}}"
+                {%- endif -%}}
 
     # Input dimming on/off command for button 1.  Similar functionality to
     # the cmd_topic but only for turning the group 1 on and off and setting
@@ -1345,7 +1512,7 @@ mqtt:
     # in the same way clicking the button would.  The inputs are the same as
     # those for the btn_on_off topic and payload.
     btn_scene_topic: 'insteon/{{address}}/scene/{{button}}'
-    btn_scene_payload: '{ "cmd" : "{{json.cmd.lower()}}"
+    btn_scene_payload: '{ "cmd" : "{{json.state.lower()}}"
                           {% if json.brightness is defined %}
                               , "level" : {{json.brightness}}
                           {% endif %}
@@ -1387,7 +1554,15 @@ mqtt:
                         {{dimmer_state_topic}}
                       {%- else -%}
                         {{btn_state_topic_1}}
-                      {%- endif -%}"
+                      {%- endif -%}",
+            "json_attr_t": "{%- if is_dimmable -%}
+                              {{dimmer_state_topic}}
+                            {%- else -%}
+                              {{btn_state_topic_1}}
+                            {%- endif -%}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}"
           }
       - component: 'switch'
         config: |-
@@ -1396,7 +1571,12 @@ mqtt:
             "name": "{{name_user_case}} btn 2",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_2}}",
-            "stat_t": "{{btn_state_topic_2}}"
+            "stat_t": "{{btn_state_topic_2}}",
+            "json_attr_t": "{{btn_state_topic_2}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'switch'
         config: |-
@@ -1405,7 +1585,12 @@ mqtt:
             "name": "{{name_user_case}} btn 3",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_3}}",
-            "stat_t": "{{btn_state_topic_3}}"
+            "stat_t": "{{btn_state_topic_3}}",
+            "json_attr_t": "{{btn_state_topic_3}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'switch'
         config: |-
@@ -1414,7 +1599,12 @@ mqtt:
             "name": "{{name_user_case}} btn 4",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_4}}",
-            "stat_t": "{{btn_state_topic_4}}"
+            "stat_t": "{{btn_state_topic_4}}",
+            "json_attr_t": "{{btn_state_topic_4}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'switch'
         config: |-
@@ -1423,7 +1613,12 @@ mqtt:
             "name": "{{name_user_case}} btn 5",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_5}}",
-            "stat_t": "{{btn_state_topic_5}}"
+            "stat_t": "{{btn_state_topic_5}}",
+            "json_attr_t": "{{btn_state_topic_5}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'switch'
         config: |-
@@ -1432,7 +1627,12 @@ mqtt:
             "name": "{{name_user_case}} btn 6",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_6}}",
-            "stat_t": "{{btn_state_topic_6}}"
+            "stat_t": "{{btn_state_topic_6}}",
+            "json_attr_t": "{{btn_state_topic_6}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'switch'
         config: |-
@@ -1441,7 +1641,12 @@ mqtt:
             "name": "{{name_user_case}} btn 7",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_7}}",
-            "stat_t": "{{btn_state_topic_7}}"
+            "stat_t": "{{btn_state_topic_7}}",
+            "json_attr_t": "{{btn_state_topic_7}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'switch'
         config: |-
@@ -1450,7 +1655,12 @@ mqtt:
             "name": "{{name_user_case}} btn 8",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_8}}",
-            "stat_t": "{{btn_state_topic_8}}"
+            "stat_t": "{{btn_state_topic_8}}",
+            "json_attr_t": "{{btn_state_topic_8}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'switch'
         config: |-
@@ -1459,7 +1669,12 @@ mqtt:
             "name": "{{name_user_case}} btn 9",
             "device": {{device_info_template}},
             "cmd_t": "{{btn_on_off_topic_9}}",
-            "stat_t": "{{btn_state_topic_9}}"
+            "stat_t": "{btn_state_topic_9}}",
+            "json_attr_t": "{{btn_state_topic_9}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
 
   #------------------------------------------------------------------------
@@ -1503,7 +1718,12 @@ mqtt:
     #   sensor_on_str = 'off'/'on'
     #   relay_on_str = 'off'/'on'
     state_topic: 'insteon/{{address}}/state'
-    state_payload: '{ "sensor" : "{{sensor_on_str.lower()}}", "relay" : {{relay_on_str.lower()}} }'
+    state_payload: >-
+      { "sensor" : "{{sensor_on_str.upper()}}",
+        "relay" : "{{relay_on_str.upper()}}",
+        "mode" : "{{mode.upper()}}",
+        "timestamp" : {{timestamp}},
+        "reason" : "{{reason}}" }
 
     # Output relay state change topic and template.  This message is sent
     # whenever the device relay state changes.  Available variables for
@@ -1514,7 +1734,7 @@ mqtt:
     #   relay_on = 0/1
     #   relay_on_str = 'off'/'on'
     relay_state_topic: 'insteon/{{address}}/relay'
-    relay_state_payload: '{{relay_on_str.lower()}}'
+    relay_state_payload: '{{relay_on_str.upper()}}'
 
     # Output sensor state change topic and template.  This message is sent
     # whenever the device sensor state changes.  Available variables for
@@ -1525,7 +1745,7 @@ mqtt:
     #   sensor_on = 0/1
     #   sensor_on = 'off'/'on'
     sensor_state_topic: 'insteon/{{address}}/sensor'
-    sensor_state_payload: '{{sensor_on_str.lower()}}'
+    sensor_state_payload: '{{sensor_on_str.upper()}}'
 
     # Input on/off command.  This forces the relay on/off and ignores the
     # momentary-A,B,C setting.  Use this to force the relay to respond.
@@ -1549,7 +1769,11 @@ mqtt:
             "name": "{{name_user_case}} relay",
             "cmd_t": "{{on_off_topic}}",
             "stat_t": "{{relay_state_topic}}",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "json_attr_t": "{{state_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}"
           }
       - component: 'binary_sensor'
         config: |-
@@ -1557,7 +1781,11 @@ mqtt:
             "uniq_id": "{{address}}_sensor",
             "name": "{{name_user_case}} sensor",
             "stat_t": "{{sensor_state_topic}}",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "json_attr_t": "{{state_topic}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}"
           }
 
   #------------------------------------------------------------------------
@@ -1591,7 +1819,11 @@ mqtt:
     #   instant = 0/1
     #   reason = 'device'/'scene'/'command'/'refresh'/'...'
     state_topic: 'insteon/{{address}}/state/{{button}}'
-    state_payload: '{{on_str.upper()}}'
+    state_payload: >-
+      { "state" : "{{on_str.upper()}}",
+        "mode" : "{{mode.upper()}}",
+        "timestamp" : {{timestamp}},
+        "reason" : "{{reason}}" }
 
     # Input on/off command.  Similar functionality to the cmd_topic but only
     # for turning the device on and off.  If reason is input, is will be
@@ -1628,7 +1860,12 @@ mqtt:
             "name": "{{name_user_case}} top",
             "cmd_t": "{{on_off_topic_1}}",
             "stat_t": "{{state_topic_1}}",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "json_attr_t": "{{state_topic_1}}",
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
       - component: 'switch'
         config: |-
@@ -1637,7 +1874,11 @@ mqtt:
             "name": "{{name_user_case}} bottom",
             "cmd_t": "{{on_off_topic_2}}",
             "stat_t": "{{state_topic_2}}",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "json_attr_tpl": "{%- raw -%}
+              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
+            {%- endraw -%}",
+            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
 
   #------------------------------------------------------------------------
