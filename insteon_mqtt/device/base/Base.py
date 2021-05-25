@@ -588,6 +588,10 @@ class Base:
         if self.db.desc is None or self.db.firmware is None or force:
             seq.add(self.get_model)
 
+        # If the engine is not known, or force true, run get_engine
+        # if self.db.engine is None or force:
+        #     seq.add(self.get_engine)
+
     #-----------------------------------------------------------------------
     def get_flags(self, on_done=None):
         """Get the Insteon operational flags field from the device.
