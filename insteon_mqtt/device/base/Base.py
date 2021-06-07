@@ -664,11 +664,11 @@ class Base:
                       resume dim)
         """
         cmd1 = Msg.CmdType.SET_OPERATING_FLAGS
-        if self.db.engine == 2:
-            return Msg.OutExtended.direct(self.addr, cmd1, cmd2,
-                                            bytes([0x00] * 14), crc_type='D14')
-        else:
+        if self.db.engine is not None and self.db.engine < 2:
             return Msg.OutStandard.direct(self.addr, cmd1, cmd2)
+        else:
+            return Msg.OutExtended.direct(self.addr, cmd1, cmd2,
+                                          bytes([0x00] * 14), crc_type='D14')
 
     #-----------------------------------------------------------------------
     def sync(self, dry_run=True, refresh=True, sequence=None, on_done=None):
