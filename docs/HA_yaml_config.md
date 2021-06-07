@@ -521,7 +521,7 @@ switch:
   - platform: mqtt
     state_topic: 'insteon/aa.bb.cc/state/2'
     command_topic: 'insteon/aa.bb.cc/set/2'
-    name: "Outlet Top"
+    name: "Outlet Bottom"
     json_attributes_topic: 'insteon/aa.bb.cc/state/2'
     json_attributes_template: >-
       {
