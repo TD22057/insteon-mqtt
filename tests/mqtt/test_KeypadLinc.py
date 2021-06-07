@@ -906,9 +906,9 @@ class Test_KeypadLinc:
             'btn_on_off_payload' : ('{ "cmd" : "{{json.on.lower()}}" }'),
             'dimmer_level_topic' : 'foo/{{address}}/1',
             'dimmer_level_payload' : ('{ "cmd" : "{{json.on.lower()}}"'
-                                      '{% if json.num is defined %},'
-                                      ' "level" : {{json.num}}'
-                                      ' {% endif %} }')}}
+                                      '{% if json.num is defined %}'
+                                      ', "level" : {{json.num}}'
+                                      '{% endif %} }')}}
         mdev.load_config(config, qos=qos)
         mdev.subscribe(link, qos)
 
