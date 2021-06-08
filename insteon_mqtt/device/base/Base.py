@@ -588,6 +588,10 @@ class Base:
         if self.db.desc is None or self.db.firmware is None or force:
             seq.add(self.get_model)
 
+        # If the engine is not known, or force true, run get_engine
+        if self.db.engine is None or force:
+            seq.add(self.get_engine)
+
     #-----------------------------------------------------------------------
     def get_flags(self, on_done=None):
         """Get the Insteon operational flags field from the device.
@@ -648,6 +652,23 @@ class Base:
         msg_handler = handler.BroadcastCmdResponse(msg, self.handle_model,
                                                    on_done)
         self.send(msg, msg_handler)
+
+    def _set_operating_flag_msg(self, cmd2):
+        """Creates a set operating flags message
+
+        This will create the appropriate message based on the device's
+        engine (extended for i2cs, else standard)
+
+        Args:
+          cmd2 (int): the set operating flags option (i.e. 0x04 to enable
+                      resume dim)
+        """
+        cmd1 = Msg.CmdType.SET_OPERATING_FLAGS
+        if self.db.engine is not None and self.db.engine < 2:
+            return Msg.OutStandard.direct(self.addr, cmd1, cmd2)
+        else:
+            return Msg.OutExtended.direct(self.addr, cmd1, cmd2,
+                                          bytes([0x00] * 14), crc_type='D14')
 
     #-----------------------------------------------------------------------
     def sync(self, dry_run=True, refresh=True, sequence=None, on_done=None):

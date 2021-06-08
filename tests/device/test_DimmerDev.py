@@ -73,11 +73,34 @@ class Test_Base_Config():
             else:
                 mocked.assert_not_called()
 
-    def test_set_resume_dim(self, test_device):
+    def test_set_resume_dim_non_i2cs(self, test_device):
         # set_resume_dim(self, resume_dim, on_done=None)
         for params in ([True, 0x04], [False, 0x05]):
             test_device.set_resume_dim(resume_dim=params[0])
             assert len(test_device.protocol.sent) == 1
+            assert isinstance(test_device.protocol.sent[0].msg, Msg.OutStandard)
+            assert test_device.protocol.sent[0].msg.cmd1 == 0x20
+            assert test_device.protocol.sent[0].msg.cmd2 == params[1]
+            test_device.protocol.clear()
+
+    def test_set_resume_dim_unknown(self, test_device):
+        # set_resume_dim(self, resume_dim, on_done=None)
+        test_device.db.engine = None
+        for params in ([True, 0x04], [False, 0x05]):
+            test_device.set_resume_dim(resume_dim=params[0])
+            assert len(test_device.protocol.sent) == 1
+            assert isinstance(test_device.protocol.sent[0].msg, Msg.OutStandard)
+            assert test_device.protocol.sent[0].msg.cmd1 == 0x20
+            assert test_device.protocol.sent[0].msg.cmd2 == params[1]
+            test_device.protocol.clear()
+            
+    def test_set_resume_dim_i2cs(self, test_device):
+        # set_resume_dim(self, resume_dim, on_done=None)
+        test_device.db.engine = 2
+        for params in ([True, 0x04], [False, 0x05]):
+            test_device.set_resume_dim(resume_dim=params[0])
+            assert len(test_device.protocol.sent) == 1
+            assert isinstance(test_device.protocol.sent[0].msg, Msg.OutExtended)
             assert test_device.protocol.sent[0].msg.cmd1 == 0x20
             assert test_device.protocol.sent[0].msg.cmd2 == params[1]
             assert test_device.protocol.sent[0].msg.data == bytes([0x00] * 14)
