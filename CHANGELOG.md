@@ -1,5 +1,11 @@
 # Revision Change History
 
+## [1.0.1]
+
+### Additions
+
+- As promised @lnr0626 added support for the Resume_Dim feature for non-i2cs devices. ([PR 423][P423])
+
 ## [1.0.0]
 
 With the addition of the Discovery Platform in the last minor release, the improved config file design added by this release, and the numerous other additions and fixes added by everyone, it seemed about time to call this a version 1 product. 🎉 🎉 🎉
@@ -770,3 +776,4 @@ will add new features.
 [P413]: https://github.com/TD22057/insteon-mqtt/pull/413
 [P414]: https://github.com/TD22057/insteon-mqtt/pull/414
 [P417]: https://github.com/TD22057/insteon-mqtt/pull/417
+[P423]: https://github.com/TD22057/insteon-mqtt/pull/423
