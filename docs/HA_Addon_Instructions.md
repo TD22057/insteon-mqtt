@@ -34,14 +34,16 @@ These instructions assume that you:
 8. Click __Start__ to start the Add-on, this will create your initial config
    files.
 9. Edit `/config/insteon-mqtt/config.yaml` as appropriate. See [configuration](configuration.md) for detailed instructions.
+10. Enable the [Discovery Platform](discovery.md)
 
-10. Restart the insteon-mqtt addon to pick up the changes to the `config.yaml` file.
-11. Initialize your devices as discussed in [initializing](initializing.md).
-12. Edit your Home Assistant configuration to add your devices as MQTT devices
-    to Home Assistant.  In the __mqtt__ section of the initial config.yaml
-    file, there are examples of Home Assistant configurations for each device
-    type.
-13. See the [device documentation](mqtt.md) for additional commands.
+> Alternatively, if you choose to define your entities in Home Assistant
+> manually instead of using the Discovery Platform, see [Home Assistant yaml
+  config](HA_yaml_config.md)
+
+11. Restart the insteon-mqtt addon to pick up the changes to the `config.yaml` file.
+12. If you navigate in Home Assistant to __Configuration -> Integrations -> MQTT__ you should see your devices and entities.
+13. Initialize your devices as discussed in [initializing](initializing.md).
+14. See the [device documentation](mqtt.md) for additional commands.
 
 ## Backing up your Data
 
