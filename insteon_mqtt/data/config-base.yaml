@@ -1110,6 +1110,8 @@ mqtt:
             "fan_mode_stat_t": "{{fan_state_topic}}",
             "fan_modes": ["auto", "on"],
             "hold_stat_t": "{{hold_state_topic}}",
+            "max_temp": 95,
+            "min_temp": 45,
             "mode_cmd_t": "{{mode_command_topic}}",
             "mode_stat_t": "{{mode_state_topic}}",
             "modes": ["off", "cool", "heat", "auto"],
