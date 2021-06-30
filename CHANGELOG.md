@@ -8,6 +8,10 @@
 - Add instructions for using older (~2012) model 2242-222 hubs.  Thanks @tbirdsaw. ([PR 432][P432])
 - Added document with [example Home Assistant configs](https://github.com/TD22057/insteon-mqtt/blob/dev/docs/HA_yaml_config.md) for those using manual configurations. ([PR 431][P431])
 
+### Fixes
+
+- Adds minimum and maximum temperature to default discovery template used for thermostats.  ([PR 434][P434])
+
 ## [1.0.0]
 
 With the addition of the Discovery Platform in the last minor release, the improved config file design added by this release, and the numerous other additions and fixes added by everyone, it seemed about time to call this a version 1 product. 🎉 🎉 🎉
@@ -781,3 +785,4 @@ will add new features.
 [P423]: https://github.com/TD22057/insteon-mqtt/pull/423
 [P432]: https://github.com/TD22057/insteon-mqtt/pull/432
 [P431]: https://github.com/TD22057/insteon-mqtt/pull/431
+[P434]: https://github.com/TD22057/insteon-mqtt/pull/434
