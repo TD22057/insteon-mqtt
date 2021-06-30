@@ -308,8 +308,7 @@ binary_sensor:
 
 ### Thermostat
 
-This example assumes the use of Farenheit, to use Celsius, be sure to make the
-necessary changes.
+#### Farenheit
 
 ```yaml
 climate:
@@ -323,6 +322,8 @@ climate:
     current_temperature_template: "{{value_json.temp_f}}"
     fan_mode_command_topic: 'insteon/aa.bb.cc/fan_command'
     hold_state_topic: 'insteon/aa.bb.cc/hold_state'
+    max_temp: 95
+    min_temp: 45
     mode_command_topic: 'insteon/aa.bb.cc/mode_command'
     mode_state_topic: 'insteon/aa.bb.cc/mode_state'
     modes: ["off", "cool", "heat", "auto"]
