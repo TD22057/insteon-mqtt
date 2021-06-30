@@ -169,6 +169,25 @@ mqtt:
   #qos: 1
   #retain: 1
 
+  encryption:
+    # Encryption Options for encrypted broker connections
+    # These settings will be passed to the `tls_set()` method.  Please refer
+    # to the Paho client documentation for details:
+    # https://eclipse.org/paho/clients/python/docs/
+
+    # A string path to the Certificate Authority certificate files that are to
+    # be treated as trusted by this client.
+    # A Certificate Authority cert is REQUIRED for any encrypted connection.
+    # an encrypted connection will not be attempted unless this is specified.
+    # ca_cert:
+
+    # Client certificate and private key - Optional
+    # Used for TLS authentication of the client.
+    # Strings pointing to the PEM encoded client certificate and private keys.
+    # These CANNOT be encrypted with a password.
+    # certfile:
+    # keyfile:
+
   ### Discovery Settings
   #
   # Home Assistant implements mqtt device discovery as outlined at:

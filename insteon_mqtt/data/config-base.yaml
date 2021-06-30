@@ -154,6 +154,42 @@ mqtt:
   qos: 1
   retain: 1
 
+  encryption:
+    # Encryption Options for encrypted broker connections
+    # These settings will be passed to the `tls_set()` method.  Please refer
+    # to the Paho client documentation for details:
+    # https://eclipse.org/paho/clients/python/docs/
+
+    # A string path to the Certificate Authority certificate files that are to
+    # be treated as trusted by this client.
+    # A Certificate Authority cert is REQUIRED for any encrypted connection.
+    # an encrypted connection will not be attempted unless this is specified.
+    # ca_cert:
+
+    # Client certificate and private key - Optional
+    # Used for TLS authentication of the client.
+    # Strings pointing to the PEM encoded client certificate and private keys.
+    # These CANNOT be encrypted with a password.
+    # certfile:
+    # keyfile:
+
+    # The following generally do not need to be specified
+
+    # Specifies the version of the SSL/TLS protocol to be used.
+    # Can be: tls, tlsv1, tlsv11, tlsv12, sslv2, sslv23, sslv3
+    tls_version: tls
+
+    # A string that defines the certificate requirements that the client
+    # imposes on the broker. Can be 'none', 'required'
+    # none means just about any cert is accepted. Validation errors, such as
+    # untrusted or expired cert, are ignored and do not abort the TLS/SSL
+    # handshake.
+    cert_reqs: required
+
+    # A string specifying which encryption ciphers are allowable for this
+    # connection.  This is a very advanced setting!!
+    # ciphers:
+
   # Input commands topic to allow changes to a device.  See the device
   # documentation for details.  NOTE: This is usually not needed for
   # home automation - it's used by the command line tool to modify the
