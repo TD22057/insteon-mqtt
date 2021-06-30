@@ -306,9 +306,12 @@ class Mqtt(Link):
                      self.port, self.keep_alive)
             return True
         except ssl.SSLError as e:
-            LOG.error("MQTT SSL/TLS connection error to %s %s. Specified "
-                      "tls_version or ciphers may not be supported by broker. "
-                      "Error %s",
+            # Sadly the exceptions returned are too general to give good
+            # instructions to the user.
+            LOG.error("MQTT SSL/TLS connection error to %s %s. Error %s "
+                      "Check if port is correct, if hostname matches cert. "
+                      "If you have specified tls_version or ciphers, check "
+                      "those too.",
                       self.host, self.port, e)
             sys.exit()
 
