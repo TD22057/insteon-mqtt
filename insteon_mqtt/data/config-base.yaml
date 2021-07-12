@@ -154,6 +154,42 @@ mqtt:
   qos: 1
   retain: 1
 
+  encryption:
+    # Encryption Options for encrypted broker connections
+    # These settings will be passed to the `tls_set()` method.  Please refer
+    # to the Paho client documentation for details:
+    # https://eclipse.org/paho/clients/python/docs/
+
+    # A string path to the Certificate Authority certificate files that are to
+    # be treated as trusted by this client.
+    # A Certificate Authority cert is REQUIRED for any encrypted connection.
+    # an encrypted connection will not be attempted unless this is specified.
+    # ca_cert:
+
+    # Client certificate and private key - Optional
+    # Used for TLS authentication of the client.
+    # Strings pointing to the PEM encoded client certificate and private keys.
+    # These CANNOT be encrypted with a password.
+    # certfile:
+    # keyfile:
+
+    # The following generally do not need to be specified
+
+    # Specifies the version of the SSL/TLS protocol to be used.
+    # Can be: tls, tlsv1, tlsv11, tlsv12, sslv2, sslv23, sslv3
+    tls_version: tls
+
+    # A string that defines the certificate requirements that the client
+    # imposes on the broker. Can be 'none', 'required'
+    # none means just about any cert is accepted. Validation errors, such as
+    # untrusted or expired cert, are ignored and do not abort the TLS/SSL
+    # handshake.
+    cert_reqs: required
+
+    # A string specifying which encryption ciphers are allowable for this
+    # connection.  This is a very advanced setting!!
+    # ciphers:
+
   # Input commands topic to allow changes to a device.  See the device
   # documentation for details.  NOTE: This is usually not needed for
   # home automation - it's used by the command line tool to modify the
@@ -217,27 +253,11 @@ mqtt:
       "via_device": "{{modem_addr}}"
     }
 
-  # Trigger modem virtual scenes.  Modem scenes are where the modem is a
-  # controller and emits a scene broadcast with the specified group number.
-  # There is no state topic since the scene doesn't have an on/off state.
-  #
-  # In Home Assistant use MQTT switch with a configuration like this to trigger
-  # modem scene 10:
-  #   switch:
-  #     - platform: mqtt
-  #       name: "scene #10"
-  #       command_topic: "insteon/modem/scene"
-  #       payload_on: { "cmd" : "on", "group" : 10 }
-  #       payload_off: { "cmd" : "off", "group" : 10 }
-  # In Home Assistant use MQTT switch with a configuration like this to trigger
-  # modem scene named 'test_scene':
-  #   switch:
-  #     - platform: mqtt
-  #       name: "test_scene"
-  #       command_topic: "insteon/modem/scene"
-  #       payload_on: { "cmd" : "on", "name" : test_scene }
-  #       payload_off: { "cmd" : "off", "name" : test_scene }
   modem:
+    # Trigger modem virtual scenes.  Modem scenes are where the modem is a
+    # controller and emits a scene broadcast with the specified group number.
+    # There is no state topic since the scene doesn't have an on/off state.
+
     # The output of passing the payload through the template must match the
     # following where group is in the range 1-255 and NAME is a string name
     # defined in a scenes.yaml file.  Either GROUP or NAME must be specified.
@@ -286,22 +306,13 @@ mqtt:
             "payload_off": "{\"state\": \"off\", \"group\": \"{{scene}}\"}"
           }
 
-  # IMPORTANT: all devices must have the pair() command run one time to make
-  # sure that the all the necessary controller/responder links are defined
-  # between the device and the modem.  If these links are there, the commands
-  # and outputs below will not work properly.
-
-  #------------------------------------------------------------------------
-  # On/off switches
-  #------------------------------------------------------------------------
-
-  # On/Off switch.  Non-dimming lamp modules and wall switches.  In Home
-  # Assistant use MQTT switch with a configuration like:
-  #   switch:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/state'
-  #       command_topic: 'insteon/aa.bb.cc/set'
   switch:
+    #------------------------------------------------------------------------
+    # On/off switches
+    #------------------------------------------------------------------------
+
+    # On/Off switch.  Non-dimming lamp modules and wall switches.
+
     # Output state change topic and template.  This message is sent whenever
     # the device state changes for any reason.  Available variables for
     # templating are:
@@ -375,23 +386,13 @@ mqtt:
             "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
 
-  #------------------------------------------------------------------------
-  # Dimmers
-  #------------------------------------------------------------------------
-
-  # Dimmer switch.  Dimming lamp modules and wall switches.  In Home
-  # Assistant use MQTT light with a configuration like the following -
-  # this gets HA to send the brightness value as the payload for all
-  # control of the light.
-  #   light:
-  #     - platform: mqtt
-  #       schema: json
-  #       name: "insteon 1"
-  #       state_topic: "insteon/48.b0.ad/state"
-  #       command_topic: "insteon/48.b0.ad/level"
-  #       brightness: true
-  #
   dimmer:
+    #------------------------------------------------------------------------
+    # Dimmers
+    #------------------------------------------------------------------------
+
+    # Dimmer switch.  Dimming lamp modules and wall switches.
+
     # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
@@ -436,7 +437,7 @@ mqtt:
     #   value = the input payload
     #   json = the input payload converted to json.  Use json.VAR to extract
     #          a variable from a json payload.
-    # NOTE: this isn't used by the HA example above - it's only useful when
+    # NOTE: this isn't used by the default HA setup - it's only useful when
     # treating the dimmer as an on/off switch and sending ON/OFF payloads
     on_off_topic: 'insteon/{{address}}/set'
     on_off_payload: '{ "cmd" : "{{value.lower()}}" }'
@@ -502,24 +503,15 @@ mqtt:
             {%- endraw -%}"
           }
 
-  #------------------------------------------------------------------------
-  # Battery powered sensors
-  #    door sensors, window sensors
-  #
-  #    Other devices (motion, leak, hidden_door, and remote) inherit the
-  #    topics defined here and then add a few more.
-  #------------------------------------------------------------------------
-
-  # In Home Assistant use MQTT binary sensor with a configuration like:
-  #   binary_sensor:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/state'
-  #       device_class: 'motion'
-  #
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/battery'
-  #       device_class: 'battery'
   battery_sensor:
+    #------------------------------------------------------------------------
+    # Battery powered sensors
+    #    door sensors, window sensors
+    #
+    #    Other devices (motion, leak, hidden_door, and remote) inherit the
+    #    topics defined here and then add a few more.
+    #------------------------------------------------------------------------
+
     # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
@@ -606,21 +598,15 @@ mqtt:
             "force_update": true
           }
 
-  #------------------------------------------------------------------------
-  # Motion sensors
-  #------------------------------------------------------------------------
-
-  # Motion sensors will use the state and low battery configuration
-  # inputs from battery_sensor and some sensors add an addition
-  # dawn/dusk notification which is configured here.
-  #
-  # To register the dawn/dusk signa in  Home Assistant use MQTT binary
-  # sensor with a configuration like:
-  #   binary_sensor:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/dawn'
-  #       device_class: 'light'
   motion:
+    #------------------------------------------------------------------------
+    # Motion sensors
+    #------------------------------------------------------------------------
+
+    # Motion sensors will use the state and low battery configuration
+    # inputs from battery_sensor and some sensors add an addition
+    # dawn/dusk notification which is configured here.
+
     # Output dawn/dusk change topic and payload.  This message is sent
     # whenever the device light sensor detects dawn or dusk changes.
     # Available variables for templating are:
@@ -685,21 +671,15 @@ mqtt:
             "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
 
-  #------------------------------------------------------------------------
-  # Hidden Door Sensors
-  #------------------------------------------------------------------------
-
-  # Hidden Door Sensors will use the state and low battery configuration
-  # inputs from battery_sensor and add battery voltage which is configured
-  # here.
-  #
-  # To register the battery voltage sensor in Home Assistant use MQTT
-  # sensor with a configuration like:
-  #   sensor:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/battery_voltage'
-  #       device_class: 'voltage'
   hidden_door:
+    #------------------------------------------------------------------------
+    # Hidden Door Sensors
+    #------------------------------------------------------------------------
+
+    # Hidden Door Sensors will use the state and low battery configuration
+    # inputs from battery_sensor and add battery voltage which is configured
+    # here.
+
     # Output topic and payload.  This message is sent
     # whenever the device is polled and a new voltage, low battery voltage
     # or heart beat interval is obtained from the device.
@@ -772,28 +752,18 @@ mqtt:
             "val_tpl": "{% raw %}{{value_json.voltage}}{% endraw %}"
           }
 
-  #------------------------------------------------------------------------
-  # Leak sensors
-  #------------------------------------------------------------------------
-
-  # Leak sensors will use the heartbeat configuration
-  # inputs from battery_sensor.
-  #
-  # Leak sensors will report the dry/wet status and a heartbeat every 24
-  # hours. The leak sensors does not support low battery signal like other
-  # battery operated devices.
-  #
-  # In Home Assistant use a combination of MQTT binary sensor and template
-  # sensor with a configuration like:
-  #   binary_sensor:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/wet'
-  #       device_class: 'moisture'
-  #
-  #   sensors:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/heartbeat'
   leak:
+    #------------------------------------------------------------------------
+    # Leak sensors
+    #------------------------------------------------------------------------
+
+    # Leak sensors will use the heartbeat configuration
+    # inputs from battery_sensor.
+    #
+    # Leak sensors will report the dry/wet status and a heartbeat every 24
+    # hours. The leak sensors does not support low battery signal like other
+    # battery operated devices.
+
     # Output wet/dry change topic and payload.  This message is sent
     # whenever the device changes state to wet or dry.
     # Available variables for templating are:
@@ -837,16 +807,17 @@ mqtt:
             "device": {{device_info_template}}
           }
 
-  #------------------------------------------------------------------------
-  # Mini remotes
-  #------------------------------------------------------------------------
-
-  # Battery powered remotes (usually 4 or 8 buttons).  A message is
-  # sent whenever one of the buttons is pressed.
-  #
-  # The Remote will use the low_battery configuration
-  # inputs from battery_sensor.
   remote:
+    #------------------------------------------------------------------------
+    # Mini remotes
+    #------------------------------------------------------------------------
+
+    # Battery powered remotes (usually 4 or 8 buttons).  A message is
+    # sent whenever one of the buttons is pressed.
+    #
+    # The Remote will use the low_battery configuration
+    # inputs from battery_sensor.
+
     # Output state change topic and template.  This message is sent
     # whenever a button is pressed.  Available variables for templating are:
     #   address = 'aa.bb.cc'
@@ -1011,30 +982,14 @@ mqtt:
             "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
 
-  #------------------------------------------------------------------------
-  # Smoke Bridge
-  #------------------------------------------------------------------------
-
-  # The smoke bridge will broadcast on a variety of groups for various error
-  # conditions.
-  #
-  # In Home Assistant use MQTT binary sensor with a configuration like:
-  #   binary_sensor:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/smoke'
-  #       device_class: 'smoke'
-  #
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/battery'
-  #       device_class: 'battery'
-  #
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/co'
-  #       device_class: 'gas'
-  #
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/error'
   smoke_bridge:
+    #------------------------------------------------------------------------
+    # Smoke Bridge
+    #------------------------------------------------------------------------
+
+    # The smoke bridge will broadcast on a variety of groups for various error
+    # conditions.
+
     # Output state change topic and payload.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
@@ -1095,31 +1050,16 @@ mqtt:
             "device": {{device_info_template}}
           }
 
-  #------------------------------------------------------------------------
-  # Thermostat
-  #------------------------------------------------------------------------
-
-  # The thermostat has a lot of available states and commands
-  #
-  #
-  # In Home Assistant use MQTT climate sensor with a configuration like:
-  # climate:
-  #   - platform: mqtt
-  #     name: Study
-  #     mode_state_topic: "insteon/aa.bb.cc/mode_state"
-  #     modes: ["OFF", "AUTO", "HEAT", "COOL", "PROGRAM"]
-  #     current_temperature_topic: "insteon/aa.bb.cc/ambient_temp"
-  #     fan_mode_state_topic: "insteon/aa.bb.cc/fan_state"
-  #     fan_modes: ["AUTO", "ON"]
-  #
-  # The current Home Assistant mqtt hvac component is not great.  It lacks
-  # a lot of functionality offered by the thermostat.  At some point I will
-  # submit a PR to Home Assistant to try and fix this.
-  # Major issues:
-  #   - no concept of separate heat and cool set points
-  #   - no humidity state
-  #   - no status state
   thermostat:
+    #------------------------------------------------------------------------
+    # Thermostat
+    #------------------------------------------------------------------------
+
+    # The thermostat has a lot of available states and commands
+
+    # The current Home Assistant mqtt hvac component lacks humidity which
+    # you could add as a seperate sensor.
+
     # Output state change topic and payload.  Available variables for
     # templating in all cases are:
     #   address = 'aa.bb.cc'
@@ -1206,6 +1146,8 @@ mqtt:
             "fan_mode_stat_t": "{{fan_state_topic}}",
             "fan_modes": ["auto", "on"],
             "hold_stat_t": "{{hold_state_topic}}",
+            "max_temp": 95,
+            "min_temp": 45,
             "mode_cmd_t": "{{mode_command_topic}}",
             "mode_stat_t": "{{mode_state_topic}}",
             "modes": ["off", "cool", "heat", "auto"],
@@ -1219,54 +1161,22 @@ mqtt:
             "temperature_unit": "F"
           }
 
-  #------------------------------------------------------------------------
-  # Fan Linc
-  #------------------------------------------------------------------------
-
-  # A FanLinc is a dimmer switch (Insteon group 1) plus a fan control
-  # (group 2).  The dimmer MQTT messages use the dimmer settings
-  # above.  The settings here are just for the fan input and output.
-  # The settings can be used to turn the fan on and off (and report
-  # on/off state changes).
-  #
-  # NOTE: Both the fan state and fan speed state topics will be
-  # published on ANY fan change.  So if you only need one of them, you
-  # can put both payloads in a single message and set the other inputs
-  # to blank (which will turn off the output).
-  #
-  # In Home Assistant, use the dimmer example above for the light and
-  # use MQTT fan with a configuration like this for the fan:
-  # fan:
-  #   - platform: mqtt
-  #     command_topic: 'insteon/aa.bb.cc/fan/set'
-  #     state_topic: 'insteon/aa.bb.cc/fan/state'
-  #     percentage_command_topic: 'insteon/aa.bb.cc/fan/speed/set'
-  #     percentage_command_template: >
-  #       {% if value < 10 %}
-  #         off
-  #       {% elif value < 40 %}
-  #         low
-  #       {% elif value < 75 %}
-  #         medium
-  #       {% else %}
-  #         high
-  #       {% endif %}
-  #     percentage_state_topic: 'insteon/aa.bb.cc/fan/speed/state'
-  #     percentage_value_template: >
-  #       {% if value == 'low' %}
-  #         33
-  #       {% elif value == 'medium' %}
-  #         67
-  #       {% elif value == 'high' %}
-  #         100
-  #       {% else %}
-  #         0
-  #       {% endif %}
-  #     preset_mode_state_topic: "insteon/aa.bb.cc/fan/speed/state"
-  #     preset_mode_command_topic: "insteon/aa.bb.cc/fan/speed/set"
-  #     preset_modes: ["off", "low", "medium", "high"]
-
   fan_linc:
+    #------------------------------------------------------------------------
+    # Fan Linc
+    #------------------------------------------------------------------------
+
+    # A FanLinc is a dimmer switch (Insteon group 1) plus a fan control
+    # (group 2).  The dimmer MQTT messages use the dimmer settings
+    # above.  The settings here are just for the fan input and output.
+    # The settings can be used to turn the fan on and off (and report
+    # on/off state changes).
+    #
+    # NOTE: Both the fan state and fan speed state topics will be
+    # published on ANY fan change.  So if you only need one of them, you
+    # can put both payloads in a single message and set the other inputs
+    # to blank (which will turn off the output).
+
     # Output fan state change topic and payload.  This message is sent
     # whenever the fan state changes for any reason.  Available
     # variables for templating are:
@@ -1361,45 +1271,24 @@ mqtt:
             {%- endraw -%}"
           }
 
-  #------------------------------------------------------------------------
-  # Keypad Linc
-  #------------------------------------------------------------------------
-
-  # A KeypadLinc is an on/off or dimmer switch (Insteon group 1) plus a
-  # series of scene control buttons which operate on other groups.  The group
-  # 1 behavior will depend on whether the device is an on/off or dimmer.  The
-  # 4 or 6 other buttons are controlled like switches - but the only affect
-  # is turning on and off the LED on the button since they have no directly
-  # attached load.
-  #
-  # 6 button and 8 button keypads have use the following button numbers:
-  #    1 on           1       2
-  #  3       4        3       4
-  #  5       6        5       6
-  #    1 off          7       8
-  #
-  # In Home Assistant, use MQTT switches to represent the on/off switches and
-  # the MQTT json component for a dimmer.  The non-group 1 buttons are switches.
-  #   # dimmers:
-  #   light:
-  #     - platform: mqtt
-  #       schema: json
-  #       state_topic: "insteon/aa.bb.cc/state/1"
-  #       command_topic: "insteon/aa.bb.cc/set/1"
-  #       brightness: true
-  #
-  #   # switches:
-  #   switch:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/state/1'
-  #       command_topic: 'insteon/aa.bb.cc/set/1'
-  #
-  #   # other buttons:
-  #   switch:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/state/2'
-  #       command_topic: 'insteon/aa.bb.cc/set/2'
   keypad_linc:
+    #------------------------------------------------------------------------
+    # Keypad Linc
+    #------------------------------------------------------------------------
+
+    # A KeypadLinc is an on/off or dimmer switch (Insteon group 1) plus a
+    # series of scene control buttons which operate on other groups.  The group
+    # 1 behavior will depend on whether the device is an on/off or dimmer.  The
+    # 4 or 6 other buttons are controlled like switches - but the only affect
+    # is turning on and off the LED on the button since they have no directly
+    # attached load.
+    #
+    # 6 button and 8 button keypads have use the following button numbers:
+    #    1 on           1       2
+    #  3       4        3       4
+    #  5       6        5       6
+    #    1 off          7       8
+
     # On/off switch state change topic and template.  This message is sent
     # whenever one of the on/off buttons is pressed.  It will not be sent for
     # button 1 if it's a dimmer.  Available variables for templating are:
@@ -1677,36 +1566,26 @@ mqtt:
             "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
 
-  #------------------------------------------------------------------------
-  # IO Linc relay controllers
-  #------------------------------------------------------------------------
-
-  # The IOLinc is both a switch (momentary or latching on/off) and a sensor
-  # that can be on or off.  If you configure the IOLinc to be momentary, then
-  # the on command will trigger it for the duration that is configured and
-  # the off command is ignored.  If it's configured as a latching switch,
-  # then the on and off commands work like a normal switch.  The set-flags
-  # command line command can be used to change the settings.
-  #
-  # NOTE: the on/off payload forces the relay to on or off ignoring any special
-  # requirements associated with the Momentary_A,B,C functions or the
-  # relay_linked flag.  It can be used without issue for latching setups, but
-  # if you want to use this accurately for Momentary_A,B,C setups, you may need
-  # to have some logic upstream from this command to check the state of sensor
-  # and or the command to determine if setting the relay on or off is
-  # appropriate .
-  #
-  # In Home Assistant use MQTT switch with a configuration like:
-  #   switch:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/relay'
-  #       command_topic: 'insteon/aa.bb.cc/set'
-  #
-  # To monitor the sensor, use an MQTT binary_sensor with a configuration like:
-  #   binary_sensor:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/sensor'
   io_linc:
+    #------------------------------------------------------------------------
+    # IO Linc relay controllers
+    #------------------------------------------------------------------------
+
+    # The IOLinc is both a switch (momentary or latching on/off) and a sensor
+    # that can be on or off.  If you configure the IOLinc to be momentary, then
+    # the on command will trigger it for the duration that is configured and
+    # the off command is ignored.  If it's configured as a latching switch,
+    # then the on and off commands work like a normal switch.  The set-flags
+    # command line command can be used to change the settings.
+    #
+    # NOTE: the on/off payload forces the relay to on or off ignoring any special
+    # requirements associated with the Momentary_A,B,C functions or the
+    # relay_linked flag.  It can be used without issue for latching setups, but
+    # if you want to use this accurately for Momentary_A,B,C setups, you may need
+    # to have some logic upstream from this command to check the state of sensor
+    # and or the command to determine if setting the relay on or off is
+    # appropriate .
+
     # Output state change topic and template.  This message is sent whenever
     # the device sensor or device relay state changes.  Available variables for
     # templating are:
@@ -1788,23 +1667,15 @@ mqtt:
             {%- endraw -%}"
           }
 
-  #------------------------------------------------------------------------
-  # On/off outlets
-  #------------------------------------------------------------------------
-
-  # On/Off outlets.  Non-dimming in wall outlet modules is two independent
-  # switchs (top and bottom outlet.  The top outlet is button 1, the bottom
-  # outlet is button 2.  In Home Assistant use MQTT switch with a
-  # configuration like:
-  #   switch:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/state/1'
-  #       command_topic: 'insteon/aa.bb.cc/set/1'
-  #   switch:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/state/2'
-  #       command_topic: 'insteon/aa.bb.cc/set/2'
   outlet:
+    #------------------------------------------------------------------------
+    # On/off outlets
+    #------------------------------------------------------------------------
+
+    # On/Off outlets.  Non-dimming in wall outlet modules is two independent
+    # switchs (top and bottom outlet.  The top outlet is button 1, the bottom
+    # outlet is button 2.
+
     # Output state change topic and template.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:
@@ -1881,22 +1752,14 @@ mqtt:
             "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
           }
 
-  #------------------------------------------------------------------------
-  # EZIO4O 4 relay output module
-  #------------------------------------------------------------------------
-  # EZIO4O is a 4 relay output wall plug module from Smartenit.
-  # Each relay has a normally open and a normally closed contact.
-  # Device relay 1 to 4 correspond to topics button 1 to 4.
-  # In Home Assistant use MQTT switch with a configuration like:
-  #   switch:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/state/1'
-  #       command_topic: 'insteon/aa.bb.cc/set/1'
-  #   switch:
-  #     - platform: mqtt
-  #       state_topic: 'insteon/aa.bb.cc/state/2'
-  #       command_topic: 'insteon/aa.bb.cc/set/2'
   ezio4o:
+    #------------------------------------------------------------------------
+    # EZIO4O 4 relay output module
+    #------------------------------------------------------------------------
+    # EZIO4O is a 4 relay output wall plug module from Smartenit.
+    # Each relay has a normally open and a normally closed contact.
+    # Device relay 1 to 4 correspond to topics button 1 to 4.
+
     # Output state change topic and template.  This message is sent
     # whenever the device state changes for any reason.  Available
     # variables for templating are:

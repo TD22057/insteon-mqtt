@@ -167,14 +167,10 @@ class DimmerBase(ManualCtrl, ResponderBase, Base):
         # 0x05 - Disables resume dim
         if resume_dim:
             LOG.info("Device %s enabling resume dim", self.label)
-            cmd2 = 0x04
+            msg = self._set_operating_flag_msg(0x04)
         else:
             LOG.info("Device %s disabling resume dim", self.label)
-            cmd2 = 0x05
-
-        cmd1 = Msg.CmdType.SET_OPERATING_FLAGS
-        msg = Msg.OutExtended.direct(self.addr, cmd1, cmd2,
-                                      bytes([0x00] * 14))
+            msg = self._set_operating_flag_msg(0x05)
 
         # Use the standard command handler which will notify us when the
         # command is ACK'ed.

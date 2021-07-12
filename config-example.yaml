@@ -49,8 +49,12 @@ insteon:
 
   # PLM Modem option (Serial or USB)
   port: '/dev/insteon'
+  # If using a 2242-222 Hub vintage ~2012 change the above line to:
+  # port: "socket://<IP Address>:9761"
+  # where <IP Address> is the address of your hub.
+  # KEEP `use_hub: False` below
 
-  # Insteon Hub option
+  # Insteon Hub 2245-222 (Modern Vintages)
   # See https://github.com/TD22057/insteon-mqtt/blob/master/docs/hub.md
   # for a discussion of the details of using a Hub as your modem.
   # If set to true, will use the Hub settings below and ignore the Serial
@@ -164,6 +168,25 @@ mqtt:
   # so that the current state is available when someone subscribes.
   #qos: 1
   #retain: 1
+
+  encryption:
+    # Encryption Options for encrypted broker connections
+    # These settings will be passed to the `tls_set()` method.  Please refer
+    # to the Paho client documentation for details:
+    # https://eclipse.org/paho/clients/python/docs/
+
+    # A string path to the Certificate Authority certificate files that are to
+    # be treated as trusted by this client.
+    # A Certificate Authority cert is REQUIRED for any encrypted connection.
+    # an encrypted connection will not be attempted unless this is specified.
+    # ca_cert:
+
+    # Client certificate and private key - Optional
+    # Used for TLS authentication of the client.
+    # Strings pointing to the PEM encoded client certificate and private keys.
+    # These CANNOT be encrypted with a password.
+    # certfile:
+    # keyfile:
 
   ### Discovery Settings
   #
