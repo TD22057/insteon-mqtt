@@ -967,15 +967,15 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
           level (int): The new device level in the range [0,255].  0 is off.
           reason (str): Reason string to pass around.
         """
-        if is_on is not None:
-            self._is_on = is_on
         group = 0x01 if group is None else group
         if group == self._load_group:
             self._level = level
+            if is_on is not None:
+                self._is_on = is_on
 
         # Update the LED bits in the correct slot.
         if group < 9:
             self._led_bits = util.bit_set(self._led_bits, group - 1,
-                                          1 if level else 0)
+                                          1 if is_on else 0)
 
     #-----------------------------------------------------------------------
