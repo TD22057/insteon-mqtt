@@ -1243,6 +1243,8 @@ mqtt:
             "name": "{{name_user_case}} fan",
             "device": {{device_info_template}},
             "cmd_t": "{{fan_on_off_topic}}",
+            "stat_t": "{{fan_state_topic}}",
+            "stat_val_tpl": "{% raw %}{{value_json.state}}{% endraw %}",
             "pct_cmd_t": "{{fan_speed_set_topic}}",
             "pct_cmd_tpl": "{% raw %}{% if value < 10 %}off{% elif value < 40 %}low{% elif value < 75 %}medium{% else %}high{% endif %}{% endraw %}",
             "pct_stat_t": "{{fan_speed_topic}}",
