@@ -595,7 +595,8 @@ mqtt:
             "stat_t": "{{heartbeat_topic}}",
             "device_class": "timestamp",
             "device": {{device_info_template}},
-            "force_update": true
+            "force_update": true,
+            "val_tpl": "{%- raw -%}{{as_datetime(value|float|timestamp_local).isoformat()|string}}{%- endraw -%}"
           }
 
   motion:
@@ -734,7 +735,8 @@ mqtt:
             "stat_t": "{{heartbeat_topic}}",
             "device_class": "timestamp",
             "device": {{device_info_template}},
-            "force_update": true
+            "force_update": true,
+            "val_tpl": "{%- raw -%}{{as_datetime(value|float|timestamp_local).isoformat()|string}}{%- endraw -%}"
           }
       - component: 'sensor'
         config: |-
@@ -804,7 +806,8 @@ mqtt:
             "name": "{{name_user_case}} heartbeat",
             "stat_t": "{{heartbeat_topic}}",
             "device_class": "timestamp",
-            "device": {{device_info_template}}
+            "device": {{device_info_template}},
+            "val_tpl": "{%- raw -%}{{as_datetime(value|float|timestamp_local).isoformat()|string}}{%- endraw -%}"
           }
 
   remote:
