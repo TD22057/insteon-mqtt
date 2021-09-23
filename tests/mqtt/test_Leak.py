@@ -93,9 +93,9 @@ class Test_Leak:
         dev.signal_state.emit(dev, button=2, is_on=False)
         assert len(link.client.pub) == 2
         assert link.client.pub[0] == dict(
-            topic='%s/wet' % topic, payload='on', qos=0, retain=True)
+            topic='%s/state' % topic, payload='on', qos=0, retain=True)
         assert link.client.pub[1] == dict(
-            topic='%s/wet' % topic, payload='off', qos=0, retain=True)
+            topic='%s/state' % topic, payload='off', qos=0, retain=True)
 
         link.client.clear()
 
@@ -115,11 +115,20 @@ class Test_Leak:
 
     #-----------------------------------------------------------------------
     def test_discovery(self, setup):
-        mdev, dev, link = setup.getAll(['mdev', 'dev', 'link'])
-        topic = "insteon/%s" % setup.addr.hex
+        mdev = setup.get('mdev')
 
-        mdev.load_config({"leak": {"junk": "junk"},
-                          "battery_sensor" : {"junk": "junk"}})
+        # Test leak defined but battery not
+        mdev.load_config({"leak": {'wet_dry_topic': 'insteon/{{address}}/wet'}})
+        assert mdev.default_discovery_cls == "leak"
+        assert mdev.rendered_topic_map == {
+            'wet_dry_topic': 'insteon/01.02.03/wet'
+        }
+        assert len(mdev.extra_topic_nums) == 0
+
+        # Test both defined
+        mdev.load_config({"leak": {'wet_dry_topic': 'insteon/{{address}}/wet'},
+                          "battery_sensor" :
+                              {'state_topic': 'insteon/{{address}}/state'}})
         assert mdev.default_discovery_cls == "leak"
         assert mdev.rendered_topic_map == {
             'wet_dry_topic': 'insteon/01.02.03/wet',
@@ -143,7 +152,7 @@ class Test_Leak:
         dev.signal_state.emit(dev, button=2, level=0x11, reason='refresh')
         assert len(link.client.pub) == 1
         assert link.client.pub[0] == dict(
-            topic='%s/wet' % topic, payload='on', qos=0, retain=True)
+            topic='%s/state' % topic, payload='on', qos=0, retain=True)
 
         link.client.clear()
 

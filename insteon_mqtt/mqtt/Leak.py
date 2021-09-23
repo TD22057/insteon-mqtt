@@ -24,7 +24,7 @@ class Leak(BatterySensor):
           device (device.Leak):  The Insteon object to link to.
         """
         super().__init__(mqtt, device,
-                         state_topic='insteon/{{address}}/wet',
+                         state_topic='insteon/{{address}}/state',
                          state_payload='{{is_wet_str.lower()}}')
 
         # This defines the default discovery_class for these devices
