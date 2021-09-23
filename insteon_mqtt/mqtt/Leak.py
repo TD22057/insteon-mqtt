@@ -46,7 +46,11 @@ class Leak(BatterySensor):
         if not data:
             return
 
-        # Load the various topics
+        # The state_topic uses a different name on the leak sensor
+        if 'state_topic' in self.rendered_topic_map:
+            self.rendered_topic_map.pop('state_topic')
+
+        # Load the special state topic
         self.load_state_data(data, qos, topic='wet_dry_topic',
                              payload='wet_dry_payload')
 
@@ -56,11 +60,6 @@ class Leak(BatterySensor):
             self.msg_heartbeat.load_config(data, 'heartbeat_topic',
                                            'heartbeat_payload', qos)
 
-        # Add our unique topics to the discovery topic map
-        # The state_topic uses a different name on the leak sensor
-        if 'state_topic' in self.rendered_topic_map:
-            rendered_topic = self.rendered_topic_map.pop('state_topic')
-            self.rendered_topic_map['wet_dry_topic'] = rendered_topic
 
     #-----------------------------------------------------------------------
     def state_template_data(self, **kwargs):
