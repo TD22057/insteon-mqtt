@@ -767,7 +767,9 @@ mqtt:
     # battery operated devices.
 
     # Output wet/dry change topic and payload.  This message is sent
-    # whenever the device changes state to wet or dry.
+    # whenever the device changes state to wet or dry.  This replaces the
+    # state_topic that would otherwise be inheritted from battery_sensor.
+    # If this is not specified, then state_topic will be used instead.
     # Available variables for templating are:
     #   address = 'aa.bb.cc'
     #   timestamp = the current timestamp
