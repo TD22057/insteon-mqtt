@@ -323,6 +323,7 @@ class Test_KPL():
         (0x06,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":6}),
         (0x07,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":7}),
         (0x08,Msg.CmdType.ON, 0x00,{"level":255,"mode":IM.on_off.Mode.NORMAL, "is_on": True, "reason":'device', "button":8}),
+        (0x08,Msg.CmdType.OFF, 0x00,{"level":0,"mode":IM.on_off.Mode.NORMAL, "is_on": False, "reason":'device', "button":8}),
     ])
     def test_handle_on_off(self, test_device, group_num, cmd1, cmd2, expected):
         test_device._load_group = 1
@@ -336,6 +337,11 @@ class Test_KPL():
                 mocked.assert_called_once_with(test_device, **expected)
             else:
                 mocked.assert_not_called()
+            if group_num > 1:
+                if cmd1 == Msg.CmdType.ON:
+                    assert test_device._led_bits == 2 ** (group_num -1)
+                else:
+                    assert test_device._led_bits == 0
 
     def test_get_flags(self, test_device):
         # This should hijack get flags and should insert a call to
