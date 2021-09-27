@@ -3,6 +3,7 @@
 # Command line utilities
 #
 #===========================================================================
+import ssl
 import json
 import random
 import time
@@ -14,6 +15,40 @@ from ..mqtt import Reply
 # there is no pure right answer for what this should be.
 TIME_OUT = 30
 
+# map for Paho acceptable TLS cert request options
+CERT_REQ_OPTIONS = {'none': ssl.CERT_NONE, 'required': ssl.CERT_REQUIRED}
+
+# Map for Paho acceptable TLS version options. Some options are
+# dependent on the OpenSSL install so catch exceptions
+TLS_VER_OPTIONS = dict()
+try:
+    TLS_VER_OPTIONS['tls'] = ssl.PROTOCOL_TLS
+except AttributeError:
+    pass
+try:
+    TLS_VER_OPTIONS['tlsv1'] = ssl.PROTOCOL_TLSv1
+except AttributeError:
+    pass
+try:
+    TLS_VER_OPTIONS['tlsv11'] = ssl.PROTOCOL_TLSv1_1
+except AttributeError:
+    pass
+try:
+    TLS_VER_OPTIONS['tlsv12'] = ssl.PROTOCOL_TLSv1_2
+except AttributeError:
+    pass
+try:
+    TLS_VER_OPTIONS['sslv2'] = ssl.PROTOCOL_SSLv2
+except AttributeError:
+    pass
+try:
+    TLS_VER_OPTIONS['sslv23'] = ssl.PROTOCOL_SSLv23
+except AttributeError:
+    pass
+try:
+    TLS_VER_OPTIONS['sslv3'] = ssl.PROTOCOL_SSLv3
+except AttributeError:
+    pass
 
 #===========================================================================
 def send(config, topic, payload, quiet=False):
@@ -45,6 +80,46 @@ def send(config, topic, payload, quiet=False):
         user = config["mqtt"]["username"]
         password = config["mqtt"].get("password", None)
         client.username_pw_set(user, password)
+
+    encryption = config["mqtt"].get('encryption', {})
+    if encryption is None:
+        encryption = {}
+    ca_cert = encryption.get('ca_cert', None)
+    if ca_cert is not None and ca_cert != "":
+        # Set the basic arguments
+        certfile = encryption.get('certfile', None)
+        if certfile == "":
+            certfile = None
+        keyfile = encryption.get('keyfile', None)
+        if keyfile == "":
+            keyfile = None
+        ciphers = encryption.get('ciphers', None)
+        if ciphers == "":
+            ciphers = None
+
+        # These require passing specific constants so we use a lookup
+        # map for them.
+        addl_tls_kwargs = {}
+        tls_ver = encryption.get('tls_version', 'tls')
+        tls_version_const = TLS_VER_OPTIONS.get(tls_ver, None)
+        if tls_version_const is not None:
+            addl_tls_kwargs['tls_version'] = tls_version_const
+        cert_reqs = encryption.get('cert_reqs', None)
+        cert_reqs = CERT_REQ_OPTIONS.get(cert_reqs, None)
+        if cert_reqs is not None:
+            addl_tls_kwargs['cert_reqs'] = cert_reqs
+
+        # Finally, try the connection
+        try:
+            client.tls_set(ca_certs=ca_cert,
+                           certfile=certfile,
+                           keyfile=keyfile,
+                           ciphers=ciphers, **addl_tls_kwargs)
+        except FileNotFoundError as e:
+            print("Cannot locate a SSL/TLS file = %s.", e)
+
+        except ssl.SSLError as e:
+            print("SSL/TLS Config error = %s.", e)
 
     # Connect to the broker.
     client.connect(config["mqtt"]["broker"], config["mqtt"]["port"])

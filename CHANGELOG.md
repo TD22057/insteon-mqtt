@@ -1,5 +1,20 @@
 # Revision Change History
 
+## [1.0.2]
+
+### Fixes
+
+- Fix problem with heartbeat sensors in HomeAssistant displaying "invalid
+timestamp". ([PR 443][P443])
+- Fix problem with fan always reporting 'off' state in HomeAssistant.
+(thanks to @tstabrawa)([PR 441][P441])
+- Fix possible error with KPL switch devices where all leds turn off at once.
+([PR 439][P439])
+- Fix an error causing the discovery template to advertise the wrong topic
+for leak devices.  ([PR 444][P444])
+- Add support for encrypted MQTT connections using the command line.
+([PR 445][P445])
+
 ## [1.0.1]
 
 ### Additions
@@ -788,3 +803,8 @@ will add new features.
 [P431]: https://github.com/TD22057/insteon-mqtt/pull/431
 [P434]: https://github.com/TD22057/insteon-mqtt/pull/434
 [P435]: https://github.com/TD22057/insteon-mqtt/pull/435
+[P439]: https://github.com/TD22057/insteon-mqtt/pull/439
+[P441]: https://github.com/TD22057/insteon-mqtt/pull/441
+[P443]: https://github.com/TD22057/insteon-mqtt/pull/443
+[P444]: https://github.com/TD22057/insteon-mqtt/pull/444
+[P445]: https://github.com/TD22057/insteon-mqtt/pull/445
