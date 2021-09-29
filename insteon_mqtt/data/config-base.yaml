@@ -190,6 +190,12 @@ mqtt:
     # connection.  This is a very advanced setting!!
     # ciphers:
 
+  # Availability topic.  A payload of `online` is published when the MQTT
+  # connection is established and a payload of `offline` is published when
+  # the MQTT connection is terminated or times out.  Can be used to
+  # determine if InsteonMQTT is running.
+  availability_topic: 'insteon/availability'
+
   # Input commands topic to allow changes to a device.  See the device
   # documentation for details.  NOTE: This is usually not needed for
   # home automation - it's used by the command line tool to modify the
