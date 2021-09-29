@@ -59,5 +59,7 @@ class MockMqttClient:
     def message_callback_add(self, topic, callback):
         self.cb[topic] = callback
 
+    def will_set(self, topic, payload, qos, retain):
+        pass
 
 #===========================================================================
