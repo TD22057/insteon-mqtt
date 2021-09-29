@@ -157,6 +157,9 @@ class Base:
         # scene() for details.
         self.broadcast_reason = ""
 
+        # Used to set proper level when scene command is used
+        self.broadcast_scene_level = {"timestamp": 0, "level": 0}
+
         # Used for internally tracking the device state
         self._is_on = False
         self._level = 0x00
