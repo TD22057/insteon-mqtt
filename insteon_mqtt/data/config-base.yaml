@@ -306,6 +306,7 @@ mqtt:
                      {%- else -%}
                        Modem Scene {{scene}}
                      {%- endif -%}",
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{scene_topic}}",
             "device": {{device_info_template}},
             "payload_on": "{\"state\": \"on\", \"group\": \"{{scene}}\"}",
@@ -382,6 +383,7 @@ mqtt:
           {
             "uniq_id": "{{address}}_switch",
             "name": "{{name_user_case}}",
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{on_off_topic}}",
             "stat_t": "{{state_topic}}",
             "device": {{device_info_template}},
@@ -498,6 +500,7 @@ mqtt:
           {
             "uniq_id": "{{address}}_light",
             "name": "{{name_user_case}}",
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{level_topic}}",
             "stat_t": "{{state_topic}}",
             "brightness": true,
@@ -569,6 +572,7 @@ mqtt:
             "uniq_id": "{{address}}_door",
             "name": "{{name_user_case}} door",
             "stat_t": "{{state_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "door",
             "device": {{device_info_template}},
             "force_update": true,
@@ -584,6 +588,7 @@ mqtt:
             "uniq_id": "{{address}}_battery",
             "name": "{{name_user_case}} battery",
             "stat_t": "{{low_battery_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "battery",
             "device": {{device_info_template}},
             "force_update": true,
@@ -599,6 +604,7 @@ mqtt:
             "uniq_id": "{{address}}_heartbeat",
             "name": "{{name_user_case}} heartbeat",
             "stat_t": "{{heartbeat_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "timestamp",
             "device": {{device_info_template}},
             "force_update": true,
@@ -638,6 +644,7 @@ mqtt:
             "uniq_id": "{{address}}_motion",
             "name": "{{name_user_case}} motion",
             "stat_t": "{{state_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "motion",
             "device": {{device_info_template}},
             "force_update": true,
@@ -653,6 +660,7 @@ mqtt:
             "uniq_id": "{{address}}_battery",
             "name": "{{name_user_case}} battery",
             "stat_t": "{{low_battery_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "battery",
             "device": {{device_info_template}},
             "force_update": true,
@@ -668,6 +676,7 @@ mqtt:
             "uniq_id": "{{address}}_dusk",
             "name": "{{name_user_case}} dusk",
             "stat_t": "{{dawn_dusk_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "light",
             "device": {{device_info_template}},
             "force_update": true,
@@ -709,6 +718,7 @@ mqtt:
             "uniq_id": "{{address}}_door",
             "name": "{{name_user_case}} door",
             "stat_t": "{{state_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "door",
             "device": {{device_info_template}},
             "force_update": true,
@@ -724,6 +734,7 @@ mqtt:
             "uniq_id": "{{address}}_battery",
             "name": "{{name_user_case}} battery",
             "stat_t": "{{low_battery_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "battery",
             "device": {{device_info_template}},
             "force_update": true,
@@ -739,6 +750,7 @@ mqtt:
             "uniq_id": "{{address}}_heartbeat",
             "name": "{{name_user_case}} heartbeat",
             "stat_t": "{{heartbeat_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "timestamp",
             "device": {{device_info_template}},
             "force_update": true,
@@ -750,6 +762,7 @@ mqtt:
             "uniq_id": "{{address}}_voltage",
             "name": "{{name_user_case}} voltage",
             "stat_t": "{{battery_voltage_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "voltage",
             "device": {{device_info_template}},
             "force_update": true,
@@ -798,6 +811,7 @@ mqtt:
             "uniq_id": "{{address}}_wet",
             "name": "{{name_user_case}} leak",
             "stat_t": "{{wet_dry_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "moisture",
             "device": {{device_info_template}},
             "force_update": true,
@@ -813,6 +827,7 @@ mqtt:
             "uniq_id": "{{address}}_heartbeat",
             "name": "{{name_user_case}} heartbeat",
             "stat_t": "{{heartbeat_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "timestamp",
             "device": {{device_info_template}},
             "val_tpl": "{%- raw -%}{{as_datetime(value|float|timestamp_local).isoformat()|string}}{%- endraw -%}"
@@ -877,6 +892,7 @@ mqtt:
             "uniq_id": "{{address}}_1",
             "name": "{{name_user_case}} btn 1",
             "stat_t": "{{state_topic_1}}",
+            "avty_t": "{{availability_topic}}",
             "device": {{device_info_template}},
             "force_update": true,
             "json_attr_t": "{{state_topic_1}}",
@@ -891,6 +907,7 @@ mqtt:
             "uniq_id": "{{address}}_2",
             "name": "{{name_user_case}} btn 2",
             "stat_t": "{{state_topic_2}}",
+            "avty_t": "{{availability_topic}}",
             "device": {{device_info_template}},
             "force_update": true,
             "json_attr_t": "{{state_topic_2}}",
@@ -905,6 +922,7 @@ mqtt:
             "uniq_id": "{{address}}_3",
             "name": "{{name_user_case}} btn 3",
             "stat_t": "{{state_topic_3}}",
+            "avty_t": "{{availability_topic}}",
             "device": {{device_info_template}},
             "force_update": true,
             "json_attr_t": "{{state_topic_3}}",
@@ -919,6 +937,7 @@ mqtt:
             "uniq_id": "{{address}}_4",
             "name": "{{name_user_case}} btn 4",
             "stat_t": "{{state_topic_4}}",
+            "avty_t": "{{availability_topic}}",
             "device": {{device_info_template}},
             "force_update": true,
             "json_attr_t": "{{state_topic_4}}",
@@ -933,6 +952,7 @@ mqtt:
             "uniq_id": "{{address}}_5",
             "name": "{{name_user_case}} btn 5",
             "stat_t": "{{state_topic_5}}",
+            "avty_t": "{{availability_topic}}",
             "device": {{device_info_template}},
             "force_update": true,
             "json_attr_t": "{{state_topic_5}}",
@@ -947,6 +967,7 @@ mqtt:
             "uniq_id": "{{address}}_6",
             "name": "{{name_user_case}} btn 6",
             "stat_t": "{{state_topic_6}}",
+            "avty_t": "{{availability_topic}}",
             "device": {{device_info_template}},
             "json_attr_tpl": "{%- raw -%}
               { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
@@ -959,6 +980,7 @@ mqtt:
             "uniq_id": "{{address}}_7",
             "name": "{{name_user_case}} btn 7",
             "stat_t": "{{state_topic_7}}",
+            "avty_t": "{{availability_topic}}",
             "device": {{device_info_template}},
             "json_attr_tpl": "{%- raw -%}
               { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
@@ -971,6 +993,7 @@ mqtt:
             "uniq_id": "{{address}}_8",
             "name": "{{name_user_case}} btn 8",
             "stat_t": "{{state_topic_8}}",
+            "avty_t": "{{availability_topic}}",
             "device": {{device_info_template}},
             "json_attr_tpl": "{%- raw -%}
               { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
@@ -983,6 +1006,7 @@ mqtt:
             "uniq_id": "{{address}}_battery",
             "name": "{{name_user_case}} battery",
             "stat_t": "{{low_battery_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "battery",
             "device": {{device_info_template}},
             "force_update": true,
@@ -1030,6 +1054,7 @@ mqtt:
             "uniq_id": "{{address}}_smoke",
             "name": "{{name_user_case}} smoke",
             "stat_t": "{{smoke_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "smoke",
             "device": {{device_info_template}}
           }
@@ -1039,6 +1064,7 @@ mqtt:
             "uniq_id": "{{address}}_battery",
             "name": "{{name_user_case}} battery",
             "stat_t": "{{battery_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "battery",
             "device": {{device_info_template}}
           }
@@ -1048,6 +1074,7 @@ mqtt:
             "uniq_id": "{{address}}_co",
             "name": "{{name_user_case}} co",
             "stat_t": "{{co_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "gas",
             "device": {{device_info_template}}
           }
@@ -1057,6 +1084,7 @@ mqtt:
             "uniq_id": "{{address}}_error",
             "name": "{{name_user_case}} error",
             "stat_t": "{{error_topic}}",
+            "avty_t": "{{availability_topic}}",
             "device_class": "problem",
             "device": {{device_info_template}}
           }
@@ -1150,6 +1178,7 @@ mqtt:
             "uniq_id": "{{address}}_thermo",
             "name": "{{name_user_case}} thermo",
             "act_t": "{{status_state_topic}}",
+            "avty_t": "{{availability_topic}}",
             "curr_temp_t": "{{ambient_temp_topic}}",
             "curr_temp_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}",
             "device": {{device_info_template}},
@@ -1253,6 +1282,7 @@ mqtt:
             "uniq_id": "{{address}}_fan",
             "name": "{{name_user_case}} fan",
             "device": {{device_info_template}},
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{fan_on_off_topic}}",
             "stat_t": "{{fan_state_topic}}",
             "stat_val_tpl": "{% raw %}{{value_json.state}}{% endraw %}",
@@ -1273,6 +1303,7 @@ mqtt:
           {
             "uniq_id": "{{address}}_light",
             "name": "{{name_user_case}}",
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{level_topic}}",
             "stat_t": "{{state_topic}}",
             "brightness": true,
@@ -1444,6 +1475,7 @@ mqtt:
           {
             "uniq_id": "{{address}}_1",
             "name": "{{name_user_case}} btn 1",
+            "avty_t": "{{availability_topic}}",
             "device": {{device_info_template}},
             "brightness": {{is_dimmable|lower()}},
             "cmd_t": "{%- if is_dimmable -%}
@@ -1472,6 +1504,7 @@ mqtt:
             "uniq_id": "{{address}}_2",
             "name": "{{name_user_case}} btn 2",
             "device": {{device_info_template}},
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{btn_on_off_topic_2}}",
             "stat_t": "{{btn_state_topic_2}}",
             "json_attr_t": "{{btn_state_topic_2}}",
@@ -1486,6 +1519,7 @@ mqtt:
             "uniq_id": "{{address}}_3",
             "name": "{{name_user_case}} btn 3",
             "device": {{device_info_template}},
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{btn_on_off_topic_3}}",
             "stat_t": "{{btn_state_topic_3}}",
             "json_attr_t": "{{btn_state_topic_3}}",
@@ -1500,6 +1534,7 @@ mqtt:
             "uniq_id": "{{address}}_4",
             "name": "{{name_user_case}} btn 4",
             "device": {{device_info_template}},
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{btn_on_off_topic_4}}",
             "stat_t": "{{btn_state_topic_4}}",
             "json_attr_t": "{{btn_state_topic_4}}",
@@ -1514,6 +1549,7 @@ mqtt:
             "uniq_id": "{{address}}_5",
             "name": "{{name_user_case}} btn 5",
             "device": {{device_info_template}},
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{btn_on_off_topic_5}}",
             "stat_t": "{{btn_state_topic_5}}",
             "json_attr_t": "{{btn_state_topic_5}}",
@@ -1528,6 +1564,7 @@ mqtt:
             "uniq_id": "{{address}}_6",
             "name": "{{name_user_case}} btn 6",
             "device": {{device_info_template}},
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{btn_on_off_topic_6}}",
             "stat_t": "{{btn_state_topic_6}}",
             "json_attr_t": "{{btn_state_topic_6}}",
@@ -1542,6 +1579,7 @@ mqtt:
             "uniq_id": "{{address}}_7",
             "name": "{{name_user_case}} btn 7",
             "device": {{device_info_template}},
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{btn_on_off_topic_7}}",
             "stat_t": "{{btn_state_topic_7}}",
             "json_attr_t": "{{btn_state_topic_7}}",
@@ -1556,6 +1594,7 @@ mqtt:
             "uniq_id": "{{address}}_8",
             "name": "{{name_user_case}} btn 8",
             "device": {{device_info_template}},
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{btn_on_off_topic_8}}",
             "stat_t": "{{btn_state_topic_8}}",
             "json_attr_t": "{{btn_state_topic_8}}",
@@ -1570,6 +1609,7 @@ mqtt:
             "uniq_id": "{{address}}_9",
             "name": "{{name_user_case}} btn 9",
             "device": {{device_info_template}},
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{btn_on_off_topic_9}}",
             "stat_t": "{btn_state_topic_9}}",
             "json_attr_t": "{{btn_state_topic_9}}",
@@ -1659,6 +1699,7 @@ mqtt:
           {
             "uniq_id": "{{address}}_relay",
             "name": "{{name_user_case}} relay",
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{on_off_topic}}",
             "stat_t": "{{relay_state_topic}}",
             "device": {{device_info_template}},
@@ -1672,6 +1713,7 @@ mqtt:
           {
             "uniq_id": "{{address}}_sensor",
             "name": "{{name_user_case}} sensor",
+            "avty_t": "{{availability_topic}}",
             "stat_t": "{{sensor_state_topic}}",
             "device": {{device_info_template}},
             "json_attr_t": "{{state_topic}}",
@@ -1742,6 +1784,7 @@ mqtt:
           {
             "uniq_id": "{{address}}_1",
             "name": "{{name_user_case}} top",
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{on_off_topic_1}}",
             "stat_t": "{{state_topic_1}}",
             "device": {{device_info_template}},
@@ -1756,6 +1799,7 @@ mqtt:
           {
             "uniq_id": "{{address}}_2",
             "name": "{{name_user_case}} bottom",
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{on_off_topic_2}}",
             "stat_t": "{{state_topic_2}}",
             "device": {{device_info_template}},
@@ -1822,6 +1866,7 @@ mqtt:
           {
             "uniq_id": "{{address}}_1",
             "name": "{{name_user_case}} relay 1",
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{on_off_topic_1}}",
             "stat_t": "{{state_topic_1}}",
             "device": {{device_info_template}}
@@ -1831,6 +1876,7 @@ mqtt:
           {
             "uniq_id": "{{address}}_2",
             "name": "{{name_user_case}} relay 2",
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{on_off_topic_2}}",
             "stat_t": "{{state_topic_2}}",
             "device": {{device_info_template}}
@@ -1840,6 +1886,7 @@ mqtt:
           {
             "uniq_id": "{{address}}_3",
             "name": "{{name_user_case}} relay 3",
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{on_off_topic_3}}",
             "stat_t": "{{state_topic_3}}",
             "device": {{device_info_template}}
@@ -1849,6 +1896,7 @@ mqtt:
           {
             "uniq_id": "{{address}}_4",
             "name": "{{name_user_case}} relay 4",
+            "avty_t": "{{availability_topic}}",
             "cmd_t": "{{on_off_topic_4}}",
             "stat_t": "{{state_topic_4}}",
             "device": {{device_info_template}}
