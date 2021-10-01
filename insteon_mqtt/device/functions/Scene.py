@@ -115,7 +115,7 @@ class Scene(Base):
 
                 # If level was specified, then Save the level value so it can
                 # be used when the broadcast message is received.
-                if use_on_level == 0x01:
+                if is_on and use_on_level == 0x01:
                     self.broadcast_scene_level = {"timestamp": time.time(),
                                                   "level": on_level}
                 else:
