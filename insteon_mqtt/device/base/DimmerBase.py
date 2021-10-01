@@ -323,8 +323,7 @@ class DimmerBase(ManualCtrl, ResponderBase, Base):
 
             # If on was set using a scene command in the last 5 seconds, then
             # set to level requested in the scene command
-            if (hasattr(self, 'broadcast_scene_level') and
-                    self.broadcast_scene_level['timestamp'] + 5 >= time.time()):
+            if self.broadcast_scene_level['timestamp'] + 5 >= time.time():
                 level = self.broadcast_scene_level['level']
 
             # No matter what, clear the scene level
