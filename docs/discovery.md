@@ -192,6 +192,7 @@ the user
 - `modem_addr` = (str) hexadecimal address of modem as a string
 - `device_info_template` = (jinja template) a template defined in
 config.yaml.  _See below_
+- `availability_topic` = The _availabiltiy_topic_ string as defied in the config.yaml file under the _mqtt_ key.
 - `<<topics>>` = (str) topic keys as defined in the config.yaml
 file under the _default class_ for this device are available as variables.
 

@@ -77,6 +77,9 @@ class Mqtt:
         # The device_info_template
         self.device_info_template = ""
 
+        # The availability topic
+        self.availability_topic = ""
+
         # The discovery base topic, None if not enabled
         self.discovery_topic_base = None
 
@@ -114,6 +117,9 @@ class Mqtt:
 
         # Create a template for prcessing messages on the command topic.
         self._cmd_topic = MsgTemplate.clean_topic(data['cmd_topic'])
+
+        if 'availability_topic' in data:
+            self.availability_topic = data['availability_topic']
 
         # Create a template for prcessing HomeAssistant status messages.
         if 'discovery_ha_status' in data:

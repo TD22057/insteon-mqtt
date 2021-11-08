@@ -183,6 +183,7 @@ class Test_DiscoveryTopic:
         discovery.disc_templates.append(mock.Mock())
         discovery.publish_discovery()
         data = {'address': '11.22.33',
+                'availability_topic': '',
                 'name': '11.22.33',
                 'name_user_case': '11.22.33',
                 'engine': 'Unknown',

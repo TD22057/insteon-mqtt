@@ -158,6 +158,7 @@ class Test_Modem:
         # The expected template data
         data = {
             'address': '20.30.40',
+            'availability_topic': '',
             'dev_cat': 0,
             'dev_cat_name': 'Unknown',
             'device_info_template': '',

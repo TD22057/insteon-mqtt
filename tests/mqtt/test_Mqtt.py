@@ -25,7 +25,8 @@ def config():
     # The minimum config required for MQTT
     config = {"broker": "127.0.0.2",
               "port": "12345",
-              "cmd_topic": "insteon/command"}
+              "cmd_topic": "insteon/command",
+              "availability_topic": "insteon/availability"}
     return config
 
 #===========================================================================

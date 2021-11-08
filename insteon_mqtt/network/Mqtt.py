@@ -87,6 +87,7 @@ class Mqtt(Link):
         self.port = port
         self.connected = False
         self.id = id if id is not None else "insteon-mqtt"
+        self.availability_topic = "insteon/availability"
 
         # Insure poll is called at least once every 30 seconds so we can send
         # a keep alive message to the server so our connection doesn't get
@@ -135,12 +136,16 @@ class Mqtt(Link):
 
         self.host = config['broker']
         self.port = config['port']
+        self.availability_topic = config['availability_topic']
         self.keep_alive = config.get("keep_alive", self.keep_alive)
 
         id = config.get("id")
         if id is not None:
             self.id = id
             self.setup_client()
+
+        self.client.will_set(self.availability_topic, payload="offline",
+                             qos=0, retain=True)
 
         username = config.get('username', None)
         if username is not None:
@@ -373,6 +378,9 @@ class Mqtt(Link):
         """
         LOG.info("MQTT device closing %s %s", self.host, self.port)
 
+        self.client.publish(self.availability_topic, payload="offline", qos=0,
+                            retain=True)
+
         self.client.disconnect()
         self.signal_needs_write.emit(self, True)
 
@@ -393,6 +401,8 @@ class Mqtt(Link):
         if result == 0:
             self.connected = True
             self.signal_connected.emit(self, True)
+            self.client.publish(self.availability_topic, payload="online",
+                                qos=0, retain=True)
         else:
             LOG.error("MQTT connection refused %s %s %s", self.host, self.port,
                       result)
