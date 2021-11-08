@@ -173,6 +173,8 @@ class DiscoveryTopic(BaseTopic):
         if hasattr(self.device, 'modem'):
             data['modem_addr'] = self.device.modem.addr.hex
 
+        data['availability_topic'] = self.mqtt.availability_topic
+
         # Finally, render the device_info_template
         try:
             device_info_template = jinja2.Template(

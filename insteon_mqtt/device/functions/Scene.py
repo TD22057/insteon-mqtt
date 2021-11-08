@@ -112,6 +112,16 @@ class Scene(Base):
                 # this is a reasonable guess, that will be overwritten by the
                 # wait time calculated by the arriving broadcast message.
                 self.protocol.set_wait_time(time.time() + 1)
+
+                # If level was specified, then Save the level value so it can
+                # be used when the broadcast message is received.
+                if is_on and use_on_level == 0x01:
+                    self.broadcast_scene_level = {"timestamp": time.time(),
+                                                  "level": on_level}
+                else:
+                    # Clear saved level
+                    self.broadcast_scene_level['timestamp'] = 0
+
                 # Reason is device because we're simulating a button press.
                 # We can't really pass this around because we just get a
                 # broadcast message later from the device.  So we set a

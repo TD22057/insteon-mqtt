@@ -9,6 +9,7 @@
 #
 #===========================================================================
 import functools
+import time
 from .ResponderBase import ResponderBase
 from .Base import Base
 from ..functions import ManualCtrl
@@ -319,6 +320,14 @@ class DimmerBase(ManualCtrl, ResponderBase, Base):
                 # Pressing on again when already at the default on
                 # level causes the device to go to full-brightness.
                 level = 0xff
+
+            # If on was set using a scene command in the last 5 seconds, then
+            # set to level requested in the scene command
+            if self.broadcast_scene_level['timestamp'] + 5 >= time.time():
+                level = self.broadcast_scene_level['level']
+
+            # No matter what, clear the scene level
+            self.broadcast_scene_level['timestamp'] = 0
         return level
 
     #-----------------------------------------------------------------------

@@ -60,7 +60,6 @@ class Leak(BatterySensor):
             self.msg_heartbeat.load_config(data, 'heartbeat_topic',
                                            'heartbeat_payload', qos)
 
-
     #-----------------------------------------------------------------------
     def state_template_data(self, **kwargs):
         """Create the Jinja templating data variables for on/off messages.

@@ -209,6 +209,7 @@ mqtt:
       meta:
         regex_error: >-
           MQTT Topics cannot start or end with / or # and cannot use +
+    availability_topic: *mqtt_topic
     enable_discovery:
       type: boolean
     discovery_topic_base: *mqtt_topic

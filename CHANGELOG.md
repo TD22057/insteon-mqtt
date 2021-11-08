@@ -1,5 +1,19 @@
 # Revision Change History
 
+## [1.1.0]
+
+### Fixes
+
+- Fixes a problem wherein the modem might not receive commands from secondary groups on multigroup controllers (keypadlincs, remotes, motion sensors).
+If you are having an issue like this.  After updating, run `pair` on the affected multigroup controller.  (#453)
+
+### Additions
+
+- Adds an availability topic to the topics published on MQTT.  It will publish `online` when InsteonMQTT comes online and `offline` whenever InsteonMQTT goes offline
+even if as a result of a crash.  This has been added into the default discovery templates for HomeAssistant.  So you should now see your devices as `unavailable` if
+InsteonMQTT is offline. (#448)
+- If a level is now sent as part of the `scene` command, the device state will now properly report that level. (#449)
+
 ## [1.0.2]
 
 ### Fixes
