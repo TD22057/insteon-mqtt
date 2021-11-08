@@ -1305,9 +1305,15 @@ class Modem:
         seq = CommandSeq(self, "Device db update complete", on_done,
                          name="ModemDBUpd")
 
+        # Group number in the db is the group number of the controller since
+        # that's the group number in the broadcast message we'll receive.
+        db_group = local_group
+        if not is_controller:
+            db_group = remote_group
+
         # Create a new database entry for the modem and send it to the modem
         # for updating.
-        entry = db.ModemEntry(remote_addr, local_group, is_controller,
+        entry = db.ModemEntry(remote_addr, db_group, is_controller,
                               local_data)
         seq.add(self.db.add_on_device, entry)
 
@@ -1319,10 +1325,10 @@ class Modem:
             on_done = None
             if is_controller:
                 seq.add(remote.db_add_resp_of, remote_group, self.addr,
-                        local_group, two_way, refresh, remote_data=remote_data)
+                        local_group, two_way, refresh, local_data=remote_data)
             else:
                 seq.add(remote.db_add_ctrl_of, remote_group, self.addr,
-                        local_group, two_way, refresh, remote_data=remote_data)
+                        local_group, two_way, refresh, local_data=remote_data)
 
         # Start the command sequence.
         seq.run()
