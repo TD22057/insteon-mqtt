@@ -50,6 +50,7 @@ try:
 except AttributeError:
     pass
 
+
 #===========================================================================
 def send(config, topic, payload, quiet=False):
     """Send a message and get the replies from the server.
