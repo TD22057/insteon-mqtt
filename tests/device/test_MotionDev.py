@@ -246,20 +246,20 @@ class Test_Base_Config():
         # already test extended flags above
 
     def test_change_flags_led_on(self, test_device):
-        test_device.led_on = 1
+        test_device.led_on = 0
         test_device.night_only = 1
         test_device.on_only = 1
         def on_done(*args):
             pass
         # Mark awake so messages get sent to protocol
         test_device.awake(on_done)
-        test_device._change_flags({'led_on':0})
+        test_device._change_flags({'led_on':1})
         # should see an ext flag request first
         assert len(test_device.protocol.sent) == 1
         assert test_device.protocol.sent[0].msg.cmd1 == Msg.CmdType.EXTENDED_SET_GET
         assert test_device.protocol.sent[0].msg.cmd2 == 0x00
         assert test_device.protocol.sent[0].msg.data[1] == 0x05  # Set flags
-        assert test_device.protocol.sent[0].msg.data[2] == 0x06
+        assert test_device.protocol.sent[0].msg.data[2] == 0x08
 
     def test_change_flags_night_only(self, test_device):
         test_device.led_on = 1
@@ -275,7 +275,7 @@ class Test_Base_Config():
         assert test_device.protocol.sent[0].msg.cmd1 == Msg.CmdType.EXTENDED_SET_GET
         assert test_device.protocol.sent[0].msg.cmd2 == 0x00
         assert test_device.protocol.sent[0].msg.data[1] == 0x05  # Set flags
-        assert test_device.protocol.sent[0].msg.data[2] == 0x0A
+        assert test_device.protocol.sent[0].msg.data[2] == 0x0C
 
     def test_change_flags_on_only(self, test_device):
         test_device.led_on = 1
@@ -291,7 +291,7 @@ class Test_Base_Config():
         assert test_device.protocol.sent[0].msg.cmd1 == Msg.CmdType.EXTENDED_SET_GET
         assert test_device.protocol.sent[0].msg.cmd2 == 0x00
         assert test_device.protocol.sent[0].msg.data[1] == 0x05  # Set flags
-        assert test_device.protocol.sent[0].msg.data[2] == 0x0C
+        assert test_device.protocol.sent[0].msg.data[2] == 0x0A
 
     def test_change_flags_bad(self, test_device, caplog):
         test_device.led_on = 1
