@@ -1,18 +1,29 @@
 # Revision Change History
 
+## [1.1.1]
+
+### Fixes
+
+- Fix error which caused changing the state of one keypadlinc button, to turn off all other keypadlinc buttons ([#463](https://github.com/TD22057/insteon-mqtt/pull/463))
+- Fix error where the `on_only` and `night_only` flags for the motion sensor were reversed. ([#464](https://github.com/TD22057/insteon-mqtt/pull/443))
+
+### Additions
+
+- Significantly improvement in readabilty and content of the helptext for the commandline interface. ([#465](https://github.com/TD22057/insteon-mqtt/pull/465))
+
 ## [1.1.0]
 
 ### Fixes
 
 - Fixes a problem wherein the modem might not receive commands from secondary groups on multigroup controllers (keypadlincs, remotes, motion sensors).
-If you are having an issue like this.  After updating, run `pair` on the affected multigroup controller.  (#453)
+If you are having an issue like this.  After updating, run `pair` on the affected multigroup controller.  ([#453](https://github.com/TD22057/insteon-mqtt/pull/453))
 
 ### Additions
 
 - Adds an availability topic to the topics published on MQTT.  It will publish `online` when InsteonMQTT comes online and `offline` whenever InsteonMQTT goes offline
 even if as a result of a crash.  This has been added into the default discovery templates for HomeAssistant.  So you should now see your devices as `unavailable` if
-InsteonMQTT is offline. (#448)
-- If a level is now sent as part of the `scene` command, the device state will now properly report that level. (#449)
+InsteonMQTT is offline. ([#448](https://github.com/TD22057/insteon-mqtt/pull/448))
+- If a level is now sent as part of the `scene` command, the device state will now properly report that level. ([#449](https://github.com/TD22057/insteon-mqtt/pull/449))
 
 ## [1.0.2]
 

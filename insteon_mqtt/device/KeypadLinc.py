@@ -77,7 +77,9 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
         # changing the led state - only toggling the load changes the state.
         # Since the non-load buttons have nothing to switch, the led state is
         # the state of the switch.
-        self._led_bits = 0x00
+        self._led_bits = self.db.get_meta('led_bits')
+        if self._led_bits is None:
+            self._led_bits = 0x00
 
         # 1 if the load is attached to the normal first button.  If the load
         # is detached, this will be group 9.
@@ -785,14 +787,8 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
         LOG.debug("KeypadLinc LED %s group %s ACK: %s", self.addr, group,
                   msg)
 
-        # Update the LED bit for the updated group.
-        self._led_bits = led_bits
-        LOG.ui("KeypadLinc %s LED's changed to %s", self.addr,
-               "{:08b}".format(self._led_bits))
-
         # Change the level and emit the active signal.
-        self._set_state(group=group, level=0xff if is_on else 0x00,
-                        reason=reason)
+        self._set_state(group=group, is_on=is_on, reason=reason)
 
         msg = "KeypadLinc %s LED group %s updated to %s" % \
               (self.addr, group, is_on)
@@ -854,6 +850,7 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
                                 reason=reason)
 
         self._led_bits = led_bits
+        self.db.set_meta('led_bits', self._led_bits)
 
     #-----------------------------------------------------------------------
     def handle_refresh_state(self, msg, on_done):
@@ -977,5 +974,8 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
         if group < 9:
             self._led_bits = util.bit_set(self._led_bits, group - 1,
                                           1 if is_on else 0)
+            self.db.set_meta('led_bits', self._led_bits)
+            LOG.ui("KeypadLinc %s LEDs changed to %s", self.addr,
+                   "{:08b}".format(self._led_bits))
 
     #-----------------------------------------------------------------------
