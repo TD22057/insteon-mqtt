@@ -250,10 +250,11 @@ class Motion(BatterySensor):
             on_only = self.on_only
 
         # Generate the value of the combined flags.
+        # on_only and night_only are inverted
         value = 0
         value = util.bit_set(value, 3, led_on)
-        value = util.bit_set(value, 2, night_only)
-        value = util.bit_set(value, 1, on_only)
+        value = util.bit_set(value, 2, False if night_only else True)
+        value = util.bit_set(value, 1, False if on_only else True)
 
         # Push the flags value to the device.
         data = bytes([
