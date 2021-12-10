@@ -1,5 +1,16 @@
 # Revision Change History
 
+## [1.1.1]
+
+### Fixes
+
+- Fix error which caused changing the state of one keypadlinc button, to turn off all other keypadlinc buttons (#463)
+- Fix error where the `on_only` and `night_only` flags for the motion sensor were reversed. (#464)
+
+### Additions
+
+- Significantly improvement in readabilty and content of the helptext for the commandline interface. (#465)
+
 ## [1.1.0]
 
 ### Fixes
