@@ -75,7 +75,7 @@ class Mqtt:
         self._ha_status_topic = None
 
         # The device_info_template
-        self.device_info_template = ""
+        self.device_info_template = {}
 
         # The availability topic
         self.availability_topic = ""

@@ -1,6 +1,6 @@
 # Migrating to Discovery for Installations 0.8.3 and Earlier
 
-Prior to version 1.0.0 InsteonMQTT used a single configuration file.  Starting in version 1.0.0, the base configuration settings are contained in a base configuration file that ships with InsteonMQTT.  You can view the contents of this file here: [config-base.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/insteon_mqtt/data/config-base.yaml)
+Prior to version 1.0.0 InsteonMQTT used a single configuration file.  Starting in version 1.0.0, the base configuration settings are contained in a base configuration file that ships with InsteonMQTT.  You can view the contents of this file here: [config-base.yaml](../insteon_mqtt/data/config-base.yaml)
 
 As described in [configuration](configuration.md), the settings in this base configuration file can be overwritten using your user configuration file.
 
@@ -36,7 +36,7 @@ do in steps, so be sure you have enough time set aside.
 2. Make a backup copy of all HomeAssistant configurations that define insteon
 entities.
 3. Rename `config-yaml.default` to `config.yaml`.
-4. Follow the insstructions [Configuration Instructions](https://github.com/TD22057/insteon-mqtt/blob/master/docs/configuration.md) copying the details of your modem, devices, and mqtt broker from your backup file.
+4. Follow the insstructions [Configuration Instructions](configuration.md) copying the details of your modem, devices, and mqtt broker from your backup file.
 5.Remove or comment out the insteon entities in your HomeAssistant
 configuration.
 6. Restart HomeAssistant (your front end will likely be filled with yellow triangles).

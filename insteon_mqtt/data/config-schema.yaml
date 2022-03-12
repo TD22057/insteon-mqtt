@@ -113,10 +113,10 @@ insteon:
                 meta:
                   type_error: >-
                     Device entry value should be a name in string form.
-            # Opt3 Entry with config_extra settings, impossible to validate
-            # this here, so runtime code does all the testing.
+            # Opt3 Entry with additional settings, which can only be partially validated
+            # here, so runtime code will do the remaining validation.
             # Setting minlength ensures this broad test only applies when
-            # config_extra keys are present
+            # additional keys are present
             - type: dict
               keysrules:
                 type: ['string', 'integer']
@@ -126,6 +126,69 @@ insteon:
               meta:
                 minlength_error: Entry did not have any extra config settings
                 type_error: "Entry was not in 'address: name' format"
+              allow_unknown: True
+              schema:
+                discoverable:
+                  type: boolean
+                discovery_class:
+                  type: string
+                discovery_override_class:
+                  type: ['string', 'list']
+                  schema:
+                    type: string
+                discovery_overrides: &discovery_overrides
+                  nullable: True
+                  type: dict
+                  keysrules:
+                    type: string
+                    meta:
+                      type_error: Discovery override entity key must be a string
+                  schema:
+                    device: &discovery_device
+                      nullable: True
+                      type: dict
+                      schema:
+                        cu:
+                          type: string
+                        cns:
+                          type: string
+                        ids:
+                          type: string
+                        name:
+                          type: string
+                        mf:
+                          type: string
+                        mdl:
+                          type: string
+                        sa:
+                          type: string
+                        sw:
+                          type: string
+                        via_device:
+                          type: string
+                  allow_unknown:
+                    type: dict
+                    schema:
+                      discoverable:
+                        type: boolean
+                        oneof:
+                          # If entity not discoverable, cannot supply 'component' or 'config' overrides
+                          - allowed: [False]
+                            excludes: ['component', 'config']
+                          - allowed: [True]
+                      component:
+                        type: string
+                        allowed: ['alarm_control_panel', 'binary_sensor', 'camera',
+                                  'cover', 'device_tracker', 'device_trigger', 'fan',
+                                  'climate', 'light', 'lock', 'scene', 'sensor',
+                                  'switch', 'tag', 'vacuum']
+                      config:
+                        nullable: True
+                        type: dict
+                        keysrules:
+                          type: string
+                          meta:
+                            type_error: Payload override attribute must be a string
           meta:
             oneof_error: |
               This entry does not match a valid device entry format.
@@ -139,26 +202,49 @@ insteon:
 
 mqtt:
   type: dict
+  keysrules:
+    type: string
+    meta:
+      type_error: MQTT entry must be a string
   allow_unknown:
     allow_unknown: False
     ## The only unknown keys are user defined discovery_class settings
     type: dict
     schema:
+      # A definition of a class with its own entities
       discovery_entities: &discovery_entities
-        type: list
-        schema:
-          type: dict
-          schema:
-            component:
+        excludes: ['discovery_overrides']
+        oneof:
+          - type: dict
+            keysrules:
               type: string
-              allowed: ['alarm_control_panel', 'binary_sensor', 'camera',
-                       'cover', 'device_tracker', 'device_trigger', 'fan',
-                       'climate', 'light', 'lock', 'scene', 'sensor',
-                       'switch', 'tag', 'vacuum']
-              required: True
-            config:
-              type: string
-              required: True
+              forbidden: ['device']
+              meta:
+                type_error: Discovery entity key must be a string
+            valuesrules:
+              type: dict
+              schema: &discovery_entity
+                component:
+                  type: string
+                  allowed: ['alarm_control_panel', 'binary_sensor', 'camera',
+                            'cover', 'device_tracker', 'device_trigger', 'fan',
+                            'climate', 'light', 'lock', 'scene', 'sensor',
+                            'switch', 'tag', 'vacuum']
+                config:
+                  oneof:
+                    - type: string
+                    - type: dict
+                      keysrules:
+                        type: string
+                        meta:
+                          type_error: Payload attribute must be a string
+                  required: True
+          - type: list
+            schema:
+              type: dict
+              schema: *discovery_entity
+      # A definition of a class containing overrides for another class
+      discovery_overrides: *discovery_overrides
   schema:
     broker:
       type: string
@@ -214,8 +300,7 @@ mqtt:
       type: boolean
     discovery_topic_base: *mqtt_topic
     discovery_ha_status: *mqtt_topic
-    device_info_template:
-      type: string
+    device_info_template: *discovery_device
     modem:
       type: dict
       allow_unknown: True

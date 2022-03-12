@@ -219,6 +219,7 @@ class MockMqtt:
         self.last_payload = None
         self.last_topic = None
         self.mode_command = None
+        self.device_info_template = {}
 
     def publish(self, topic, payload, qos=None, retain=None):
         self.last_topic = topic

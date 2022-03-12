@@ -1,0 +1,8 @@
+insteon:
+  port: 'foo'
+  devices:
+    switch:
+      - aa.aa.12: 'device 2'
+        discovery_overrides:
+          device:
+            foo: 'bar'
