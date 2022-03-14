@@ -102,6 +102,13 @@ class Test_config:
         assert val == ""
 
     #-----------------------------------------------------------------------
+    def test_scenes_empty(self):
+        file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'configs', 'scenes_empty.yaml')
+        val = IM.config.validate(file)
+        assert val == ""
+
+    #-----------------------------------------------------------------------
     def test_validate_addr(self):
         validator = IM.config.IMValidator()
         validator._error = mock.Mock()
