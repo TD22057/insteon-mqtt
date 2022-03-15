@@ -24,6 +24,7 @@
 ## document contents
 
 scenes:
+  nullable: True
   type: list
   schema:
     type: dict
