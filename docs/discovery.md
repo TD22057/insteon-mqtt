@@ -45,7 +45,8 @@ mqtt:
 
 Enabling the platform, then restarting Insteon-MQTT, will result in
 the __default__ device and entity templates (which are included in the
-`config-base.yaml` file that is part of the Insteon-MQTT installation)
+[config-base.yaml](../insteon_mqtt/data/config-base.yaml) file that 
+is part of the Insteon-MQTT installation)
 being used to *push* those devices and entities to Home Assistant.
 
 ### Insteon-MQTT 0.8.3 or earlier
@@ -136,7 +137,7 @@ Each entry in `discovery_entities` is an associative array with the
 __required__ keys `component` and `config`.
 
 - `component` - (str) One of the supported Home Assistant MQTT components,
-eg. `binary_sensor`, `light`, `switch`
+eg. `binary_sensor`, `light`, `switch` [See here for a full list](https://www.home-assistant.io/docs/mqtt/discovery/)
 
 - `config` - (associative array) The array is rendered into a __JSON__
 string that is acceptable to Home Assistant.  The contents of what is
@@ -144,7 +145,7 @@ required in this JSON string are defined by the [Home Assistant
 Discovery
 Platform](https://www.home-assistant.io/docs/mqtt/discovery/).
 
-Each entry in this array is processed as a Jinja2 template, which
+  -  Each entry in this array is processed as a Jinja2 template, which
 means that variable substitution and template logic can be used.
 
 > The `config` array __must include__ an entry for `unique_id`
@@ -153,7 +154,8 @@ recommended__ that you use the the device address as part of this
 unique id.  The recommended format is `{{address}}_suffix` where the
 suffix is something that plainly describes the nature of this entity.
 Devices with only a single entity do not need a suffix, but it is
-still good practice to use one.
+still good practice to use one.  The unique id is used internally by
+HomeAssistant and is not otherwise visible to the user.
 
 The `config` array has a number of variables available to it.  For
 all devices this includes at minimum the following, devices may also
@@ -202,8 +204,8 @@ gathered from the `mqtt->dimmer` key.  Topics listed under a
 user-defined `discovery_class` will be ignored.
 
 Additional variables may be offered by specific device classes.
-Those variables are defined in the `config-example.yaml` file under
-the relevant `mqtt` device keys.
+Those variables are defined in the [config-base.yaml](../insteon_mqtt/data/config-base.yaml) 
+file under the relevant `mqtt` device keys.
 
 #### JSON Dangers
 
