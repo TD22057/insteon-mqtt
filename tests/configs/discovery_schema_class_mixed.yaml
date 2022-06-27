@@ -1,0 +1,12 @@
+mqtt:
+  broker: 127.0.0.1
+  port: 1883
+  class1:
+    discovery_overrides:
+      switch:
+        config:
+          item1: 'foo'
+    discovery_entities:
+      light:
+        component: 'light'
+        config: 'foo'

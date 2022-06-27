@@ -3,8 +3,9 @@
 # MQTT Discovery Topic
 #
 #===========================================================================
-import re
+import copy
 import json
+import re
 import jinja2
 from ... import log
 from ...catalog import Category
@@ -37,6 +38,10 @@ class DiscoveryTopic(BaseTopic):
         # device
         self.disc_templates = []
 
+        # get a copy of the global device_info_template, so that it can
+        # be overriden later if needed
+        self.device_info_template = copy.deepcopy(mqtt.device_info_template)
+
     #-----------------------------------------------------------------------
     def load_discovery_data(self, config, qos=None):
         """Load values from a configuration data object.
@@ -48,27 +53,83 @@ class DiscoveryTopic(BaseTopic):
           config (dict):  The mqtt section of the config dict.
           qos (int):  The default quality of service level to use.
         """
-        # Skip is discovery not enabled
+        # Skip if discovery not enabled
         if not self.mqtt.discovery_enabled:
             return
 
-        # Get the device specific discovery class
+        # Skip if device should not be discovered
+        if not self.device.config_extra.get('discoverable', True):
+            return
+
+        # Get the device specific discovery class(es)
         disc_class = self.device.config_extra.get('discovery_class',
                                                   self.default_discovery_cls)
-        class_config = config.get(disc_class, None)
+        if isinstance(disc_class, list):
+            base_class = disc_class[0]
+            override_classes = disc_class[1:]
+        else:
+            base_class = disc_class
+            override_classes = []
+
+        dev_over_classes = self.device.config_extra.get(
+            'discovery_override_class',
+            None)
+        if dev_over_classes:
+            if isinstance(dev_over_classes, list):
+                override_classes.extend(dev_over_classes)
+            else:
+                override_classes.append(dev_over_classes)
+
+        # handle base_class first, which must provide entities
+        class_config = config.get(base_class, None)
         if class_config is None:
             LOG.error("%s - Unable to find discovery class %s",
-                      self.device.label, disc_class)
+                      self.device.label, base_class)
             return
+        entities = class_config.get('discovery_entities', None)
+        if entities is None:
+            LOG.error("%s - No discovery_entities defined",
+                      self.device.label)
+            return
+        if isinstance(entities, list):
+            # convert old-style (unnamed) entity list to new-style (named)
+            # names are 'entity' plus the 0-based index in the list
+            entities = {'entity' + str(i): e for i, e in enumerate(entities)}
+        elif not isinstance(entities, dict):
+            LOG.error("%s - discovery_entities must be a mapping - %s",
+                      self.device.label, entities)
+            return
+        else:
+            # a copy of the entities dictionary is needed, so that overrides
+            # applied later do not modify the original in the base class
+            entities = copy.deepcopy(entities)
+
+        # handle override classes
+        for override_class in override_classes:
+            class_config = config.get(override_class, None)
+            if class_config is None:
+                LOG.error("%s - Unable to find discovery class %s",
+                          self.device.label, override_class)
+                return
+            disc_overrides = class_config.get('discovery_overrides', None)
+            if disc_overrides:
+                if not self._apply_discovery_overrides(entities,
+                                                       disc_overrides):
+                    return
+
+        # handle overrides from device
+        disc_overrides = self.device.config_extra.get('discovery_overrides',
+                                                      None)
+        if disc_overrides:
+            if not self._apply_discovery_overrides(entities, disc_overrides):
+                return
 
         # Loop all of the discovery entities and append them to
         # self.rendered_topic_map
-        entities = class_config.get('discovery_entities', None)
-        if entities is None or not isinstance(entities, list):
-            LOG.error("%s - No discovery_entities defined, or not a list %s",
-                      self.device.label, entities)
-            return
-        for entity in entities:
+        for entity in entities.values():
+            if not entity.get('discoverable', True):
+                continue
+
             component = entity.get('component', None)
             if component is None:
                 LOG.error("%s - No component specified in discovery entity %s",
@@ -80,6 +141,14 @@ class DiscoveryTopic(BaseTopic):
                 LOG.error("%s - No config specified in discovery entity %s",
                           self.device.label, entity)
                 continue
+
+            # handle dict-style configuration
+            if isinstance(payload, dict):
+                payload = json.dumps(payload, indent=2)
+                # replace reference to device_info as string
+                # with reference as object (remove quotes)
+                payload = re.sub(r'"{{\s*device_info\s*}}"', '{{device_info}}',
+                                 payload)
 
             # Get Unique ID from payload to use in topic
             unique_id = self._get_unique_id(payload)
@@ -135,8 +204,8 @@ class DiscoveryTopic(BaseTopic):
                  dev_cat_name = (str) device category name
                  sub_cat = (int) device sub-category
                  modem_addr = (str) hexadecimal address of modem as a string
-                 device_info_template = (jinja template) a template defined in
-                                        config.yaml
+                 device_info = (str) a JSON object with info about this device,
+                                     produced from its device_info_template
                  <<topics>> = (str) topic keys as defined in the config.yaml
                               file are available as variables
         """
@@ -178,13 +247,16 @@ class DiscoveryTopic(BaseTopic):
         # Finally, render the device_info_template
         try:
             device_info_template = jinja2.Template(
-                self.mqtt.device_info_template
+                json.dumps(self.device_info_template, indent=2)
             )
-            data['device_info_template'] = device_info_template.render(data)
+            data['device_info'] = device_info_template.render(data)
+            # provide a 'device_info_template' alias for configurations
+            # which use it
+            data['device_info_template'] = data['device_info']
         except jinja2.exceptions.TemplateError as exc:
             LOG.error("Error rendering device_info_template: %s", exc)
             LOG.error("Template was: \n%s",
-                      self.mqtt.device_info_template.strip())
+                      json.dumps(self.device_info_template))
             LOG.error("Data passed was: %s", data)
 
         return data
@@ -255,3 +327,49 @@ class DiscoveryTopic(BaseTopic):
         return ret
 
     #-----------------------------------------------------------------------
+    def _apply_discovery_overrides(self, entities, disc_overrides):
+        for entity_key, overrides in disc_overrides.items():
+            # special handling for device-level overrides
+            if entity_key == 'device':
+                device = self.device_info_template
+                if overrides:
+                    device.update(overrides)
+                # delete any keys with empty string values
+                keys_to_delete = []
+                for key, val in device.items():
+                    if val == "":
+                        keys_to_delete.append(key)
+                for key in keys_to_delete:
+                    del device[key]
+                continue
+
+            if entity_key not in entities:
+                LOG.error("%s - Entity to override was not found - %s",
+                          self.device.label, entity_key)
+                return False
+
+            entity = entities[entity_key]
+
+            if not overrides.get('discoverable', True):
+                entity['discoverable'] = False
+                continue
+
+            if 'component' in overrides:
+                entity['component'] = overrides['component']
+
+            if 'config' in overrides and overrides['config']:
+                config = entity['config']
+                if not isinstance(config, dict):
+                    LOG.error("%s - Config as string cannot be overriden - %s",
+                              self.device.label, entity_key)
+                    return False
+                config.update(overrides['config'])
+                # delete any keys with empty string values
+                keys_to_delete = []
+                for key, val in config.items():
+                    if val == "":
+                        keys_to_delete.append(key)
+                for key in keys_to_delete:
+                    del config[key]
+
+        return True

@@ -129,7 +129,7 @@ class Test_Modem:
                        Modem Scene {{scene}}
                      {%- endif -%}",
             "cmd_t": "{{scene_topic}}",
-            "device": {{device_info_template}},
+            "device": {{device_info}},
             "payload_on": "{\"cmd\": \"on\", \"group\": \"{{scene}}\"}",
             "payload_off": "{\"cmd\": \"off\", \"group\": \"{{scene}}\"}"
           }
@@ -161,7 +161,8 @@ class Test_Modem:
             'availability_topic': '',
             'dev_cat': 0,
             'dev_cat_name': 'Unknown',
-            'device_info_template': '',
+            'device_info': '{}',
+            'device_info_template': '{}',
             'engine': 'Unknown',
             'firmware': 0,
             'model_description': 'Unknown',

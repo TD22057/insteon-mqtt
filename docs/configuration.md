@@ -17,7 +17,7 @@ The following is the bare minimum of changes to the `config.yaml` file that are 
 Starting in version 1.0.0 InsteonMQTT now includes a base configuration file which the user configuration file is overlayed over the top.  You should not directly edit the base configuration file, as it will be overwritten during updates.  If you want to change a default setting, simply define the same key in your user configuration file and set your desired value.
 
 You can view the contents of the base configuration file here:
-[config-base.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/insteon_mqtt/data/config-base.yaml)
+[config-base.yaml](../insteon_mqtt/data/config-base.yaml)
 
 Settings in your user config file will replace those in the base config file pursuant to the following rules:
 

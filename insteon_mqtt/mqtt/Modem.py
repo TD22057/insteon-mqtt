@@ -3,6 +3,7 @@
 # MQTT PLM modem device
 #
 #===========================================================================
+import json
 import re
 from .. import log
 from . import topic
@@ -64,8 +65,8 @@ class Modem(topic.SceneTopic, topic.DiscoveryTopic):
         # Loop all of the discovery entities and append them to
         # self.rendered_topic_map
         entities = class_config.get('discovery_entities', None)
-        if entities is None or not isinstance(entities, list):
-            LOG.error("%s - No discovery_entities defined, or not a list %s",
+        if entities is None or not isinstance(entities, dict):
+            LOG.error("%s - No discovery_entities defined, or not a dict %s",
                       self.device.label, entities)
             return
 
@@ -73,7 +74,7 @@ class Modem(topic.SceneTopic, topic.DiscoveryTopic):
             LOG.warning("%s - Modem only uses the first discovery_entity, "
                         "ignoring the rest %s", self.device.label, entities)
 
-        entity = entities[0]
+        entity = list(entities.values())[0]
         component = entity.get('component', None)
         if component is None:
             LOG.error("%s - No component specified in discovery entity %s",
@@ -85,6 +86,12 @@ class Modem(topic.SceneTopic, topic.DiscoveryTopic):
             LOG.error("%s - No config specified in discovery entity %s",
                       self.device.label, entity)
             return
+
+        payload = json.dumps(payload, indent=2)
+        # replace reference to device_info as string
+        # with reference as object (remove quotes)
+        payload = re.sub(r'"{{\s*device_info\s*}}"', '{{device_info}}',
+                         payload)
 
         # Get Unique ID from payload to use in topic
         unique_id = self._get_unique_id(payload)
