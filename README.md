@@ -13,18 +13,6 @@ Version: 1.1.1  ([History](CHANGELOG.md))
 
 - 0.9.1 - A Yaml validation routine was added.  If you have an error in your
   config.yaml file, you will get an error on startup.
-- 0.8.3 - HomeAssistant version 2021.4.0 now only supports percentages for fan
-  speeds.  This means any fan entities in HomeAssistant that were configured
-  to use "low", "medium", and "high" for the fan speed will no longer work.
-  See [config-example.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/config-example.yaml)
-  under the `mqtt -> fan` section for a suggest configuration in
-  HomeAssistant.  __Users not using HomeAssistant are unaffected.__
-- 0.7.4 - IOLinc, the scene_topic has been elimited, please see the documentation
-  for the replaces functionality.
-- 0.7.2 - KeypadLinc now supports both dimmer and on/off device types.  This required
-  changing the KeypadLinc inputs in the MQTT portion of the config.yaml file.
-  See the file in the repository for the new input fields. ([Issue #33][I33]).
-
 
 # Quickstart
 
@@ -39,6 +27,9 @@ Using Home Assistant Supervisor?
 - [Installation Guide](docs/quick_start.md) - Install from the command line
 - [Startup Script](docs/auto_start.md) - Running InsteonMQTT on startup.
 - [Install as a HomeAssistant Addon](docs/HA_Addon_Instructions.md) - Install in HomeAssistant
+  - [Discovery for HomeAssistant](docs/discovery.md) - Automatic entity discovery
+  - [Customizing HomeAssistant Entities](docs/discovery_customization_ui.md) - Customizing entities in HomeAssistant
+  - [Discovery Overrides](docs/discovery_customization_config.md) - Alter discovery entities using templates and overrides
 - [Configuration](docs/configuration.md) - The base configuration requirements
 - [Initialize your Devices](docs/initializing.md) - Setting up your Insteon Devices
 - [User Interface Options](docs/user_interface.md) - Three available user interfaces.
@@ -121,3 +112,17 @@ Thanks to [Insteon terminal](https://github.com/pfrommerd/insteon-terminal),
 without the work that went into that repo, it would have taken me
 forever to get this to work.  I learned all of the command protocols
 and database managemenet commands from inspecting that code.
+
+# Old Breaking Changes
+
+- 0.8.3 - HomeAssistant version 2021.4.0 now only supports percentages for fan
+  speeds.  This means any fan entities in HomeAssistant that were configured
+  to use "low", "medium", and "high" for the fan speed will no longer work.
+  See [config-example.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/config-example.yaml)
+  under the `mqtt -> fan` section for a suggest configuration in
+  HomeAssistant.  __Users not using HomeAssistant are unaffected.__
+- 0.7.4 - IOLinc, the scene_topic has been elimited, please see the documentation
+  for the replaces functionality.
+- 0.7.2 - KeypadLinc now supports both dimmer and on/off device types.  This required
+  changing the KeypadLinc inputs in the MQTT portion of the config.yaml file.
+  See the file in the repository for the new input fields. ([Issue #33][I33]).
