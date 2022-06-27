@@ -1,0 +1,7 @@
+insteon:
+  port: '/dev/insteon'
+  scenes: !rel_path empty.yaml
+
+mqtt:
+  broker: 127.0.0.1
+  port: 1883
