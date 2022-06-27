@@ -129,8 +129,8 @@ will produce two entities: 'fan.game_room_fan' and 'light.game_room'.
 ### Device type 'battery_sensor' entities
 
 |Name|Purpose|
-|---|---|---|
-|binary_sensor.NAME_door|open/closed sensor|
+|---|---|
+|binary_sensor.NAME_door|open/closed sensor||
 |binary_sensor.NAME_battery|battery good/low|
 |sensor.NAME_heartbeat|regular update from device to confirm communication|
 
