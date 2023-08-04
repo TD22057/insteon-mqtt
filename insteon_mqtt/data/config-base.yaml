@@ -379,7 +379,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_switch"
-          name: "{{name_user_case}}"
+          name: ""
           avty_t: "{{availability_topic}}"
           cmd_t: "{{on_off_topic}}"
           stat_t: "{{state_topic}}"
@@ -495,7 +495,7 @@ mqtt:
         component: 'light'
         config:
           uniq_id: "{{address}}_light"
-          name: "{{name_user_case}}"
+          name: ""
           avty_t: "{{availability_topic}}"
           cmd_t: "{{level_topic}}"
           stat_t: "{{state_topic}}"
@@ -565,7 +565,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_door"
-          name: "{{name_user_case}} door"
+          name: ""
           stat_t: "{{state_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "door"
@@ -580,7 +580,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_battery"
-          name: "{{name_user_case}} battery"
+          name: "battery"
           stat_t: "{{low_battery_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "battery"
@@ -595,7 +595,7 @@ mqtt:
         component: 'sensor'
         config:
           uniq_id: "{{address}}_heartbeat"
-          name: "{{name_user_case}} heartbeat"
+          name: "heartbeat"
           stat_t: "{{heartbeat_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "timestamp"
@@ -634,7 +634,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_motion"
-          name: "{{name_user_case}} motion"
+          name: ""
           stat_t: "{{state_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "motion"
@@ -649,7 +649,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_battery"
-          name: "{{name_user_case}} battery"
+          name: "battery"
           stat_t: "{{low_battery_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "battery"
@@ -664,7 +664,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_dusk"
-          name: "{{name_user_case}} dusk"
+          name: "dusk"
           stat_t: "{{dawn_dusk_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "light"
@@ -705,7 +705,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_door"
-          name: "{{name_user_case}} door"
+          name: ""
           stat_t: "{{state_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "door"
@@ -720,7 +720,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_battery"
-          name: "{{name_user_case}} battery"
+          name: "battery"
           stat_t: "{{low_battery_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "battery"
@@ -735,7 +735,7 @@ mqtt:
         component: 'sensor'
         config:
             uniq_id: "{{address}}_heartbeat"
-            name: "{{name_user_case}} heartbeat"
+            name: "heartbeat"
             stat_t: "{{heartbeat_topic}}"
             avty_t: "{{availability_topic}}"
             device_class: "timestamp"
@@ -746,7 +746,7 @@ mqtt:
         component: 'sensor'
         config:
             uniq_id: "{{address}}_voltage"
-            name: "{{name_user_case}} voltage"
+            name: "voltage"
             stat_t: "{{battery_voltage_topic}}"
             avty_t: "{{availability_topic}}"
             device_class: "voltage"
@@ -794,7 +794,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_wet"
-          name: "{{name_user_case}} leak"
+          name: ""
           stat_t: "{{wet_dry_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "moisture"
@@ -809,7 +809,7 @@ mqtt:
         component: 'sensor'
         config:
           uniq_id: "{{address}}_heartbeat"
-          name: "{{name_user_case}} heartbeat"
+          name: "heartbeat"
           stat_t: "{{heartbeat_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "timestamp"
@@ -873,7 +873,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_1"
-          name: "{{name_user_case}} btn 1"
+          name: "btn 1"
           stat_t: "{{state_topic_1}}"
           avty_t: "{{availability_topic}}"
           device: "{{device_info}}"
@@ -887,7 +887,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_2"
-          name: "{{name_user_case}} btn 2"
+          name: "btn 2"
           stat_t: "{{state_topic_2}}"
           avty_t: "{{availability_topic}}"
           device: "{{device_info}}"
@@ -901,7 +901,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_3"
-          name: "{{name_user_case}} btn 3"
+          name: "btn 3"
           stat_t: "{{state_topic_3}}"
           avty_t: "{{availability_topic}}"
           device: "{{device_info}}"
@@ -915,7 +915,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_4"
-          name: "{{name_user_case}} btn 4"
+          name: "btn 4"
           stat_t: "{{state_topic_4}}"
           avty_t: "{{availability_topic}}"
           device: "{{device_info}}"
@@ -929,7 +929,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_5"
-          name: "{{name_user_case}} btn 5"
+          name: "btn 5"
           stat_t: "{{state_topic_5}}"
           avty_t: "{{availability_topic}}"
           device: "{{device_info}}"
@@ -943,7 +943,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_6"
-          name: "{{name_user_case}} btn 6"
+          name: "btn 6"
           stat_t: "{{state_topic_6}}"
           avty_t: "{{availability_topic}}"
           device: "{{device_info}}"
@@ -957,7 +957,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_7"
-          name: "{{name_user_case}} btn 7"
+          name: "btn 7"
           stat_t: "{{state_topic_7}}"
           avty_t: "{{availability_topic}}"
           device: "{{device_info}}"
@@ -971,7 +971,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_8"
-          name: "{{name_user_case}} btn 8"
+          name: "btn 8"
           stat_t: "{{state_topic_8}}"
           avty_t: "{{availability_topic}}"
           device: "{{device_info}}"
@@ -985,7 +985,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_battery"
-          name: "{{name_user_case}} battery"
+          name: "battery"
           stat_t: "{{low_battery_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "battery"
@@ -1032,7 +1032,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_smoke"
-          name: "{{name_user_case}} smoke"
+          name: "smoke"
           stat_t: "{{smoke_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "smoke"
@@ -1041,7 +1041,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_battery"
-          name: "{{name_user_case}} battery"
+          name: "battery"
           stat_t: "{{battery_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "battery"
@@ -1050,7 +1050,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_co"
-          name: "{{name_user_case}} co"
+          name: "co"
           stat_t: "{{co_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "gas"
@@ -1059,7 +1059,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_error"
-          name: "{{name_user_case}} error"
+          name: "error"
           stat_t: "{{error_topic}}"
           avty_t: "{{availability_topic}}"
           device_class: "problem"
@@ -1152,7 +1152,7 @@ mqtt:
         component: 'climate'
         config:
           uniq_id: "{{address}}_thermo"
-          name: "{{name_user_case}} thermo"
+          name: "thermo"
           "act_t": "{{status_state_topic}}"
           avty_t: "{{availability_topic}}"
           "curr_temp_t": "{{ambient_temp_topic}}"
@@ -1254,7 +1254,7 @@ mqtt:
         component: 'fan'
         config:
           uniq_id: "{{address}}_fan"
-          name: "{{name_user_case}} fan"
+          name: "fan"
           device: "{{device_info}}"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{fan_on_off_topic}}"
@@ -1275,7 +1275,7 @@ mqtt:
         component: 'light'
         config:
           uniq_id: "{{address}}_light"
-          name: "{{name_user_case}}"
+          name: "light"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{level_topic}}"
           stat_t: "{{state_topic}}"
@@ -1446,7 +1446,7 @@ mqtt:
         component: 'light'
         config:
           uniq_id: "{{address}}_1"
-          name: "{{name_user_case}} btn 1"
+          name: "btn 1"
           avty_t: "{{availability_topic}}"
           device: "{{device_info}}"
           brightness: "{{is_dimmable|lower()}}"
@@ -1473,7 +1473,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_2"
-          name: "{{name_user_case}} btn 2"
+          name: "btn 2"
           device: "{{device_info}}"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{btn_on_off_topic_2}}"
@@ -1487,7 +1487,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_3"
-          name: "{{name_user_case}} btn 3"
+          name: "btn 3"
           device: "{{device_info}}"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{btn_on_off_topic_3}}"
@@ -1501,7 +1501,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_4"
-          name: "{{name_user_case}} btn 4"
+          name: "btn 4"
           device: "{{device_info}}"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{btn_on_off_topic_4}}"
@@ -1515,7 +1515,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_5"
-          name: "{{name_user_case}} btn 5"
+          name: "btn 5"
           device: "{{device_info}}"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{btn_on_off_topic_5}}"
@@ -1529,7 +1529,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_6"
-          name: "{{name_user_case}} btn 6"
+          name: "btn 6"
           device: "{{device_info}}"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{btn_on_off_topic_6}}"
@@ -1543,7 +1543,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_7"
-          name: "{{name_user_case}} btn 7"
+          name: "btn 7"
           device: "{{device_info}}"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{btn_on_off_topic_7}}"
@@ -1557,7 +1557,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_8"
-          name: "{{name_user_case}} btn 8"
+          name: "btn 8"
           device: "{{device_info}}"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{btn_on_off_topic_8}}"
@@ -1571,7 +1571,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_9"
-          name: "{{name_user_case}} btn 9"
+          name: "btn 9"
           device: "{{device_info}}"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{btn_on_off_topic_9}}"
@@ -1661,7 +1661,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_relay"
-          name: "{{name_user_case}} relay"
+          name: "relay"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{on_off_topic}}"
           stat_t: "{{relay_state_topic}}"
@@ -1674,7 +1674,7 @@ mqtt:
         component: 'binary_sensor'
         config:
           uniq_id: "{{address}}_sensor"
-          name: "{{name_user_case}} sensor"
+          name: "sensor"
           avty_t: "{{availability_topic}}"
           stat_t: "{{sensor_state_topic}}"
           device: "{{device_info}}"
@@ -1744,7 +1744,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_1"
-          name: "{{name_user_case}} top"
+          name: "top"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{on_off_topic_1}}"
           stat_t: "{{state_topic_1}}"
@@ -1758,7 +1758,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_2"
-          name: "{{name_user_case}} bottom"
+          name: "bottom"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{on_off_topic_2}}"
           stat_t: "{{state_topic_2}}"
@@ -1824,7 +1824,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_1"
-          name: "{{name_user_case}} relay 1"
+          name: "relay 1"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{on_off_topic_1}}"
           stat_t: "{{state_topic_1}}"
@@ -1833,7 +1833,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_2"
-          name: "{{name_user_case}} relay 2"
+          name: "relay 2"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{on_off_topic_2}}"
           stat_t: "{{state_topic_2}}"
@@ -1842,7 +1842,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_3"
-          name: "{{name_user_case}} relay 3"
+          name: "relay 3"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{on_off_topic_3}}"
           stat_t: "{{state_topic_3}}"
@@ -1851,7 +1851,7 @@ mqtt:
         component: 'switch'
         config:
           uniq_id: "{{address}}_4"
-          name: "{{name_user_case}} relay 4"
+          name: "relay 4"
           avty_t: "{{availability_topic}}"
           cmd_t: "{{on_off_topic_4}}"
           stat_t: "{{state_topic_4}}"

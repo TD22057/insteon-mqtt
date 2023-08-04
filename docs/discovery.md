@@ -161,7 +161,14 @@ The `config` array has a number of variables available to it.  For
 all devices this includes at minimum the following, devices may also
 add additional variables unique to these devices:
 
-- `name` = (str) device name in lower case
+- `name` = (str) device name in lower case.  
+
+>This should not contain 
+the name of the device.  HomeAssistant may produce an error if the
+entity name starts with the device name, See:
+[HomeAssistant Entity Naming Guidelines](https://developers.home-assistant.io/docs/core/entity/#entity-naming),
+[Change in MQTT Naming](https://github.com/home-assistant/core/pull/95159), and
+[Forum Discussion](https://community.home-assistant.io/t/psa-mqtt-name-changes-in-2023-8/598099).
 
 - `address` = (str) hexadecimal address of device as a string
 
