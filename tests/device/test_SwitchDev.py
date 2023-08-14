@@ -82,6 +82,40 @@ class Test_Base_Config():
                           mode=IM.on_off.Mode.MANUAL, reason='device')]
             mocked.assert_has_calls(calls)
 
+    @pytest.mark.parametrize("cmd1, entry_d1, expected", [
+        (0x11, None, None),
+        (0x11, 0xFF, True),
+        (0x11, 0x00, False),
+        (0x13, None, None),
+        (0x13, 0xFF, False),
+        (0x13, 0x00, False),
+    ])
+    def test_handle_group_cmd(self, test_device, cmd1, entry_d1, expected):
+        with mock.patch.object(IM.Signal, 'emit'):
+            # Build the msg to send to the handler
+            to_addr = test_device.addr
+            from_addr = IM.Address(0x04, 0x05, 0x06)
+            flags = IM.message.Flags(IM.message.Flags.Type.ALL_LINK_CLEANUP,
+                                     False)
+            msg = IM.message.InpStandard(from_addr, to_addr, flags, cmd1, 0x01)
+            # If db entry is requested, build and add the entry to the dev db
+            if entry_d1 is not None:
+                db_flags = IM.message.DbFlags(True, False, True)
+                entry = IM.db.DeviceEntry(from_addr, 0x01, 0xFFFF, db_flags,
+                                          bytes([entry_d1, 0x00, 0x00]))
+                test_device.db.add_entry(entry)
+            # send the message to the handler
+            test_device.handle_group_cmd(from_addr, msg)
+            # Test the responses received
+            calls = IM.Signal.emit.call_args_list
+            if expected is not None:
+                print(calls)
+                assert calls[0][1]['is_on'] == expected
+                assert calls[0][1]['button'] == 1
+                assert IM.Signal.emit.call_count == 1
+            else:
+                assert IM.Signal.emit.call_count == 0
+
     def test_set_backlight(self, test_device):
         test_device.set_backlight(backlight=0)
         assert len(test_device.protocol.sent) == 1
