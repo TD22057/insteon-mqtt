@@ -116,6 +116,22 @@ class Test_Base_Config():
             else:
                 assert IM.Signal.emit.call_count == 0
 
+    @pytest.mark.parametrize("data_1, pretty_data_1, name, is_controller", [
+        (0x00, 0, 'on_off', False),
+        (0xFF, 1, 'on_off', False),
+        (0xFF, 0XFF, 'data_1', True),
+    ])
+    def test_link_data(self, test_device, data_1, pretty_data_1, name,
+                       is_controller):
+        pretty = test_device.link_data_to_pretty(is_controller,
+                                                 [data_1, 0x00, 0x00])
+        assert pretty[0][name] == pretty_data_1
+        ugly = test_device.link_data_from_pretty(is_controller,
+                                                 {name: pretty_data_1,
+                                                  'data_2': 0x00,
+                                                  'data_3': 0x00})
+        assert ugly[0] == data_1
+
     def test_set_backlight(self, test_device):
         test_device.set_backlight(backlight=0)
         assert len(test_device.protocol.sent) == 1
