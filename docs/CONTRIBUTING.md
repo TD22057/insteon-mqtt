@@ -61,8 +61,8 @@ added.
    # Show lines that need coverage
    pytest --cov=insteon_mqtt --cov-report term-missing
 
-   # Create html files that show missing lines
-   pytest --cov=insteon_mqtt --cov-report html
+   # Create html files that show missing lines and which tests are run on which lines
+   pytest --cov=insteon_mqtt --cov-report=html --cov-context=test
    ```
 
 # Logging
