@@ -113,6 +113,12 @@ class ResponderBase(Base):
         """
         LOG.info("Device %s grp: %s cmd: on %s", self.addr, group, mode)
         assert group in self.responder_groups
+        if isinstance(mode, str):
+          try:
+            mode = on_off.Mode(mode.lower())
+          except:
+              LOG.error("Invalid mode string '%s'", mode)
+              mode = on_off.Mode.NORMAL
         assert isinstance(mode, on_off.Mode)
 
         # Send the requested on code value.
@@ -150,6 +156,12 @@ class ResponderBase(Base):
         """
         LOG.info("Device %s grp: %s cmd: off %s", self.addr, group, mode)
         assert group in self.responder_groups
+        if isinstance(mode, str):
+          try:
+            mode = on_off.Mode(mode.lower())
+          except:
+              LOG.error("Invalid mode string '%s'", mode)
+              mode = on_off.Mode.NORMAL
         assert isinstance(mode, on_off.Mode)
 
         # Send an off or instant off command.
@@ -372,7 +384,7 @@ class ResponderBase(Base):
         """
         # I am not sure I am aware of increment group commands.  Is there
         # some way I can cause one to occur?
-        pass
+        pass # pragma: no cover
 
     #-----------------------------------------------------------------------
     def group_cmd_handle_manual(self, manual, group, reason):
@@ -388,4 +400,4 @@ class ResponderBase(Base):
           group (int):  The local db entry for this group command.
           reason (str): Whether the command was ON or OFF
         """
-        pass
+        pass # pragma: no cover
