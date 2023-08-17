@@ -205,7 +205,7 @@ class Motion(BatterySensor):
         # Send True for dawn, False for dusk.
         LOG.info("Motion %s broadcast grp: %s cmd %s", self.addr,
                  msg.group, msg.cmd1)
-        self.signal_dawn.emit(self, msg.cmd1 == Msg.CmdType.ON)
+        self.signal_dawn.emit(self, msg.cmd1 == Msg.CmdType.OFF)
 
     #-----------------------------------------------------------------------
     def update_flags(self, on_done=None, **kwargs):
