@@ -115,6 +115,17 @@ class BatterySensor(Base):
         if self._awake_time >= (time.time() - 180):
             super().send(msg, msg_handler, high_priority, after)
         else:
+            # Don't let refresh requests pile up while not awake.  Better to
+            # replace old requests with new ones as they come in.
+            if str(msg) == str(Msg.OutStandard.direct(self.addr, 0x19, 0x00)):
+                for i in range(len(self._send_queue)):
+                    if str(msg) == str(self._send_queue[i][0]):
+                        LOG.ui("BatterySensor %s - replacing previously-queued"
+                               " refresh request (device not awake)",
+                                self.label)
+                        self._send_queue[i] = [msg, msg_handler,
+                                               high_priority, after]
+                        return
             LOG.ui("BatterySensor %s - queueing msg until awake", self.label)
             self._send_queue.append([msg, msg_handler, high_priority, after])
 
