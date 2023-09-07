@@ -113,6 +113,12 @@ class ResponderBase(Base):
         """
         LOG.info("Device %s grp: %s cmd: on %s", self.addr, group, mode)
         assert group in self.responder_groups
+        if isinstance(mode, str):
+            try:
+                mode = on_off.Mode(mode.lower())
+            except:
+                LOG.error("Invalid mode string '%s'", mode)
+                mode = on_off.Mode.NORMAL
         assert isinstance(mode, on_off.Mode)
 
         # Send the requested on code value.
@@ -150,6 +156,12 @@ class ResponderBase(Base):
         """
         LOG.info("Device %s grp: %s cmd: off %s", self.addr, group, mode)
         assert group in self.responder_groups
+        if isinstance(mode, str):
+            try:
+                mode = on_off.Mode(mode.lower())
+            except:
+                LOG.error("Invalid mode string '%s'", mode)
+                mode = on_off.Mode.NORMAL
         assert isinstance(mode, on_off.Mode)
 
         # Send an off or instant off command.
@@ -289,6 +301,7 @@ class ResponderBase(Base):
                      self.label, msg.group, addr)
             is_on, mode = on_off.Mode.decode(msg.cmd1)
             level = self.group_cmd_on_level(entry, is_on)
+            is_on = self.group_cmd_on_off(entry, is_on)
             self._set_state(group=localGroup, is_on=is_on, level=level,
                             mode=mode, reason=reason)
 
@@ -342,6 +355,21 @@ class ResponderBase(Base):
         return level
 
     #-----------------------------------------------------------------------
+    def group_cmd_on_off(self, entry, is_on):
+        """Determine if device turns on or off for this Group Command
+
+        For example, the database entry holds the actual on/off state that
+        is applied when the ON command is received by switches.
+
+        Args:
+          entry (DeviceEntry):  The local db entry for this group command.
+          is_on (bool): Whether the command was ON or OFF
+        Returns:
+          is_on (bool):  The actual is_on value based on DB entry
+        """
+        return is_on
+
+    #-----------------------------------------------------------------------
     def group_cmd_handle_increment(self, cmd, group, reason):
         """Process Increment Group Commands
 
@@ -356,7 +384,7 @@ class ResponderBase(Base):
         """
         # I am not sure I am aware of increment group commands.  Is there
         # some way I can cause one to occur?
-        pass
+        pass  # pragma: no cover
 
     #-----------------------------------------------------------------------
     def group_cmd_handle_manual(self, manual, group, reason):
@@ -372,4 +400,4 @@ class ResponderBase(Base):
           group (int):  The local db entry for this group command.
           reason (str): Whether the command was ON or OFF
         """
-        pass
+        pass  # pragma: no cover

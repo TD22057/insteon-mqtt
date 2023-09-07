@@ -1,0 +1,134 @@
+# This configuration tests validation of all documented
+# combinations of discovery configurations.
+
+insteon:
+  port: 'foo'
+  devices:
+    switch:
+      # device not discoverable
+      - aa.aa.11: 'device 1'
+        discoverable: false
+      # entity not discoverable
+      - aa.aa.12: 'device 2'
+        discovery_overrides:
+          switch:
+            discoverable: false
+      # component type override
+      - aa.aa.13: 'device 3'
+        discovery_overrides:
+          switch:
+            component: 'light'
+      # discovery_override_class (single)
+      - aa.aa.14: 'device 4'
+        discovery_override_class: 'class1'
+      # discovery_override_class (multiple)
+      - aa.aa.15: 'device 5'
+        discovery_override_class:
+          - 'class1'
+          - 'class2'
+      # device override (single)
+      - aa.aa.16: 'device 6'
+        discovery_overrides:
+          device:
+            name: 'foo'
+      # device override (multiple)
+      - aa.aa.17: 'device 7'
+        discovery_overrides:
+          device:
+            name: 'foo'
+            mdl: 'foo'
+      # entity override (single)
+      - aa.aa.17: 'device 7'
+        discovery_overrides:
+          switch:
+            config:
+              item1: 'foo'
+      # entity override (multiple)
+      - aa.aa.18: 'device 8'
+        discovery_overrides:
+          switch:
+            config:
+              item1: 'foo'
+              item2: 'foo'
+      # all types of overrides, plus class
+      - aa.aa.19: 'device 9'
+        discovery_override_class: 'class1'
+        discovery_overrides:
+          device:
+            name: 'foo'
+          switch:
+            component: 'light'
+            config:
+              item1: 'foo'
+      # empty override map
+      - aa.aa.20: 'device 10'
+        discovery_overrides:
+      # empty device override map
+      - aa.aa.22: 'device 12'
+        discovery_overrides:
+          device:
+      # empty config override map
+      - aa.aa.23: 'device 13'
+        discovery_overrides:
+          switch:
+            config:
+
+mqtt:
+  broker: 127.0.0.1
+  port: 1883
+  # class with entity override (single)
+  class1:
+    discovery_overrides:
+      switch:
+        config:
+          item1: 'foo'
+  # class with entity override (multiple)
+  class2:
+    discovery_overrides:
+      switch:
+        config:
+          item1: 'foo'
+          item2: 'foo'
+  # class with device override (single)
+  class3:
+    discovery_overrides:
+      device:
+        name: 'foo'
+  # class with device override (multiple)
+  class4:
+    discovery_overrides:
+      device:
+        name: 'foo'
+        mdl: 'foo'
+  # class with entity not discoverable
+  class5:
+    discovery_overrides:
+      switch:
+        discoverable: false
+  # class with component type override
+  class6:
+    discovery_overrides:
+      switch:
+        component: 'light'
+  # class with all types of overrides
+  class7:
+    discovery_overrides:
+      device:
+        name: 'foo'
+      switch:
+        component: 'light'
+        config:
+          item1: 'foo'
+  # class with entities (config as string)
+  class8:
+    discovery_entities:
+      light:
+        component: 'light'
+        config: 'foo'
+  # class with entities (config as dict)
+  class9:
+    discovery_entities:
+      light:
+        component: 'light'
+        config:
+          foo: 'bar'

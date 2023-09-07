@@ -102,6 +102,34 @@ class Test_config:
         assert val == ""
 
     #-----------------------------------------------------------------------
+    def test_scenes_empty(self):
+        file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'configs', 'scenes_empty.yaml')
+        val = IM.config.validate(file)
+        assert val == ""
+
+    #-----------------------------------------------------------------------
+    def test_discovery_schema_good(self):
+        file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            'configs', 'discovery_schema_good.yaml')
+        val = IM.config.validate(file)
+        assert val == ""
+
+    #-----------------------------------------------------------------------
+    def test_discovery_schema_bad(self):
+        configs = [
+            ("discovery_schema_class_mixed.yaml", "'discovery_overrides' must not be present with 'discovery_entities'"),
+            ("discovery_schema_device_discoverable_overrides.yaml", "'component', 'config' must not be present with 'discoverable'"),
+            ("discovery_schema_device_unknown.yaml", "entry does not match a valid device entry format"),
+        ]
+
+        for config in configs:
+            file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                'configs', config[0])
+            val = IM.config.validate(file)
+            assert config[1] in val
+
+    #-----------------------------------------------------------------------
     def test_validate_addr(self):
         validator = IM.config.IMValidator()
         validator._error = mock.Mock()

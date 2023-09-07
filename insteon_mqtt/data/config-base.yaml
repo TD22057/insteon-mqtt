@@ -241,23 +241,21 @@ mqtt:
   # my experience that it is required.
   # This device section describes the parent device that all sub-entities are
   # grouped under
-  device_info_template: |-
-    {
-      "ids": "{{address}}",
-      "mf": "Insteon",
-      "mdl": "{%- if model_number != 'Unknown' -%}
-                {{model_number}} - {{model_description}}
-              {%- elif dev_cat_name != 'Unknown' -%}
-                {{dev_cat_name}} - 0x{{'%0x' % sub_cat|int }}
-              {%- elif dev_cat == 0 and sub_cat == 0 -%}
-                No Info
-              {%- else -%}
-                0x{{'%0x' % dev_cat|int }} - 0x{{'%0x' % sub_cat|int }}
-              {%- endif -%}",
-      "sw": "0x{{'%0x' % firmware|int }} - {{engine}}",
-      "name": "{{name_user_case}}",
-      "via_device": "{{modem_addr}}"
-    }
+  device_info_template:
+    ids: "{{address}}"
+    mf: "Insteon"
+    mdl: "{%- if model_number != 'Unknown' -%}
+            {{model_number}} - {{model_description}}
+          {%- elif dev_cat_name != 'Unknown' -%}
+            {{dev_cat_name}} - 0x{{'%0x' % sub_cat|int }}
+          {%- elif dev_cat == 0 and sub_cat == 0 -%}
+            No Info
+          {%- else -%}
+            0x{{'%0x' % dev_cat|int }} - 0x{{'%0x' % sub_cat|int }}
+          {%- endif -%}"
+    sw: "0x{{'%0x' % firmware|int }} - {{engine}}"
+    name: "{{name_user_case}}"
+    via_device: "{{modem_addr}}"
 
   modem:
     # Trigger modem virtual scenes.  Modem scenes are where the modem is a
@@ -297,21 +295,20 @@ mqtt:
     # listed as a controller.  Run `refresh modem` if the entities list
     # appears incomplete to you.
     discovery_entities:
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_{{scene}}",
-            "name": "{%- if scene_name != "" -%}
-                       {{scene_name}}
-                     {%- else -%}
-                       Modem Scene {{scene}}
-                     {%- endif -%}",
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{scene_topic}}",
-            "device": {{device_info_template}},
-            "payload_on": "{\"state\": \"on\", \"group\": \"{{scene}}\"}",
-            "payload_off": "{\"state\": \"off\", \"group\": \"{{scene}}\"}"
-          }
+      scene:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_{{scene}}"
+          name: "{%- if scene_name != '' -%}
+                    {{scene_name}}
+                  {%- else -%}
+                    Modem Scene {{scene}}
+                  {%- endif -%}"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{scene_topic}}"
+          device: "{{device_info}}"
+          payload_on: "{\"state\": \"on\", \"group\": \"{{scene}}\"}"
+          payload_off: "{\"state\": \"off\", \"group\": \"{{scene}}\"}"
 
   switch:
     #------------------------------------------------------------------------
@@ -378,21 +375,20 @@ mqtt:
 
     # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
     discovery_entities:
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_switch",
-            "name": "{{name_user_case}}",
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{on_off_topic}}",
-            "stat_t": "{{state_topic}}",
-            "device": {{device_info_template}},
-            "json_attr_t": "{{state_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
+      switch:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_switch"
+          name: ""
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{on_off_topic}}"
+          stat_t: "{{state_topic}}"
+          device: "{{device_info}}"
+          json_attr_t: "{{state_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
 
   dimmer:
     #------------------------------------------------------------------------
@@ -495,22 +491,21 @@ mqtt:
 
     # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
     discovery_entities:
-      - component: 'light'
-        config: |-
-          {
-            "uniq_id": "{{address}}_light",
-            "name": "{{name_user_case}}",
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{level_topic}}",
-            "stat_t": "{{state_topic}}",
-            "brightness": true,
-            "schema": "json",
-            "device": {{device_info_template}},
-            "json_attr_t": "{{state_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}"
-          }
+      dimmer:
+        component: 'light'
+        config:
+          uniq_id: "{{address}}_light"
+          name: ""
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{level_topic}}"
+          stat_t: "{{state_topic}}"
+          brightness: true
+          schema: "json"
+          device: "{{device_info}}"
+          json_attr_t: "{{state_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
 
   battery_sensor:
     #------------------------------------------------------------------------
@@ -566,50 +561,47 @@ mqtt:
     # extend this class (motion, hidden_door, leak, and remote) all have their
     # own discovery_entities
     discovery_entities:
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_door",
-            "name": "{{name_user_case}} door",
-            "stat_t": "{{state_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "door",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{state_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_battery",
-            "name": "{{name_user_case}} battery",
-            "stat_t": "{{low_battery_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "battery",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{low_battery_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}} }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_heartbeat",
-            "name": "{{name_user_case}} heartbeat",
-            "stat_t": "{{heartbeat_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "timestamp",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "val_tpl": "{%- raw -%}{{as_datetime(value|float|timestamp_local).isoformat()|string}}{%- endraw -%}"
-          }
+      door:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_door"
+          name: ""
+          stat_t: "{{state_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "door"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{state_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      battery:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_battery"
+          name: "battery"
+          stat_t: "{{low_battery_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "battery"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{low_battery_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      heartbeat:
+        component: 'sensor'
+        config:
+          uniq_id: "{{address}}_heartbeat"
+          name: "heartbeat"
+          stat_t: "{{heartbeat_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "timestamp"
+          device: "{{device_info}}"
+          force_update: true
+          val_tpl: "{%- raw -%}{{as_datetime(value|float|timestamp_local).isoformat()|string}}{%- endraw -%}"
 
   motion:
     #------------------------------------------------------------------------
@@ -638,54 +630,51 @@ mqtt:
 
     # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
     discovery_entities:
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_motion",
-            "name": "{{name_user_case}} motion",
-            "stat_t": "{{state_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "motion",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{state_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_battery",
-            "name": "{{name_user_case}} battery",
-            "stat_t": "{{low_battery_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "battery",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{low_battery_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}} }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_dusk",
-            "name": "{{name_user_case}} dusk",
-            "stat_t": "{{dawn_dusk_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "light",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{dawn_dusk_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}} }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
+      motion:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_motion"
+          name: ""
+          stat_t: "{{state_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "motion"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{state_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      battery:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_battery"
+          name: "battery"
+          stat_t: "{{low_battery_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "battery"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{low_battery_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      dusk:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_dusk"
+          name: "dusk"
+          stat_t: "{{dawn_dusk_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "light"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{dawn_dusk_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
 
   hidden_door:
     #------------------------------------------------------------------------
@@ -712,66 +701,62 @@ mqtt:
 
     # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
     discovery_entities:
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_door",
-            "name": "{{name_user_case}} door",
-            "stat_t": "{{state_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "door",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{state_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_battery",
-            "name": "{{name_user_case}} battery",
-            "stat_t": "{{low_battery_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "battery",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{low_battery_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}} }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_heartbeat",
-            "name": "{{name_user_case}} heartbeat",
-            "stat_t": "{{heartbeat_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "timestamp",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "val_tpl": "{%- raw -%}{{as_datetime(value|float|timestamp_local).isoformat()|string}}{%- endraw -%}"
-          }
-      - component: 'sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_voltage",
-            "name": "{{name_user_case}} voltage",
-            "stat_t": "{{battery_voltage_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "voltage",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{battery_voltage_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}} }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.voltage}}{% endraw %}"
-          }
+      door:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_door"
+          name: ""
+          stat_t: "{{state_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "door"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{state_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      battery:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_battery"
+          name: "battery"
+          stat_t: "{{low_battery_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "battery"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{low_battery_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      heartbeat:
+        component: 'sensor'
+        config:
+            uniq_id: "{{address}}_heartbeat"
+            name: "heartbeat"
+            stat_t: "{{heartbeat_topic}}"
+            avty_t: "{{availability_topic}}"
+            device_class: "timestamp"
+            device: "{{device_info}}"
+            force_update: true
+            val_tpl: "{%- raw -%}{{as_datetime(value|float|timestamp_local).isoformat()|string}}{%- endraw -%}"
+      voltage:
+        component: 'sensor'
+        config:
+            uniq_id: "{{address}}_voltage"
+            name: "voltage"
+            stat_t: "{{battery_voltage_topic}}"
+            avty_t: "{{availability_topic}}"
+            device_class: "voltage"
+            device: "{{device_info}}"
+            force_update: true
+            json_attr_t: "{{battery_voltage_topic}}"
+            json_attr_tpl: "{%- raw -%}
+                            {\"timestamp\": {{value_json.timestamp}}}
+                            {%- endraw -%}"
+            val_tpl: "{% raw %}{{value_json.voltage}}{% endraw %}"
 
   leak:
     #------------------------------------------------------------------------
@@ -805,33 +790,31 @@ mqtt:
 
     # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
     discovery_entities:
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_wet",
-            "name": "{{name_user_case}} leak",
-            "stat_t": "{{wet_dry_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "moisture",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{wet_dry_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}} }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_heartbeat",
-            "name": "{{name_user_case}} heartbeat",
-            "stat_t": "{{heartbeat_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "timestamp",
-            "device": {{device_info_template}},
-            "val_tpl": "{%- raw -%}{{as_datetime(value|float|timestamp_local).isoformat()|string}}{%- endraw -%}"
-          }
+      wet:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_wet"
+          name: ""
+          stat_t: "{{wet_dry_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "moisture"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{wet_dry_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      heartbeat:
+        component: 'sensor'
+        config:
+          uniq_id: "{{address}}_heartbeat"
+          name: "heartbeat"
+          stat_t: "{{heartbeat_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "timestamp"
+          device: "{{device_info}}"
+          val_tpl: "{%- raw -%}{{as_datetime(value|float|timestamp_local).isoformat()|string}}{%- endraw -%}"
 
   remote:
     #------------------------------------------------------------------------
@@ -886,136 +869,133 @@ mqtt:
     # https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery.md
     # for details about how to define a custom class for your devices.
     discovery_entities:
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_1",
-            "name": "{{name_user_case}} btn 1",
-            "stat_t": "{{state_topic_1}}",
-            "avty_t": "{{availability_topic}}",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{state_topic_1}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_2",
-            "name": "{{name_user_case}} btn 2",
-            "stat_t": "{{state_topic_2}}",
-            "avty_t": "{{availability_topic}}",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{state_topic_2}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_3",
-            "name": "{{name_user_case}} btn 3",
-            "stat_t": "{{state_topic_3}}",
-            "avty_t": "{{availability_topic}}",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{state_topic_3}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_4",
-            "name": "{{name_user_case}} btn 4",
-            "stat_t": "{{state_topic_4}}",
-            "avty_t": "{{availability_topic}}",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{state_topic_4}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_5",
-            "name": "{{name_user_case}} btn 5",
-            "stat_t": "{{state_topic_5}}",
-            "avty_t": "{{availability_topic}}",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{state_topic_5}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_6",
-            "name": "{{name_user_case}} btn 6",
-            "stat_t": "{{state_topic_6}}",
-            "avty_t": "{{availability_topic}}",
-            "device": {{device_info_template}},
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_7",
-            "name": "{{name_user_case}} btn 7",
-            "stat_t": "{{state_topic_7}}",
-            "avty_t": "{{availability_topic}}",
-            "device": {{device_info_template}},
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_8",
-            "name": "{{name_user_case}} btn 8",
-            "stat_t": "{{state_topic_8}}",
-            "avty_t": "{{availability_topic}}",
-            "device": {{device_info_template}},
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_battery",
-            "name": "{{name_user_case}} battery",
-            "stat_t": "{{low_battery_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "battery",
-            "device": {{device_info_template}},
-            "force_update": true,
-            "json_attr_t": "{{low_battery_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}} }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
+      button1:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_1"
+          name: "btn 1"
+          stat_t: "{{state_topic_1}}"
+          avty_t: "{{availability_topic}}"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{state_topic_1}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      button2:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_2"
+          name: "btn 2"
+          stat_t: "{{state_topic_2}}"
+          avty_t: "{{availability_topic}}"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{state_topic_2}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      button3:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_3"
+          name: "btn 3"
+          stat_t: "{{state_topic_3}}"
+          avty_t: "{{availability_topic}}"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{state_topic_3}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      button4:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_4"
+          name: "btn 4"
+          stat_t: "{{state_topic_4}}"
+          avty_t: "{{availability_topic}}"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{state_topic_4}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      button5:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_5"
+          name: "btn 5"
+          stat_t: "{{state_topic_5}}"
+          avty_t: "{{availability_topic}}"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{state_topic_5}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      button6:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_6"
+          name: "btn 6"
+          stat_t: "{{state_topic_6}}"
+          avty_t: "{{availability_topic}}"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{state_topic_6}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      button7:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_7"
+          name: "btn 7"
+          stat_t: "{{state_topic_7}}"
+          avty_t: "{{availability_topic}}"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{state_topic_7}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      button8:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_8"
+          name: "btn 8"
+          stat_t: "{{state_topic_8}}"
+          avty_t: "{{availability_topic}}"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{state_topic_8}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      battery:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_battery"
+          name: "battery"
+          stat_t: "{{low_battery_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "battery"
+          device: "{{device_info}}"
+          force_update: true
+          json_attr_t: "{{low_battery_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
 
   smoke_bridge:
     #------------------------------------------------------------------------
@@ -1048,46 +1028,42 @@ mqtt:
 
     # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
     discovery_entities:
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_smoke",
-            "name": "{{name_user_case}} smoke",
-            "stat_t": "{{smoke_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "smoke",
-            "device": {{device_info_template}}
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_battery",
-            "name": "{{name_user_case}} battery",
-            "stat_t": "{{battery_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "battery",
-            "device": {{device_info_template}}
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_co",
-            "name": "{{name_user_case}} co",
-            "stat_t": "{{co_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "gas",
-            "device": {{device_info_template}}
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_error",
-            "name": "{{name_user_case}} error",
-            "stat_t": "{{error_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "device_class": "problem",
-            "device": {{device_info_template}}
-          }
+      smoke:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_smoke"
+          name: "smoke"
+          stat_t: "{{smoke_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "smoke"
+          device: "{{device_info}}"
+      battery:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_battery"
+          name: "battery"
+          stat_t: "{{battery_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "battery"
+          device: "{{device_info}}"
+      co:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_co"
+          name: "co"
+          stat_t: "{{co_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "gas"
+          device: "{{device_info}}"
+      error:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_error"
+          name: "error"
+          stat_t: "{{error_topic}}"
+          avty_t: "{{availability_topic}}"
+          device_class: "problem"
+          device: "{{device_info}}"
 
   thermostat:
     #------------------------------------------------------------------------
@@ -1172,34 +1148,32 @@ mqtt:
 
     # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
     discovery_entities:
-      - component: 'climate'
-        config: |-
-          {
-            "uniq_id": "{{address}}_thermo",
-            "name": "{{name_user_case}} thermo",
-            "act_t": "{{status_state_topic}}",
-            "avty_t": "{{availability_topic}}",
-            "curr_temp_t": "{{ambient_temp_topic}}",
-            "curr_temp_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}",
-            "device": {{device_info_template}},
-            "fan_mode_cmd_t": "{{fan_command_topic}}",
-            "fan_mode_stat_t": "{{fan_state_topic}}",
-            "fan_modes": ["auto", "on"],
-            "hold_stat_t": "{{hold_state_topic}}",
-            "max_temp": 95,
-            "min_temp": 45,
-            "mode_cmd_t": "{{mode_command_topic}}",
-            "mode_stat_t": "{{mode_state_topic}}",
-            "modes": ["off", "cool", "heat", "auto"],
-            "precision": 1.0,
-            "temp_hi_cmd_t": "{{cool_sp_command_topic}}",
-            "temp_hi_stat_t": "{{cool_sp_state_topic}}",
-            "temp_hi_stat_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}",
-            "temp_lo_cmd_t": "{{heat_sp_command_topic}}",
-            "temp_lo_stat_t": "{{heat_sp_state_topic}}",
-            "temp_lo_stat_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}",
-            "temperature_unit": "F"
-          }
+      thermo:
+        component: 'climate'
+        config:
+          uniq_id: "{{address}}_thermo"
+          name: "thermo"
+          "act_t": "{{status_state_topic}}"
+          avty_t: "{{availability_topic}}"
+          "curr_temp_t": "{{ambient_temp_topic}}"
+          "curr_temp_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}"
+          device: "{{device_info}}"
+          "fan_mode_cmd_t": "{{fan_command_topic}}"
+          "fan_mode_stat_t": "{{fan_state_topic}}"
+          "fan_modes": ["auto", "on"]
+          "max_temp": 95
+          "min_temp": 45
+          "mode_cmd_t": "{{mode_command_topic}}"
+          "mode_stat_t": "{{mode_state_topic}}"
+          "modes": ["off", "cool", "heat", "auto"]
+          "precision": 1.0
+          "temp_hi_cmd_t": "{{cool_sp_command_topic}}"
+          "temp_hi_stat_t": "{{cool_sp_state_topic}}"
+          "temp_hi_stat_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}"
+          "temp_lo_cmd_t": "{{heat_sp_command_topic}}"
+          "temp_lo_stat_t": "{{heat_sp_state_topic}}"
+          "temp_lo_stat_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}"
+          "temperature_unit": "F"
 
   fan_linc:
     #------------------------------------------------------------------------
@@ -1276,44 +1250,42 @@ mqtt:
 
     # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
     discovery_entities:
-      - component: 'fan'
-        config: |-
-          {
-            "uniq_id": "{{address}}_fan",
-            "name": "{{name_user_case}} fan",
-            "device": {{device_info_template}},
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{fan_on_off_topic}}",
-            "stat_t": "{{fan_state_topic}}",
-            "stat_val_tpl": "{% raw %}{{value_json.state}}{% endraw %}",
-            "pct_cmd_t": "{{fan_speed_set_topic}}",
-            "pct_cmd_tpl": "{% raw %}{% if value < 10 %}off{% elif value < 40 %}low{% elif value < 75 %}medium{% else %}high{% endif %}{% endraw %}",
-            "pct_stat_t": "{{fan_speed_topic}}",
-            "pct_val_tpl": "{% raw %}{% if value == 'low' %}33{% elif value == 'medium' %}67{% elif value == 'high' %}100{% else %}0{% endif %}{% endraw %}",
-            "pr_mode_stat_t": "{{fan_speed_topic}}",
-            "pr_mode_cmd_t": "{{fan_speed_set_topic}}",
-            "pr_modes": ["off", "low", "medium", "high"],
-            "json_attr_t": "{{fan_state_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}"
-          }
-      - component: 'light'
-        config: |-
-          {
-            "uniq_id": "{{address}}_light",
-            "name": "{{name_user_case}}",
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{level_topic}}",
-            "stat_t": "{{state_topic}}",
-            "brightness": true,
-            "schema": "json",
-            "device": {{device_info_template}},
-            "json_attr_t": "{{state_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}"
-          }
+      fan:
+        component: 'fan'
+        config:
+          uniq_id: "{{address}}_fan"
+          name: "fan"
+          device: "{{device_info}}"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{fan_on_off_topic}}"
+          stat_t: "{{fan_state_topic}}"
+          stat_val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+          pct_cmd_t: "{{fan_speed_set_topic}}"
+          pct_cmd_tpl: "{% raw %}{% if value < 10 %}off{% elif value < 40 %}low{% elif value < 75 %}medium{% else %}high{% endif %}{% endraw %}"
+          pct_stat_t: "{{fan_speed_topic}}"
+          pct_val_tpl: "{% raw %}{% if value == 'low' %}33{% elif value == 'medium' %}67{% elif value == 'high' %}100{% else %}0{% endif %}{% endraw %}"
+          pr_mode_stat_t: "{{fan_speed_topic}}"
+          pr_mode_cmd_t: "{{fan_speed_set_topic}}"
+          pr_modes: ["off", "low", "medium", "high"]
+          json_attr_t: "{{fan_state_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+      light:
+        component: 'light'
+        config:
+          uniq_id: "{{address}}_light"
+          name: "light"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{level_topic}}"
+          stat_t: "{{state_topic}}"
+          brightness: true
+          schema: "json"
+          device: "{{device_info}}"
+          json_attr_t: "{{state_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
 
   keypad_linc:
     #------------------------------------------------------------------------
@@ -1470,154 +1442,145 @@ mqtt:
     # https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery.md
     # for details about how to define a custom class for your devices.
     discovery_entities:
-      - component: 'light'
-        config: |-
-          {
-            "uniq_id": "{{address}}_1",
-            "name": "{{name_user_case}} btn 1",
-            "avty_t": "{{availability_topic}}",
-            "device": {{device_info_template}},
-            "brightness": {{is_dimmable|lower()}},
-            "cmd_t": "{%- if is_dimmable -%}
-                        {{dimmer_level_topic}}
-                      {%- else -%}
-                        {{btn_on_off_topic_1}}
-                      {%- endif -%}",
-            "schema": "json",
-            "stat_t": "{%- if is_dimmable -%}
-                        {{dimmer_state_topic}}
-                      {%- else -%}
-                        {{btn_state_topic_1}}
-                      {%- endif -%}",
-            "json_attr_t": "{%- if is_dimmable -%}
-                              {{dimmer_state_topic}}
-                            {%- else -%}
-                              {{btn_state_topic_1}}
-                            {%- endif -%}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}"
-          }
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_2",
-            "name": "{{name_user_case}} btn 2",
-            "device": {{device_info_template}},
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{btn_on_off_topic_2}}",
-            "stat_t": "{{btn_state_topic_2}}",
-            "json_attr_t": "{{btn_state_topic_2}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_3",
-            "name": "{{name_user_case}} btn 3",
-            "device": {{device_info_template}},
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{btn_on_off_topic_3}}",
-            "stat_t": "{{btn_state_topic_3}}",
-            "json_attr_t": "{{btn_state_topic_3}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_4",
-            "name": "{{name_user_case}} btn 4",
-            "device": {{device_info_template}},
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{btn_on_off_topic_4}}",
-            "stat_t": "{{btn_state_topic_4}}",
-            "json_attr_t": "{{btn_state_topic_4}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_5",
-            "name": "{{name_user_case}} btn 5",
-            "device": {{device_info_template}},
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{btn_on_off_topic_5}}",
-            "stat_t": "{{btn_state_topic_5}}",
-            "json_attr_t": "{{btn_state_topic_5}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_6",
-            "name": "{{name_user_case}} btn 6",
-            "device": {{device_info_template}},
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{btn_on_off_topic_6}}",
-            "stat_t": "{{btn_state_topic_6}}",
-            "json_attr_t": "{{btn_state_topic_6}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_7",
-            "name": "{{name_user_case}} btn 7",
-            "device": {{device_info_template}},
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{btn_on_off_topic_7}}",
-            "stat_t": "{{btn_state_topic_7}}",
-            "json_attr_t": "{{btn_state_topic_7}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_8",
-            "name": "{{name_user_case}} btn 8",
-            "device": {{device_info_template}},
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{btn_on_off_topic_8}}",
-            "stat_t": "{{btn_state_topic_8}}",
-            "json_attr_t": "{{btn_state_topic_8}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_9",
-            "name": "{{name_user_case}} btn 9",
-            "device": {{device_info_template}},
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{btn_on_off_topic_9}}",
-            "stat_t": "{btn_state_topic_9}}",
-            "json_attr_t": "{{btn_state_topic_9}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
+      button1:
+        component: 'light'
+        config:
+          uniq_id: "{{address}}_1"
+          name: "btn 1"
+          avty_t: "{{availability_topic}}"
+          device: "{{device_info}}"
+          brightness: "{{is_dimmable|lower()}}"
+          cmd_t: "{%- if is_dimmable -%}
+                    {{dimmer_level_topic}}
+                  {%- else -%}
+                    {{btn_on_off_topic_1}}
+                  {%- endif -%}"
+          schema: "json"
+          stat_t: "{%- if is_dimmable -%}
+                     {{dimmer_state_topic}}
+                   {%- else -%}
+                     {{btn_state_topic_1}}
+                   {%- endif -%}"
+          json_attr_t: "{%- if is_dimmable -%}
+                          {{dimmer_state_topic}}
+                        {%- else -%}
+                          {{btn_state_topic_1}}
+                        {%- endif -%}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+      button2:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_2"
+          name: "btn 2"
+          device: "{{device_info}}"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{btn_on_off_topic_2}}"
+          stat_t: "{{btn_state_topic_2}}"
+          json_attr_t: "{{btn_state_topic_2}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      button3:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_3"
+          name: "btn 3"
+          device: "{{device_info}}"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{btn_on_off_topic_3}}"
+          stat_t: "{{btn_state_topic_3}}"
+          json_attr_t: "{{btn_state_topic_3}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      button4:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_4"
+          name: "btn 4"
+          device: "{{device_info}}"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{btn_on_off_topic_4}}"
+          stat_t: "{{btn_state_topic_4}}"
+          json_attr_t: "{{btn_state_topic_4}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      button5:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_5"
+          name: "btn 5"
+          device: "{{device_info}}"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{btn_on_off_topic_5}}"
+          stat_t: "{{btn_state_topic_5}}"
+          json_attr_t: "{{btn_state_topic_5}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      button6:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_6"
+          name: "btn 6"
+          device: "{{device_info}}"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{btn_on_off_topic_6}}"
+          stat_t: "{{btn_state_topic_6}}"
+          json_attr_t: "{{btn_state_topic_6}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      button7:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_7"
+          name: "btn 7"
+          device: "{{device_info}}"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{btn_on_off_topic_7}}"
+          stat_t: "{{btn_state_topic_7}}"
+          json_attr_t: "{{btn_state_topic_7}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      button8:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_8"
+          name: "btn 8"
+          device: "{{device_info}}"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{btn_on_off_topic_8}}"
+          stat_t: "{{btn_state_topic_8}}"
+          json_attr_t: "{{btn_state_topic_8}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      button9:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_9"
+          name: "btn 9"
+          device: "{{device_info}}"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{btn_on_off_topic_9}}"
+          stat_t: "{{btn_state_topic_9}}"
+          json_attr_t: "{{btn_state_topic_9}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
 
   io_linc:
     #------------------------------------------------------------------------
@@ -1694,33 +1657,31 @@ mqtt:
 
     # Discovery Entities - Used as part of HomeAssistant MQTT Discovery
     discovery_entities:
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_relay",
-            "name": "{{name_user_case}} relay",
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{on_off_topic}}",
-            "stat_t": "{{relay_state_topic}}",
-            "device": {{device_info_template}},
-            "json_attr_t": "{{state_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}"
-          }
-      - component: 'binary_sensor'
-        config: |-
-          {
-            "uniq_id": "{{address}}_sensor",
-            "name": "{{name_user_case}} sensor",
-            "avty_t": "{{availability_topic}}",
-            "stat_t": "{{sensor_state_topic}}",
-            "device": {{device_info_template}},
-            "json_attr_t": "{{state_topic}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}"
-          }
+      relay:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_relay"
+          name: "relay"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{on_off_topic}}"
+          stat_t: "{{relay_state_topic}}"
+          device: "{{device_info}}"
+          json_attr_t: "{{state_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+      sensor:
+        component: 'binary_sensor'
+        config:
+          uniq_id: "{{address}}_sensor"
+          name: "sensor"
+          avty_t: "{{availability_topic}}"
+          stat_t: "{{sensor_state_topic}}"
+          device: "{{device_info}}"
+          json_attr_t: "{{state_topic}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
 
   outlet:
     #------------------------------------------------------------------------
@@ -1779,35 +1740,33 @@ mqtt:
     # https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery.md
     # for details about how to define a custom class for your devices.
     discovery_entities:
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_1",
-            "name": "{{name_user_case}} top",
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{on_off_topic_1}}",
-            "stat_t": "{{state_topic_1}}",
-            "device": {{device_info_template}},
-            "json_attr_t": "{{state_topic_1}}",
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_2",
-            "name": "{{name_user_case}} bottom",
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{on_off_topic_2}}",
-            "stat_t": "{{state_topic_2}}",
-            "device": {{device_info_template}},
-            "json_attr_tpl": "{%- raw -%}
-              { \"timestamp\" : {{value_json.timestamp}}, \"mode\" : \"{{value_json.mode}}\", \"reason\" : \"{{value_json.reason}}\" }
-            {%- endraw -%}",
-            "val_tpl": "{% raw %}{{value_json.state}}{% endraw %}"
-          }
+      top:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_1"
+          name: "top"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{on_off_topic_1}}"
+          stat_t: "{{state_topic_1}}"
+          device: "{{device_info}}"
+          json_attr_t: "{{state_topic_1}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      bottom:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_2"
+          name: "bottom"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{on_off_topic_2}}"
+          stat_t: "{{state_topic_2}}"
+          device: "{{device_info}}"
+          json_attr_tpl: "{%- raw -%}
+                          {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
+                          {%- endraw -%}"
+          val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
 
   ezio4o:
     #------------------------------------------------------------------------
@@ -1861,45 +1820,41 @@ mqtt:
     # https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery.md
     # for details about how to define a custom class for your devices.
     discovery_entities:
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_1",
-            "name": "{{name_user_case}} relay 1",
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{on_off_topic_1}}",
-            "stat_t": "{{state_topic_1}}",
-            "device": {{device_info_template}}
-          }
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_2",
-            "name": "{{name_user_case}} relay 2",
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{on_off_topic_2}}",
-            "stat_t": "{{state_topic_2}}",
-            "device": {{device_info_template}}
-          }
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_3",
-            "name": "{{name_user_case}} relay 3",
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{on_off_topic_3}}",
-            "stat_t": "{{state_topic_3}}",
-            "device": {{device_info_template}}
-          }
-      - component: 'switch'
-        config: |-
-          {
-            "uniq_id": "{{address}}_4",
-            "name": "{{name_user_case}} relay 4",
-            "avty_t": "{{availability_topic}}",
-            "cmd_t": "{{on_off_topic_4}}",
-            "stat_t": "{{state_topic_4}}",
-            "device": {{device_info_template}}
-          }
+      relay1:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_1"
+          name: "relay 1"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{on_off_topic_1}}"
+          stat_t: "{{state_topic_1}}"
+          device: "{{device_info}}"
+      relay2:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_2"
+          name: "relay 2"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{on_off_topic_2}}"
+          stat_t: "{{state_topic_2}}"
+          device: "{{device_info}}"
+      relay3:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_3"
+          name: "relay 3"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{on_off_topic_3}}"
+          stat_t: "{{state_topic_3}}"
+          device: "{{device_info}}"
+      relay4:
+        component: 'switch'
+        config:
+          uniq_id: "{{address}}_4"
+          name: "relay 4"
+          avty_t: "{{availability_topic}}"
+          cmd_t: "{{on_off_topic_4}}"
+          stat_t: "{{state_topic_4}}"
+          device: "{{device_info}}"
 
 #----------------------------------------------------------------

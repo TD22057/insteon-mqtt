@@ -106,4 +106,4 @@ def handle_estop(message):
         app.config['cmd'] = []
 
 def start_webcli():
-    socketio.run(app, host='0.0.0.0', port='8099')
+    socketio.run(app, host='0.0.0.0', port='8099', allow_unsafe_werkzeug=True)

@@ -133,3 +133,22 @@ class Test_Base_Config():
         assert len(test_device.protocol.sent) == 1
         assert len(test_device._send_queue) == 0
         assert msg_handler._num_retry > 0
+
+    def test_queued_refresh_replace(self, test_device):
+        # Queue multiple refresh commands
+        msg1 = Msg.OutStandard.direct(test_device.addr, 0x19, 0x00)
+        msg2 = Msg.OutStandard.direct(test_device.addr, 0x19, 0x00)
+        msg3 = Msg.OutStandard.direct(test_device.addr, 0x19, 0x00)
+        msg_handler1 = IM.handler.StandardCmd(msg1, None, None)
+        msg_handler2 = IM.handler.StandardCmd(msg2, None, None)
+        msg_handler3 = IM.handler.StandardCmd(msg3, None, None)
+        test_device.send(msg1, msg_handler1)
+        test_device.send(msg2, msg_handler2)
+        test_device.send(msg3, msg_handler3)
+        # Confirm that only the last command is queued
+        assert len(test_device._send_queue) == 1
+        m, h, p, a = test_device._send_queue[0]
+        assert m != msg1
+        assert m == msg3
+        assert h != msg_handler1
+        assert h == msg_handler3

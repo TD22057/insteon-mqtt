@@ -64,8 +64,8 @@ class Test_Base_Config():
                 mocked.assert_not_called()
 
     @pytest.mark.parametrize("group_num,cmd1,cmd2,expected", [
-        (0x02,Msg.CmdType.ON, 0x00,[True]),
-        (0x02,Msg.CmdType.OFF, 0x00, [False]),
+        (0x02,Msg.CmdType.ON, 0x00,[False]),
+        (0x02,Msg.CmdType.OFF, 0x00, [True]),
         (0x03,Msg.CmdType.ON, 0x00,[True]),
         (0x03,Msg.CmdType.OFF, 0x00, [False]),
         (0x04,Msg.CmdType.ON, 0x00,[True]),
