@@ -1,5 +1,23 @@
 # Revision Change History
 
+## [1.2.0]
+
+### Fixes
+
+- Fix error description #488
+- Allow scenes.yaml file to be empty Thanks @kpfleming #497
+- Fixes for HomeAssitant changes #505
+- Suppress runtime error in Web UI #515
+- Change default Friendly Name of devices in Home Assitant Discovery to comply with new standards. If you have defined your own templates, you may need to adjust the name field.  See ([HomeAssistant Entity Naming Guidelines](https://developers.home-assistant.io/docs/core/entity/#entity-naming)) ([Change in MQTT Naming](https://github.com/home-assistant/core/pull/95159)) #516
+- Fix Bug cuasing switches turned off to be reported as on. Thanks @tstabrawa #517
+- Allow for use of mode strings "instant", "fast", "normal" ... as described in the documentation.  #519
+- Reverse dusk and dawn signal. #520
+- Prevent Refresh Commands from piling up on battery devices. Thanks @tstabrawa #521
+
+### Additions
+
+- New improvements to the Home Assistant Discovery Platform system.  Now allows for overriding values for an individual device.  Thanks @kpfleming ([Documentation](https://github.com/TD22057/insteon-mqtt/blob/master/docs/discovery_customization_config.md))
+
 ## [1.1.1]
 
 ### Fixes
