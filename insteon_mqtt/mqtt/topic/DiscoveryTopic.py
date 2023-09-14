@@ -367,7 +367,7 @@ class DiscoveryTopic(BaseTopic):
                 # delete any keys with empty string values
                 keys_to_delete = []
                 for key, val in config.items():
-                    if val == "":
+                    if val == "" and key != "name":
                         keys_to_delete.append(key)
                 for key in keys_to_delete:
                     del config[key]
