@@ -108,7 +108,8 @@ class Mqtt(Link):
         client_args = {'client_id': self.id, 'clean_session': False}
 
         if not hasattr(self, 'client'):
-            self.client = paho.Client(**client_args)
+            self.client = paho.Client(paho.CallbackAPIVersion.VERSION1,
+                                      **client_args)
         else:
             self.client.reinitialise(**client_args)
         self.client.on_connect = self._on_connect

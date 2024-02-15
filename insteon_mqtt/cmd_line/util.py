@@ -74,7 +74,7 @@ def send(config, topic, payload, quiet=False):
         "quiet" : int(quiet),
         }
 
-    client = mqtt.Client(userdata=session)
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, userdata=session)
 
     # Add user/password if the config file has them set.
     if config["mqtt"].get("username", None):
