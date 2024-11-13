@@ -105,7 +105,11 @@ class Mqtt(Link):
         """ Create or reinitialise the MQTT client and set the callbacks.
         """
 
-        client_args = {'client_id': self.id, 'clean_session': False}
+        client_args = {
+            'callback_api_version': paho.CallbackAPIVersion.VERSION2,
+            'client_id': self.id,
+            'clean_session': False
+        }
 
         if not hasattr(self, 'client'):
             self.client = paho.Client(**client_args)
@@ -385,7 +389,7 @@ class Mqtt(Link):
         self.signal_needs_write.emit(self, True)
 
     #-----------------------------------------------------------------------
-    def _on_connect(self, client, data, flags, result):
+    def _on_connect(self, client, userdata, flags, reason_code, properties):
         """MQTT connection callback.
 
         This is called by the MQTT client once the connection has occurred.
@@ -398,20 +402,20 @@ class Mqtt(Link):
                  client, 3 = server unavailable, 4 = bad login, 5 = not
                  authorized.
         """
-        if result == 0:
+        if reason_code == 0:
             self.connected = True
             self.signal_connected.emit(self, True)
             self.client.publish(self.availability_topic, payload="online",
                                 qos=0, retain=True)
         else:
             LOG.error("MQTT connection refused %s %s %s", self.host, self.port,
-                      result)
+                      reason_code)
 
     #-----------------------------------------------------------------------
-    def _on_disconnect(self, client, data, result):
+    def _on_disconnect(self, client, userdata, flags, reason_code, properties):
         """MQTT disconnection callback.
 
-        This is called by the MQTT client when the connection is droppped.
+        This is called by the MQTT client when the connection is dropped.
 
         Args:
           client (paho.Client):  The paho mqtt client (self.client).
