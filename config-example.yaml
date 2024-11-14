@@ -170,6 +170,9 @@ mqtt:
   #retain: 1
 
   encryption:
+    # Whether to enable a TLS encrypted connection to your MQTT broker.
+    enable: False
+
     # Encryption Options for encrypted broker connections
     # These settings will be passed to the `tls_set()` method.  Please refer
     # to the Paho client documentation for details:
@@ -177,8 +180,9 @@ mqtt:
 
     # A string path to the Certificate Authority certificate files that are to
     # be treated as trusted by this client.
-    # A Certificate Authority cert is REQUIRED for any encrypted connection.
-    # an encrypted connection will not be attempted unless this is specified.
+    # WARNING: If a ca_cert is specified, encryption will be enabled. You should
+    # however use the enable setting above as this is a deprecated way to enable
+    # encryption.
     # ca_cert:
 
     # Client certificate and private key - Optional

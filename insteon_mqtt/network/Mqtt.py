@@ -156,18 +156,21 @@ class Mqtt(Link):
         if encryption is None:
             encryption = {}
         ca_cert = encryption.get('ca_cert', None)
-        if ca_cert is not None and ca_cert != "":
+        enable_tls = encryption.get('enable', None)
+        if (ca_cert is not None and ca_cert != "") or enable_tls:
             LOG.info("Using TLS for MQTT broker connection.")
             # Set the basic arguments
+            if ca_cert is not None and ca_cert != "":
+                addl_tls_kwargs['ca_certs'] = ca_cert
             certfile = encryption.get('certfile', None)
-            if certfile == "":
-                certfile = None
+            if certfile is not None and certfile != "":
+                addl_tls_kwargs['certfile'] = certfile
             keyfile = encryption.get('keyfile', None)
-            if keyfile == "":
-                keyfile = None
+            if keyfile is not None and keyfile != "":
+                addl_tls_kwargs['keyfile'] = keyfile
             ciphers = encryption.get('ciphers', None)
-            if ciphers == "":
-                ciphers = None
+            if ciphers is not None and ciphers != "":
+                addl_tls_kwargs['ciphers'] = ciphers
 
             # These require passing specific constants so we use a lookup
             # map for them.
@@ -183,10 +186,7 @@ class Mqtt(Link):
 
             # Finally, try the connection
             try:
-                self.client.tls_set(ca_certs=ca_cert,
-                                    certfile=certfile,
-                                    keyfile=keyfile,
-                                    ciphers=ciphers, **addl_tls_kwargs)
+                self.client.tls_set(**addl_tls_kwargs)
             except FileNotFoundError as e:
                 LOG.error("Cannot locate a SSL/TLS file = %s.", e)
                 sys.exit()

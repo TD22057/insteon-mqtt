@@ -264,6 +264,8 @@ mqtt:
       nullable: True
       type: dict
       schema:
+        enable:
+          type: boolean
         ca_cert:
           type: string
         certfile:
