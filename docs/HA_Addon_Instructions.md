@@ -33,7 +33,7 @@ These instructions assume that you:
 7. Click __Install__
 8. Click __Start__ to start the Add-on, this will create your initial config
    files.
-9. Edit `/config/insteon-mqtt/config.yaml` as appropriate. See [configuration](configuration.md) for detailed instructions.
+9. Edit `/config/config.yaml` (which can be found at '/addons_configs/83fc19e1_insteon-mqtt/config.yaml' within VSCode or SSH Addon) as appropriate. See [configuration](configuration.md) for detailed instructions.
 10. Enable the [Discovery Platform](discovery.md)
 
 > Alternatively, if you choose to define your entities in Home Assistant
@@ -48,10 +48,12 @@ These instructions assume that you:
 ## Backing up your Data
 
 The default settings in the config.yaml file will save all user data to the
-`/config/insteon-mqtt` directory.  So you only need to backup and save this
-data, you do not need to make a snapshot of the Insteon-MQTT add-on.  This
-directory may also contain a log file if you have enabled logging,
-be careful, this can get quite large.
+`/config/` directory.  This directory is backed up when you make a snapshot 
+of the Insteon-MQTT add-on.  This directory may also contain a log file if 
+you have enabled logging, be careful, this can get quite large.
+
+You can also access this directory '/addons_configs/83fc19e1_insteon-mqtt/'
+within VSCode or SSH Addon.
 
 ## Updating
 
