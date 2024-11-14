@@ -6,7 +6,7 @@ When setting up Insteon-MQTT, adding a new device, or to solve problems, it is n
 
 All of these functions are idempotent, they can be run multiple times without causing any issue.
 
-> __Note__ Battery devices (e.g. motion sensors, remotes, etc) are normally sleeping and will not respond to commands sent to them.  If the commands below are sent to a battery device, the command will be queued and will attempt to be run the next time the device is awake. For more details, see [battery devices](battery_devices.md)
+> __Note__ Battery devices (e.g. motion sensors, remotes, etc) are normally sleeping and will not respond to commands sent to them.  If the commands below are sent to a battery device, the command will be queued and will attempt to be run the next time the device is awake. None of the `*_all` commands will work on battery devices, you must individually call each desired command on battery devices. For more details, see [battery devices](battery_devices.md)
 
 1. __Join__ This is necessary to allow the modem to talk to the device.  This needs to be done first on any new device or device that has been factory reset.  If you are seeing the error `Senders ID not in responders db. Try running 'join' again.`
    - To join a __single device__ run `join`.
@@ -21,7 +21,8 @@ All of these functions are idempotent, they can be run multiple times without ca
     Payload: { "cmd" : "join" }
     ```
 
-   - To join __all__ devices run `join_all`.  This may be necesary when first setting up a network.
+   - To join __all__ non-battery devices run `join_all`.  This may be necesary when first setting up a network.
+   - The `join` must be run individually on each desired battery device.
 
      _Command Line_
      ```
@@ -47,7 +48,8 @@ All of these functions are idempotent, they can be run multiple times without ca
     Payload: { "cmd" : "pair" }
     ```
 
-   - To pair __all__ devices run `pair_all`.  This may be necesary when first setting up a network.
+   - To pair __all__ non_battery devices run `pair_all`.  This may be necessary when first setting up a network.
+   - The `pair` must be run individually on each desired battery device.
 
       _Command Line_
       ```
@@ -79,7 +81,8 @@ All of these functions are idempotent, they can be run multiple times without ca
      Payload: { "cmd" : "refresh", ["force" : true/false] }
      ```
 
-   - To refresh __all__ devices run `refresh_all`.  This may be necesary when first setting up a network.  __This may take a while to complete__
+   - To refresh __all__ non-battery devices run `refresh_all`.  This may be necessary when first setting up a network.  __This may take a while to complete__
+   - This `refresh` must be run individually on each desired battery device.
 
     _Command Line_
      ```

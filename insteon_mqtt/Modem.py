@@ -437,6 +437,9 @@ class Modem:
         the database sizes.  So it usually should only be called if no other
         activity is expected on the network.
 
+        Battery devices are not included in this command and this command
+        must be run individually on each battery device.
+
         Args:
           force (bool):  Force flag passed to devices.  If True, devices
                 will refresh their Insteon db's even if they think the db
@@ -469,6 +472,9 @@ class Modem:
         lose your data directory.  Otherwise you likely never need to use
         this.
 
+        Battery devices are not included in this command and this command
+        must be run individually on each battery device.
+
         Args:
           on_done:  Finished callback.  This is called when the command has
                     completed.  Signature is: on_done(success, msg, data)
@@ -493,6 +499,9 @@ class Modem:
         This calls join on all the devices.  This can take a little time.  It
         is helpful when first setting up a network or replacing a PLM.
 
+        Battery devices are not included in this command and this command
+        must be run individually on each battery device.
+
         Args:
           on_done:  Finished callback.  This is called when the command has
                     completed.  Signature is: on_done(success, msg, data)
@@ -516,6 +525,9 @@ class Modem:
 
         This calls pair on all the devices.  This can take a little time.  It
         is helpful when first setting up a network or replacing a PLM.
+
+        Battery devices are not included in this command and this command
+        must be run individually on each battery device.
 
         Args:
           on_done:  Finished callback.  This is called when the command has
@@ -879,6 +891,9 @@ class Modem:
     def sync_all(self, dry_run=True, refresh=True, on_done=None):
         """Perform the 'sync' command on all devices.
 
+        Battery devices are not included in this command and this command
+        must be run individually on each battery device.
+
         See the 'sync' command for a description.
 
         Args:
@@ -963,6 +978,9 @@ class Modem:
     #-----------------------------------------------------------------------
     def import_scenes_all(self, dry_run=True, on_done=None):
         """Perform the 'import_scenes' command on all devices.
+
+        Battery devices are not included in this command and this command
+        must be run individually on each battery device.
 
         See the 'import_scenes' command for a description.
 
