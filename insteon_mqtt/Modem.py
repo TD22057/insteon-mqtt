@@ -10,6 +10,7 @@ import functools
 from .const import __version__
 from .Address import Address
 from .CommandSeq import CommandSeq
+from .device.BatterySensor import BatterySensor
 from . import config
 from . import db
 from . import handler
@@ -453,7 +454,8 @@ class Modem:
 
         # Reload all the device databases.
         for device in self.devices.values():
-            seq.add(device.refresh, force)
+            if (not isinstance(device, BatterySensor)):
+                seq.add(device.refresh, force)
 
         # Start the command sequence.
         seq.run()
@@ -478,7 +480,8 @@ class Modem:
 
         # Reload all the device databases.
         for device in self.devices.values():
-            seq.add(device.get_engine)
+            if (not isinstance(device, BatterySensor)):
+                seq.add(device.get_engine)
 
         # Start the command sequence.
         seq.run()
@@ -501,7 +504,8 @@ class Modem:
 
         # Join all the device databases.
         for device in self.devices.values():
-            seq.add(device.join)
+            if (not isinstance(device, BatterySensor)):
+                seq.add(device.join)
 
         # Start the command sequence.
         seq.run()
@@ -524,7 +528,8 @@ class Modem:
 
         # Pair all the device databases.
         for device in self.devices.values():
-            seq.add(device.pair)
+            if (not isinstance(device, BatterySensor)):
+                seq.add(device.pair)
 
         # Start the command sequence.
         seq.run()
@@ -894,7 +899,8 @@ class Modem:
 
         # Then each other device.
         for device in self.devices.values():
-            seq.add(device.sync, dry_run=dry_run, refresh=refresh)
+            if (not isinstance(device, BatterySensor)):
+                seq.add(device.sync, dry_run=dry_run, refresh=refresh)
 
         # Start the command sequence.
         seq.run()
@@ -978,7 +984,8 @@ class Modem:
 
         # Then each other device.
         for device in self.devices.values():
-            group.add(device.import_scenes, dry_run=dry_run, save=False)
+            if (not isinstance(device, BatterySensor)):
+                group.add(device.import_scenes, dry_run=dry_run, save=False)
 
         # Save everything at the end
         if not dry_run:
