@@ -6,7 +6,7 @@
 # to the add-on configuration folder.
 # We add a file to the old directory so that hopefully a user
 # doesn't get confused in the future.
-if [ ! -f /config/config.yaml ] && [ -d /homeassistant/insteon-mqtt]; then
+if [ ! -f /config/config.yaml ] && [ -f /homeassistant/insteon-mqtt/config.yaml]; then
     shopt -s dotglob
     mv /homeassistant/insteon-mqtt/* /config/ \
         || echo "Failed to migrate InsteonMQTT configuration"; exit 1;
