@@ -155,6 +155,7 @@ class Mqtt(Link):
         encryption = config.get('encryption', {})
         if encryption is None:
             encryption = {}
+        addl_tls_kwargs = {}
         ca_cert = encryption.get('ca_cert', None)
         enable_tls = encryption.get('enable', None)
         if (ca_cert is not None and ca_cert != "") or enable_tls:
@@ -174,7 +175,6 @@ class Mqtt(Link):
 
             # These require passing specific constants so we use a lookup
             # map for them.
-            addl_tls_kwargs = {}
             tls_ver = encryption.get('tls_version', 'tls')
             tls_version_const = self.TLS_VER_OPTIONS.get(tls_ver, None)
             if tls_version_const is not None:
