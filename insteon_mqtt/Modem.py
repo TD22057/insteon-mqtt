@@ -484,7 +484,7 @@ class Modem:
         seq = CommandSeq(self, "Get Engine all complete", on_done,
                          error_stop=False, name="EngineAll")
 
-        # Reload all the device databases.
+        # Run Get Engine on all the devices
         for device in self.devices.values():
             if (not isinstance(device, BatterySensor)):
                 seq.add(device.get_engine)
