@@ -20,9 +20,11 @@ if [ ! -f /config/config.yaml ]; then
     echo "Creating your initial config.yaml file."
     /bin/cp /config/config.yaml.default /config/config.yaml \
       || echo "Unable to create initial InsteonMQTT config.yaml file"; exit 1;
-    sed -i "s/#storage: 'data'/storage: '\/config\/insteon-mqtt\/data'/" /config/config.yaml
-    sed -i "s/#file: \/var\/log\/insteon_mqtt.log/file: \/config\/insteon_mqtt.log/" /config/config.yaml
+    sed -i "s|#storage: 'data'|storage: '/config/data'|" /config/config.yaml
+    sed -i "s|#file: /var/log/insteon_mqtt.log|file: /config/insteon_mqtt.log|" /config/config.yaml
     echo "Please define the required settings in the file /config/config.yaml"
+    echo "(which can be found at '/addons_configs/83fc19e1_insteon-mqtt/config.yaml'"
+    echo "within VSCode or SSH Addon)."
     echo "Then you can start InsteonMQTT."
 else
     python3 /opt/insteon-mqtt/hassio/start.py /config/config.yaml start
