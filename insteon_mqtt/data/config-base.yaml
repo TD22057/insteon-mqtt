@@ -234,7 +234,7 @@ mqtt:
   discovery_ha_status: 'homeassistant/status'
 
   # This is a variable that is available for use in all templates, as
-  # {{device_info_template}}.  It is envisioned that it would be used to set
+  # {{device_info}}.  It is envisioned that it would be used to set
   # the device map information, see e.g.
   # https://www.home-assistant.io/integrations/switch.mqtt/#device
   # While the identifiers or (ids) section is listed as optional, it has been
@@ -389,6 +389,56 @@ mqtt:
                           {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
                           {%- endraw -%}"
           val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      join_button: &join_button
+        component: 'button'
+        config:
+          uniq_id: "{{address}}_join"
+          name: "Join"
+          avty_t: "{{availability_topic}}"
+          ent_cat: "config"
+          cmd_t: "insteon/command/{{address}}"
+          cmd_tpl: "{\"cmd\": \"join\", \"session\": \"homeassistant\"}"
+          device: "{{device_info}}"
+      pair_button: &pair_button
+        component: 'button'
+        config:
+          uniq_id: "{{address}}_pair"
+          name: "Pair"
+          avty_t: "{{availability_topic}}"
+          ent_cat: "config"
+          cmd_t: "insteon/command/{{address}}"
+          cmd_tpl: "{\"cmd\": \"pair\", \"session\": \"homeassistant\"}"
+          device: "{{device_info}}"
+      sync_button: &sync_button
+        component: 'button'
+        config:
+          uniq_id: "{{address}}_sync"
+          name: "Sync"
+          avty_t: "{{availability_topic}}"
+          ent_cat: "config"
+          cmd_t: "insteon/command/{{address}}"
+          cmd_tpl: "{\"cmd\": \"sync\", \"dry_run\": false, \"session\": \"homeassistant\"}"
+          device: "{{device_info}}"
+      refresh_button: &refresh_button
+        component: 'button'
+        config:
+          uniq_id: "{{address}}_refresh"
+          name: "Refresh"
+          avty_t: "{{availability_topic}}"
+          ent_cat: "config"
+          cmd_t: "insteon/command/{{address}}"
+          cmd_tpl: "{\"cmd\": \"refresh\", \"force\": true, \"session\": \"homeassistant\"}"
+          device: "{{device_info}}"
+      log_sensor: &log_sensor
+        component: 'sensor'
+        config:
+          uniq_id: "{{address}}_log"
+          name: "Log"
+          avty_t: "{{availability_topic}}"
+          ent_cat: "diagnostic"
+          stat_t: "insteon/command/{{address}}/session/homeassistant"
+          device: "{{device_info}}"
+          val_tpl: "{%- raw -%}{% if value_json.type == 'MESSAGE' %} {{value_json.data}} {% else %} {{ 0/0 }} {%endif %}{%- endraw -%}"
 
   dimmer:
     #------------------------------------------------------------------------
@@ -506,6 +556,11 @@ mqtt:
           json_attr_tpl: "{%- raw -%}
                           {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
                           {%- endraw -%}"
+      join_button: *join_button
+      pair_button: *pair_button
+      refresh_button: *refresh_button
+      sync_button: *sync_button
+      log_sensor: *log_sensor
 
   battery_sensor:
     #------------------------------------------------------------------------
@@ -602,6 +657,21 @@ mqtt:
           device: "{{device_info}}"
           force_update: true
           val_tpl: "{%- raw -%}{{as_datetime(value|float|timestamp_local).isoformat()|string}}{%- endraw -%}"
+      awake_button: &awake_button
+        component: 'button'
+        config:
+          uniq_id: "{{address}}_awake"
+          name: "Mark Awake"
+          avty_t: "{{availability_topic}}"
+          ent_cat: "config"
+          cmd_t: "insteon/command/{{address}}"
+          cmd_tpl: "{\"cmd\": \"awake\", \"session\": \"homeassistant\"}"
+          device: "{{device_info}}"
+      join_button: *join_button
+      pair_button: *pair_button
+      refresh_button: *refresh_button
+      sync_button: *sync_button
+      log_sensor: *log_sensor
 
   motion:
     #------------------------------------------------------------------------
@@ -675,6 +745,12 @@ mqtt:
                           {\"timestamp\": {{value_json.timestamp}}}
                           {%- endraw -%}"
           val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      awake_button: *awake_button
+      join_button: *join_button
+      pair_button: *pair_button
+      refresh_button: *refresh_button
+      sync_button: *sync_button
+      log_sensor: *log_sensor
 
   hidden_door:
     #------------------------------------------------------------------------
@@ -757,6 +833,12 @@ mqtt:
                             {\"timestamp\": {{value_json.timestamp}}}
                             {%- endraw -%}"
             val_tpl: "{% raw %}{{value_json.voltage}}{% endraw %}"
+      awake_button: *awake_button
+      join_button: *join_button
+      pair_button: *pair_button
+      refresh_button: *refresh_button
+      sync_button: *sync_button
+      log_sensor: *log_sensor
 
   leak:
     #------------------------------------------------------------------------
@@ -815,6 +897,12 @@ mqtt:
           device_class: "timestamp"
           device: "{{device_info}}"
           val_tpl: "{%- raw -%}{{as_datetime(value|float|timestamp_local).isoformat()|string}}{%- endraw -%}"
+      awake_button: *awake_button
+      join_button: *join_button
+      pair_button: *pair_button
+      refresh_button: *refresh_button
+      sync_button: *sync_button
+      log_sensor: *log_sensor
 
   remote:
     #------------------------------------------------------------------------
@@ -996,6 +1084,12 @@ mqtt:
                           {\"timestamp\": {{value_json.timestamp}}}
                           {%- endraw -%}"
           val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      awake_button: *awake_button
+      join_button: *join_button
+      pair_button: *pair_button
+      refresh_button: *refresh_button
+      sync_button: *sync_button
+      log_sensor: *log_sensor
 
   smoke_bridge:
     #------------------------------------------------------------------------
@@ -1064,6 +1158,11 @@ mqtt:
           avty_t: "{{availability_topic}}"
           device_class: "problem"
           device: "{{device_info}}"
+      join_button: *join_button
+      pair_button: *pair_button
+      refresh_button: *refresh_button
+      sync_button: *sync_button
+      log_sensor: *log_sensor
 
   thermostat:
     #------------------------------------------------------------------------
@@ -1174,6 +1273,11 @@ mqtt:
           "temp_lo_stat_t": "{{heat_sp_state_topic}}"
           "temp_lo_stat_tpl": "{% raw %}{{value_json.temp_f}}{% endraw %}"
           "temperature_unit": "F"
+      join_button: *join_button
+      pair_button: *pair_button
+      refresh_button: *refresh_button
+      sync_button: *sync_button
+      log_sensor: *log_sensor
 
   fan_linc:
     #------------------------------------------------------------------------
@@ -1286,6 +1390,11 @@ mqtt:
           json_attr_tpl: "{%- raw -%}
                           {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
                           {%- endraw -%}"
+      join_button: *join_button
+      pair_button: *pair_button
+      refresh_button: *refresh_button
+      sync_button: *sync_button
+      log_sensor: *log_sensor
 
   keypad_linc:
     #------------------------------------------------------------------------
@@ -1581,6 +1690,11 @@ mqtt:
                           {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
                           {%- endraw -%}"
           val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      join_button: *join_button
+      pair_button: *pair_button
+      refresh_button: *refresh_button
+      sync_button: *sync_button
+      log_sensor: *log_sensor
 
   io_linc:
     #------------------------------------------------------------------------
@@ -1682,6 +1796,11 @@ mqtt:
           json_attr_tpl: "{%- raw -%}
                           {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
                           {%- endraw -%}"
+      join_button: *join_button
+      pair_button: *pair_button
+      refresh_button: *refresh_button
+      sync_button: *sync_button
+      log_sensor: *log_sensor
 
   outlet:
     #------------------------------------------------------------------------
@@ -1767,6 +1886,11 @@ mqtt:
                           {\"timestamp\": {{value_json.timestamp}}, \"mode\": \"{{value_json.mode}}\", \"reason\": \"{{value_json.reason}}\"}
                           {%- endraw -%}"
           val_tpl: "{% raw %}{{value_json.state}}{% endraw %}"
+      join_button: *join_button
+      pair_button: *pair_button
+      refresh_button: *refresh_button
+      sync_button: *sync_button
+      log_sensor: *log_sensor
 
   ezio4o:
     #------------------------------------------------------------------------
@@ -1856,5 +1980,10 @@ mqtt:
           cmd_t: "{{on_off_topic_4}}"
           stat_t: "{{state_topic_4}}"
           device: "{{device_info}}"
+      join_button: *join_button
+      pair_button: *pair_button
+      refresh_button: *refresh_button
+      sync_button: *sync_button
+      log_sensor: *log_sensor
 
 #----------------------------------------------------------------
