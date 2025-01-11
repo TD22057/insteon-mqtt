@@ -429,6 +429,16 @@ mqtt:
           cmd_t: "insteon/command/{{address}}"
           cmd_tpl: "{\"cmd\": \"refresh\", \"force\": true, \"session\": \"homeassistant\"}"
           device: "{{device_info}}"
+      engine_button: &engine_button
+        component: 'button'
+        config:
+          uniq_id: "{{address}}_get_engine"
+          name: "Get Engine Version"
+          avty_t: "{{availability_topic}}"
+          ent_cat: "config"
+          cmd_t: "insteon/command/{{address}}"
+          cmd_tpl: "{\"cmd\": \"get_engine\", \"session\": \"homeassistant\"}"
+          device: "{{device_info}}"
       log_sensor: &log_sensor
         component: 'sensor'
         config:
@@ -559,6 +569,7 @@ mqtt:
       join_button: *join_button
       pair_button: *pair_button
       refresh_button: *refresh_button
+      engine_button: *engine_button
       sync_button: *sync_button
       log_sensor: *log_sensor
 
@@ -670,6 +681,7 @@ mqtt:
       join_button: *join_button
       pair_button: *pair_button
       refresh_button: *refresh_button
+      engine_button: *engine_button
       sync_button: *sync_button
       log_sensor: *log_sensor
 
@@ -749,6 +761,7 @@ mqtt:
       join_button: *join_button
       pair_button: *pair_button
       refresh_button: *refresh_button
+      engine_button: *engine_button
       sync_button: *sync_button
       log_sensor: *log_sensor
 
@@ -837,6 +850,7 @@ mqtt:
       join_button: *join_button
       pair_button: *pair_button
       refresh_button: *refresh_button
+      engine_button: *engine_button
       sync_button: *sync_button
       log_sensor: *log_sensor
 
@@ -901,6 +915,7 @@ mqtt:
       join_button: *join_button
       pair_button: *pair_button
       refresh_button: *refresh_button
+      engine_button: *engine_button
       sync_button: *sync_button
       log_sensor: *log_sensor
 
@@ -1088,6 +1103,7 @@ mqtt:
       join_button: *join_button
       pair_button: *pair_button
       refresh_button: *refresh_button
+      engine_button: *engine_button
       sync_button: *sync_button
       log_sensor: *log_sensor
 
@@ -1161,6 +1177,7 @@ mqtt:
       join_button: *join_button
       pair_button: *pair_button
       refresh_button: *refresh_button
+      engine_button: *engine_button
       sync_button: *sync_button
       log_sensor: *log_sensor
 
@@ -1276,6 +1293,7 @@ mqtt:
       join_button: *join_button
       pair_button: *pair_button
       refresh_button: *refresh_button
+      engine_button: *engine_button
       sync_button: *sync_button
       log_sensor: *log_sensor
 
@@ -1393,6 +1411,7 @@ mqtt:
       join_button: *join_button
       pair_button: *pair_button
       refresh_button: *refresh_button
+      engine_button: *engine_button
       sync_button: *sync_button
       log_sensor: *log_sensor
 
@@ -1693,6 +1712,7 @@ mqtt:
       join_button: *join_button
       pair_button: *pair_button
       refresh_button: *refresh_button
+      engine_button: *engine_button
       sync_button: *sync_button
       log_sensor: *log_sensor
 
@@ -1799,6 +1819,7 @@ mqtt:
       join_button: *join_button
       pair_button: *pair_button
       refresh_button: *refresh_button
+      engine_button: *engine_button
       sync_button: *sync_button
       log_sensor: *log_sensor
 
@@ -1889,6 +1910,7 @@ mqtt:
       join_button: *join_button
       pair_button: *pair_button
       refresh_button: *refresh_button
+      engine_button: *engine_button
       sync_button: *sync_button
       log_sensor: *log_sensor
 
@@ -1983,6 +2005,7 @@ mqtt:
       join_button: *join_button
       pair_button: *pair_button
       refresh_button: *refresh_button
+      engine_button: *engine_button
       sync_button: *sync_button
       log_sensor: *log_sensor
 
