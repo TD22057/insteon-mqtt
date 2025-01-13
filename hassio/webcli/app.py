@@ -88,7 +88,7 @@ def handle_message(message):
             socketio.start_background_task(target=app.config["worker"].do_work)
         # We run it this way to disable buffering
         command = ['python3', '-u', '/opt/insteon-mqtt/scripts/insteon-mqtt',
-                   '/config/insteon-mqtt/config.yaml']
+                   '/config/config.yaml']
         command.extend(user_cmd)
         # Save the user inputed text so we can display it back to the user
         user_text = 'insteon-mqtt config.yaml ' + message

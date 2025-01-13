@@ -105,7 +105,11 @@ class Mqtt(Link):
         """ Create or reinitialise the MQTT client and set the callbacks.
         """
 
-        client_args = {'client_id': self.id, 'clean_session': False}
+        client_args = {
+            'callback_api_version': paho.CallbackAPIVersion.VERSION2,
+            'client_id': self.id,
+            'clean_session': False
+        }
 
         if not hasattr(self, 'client'):
             self.client = paho.Client(**client_args)
@@ -155,23 +159,26 @@ class Mqtt(Link):
         encryption = config.get('encryption', {})
         if encryption is None:
             encryption = {}
+        addl_tls_kwargs = {}
         ca_cert = encryption.get('ca_cert', None)
-        if ca_cert is not None and ca_cert != "":
+        enable_tls = encryption.get('enable', None)
+        if (ca_cert is not None and ca_cert != "") or enable_tls:
             LOG.info("Using TLS for MQTT broker connection.")
             # Set the basic arguments
+            if ca_cert is not None and ca_cert != "":
+                addl_tls_kwargs['ca_certs'] = ca_cert
             certfile = encryption.get('certfile', None)
-            if certfile == "":
-                certfile = None
+            if certfile is not None and certfile != "":
+                addl_tls_kwargs['certfile'] = certfile
             keyfile = encryption.get('keyfile', None)
-            if keyfile == "":
-                keyfile = None
+            if keyfile is not None and keyfile != "":
+                addl_tls_kwargs['keyfile'] = keyfile
             ciphers = encryption.get('ciphers', None)
-            if ciphers == "":
-                ciphers = None
+            if ciphers is not None and ciphers != "":
+                addl_tls_kwargs['ciphers'] = ciphers
 
             # These require passing specific constants so we use a lookup
             # map for them.
-            addl_tls_kwargs = {}
             tls_ver = encryption.get('tls_version', 'tls')
             tls_version_const = self.TLS_VER_OPTIONS.get(tls_ver, None)
             if tls_version_const is not None:
@@ -183,10 +190,7 @@ class Mqtt(Link):
 
             # Finally, try the connection
             try:
-                self.client.tls_set(ca_certs=ca_cert,
-                                    certfile=certfile,
-                                    keyfile=keyfile,
-                                    ciphers=ciphers, **addl_tls_kwargs)
+                self.client.tls_set(**addl_tls_kwargs)
             except FileNotFoundError as e:
                 LOG.error("Cannot locate a SSL/TLS file = %s.", e)
                 sys.exit()
@@ -385,7 +389,7 @@ class Mqtt(Link):
         self.signal_needs_write.emit(self, True)
 
     #-----------------------------------------------------------------------
-    def _on_connect(self, client, data, flags, result):
+    def _on_connect(self, client, userdata, flags, reason_code, properties):
         """MQTT connection callback.
 
         This is called by the MQTT client once the connection has occurred.
@@ -398,20 +402,20 @@ class Mqtt(Link):
                  client, 3 = server unavailable, 4 = bad login, 5 = not
                  authorized.
         """
-        if result == 0:
+        if reason_code == 0:
             self.connected = True
             self.signal_connected.emit(self, True)
             self.client.publish(self.availability_topic, payload="online",
                                 qos=0, retain=True)
         else:
             LOG.error("MQTT connection refused %s %s %s", self.host, self.port,
-                      result)
+                      reason_code)
 
     #-----------------------------------------------------------------------
-    def _on_disconnect(self, client, data, result):
+    def _on_disconnect(self, client, userdata, flags, reason_code, properties):
         """MQTT disconnection callback.
 
-        This is called by the MQTT client when the connection is droppped.
+        This is called by the MQTT client when the connection is dropped.
 
         Args:
           client (paho.Client):  The paho mqtt client (self.client).

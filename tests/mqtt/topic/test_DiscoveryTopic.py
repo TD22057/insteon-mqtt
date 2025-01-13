@@ -162,6 +162,7 @@ class Test_DiscoveryTopic:
             'fake': {
                 "component": "fan",
                 "config": {
+                    "name": "",
                     "unique_id": "unique",
                     "icon": "fake",
                 },
@@ -226,6 +227,7 @@ class Test_DiscoveryTopic:
         discovery_fan.disc_templates = []
 
         # test for adding config attribute
+        # Also test that name isn't removed
         discovery_fan.device.config_extra['discovery_overrides'] = { 'fake': {
             "config": {
                 "foo": "fake",
@@ -234,9 +236,12 @@ class Test_DiscoveryTopic:
         discovery_fan.load_discovery_data(config)
         payload = json.loads(discovery_fan.disc_templates[0].payload_str)
         assert payload.get("foo", None) == "fake"
+        assert "name" in payload
+        assert payload.get("name", None) == ""
         discovery_fan.disc_templates = []
 
         # test for deleting config attribute
+        # Also test that name isn't removed
         discovery_fan.device.config_extra['discovery_overrides'] = { 'fake': {
             "config": {
                 "icon": "",
@@ -245,6 +250,8 @@ class Test_DiscoveryTopic:
         discovery_fan.load_discovery_data(config)
         payload = json.loads(discovery_fan.disc_templates[0].payload_str)
         assert "icon" not in payload
+        assert "name" in payload
+        assert payload.get("name", None) == ""
         discovery_fan.disc_templates = []
 
         # test for overriding device info

@@ -101,7 +101,9 @@ The `import-scenes` function will attempt to keep the order and all comments in 
   ```
 
 ### `import-scenes-all`
-The `import-scenes-all` function will perform the `import-scenes` function on all devices in the network.  The same caveats about `import-scenes` apply to this function as well.
+The `import-scenes-all` function will perform the `import-scenes` function on all non-battery devices in the network.  The same caveats about `import-scenes` apply to this function as well.
+
+This command must be run individually on each desired battery device.
 
 > The `import-scenes-all` function can take quite a while to complete particularly if you have a lot of devices and scenes and/or a slow computer. For reference 85 devices on a raspberry pi takes about 20 seconds to complete.  This may cause the command line to time out before the command completes.  The command should continue to run and complete in the background however, you will not see the results printed to the screen.  You can solve this by editing the file (../insteon_mqtt/cmd_line/util.py) and changing the line at the top from `TIME_OUT = 10` to something like `TIME_OUT = 30`.
 
@@ -140,7 +142,9 @@ The changes will only be made to the device on which this command is called.  So
  ```
 
 ### `sync-all`
-The `sync-all` function will perform the `sync` function on all devices in the network.  The same caveats about `sync` apply to this function as well.
+The `sync-all` function will perform the `sync` function on all non-battery devices in the network.  The same caveats about `sync` apply to this function as well.
+
+This command must be run individually on each desired battery device.
 
   _Command Line_
   ```

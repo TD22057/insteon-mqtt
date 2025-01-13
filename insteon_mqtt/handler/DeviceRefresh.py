@@ -106,7 +106,7 @@ class DeviceRefresh(Base):
                     # Clear the current database values.
                     self.device.db.clear()
 
-                    # When the update message below ends, update the db delta
+                    # When database download is complete, update the db delta
                     # w/ the current value and save the database.
                     def on_done(success, message, data):
                         if success:
@@ -116,7 +116,22 @@ class DeviceRefresh(Base):
                                    self.addr, self.device.db)
                         self.on_done(success, message, data)
 
-                    # Request that the device send us all of it's database
+                    # Called after DeviceDbGet finishes trying a bulk download
+                    def on_done_dbget(success, message, data):
+                        if success:
+                            # Skip gap-filling step & call above-defined func
+                            on_done(success, message, data)
+                        else:
+                            LOG.warning("%s database bulk download error: %s",
+                                        self.addr, message)
+                            # Try filling-in gaps one entry at a time
+                            manager = db.DeviceScanManagerI2(self.device,
+                                                             self.device.db,
+                                                             on_done=on_done,
+                                                             num_retry=3)
+                            manager.start_scan()
+
+                    # Request that the device send us all of its database
                     # records.  These will be streamed as fast as possible to
                     # us and the handler will update the database.  We need a
                     # retry count here because battery powered devices don't
@@ -130,7 +145,8 @@ class DeviceRefresh(Base):
                     else:
                         db_msg = Msg.OutExtended.direct(self.addr, 0x2f, 0x00,
                                                         bytes(14))
-                        msg_handler = DeviceDbGet(self.device.db, on_done,
+                        msg_handler = DeviceDbGet(self.device.db,
+                                                  on_done_dbget,
                                                   num_retry=3)
                         self.device.send(db_msg, msg_handler)
                 # Either way - this transaction is complete.
