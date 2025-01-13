@@ -143,7 +143,10 @@ class DeviceDbGet(Base):
             # Note that if the entry is a null entry (all zeros), then
             # is_last_rec will be True as well.
             if entry.db_flags.is_last_rec:
-                self.on_done(True, "Database received", entry)
+                if self.db.is_complete():
+                    self.on_done(True, "Database received", entry)
+                else:
+                    self.on_done(False, "Database incomplete", entry)
                 return Msg.FINISHED
 
             # Otherwise keep processing records as they arrive.

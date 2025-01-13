@@ -175,6 +175,23 @@ class Device:
         return delta == self.delta
 
     #-----------------------------------------------------------------------
+    def is_complete(self):
+        """See if the database is complete.
+
+        Check that all DB entries between START_MEM_LOC and self.last
+        (inclusive) are present in either self.entries or self.unused.
+
+        Returns:
+          (bool) Returns True if the database is complete.
+        """
+        if (self.last not in self.entries.values() and
+                self.last not in self.unused.values()):
+            # Last entry hasn't been added/downloaded yet
+            return False
+        expected_entries = ((START_MEM_LOC - self.last.mem_loc) / 8) + 1
+        return len(self.entries) + len(self.unused) == expected_entries
+
+    #-----------------------------------------------------------------------
     def increment_delta(self):
         """Increments the current database delta by 1
 
@@ -770,7 +787,7 @@ class Device:
     #-----------------------------------------------------------------------
     def _add_using_new(self, addr, group, is_controller, data,
                        on_done):
-        """Add a anew entry at the end of the database.
+        """Add a new entry at the end of the database.
 
         First we send the new entry to the remote device.  If that works,
         then we update the previously last entry to mart it as "not the last
