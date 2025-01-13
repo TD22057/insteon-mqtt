@@ -10,6 +10,7 @@ import functools
 from .const import __version__
 from .Address import Address
 from .CommandSeq import CommandSeq
+from .device.BatterySensor import BatterySensor
 from . import config
 from . import db
 from . import handler
@@ -436,6 +437,9 @@ class Modem:
         the database sizes.  So it usually should only be called if no other
         activity is expected on the network.
 
+        Battery devices are not included in this command and this command
+        must be run individually on each battery device.
+
         Args:
           force (bool):  Force flag passed to devices.  If True, devices
                 will refresh their Insteon db's even if they think the db
@@ -453,7 +457,8 @@ class Modem:
 
         # Reload all the device databases.
         for device in self.devices.values():
-            seq.add(device.refresh, force)
+            if (not isinstance(device, BatterySensor)):
+                seq.add(device.refresh, force)
 
         # Start the command sequence.
         seq.run()
@@ -467,6 +472,9 @@ class Modem:
         lose your data directory.  Otherwise you likely never need to use
         this.
 
+        Battery devices are not included in this command and this command
+        must be run individually on each battery device.
+
         Args:
           on_done:  Finished callback.  This is called when the command has
                     completed.  Signature is: on_done(success, msg, data)
@@ -476,9 +484,10 @@ class Modem:
         seq = CommandSeq(self, "Get Engine all complete", on_done,
                          error_stop=False, name="EngineAll")
 
-        # Reload all the device databases.
+        # Run Get Engine on all the devices
         for device in self.devices.values():
-            seq.add(device.get_engine)
+            if (not isinstance(device, BatterySensor)):
+                seq.add(device.get_engine)
 
         # Start the command sequence.
         seq.run()
@@ -489,6 +498,9 @@ class Modem:
 
         This calls join on all the devices.  This can take a little time.  It
         is helpful when first setting up a network or replacing a PLM.
+
+        Battery devices are not included in this command and this command
+        must be run individually on each battery device.
 
         Args:
           on_done:  Finished callback.  This is called when the command has
@@ -501,7 +513,8 @@ class Modem:
 
         # Join all the device databases.
         for device in self.devices.values():
-            seq.add(device.join)
+            if (not isinstance(device, BatterySensor)):
+                seq.add(device.join)
 
         # Start the command sequence.
         seq.run()
@@ -512,6 +525,9 @@ class Modem:
 
         This calls pair on all the devices.  This can take a little time.  It
         is helpful when first setting up a network or replacing a PLM.
+
+        Battery devices are not included in this command and this command
+        must be run individually on each battery device.
 
         Args:
           on_done:  Finished callback.  This is called when the command has
@@ -524,7 +540,8 @@ class Modem:
 
         # Pair all the device databases.
         for device in self.devices.values():
-            seq.add(device.pair)
+            if (not isinstance(device, BatterySensor)):
+                seq.add(device.pair)
 
         # Start the command sequence.
         seq.run()
@@ -874,6 +891,9 @@ class Modem:
     def sync_all(self, dry_run=True, refresh=True, on_done=None):
         """Perform the 'sync' command on all devices.
 
+        Battery devices are not included in this command and this command
+        must be run individually on each battery device.
+
         See the 'sync' command for a description.
 
         Args:
@@ -894,7 +914,8 @@ class Modem:
 
         # Then each other device.
         for device in self.devices.values():
-            seq.add(device.sync, dry_run=dry_run, refresh=refresh)
+            if (not isinstance(device, BatterySensor)):
+                seq.add(device.sync, dry_run=dry_run, refresh=refresh)
 
         # Start the command sequence.
         seq.run()
@@ -958,6 +979,9 @@ class Modem:
     def import_scenes_all(self, dry_run=True, on_done=None):
         """Perform the 'import_scenes' command on all devices.
 
+        Battery devices are not included in this command and this command
+        must be run individually on each battery device.
+
         See the 'import_scenes' command for a description.
 
         Args:
@@ -978,7 +1002,8 @@ class Modem:
 
         # Then each other device.
         for device in self.devices.values():
-            group.add(device.import_scenes, dry_run=dry_run, save=False)
+            if (not isinstance(device, BatterySensor)):
+                group.add(device.import_scenes, dry_run=dry_run, save=False)
 
         # Save everything at the end
         if not dry_run:

@@ -4,6 +4,9 @@ Battery devices (e.g. motion sensors, remotes, etc) are normally sleeping and wi
 
 > As noted below, not all devices enter an _awake_ state after sending a message.  For some devices, the only option is to manually wake them up.
 
+## `*_all` Commands
+None of the `*_all` style commands will work on battery devices, you must individually call the commands you wish to run on each battery device.
+
 ## Waking a Battery Device
 
 ### Automatically

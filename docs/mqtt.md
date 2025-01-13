@@ -223,12 +223,14 @@ data.
 
 Supported: modem
 
-This will cause a get_engine command to be sent to each device (i.e. devices
+This will cause a get_engine command to be sent to each non-battery device (i.e. devices
 defined in the config file).  The command payload is:
 
   ```
   { "cmd" : "get_engine_all"}
   ```
+
+This command must be run individually on each desired battery device.
 
 ### Add the device as a controller of another device.
 
