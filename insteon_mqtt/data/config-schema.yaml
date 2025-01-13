@@ -166,6 +166,8 @@ insteon:
                           type: string
                         via_device:
                           type: string
+                        sn:
+                          type: string
                   allow_unknown:
                     type: dict
                     schema:
@@ -226,7 +228,7 @@ mqtt:
               schema: &discovery_entity
                 component:
                   type: string
-                  allowed: ['alarm_control_panel', 'binary_sensor', 'camera',
+                  allowed: ['alarm_control_panel', 'binary_sensor', 'button', 'camera',
                             'cover', 'device_tracker', 'device_trigger', 'fan',
                             'climate', 'light', 'lock', 'scene', 'sensor',
                             'switch', 'tag', 'vacuum']
