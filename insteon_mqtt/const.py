@@ -11,6 +11,6 @@ unused.  The primary impetus for this is to allow importing of the version
 variable throughout the code without causing a cyclic import
 """
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 #===========================================================================
