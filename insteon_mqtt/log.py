@@ -83,7 +83,12 @@ def initialize(level=None, screen=None, file=None, config=None):
     if file:
         # Use a watched file handler - that way LINUX system log
         # rotation works properly.
-        handler = logging.handlers.WatchedFileHandler(file)
+        try:
+            handler = logging.handlers.WatchedFileHandler(file)
+        except FileNotFoundError:
+            print("ERROR - Cannot access log file", file)
+            print("Please check your config.yaml file under logging > file")
+            exit(1)
         handler.setFormatter(formatter)
         log_obj.addHandler(handler)
 

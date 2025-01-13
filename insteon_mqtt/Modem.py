@@ -209,8 +209,12 @@ class Modem:
         # Load the modem database.
         if 'storage' in config_data:
             save_path = config_data['storage']
-            if not os.path.exists(save_path):
-                os.makedirs(save_path)
+            try:
+                os.makedirs(save_path, exist_ok=True)
+            except OSError as error:
+                print("ERROR - Cannot access or create the data directory", save_path)
+                print("Please check your config.yaml file at insteon > storage")
+                exit(1)
 
             self.save_path = save_path
             self.load_db()

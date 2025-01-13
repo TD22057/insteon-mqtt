@@ -1,0 +1,16 @@
+InsteonMQTT Config Files Have Moved!!!
+
+Your config files were copied from this location on <<MIGRATION_DATE>>
+
+If InsteonMQTT is operating correctly, you may delete these files.
+
+
+Config files can now be found at:
+
+WITHIN Visual Code Addon or SSH Addon:
+
+    /addons_configs/83fc19e1_insteon-mqtt
+
+WITHIN InsteonMQTT Addon:
+
+    /config/
