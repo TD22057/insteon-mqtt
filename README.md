@@ -7,7 +7,7 @@ integrated into and controlled from anything that can use MQTT.
 
 This package works well with HomeAssistant and can be easily [installed as an addon](docs/HA_Addon_Instructions.md) using the HomeAssistant Supervisor.
 
-Version: 1.3.0  ([History](CHANGELOG.md))
+Version: 1.3.1  ([History](CHANGELOG.md))
 
 ### Recent Breaking Changes
 
