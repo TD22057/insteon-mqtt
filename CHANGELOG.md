@@ -1,5 +1,46 @@
 # Revision Change History
 
+## [1.3.1]
+
+- Also update scenes pathname on migration
+- Update changelog, oops
+
+## [1.3.0] - Potential Breaking Change for Home Assistant Users
+
+This release migrates the configuration files from the global `/config` directory to an addon specific `/config` directory.  The migration script will attempt to update your log file and storage directories, but it may not work.  Please check the log files after installing this update and specifically check the values of:
+
+```
+logging:
+  file: <<check this value>>
+
+insteon:
+  storage: <<check this value>>
+```
+
+Within the addon the config files are located at `/config` which was previously `/config/insteon-mqtt`.  Within the VSCode addon, addon config directories are mounted under `/addons_configs` and the InsteonMQTT config file can be found at `/83fc19e1_insteon-mqtt/config.yaml`
+
+The benefit of this change, is that your config files will now be backed up with the addon.
+
+### Fixes for other Home Assistant Deprecations
+
+Home Assistant continues to evolve and some of the prior ways of doing things have been deprecated or entirely removed.  This release contains a number of fixes that may have prevented users from installing the InsteonMQTT addon.
+
+### New Home Assistant Config Buttons in Device Config
+
+This release adds a number of configuration buttons to each entity that allow the user to perform many common tasks as shown in this screenshot:
+
+![image](https://github.com/user-attachments/assets/ac8423f7-f4ad-4d6e-a706-643ca7315ea6)
+
+### What's Changed
+* Don't prune blank entity names in overridden discovery data by @tstabrawa in https://github.com/TD22057/insteon-mqtt/pull/523
+* If not all DB records are received, try one-by-one by @tstabrawa in https://github.com/TD22057/insteon-mqtt/pull/531
+* Allow Installation of Insteon_MQTT Module via Pip in Addon by @krkeegan in https://github.com/TD22057/insteon-mqtt/pull/537
+* Migrate to Paho API Version 2 by @krkeegan in https://github.com/TD22057/insteon-mqtt/pull/538
+* Enable Optional Encryption Without CA_Cert by @krkeegan in https://github.com/TD22057/insteon-mqtt/pull/539
+* Remove Battery Devices from *_All Commands by @krkeegan in https://github.com/TD22057/insteon-mqtt/pull/540
+* Migrate HomeAssistant Config Files Location by @krkeegan in https://github.com/TD22057/insteon-mqtt/pull/541
+* Add MQTT Discovery Entities for Config Buttons in Home Assistant by @krkeegan in https://github.com/TD22057/insteon-mqtt/pull/542
+
 ## [1.2.0]
 
 ### Fixes
