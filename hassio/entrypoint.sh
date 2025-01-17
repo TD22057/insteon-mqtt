@@ -29,7 +29,7 @@ if [ ! -f /config/config.yaml ]; then
     sed -i "s|storage: 'data'|storage: /config/data|" /config/config.yaml
     sed -i "s|#file: /var/log/insteon_mqtt.log|file: /config/insteon_mqtt.log|" /config/config.yaml
     echo "Please define the required settings in the file /config/config.yaml"
-    echo "(which can be found at '/addons_configs/83fc19e1_insteon-mqtt/config.yaml'"
+    echo "(which can be found at '/addon_configs/83fc19e1_insteon-mqtt/config.yaml'"
     echo "within VSCode or SSH Addon)."
     echo "Then you can start InsteonMQTT."
 else

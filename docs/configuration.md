@@ -5,7 +5,7 @@
 The following is the bare minimum of changes to the `config.yaml` file that are necessary to get Insteon-MQTT started.
 
 > For HomeAssistant Addon users, the `config.yaml` file is stored at `/config/config.yaml` within the addon
-> and can be found at at '/addons_configs/83fc19e1_insteon-mqtt/' within VSCode or SSH Addon.
+> and can be found at at '/addon_configs/83fc19e1_insteon-mqtt/' within VSCode or SSH Addon.
 
 1. __Configure Modem__ Set the Insteon port as `port` under the `insteon` section to be the USB port or address of the PLM modem on your system.  If using an Insteon Hub, see [Hub Instructions](hub.md).
 
