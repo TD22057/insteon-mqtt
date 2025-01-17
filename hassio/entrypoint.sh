@@ -12,8 +12,10 @@ if [ ! -f /config/config.yaml ] && [ -f /homeassistant/insteon-mqtt/config.yaml 
     mv /homeassistant/insteon-mqtt/* /config/ || \
         { echo "Failed to migrate InsteonMQTT configuration"; exit 1; }
     # If user was using default data and log locations, edit them to match the new location
-    sed -i "s|storage: '\{0,1\}\"\{0,1\}/config/insteon-mqtt/data'\{0,1\}\"\{0,1\}|storage: /config/data|" /config/config.yaml
+    sed -i "s|storage: ['\"]\?/config/insteon-mqtt/data['\"]\?|storage: /config/data|" /config/config.yaml
     sed -i "s|file: /config/insteon-mqtt/insteon_mqtt.log|file: /config/insteon_mqtt.log|" /config/config.yaml
+    #Scenes are not used by default, but attempt to move if user had them stored in old config
+    sed -i "s|scenes: ['\"]\?/config/insteon-mqtt/\([^ '\"]*\)['\"]\?|scenes: /config/\1|" /config/config.yaml
     /bin/cp /opt/insteon-mqtt/hassio/CONFIG-MOVED.txt /homeassistant/insteon-mqtt/CONFIG-MOVED.txt
     sed -i "s/<<MIGRATION_DATE>>/$(date)/g" /homeassistant/insteon-mqtt/CONFIG-MOVED.txt
     echo "InsteonMQTT configuration successfully migrated from /config/insteon-mqtt."
