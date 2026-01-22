@@ -1,5 +1,9 @@
 # Revision Change History
 
+## [1.4.0] - Drop Support of armhf and i386
+
+- HomeAssistant no longer supports the armhf and i386 architectures.
+
 ## [1.3.2] - Add Supported_Color_Modes; Add 6 Button Remote
 
 - Starting in HomeAssistant 2026.3 `supported_color_modes` will be a required attribute for all lights.
