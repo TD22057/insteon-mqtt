@@ -4,8 +4,11 @@
 #
 # pylint: disable=redefined-outer-name
 #===========================================================================
+import json
+import os
 from unittest import mock
 import pytest
+import yaml
 import insteon_mqtt as IM
 import helpers as H
 
@@ -185,6 +188,62 @@ class Test_Modem:
         data['scene'] = 16
         data['scene_name'] = 'test_name'
         mocked.assert_any_call(mdev.mqtt, data, retain=False)
+
+    #-----------------------------------------------------------------------
+    def test_discovery_device_info_via_device(self, setup, tmpdir):
+        mdev, link, proto = setup.getAll(['mdev', 'link', 'proto'])
+        modem = mdev.device
+        mqtt = mdev.mqtt
+
+        # Use the shipped default config so the real device_info_template
+        # is exercised.
+        base_path = os.path.join(os.path.dirname(IM.__file__), 'data',
+                                 'config-base.yaml')
+        with open(base_path) as f:
+            config = yaml.safe_load(f)['mqtt']
+        mqtt.discovery_enabled = True
+        mqtt.discovery_topic_base = config['discovery_topic_base']
+        mqtt.device_info_template = config['device_info_template']
+
+        # Rebuild the MQTT modem so it copies the device_info_template.
+        mdev = IM.mqtt.Modem(mqtt, modem)
+        mdev.load_config(config, qos=1)
+
+        modem.db.groups[20] = ['junk']
+        modem.db.groups[26] = ['junk']
+        modem.scene_map['Fan High'] = 26
+
+        link.client.clear()
+        mdev.publish_discovery()
+        assert len(link.client.pub) == 2
+        payloads = {}
+        for msg in link.client.pub:
+            payload = json.loads(msg['payload'])
+            payloads[payload['uniq_id']] = payload
+
+        # Scene names are preserved
+        assert payloads['20.30.40_20']['name'] == 'Modem Scene 20'
+        assert payloads['20.30.40_26']['name'] == 'Fan High'
+
+        # Modem scenes belong to the modem device, but Home Assistant
+        # rejects a device that is its own via_device.
+        for payload in payloads.values():
+            assert payload['device']['ids'] == '20.30.40'
+            assert payload['device']['name'] == 'Modem'
+            assert 'via_device' not in payload['device']
+
+        # Regular devices still use the modem as their via_device.
+        modem.save_path = str(tmpdir)
+        dev = IM.device.Switch(proto, modem, IM.Address('11.22.33'), 'sw')
+        sdev = IM.mqtt.Switch(mqtt, dev)
+        sdev.load_config(config, qos=1)
+        link.client.clear()
+        sdev.publish_discovery()
+        assert len(link.client.pub) > 0
+        for msg in link.client.pub:
+            payload = json.loads(msg['payload'])
+            assert payload['device']['ids'] == '11.22.33'
+            assert payload['device']['via_device'] == '20.30.40'
 
 
 #===========================================================================
