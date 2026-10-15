@@ -4,6 +4,7 @@
 #
 #===========================================================================
 import functools
+from collections import deque
 from .. import handler
 from .. import log
 from .. import message as Msg
@@ -84,6 +85,10 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
         # 1 if the load is attached to the normal first button.  If the load
         # is detached, this will be group 9.
         self._load_group = 1
+
+        # Serialize full LED bitmap writes for this keypad.
+        self._led_queue = deque()
+        self._led_pending = False
 
         # Button 1 level (0-255)
         self._level = 0
@@ -490,49 +495,43 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
             on_done(False, "Invalid group", None)
             return
 
-        # New LED bit flags to send.  Either set the bit or clear it
-        # depending on the input flag.
+        if group == 1:
+            # A detached load button needs a virtual modem scene, which is
+            # not implemented by set_button_led().
+            return
+
+        # An extended LED command writes the entire bitmap.  Calculate the
+        # bits only when the preceding write has completed, not when the
+        # command is first requested.
+        self._led_queue.append((group, is_on, reason, on_done))
+        self._send_next_button_led()
+
+    #-----------------------------------------------------------------------
+    def _send_next_button_led(self):
+        """Send the next queued LED bitmap once the prior write has finished."""
+        if self._led_pending or not self._led_queue:
+            return
+
+        group, is_on, reason, on_done = self._led_queue.popleft()
         led_bits = util.bit_set(self._led_bits, group - 1, is_on)
 
-        # Group 1 LED is controlled w/ a separate command from the other LED
-        # bits (just another weird Insteon behavior).  The only way to toggle
-        # group 1 when the load is detached is to send a simulated scene
-        # command from the modem.
-        if group == 1:
-            # TODO: create virtual modem scene to control group 1 when load
-            # is detached.  Need to store that in the device db somehow.
+        data = bytes([0x01, 0x09, led_bits] + [0x00] * 11)
+        msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
+        callback = functools.partial(self.handle_button_led, group=group,
+                                     is_on=is_on, led_bits=led_bits,
+                                     reason=reason)
 
-            # There doesn't seem to be anyway to toggle just group 1
-            # LED command - the only way I could find to do it is to create a
-            # virtual scene on the modem and then trigger that.  This really
-            # only applies to detached load cases.
-            #modem_scene = 100
-            #self.broadcast_reason = reason
-            #LOG.info("KeypadLinc %s triggering modem scene %s", self.label,
-            #         modem_scene)
-            #self.modem.scene(is_on, modem_scene, on_done=on_done)
-            pass
+        def finished(success, message, result):
+            """Release the next bitmap write after an ACK or failure."""
+            try:
+                on_done(success, message, result)
+            finally:
+                self._led_pending = False
+                self._send_next_button_led()
 
-        else:
-            # Extended message data - see Insteon dev guide p156.  NOTE:
-            # guide is wrong - it says send group, 0x09, 0x01/0x00 to turn
-            # that group on/off but that doesn't work.  Must send group 0x01
-            # and the full LED bit mask to adjust the lights.
-            data = bytes([
-                0x01,   # D1 only group 0x01 works
-                0x09,   # D2 set LED state for groups
-                led_bits,  # D3 all 8 LED flags.
-                ] + [0x00] * 11)
-
-            msg = Msg.OutExtended.direct(self.addr, 0x2e, 0x00, data)
-
-            # Use the standard command handler which will notify us when the
-            # command is ACK'ed.
-            callback = functools.partial(self.handle_button_led, group=group,
-                                         is_on=is_on, led_bits=led_bits,
-                                         reason=reason)
-            msg_handler = handler.StandardCmd(msg, callback, on_done)
-            self.send(msg, msg_handler)
+        self._led_pending = True
+        msg_handler = handler.StandardCmd(msg, callback, finished)
+        self.send(msg, msg_handler)
 
     #-----------------------------------------------------------------------
     def set_led_follow_mask(self, on_done=None, **kwargs):
