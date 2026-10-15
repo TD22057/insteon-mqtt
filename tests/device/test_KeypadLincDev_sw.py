@@ -140,7 +140,61 @@ class Test_KPL():
             assert len(test_device.protocol.sent) == 1
             assert test_device.protocol.sent[0].msg.cmd1 == 0x2e
             assert test_device.protocol.sent[0].msg.data == group_bytes(params[2])
+            handler = test_device.protocol.sent[0].handler
+            handler.callback(None, on_done=handler.on_done)
             test_device.protocol.clear()
+
+    @pytest.mark.parametrize("is_on,initial_bits,expected_bits", [
+        (True, 0x00, [0x04, 0x0c]),
+        (False, 0x0c, [0x08, 0x00]),
+    ])
+    def test_concurrent_button_led_updates(self, test_device, is_on,
+                                           initial_bits, expected_bits):
+        """Queued button updates must preserve the previous bitmap write."""
+        test_device._led_bits = initial_bits
+        completions = []
+
+        def on_done(success, message, result):
+            completions.append(success)
+
+        test_device.set_button_led(3, is_on, on_done=on_done)
+        test_device.set_button_led(4, is_on, on_done=on_done)
+
+        # No second bitmap can be calculated before the first ACK.
+        assert len(test_device.protocol.sent) == 1
+        first = test_device.protocol.sent[0]
+        assert first.msg.data[2] == expected_bits[0]
+        first.handler.callback(None, on_done=first.handler.on_done)
+
+        assert len(test_device.protocol.sent) == 2
+        second = test_device.protocol.sent[1]
+        assert second.msg.data[2] == expected_bits[1]
+        second.handler.callback(None, on_done=second.handler.on_done)
+
+        assert test_device._led_bits == expected_bits[1]
+        assert completions == [True, True]
+
+    def test_button_led_queue_continues_after_failure(self, test_device):
+        """Failed writes must not deadlock later LED commands."""
+        completions = []
+
+        def on_done(success, message, result):
+            completions.append(success)
+
+        test_device.set_button_led(3, True, on_done=on_done)
+        test_device.set_button_led(4, True, on_done=on_done)
+
+        first = test_device.protocol.sent[0]
+        first.handler.on_done(False, "Timed out", None)
+
+        assert len(test_device.protocol.sent) == 2
+        second = test_device.protocol.sent[1]
+        # No successful ACK updated button 3.
+        assert second.msg.data[2] == 0x08
+        second.handler.callback(None, on_done=second.handler.on_done)
+
+        assert completions == [False, True]
+        assert test_device._led_bits == 0x08
 
     def test_set_backlight(self, test_device):
         # set_backlight(self, level, on_done=None)
