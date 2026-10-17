@@ -145,6 +145,24 @@ class Test_KPL():
             handler.callback(None, on_done=handler.on_done)
             test_device.protocol.clear()
 
+    @pytest.mark.parametrize("is_on", [True, False])
+    def test_detached_group_one_led_callback(self, test_device, is_on):
+        test_device._load_group = 9
+        initial_bits = test_device._led_bits
+        on_done = mock.Mock()
+
+        test_device.set_button_led(1, is_on, on_done=on_done)
+
+        on_done.assert_called_once_with(
+            False, "Group 1 LED control is not supported", None)
+        assert test_device.protocol.sent == []
+        assert test_device._led_bits == initial_bits
+        assert not test_device._led_pending
+        assert not test_device._led_queue
+
+        # An omitted callback must also be safe.
+        test_device.set_button_led(1, is_on)
+
     @pytest.mark.parametrize("is_on,initial_bits,expected_bits", [
         (True, 0x00, [0x04, 0x0c]),
         (False, 0x0c, [0x08, 0x00]),

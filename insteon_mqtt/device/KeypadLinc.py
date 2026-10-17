@@ -498,6 +498,7 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
         if group == 1:
             # A detached load button needs a virtual modem scene, which is
             # not implemented by set_button_led().
+            on_done(False, "Group 1 LED control is not supported", None)
             return
 
         # An extended LED command writes the entire bitmap.  Calculate the
@@ -508,7 +509,7 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
 
     #-----------------------------------------------------------------------
     def _send_next_button_led(self):
-        """Send the next queued LED bitmap once the prior write has finished."""
+        """Send the next LED bitmap once the prior write has finished."""
         if self._led_pending or not self._led_queue:
             return
 
