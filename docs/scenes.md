@@ -50,9 +50,17 @@ configuration file, either for backup or to allow for modifications.
 ### Defining a Scenes.yaml File
 The scenes.yaml file location has to be defined in the config.yaml file. An
 example of how the definition should be written can be found in the
-[config.yaml](../config.yaml) file.  The scenes.yaml file needs to be defined under
+[config-example.yaml](../config-example.yaml) file.  The scenes.yaml file needs to be defined under
 the insteon key using the scenes key. If a scenes.yaml file is not defined, the
 results of 'import-scenes' cannot be saved to disk.
+
+> - __Standalone installs__: use an absolute path, or
+>   `scenes: !rel_path scenes.yaml` to place the file in the same directory
+>   as your `config.yaml`.
+> - __HomeAssistant Addon__: use `scenes: /config/scenes.yaml`, which will
+>   place the file in `/addon_configs/83fc19e1_insteon-mqtt/` within the
+>   VSCode or SSH Addon.  See
+>   [HA Addon Instructions](HA_Addon_Instructions.md#where-are-my-files).
 
 ### The Format of the Scenes.yaml File
 The scenes.yaml file has a simple structure that allows the user to quickly
