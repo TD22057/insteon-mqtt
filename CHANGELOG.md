@@ -1,5 +1,11 @@
 # Revision Change History
 
+## [1.4.0] - Drop Support of armhf and i386
+
+### Breaking Change ###
+- HomeAssistant no longer supports the armhf and i386 architectures and has not for some time.
+
+### Other Fixes ###
 - Fix Home Assistant discovery for modem scenes that broke in Home Assistant 2026.09 #559 (thanks @quest4ikigai)
 
 ## [1.3.2] - Add Supported_Color_Modes; Add 6 Button Remote
