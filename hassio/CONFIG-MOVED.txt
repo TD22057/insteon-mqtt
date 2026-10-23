@@ -7,10 +7,10 @@ If InsteonMQTT is operating correctly, you may delete these files.
 
 Config files can now be found at:
 
-WITHIN Visual Code Addon or SSH Addon:
+WITHIN Visual Code App or SSH App:
 
     /addon_configs/83fc19e1_insteon-mqtt
 
-WITHIN InsteonMQTT Addon:
+WITHIN InsteonMQTT App:
 
     /config/

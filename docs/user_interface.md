@@ -14,7 +14,7 @@ Run `insteon-mqtt -h` to see all the commands that can be sent and for help with
 Commands entered in the command line will produce nice human readable responses.
 
 ## WebGUI
-The WebGUI is __only available to those who installed Insteon-MQTT as a HomeAssistant Addon__.  The WebGUI, is accessible from the Add-on page via the __Open Web UI__ button.  Once you click this button you will get a brief notice about how to use the WebGUI.
+The WebGUI is __only available to those who installed Insteon-MQTT as a HomeAssistant App__.  The WebGUI, is accessible from the app page via the __Open Web UI__ button.  Once you click this button you will get a brief notice about how to use the WebGUI.
 
 All of the standard Command Line functions that you see documented for Insteon-MQTT can be used in the WebGUI.
 

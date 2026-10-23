@@ -9,12 +9,12 @@ The following is the bare minimum of changes to the `config.yaml` file that are 
 > - __Standalone installs__ (pip, virtualenv, or [auto start](auto_start.md)):
 >   `config.yaml` is wherever you created it, as described in the
 >   [quick start](quick_start.md) instructions.
-> - __HomeAssistant Addon__: `config.yaml` can be found at
->   `/addon_configs/83fc19e1_insteon-mqtt/config.yaml` within the VSCode or SSH Addon.
->   Inside the Insteon-MQTT addon itself, this same directory is mounted at `/config/`,
+> - __HomeAssistant App__: `config.yaml` can be found at
+>   `/addon_configs/83fc19e1_insteon-mqtt/config.yaml` within the VSCode or SSH Apps.
+>   Inside the Insteon-MQTT App itself, this same directory is mounted at `/config/`,
 >   so paths in `config.yaml` should use `/config/`. Note that this is __not__ the
 >   Home Assistant `/config` directory. See
->   [HA Addon Instructions](HA_Addon_Instructions.md#where-are-my-files) for details.
+>   [HA App Instructions](HA_Addon_Instructions.md#where-are-my-files) for details.
 
 1. __Configure Modem__ Set the Insteon port as `port` under the `insteon` section to be the USB port or address of the PLM modem on your system.  If using an Insteon Hub, see [Hub Instructions](hub.md).
 
