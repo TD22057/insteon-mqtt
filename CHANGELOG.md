@@ -11,6 +11,7 @@
 - Fix new Home Assistant addon installs not setting the default `storage` and log `file` locations in the generated `config.yaml`
 - Clarify in the documentation where config files are located for Home Assistant addon and standalone installs
 - Fix log timestamps in the Home Assistant addon being in UTC rather than the local timezone
+- Improve security of the Home Assistant addon Web CLI
 
 ## [1.3.2] - Add Supported_Color_Modes; Add 6 Button Remote
 
