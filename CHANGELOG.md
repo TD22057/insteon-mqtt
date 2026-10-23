@@ -7,6 +7,7 @@
 
 ### Other Fixes ###
 - Fix Home Assistant discovery for modem scenes that broke in Home Assistant 2026.09 #559 (thanks @quest4ikigai)
+- Fix a race condition in setting KeypadLinc Button LEDs (thanks @obenreph)
 
 ## [1.3.2] - Add Supported_Color_Modes; Add 6 Button Remote
 
