@@ -1,5 +1,7 @@
 # Revision Change History
 
+- Fix Home Assistant discovery for modem scenes that broke in Home Assistant 2026.09 #559 (thanks @quest4ikigai)
+
 ## [1.3.2] - Add Supported_Color_Modes; Add 6 Button Remote
 
 - Starting in HomeAssistant 2026.3 `supported_color_modes` will be a required attribute for all lights.
