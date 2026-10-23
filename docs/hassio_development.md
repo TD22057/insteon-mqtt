@@ -1,8 +1,8 @@
 ## Testing Unreleased Versions in Home Assistant Supervisor
 The Home Assistant Supervisor system makes most things pretty simple.  Testing development releases or your own code fixes is mildly more difficult.  The following instructions should help.
 
-1. Uninstall the Insteon-MQTT addon.  Your config files for the repository installed addon are saved in `/config/` (which can be found at '/addon_configs/83fc19e1_insteon-mqtt/' within VSCode or SSH Addon).  If you install the addon locally, as described below, the configs for the locally installed addon will be at:
-`/addons_configs/local_insteon-mqtt/` within VSCode or SSH Addon).
+1. Uninstall the Insteon-MQTT addon.  Your config files for the repository installed addon are saved in `/addon_configs/83fc19e1_insteon-mqtt/` within the VSCode or SSH Addon.  If you install the addon locally, as described below, the configs for the locally installed addon will be at
+`/addon_configs/local_insteon-mqtt/` within the VSCode or SSH Addon.
 2. SSH into Home Assistant using the SSH addon
 3. cd to `/addons`
 4. run `git clone https://github.com/TD22057/insteon-mqtt.git`  You can replace the repository with your own if you like.
@@ -16,6 +16,6 @@ The Home Assistant Supervisor system makes most things pretty simple.  Testing d
 9. Go back into your Home Assistant instance and go to `Supervisor->Addon Store`
 10. In the menu on the top right click `Reload`
 11. You should now see the Insteon-MQTT addon listed as a `Local Add-on` install that, it may take a few minutes to compile locally.
-12. You will have to copy your InsteonMQTT `config.yaml` file to the local config directory (which can be found at '/addons_configs/local_insteon-mqtt/' within VSCode or SSH Addon)
+12. You will have to copy your InsteonMQTT `config.yaml` file to the local config directory (which can be found at `/addon_configs/local_insteon-mqtt/` within the VSCode or SSH Addon)
 13. In the future to update your local version, you have to edit the `config.json` to trigger a new release, then run the `Reload` command in the store to see the new version.
 
