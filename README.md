@@ -11,6 +11,7 @@ Version: 1.3.2  ([History](CHANGELOG.md))
 
 ### Recent Breaking Changes
 
+- 1.4.0 - Dropped support for armhf and i386
 - 1.3.0 - The config files moved locations, see [notes](CHANGELOG.md#130).
 
 # Quickstart
