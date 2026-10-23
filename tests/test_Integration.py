@@ -80,7 +80,7 @@ class Patch_Stack():
         # written
         self.all_written = True
 
-        @patch('insteon_mqtt.network.Mqtt.subscribe', self._mqtt_subscribe)
+        @patch('insteon_mqtt.network.Mqtt.Mqtt.subscribe', self._mqtt_subscribe)
         @patch('insteon_mqtt.config.apply', self._config_apply)
         @patch('sys.argv', ["", "config-example.yaml", "start"])
         @patch.object(IM.network.Manager, 'active', return_value=False)
@@ -122,7 +122,7 @@ class Patch_Stack():
           payload: (str) the payload sent to the topic
         """
         msg_obj = self.mqtt_msg(topic, payload)
-        with patch('insteon_mqtt.network.Serial.write', self._modem_out):
+        with patch('insteon_mqtt.network.Serial.Serial.write', self._modem_out):
             self._subscribed_topics[topic](None, None, msg_obj)
 
     def _modem_out(self, msg_bytes, next_write_time):
@@ -144,7 +144,7 @@ class Patch_Stack():
                 receive
         """
         data = bytes.fromhex(data)
-        with patch('insteon_mqtt.network.Mqtt.publish', self._mqtt_publish):
+        with patch('insteon_mqtt.network.Mqtt.Mqtt.publish', self._mqtt_publish):
             self.plm_link.signal_read.emit(self.plm_link, data)
 
     def _mqtt_publish(self, topic, payload, qos=0, retain=False):
