@@ -13,6 +13,7 @@
 - Clarify in the documentation where config files are located for Home Assistant addon and standalone installs
 - Fix log timestamps in the Home Assistant addon being in UTC rather than the local timezone
 - Improve security of the Home Assistant addon Web CLI
+- Update the Home Assistant addon Docker image to use a pinned `base-python` base image. Supervisor 2026.04.0 and later no longer passes `BUILD_FROM`, so the Dockerfile now provides a default
 
 ## [1.3.2] - Add Supported_Color_Modes; Add 6 Button Remote
 
