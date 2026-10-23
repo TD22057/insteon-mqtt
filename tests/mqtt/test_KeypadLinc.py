@@ -268,6 +268,8 @@ class Test_KeypadLinc:
         assert len(proto.sent) == 1
 
         assert proto.sent[0].msg.cmd1 == 0x2e
+        handler = proto.sent[0].handler
+        handler.callback(None, on_done=handler.on_done)
         proto.clear()
 
         payload = b'{ "on" : "OFF", "mode" : "NORMAL" }'
@@ -275,6 +277,8 @@ class Test_KeypadLinc:
         assert len(proto.sent) == 1
 
         assert proto.sent[0].msg.cmd1 == 0x2e
+        handler = proto.sent[0].handler
+        handler.callback(None, on_done=handler.on_done)
         proto.clear()
 
         payload = b'{ "on" : "ON", "mode" : "FAST" }'
