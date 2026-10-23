@@ -1,5 +1,20 @@
 # Revision Change History
 
+## [1.4.0] - Fix Modem Scenes
+
+### Breaking Change ###
+- HomeAssistant no longer supports the armhf and i386 architectures and has not for some time.
+
+### Other Fixes ###
+- Fix Home Assistant discovery for modem scenes that broke in Home Assistant 2026.09 #559 (thanks @quest4ikigai)
+- Fix a race condition in setting KeypadLinc Button LEDs (thanks @obenreph)
+- Update documentation to refer to Home Assistant "add-ons" as "apps", following the rename in Home Assistant 2026.2
+- Fix new Home Assistant addon installs not setting the default `storage` and log `file` locations in the generated `config.yaml`
+- Clarify in the documentation where config files are located for Home Assistant addon and standalone installs
+- Fix log timestamps in the Home Assistant addon being in UTC rather than the local timezone
+- Improve security of the Home Assistant addon Web CLI
+- Update the Home Assistant addon Docker image to use a pinned `base-python` base image. Supervisor 2026.04.0 and later no longer passes `BUILD_FROM`, so the Dockerfile now provides a default
+
 ## [1.3.2] - Add Supported_Color_Modes; Add 6 Button Remote
 
 - Starting in HomeAssistant 2026.3 `supported_color_modes` will be a required attribute for all lights.
@@ -22,7 +37,7 @@ insteon:
   storage: <<check this value>>
 ```
 
-Within the addon the config files are located at `/config` which was previously `/config/insteon-mqtt`.  Within the VSCode addon, addon config directories are mounted under `/addons_configs` and the InsteonMQTT config file can be found at `/83fc19e1_insteon-mqtt/config.yaml`
+Within the addon the config files are located at `/config` which was previously `/config/insteon-mqtt`.  Within the VSCode addon, addon config directories are mounted under `/addon_configs` and the InsteonMQTT config file can be found at `/83fc19e1_insteon-mqtt/config.yaml`
 
 The benefit of this change, is that your config files will now be backed up with the addon.
 

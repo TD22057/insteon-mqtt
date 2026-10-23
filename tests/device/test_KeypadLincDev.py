@@ -156,10 +156,13 @@ class Test_KPL():
                 ] + [0x00] * 11)
             return data
         for params in ([2, True, 0x02], [5, True, 0x10], [2, False, 0x00]):
+            test_device._led_bits = 0x00
             test_device.set_button_led(params[0], params[1])
             assert len(test_device.protocol.sent) == 1
             assert test_device.protocol.sent[0].msg.cmd1 == 0x2e
             assert test_device.protocol.sent[0].msg.data == group_bytes(params[2])
+            handler = test_device.protocol.sent[0].handler
+            handler.callback(None, on_done=handler.on_done)
             test_device.protocol.clear()
 
     def test_set_backlight(self, test_device):

@@ -8,7 +8,7 @@ test_requirements = open("requirements-test.txt").readlines()
 
 setuptools.setup(
     name = 'insteon-mqtt',
-    version = '1.3.2',
+    version = '1.4.0',
     description = "Insteon <-> MQTT bridge server",
     long_description = readme,
     author = "Ted Drain",

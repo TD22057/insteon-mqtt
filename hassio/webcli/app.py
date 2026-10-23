@@ -53,11 +53,25 @@ class Worker():
         self.run = False
 
 
+# Only the Home Assistant ingress proxy is allowed, it handles authentication
+INGRESS_ADDR = "172.30.32.2"
+
 @app.before_request
 def before_request_func():
-    if request.remote_addr != "172.30.32.2":
+    if request.remote_addr != INGRESS_ADDR:
         return 'Unauthorized'
     return
+
+@socketio.on('connect')
+def handle_connect():
+    '''
+    Flask-SocketIO does not call before_request for socket events, so the
+    ingress check must also be done here.  Returning False rejects the
+    connection.
+    '''
+    if request.remote_addr != INGRESS_ADDR:
+        return False
+    return True
 
 @app.route('/')
 def index():

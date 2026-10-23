@@ -5,12 +5,13 @@ This is a Python 3 package that communicates with an Insteon PLM modem
 commands to Insteon commands.  It allows an Insteon network to be
 integrated into and controlled from anything that can use MQTT.
 
-This package works well with HomeAssistant and can be easily [installed as an addon](docs/HA_Addon_Instructions.md) using the HomeAssistant Supervisor.
+This package works well with HomeAssistant and can be easily [installed as an app](docs/HA_Addon_Instructions.md) using the HomeAssistant Supervisor.
 
-Version: 1.3.2  ([History](CHANGELOG.md))
+Version: 1.4.0  ([History](CHANGELOG.md))
 
 ### Recent Breaking Changes
 
+- 1.4.0 - Dropped support for armhf and i386
 - 1.3.0 - The config files moved locations, see [notes](CHANGELOG.md#130).
 
 # Quickstart
@@ -19,13 +20,13 @@ Blah, blah, blah, too much reading, how do I use it?  [Read the quick
 start guide](docs/quick_start.md)
 
 Using Home Assistant Supervisor?
-[Install Insteon-MQTT as an Add-on](docs/HA_Addon_Instructions.md)
+[Install Insteon-MQTT as an App](docs/HA_Addon_Instructions.md)
 
 # Documentation
 
 - [Installation Guide](docs/quick_start.md) - Install from the command line
 - [Startup Script](docs/auto_start.md) - Running InsteonMQTT on startup.
-- [Install as a HomeAssistant Addon](docs/HA_Addon_Instructions.md) - Install in HomeAssistant
+- [Install as a HomeAssistant App](docs/HA_Addon_Instructions.md) - Install in HomeAssistant
   - [Discovery for HomeAssistant](docs/discovery.md) - Automatic entity discovery
   - [Customizing HomeAssistant Entities](docs/discovery_customization_ui.md) - Customizing entities in HomeAssistant
   - [Discovery Overrides](docs/discovery_customization_config.md) - Alter discovery entities using templates and overrides

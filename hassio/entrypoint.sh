@@ -1,9 +1,9 @@
-#!/bin/sh
+#!/usr/bin/with-contenv sh
 
 /bin/cp /opt/insteon-mqtt/config-example.yaml /config/config.yaml.default
 
-# Migrate add-on data from the Home Assistant config folder,
-# to the add-on configuration folder.
+# Migrate app data from the Home Assistant config folder,
+# to the app configuration folder.
 # We add a file to the old directory so that hopefully a user
 # doesn't get confused in the future.
 
@@ -25,12 +25,12 @@ if [ ! -f /config/config.yaml ]; then
     echo "Welcome to InsteonMQTT!"
     echo "Creating your initial config.yaml file."
     /bin/cp /config/config.yaml.default /config/config.yaml \
-      || echo "Unable to create initial InsteonMQTT config.yaml file"; exit 1;
-    sed -i "s|storage: 'data'|storage: /config/data|" /config/config.yaml
+      || { echo "Unable to create initial InsteonMQTT config.yaml file"; exit 1; }
+    sed -i "s|#storage: 'data'|storage: /config/data|" /config/config.yaml
     sed -i "s|#file: /var/log/insteon_mqtt.log|file: /config/insteon_mqtt.log|" /config/config.yaml
     echo "Please define the required settings in the file /config/config.yaml"
     echo "(which can be found at '/addon_configs/83fc19e1_insteon-mqtt/config.yaml'"
-    echo "within VSCode or SSH Addon)."
+    echo "within the VSCode or SSH app)."
     echo "Then you can start InsteonMQTT."
 else
     python3 /opt/insteon-mqtt/hassio/start.py /config/config.yaml start

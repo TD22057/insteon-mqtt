@@ -1,6 +1,6 @@
-# Home Assistant Add-on: Insteon MQTT
+# Home Assistant App: Insteon MQTT
 
-- [HomeAssistant Addon](docs/HA_Addon_Instructions.md) - Install in HomeAssistant
+- [HomeAssistant App](docs/HA_Addon_Instructions.md) - Install in HomeAssistant
 - [Configuring](docs/configuration.md) - The base configuration requirements
 - [Initializing](docs/initializing.md) - Setting up your Insteon Devices
 - [User Interfaces](docs/user_interface.md) - Three available user interfaces.

@@ -35,7 +35,17 @@ do in steps, so be sure you have enough time set aside.
 1. Move your InsteonMQTT config.yaml file to config-backup.yaml.
 2. Make a backup copy of all HomeAssistant configurations that define insteon
 entities.
-3. Rename `config-yaml.default` to `config.yaml`.
+3. Create a new `config.yaml` from the example file:
+   - __Standalone installs__: copy `config-example.yaml` from the
+   Insteon-MQTT source directory to `config.yaml`.  If you installed using
+   pip and do not have the source, you can download
+   [config-example.yaml](https://github.com/TD22057/insteon-mqtt/blob/master/config-example.yaml)
+   from GitHub.
+   - __HomeAssistant Addon__: copy `config.yaml.default` to `config.yaml`.
+   Both files are in `/addon_configs/83fc19e1_insteon-mqtt/` within the
+   VSCode or SSH Addon.  Alternatively, delete `config.yaml` and restart
+   the addon, which will create a new `config.yaml` with the correct
+   addon paths for `storage` and the log `file` already set.
 4. Follow the insstructions [Configuration Instructions](configuration.md) copying the details of your modem, devices, and mqtt broker from your backup file.
 5.Remove or comment out the insteon entities in your HomeAssistant
 configuration.
