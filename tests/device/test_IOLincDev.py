@@ -104,7 +104,7 @@ class Test_IOLinc_Set_Flags():
         class BadModes(enum.IntEnum):
             BAD = 18
         test_iolinc.mode = BadModes.BAD
-        assert "Bad value BadModes.BAD, for mode on IOLinc" in caplog.text
+        assert "Bad value %s, for mode on IOLinc" % BadModes.BAD in caplog.text
 
     @pytest.mark.parametrize("flag,expected", [
         ({"momentary_secs": .1},   [0x2e, 0x00, 0x01, 0x01]),
