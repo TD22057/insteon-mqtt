@@ -56,6 +56,12 @@ class Modem(topic.SceneTopic, topic.DiscoveryTopic):
         if not self.mqtt.discovery_enabled:
             return
 
+        # The shared device_info_template sets via_device to the modem, which
+        # is correct for other devices.  But for the modem it would point at
+        # itself, which HomeAssistant rejects ("A device can not be its own
+        # via device").  So drop it from the modem's copy of the template.
+        self.device_info_template.pop('via_device', None)
+
         class_config = config.get(self.default_discovery_cls, None)
         if class_config is None:
             LOG.error("%s - Unable to find discovery class %s",
