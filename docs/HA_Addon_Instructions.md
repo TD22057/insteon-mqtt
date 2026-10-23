@@ -63,7 +63,8 @@ log `file`) are read by the Insteon-MQTT addon, so they should use the
 `/config/` form, e.g. `/config/scenes.yaml`.
 
 > __Note:__ The `/config/` directory inside the Insteon-MQTT addon is __not__
-> the Home Assistant `/config` directory (where `configuration.yaml` lives).
+> the Home Assistant `/config` directory (the one containing Home Assistant's
+> own `configuration.yaml`).
 
 ### Older Installations
 
