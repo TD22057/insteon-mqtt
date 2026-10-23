@@ -2,7 +2,7 @@
     "name": "Insteon MQTT",
     "description": "Creates an MQTT interface to the Insteon protocol.",
     "slug": "insteon-mqtt",
-    "version": "1.3.2",
+    "version": "1.4.0",
     "startup": "services",
     "arch": ["amd64","aarch64"],
     "boot": "auto",
