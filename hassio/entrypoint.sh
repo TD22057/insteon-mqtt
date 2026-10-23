@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/with-contenv sh
 
 /bin/cp /opt/insteon-mqtt/config-example.yaml /config/config.yaml.default
 
