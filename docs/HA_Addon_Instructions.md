@@ -14,8 +14,8 @@ These instructions assume that you:
   installation should also work as well.
 
 - Have a working MQTT broker up and running.
-  [Mosquitto](https://mosquitto.org/) is good choice, and there is [an add-on
-  for Home Assistant](https://www.home-assistant.io/addons/mosquitto/) that
+  [Mosquitto](https://mosquitto.org/) is good choice, and there is [an app
+  for Home Assistant](https://github.com/home-assistant/apps/blob/master/mosquitto/README.md) that
   makes installation simple.
 
 - Have an Insteon PLM modem (serial or USB) or an Insteon HUB on a fixed IP
@@ -23,24 +23,24 @@ These instructions assume that you:
 
 ## Installation
 
-1. Navigate in Home Assistant frontend to __Supervisor -> Add-on Store__
+1. Navigate in Home Assistant frontend to __Settings -> Apps -> Install app__
 2. Select the menu in the top right and click __Repositories__
 3. Paste the following URL into the __Add Repository__ field:
    `https://github.com/TD22057/insteon-mqtt`
 4. Click __ADD__
 5. Scroll to find the __Insteon MQTT Repository__
-6. Click on the __Insteon MQTT__ Add on
+6. Click on the __Insteon MQTT__ app
 7. Click __Install__
-8. Click __Start__ to start the Add-on, this will create your initial config
+8. Click __Start__ to start the app, this will create your initial config
    files.
-9. Edit `/config/config.yaml` (which can be found at '/addon_configs/83fc19e1_insteon-mqtt/config.yaml' within VSCode or SSH Addon) as appropriate. See [configuration](configuration.md) for detailed instructions.
+9. Edit `/config/config.yaml` (which can be found at '/addon_configs/83fc19e1_insteon-mqtt/config.yaml' within the VSCode or SSH app) as appropriate. See [configuration](configuration.md) for detailed instructions.
 10. Enable the [Discovery Platform](discovery.md)
 
 > Alternatively, if you choose to define your entities in Home Assistant
 > manually instead of using the Discovery Platform, see [Home Assistant yaml
   config](HA_yaml_config.md)
 
-11. Restart the insteon-mqtt addon to pick up the changes to the `config.yaml` file.
+11. Restart the insteon-mqtt app to pick up the changes to the `config.yaml` file.
 12. If you navigate in Home Assistant to __Configuration -> Integrations -> MQTT__ you should see your devices and entities.
 13. Initialize your devices as discussed in [initializing](initializing.md).
 14. See the [device documentation](mqtt.md) for additional commands.
@@ -49,11 +49,11 @@ These instructions assume that you:
 
 The default settings in the config.yaml file will save all user data to the
 `/config/` directory.  This directory is backed up when you make a snapshot 
-of the Insteon-MQTT add-on.  This directory may also contain a log file if 
+of the Insteon-MQTT app.  This directory may also contain a log file if 
 you have enabled logging, be careful, this can get quite large.
 
 You can also access this directory '/addon_configs/83fc19e1_insteon-mqtt/'
-within VSCode or SSH Addon.
+within the VSCode or SSH app.
 
 ## Updating
 

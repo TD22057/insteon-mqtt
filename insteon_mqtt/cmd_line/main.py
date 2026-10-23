@@ -23,7 +23,7 @@ def parse_args(args):
                        network to be integrated into and controlled from
                        anything that can use MQTT. This package works well
                        with HomeAssistant and can be easily installed as an
-                       addon using the HomeAssistant Supervisor."""
+                       app using the HomeAssistant Supervisor."""
     p = argparse_ext.ArgumentParser(prog="insteon-mqtt",
                                     description=prog_description)
     p.add_argument('-v', '--version', action='version', version='%(prog)s ' +

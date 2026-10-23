@@ -8,6 +8,7 @@
 ### Other Fixes ###
 - Fix Home Assistant discovery for modem scenes that broke in Home Assistant 2026.09 #559 (thanks @quest4ikigai)
 - Fix a race condition in setting KeypadLinc Button LEDs (thanks @obenreph)
+- Update documentation to refer to Home Assistant "add-ons" as "apps", following the rename in Home Assistant 2026.2
 
 ## [1.3.2] - Add Supported_Color_Modes; Add 6 Button Remote
 
@@ -31,7 +32,7 @@ insteon:
   storage: <<check this value>>
 ```
 
-Within the addon the config files are located at `/config` which was previously `/config/insteon-mqtt`.  Within the VSCode addon, addon config directories are mounted under `/addons_configs` and the InsteonMQTT config file can be found at `/83fc19e1_insteon-mqtt/config.yaml`
+Within the addon the config files are located at `/config` which was previously `/config/insteon-mqtt`.  Within the VSCode addon, addon config directories are mounted under `/addon_configs` and the InsteonMQTT config file can be found at `/83fc19e1_insteon-mqtt/config.yaml`
 
 The benefit of this change, is that your config files will now be backed up with the addon.
 
