@@ -1,6 +1,6 @@
 # Revision Change History
 
-## [1.4.0] - Drop Support of armhf and i386
+## [1.4.0] - Fix Modem Scenes
 
 ### Breaking Change ###
 - HomeAssistant no longer supports the armhf and i386 architectures and has not for some time.
