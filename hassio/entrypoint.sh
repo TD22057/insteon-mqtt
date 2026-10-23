@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/with-contenv sh
 
 /bin/cp /opt/insteon-mqtt/config-example.yaml /config/config.yaml.default
 
@@ -25,8 +25,8 @@ if [ ! -f /config/config.yaml ]; then
     echo "Welcome to InsteonMQTT!"
     echo "Creating your initial config.yaml file."
     /bin/cp /config/config.yaml.default /config/config.yaml \
-      || echo "Unable to create initial InsteonMQTT config.yaml file"; exit 1;
-    sed -i "s|storage: 'data'|storage: /config/data|" /config/config.yaml
+      || { echo "Unable to create initial InsteonMQTT config.yaml file"; exit 1; }
+    sed -i "s|#storage: 'data'|storage: /config/data|" /config/config.yaml
     sed -i "s|#file: /var/log/insteon_mqtt.log|file: /config/insteon_mqtt.log|" /config/config.yaml
     echo "Please define the required settings in the file /config/config.yaml"
     echo "(which can be found at '/addon_configs/83fc19e1_insteon-mqtt/config.yaml'"

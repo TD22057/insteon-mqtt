@@ -33,7 +33,9 @@ These instructions assume that you:
 7. Click __Install__
 8. Click __Start__ to start the app, this will create your initial config
    files.
-9. Edit `/config/config.yaml` (which can be found at '/addon_configs/83fc19e1_insteon-mqtt/config.yaml' within the VSCode or SSH app) as appropriate. See [configuration](configuration.md) for detailed instructions.
+9. Edit `/addon_configs/83fc19e1_insteon-mqtt/config.yaml` using the VSCode or
+   SSH Apps as appropriate (see [Where Are My Files](#where-are-my-files)).
+   See [configuration](configuration.md) for detailed instructions.
 10. Enable the [Discovery Platform](discovery.md)
 
 > Alternatively, if you choose to define your entities in Home Assistant
@@ -44,6 +46,34 @@ These instructions assume that you:
 12. If you navigate in Home Assistant to __Configuration -> Integrations -> MQTT__ you should see your devices and entities.
 13. Initialize your devices as discussed in [initializing](initializing.md).
 14. See the [device documentation](mqtt.md) for additional commands.
+
+## Where Are My Files
+
+The Insteon-MQTT config files, device database, and log file are stored in
+the addon's own configuration directory.  The same directory has a different
+path depending on where you are looking from:
+
+| Where you are looking from      | Path                                     |
+|---------------------------------|------------------------------------------|
+| VSCode Addon or SSH Addon       | `/addon_configs/83fc19e1_insteon-mqtt/`  |
+| Inside the Insteon-MQTT addon   | `/config/`                               |
+
+Paths written in your `config.yaml` file (such as `storage`, `scenes`, or the
+log `file`) are read by the Insteon-MQTT addon, so they should use the
+`/config/` form, e.g. `/config/scenes.yaml`.
+
+> __Note:__ The `/config/` directory inside the Insteon-MQTT addon is __not__
+> the Home Assistant `/config` directory (the one containing Home Assistant's
+> own `configuration.yaml`).
+
+### Older Installations
+
+Prior versions of the addon stored files in the Home Assistant config
+directory at `/config/insteon-mqtt/` (`/homeassistant/insteon-mqtt/` within
+the VSCode or SSH Addon).  On upgrade, these files are automatically moved to
+the new location and a `CONFIG-MOVED.txt` file is left behind in the old
+directory.  Once Insteon-MQTT is running correctly, the old directory can be
+deleted.
 
 ## Backing up your Data
 

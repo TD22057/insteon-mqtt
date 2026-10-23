@@ -9,6 +9,10 @@
 - Fix Home Assistant discovery for modem scenes that broke in Home Assistant 2026.09 #559 (thanks @quest4ikigai)
 - Fix a race condition in setting KeypadLinc Button LEDs (thanks @obenreph)
 - Update documentation to refer to Home Assistant "add-ons" as "apps", following the rename in Home Assistant 2026.2
+- Fix new Home Assistant addon installs not setting the default `storage` and log `file` locations in the generated `config.yaml`
+- Clarify in the documentation where config files are located for Home Assistant addon and standalone installs
+- Fix log timestamps in the Home Assistant addon being in UTC rather than the local timezone
+- Improve security of the Home Assistant addon Web CLI
 
 ## [1.3.2] - Add Supported_Color_Modes; Add 6 Button Remote
 

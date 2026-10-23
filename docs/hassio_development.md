@@ -1,9 +1,10 @@
 ## Testing Unreleased Versions in Home Assistant Supervisor
 The Home Assistant Supervisor system makes most things pretty simple.  Testing development releases or your own code fixes is mildly more difficult.  The following instructions should help.
 
-1. Uninstall the Insteon-MQTT app.  Your config files for the repository installed app are saved in `/config/` (which can be found at '/addon_configs/83fc19e1_insteon-mqtt/' within the VSCode or SSH app).  If you install the app locally, as described below, the configs for the locally installed app will be at:
-`/addon_configs/local_insteon-mqtt/` within the VSCode or SSH app).
-2. SSH into Home Assistant using the SSH app
+
+1. Uninstall the Insteon-MQTT App.  Your config files for the repository installed app are saved in `/addon_configs/83fc19e1_insteon-mqtt/` within the VSCode or SSH Apps.  If you install the addon locally, as described below, the configs for the locally installed addon will be at
+`/addon_configs/local_insteon-mqtt/` within the VSCode or SSH Apps.
+2. SSH into Home Assistant using the SSH App
 3. cd to `/addons`
 4. run `git clone https://github.com/TD22057/insteon-mqtt.git`  You can replace the repository with your own if you like.
 5. cd `insteon-mqtt`
