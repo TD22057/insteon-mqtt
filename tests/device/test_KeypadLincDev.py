@@ -65,6 +65,51 @@ class Test_KPL():
             assert args_list[2][0][0].cmd2 == 0x00
             assert isinstance(args_list[2][0][0], Msg.OutExtended)
 
+    def test_refresh_led_keeps_dimmed_load_level(self, test_device):
+        # A dimmed load is still "on", so its LED bit is set.  The LED
+        # refresh must report the known level, not full brightness.
+        test_device._load_group = 1
+        test_device._led_bits = 0x00
+        test_device._level = 52
+        test_device._is_on = True
+
+        addr = IM.Address(0x01, 0x02, 0x03)
+        group = IM.Address(0x00, 0x00, 0x01)
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
+        msg = Msg.InpStandard(addr, group, flags, 0x00, 0x01)
+
+        with mock.patch.object(IM.Signal, 'emit') as mocked:
+            test_device.handle_refresh_led(msg)
+
+        mocked.assert_called_once()
+        assert mocked.call_args.kwargs['level'] == 52
+        assert mocked.call_args.kwargs['button'] == 1
+        assert test_device._led_bits == 0x01
+
+    def test_refresh_led_after_level_refresh(self, test_device):
+        # The refresh sequence queries the load level first and then the LED
+        # bits.  The level reply has no is_on value, so it must not clear the
+        # cached LED bit and make the LED refresh report full brightness.
+        test_device._load_group = 1
+        test_device._led_bits = 0x01
+        test_device._level = 52
+        test_device._is_on = True
+
+        addr = IM.Address(0x01, 0x02, 0x03)
+        group = IM.Address(0x00, 0x00, 0x01)
+        flags = Msg.Flags(Msg.Flags.Type.DIRECT_ACK, False)
+        msg = Msg.InpStandard(addr, group, flags, 0x00, 0x01)
+
+        with mock.patch.object(IM.Signal, 'emit') as mocked:
+            # Mimic DimmerBase.handle_refresh(): level only, no is_on.
+            test_device._set_state(level=52, group=1,
+                                   reason=IM.on_off.REASON_REFRESH)
+            test_device.handle_refresh_led(msg)
+
+        mocked.assert_called_once()
+        assert mocked.call_args.kwargs['level'] == 52
+        assert test_device._led_bits == 0x01
+
     def test_link_data(self, test_device):
         # is_controller, group, data=None
         data = test_device.link_data(True, 0x01, data=None)

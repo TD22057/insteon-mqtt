@@ -846,8 +846,13 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
 
             LOG.debug("Btn %d old: %d new %d", i + 1, is_on, was_on)
             if is_on != was_on:
-                self._set_state(group=i + 1, level=0xff if is_on else 0x00,
-                                reason=reason)
+                # The LED bits only report on/off.  For the load group a
+                # dimmed load still has its LED bit set, so report the known
+                # level instead of full brightness.
+                level = 0xff if is_on else 0x00
+                if is_on and i + 1 == self._load_group and self._level:
+                    level = self._level
+                self._set_state(group=i + 1, level=level, reason=reason)
 
         self._led_bits = led_bits
         self.db.set_meta('led_bits', self._led_bits)
@@ -965,6 +970,14 @@ class KeypadLinc(Scene, Backlight, ManualCtrl, ResponderBase):
           reason (str): Reason string to pass around.
         """
         group = 0x01 if group is None else group
+
+        # Dimmers report a refresh as a level with no explicit on/off value.
+        # Derive is_on from the level so a dimmed load doesn't clear its
+        # cached LED bit (which a later LED refresh would report as a change
+        # to full brightness).
+        if is_on is None and level is not None:
+            is_on = level > 0
+
         if group == self._load_group:
             self._level = level
             if is_on is not None:
